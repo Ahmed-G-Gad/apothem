@@ -7,9 +7,10 @@ must derive the project root from the adapter's declared ``relative_target``
 component count, not a hardcoded ``parents[N]`` magic index, so a manifest
 target-depth change can never silently derive the wrong root. Also covers
 what every uninstall shim does with an ``error`` result: it raises, so the CLI
-does not report a refused uninstall as done. A native-config uninstall whose
-native-config step raises after its first step removed files exits as partial
-and still names Apothem's rules file left behind a link.
+does not report a refused uninstall as done. A native-config uninstall that
+stops at its native-config step, after its first step removed a file or only
+found Apothem's rules file behind a link, or in the shared pass after both
+steps, exits as partial and names that link.
 """
 
 from __future__ import annotations
@@ -353,22 +354,26 @@ def _link_folder(link: Path, target: Path) -> None:
         pytest.skip(f"cannot create a folder link here: {exc}")
 
 
-def _install_with_a_linked_workspace() -> Path:
+def _install_with_a_linked_workspace(*, alone: bool = False) -> Path:
     """Install open-claw into two workspaces; link the second one's rules folder.
 
     Returns the link: the second workspace's ``apothem`` folder, moved aside
     and linked back, so the uninstall cannot take the rules file out of it.
+    With *alone*, that workspace is the only one.
     """
     home = Path.home()
-    for name in ("ws-a", "ws-b"):
+    names = ("ws-b",) if alone else ("ws-a", "ws-b")
+    for name in names:
         (home / name).mkdir()
         (home / name / "AGENTS.md").write_text("# My agent\n", encoding="utf-8")
     config = home / ".openclaw" / "openclaw.json"
     config.parent.mkdir()
-    workspaces = {
-        "defaults": {"workspace": "~/ws-a"},
-        "entries": {"b": {"workspace": "~/ws-b"}},
-    }
+    workspaces: dict[str, object] = {"defaults": {"workspace": "~/ws-b"}}
+    if not alone:
+        workspaces = {
+            "defaults": {"workspace": "~/ws-a"},
+            "entries": {"b": {"workspace": "~/ws-b"}},
+        }
     config.write_text(json.dumps({"agents": workspaces}), encoding="utf-8")
     OpenClawAdapter().install({})
     link = home / "ws-b" / "apothem"
@@ -434,6 +439,38 @@ def test_a_stopped_native_uninstall_names_the_rules_file_behind_a_link(
     assert (link / "AGENTS.md").is_file()
     if output_format == "plain":
         assert "open-claw uninstall stopped after removing files" in result.stderr
+    _assert_the_link_is_named(result, link, output_format)
+
+
+@pytest.mark.parametrize("output_format", ["plain", "json"])
+def test_a_native_uninstall_stopped_before_any_removal_names_the_link(
+    monkeypatch: pytest.MonkeyPatch, output_format: str
+) -> None:
+    """The link is named when the first step found it and removed nothing.
+
+    The only workspace's rules folder is a link, so the first step changes
+    nothing and only finds Apothem's file behind the link; the
+    ``openclaw.json`` step then stops. The report names the link, and the CLI
+    exits 2, as for an uninstall that ran all its steps and left Apothem's
+    files behind a link. Nothing changed, so nothing is recorded.
+    """
+    link = _install_with_a_linked_workspace(alone=True)
+    config = Path.home() / ".openclaw" / "openclaw.json"
+    before = config.read_bytes()
+    _deny_the_native_config(monkeypatch, config)
+
+    result = _uninstall_open_claw_as(output_format)
+
+    assert result.exit_code == 2, result.output
+    assert config.read_bytes() == before
+    assert (link / "AGENTS.md").is_file()
+    records = install_ledger.read_records("open_claw")
+    assert [record.kind for record in records] == ["install"]
+    if output_format == "plain":
+        flat = " ".join(result.stderr.split())
+        assert "✗ open-claw uninstall failed: uninstall stopped: [Errno 13]" in flat
+    else:
+        assert json.loads(result.stdout)["status"] == "partial"
     _assert_the_link_is_named(result, link, output_format)
 
 

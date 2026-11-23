@@ -780,13 +780,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   found keeping Apothem's own files in place, as one that ran all its steps
   does: on a `✗ <harness> uninstall did not finish:` line, at the end of its
   `results` row's message and, when the reasons name one link, in that row's
-  `detail.symlink` and `detail.leads_to`. `apothem rollback` now undoes the
-  newest install still in place, so a second rollback undoes the one before,
-  refuses an `--install-id` that was already rolled back or uninstalled, and
-  removes a file an install created only while it still has the content that
-  install wrote. Uninstalling a tool from one project no longer removes the
-  shared memory, contexts and learning stores in your home folder while the
-  same tool installed in another project still uses them.
+  `detail.symlink` and `detail.leads_to`. Such a link makes it exit `2`, also
+  when it removed nothing. `apothem rollback` now undoes the newest install
+  still in place, so a second rollback undoes the one before, refuses an
+  `--install-id` that was already rolled back or uninstalled, and removes a
+  file an install created only while it still has the content that install
+  wrote. Uninstalling a tool from one project no longer removes the shared
+  memory, contexts and learning stores in your home folder while the same
+  tool installed in another project still uses them.
 - **Uninstall checks more strictly which files are Apothem's.** An install
   recorded by an earlier release does not say which files Apothem wrote, so
   the uninstall compares them with what this release writes. In the two places

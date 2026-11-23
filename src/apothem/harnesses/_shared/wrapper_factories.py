@@ -736,11 +736,14 @@ def make_native_config_uninstall(
     shared driver does the same for an error later on). An ordinary error is
     then raised as a :class:`MaterializationError` that carries those
     results, with the error as its cause, so the CLI reports a partial
-    uninstall (exit 2); a refusal and Ctrl-C are raised as they are, and so
-    is any error when *before_fn* changed nothing and took no backup. An
-    error inside *before_fn* itself records nothing: the files it changed
-    before the error keep their backups, but no record names them. A backup
-    root or ledger in a protected folder is refused before *before_fn* runs.
+    uninstall (exit 2). When *before_fn* changed nothing and took no backup,
+    nothing is recorded, and an ordinary error is raised that way only when
+    its results hold a warning (Apothem's file behind a link, say), which
+    the CLI then reports with the error; otherwise it is raised as it is. A
+    refusal and Ctrl-C are always raised as they are. An error inside
+    *before_fn* itself records nothing: the files it changed before the
+    error keep their backups, but no record names them. A backup root or
+    ledger in a protected folder is refused before *before_fn* runs.
     """
 
     @install_driver.backup_session()
@@ -784,14 +787,18 @@ def make_native_config_uninstall(
             )
         except BaseException as exc:
             stopped = _record_stopped_prepass(harness_name, output_path.parent, before)
-            if (
-                stopped is None
-                or not isinstance(exc, Exception)
-                or isinstance(exc, home_write_guard.RealHomeWriteError)
+            if not isinstance(exc, Exception) or isinstance(
+                exc, home_write_guard.RealHomeWriteError
             ):
                 raise
-            # Hand the CLI what before_fn removed, so it reports a partial
-            # uninstall (exit 2), as run_uninstall does for its own pass.
+            if stopped is None and any(r.outcome == "warning" for r in before):
+                # before_fn changed nothing, but found something to report
+                # (Apothem's file behind a link, say): no record is due.
+                stopped = MaterializationRun(harness_name, False, before)
+            if stopped is None:
+                raise
+            # Hand the CLI what before_fn removed or found, so it reports it
+            # with the error, as run_uninstall does for its own pass.
             raise MaterializationError(f"uninstall stopped: {exc}", stopped) from exc
         prior = (*before, *((native,) if native is not None else ()))
         removed = install_driver.run_uninstall(

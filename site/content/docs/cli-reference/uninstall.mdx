@@ -294,9 +294,9 @@ behind a link before it stopped, a `✗ <harness> uninstall did not finish:`
 line follows for each such link, as above, and the same text is added to the
 end of the row's message; when the reasons name one link, the row carries it
 in `detail.symlink` and the folder it leads to in `detail.leads_to`. It exits
-`2` with `status` `"partial"` when it removed files first, otherwise `1`. A
-refused uninstall (a link that leads the folder out of your home directory,
-say) removes nothing and exits `1`.
+`2` with `status` `"partial"` when it removed files first or names such a
+link, otherwise `1`. A refused uninstall (a link that leads the folder out of
+your home directory, say) removes nothing and exits `1`.
 
 ### An uninstall that did not finish
 
@@ -508,7 +508,7 @@ apothem uninstall --harness cursor --project A --yes     # removes it: no instal
 | Code | Meaning |
 |---|---|
 | 0 | Adapter uninstalled, or was not installed |
-| 1 | Harness not found, confirmation declined or unavailable (non-interactive or JSON mode without `--yes`), nothing was removed because each installed harness failed before removing anything, or the command was interrupted (`Ctrl+C`, which prints `Aborted!`), whatever it had removed by then |
+| 1 | Harness not found, confirmation declined or unavailable (non-interactive or JSON mode without `--yes`), nothing was removed because each installed harness failed before removing anything and named no link that keeps Apothem's own files in place, or the command was interrupted (`Ctrl+C`, which prints `Aborted!`), whatever it had removed by then |
 | 2 | Partial removal — an uninstall failed or stopped after removing files, at least one harness was removed and another failed, an uninstall left Apothem's own files in place because a link leads to them, files of an install an earlier release recorded differ from what this release writes, or an install has no record to show which files Apothem wrote |
 | 64 | Usage error: an unknown option or command, or a missing or invalid option value. Under `--json` the error is a JSON envelope with code `cli.usage`. |
 
