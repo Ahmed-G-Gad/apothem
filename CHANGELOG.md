@@ -262,16 +262,18 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   it is: one absorbed after the `yield` of a `tryfirst` `pytest_unconfigure`
   wrapper that pytest registered after the guard, one absorbed in a cleanup
   registered with `config.add_cleanup`, and one a worker absorbs after that
-  hand-off but never writes to the file the main process reads, because the
-  worker was stopped first (a worker still running 5 seconds after the main
-  process's session finishes is interrupted, and one still running after
-  10 seconds is stopped) or that file could not be made or written. With
-  no system record of the account's home (no `passwd` entry), the home is
-  not protected. A test that must run a real install starts Apothem without
-  `PYTEST_CURRENT_TEST` and `PYTEST_VERSION` in the child's environment.
-  `tests/README.md` lists what the refusal does not cover, such as a bind
-  mount of the home, a refusal absorbed in a child process and a folder
-  swapped for a link between the check and the write.
+  hand-off, or without reaching it, but never writes to the file the main
+  process reads, because the worker ended or was stopped before it did, or
+  that file could not be made or written. At the end of the run the main
+  process tells each worker to exit; a worker still running Python code
+  5 seconds later is interrupted (on Windows, not one blocked in a sleep or
+  another call), and any worker still running after 10 seconds is stopped.
+  With no system record of the account's home (no `passwd` entry), the home
+  is not protected. A test that must run a real install starts Apothem
+  without `PYTEST_CURRENT_TEST` and `PYTEST_VERSION` in the child's
+  environment. `tests/README.md` lists what the refusal does not cover, such
+  as a bind mount of the home, a refusal absorbed in a child process and a
+  folder swapped for a link between the check and the write.
 - **The Windows test cells in CI get 120 minutes.** The Windows cells of the
   `ci.yml` quality job take 64 to 88 minutes, and the 90-minute limit
   cancelled cells whose tests had passed. They now get 120, as the CI Matrix

@@ -223,11 +223,14 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   ``pytest_sessionfinish`` in the controller does that, and the wrapper does
   it again for a worker still running, as when a plain session-finish hook
   that pluggy calls before xdist's ended the run with ``pytest.exit``. A
-  worker still running 5 seconds after it was told gets a
-  ``KeyboardInterrupt``, and one still running after 10 seconds is stopped.
-  What such a worker had not written to its file reaches only ``stderr``,
-  and so does everything a worker finds after the hand-off when the
-  controller could not make the folder or the worker cannot write to it.
+  worker still running Python code 5 seconds after it was told gets a
+  ``KeyboardInterrupt``; on Windows one blocked in a sleep or another call
+  does not, since ``_thread.interrupt_main`` does not wake it. One still
+  running after 10 seconds is stopped. What a worker had not written to
+  its file when it ended (``os._exit``, a crash) or was stopped reaches
+  only ``stderr``, and so does everything a worker finds after the
+  hand-off when the controller could not make the folder or the worker
+  cannot write to it.
 
 The guard fails a test with ``RealHomeGuardFailure``, ``pytest.fail``'s exception
 under a type of its own, so the report hook can tell it apart. ``-p
