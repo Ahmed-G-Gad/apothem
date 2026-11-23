@@ -22,7 +22,7 @@ import pytest
 from click.testing import CliRunner, Result
 
 from apothem.cli import main
-from apothem.harnesses._shared import install_driver
+from apothem.harnesses._shared import install_driver, install_driver_written
 from apothem.harnesses._shared.install_driver import MaterializationResult
 from apothem.harnesses._shared.wrapper_factories import (
     make_native_config_uninstall,
@@ -384,19 +384,22 @@ def _uninstall_open_claw_as(output_format: str) -> Result:
     return CliRunner().invoke(main, [*args, "--format", output_format])
 
 
-def _assert_the_link_is_named(result: Result, link: Path, output_format: str) -> None:
+def _assert_the_link_is_named(
+    result: Result, link: Path, output_format: str, *, loaded: bool = True
+) -> None:
     """Check that the uninstall named *link*, where it leads and its fix.
 
     In JSON output the harness's ``results`` row ends its message with the
     link's line and names the link and the folder it leads to in ``detail``.
     In plain output that line follows ``✗ open-claw uninstall did not
-    finish:`` on standard error. OpenClaw still loads the rules file behind
-    the link, since ``openclaw.json`` still names it.
+    finish:`` on standard error. The line says OpenClaw still loads the rules
+    file behind the link when *loaded*: ``openclaw.json`` still names it.
     """
+    loads = ", and open-claw still loads them" if loaded else ""
     line = (
-        f"1 installed path(s) stay because they are reached through the link {link}, "
-        "and open-claw still loads them; replace the link with a real folder that "
-        "holds the same files, then run the command again"
+        f"1 installed path(s) stay because they are reached through the link {link}"
+        f"{loads}; replace the link with a real folder that holds the same files, "
+        "then run the command again"
     )
     if output_format == "json":
         row = json.loads(result.stdout)["results"][0]
@@ -432,3 +435,54 @@ def test_a_stopped_native_uninstall_names_the_rules_file_behind_a_link(
     if output_format == "plain":
         assert "open-claw uninstall stopped after removing files" in result.stderr
     _assert_the_link_is_named(result, link, output_format)
+
+
+def _fail_the_support_tree_backups(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make each backup of a file in the support tree fail, as on a full disk.
+
+    The workspace rules files and ``openclaw.json`` are backed up through
+    other code, so the first two steps finish and the shared pass stops.
+    """
+    real = install_driver_written.backup_existing
+
+    def full(target: Path, **kwargs: object) -> object:
+        if ".apothem" in target.parts:
+            raise OSError("backup disk full")
+        return real(target, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(install_driver_written, "backup_existing", full)
+
+
+@pytest.mark.parametrize("output_format", ["plain", "json"])
+def test_an_uninstall_stopped_in_the_shared_pass_reports_the_steps_before_it(
+    monkeypatch: pytest.MonkeyPatch, output_format: str
+) -> None:
+    """A stop in the shared pass keeps what the two steps before it did.
+
+    The first step took the first workspace's rules file out and found the
+    second one's behind a link, and the native step took Apothem's entries out
+    of ``openclaw.json``; then a backup in the support tree fails. The CLI
+    exits 2 and says the uninstall stopped after removing files, and it names
+    the link, as a stop at the native step does. OpenClaw no longer loads the
+    file behind the link: ``openclaw.json`` no longer names it.
+    """
+    link = _install_with_a_linked_workspace()
+    config = Path.home() / ".openclaw" / "openclaw.json"
+    before = config.read_bytes()
+    _fail_the_support_tree_backups(monkeypatch)
+
+    result = _uninstall_open_claw_as(output_format)
+
+    assert result.exit_code == 2, result.output
+    assert not (Path.home() / "ws-a" / "apothem" / "AGENTS.md").exists()
+    assert config.read_bytes() != before
+    assert (link / "AGENTS.md").is_file()
+    records = install_ledger.read_records("open_claw")
+    assert [record.kind for record in records] == ["install", "uninstall-incomplete"]
+    if output_format == "plain":
+        flat = " ".join(result.stderr.split())
+        stopped = "uninstall stopped after removing files: uninstall stopped: backup"
+        assert f"✗ open-claw {stopped} disk full" in flat
+    else:
+        assert json.loads(result.stdout)["status"] == "partial"
+    _assert_the_link_is_named(result, link, output_format, loaded=False)

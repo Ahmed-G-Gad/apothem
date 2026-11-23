@@ -382,7 +382,12 @@ def run_uninstall(
     against it. Either record references every backup the uninstall took,
     including those in *prior_results*: removals the caller made just before
     this pass, such as a native config stripped of Apothem's keys. An error in
-    *prior_results* also makes the uninstall unfinished.
+    *prior_results* also makes the uninstall unfinished. An ordinary error
+    that stops the pass is raised as a :class:`MaterializationError`, with
+    the error as its cause, whose ``run`` holds *prior_results*, this pass's
+    results and the files its removals kept: the CLI then reports what the
+    caller's steps and this pass did before it stopped, a file behind a link
+    that a step before it found included.
 
     A refusal of the real-home guard (see :mod:`apothem.lib.home_write_guard`)
     is raised as it is: it changed nothing in the protected folder. When the
@@ -438,10 +443,12 @@ def run_uninstall(
         results += record_pass(record, [*prior_results, *results], finished=False)
         if not isinstance(exc, Exception):
             raise
-        # Hand the caller what this pass removed before it stopped, so the CLI
-        # can report the uninstall as partial instead of a bare failure.
+        # Hand the caller what this pass, and the caller's steps before it,
+        # removed or found before it stopped, so the CLI can report the
+        # uninstall as partial instead of a bare failure.
         kept_now = kept_file_warnings(results)
-        run = MaterializationRun(harness_name, False, (*results, *kept_now))
+        done = (*prior_results, *results, *kept_now)
+        run = MaterializationRun(harness_name, False, done)
         raise MaterializationError(f"uninstall stopped: {exc}", run) from exc
     return [*results, *kept]
 
