@@ -83,8 +83,11 @@ an ``__all__`` got none of them, and its tests ran Apothem against the
 developer's real home: that once deleted a real install ledger and overwrote a
 file under ``~/.config/apothem``. Two things now stop that.
 
-``__all__`` lists the five isolation fixtures, the guard's names and every
-other public name, so a star import of this file carries the isolation with it.
+``__all__`` lists the five isolation fixtures, ``_report_real_home_refusals``,
+the guard's names and every other public name, so a star import of this file
+carries the isolation with it, and the fixture that fails a test after which a
+refusal was absorbed: without it the guard's report hook still fails such a
+test, but says the refusal came while a fixture was torn down.
 
 ``real_home_guard``, an instance of ``RealHomeGuard``, is a plugin object.
 Importing this file inside a pytest session registers it with that session,
@@ -325,14 +328,15 @@ from apothem.lib import home_write_guard, install_ledger, propagation
 from apothem.lib.data_home import resolve_shared_data_home
 from apothem.lib.profile import DEFAULT_PROFILE_PATH
 
-#: What ``from tests.conftest import *`` binds. The isolation fixtures start with
-#: ``_``, so a star import carries them only because they are listed here; the
-#: rest are the public names a star import carried before this list existed,
-#: which probe conftests use (``pytest``, ``install_ledger``, ``install_driver``,
-#: ``propagation``), the guard's names and every other public name of this
-#: module. One earlier name is gone on purpose: ``pytest_real_home_guard``, the
-#: module-level hook the guard was before it became the ``real_home_guard``
-#: plugin object; importing it by name fails with ``ImportError``.
+#: What ``from tests.conftest import *`` binds. The isolation fixtures and
+#: ``_report_real_home_refusals`` start with ``_``, so a star import carries
+#: them only because they are listed here; the rest are the public names a star
+#: import carried before this list existed, which probe conftests use
+#: (``pytest``, ``install_ledger``, ``install_driver``, ``propagation``), the
+#: guard's names and every other public name of this module. One earlier name
+#: is gone on purpose: ``pytest_real_home_guard``, the module-level hook the
+#: guard was before it became the ``real_home_guard`` plugin object; importing
+#: it by name fails with ``ImportError``.
 __all__ = [
     "DEFAULT_PROFILE_PATH",
     "REAL_HOME_GUARD_PLUGIN",

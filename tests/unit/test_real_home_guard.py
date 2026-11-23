@@ -11,8 +11,8 @@ real folder in it. Its report hook keeps such a failure failed when the test is
 marked ``xfail``. Its session hooks fail the run on a refusal of a write into a
 protected home that a caller absorbed outside any test, named for where it
 happened. ``__all__`` makes a star import of ``tests/conftest.py`` carry the
-isolation fixtures, which a star import used to skip because their names start
-with ``_``.
+isolation fixtures and ``_report_real_home_refusals``, which a star import
+would skip otherwise because their names start with ``_``.
 
 The ``test_*`` functions run in the suite, where ``tests/conftest.py`` is
 loaded as a conftest. They check that the guard is registered once, with its
@@ -134,6 +134,14 @@ _ISOLATION = (
     "_isolate_install_ledger",
     "_isolate_backup_root",
 )
+#: Every name ``__all__`` lists that starts with ``_``, which a star import
+#: carries only because it is listed: the five isolation fixtures and the
+#: fixture that fails a test after which a refusal was absorbed.
+_UNDERSCORE_EXPORTS = {
+    *_ISOLATION,
+    "_isolate_hook_state",
+    "_report_real_home_refusals",
+}
 #: The guard's hooks that read the refusal log outside any test, and the two
 #: xdist hooks that carry what the workers found to the controller.
 _SESSION_HOOKS = (
@@ -656,7 +664,10 @@ def test_a_star_import_carries_the_isolation_and_the_guard(
 ) -> None:
     conftest = _suite_conftest(request.config)
     exported = set(conftest.__all__)
-    assert exported >= {*_ISOLATION, "_isolate_hook_state", *_GUARD_NAMES}
+    assert exported >= _GUARD_NAMES
+    underscored = {name for name in exported if name.startswith("_")}
+    # The texts on __all__ in tests/conftest.py and tests/README.md name these.
+    assert underscored == _UNDERSCORE_EXPORTS
     # Assertion rewriting adds names such as "@py_builtins"; no import binds them.
     public = {
         name
