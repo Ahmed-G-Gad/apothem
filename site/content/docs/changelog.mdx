@@ -209,6 +209,19 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- **The CI coverage check runs the test suite in two halves at once.** The
+  `ci.yml` coverage job ran the whole suite under coverage on one runner in 16
+  to 30 minutes, so its 30-minute limit cancelled some runs. Two jobs,
+  `coverage shard 1 of 2` and `coverage shard 2 of 2`, now run in parallel,
+  each on half the tests, picked with the new `pytest --shard=K/N` option, and
+  upload their coverage data. The `coverage` job, still the required check,
+  combines the two, holds the engine to its 80% floor and uploads the same XML
+  and HTML reports. It fails unless both halves passed, because GitHub would
+  otherwise skip it after a failed half, and a skipped required check counts as
+  passed. A hash of each test's node id picks its half, the same on every
+  machine, so the halves never overlap or leave a test out. The
+  `home-isolation` job's limit goes from 20 to 30 minutes: 20 cancelled it on
+  `main` and on pull requests.
 - **The Windows test cells in CI get 120 minutes.** The Windows cells of the
   `ci.yml` quality job take 64 to 88 minutes, and the 90-minute limit
   cancelled cells whose tests had passed. They now get 120, as the CI Matrix

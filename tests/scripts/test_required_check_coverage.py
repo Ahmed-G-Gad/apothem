@@ -19,10 +19,16 @@ Two mechanisms keep the stub honest, and these tests pin both:
    `.github/workflows/scripts/assert-docs-only.sh`, which fails when any gated
    surface is in the PR diff, so the stub can never report a required check
    green over a real code or config change.
+
+`ci.yml`'s `coverage` job combines what the `coverage-shard` cells measured,
+each on its part of `pytest --shard=K/N`. Two more tests pin that the cells
+cover every part, and that the job runs, and fails, when a shard did not pass:
+GitHub would skip it otherwise, and a skipped required check counts as passed.
 """
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import yaml
@@ -74,6 +80,31 @@ def test_stub_reports_the_required_context_names() -> None:
     ci = _load("ci.yml")
     assert jobs["quality"]["name"] == ci["jobs"]["quality"]["name"]
     assert jobs["coverage"]["name"] == ci["jobs"]["coverage"]["name"]
+
+
+def test_the_coverage_shards_cover_every_part_of_the_suite() -> None:
+    # Each cell passes its matrix value as K of --shard=K/N. A value of 1 to N
+    # missing from the matrix would leave that part's tests unmeasured.
+    job = _load("ci.yml")["jobs"]["coverage-shard"]
+    run = "\n".join(step.get("run", "") for step in job["steps"])
+    split = re.search(r"--shard=\$\{\{ matrix\.shard \}\}/(\d+)\b", run)
+    assert split, "coverage-shard must run pytest --shard=${{ matrix.shard }}/N"
+    parts = list(range(1, int(split.group(1)) + 1))
+    assert job["strategy"]["matrix"]["shard"] == parts
+
+
+def test_the_coverage_check_fails_unless_every_shard_passed() -> None:
+    # GitHub skips a job when a job it needs failed or was cancelled, and a
+    # skipped required check counts as passed. The required job runs always()
+    # and fails itself, right after the harden-runner step, unless the shards'
+    # result is success.
+    job = _load("ci.yml")["jobs"]["coverage"]
+    assert job["needs"] == ["coverage-shard"]
+    assert job["if"] == "always()"
+    check = job["steps"][1]
+    assert check["env"]["SHARD_RESULT"] == "${{ needs.coverage-shard.result }}"
+    assert '[ "${SHARD_RESULT}" != "success" ]' in check["run"]
+    assert "exit 1" in check["run"]
 
 
 def test_stub_quality_matrix_mirrors_ci_for_context_parity() -> None:
