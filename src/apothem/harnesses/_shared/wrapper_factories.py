@@ -662,10 +662,17 @@ def _record_stopped_prepass(
     Returns the run so far, for the caller to raise as a stopped uninstall:
     *done*, a warning that names the ledger when appending the record fails,
     and the files a removal in *done* kept. Returns ``None`` when *done*
-    changed nothing and took no backup: no record is due. A refusal of the
-    record, a failure to read the install record, or any other error that
-    escapes writing it is dropped with no warning, so the first error
-    propagates.
+    changed nothing and took no backup: no record is due.
+
+    Only an :class:`OSError` or a
+    :class:`~apothem.lib.install_ledger.LedgerError` that escapes writing the
+    record is dropped, with no warning, so the caller's error still
+    propagates: a refusal of the record (the guard's error is an
+    :class:`OSError`), or a failure to read the install record or the
+    ledger. Any other error raised there (a ``TypeError``, say, or Ctrl-C)
+    is not caught: it propagates in place of the caller's error, which
+    Python chains to it as its context, and the caller raises no stopped
+    uninstall, so no run reaches the CLI.
     """
     if not any(result.changed or result.backup_path is not None for result in done):
         return None
