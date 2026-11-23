@@ -286,6 +286,41 @@ def test_a_native_uninstall_stopped_after_its_first_step_exits_partial(
     assert all(ref is not None and Path(ref).exists() for ref in backups.values())
 
 
+def test_ctrl_c_after_the_first_step_is_recorded_and_exits_through_click(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Ctrl-C at ``openclaw.json`` after the rules file went is recorded unfinished.
+
+    The CLI does not report the interrupt as a stopped uninstall: Click ends
+    the command with ``Aborted!`` and exit 1, as for any interrupt, although
+    the first step removed the rules file. The ledger says what happened: the
+    unfinished uninstall it records names that file's backup.
+    """
+    workspace = Path.home() / ".openclaw" / "workspace"
+    workspace.mkdir(parents=True)
+    (workspace / "AGENTS.md").write_text("# My agent\n", encoding="utf-8")
+    OpenClawAdapter().install({})
+    rules = workspace / "apothem" / "AGENTS.md"
+    written = rules.read_bytes()
+
+    def interrupted(*_args: object, **_kwargs: object) -> None:
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(
+        install_driver, "surgically_remove_materialized_config", interrupted
+    )
+
+    code, stderr = _uninstall_open_claw()
+
+    assert code == 1, stderr
+    assert stderr.strip() == "Aborted!"
+    assert not rules.exists()
+    records = install_ledger.read_records("open_claw")
+    assert [record.kind for record in records] == ["install", "uninstall-incomplete"]
+    backups = {target.path: target.backup_ref for target in records[-1].targets}
+    assert Path(str(backups[str(rules)])).read_bytes() == written
+
+
 def test_a_native_uninstall_stopped_before_any_change_still_fails(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
