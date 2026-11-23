@@ -60,8 +60,9 @@ its own ``tryfirst`` session-finish wrapper yields, which the worker writes to
 a file the controller reads and removes, also once a controller hook ended
 the run with ``pytest.exit`` before xdist ended the workers (a later run with
 the same ``--basetemp`` passes, and no such file is made in a protected
-folder), and a worker whose session ends at its start, which handed nothing
-over, is not named as if it had; a
+folder), a worker whose session ends at its start, which handed nothing
+over, is not named as if it had, and an empty file a worker left fails the
+run; a
 worker that stops on Ctrl-C has its refusal reported once, and one the
 controller absorbs while its workers run the tests is named for the run. Each
 names where the refusal happened. A session that absorbs nothing exits 0, with
@@ -1864,6 +1865,40 @@ def case_a_worker_that_handed_nothing_over_is_not_named_as_if_it_had(
     named = f"in xdist worker gw0, {_AT_SESSION_START}, and the refusal"
     assert output.count(named) == 1, output
     assert _AFTER_THE_HAND_OFF not in output
+    assert not (fake_real_home / ".apothem").exists()
+
+
+#: Where the probe hooks below find the file an xdist worker writes its late
+#: refusals to, in ``config.workerinput``.
+_LATE_FILE_KEY = "apothem-real-home-late-refusals"
+
+#: An unconfigure hook that leaves the file an xdist worker writes its late
+#: refusals to empty, as a worker stopped after it created the file would.
+_AN_EMPTY_LATE_FILE = f"""
+
+def pytest_unconfigure(config):
+    if hasattr(config, "workerinput"):
+        open(config.workerinput[{_LATE_FILE_KEY!r}], "a").close()
+"""
+
+
+def case_an_empty_late_file_a_worker_left_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """A worker creates the file only to write a refusal it found.
+
+    An empty one means it was stopped while it wrote, so the run fails, and
+    the report names the worker and the file.
+    """
+    pytester.makeconftest(_STAR_IMPORT + _AN_EMPTY_LATE_FILE)
+
+    result = _run(pytester, "-n", "1")
+
+    result.assert_outcomes(passed=len(_PROBE_TESTS))
+    assert result.ret == pytest.ExitCode.TESTS_FAILED
+    output = " ".join(result.stdout.str().split())
+    assert "outside any test, in xdist worker gw0, and the refusal" in output
+    assert "gw0.jsonl is empty: the worker creates it only to write" in output
     assert not (fake_real_home / ".apothem").exists()
 
 

@@ -1698,10 +1698,12 @@ def _take_late(config: pytest.Config) -> None:
     controller by then, and for where the worker found it (``in xdist
     worker gw0, after it handed its refusals to the controller, after the
     session finished``; see :func:`_late_report`). A worker that found
-    nothing wrote no file. A file that cannot be read is held as a refusal
-    of its own, so the run fails: the worker wrote it only because it found
-    one. Nothing happens outside an xdist controller, which alone names
-    files.
+    nothing wrote no file. A file that cannot be read, or that holds no
+    line, is held as a refusal of its own, so the run fails: the worker
+    creates its file only to write a refusal it found, and one stopped
+    after it created the file and before the text reached it leaves the
+    file empty. Nothing happens outside an xdist controller, which alone
+    names files.
     """
     files = config.stash.get(_LATE_FILES, {})
     if files:
@@ -1717,6 +1719,12 @@ def _take_late(config: pytest.Config) -> None:
             held.append((named, (f"the guard could not read {path}: {error}",)))
             continue
         lines = [line for line in text.splitlines() if line.strip()]
+        if not lines:
+            empty = (
+                f"{path} is empty: the worker creates it only to write a "
+                "refusal it found, so it was stopped while it wrote, say"
+            )
+            held.append((named, (empty,)))
         held.extend(_late_report(line, named) for line in lines)
     files.clear()
     folder = config.stash.get(_LATE_FOLDER, None)
