@@ -250,14 +250,14 @@ def test_in_a_pytest_process_the_running_pytest_counts_not_its_metadata(
         home_write_guard._installed_pytest_version.cache_clear()
 
 
-def test_a_failed_pytest_lookup_is_tried_again_and_a_found_one_is_kept(
+def test_the_installed_pytest_is_looked_up_once_found_or_not(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """In a process that runs no pytest, the installed pytest is looked up.
+    """In a process that runs no pytest, the installed pytest is looked up once.
 
     That is a child process a session started, which inherited
     ``PYTEST_VERSION``. Where its Python has no pytest installed, the variable
-    does not count there.
+    does not count there, and the failed lookup is kept too.
     """
     real_version = importlib.metadata.version
     asked: list[str] = []
@@ -274,13 +274,13 @@ def test_a_failed_pytest_lookup_is_tried_again_and_a_found_one_is_kept(
     lookup.cache_clear()
     monkeypatch.setattr(importlib.metadata, "version", missing)
     try:
-        for _ in range(2):
-            with pytest.raises(importlib.metadata.PackageNotFoundError):
-                lookup()
-        assert asked == ["pytest", "pytest"]
+        assert lookup() is None
+        assert lookup() is None
+        assert asked == ["pytest"]
+        lookup.cache_clear()
         monkeypatch.setattr(importlib.metadata, "version", found)
         assert lookup() == lookup() == real_version("pytest")
-        assert asked == ["pytest", "pytest", "pytest"]
+        assert asked == ["pytest", "pytest"]
     finally:
         monkeypatch.setattr(importlib.metadata, "version", real_version)
         lookup.cache_clear()
@@ -353,6 +353,32 @@ def test_outside_pytest_the_refusal_says_pytest_version_alone_turned_it_on(
     assert "pytest is running" not in output
     assert "pytest imported: False" in output
     assert not home.exists()
+
+
+def test_a_python_with_no_pytest_reads_the_metadata_once_for_every_check(
+    tmp_path: Path,
+) -> None:
+    """Such as an installer's copy of Apothem, with a pin in ``PYTEST_VERSION``.
+
+    The variable does not count there, and the failed lookup is not repeated
+    on each of the thousands of checks an all-harness install makes.
+    """
+    home = tmp_path / "account-home"
+    claude = home / ".claude" / "settings.json"
+    output = _in_a_child(
+        "import importlib.metadata\n"
+        "asked = []\n"
+        "def missing(name):\n"
+        "    asked.append(name)\n"
+        "    raise importlib.metadata.PackageNotFoundError(name)\n"
+        "importlib.metadata.version = missing\n"
+        "from apothem.lib import home_write_guard as guard\n"
+        f"guard.also_protect_home({str(home)!r})\n"
+        f"checks = [guard.would_refuse({str(claude)!r}) for _ in range(5)]\n"
+        "print(checks, guard.active(), asked)\n",
+        PYTEST_VERSION="8.2",
+    )
+    assert output.strip() == "[False, False, False, False, False] False ['pytest']"
 
 
 @pytest.mark.parametrize(

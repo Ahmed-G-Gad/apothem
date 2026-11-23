@@ -41,8 +41,9 @@ package, the string pytest puts in ``PYTEST_VERSION``, so a stale
 tree that names itself ``unknown``, changes nothing. In a process that has not
 imported pytest (a child process a session started, say), ``PYTEST_VERSION``
 counts when it holds the version of the pytest installed for this Python,
-read from its package metadata only while ``PYTEST_VERSION`` is set; a
-version found is kept for the process. A ``PYTEST_VERSION`` with any other
+read from its package metadata only while ``PYTEST_VERSION`` is set; the
+answer is kept for the process, a failed lookup (no pytest installed)
+included. A ``PYTEST_VERSION`` with any other
 value (an empty one, or a pin such as ``8.2`` that a shell or a CI job
 exports) does not count. One that a shell or a CI job exports with the
 installed pytest's exact version (``9.1.0`` beside ``pip install
@@ -50,9 +51,8 @@ pytest==9.1.0``) counts all the same, outside pytest too: the refusal message
 then says that ``PYTEST_VERSION`` alone turned the guard on, in a process that
 runs no pytest. With both variables unset a check is two environment lookups.
 A ``PYTEST_VERSION`` that does not count adds a comparison with that version,
-or, in a process that runs no pytest where this Python has no pytest
-installed, a package metadata lookup on every check, since a failed lookup is
-not kept. The refusal message names the variable that turned the guard on.
+and, in a process that runs no pytest, one package metadata lookup on the
+first check. The refusal message names the variable that turned the guard on.
 
 A path is compared as written and as resolved through links, afresh on every
 check, so a folder swapped for a link during a test counts at once. The
@@ -350,49 +350,43 @@ def _session_counts(value: str | None) -> bool:
 
     That is when it is the version :func:`_pytest_version` returns.
     """
-    if not value:
-        return False
-    try:
-        version = _pytest_version()
-    except _LOOKUP_ERRORS:
-        return False
-    return value == version
+    return bool(value) and value == _pytest_version()
 
 
-def _pytest_version() -> str:
+def _pytest_version() -> str | None:
     """Return the version ``PYTEST_VERSION`` has to hold to turn the guard on.
 
     In a process that has imported pytest, that is the ``__version__`` of its
     ``_pytest`` package: the string pytest's ``main`` puts in the variable,
     whatever the package metadata says. In any other process (a child process
     a session started, say) it is the version of the pytest installed for
-    this Python (:func:`_installed_pytest_version`). Raises when the one it
-    needs is not known.
+    this Python (:func:`_installed_pytest_version`). None when the one it
+    needs is not known: then no ``PYTEST_VERSION`` counts.
     """
     running = sys.modules.get("_pytest")
     if running is None:
         return _installed_pytest_version()
     found: object = getattr(running, "__version__", None)
-    if not isinstance(found, str) or not found:
-        raise LookupError("the running pytest names no version")
-    return found
+    return found if isinstance(found, str) and found else None
 
 
-@functools.lru_cache(maxsize=1)
-def _installed_pytest_version() -> str:
-    """Return the version of the pytest installed for this Python.
+@functools.cache
+def _installed_pytest_version() -> str | None:
+    """Return the version of the pytest installed for this Python, or None.
 
     It comes from the package metadata (``importlib.metadata``), looked up on
-    first use, never at import, and kept for the process. ``lru_cache`` keeps
-    no failure: with no pytest installed, or metadata that cannot be read,
-    this raises, ``PYTEST_VERSION`` does not count, and the next call tries
-    again.
+    first use, never at import. The answer is kept for the process, a failed
+    lookup (no pytest installed, or metadata that cannot be read) included:
+    a process that runs no pytest does not gain one, and an installer's copy
+    of Apothem in a Python with no pytest would otherwise read the metadata
+    again on each of the thousands of checks a run makes.
     """
-    metadata = importlib.import_module("importlib.metadata")
-    found: object = metadata.version("pytest")
-    if not isinstance(found, str) or not found:
-        raise LookupError("the installed pytest names no version")
-    return found
+    try:
+        metadata = importlib.import_module("importlib.metadata")
+        found: object = metadata.version("pytest")
+    except _LOOKUP_ERRORS:
+        return None
+    return found if isinstance(found, str) and found else None
 
 
 def account_home() -> str | None:
