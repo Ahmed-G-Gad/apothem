@@ -138,7 +138,9 @@ PYTEST_VARIABLE = "PYTEST_CURRENT_TEST"
 #: :func:`active`).
 PYTEST_SESSION_VARIABLE = "PYTEST_VERSION"
 
-#: What a refusal outside any test names in place of the test.
+#: What stands in for the test outside any test: the key the ``stderr`` notices
+#: are counted under, and the name a message gives when neither variable counts
+#: any more (see :func:`_running`).
 _SESSION = "the pytest session"
 
 #: Apothem's own folders in the home, relative to it.
@@ -576,14 +578,17 @@ _FIX = (
 
 
 def _running() -> str:
-    """Return what is running, for a message, and the variable that says so.
+    """Return why the guard is on, for a message, and the variable that says so.
 
-    That is the test, while ``PYTEST_CURRENT_TEST`` is set and not empty, and
-    otherwise the pytest session, outside any test, whose ``PYTEST_VERSION``
-    matches the running pytest (:func:`active`). In a process that has not
-    imported pytest (one a session started, or one whose shell or CI job
-    exports the installed pytest's exact version), no pytest is running: the
-    message says that ``PYTEST_VERSION`` alone turned the guard on.
+    That is the test, while ``PYTEST_CURRENT_TEST`` is set and not empty.
+    Otherwise ``PYTEST_VERSION`` turned the guard on (:func:`active`), outside
+    any test. In a process that has imported pytest the message says that the
+    variable holds the version of that pytest, not that a pytest session runs:
+    pytest sets it so for its whole session, but a shell or a CI job may export
+    it to a process that imports pytest without running it. In any other
+    process (one a session started, or one whose shell or CI job exports the
+    installed pytest's exact version) no pytest runs, and the message says that
+    ``PYTEST_VERSION`` alone turned the guard on.
 
     Each variable is read once. pytest takes ``PYTEST_CURRENT_TEST`` out of the
     environment at the end of each test's teardown, so a check made just before
@@ -604,8 +609,8 @@ def _running() -> str:
             f"{version}, though no pytest runs in this process"
         )
     return (
-        f"pytest is running ({_SESSION}, outside any test: "
-        f"{PYTEST_SESSION_VARIABLE} matches the running pytest {version})"
+        f"{PYTEST_SESSION_VARIABLE} holds the version of the pytest imported in "
+        f"this process, {version}, outside any test"
     )
 
 

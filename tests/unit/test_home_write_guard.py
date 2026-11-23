@@ -54,6 +54,13 @@ _ROOTS = (
     ".trae",
 )
 
+#: How a refusal outside any test names ``PYTEST_VERSION`` in a process that
+#: has imported pytest: by what the guard knows, not as a running session.
+_IMPORTED = (
+    "PYTEST_VERSION holds the version of the pytest imported in this process, "
+    "{version}, outside any test"
+)
+
 
 @pytest.fixture(autouse=True)
 def _forget_fake_homes() -> Iterator[None]:
@@ -139,13 +146,14 @@ def test_pytest_marks_the_whole_session_for_the_guard(
     assert home_write_guard.active()
 
 
-def test_a_write_outside_any_test_is_refused_and_names_the_session(
+def test_a_write_outside_any_test_is_refused_and_names_pytest_version(
     fake_home: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     """Collection, module-level code and session hooks run with no test id."""
     version = sys.modules["_pytest"].__version__
+    running = f", while {_IMPORTED.format(version=version)}. "
     monkeypatch.delenv(home_write_guard.PYTEST_VARIABLE)
     monkeypatch.setenv(home_write_guard.PYTEST_SESSION_VARIABLE, version)
     assert home_write_guard.active()
@@ -155,26 +163,24 @@ def test_a_write_outside_any_test_is_refused_and_names_the_session(
     with pytest.raises(home_write_guard.RealHomeWriteError) as caught:
         _write(claude)
     message = str(caught.value)
-    assert (
-        "while pytest is running (the pytest session, outside any test: "
-        f"PYTEST_VERSION matches the running pytest {version}). "
-    ) in message
+    assert running in message
+    assert "pytest is running" not in message
     assert "()" not in message
     assert "without PYTEST_CURRENT_TEST and PYTEST_VERSION" in message
     with pytest.raises(home_write_guard.RealHomeWriteError):
         _append(fake_home / ".claude" / "x.jsonl")
     with pytest.raises(home_write_guard.RealHomeWriteError) as project:
         home_write_guard.refuse_project_root_at_home(fake_home, operation="install")
-    assert "the pytest session" in str(project.value)
+    assert running in str(project.value)
     notices = [
         line
         for line in capsys.readouterr().err.splitlines()
         if line.startswith("RealHomeWriteError: ")
     ]
-    # Once per protected folder in the session: the second .claude refusal is
+    # Once per protected folder outside any test: the second .claude refusal is
     # logged but not written again; the home itself is a folder of its own.
     assert len(notices) == 2
-    assert all("the pytest session" in line for line in notices)
+    assert all(running in line for line in notices)
     assert len(home_write_guard.drain_refusals()) == 3
     assert _everything_in(fake_home) == []
 
@@ -384,6 +390,37 @@ def test_outside_pytest_the_refusal_says_pytest_version_alone_turned_it_on(
     assert not home.exists()
 
 
+def test_with_pytest_imported_and_not_run_the_refusal_claims_no_session(
+    tmp_path: Path,
+) -> None:
+    """A process may import pytest as a library and run no pytest session.
+
+    With ``PYTEST_VERSION`` equal to that pytest's version, as a shell or a CI
+    job may export it, the guard is on there too. The message says only what
+    the guard knows: the variable holds the version of the pytest imported in
+    this process, outside any test. It does not say that pytest is running.
+    """
+    version = sys.modules["_pytest"].__version__
+    home = tmp_path / "account-home"
+    claude = home / ".claude" / "settings.json"
+    output = _in_a_child(
+        "import pytest\n"
+        "from apothem.lib import home_write_guard as guard\n"
+        f"guard.also_protect_home({str(home)!r})\n"
+        "try:\n"
+        f"    guard.refuse_real_home_write({str(claude)!r}, operation='write')\n"
+        "except guard.RealHomeWriteError as error:\n"
+        "    print(error)\n"
+        "print('pytest imported:', '_pytest' in sys.modules)\n",
+        PYTEST_VERSION=version,
+    )
+    assert f", while {_IMPORTED.format(version=version)}. " in output
+    assert "pytest is running" not in output
+    assert "pytest session" not in output
+    assert "pytest imported: True" in output
+    assert not home.exists()
+
+
 def test_importing_the_guard_looks_no_pytest_version_up() -> None:
     """Every Apothem start imports the guard, so the import stays this cheap.
 
@@ -434,16 +471,8 @@ def test_a_python_with_no_pytest_reads_the_metadata_once_for_every_check(
             "a pytest test is running (PYTEST_CURRENT_TEST is set: "
             "probe.py::test_one (call))",
         ),
-        (
-            "",
-            "pytest is running (the pytest session, outside any test: "
-            "PYTEST_VERSION matches the running pytest {version})",
-        ),
-        (
-            None,
-            "pytest is running (the pytest session, outside any test: "
-            "PYTEST_VERSION matches the running pytest {version})",
-        ),
+        ("", _IMPORTED),
+        (None, _IMPORTED),
     ],
     ids=["test", "empty-test-id", "session"],
 )

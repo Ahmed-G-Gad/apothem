@@ -368,10 +368,14 @@ def case_module_level_code_and_session_hooks_are_refused(
         name: (pytester.path / f"{name}.outcome").read_text(encoding="utf-8")
         for name in ("conftest-import", "sessionstart", "module-level")
     }
+    # The probe session runs this same pytest, so it put this version there.
+    running = (
+        "while PYTEST_VERSION holds the version of the pytest imported in this "
+        f"process, {pytest.__version__}, outside any test. "
+    )
     for name, outcome in outcomes.items():
         assert outcome.startswith("refused: "), (name, outcome, output)
-        assert "while pytest is running (the pytest session" in outcome, outcome
-        assert "PYTEST_VERSION matches the running pytest" in outcome, outcome
+        assert running in outcome, outcome
     result.assert_outcomes(passed=1)
 
 
