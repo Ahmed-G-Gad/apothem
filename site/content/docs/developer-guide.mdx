@@ -689,10 +689,10 @@ changed. ...
 A `PYTEST_VERSION` with any other value, such as a pin like `8.2` that a
 shell or a CI job exports, does not count. Outside any test the error says
 `PYTEST_VERSION matches the running pytest <version>` in place of the test.
-One that a shell or a CI job exports with the installed pytest's exact
-version counts all the same, outside pytest too, and the error then says
-`PYTEST_VERSION holds the installed pytest's version, <version>, though no
-pytest runs in this process`.
+A `PYTEST_VERSION` that a shell or a CI job exports with the installed
+pytest's exact version counts all the same, outside pytest too, and the error
+then says `PYTEST_VERSION holds the installed pytest's version, <version>,
+though no pytest runs in this process`.
 
 A project-scope install, update, uninstall or rollback whose project root is
 the account home itself is refused the same way, before it writes anything:
