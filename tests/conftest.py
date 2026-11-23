@@ -195,42 +195,40 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   wrapper's ``yield`` is named "after the session finished", and one after
   such a ``pytest_unconfigure`` wrapper's ``yield`` reaches only ``stderr``.
 - ``pytest_testnodedown`` and ``pytest_configure_node``, optional hooks that
-  only xdist defines and calls in the controller. A worker's terminal output
-  is discarded and the controller does not use its exit code, so a worker
-  sends what it holds to the controller. Its ``trylast`` session-finish
-  wrapper puts it in ``config.workeroutput`` once every plain session-finish
-  hook has run, which xdist's own wrapper then sends, and the controller's
+  only xdist defines and calls in the controller. A worker's terminal output is
+  discarded and the controller does not use its exit code, so a worker sends
+  what it holds to the controller. Its ``trylast`` session-finish wrapper puts
+  it in ``config.workeroutput`` once every plain session-finish hook has run,
+  which xdist's own wrapper then sends, and the controller's
   ``pytest_testnodedown`` holds it under the worker's name, once also for a
   worker that stopped on Ctrl-C, which xdist reports down twice. What a worker
-  finds after that hand-off, after another session-finish wrapper's
-  ``yield``, in its terminal summary or in its ``pytest_unconfigure``, it
-  appends to a file that the controller's ``pytest_configure_node`` named in
-  the worker's ``workerinput``: one per worker, in a folder the controller
-  makes for the session with ``tempfile.mkdtemp``, so a folder an earlier run
-  left is never read, and never in a protected folder of a real home. The
-  worker also writes a copy of what it hands over there, which the
-  controller reports only when ``pytest_testnodedown`` did not take the
-  worker's output: a hook of the controller ended its test loop with
-  ``pytest.exit``, say. A worker whose session stopped before its session
-  finish (``pytest.exit`` in its ``pytest_sessionstart``, say) handed
-  nothing over, and writes what it holds to that file from its
-  ``pytest_unconfigure``. The controller's
-  ``pytest_unconfigure`` wrapper reads the files, holds each refusal named
-  "in xdist worker <name>, after it handed its refusals to the controller,
-  ..." (without "after it handed ..." for a worker that handed nothing
-  over) and removes the folder. Before it reads them, every worker has been
-  told to exit and its process has ended: xdist's own
-  ``pytest_sessionfinish`` in the controller does that, and the wrapper does
-  it again for a worker still running, as when a plain session-finish hook
-  that pluggy calls before xdist's ended the run with ``pytest.exit``. A
-  worker still running Python code 5 seconds after it was told gets a
-  ``KeyboardInterrupt``; on Windows one blocked in a sleep or another call
-  does not, since ``_thread.interrupt_main`` does not wake it. One still
-  running after 10 seconds is stopped. What a worker had not written to
-  its file when it ended (``os._exit``, a crash) or was stopped reaches
-  only ``stderr``, and so does everything a worker finds after the
-  hand-off when the controller could not make the folder or the worker
-  cannot write to it.
+  finds after that hand-off, after another session-finish wrapper's ``yield``,
+  in its terminal summary or in its ``pytest_unconfigure``, it appends to a
+  file that the controller's ``pytest_configure_node`` named in the worker's
+  ``workerinput``: one per worker, in a folder the controller makes for the
+  session with ``tempfile.mkdtemp``, so a folder an earlier run left is never
+  read, and never in a protected folder of a real home. The worker also writes
+  a copy of what it hands over there, which the controller reports only when
+  ``pytest_testnodedown`` did not take the worker's output: a hook of the
+  controller ended its test loop with ``pytest.exit``, say. A worker whose
+  session stopped before its session finish (``pytest.exit`` in its
+  ``pytest_sessionstart``, say) handed nothing over, and writes what it holds
+  to that file from its ``pytest_unconfigure``. The controller's
+  ``pytest_unconfigure`` wrapper reads the files, holds each refusal named "in
+  xdist worker <name>, after it handed its refusals to the controller, ..."
+  (without "after it handed ..." for a worker that handed nothing over) and
+  removes the folder. Before it reads them, every worker has been told to exit
+  and its process has ended: xdist's own ``pytest_sessionfinish`` in the
+  controller does that, and the wrapper does it again for a worker still
+  running, as when a plain session-finish hook that pluggy calls before xdist's
+  ended the run with ``pytest.exit``. A worker still running Python code 5
+  seconds after it was told gets a ``KeyboardInterrupt``; on Windows one
+  blocked in a sleep or another call does not, since ``_thread.interrupt_main``
+  does not wake it. One still running after 10 seconds is stopped. What a
+  worker had not written to its file when it ended (``os._exit``, a crash) or
+  was stopped reaches only ``stderr``, and so does everything a worker finds
+  after the hand-off when the controller could not make the folder or the
+  worker cannot write to it.
 
 The guard fails a test with ``RealHomeGuardFailure``, ``pytest.fail``'s exception
 under a type of its own, so the report hook can tell it apart. ``-p
