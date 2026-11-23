@@ -60,7 +60,8 @@ its own ``tryfirst`` session-finish wrapper yields, which the worker writes to
 a file the controller reads and removes, also once a controller hook ended
 the run with ``pytest.exit`` before xdist ended the workers (a later run with
 the same ``--basetemp`` passes, and no such file is made in a protected
-folder); a
+folder), and a worker whose session ends at its start, which handed nothing
+over, is not named as if it had; a
 worker that stops on Ctrl-C has its refusal reported once, and one the
 controller absorbs while its workers run the tests is named for the run. Each
 names where the refusal happened. A session that absorbs nothing exits 0, with
@@ -1789,6 +1790,45 @@ def case_the_controller_waits_for_its_workers_before_it_reads_their_files(
     for worker in ("gw0", "gw1"):
         named = f"in xdist worker {worker}, {_AFTER_THE_HAND_OFF}, after the session"
         assert output.count(named) == 1, output
+    assert not (fake_real_home / ".apothem").exists()
+
+
+#: A session-start hook that absorbs the refusal in an xdist worker and ends
+#: the worker's session there, so the worker never reaches its session
+#: finish and hands nothing to the controller.
+_ABSORBED_WHERE_A_WORKERS_SESSION_ENDS_AT_ITS_START = """
+
+def pytest_sessionstart(session):
+    if hasattr(session.config, "workerinput"):
+        _absorb()
+        pytest.exit("probe", returncode=0)
+"""
+
+
+def case_a_worker_that_handed_nothing_over_is_not_named_as_if_it_had(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """A worker whose session ends at its start sends its refusal in the file.
+
+    It never reached its session finish, where it hands its refusals to the
+    controller, so the controller names the refusal for where it happened,
+    not as found after that hand-off.
+    """
+    result = _run_absorbing(
+        pytester,
+        fake_real_home,
+        _ABSORBED_WHERE_A_WORKERS_SESSION_ENDS_AT_ITS_START,
+        "-n",
+        "1",
+        "--max-worker-restart",
+        "0",
+    )
+
+    assert result.ret == pytest.ExitCode.TESTS_FAILED
+    output = result.stdout.str()
+    named = f"in xdist worker gw0, {_AT_SESSION_START}, and the refusal"
+    assert output.count(named) == 1, output
+    assert _AFTER_THE_HAND_OFF not in output
     assert not (fake_real_home / ".apothem").exists()
 
 

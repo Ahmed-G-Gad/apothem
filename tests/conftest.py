@@ -205,11 +205,15 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   appends to a file that the controller's ``pytest_configure_node`` named in
   the worker's ``workerinput``: one per worker, in a folder the controller
   makes for the session with ``tempfile.mkdtemp``, so a folder an earlier run
-  left is never read, and never in a protected folder of a real home. The
-  controller's ``pytest_unconfigure`` wrapper reads the files, holds each
-  refusal named "in xdist worker <name>, after it handed its refusals to the
-  controller, ..." and removes the folder. Before it reads them, every
-  worker has been told to exit and its process has ended: xdist's own
+  left is never read, and never in a protected folder of a real home. A
+  worker whose session stopped before its session finish (``pytest.exit`` in
+  its ``pytest_sessionstart``, say) handed nothing over, and writes what it
+  holds to that file from its ``pytest_unconfigure``. The controller's
+  ``pytest_unconfigure`` wrapper reads the files, holds each refusal named
+  "in xdist worker <name>, after it handed its refusals to the controller,
+  ..." (without "after it handed ..." for a worker that handed nothing
+  over) and removes the folder. Before it reads them, every worker has been
+  told to exit and its process has ended: xdist's own
   ``pytest_sessionfinish`` in the controller does that, and the wrapper does
   it again for a worker still running, as when a plain session-finish hook
   that pluggy calls before xdist's ended the run with ``pytest.exit``. A
@@ -1295,6 +1299,7 @@ class RealHomeGuard:
         finally:
             _hold(session.config, _AFTER_THE_LAST_TEST)
             _report_held(session.config, session, to_the_controller=True)
+            session.config.stash[_HANDED_OFF] = True
 
     @pytest.hookimpl(wrapper=True, tryfirst=True, specname="pytest_sessionfinish")
     def pytest_sessionfinish_after_the_summary(
@@ -1499,8 +1504,13 @@ _LATE_TO_THE_CONTROLLER = "apothem-real-home-late-refusals"
 #: worker's name.
 _LATE_FOLDER = pytest.StashKey[str | None]()
 _LATE_FILES = pytest.StashKey[dict[str, str]]()
-#: How the controller names what a worker wrote to that file.
+#: How the controller names what a worker wrote to that file once it had
+#: handed its refusals over.
 _AFTER_THE_HAND_OFF = "after it handed its refusals to the controller"
+#: Set in an xdist worker once its ``trylast`` session-finish wrapper has
+#: handed what it held to the controller; a worker whose session stopped
+#: before its session finish never sets it.
+_HANDED_OFF = pytest.StashKey[bool]()
 #: Set once the guard has reported a refusal and failed the run.
 _REPORTED = pytest.StashKey[bool]()
 #: The exit statuses a held refusal turns into "tests failed".
@@ -1585,11 +1595,16 @@ def _report_held(
     )
     reporter = config.pluginmanager.get_plugin("terminalreporter")
     if worker:
+        when = (
+            "after it handed its refusals to the controller, once every plain "
+            "session-finish hook had run"
+            if config.stash.get(_HANDED_OFF, False)
+            else "before it handed its refusals to the controller, which it "
+            "does at its session finish"
+        )
         sys.stderr.write(
-            f"{message}\nThe worker found it after it handed its refusals to the "
-            "controller, once every plain session-finish hook had run, and could "
-            "not write it to the controller's file, so the run does not fail on "
-            "it.\n"
+            f"{message}\nThe worker found it {when}, and could not write it to "
+            "the controller's file, so the run does not fail on it.\n"
         )
     elif reporter is not None:
         reporter.write_line(f"\n{message}", red=True)
@@ -1640,9 +1655,12 @@ def _sent_late(
 
     The file is the one :meth:`RealHomeGuard.pytest_configure_node` named in
     ``config.workerinput``. Each report is one JSON line, all of them written
-    in one call, and no other process writes to the file. Returns whether
-    they were written: not when the controller named no file, or the file
-    cannot be written (the controller's folder is gone, say).
+    in one call, and no other process writes to the file. Each line says
+    whether the worker had handed its refusals to the controller by then
+    (``handed_off``): a worker whose session stopped before its session
+    finish never did. Returns whether they were written: not when the
+    controller named no file, or the file cannot be written (the
+    controller's folder is gone, say).
     """
     workerinput = getattr(config, "workerinput", None)
     path = (
@@ -1652,8 +1670,10 @@ def _sent_late(
     )
     if not isinstance(path, str) or not path:
         return False
+    handed_off = config.stash.get(_HANDED_OFF, False)
     lines = "".join(
-        _dumps({"where": where, "messages": list(messages)}) + "\n"
+        _dumps({"where": where, "messages": list(messages), "handed_off": handed_off})
+        + "\n"
         for where, messages in reports
     )
     try:
@@ -1669,19 +1689,21 @@ def _take_late(config: pytest.Config) -> None:
 
     It first waits for every worker to end (:func:`_end_the_workers`), so
     no worker writes to its file after it was read. Each refusal is named
-    for its worker and for where the worker found it (``in xdist worker
-    gw0, after it handed its refusals to the controller, after the session
-    finished``). A worker that found nothing wrote no file. A file that
-    cannot be read is held as a refusal of its own, so the run fails: the
-    worker wrote it only because it found one. Nothing happens outside an
-    xdist controller, which alone names files.
+    for its worker, for whether the worker had handed its refusals to the
+    controller by then, and for where the worker found it (``in xdist
+    worker gw0, after it handed its refusals to the controller, after the
+    session finished``; see :func:`_late_report`). A worker that found
+    nothing wrote no file. A file that cannot be read is held as a refusal
+    of its own, so the run fails: the worker wrote it only because it found
+    one. Nothing happens outside an xdist controller, which alone names
+    files.
     """
     files = config.stash.get(_LATE_FILES, {})
     if files:
         _end_the_workers(config)
     held = config.stash.setdefault(_HELD, [])
     for path, worker in files.items():
-        named = f"in xdist worker {worker}, {_AFTER_THE_HAND_OFF}"
+        named = f"in xdist worker {worker}"
         try:
             text = Path(path).read_text(encoding="utf-8")
         except FileNotFoundError:
@@ -1689,10 +1711,8 @@ def _take_late(config: pytest.Config) -> None:
         except (OSError, ValueError) as error:
             held.append((named, (f"the guard could not read {path}: {error}",)))
             continue
-        for line in text.splitlines():
-            if line.strip():
-                where, messages = _late_report(line)
-                held.append((f"{named}, {where}" if where else named, messages))
+        lines = [line for line in text.splitlines() if line.strip()]
+        held.extend(_late_report(line, named) for line in lines)
     files.clear()
     folder = config.stash.get(_LATE_FOLDER, None)
     if folder is not None:
@@ -1719,19 +1739,25 @@ def _end_the_workers(config: pytest.Config) -> None:
             nodes.teardown_nodes()
 
 
-def _late_report(line: str) -> tuple[str, tuple[str, ...]]:
-    """Return ``(where, messages)`` from one line a worker wrote.
+def _late_report(line: str, named: str) -> tuple[str, tuple[str, ...]]:
+    """Return ``(where, messages)`` for one line a worker wrote, for *named*.
 
-    A line that cannot be read as one (a worker stopped while it wrote it)
-    is returned whole as the message, with no place.
+    *named* is the worker (``in xdist worker gw0``). The place adds ``after
+    it handed its refusals to the controller`` only when the line says the
+    worker had (``handed_off``; see :func:`_sent_late`), then where the
+    worker found the refusal. A line that cannot be read as one (a worker
+    stopped while it wrote it) is returned whole as the message, under
+    *named* alone.
     """
     try:
         found = _loads(line)
         where = str(found["where"])
         messages = tuple(str(message) for message in found["messages"])
-    except (ValueError, KeyError, TypeError):
-        return "", (line,)
-    return where, messages
+        handed_off = found.get("handed_off") is True
+    except (ValueError, KeyError, TypeError, AttributeError):
+        return named, (line,)
+    parts = [named, *([_AFTER_THE_HAND_OFF] if handed_off else []), where]
+    return ", ".join(part for part in parts if part), messages
 
 
 #: The name the guard is registered under, once per session.
