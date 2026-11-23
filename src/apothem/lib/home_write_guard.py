@@ -99,7 +99,8 @@ off; a test that runs a real install on purpose starts Apothem without
 
 Every refusal is logged in this process (:func:`refusals`,
 :func:`drain_refusals`) and written to ``stderr`` once per protected folder in
-each test (or, outside any test, in the pytest session), so a caller that
+each test, and, outside any test, once per protected folder in each stretch
+between two tests (in a process that runs no test, once), so a caller that
 absorbs the error still leaves a trace that ``tests/conftest.py`` reports. The
 log is per process: a refusal a child process absorbs shows only as the child's
 ``stderr`` line. A child process that inherits only ``PYTEST_VERSION`` (one
