@@ -23,6 +23,7 @@ from apothem.lib.propagation import (
     resolve_target,
 )
 
+from .install_driver_backup import refuse_bookkeeping_in_real_home
 from .install_driver_blocks import install_may_be_open
 from .install_driver_datahome import (
     _data_home_for,
@@ -389,12 +390,14 @@ def run_uninstall(
     an ``uninstall-incomplete`` record is appended first, so their backups
     stay referenced; a refusal before any removal records nothing, and a
     failure to write that record does not replace the refusal. A project root
-    that is the account home is refused before the pass starts.
+    that is the account home is refused before the pass starts, and so is a
+    backup root or ledger in a protected folder.
     """
     if project_root is not None:
         home_write_guard.refuse_project_root_at_home(
             project_root, operation="uninstall"
         )
+    refuse_bookkeeping_in_real_home(harness_name, operation="uninstall")
     root = _root_for(harness_root, project_root)
     root_floor = _allowed_write_root(harness_root, project_root)
     active: list[LedgerRecord] = []

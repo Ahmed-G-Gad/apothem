@@ -210,6 +210,26 @@ def _unreadable(path: Path) -> bool:
         return True
 
 
+def refuse_bookkeeping_in_real_home(harness_name: str, *, operation: str) -> None:
+    """Refuse a pass whose backups or ledger record would land in the real home.
+
+    A rollback or an uninstall copies each file into the backup root before it
+    changes it, and appends a ledger record after the last change. While
+    pytest runs, a backup root or ledger in a protected folder of the real
+    home (see :mod:`apothem.lib.home_write_guard`) would stop the pass partway,
+    with what it had changed unrecorded. Called before the first change, this
+    refuses the pass while nothing has changed. *operation* names the pass for
+    the message (``roll back``, ``uninstall``).
+    """
+    from apothem.harnesses._shared import install_driver
+
+    home_write_guard.refuse_real_home_write(
+        install_driver.BACKUP_ROOT,
+        install_ledger.ledger_path(harness_name),
+        operation=f"{operation} with its backups or ledger record in",
+    )
+
+
 def backup_existing(
     target: Path,
     *,

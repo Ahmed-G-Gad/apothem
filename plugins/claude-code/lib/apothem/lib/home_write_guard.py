@@ -45,7 +45,9 @@ On Windows a ``\\\\?\\``, ``\\\\.\\`` or ``\\??\\`` prefix (with either
 slash), a loopback admin share (``\\\\localhost\\C$``, ``\\\\127.0.0.1\\C$``,
 ``\\\\--1.ipv6-literal.net\\C$``, the machine's own name), a short (8.3) name
 and an alternate data stream (``.apothem:name``) all read as the plain
-drive-letter path. Any other share path, written so or
+drive-letter path. A device path behind one of those prefixes
+(``GLOBALROOT\\Device\\HarddiskVolume2\\x``, ``Volume{GUID}\\x``) is resolved
+to the drive-letter path it names. Any other share path, written so or
 reached through a mapped drive, is compared by file identity with the
 protected folders and the folders above them, folder by folder up to the
 share, so one of this machine's own addresses counts too. Only the string
@@ -186,9 +188,12 @@ _SETTLE_NS = 100_000_000
 #: The NT object-namespace prefixes, lower case, with what replaces each. A
 #: file call passes ``\\??\\C:\\x`` through to the NT path ``C:\\x`` as written,
 #: while ``os.path.abspath`` reads it as a folder ``??`` on the current drive.
+#: ``\\\\?\\`` passes a path through the same way, so a device path after the
+#: prefix (``GLOBALROOT\\Device\\HarddiskVolume2``, ``Volume{GUID}``) stays
+#: absolute and is resolved like any other path.
 _NT_PREFIXES: tuple[tuple[str, str], ...] = (
     ("\\??\\unc\\", "\\\\"),
-    ("\\??\\", ""),
+    ("\\??\\", "\\\\?\\"),
 )
 
 #: The path prefixes that name the same file as the plain path after them,
@@ -198,7 +203,8 @@ _PREFIXES: tuple[tuple[str, str], ...] = (
     ("\\\\.\\unc\\", "\\\\"),
     ("\\\\?\\", ""),
     ("\\\\.\\", ""),
-    *_NT_PREFIXES,
+    ("\\??\\unc\\", "\\\\"),
+    ("\\??\\", ""),
 )
 
 #: The Windows errors that say a share's host, or the share itself, cannot be
@@ -539,10 +545,15 @@ def _home_at(path: str) -> str | None:
 def _absolute(path: str) -> str:
     """Return *path* made absolute, with an NT object-namespace prefix read first.
 
-    On Windows ``\\??\\C:\\x`` and ``\\??\\UNC\\host\\share\\x`` (with either
-    slash) read as ``C:\\x`` and ``\\\\host\\share\\x``, the paths a file call
-    reaches through them; ``os.path.abspath`` alone would read them as a
-    folder ``??`` on the current drive.
+    On Windows ``\\??\\UNC\\host\\share\\x`` (with either slash) reads as
+    ``\\\\host\\share\\x`` and any other ``\\??\\x`` as ``\\\\?\\x``, which a file
+    call passes through to the same NT path. So ``\\??\\C:\\x`` reads as
+    ``C:\\x``, and a device path such as
+    ``\\??\\GLOBALROOT\\Device\\HarddiskVolume2\\x`` or ``\\??\\Volume{GUID}\\x``
+    stays absolute and is resolved to the drive path it names.
+    ``os.path.abspath`` alone would read each as a folder ``??`` on the current
+    drive, and dropping the prefix would leave a device path relative to the
+    current folder.
     """
     if os.name == "nt":
         flipped = path.replace("/", "\\")
