@@ -1269,6 +1269,7 @@ def case_the_conftest_loaded_as_a_plugin_isolates_and_runs(
     )
 
     result.assert_outcomes(passed=2)
+    assert result.ret == pytest.ExitCode.OK
     assert _written(pytester, _SENTINELS) == list(_SENTINELS)
 
 
