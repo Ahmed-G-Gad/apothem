@@ -119,12 +119,16 @@ def test_the_coverage_check_combines_every_shard_and_enforces_the_floor() -> Non
     # floor. coverage report takes fail_under = 80 from pyproject, and a
     # --fail-under or an "|| true" would lower or skip that floor.
     # continue-on-error on the job or a step, or a set +e in a step, would let a
-    # missing data file or a floor failure end this required check green.
+    # missing data file or a floor failure end this required check green. So
+    # would a shell without -e, such as "bash {0}": the xml and html commands
+    # after a failed report succeed and the step ends green. With no shell, or
+    # "bash", GitHub runs the script with -e. An if: on the step would skip it.
     ci = _load("ci.yml")
     parts = _shard_parts(ci)
     job = ci["jobs"]["coverage"]
     steps = job["steps"]
     [step] = [s for s in steps if "coverage combine" in s.get("run", "")]
+    assert "if" not in step
     run = step["run"]
     combine = re.search(r"python -m coverage combine (.*)", run)
     assert combine, run
@@ -136,6 +140,9 @@ def test_the_coverage_check_combines_every_shard_and_enforces_the_floor() -> Non
     for each in steps:
         assert "continue-on-error" not in each, each.get("name")
         assert "set +e" not in each.get("run", ""), each.get("name")
+        assert each.get("shell", "bash") == "bash", each.get("name")
+    for defaults in (ci.get("defaults", {}), job.get("defaults", {})):
+        assert defaults.get("run", {}).get("shell", "bash") == "bash", defaults
 
 
 def test_the_coverage_check_fails_unless_every_shard_passed() -> None:
@@ -147,6 +154,8 @@ def test_the_coverage_check_fails_unless_every_shard_passed() -> None:
     assert job["needs"] == ["coverage-shard"]
     assert job["if"] == "always()"
     check = job["steps"][1]
+    # An if: on this step would skip the check of the shards' result.
+    assert "if" not in check
     assert check["env"]["SHARD_RESULT"] == "${{ needs.coverage-shard.result }}"
     assert '[ "${SHARD_RESULT}" != "success" ]' in check["run"]
     assert "exit 1" in check["run"]
