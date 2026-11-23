@@ -24,6 +24,7 @@ import os
 import shutil
 import subprocess
 import sys
+from hashlib import sha256
 from pathlib import Path
 
 import pytest
@@ -55,8 +56,21 @@ def test_plain():
 """
 _MODULES = ("test_alpha", "test_beta", "test_gamma")
 _TESTS = 13 * len(_MODULES)
-#: Values that are not ``K/N`` with ``1 <= K <= N``.
-_BAD_VALUES = ("0/2", "3/2", "1/0", "2", "a/b", "1/2/3")
+#: Values that are not ``K/N`` with ``1 <= K <= N``, in plain ASCII digits.
+#: ``int`` alone takes the sign, the spaces, the ``_`` and the full-width digits.
+_BAD_VALUES = (
+    "0/2",
+    "3/2",
+    "1/0",
+    "2",
+    "a/b",
+    "1/2/3",
+    "+1/2",
+    " 1/2",
+    "1/2 ",
+    "1_0/20",
+    "\uff11/\uff12",  # full-width digits 1/2
+)
 
 
 def test_the_pytester_cases_pass(tmp_path: Path) -> None:
@@ -153,6 +167,51 @@ def case_the_parts_cover_each_test_once(suite: pytest.Pytester) -> None:
             parts.append(part)
         assert set().union(*parts) == everything, f"a test is in none of {count} parts"
         assert sum(map(len, parts)) == _TESTS, f"a test is in two of {count} parts"
+
+
+def _part(node_id: str, count: int) -> int:
+    """Return the part of ``count`` that the docs say a node id belongs to."""
+    return int.from_bytes(sha256(node_id.encode()).digest(), "big") % count + 1
+
+
+def case_a_test_part_comes_from_its_node_id(suite: pytest.Pytester) -> None:
+    """Each part holds exactly the tests whose node id hashes to it.
+
+    The cover-once and same-in-every-process cases also hold for a split by
+    collection order, such as round robin. This one pins the rule the docs give,
+    so a test keeps its part when ``-k``, ``-m``, a path or a new test changes
+    what is collected.
+    """
+    everything = _kept(suite.runpytest(*_args("--collect-only", "-q")))
+    for count in (2, 3):
+        for index in range(1, count + 1):
+            expected = {i for i in everything if _part(i, count) == index}
+            result = suite.runpytest(
+                *_args("--collect-only", "-q", f"--shard={index}/{count}")
+            )
+            assert _kept(result) == expected, f"part {index} of {count}"
+
+
+def case_a_conftest_that_star_imports_still_splits(suite: pytest.Pytester) -> None:
+    """A star import registers the shard hooks twice, and the split still holds.
+
+    The second ``--shard`` registration is ignored, and the second deselection
+    pass finds nothing more to drop, so pytest reports each dropped test once.
+    """
+    suite.makeconftest("from tests.conftest import *\n")
+    everything = _kept(suite.runpytest(*_args("--collect-only", "-q")))
+    assert len(everything) == _TESTS
+    parts = []
+    for index in (1, 2):
+        result = suite.runpytest(*_args("--collect-only", "-q", f"--shard={index}/2"))
+        part = _kept(result)
+        dropped = _TESTS - len(part)
+        result.stdout.fnmatch_lines(
+            [f"{len(part)}/{_TESTS} tests collected ({dropped} deselected)*"]
+        )
+        parts.append(part)
+    assert parts[0].isdisjoint(parts[1]), "a test is in both parts"
+    assert parts[0] | parts[1] == everything, "a test is in neither part"
 
 
 def case_every_process_picks_the_same_part(

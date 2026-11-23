@@ -21,9 +21,11 @@ Two mechanisms keep the stub honest, and these tests pin both:
    green over a real code or config change.
 
 `ci.yml`'s `coverage` job combines what the `coverage-shard` cells measured,
-each on its part of `pytest --shard=K/N`. Two more tests pin that the cells
-cover every part, and that the job runs, and fails, when a shard did not pass:
-GitHub would skip it otherwise, and a skipped required check counts as passed.
+each on its part of `pytest --shard=K/N`. Three more tests pin that the cells
+cover every part and cannot read as passed when they fail, that the job combines
+every part's data file by name and enforces the coverage floor, and that the job
+runs, and fails, when a shard did not pass: GitHub would skip it otherwise, and a
+skipped required check counts as passed.
 """
 
 from __future__ import annotations
@@ -82,15 +84,50 @@ def test_stub_reports_the_required_context_names() -> None:
     assert jobs["coverage"]["name"] == ci["jobs"]["coverage"]["name"]
 
 
-def test_the_coverage_shards_cover_every_part_of_the_suite() -> None:
-    # Each cell passes its matrix value as K of --shard=K/N. A value of 1 to N
-    # missing from the matrix would leave that part's tests unmeasured.
-    job = _load("ci.yml")["jobs"]["coverage-shard"]
+def _shard_parts(ci: dict) -> list[int]:
+    """Return 1 to N, with N read from the coverage-shard job's --shard=K/N."""
+    job = ci["jobs"]["coverage-shard"]
     run = "\n".join(step.get("run", "") for step in job["steps"])
     split = re.search(r"--shard=\$\{\{ matrix\.shard \}\}/(\d+)\b", run)
     assert split, "coverage-shard must run pytest --shard=${{ matrix.shard }}/N"
-    parts = list(range(1, int(split.group(1)) + 1))
+    return list(range(1, int(split.group(1)) + 1))
+
+
+def test_the_coverage_shards_cover_every_part_of_the_suite() -> None:
+    # Each cell passes its matrix value as K of --shard=K/N. A value of 1 to N
+    # missing from the matrix would leave that part's tests unmeasured.
+    ci = _load("ci.yml")
+    job = ci["jobs"]["coverage-shard"]
+    parts = _shard_parts(ci)
     assert job["strategy"]["matrix"]["shard"] == parts
+    name = re.fullmatch(
+        r"coverage shard \$\{\{ matrix\.shard \}\} of (\d+)", job["name"]
+    )
+    assert name, job["name"]
+    assert int(name.group(1)) == len(parts), "the job name gives another N"
+    # continue-on-error would make a failed shard read as success to the
+    # coverage job, which would then check the floor without that shard's data.
+    assert "continue-on-error" not in job
+    for step in job["steps"]:
+        assert "continue-on-error" not in step, step.get("name")
+
+
+def test_the_coverage_check_combines_every_shard_and_enforces_the_floor() -> None:
+    # Naming each data file makes a missing one fail the combine; a glob would
+    # combine the files that are there, and half the suite can still clear the
+    # floor. coverage report takes fail_under = 80 from pyproject, and a
+    # --fail-under or an "|| true" would lower or skip that floor.
+    ci = _load("ci.yml")
+    parts = _shard_parts(ci)
+    steps = ci["jobs"]["coverage"]["steps"]
+    [step] = [s for s in steps if "coverage combine" in s.get("run", "")]
+    run = step["run"]
+    combine = re.search(r"python -m coverage combine (.*)", run)
+    assert combine, run
+    assert combine.group(1).split() == [f".coverage.shard-{k}" for k in parts]
+    assert re.search(r"^python -m coverage report$", run, re.MULTILINE), run
+    assert "--fail-under" not in run
+    assert "|| true" not in run
 
 
 def test_the_coverage_check_fails_unless_every_shard_passed() -> None:

@@ -219,7 +219,7 @@ jobs:
 
   # 5 — coverage, in two shards
   #
-  # The whole suite under coverage took 16 to 30 minutes on one runner
+  # The whole suite under coverage took 14 to 30 minutes on one runner
   # (November 2026), and the 30-minute limit, the workflow-concurrency
   # validator's ceiling for a job without a matrix, cancelled some runs. So
   # the suite runs in two shards in parallel, each on its own runner with half
@@ -281,7 +281,9 @@ jobs:
           # unless this is set.
           include-hidden-files: true
           if-no-files-found: error
-          retention-days: 1
+          # Kept 7 days, so a failed shard can be re-run later and still use
+          # the other shard's data. After 7 days, re-run all jobs.
+          retention-days: 7
 
   # The required check. It keeps the name `coverage` that branch protection
   # requires and ci-docs-stub.yml reports on a documentation-only pull request.
@@ -291,6 +293,10 @@ jobs:
     # GitHub skips a job when a job it needs failed or was cancelled, and a
     # skipped required check counts as passed. always() runs this job anyway,
     # and the step after Harden runner fails it unless both shards passed.
+    # always() also starts this job, which then fails, on a run that is
+    # cancelled or superseded by a newer push (the concurrency group at the
+    # top of this file cancels a run in progress). That costs one short job.
+    # It is kept because this job must never end as skipped.
     if: always()
     timeout-minutes: 15
     needs: [coverage-shard]
@@ -339,9 +345,13 @@ jobs:
         # out to the same path, so the shards' files and this checkout match.
         # coverage report enforces [tool.coverage.report] fail_under = 80 on the
         # combined engine figure, the gate pytest-cov applied when one job ran
-        # the whole suite; show_missing lists the lines no test ran.
+        # the whole suite; show_missing lists the lines no test ran. combine
+        # names each shard's file, so a missing file fails this step
+        # ("Couldn't combine from non-existent path") instead of measuring half
+        # the suite, which can still clear the 80% floor (main's engine total
+        # is about 93%).
         run: |
-          python -m coverage combine .coverage.shard-*
+          python -m coverage combine .coverage.shard-1 .coverage.shard-2
           python -m coverage report
           python -m coverage xml -o coverage.xml
           python -m coverage html -d coverage-html

@@ -193,7 +193,10 @@ N runs of one split neither overlap nor leave a test out. The CI ``coverage``
 check runs the suite in two parts on two runners and combines their coverage
 data. Write the option with ``=``. pytest reads its command line before it loads
 this file, so in ``--shard 1/2`` with no test path it takes ``1/2`` for a path,
-never loads this file and stops at ``--shard`` as an unknown argument.
+never loads this file and stops at ``--shard`` as an unknown argument. K and N
+are plain ASCII digits. A conftest that star-imports this file registers the
+option a second time; that second registration is ignored, and the split is
+the same.
 ``tests/unit/test_shard_option.py`` checks the parts.
 """
 
@@ -201,6 +204,7 @@ from __future__ import annotations
 
 import contextlib
 import os
+import re as _re
 import sys
 import tempfile
 from argparse import ArgumentTypeError as _ArgumentTypeError
@@ -455,13 +459,12 @@ def _isolate_hook_state(
 def _shard(value: str) -> tuple[int, int]:
     """Read the value of ``--shard``: ``K/N``, two whole numbers, ``1 <= K <= N``.
 
+    Each number is plain ASCII digits. ``int`` alone would also take a sign,
+    spaces, ``_`` and other scripts' digits, so ``1_0/20`` would run part 10.
     argparse reports the error, and pytest makes it a usage error (exit code 4).
     """
-    index, _, count = value.partition("/")
-    try:
-        shard = (int(index), int(count))
-    except ValueError:
-        shard = None
+    match = _re.fullmatch(r"([0-9]+)/([0-9]+)", value)
+    shard = (int(match[1]), int(match[2])) if match else None
     if shard is None or not 1 <= shard[0] <= shard[1]:
         msg = f"expected K/N, two whole numbers with 1 <= K <= N, not {value!r}"
         raise _ArgumentTypeError(msg)
@@ -469,19 +472,26 @@ def _shard(value: str) -> tuple[int, int]:
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
-    """Add ``--shard=K/N``."""
-    parser.addoption(
-        "--shard",
-        type=_shard,
-        default=None,
-        metavar="K/N",
-        help=(
-            "run only the K-th of N parts of the collected tests (1 <= K <= N); "
-            "a hash of each test's node id picks its part. Write it as "
-            "--shard=K/N: with a space and no test path, pytest takes K/N for "
-            "a path before it loads tests/conftest.py."
-        ),
-    )
+    """Add ``--shard=K/N``.
+
+    A conftest that star-imports this file, the documented way to carry the
+    isolation, registers this hook a second time, and the second ``addoption``
+    raises ``ValueError``; it is ignored. ``pytest_collection_modifyitems`` runs
+    twice as well, and its second pass drops nothing.
+    """
+    with contextlib.suppress(ValueError):
+        parser.addoption(
+            "--shard",
+            type=_shard,
+            default=None,
+            metavar="K/N",
+            help=(
+                "run only the K-th of N parts of the collected tests "
+                "(1 <= K <= N); a hash of each test's node id picks its part. "
+                "Write it as --shard=K/N: with a space and no test path, pytest "
+                "takes K/N for a path before it loads tests/conftest.py."
+            ),
+        )
 
 
 def pytest_collection_modifyitems(
