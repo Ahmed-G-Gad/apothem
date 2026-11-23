@@ -251,28 +251,31 @@ def quickstart(
 
     # Steps 2-4 — preview + confirm + install, composed from the install path
     # (blast-radius preview/confirm, placeholder advisory, and grouped notes all
-    # live in ``_materialize``; quickstart never reimplements them).
+    # live in ``_materialize``; quickstart never reimplements them). The sink
+    # takes the install's envelope in either format, so an install that left a
+    # file as it is hands its exit back and the summary or next steps print.
+    sink: list[dict[str, object]] = []
+    _materialize(
+        harness,
+        profile,
+        False,
+        "install",
+        "Installed",
+        fmt=fmt,
+        quiet=quiet,
+        no_color=no_color,
+        project=project,
+        assume_yes=assume_yes,
+        verbose=verbose,
+        payload_sink=sink,
+    )
+    if not sink:
+        # The install step failed; ``_materialize`` already emitted the error
+        # (under --json, one JSON document) — do not emit a second.
+        return
+    install_payload = sink[0]
+    status = install_payload.get("status", "success")
     if fmt == "json":
-        sink: list[dict[str, object]] = []
-        _materialize(
-            harness,
-            profile,
-            False,
-            "install",
-            "Installed",
-            fmt="json",
-            quiet=quiet,
-            no_color=no_color,
-            project=project,
-            assume_yes=assume_yes,
-            verbose=verbose,
-            payload_sink=sink,
-        )
-        if not sink:
-            # The install step failed; ``_materialize`` already emitted the error
-            # envelope (one JSON document) — do not emit a second.
-            return
-        install_payload = sink[0]
         steps.append(
             {
                 "step": "install",
@@ -284,7 +287,6 @@ def quickstart(
             }
         )
         steps.append({"step": "recommend", "next": recommended})
-        status = install_payload.get("status", "success")
         emit_json(
             {
                 "status": status,
@@ -294,32 +296,17 @@ def quickstart(
                 "recommended_next": recommended,
             }
         )
-        if status == "partial":
-            # The install left a file as it is because of its Apothem
-            # markers; ``_materialize`` handed the exit to this summary.
-            sys.exit(_EXIT_PARTIAL)
-        return
-
-    _materialize(
-        harness,
-        profile,
-        False,
-        "install",
-        "Installed",
-        fmt="plain",
-        quiet=quiet,
-        no_color=no_color,
-        project=project,
-        assume_yes=assume_yes,
-        verbose=verbose,
-    )
-    if not quiet:
+    elif not quiet:
         con.print("\n[bold]Recommended next step:[/]")
         confirm = f"[cyan]{escape(verify_cmd)}[/]"
         if verify_words:
             confirm = f"run {confirm}{escape(verify_words)}"
         con.print(f"  Confirm the install:  {confirm}")
         con.print(f"  Check system health:  [cyan]{escape(recommended[1])}[/]")
+    if status == "partial":
+        # The install left a file as it is because of its Apothem markers;
+        # ``_materialize`` handed the exit to quickstart.
+        sys.exit(_EXIT_PARTIAL)
 
 
 def _verify_next(harness: str, project: str | None) -> tuple[str, str]:

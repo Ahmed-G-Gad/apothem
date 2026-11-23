@@ -2597,6 +2597,44 @@ def test_a_quickstart_over_a_file_it_leaves_ends_as_partial(
     assert anchor.read_bytes() == before
 
 
+def test_a_plain_quickstart_over_a_file_it_leaves_prints_its_next_steps(
+    sandbox_factory: SandboxFactory,
+) -> None:
+    """lifecycle-r5-8: the plain run ended at the install's ✗ line.
+
+    The install exited with code 2 before quickstart printed the verify and
+    doctor commands it recommends. The install now hands that exit back, as
+    it does under --json: the run prints the ✗ line, then the next steps,
+    and exits with code 2.
+    """
+    box = sandbox_factory("codex")
+    box.install()
+    anchor = _anchor(box)
+    _fence_the_block(anchor)
+    before = anchor.read_bytes()
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "quickstart",
+            "--harness",
+            "codex",
+            "--profile",
+            str(profile_minimal_path()),
+            "--yes",
+            "--no-color",
+        ],
+    )
+
+    output = _flat_lines(result.output)
+    assert result.exit_code == 2, result.output
+    left = output.find("✗ codex install left 1 file(s) as they are")
+    assert -1 < left < output.find("Recommended next step:"), output
+    assert "Confirm the install: apothem verify --harness codex\n" in output
+    assert "Check system health: apothem doctor" in output
+    assert anchor.read_bytes() == before
+
+
 # --- the code block around Apothem's block, closed below it ---------------------
 
 

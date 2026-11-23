@@ -558,10 +558,11 @@ def _emit_run_outcome(
     """Emit the JSON lifecycle envelope, or the plain multi-harness summary.
 
     A run that left a file as it is because of its markers is ``partial``.
+    A *payload_sink* takes the envelope in either format.
     """
     solo = len(inputs.adapters) == 1
     status = "partial" if totals.left_as_is else "success"
-    if run.fmt == "json":
+    if run.fmt == "json" or payload_sink is not None:
         payload = _lifecycle_envelope(
             status="dry_run" if run.dry_run else status,
             command=run.verb_present,
@@ -578,13 +579,14 @@ def _emit_run_outcome(
         if clean_result is not None:
             payload["clean"] = _clean_slate_dict(clean_result)
         # When a caller supplies a sink (the guided ``quickstart`` flow), hand it
-        # the success envelope instead of emitting, so the caller can fold it into
-        # one combined JSON summary rather than printing two documents.
+        # the envelope instead of emitting: under --json the caller folds it
+        # into one combined summary rather than printing two documents, and in
+        # plain mode it reads the status. Either way it ends the run itself.
         if payload_sink is not None:
             payload_sink.append(payload)
         else:
             emit_json(payload)
-    elif len(inputs.adapters) > 1 and not run.quiet:
+    if run.fmt != "json" and len(inputs.adapters) > 1 and not run.quiet:
         left = len(totals.left_as_is)
         mark, tail = (
             ("[yellow]![/]", f"; {left} file(s) left as they are, named above")
