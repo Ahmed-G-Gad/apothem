@@ -162,7 +162,28 @@ def _fixes_text(fixes: Sequence[Fix], outcome: str | None) -> str:
     return render_fixes(fixes, promises, FALLBACK.format(then=gone))
 
 
-def _held_until(pairs: Sequence[UncertainPair], held: bool) -> str:
+def _example_reads(pairs: Sequence[UncertainPair]) -> str:
+    """Return where a marker example of the operator's among *pairs* reads.
+
+    In code (a fenced code block or indented code), as part of a paragraph
+    (a marker line indented four or more columns under a line of text), or
+    either, after "A marker example of yours".
+    """
+    code = paragraph = False
+    for pair in pairs:
+        if pair.split or _outside(pair):
+            continue
+        places = {pair.begin.place, pair.end.place}
+        if places & {MarkerPlace.FENCE, MarkerPlace.INDENTED}:
+            code = True
+        else:
+            paragraph = True
+    if code and paragraph:
+        return "in code or in a paragraph"
+    return "in code" if code else "that reads as part of a paragraph"
+
+
+def _held_until(pairs: Sequence[UncertainPair], held: bool, wrote: bool) -> str:
     """Return how long install and update leave a file with *pairs* as it is.
 
     Until its marker lines are fixed, whoever wrote them, but only where the
@@ -178,17 +199,21 @@ def _held_until(pairs: Sequence[UncertainPair], held: bool) -> str:
     it, so their text then leaves this out. Each such run ends as partial. Empty
     when nothing holds the file back: the next update then adds its block
     after the pairs, so the text must not say it leaves the file as it is.
+    With *wrote* (the run that gives the text wrote its block, and ends as a
+    success), the text says that holds from the next run on. The example
+    sentence says where the operator's pairs read (see :func:`_example_reads`).
     """
     if not held and not any(pair.split for pair in pairs):
         return ""
+    when = "From the next run on, until" if wrote else "Until"
     text = (
-        "Until you fix these marker lines as this text says, install and update "
+        f"{when} you fix these marker lines as this text says, install and update "
         "leave this file as it is and end as partial (exit code 2)."
     )
     if held and any(not pair.split and not _outside(pair) for pair in pairs):
         text += (
-            " A marker example of yours in code holds the file back the same "
-            "way, until you change its two marker lines."
+            f" A marker example of yours {_example_reads(pairs)} holds the file "
+            "back the same way, until you change its two marker lines."
         )
     return text
 
@@ -203,6 +228,7 @@ def unclear_block_report(
     lone: Sequence[int] = (),
     dry_run: bool = False,
     held: bool = False,
+    wrote: bool = False,
 ) -> str:
     """Return what is wrong with *path*, whose text *text* holds *pairs*, and the fix.
 
@@ -223,7 +249,8 @@ def unclear_block_report(
     :data:`REPLACES`, the text ends by saying that install and update leave
     the file as it is, and end as partial, until its marker lines are fixed,
     where the merge holds the file back: while *held*, or for the pair rule
-    3 fired on (see :func:`_held_until`).
+    3 fired on (see :func:`_held_until`); with *wrote* (the run wrote its
+    block), from the next run on.
     """
     head = (
         f"{path}: Apothem cannot tell whether the marker lines in this file mark "
@@ -242,7 +269,7 @@ def unclear_block_report(
     if outcome is None:
         parts.append("Then run the uninstall again.")
     elif outcome == REPLACES:
-        parts.append(_held_until(pairs, held))
+        parts.append(_held_until(pairs, held, wrote))
     return " ".join(part for part in parts if part)
 
 

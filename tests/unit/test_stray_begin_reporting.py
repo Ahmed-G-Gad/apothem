@@ -961,6 +961,56 @@ def test_a_write_whose_block_reads_as_code_names_it_and_the_code_block(
     assert _holds(_HIDDEN_BLOCK, warning.message) == 2
 
 
+def test_a_write_says_the_file_is_held_back_from_the_next_run_on(
+    tmp_path: Path,
+) -> None:
+    """markers-r5-4: a run that wrote the file said it leaves the file as it is.
+
+    That run ends as a success (exit code 0), yet its warning said install and
+    update leave the file as it is and end as partial. It now says that holds
+    from the next run on; the warning of a run that left the file says it as
+    before.
+    """
+    target = tmp_path / "CLAUDE.md"
+    target.write_bytes(_HIDDEN_BLOCK.encode())
+    runs = {
+        outcome: install_driver.MaterializationResult(
+            outcome=outcome, operation="sentinel_merge", path=str(target), message=""
+        )
+        for outcome in ("updated", "unchanged")
+    }
+
+    [written] = stray_begin_install_warnings([runs["updated"]])
+    [left] = stray_begin_install_warnings([runs["unchanged"]])
+
+    assert (
+        "From the next run on, until you fix these marker lines as this text says, "
+        "install and update leave this file as it is and end as partial (exit code "
+        "2)."
+    ) in written.message
+    assert "Until you fix" not in written.message
+    assert (
+        "Until you fix these marker lines as this text says, install and update "
+        "leave this file as it is and end as partial (exit code 2)."
+    ) in left.message
+    assert "From the next run on" not in left.message
+
+
+def test_a_marker_example_that_reads_as_a_paragraph_is_not_called_code(
+    tmp_path: Path,
+) -> None:
+    """markers-r5-5: the text called a pair under a paragraph a pair "in code"."""
+    text = f"Example of the markers:\n    {B}\n    quoted\n    {E}\n"
+
+    _, [message] = _held(tmp_path, text)
+
+    assert (
+        "A marker example of yours that reads as part of a paragraph holds the "
+        "file back the same way, until you change its two marker lines."
+    ) in message
+    assert " in code" not in message
+
+
 def test_a_block_your_open_code_block_hides_is_named_and_the_fix_holds(
     sandbox_factory: SandboxFactory, tmp_path: Path
 ) -> None:
@@ -999,6 +1049,7 @@ def test_a_block_your_open_code_block_hides_is_named_and_the_fix_holds(
     ]
     assert fix in message
     assert "left the file as it is" not in message
+    assert "From the next run on, until you fix these marker lines" in message
     assert verify == 1, verify_output
     [row] = json.loads(verify_output)["results"]
     assert fix in row["stray_begin"]["message"]

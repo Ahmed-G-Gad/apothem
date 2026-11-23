@@ -296,7 +296,14 @@ def _install_warning(
     if pairs and (unchanged or not dry_run or any(pair.split for pair in pairs)):
         lone, held = lone_begins(text), unchanged or not dry_run
         report = unclear_block_report(
-            path, text, pairs, left=unchanged, lone=lone, dry_run=dry_run, held=held
+            path,
+            text,
+            pairs,
+            left=unchanged,
+            lone=lone,
+            dry_run=dry_run,
+            held=held,
+            wrote=not unchanged and not dry_run,
         )
         return f"{report}{_UPDATE_AGAIN}", unchanged
     if not has_stray_begin(text):

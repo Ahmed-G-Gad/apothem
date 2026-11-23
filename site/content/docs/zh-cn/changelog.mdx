@@ -831,9 +831,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   left as they are. `install --clean` then does not print its next step,
   `apothem verify`, which fails until you fix the file. The warning says
   that install and update leave the file as it is, and end as partial, until
-  you fix those marker lines, and that a marker example of yours in a code
-  block holds the file back the same way until you change its two marker
-  lines: while an install record lists the file, nothing else ends that.
+  you fix those marker lines (from the next run on, in the warning of a run
+  that wrote the file and ends as a success), and that a marker example of
+  yours in a code block, or one that reads as part of a paragraph, holds the
+  file back the same way until you change its two marker lines: while an
+  install record lists the file, nothing else ends that.
   Until you fix those lines, `verify` fails, `doctor` reports the file (as
   `harness.stray_begin`) and, for a file the current install writes,
   `status --profile` shows drift; then run `apothem update` again. A dry run's

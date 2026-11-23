@@ -516,13 +516,17 @@ pair after them, they do so with or without a record. Each such run ends as
 partial: in place of its `✓` line it prints a `✗` line that names the file,
 its `--format json` `status` is `"partial"`, and it exits with code `2`. The
 warning says so: "Until you fix these marker lines as this text says, install
-and update leave this file as it is and end as partial (exit code 2)." That
+and update leave this file as it is and end as partial (exit code 2)." The
+warning of a run that wrote the file, and so ends as a success, starts that
+sentence "From the next run on, until you fix these marker lines". That
 lasts as long as the marker lines stay as they are, a marker
 example of yours in a code block included: such a pair may be Apothem's block
 inside a code block of yours, so the warning adds that your example holds the
 file back the same way until you change its two marker lines, for example by
 adding a word inside each comment, as in
-`<!-- END APOTHEM MANAGED BLOCK (example) -->`. Nothing else ends it: the
+`<!-- END APOTHEM MANAGED BLOCK (example) -->`. For a pair whose marker lines
+read as part of the paragraph above them, it calls the pair "a marker example
+of yours that reads as part of a paragraph". Nothing else ends it: the
 uninstall does not finish while the pair is there either. A BEGIN marker outside
 code that starts no pair does not change that, even when every marker pair in
 the file is quoted in code below it: the marker may be what is left of
