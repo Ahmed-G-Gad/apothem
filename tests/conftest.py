@@ -114,7 +114,14 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   the environment could run, and under ``--setup-only`` no test call runs at all.
   Fixtures of a plugin installed as a package (loaded through its entry point)
   are not checked for their order: they are the developer's tools, and every
-  test would fail.
+  test would fail. Before those checks it holds a refusal absorbed since the
+  test before was reported (in a ``pytest_runtest_logreport`` or
+  ``pytest_runtest_logfinish`` hook, a ``pytest_runtest_protocol`` wrapper, a
+  ``pytest_runtest_logstart`` hook), named "between two tests, before
+  <test>", or, for the first test, since the test loop started (a plain
+  ``pytest_runtestloop`` implementation, which runs before pytest's own),
+  named "after collection, before the first test". ``_report_real_home_refusals``
+  would otherwise fail the test for it.
 - ``pytest_pyfunc_call`` and ``pytest_runtest_call``, plain hooks, neither
   ``tryfirst`` nor ``trylast``. pytest starts every wrapper of a hook before it
   calls a plain implementation, and calls the most recently registered plain
@@ -142,8 +149,10 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
 - ``pytest_sessionstart`` and ``pytest_collection_finish``, ``tryfirst``
   wrappers, which finish after every plain implementation and every wrapper
   that is not ``tryfirst``; ``pytest_runtestloop``, a ``trylast`` wrapper,
-  which starts right before the implementation that runs the tests; and the
-  collect-report wrapper, before each report starts. Each holds a refusal
+  which starts after every other wrapper and before every plain implementation
+  of the hook, the one that runs the tests among them (a plain one a conftest
+  registers runs before pytest's own, and the first test's setup holds what it
+  logs); and the collect-report wrapper, before each report starts. Each holds a refusal
   absorbed outside any test before the first test, named "at the session
   start, before collection" (a conftest's import, ``pytest_configure``,
   ``pytest_sessionstart``, a ``pytest_collection`` hook), "during collection,
@@ -1041,7 +1050,11 @@ class RealHomeGuard:
         a ``KeyError`` on a ``StashKey``. Every one of the four fixtures is
         checked, whichever import brought the others in, and then the order the
         session-scoped fixtures will be set up in (``_setup_order_problems``).
+
+        First it holds what the refusal log took since the test before was
+        reported (see :func:`_hold_before_the_test`).
         """
+        _hold_before_the_test(item)
         present = set(getattr(item, "fixturenames", ()))
         missing = [name for name in _ISOLATION_FIXTURES if name not in present]
         if missing:
@@ -1188,12 +1201,14 @@ class RealHomeGuard:
     ) -> Generator[None, object, object]:
         """Hold a refusal Apothem logged after collection, before the first test.
 
-        A ``trylast`` wrapper starts after every other wrapper of the hook, right
-        before the implementation that runs the tests (pytest's own, or
-        xdist's), so this sees one absorbed after
+        A ``trylast`` wrapper starts after every other wrapper of the hook and
+        before every plain implementation, the one that runs the tests
+        (pytest's own, or xdist's) among them, so this sees one absorbed after
         :meth:`pytest_collection_finish`: by another ``pytest_runtestloop``
         wrapper before it yields, or by a ``pytest_collection`` wrapper after it
-        yields.
+        yields. A plain implementation a conftest registers runs before
+        pytest's own, after this: the first test's setup holds what it logs
+        (:func:`_hold_before_the_test`).
         """
         _hold(session.config, _BEFORE_THE_FIRST_TEST)
         return (yield)
@@ -1331,6 +1346,7 @@ def _outside_any_test(refused: Iterable[object], where: str) -> str:
 _AT_SESSION_START = "at the session start, before collection"
 _DURING_COLLECTION = "during collection"
 _BEFORE_THE_FIRST_TEST = "after collection, before the first test"
+_BETWEEN_TWO_TESTS = "between two tests"
 _AFTER_THE_LAST_TEST = "after the last test"
 _AFTER_THE_SESSION = "after the session finished"
 
@@ -1338,6 +1354,8 @@ _AFTER_THE_SESSION = "after the session finished"
 _HELD = pytest.StashKey[list[tuple[str, tuple[str, ...]]]]()
 #: The session whose exit status a refusal found in ``pytest_unconfigure`` fails.
 _HELD_SESSION = pytest.StashKey[pytest.Session]()
+#: Set once the first test's setup has started.
+_A_TEST_STARTED = pytest.StashKey[bool]()
 #: The ``config.workeroutput`` key an xdist worker sends its held refusals under.
 _TO_THE_CONTROLLER = "apothem-real-home-refusals"
 #: The exit statuses a held refusal turns into "tests failed".
@@ -1351,6 +1369,32 @@ def _hold(config: pytest.Config, where: str) -> None:
         config.stash.setdefault(_HELD, []).append(
             (where, tuple(str(error) for error in refused))
         )
+
+
+def _hold_before_the_test(item: pytest.Item) -> None:
+    """Hold what was logged since the test before *item*, or since collection.
+
+    It runs when *item*'s setup starts, before any of its fixtures is set up
+    and before pytest sets ``PYTEST_CURRENT_TEST`` for it, so the refusal log
+    then holds only refusals made outside any test: after the teardown report
+    of the test before, in a ``pytest_runtest_logreport`` or
+    ``pytest_runtest_logfinish`` hook or a ``pytest_runtest_protocol`` wrapper,
+    or before this test's setup, in a ``pytest_runtest_logstart`` hook. For
+    the first test of a session that is one since the test loop wrapper held
+    the log (:meth:`RealHomeGuard.pytest_runtestloop`), such as one from a
+    plain ``pytest_runtestloop`` implementation, which runs before pytest's
+    own. ``_report_real_home_refusals`` would otherwise fail *item* for it, as
+    made during the test.
+    """
+    config = item.config
+    first = not config.stash.get(_A_TEST_STARTED, False)
+    config.stash[_A_TEST_STARTED] = True
+    where = (
+        _BEFORE_THE_FIRST_TEST
+        if first
+        else f"{_BETWEEN_TWO_TESTS}, before {item.nodeid}"
+    )
+    _hold(config, where)
 
 
 def _report_held(

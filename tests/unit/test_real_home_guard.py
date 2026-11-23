@@ -44,11 +44,13 @@ collection, and in a probe conftest's hook, which leaves the tests to run and
 pass and fails the run: at the session start (also in a run that collects no
 test), in a ``pytest_collection`` or ``pytest_collection_modifyitems`` hook,
 between two collect reports (a ``pytest_itemcollected`` hook, and the
-``pytest_collectreport`` hook of the session's own report), in
-a ``pytest_runtestloop`` wrapper before it yields, in a ``pytest_sessionfinish``
-hook or after a session-finish wrapper yields, in ``pytest_terminal_summary``,
-in ``pytest_unconfigure``, and under xdist (``-n 2``) at the session start and
-in a worker's session finish. Each names where the refusal happened. A session
+``pytest_collectreport`` hook of the session's own report), in a
+``pytest_runtestloop`` wrapper before it yields and in a plain
+``pytest_runtestloop`` hook, between two tests (a ``pytest_runtest_logreport``
+hook for a teardown report), in a ``pytest_sessionfinish`` hook or after a
+session-finish wrapper yields, in ``pytest_terminal_summary``, in
+``pytest_unconfigure``, and under xdist (``-n 2``) at the session start and in
+a worker's session finish. Each names where the refusal happened. A session
 that absorbs nothing exits 0, with and without xdist. The guard refuses before
 any write, so nothing lands in a home.
 """
@@ -1635,6 +1637,44 @@ def case_a_refusal_absorbed_before_the_test_loop_fails_the_run_not_the_first_tes
     pytester: pytest.Pytester, fake_real_home: Path
 ) -> None:
     result = _run_absorbing(pytester, fake_real_home, _ABSORBED_BEFORE_THE_TEST_LOOP)
+
+    _assert_the_run_failed_on_it(result, fake_real_home, _BEFORE_THE_FIRST_TEST)
+
+
+#: A conftest hook that absorbs the refusal once, at the first test's teardown
+#: report, after which that test is done.
+_ABSORBED_AT_A_TEARDOWN_REPORT = """
+
+def pytest_runtest_logreport(report):
+    if report.when == "teardown" and report.nodeid.endswith("test_fixture_free"):
+        _absorb()
+"""
+
+#: A plain test-loop hook, which pytest calls before its own, that absorbs the
+#: refusal and lets pytest's own run the tests.
+_ABSORBED_IN_A_PLAIN_TEST_LOOP = """
+
+def pytest_runtestloop(session):
+    _absorb()
+"""
+
+
+def case_a_refusal_absorbed_between_two_tests_fails_the_run_not_the_next_test(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    result = _run_absorbing(pytester, fake_real_home, _ABSORBED_AT_A_TEARDOWN_REPORT)
+
+    _assert_the_run_failed_on_it(
+        result,
+        fake_real_home,
+        "between two tests, before test_probe.py::test_with_tmp_path",
+    )
+
+
+def case_a_refusal_absorbed_in_a_plain_test_loop_fails_the_run_not_the_first_test(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    result = _run_absorbing(pytester, fake_real_home, _ABSORBED_IN_A_PLAIN_TEST_LOOP)
 
     _assert_the_run_failed_on_it(result, fake_real_home, _BEFORE_THE_FIRST_TEST)
 
