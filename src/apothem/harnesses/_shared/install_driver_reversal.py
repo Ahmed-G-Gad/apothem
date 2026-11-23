@@ -36,7 +36,11 @@ from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
 from apothem.lib.propagation import resolve_target, user_home
 
 from . import install_driver_homelink
-from .install_driver_backup import backup_existing, write_bytes_safely
+from .install_driver_backup import (
+    backup_existing,
+    refuse_bookkeeping_in_real_home,
+    write_bytes_safely,
+)
 from .install_driver_datahome import (
     _data_home_for,
     _remove_data_home,
@@ -509,8 +513,9 @@ def rollback_install(
     So is a record that names a path in a protected folder of the real home,
     before anything changes, even a path the rollback would leave in place,
     and so is a user-level folder in a protected folder that the rollback may
-    tidy last, or one above it in the home (see :func:`_home_folders`): no
-    rollback stops partway with its reversals unrecorded.
+    tidy last, or one above it in the home (see :func:`_home_folders`), and
+    a backup root or ledger in a protected folder: no rollback stops partway
+    with its reversals unrecorded.
     """
     if project_root is not None:
         home_write_guard.refuse_project_root_at_home(
@@ -546,6 +551,7 @@ def rollback_install(
         *_home_folders(gate),
         operation="roll back",
     )
+    refuse_bookkeeping_in_real_home(harness_name, operation="roll back")
     if seeded:
         refuse_data_home_removal(
             harness_name, root=root, allowed_root=allowed_root, home=home

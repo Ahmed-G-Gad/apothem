@@ -7,6 +7,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from apothem.harnesses._shared import install_driver
+from apothem.harnesses._shared.install_driver_backup import (
+    refuse_bookkeeping_in_real_home,
+)
 from apothem.lib import home_write_guard
 from apothem.lib.install_ledger import move_install, uninstall_spelling
 
@@ -55,6 +58,9 @@ def uninstall(
         project if project is not None else output_path.parents[_PROJECT_DEPTH],
     )
     home_write_guard.refuse_project_root_at_home(project_root, operation="uninstall")
+    # Before the move and the sweep: a refusal at the record would leave them
+    # unrecorded.
+    refuse_bookkeeping_in_real_home(_HARNESS_NAME, operation="uninstall")
     if moving is not None:
         move_install(_HARNESS_NAME, moving, project_root)
     legacy = install_driver.sweep_stale(

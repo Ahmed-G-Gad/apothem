@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -348,6 +349,79 @@ def test_an_uninstall_or_rollback_of_a_project_at_the_home_writes_nothing(
         assert "with the project root" in str(result.exception)
         assert _snapshot(home) == before
         assert _kinds(package_key) == kinds
+
+
+@pytest.mark.parametrize("verb", ["uninstall", "rollback"])
+@pytest.mark.parametrize("kept", ["backups", "state"])
+@pytest.mark.parametrize("harness", ["kimi-code", "gemini-cli"])
+def test_a_pass_whose_backups_or_ledger_are_protected_changes_nothing(
+    home: Path,
+    profile: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    harness: str,
+    kept: str,
+    verb: str,
+) -> None:
+    """The backup root and the ledger are checked before the first change.
+
+    These harnesses write only into the project, so the backups and the
+    ledger record are all that would reach the home: without the check the
+    pass reversed the project and was refused at its first backup or its
+    record, with those changes unrecorded.
+    """
+    project = tmp_path / "project"
+    project.mkdir()
+    argv = ("--harness", harness, "--project", str(project))
+    _installed(*argv, "--profile", str(profile))
+    package_key = get_harness_entry(harness).package_key
+    if kept == "state":
+        moved = home / ".apothem" / "state"
+        shutil.copytree(install_ledger.STATE_ROOT, moved)
+        monkeypatch.setattr(install_ledger, "STATE_ROOT", moved)
+    else:
+        backups = home / ".apothem" / "backups"
+        monkeypatch.setattr(install_driver, "BACKUP_ROOT", backups)
+    kinds = _kinds(package_key)
+    before = (_snapshot(home), _snapshot(project), _snapshot(tmp_path / "outside"))
+    home_write_guard.also_protect_home(home)
+
+    result = _run(verb, *argv, "--yes")
+
+    assert isinstance(result.exception, Refused), (result.exit_code, result.output)
+    assert "backups or ledger record" in str(result.exception)
+    assert result.exception.protected_root == str(home / ".apothem")
+    after = (_snapshot(home), _snapshot(project), _snapshot(tmp_path / "outside"))
+    assert after == before
+    assert _kinds(package_key) == kinds
+
+
+def test_a_native_uninstall_with_its_ledger_protected_runs_no_step(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The step before the native config does not run: its removals could not be recorded."""
+    root = tmp_path / "openclaw"
+    root.mkdir()
+    config = root / "openclaw.json"
+    config.write_bytes(b"{}\n")
+    monkeypatch.setattr(install_ledger, "STATE_ROOT", home / ".apothem" / "state")
+    home_write_guard.also_protect_home(home)
+    steps: list[Path] = []
+
+    def first_step(
+        output_path: Path,
+    ) -> tuple[install_driver.MaterializationResult, ...]:
+        steps.append(output_path)
+        return ()
+
+    uninstall = make_native_config_uninstall(
+        "open_claw", lambda profile: "{}", before_fn=first_step
+    )
+    with pytest.raises(Refused, match="backups or ledger record"):
+        uninstall(config)
+    assert steps == []
+    assert config.read_bytes() == b"{}\n"
+    assert list(home.rglob("*")) == []
 
 
 def test_the_driver_refuses_the_home_as_project_root_before_writing(

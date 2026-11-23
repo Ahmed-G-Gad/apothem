@@ -49,6 +49,7 @@ from .install_driver import (
     MaterializationResult,
     MaterializationRun,
 )
+from .install_driver_backup import refuse_bookkeeping_in_real_home
 from .install_driver_outcome import record_uninstall
 from .install_driver_ownership import RelocatedFn
 from .install_driver_shared import shared_scope
@@ -710,11 +711,13 @@ def make_native_config_uninstall(
     like any other. A refusal of the real-home guard at the native config,
     after *before_fn* changed files elsewhere, records the uninstall
     unfinished with their backups before it is raised (the shared driver
-    does the same for a refusal later on).
+    does the same for a refusal later on). A backup root or ledger in a
+    protected folder is refused before *before_fn* runs.
     """
 
     @install_driver.backup_session()
     def uninstall(output_path: Path) -> MaterializationRun:
+        refuse_bookkeeping_in_real_home(harness_name, operation="uninstall")
         before = before_fn(output_path) if before_fn is not None else ()
         if any(result.outcome == "error" for result in before):
             # Something the operator has to clear by hand: stop before the
