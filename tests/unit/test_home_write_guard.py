@@ -731,6 +731,55 @@ def _link_folder(link: Path, target: Path) -> None:
             pytest.skip(f"this host cannot create a junction: {exc}")
 
 
+def _remove_folder_link(link: Path) -> None:
+    """Remove the link *link* itself, never what it leads to."""
+    try:
+        link.rmdir()  # a junction, or a folder symlink on Windows
+    except OSError:
+        link.unlink()  # a symlink on POSIX
+
+
+def test_a_data_home_that_links_to_a_folder_right_in_a_home_is_refused(
+    fake_home: Path, tmp_path: Path
+) -> None:
+    """The data home itself is resolved, as the project-root check resolves a root.
+
+    A symlink where the host can make one, a junction on a Windows host that
+    cannot.
+    """
+    project = tmp_path / "project"
+    project.mkdir()
+    linked = project / ".apothem"
+    deeper = project / "deeper-data"
+    _link_folder(linked, fake_home / "my-data")
+    try:
+        _link_folder(deeper, fake_home / "Projects" / "x" / ".apothem")
+        try:
+            with pytest.raises(home_write_guard.RealHomeWriteError) as caught:
+                home_write_guard.refuse_data_home_in_home(
+                    linked, operation="create the data home"
+                )
+            assert caught.value.protected_root == str(fake_home)
+            assert caught.value.path == str(linked)
+            assert "a data home right in" in str(caught.value)
+            # A link to a folder deeper in the home is the write checks' business.
+            home_write_guard.refuse_data_home_in_home(
+                deeper, operation="create the data home"
+            )
+        finally:
+            _remove_folder_link(deeper)
+    finally:
+        _remove_folder_link(linked)
+    # A data home that does not exist yet is judged by its folder, as before.
+    home_write_guard.refuse_data_home_in_home(linked, operation="create the data home")
+    with pytest.raises(home_write_guard.RealHomeWriteError):
+        home_write_guard.refuse_data_home_in_home(
+            fake_home / "missing", operation="create the data home"
+        )
+    assert len(home_write_guard.drain_refusals()) == 2
+    assert [path for path in _everything_in(fake_home) if path.is_file()] == []
+
+
 def test_a_link_into_a_protected_folder_is_refused(tmp_path: Path) -> None:
     home = tmp_path / "account-home"
     alias = tmp_path / "alias"

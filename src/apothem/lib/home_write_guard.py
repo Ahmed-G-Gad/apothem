@@ -486,15 +486,26 @@ def refuse_data_home_in_home(
     is not. While pytest runs, a data home whose folder is the account home
     or a home added with :func:`also_protect_home` (any spelling
     :func:`refuse_project_root_at_home` accepts) is refused before it is
-    created or its stores are removed. A data home anywhere else, in a
-    project or a tool folder, is left to the write checks. *operation* is a
-    verb phrase for the message. Outside pytest it returns before any path
-    work, so it costs what :func:`active` costs.
+    created or its stores are removed. The data home itself is resolved too,
+    as the project-root check resolves a root, so one that is a link (a
+    junction on Windows) to a folder right in a home is refused as well; one
+    that does not exist yet is judged by its folder alone. A data home
+    anywhere else, in a project or a tool folder, is left to the write
+    checks. *operation* is a verb phrase for the message. Outside pytest it
+    returns before any path work, so it costs what :func:`active` costs.
     """
     if not active():
         return
     text = os.fspath(data_home)
-    home = _home_at(os.path.dirname(_absolute(text)))
+    absolute = _absolute(text)
+    folder = os.path.dirname(absolute)
+    home = _home_among(
+        (
+            _canonical(folder),
+            _real_target(folder),
+            os.path.dirname(_real_target(absolute)),
+        )
+    )
     if home is not None:
         _refuse(
             f"Apothem refused to {operation} {text}: it is a data home right in "
@@ -589,18 +600,27 @@ def _home_at(path: str) -> str | None:
     """Return the account home, or added home, that *path* names, or None."""
     if not active():
         return None
+    absolute = _absolute(path)
+    return _home_among((_canonical(absolute), _real_target(absolute)))
+
+
+def _home_among(spellings: tuple[str, ...]) -> str | None:
+    """Return the account home, or added home, one of *spellings* names.
+
+    *spellings* are canonical (:func:`_canonical`). A share path among them
+    is placed by file identity as well (:func:`_local_twins`), each share
+    folder read at most once for all of them.
+    """
     homes = [
         (home, {_folded(_canonical(home)), _folded(_canonical(_realpath(home)))})
         for home in (account_home(), *_extra_homes)
         if home is not None
     ]
-    absolute = _absolute(path)
-    canonical = _canonical(absolute)
-    spellings = [canonical, _real_target(absolute)]
-    if any(_is_share(spelling) for spelling in spellings):
+    found = list(dict.fromkeys(spellings))
+    if any(_is_share(spelling) for spelling in found):
         roots = _roots(account_home(), tuple(_extra_homes))
-        spellings += _local_twins(tuple(spellings), roots)
-    for spelling in spellings:
+        found += _local_twins(tuple(found), roots)
+    for spelling in found:
         for home, keys in homes:
             if _folded(spelling) in keys:
                 return home
