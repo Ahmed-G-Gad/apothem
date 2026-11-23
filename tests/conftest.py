@@ -231,10 +231,16 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   worker cannot write to it.
 
 The guard fails a test with ``RealHomeGuardFailure``, ``pytest.fail``'s exception
-under a type of its own, so the report hook can tell it apart. ``-p
-no:apothem-real-home-guard`` turns the guard off. They are hooks, not autouse
-fixtures: a fixture runs at a point in the setup that depends on its scope, its
-name and the order the conftests were registered.
+under a type of its own, so the report hook can tell it apart. The hook looks
+for a mark on the class rather than for the class itself: pytest can import
+this file as two modules (``conftest`` and ``tests.conftest``, when
+``python -m pytest`` runs from ``tests/`` with ``-p tests.conftest`` or with a
+conftest there that imports from ``tests.conftest``), and the
+``_report_real_home_refusals`` of one copy then raises its own class while the
+guard registered from the other checks. ``-p no:apothem-real-home-guard`` turns
+the guard off. They are hooks, not autouse fixtures: a fixture runs at a point
+in the setup that depends on its scope, its name and the order the conftests
+were registered.
 
 The guard captures the real home once, when this file is imported and
 before any fixture runs: ``HOME``, ``USERPROFILE``, ``HOMEDRIVE`` with
@@ -555,8 +561,9 @@ def _report_real_home_refusals() -> Iterator[None]:
     teardown and fails the test when it holds anything. A test of the guard
     itself drains the log before it finishes. It fails with
     ``RealHomeGuardFailure``, which the guard's report hook keeps failed when
-    the test is marked ``xfail``; a plain ``pytest.fail`` would turn into XFAIL
-    there and let the run pass.
+    the test is marked ``xfail``, also when this fixture comes from a second
+    copy of this file (see :func:`_is_guard_failure`); a plain ``pytest.fail``
+    would turn into XFAIL there and let the run pass.
     """
     yield
     refused = home_write_guard.drain_refusals()
@@ -1075,8 +1082,14 @@ class RealHomeGuardFailure(pytest.fail.Exception):  # type: ignore[misc,name-def
 
     The type lets ``RealHomeGuard.pytest_runtest_makereport`` tell the guard's
     failure from the test's own, and keep it failed when the test is marked
-    ``xfail``.
+    ``xfail``. It tells them apart by the mark below, not by the class: every
+    copy of this module makes a class of its own (see
+    :func:`_is_guard_failure`).
     """
+
+    #: The mark :func:`_is_guard_failure` looks for. Every copy of this module
+    #: sets it the same way, so a failure from any copy carries it.
+    _apothem_real_home_guard_failure = True
 
 
 class RealHomeGuard:
@@ -1154,9 +1167,10 @@ class RealHomeGuard:
         stopped test, or an absorbed refusal ``_report_real_home_refusals``
         found, would pass the run quietly. This wrapper starts first and so
         finishes last, after ``skipping`` has changed the report, and changes it
-        back for a ``RealHomeGuardFailure``. A teardown
-        report also fails on a refusal logged too late for
-        ``_report_real_home_refusals`` (see :func:`_fail_on_late_refusals`).
+        back for a ``RealHomeGuardFailure`` from any copy of this module (see
+        :func:`_is_guard_failure`). A teardown report also fails on a refusal
+        logged too late for ``_report_real_home_refusals`` (see
+        :func:`_fail_on_late_refusals`).
         """
         report = yield
         if call.excinfo is not None and _is_guard_failure(call.excinfo.value):
@@ -1455,10 +1469,20 @@ class RealHomeGuard:
 def _is_guard_failure(error: BaseException) -> bool:
     """Return whether *error* is the guard's failure, or a group that holds one.
 
+    The guard's failure is an exception whose class carries the mark of
+    ``RealHomeGuardFailure``, whichever copy of this module made the class.
+    pytest can import this file as two modules: ``python -m pytest`` run from
+    ``tests/`` imports it as ``conftest``, and ``-p tests.conftest``, or a
+    conftest under ``tests/`` that imports from ``tests.conftest``, imports
+    it again. The guard is registered once, by name, from the copy imported
+    first, so ``_report_real_home_refusals`` can come from the other copy and
+    raise that copy's class, which an ``isinstance`` check against this
+    copy's class would miss: the test would pass as XFAIL.
+
     pytest raises the errors of several finalizers that failed in one teardown
     together, as an exception group.
     """
-    if isinstance(error, RealHomeGuardFailure):
+    if getattr(type(error), "_apothem_real_home_guard_failure", False) is True:
         return True
     inner = getattr(error, "exceptions", None)
     return isinstance(inner, tuple) and any(

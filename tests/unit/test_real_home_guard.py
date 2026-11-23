@@ -39,8 +39,10 @@ sentinels there too. One probe test uses no fixture and the other uses
 
 The other cases protect the fake real home with
 ``apothem.lib.home_write_guard.also_protect_home`` and absorb a refusal of a
-write into it. Two absorb it in the test body or a fixture's teardown, with and
-without an ``xfail`` mark, and each test errors at teardown. The rest absorb it
+write into it. Three absorb it in the test body or a fixture's teardown, with
+and without an ``xfail`` mark, and with the mark when the probe conftest takes
+the refusal fixture from a second copy of ``tests/conftest.py``, loaded under
+another module name. Each test errors at teardown. The rest absorb it
 outside any test: while a test module is imported, which fails that module's
 collection, and in a probe conftest's hook, which leaves the tests to run and
 pass and fails the run: at the session start (also in a run that collects no
@@ -417,6 +419,27 @@ _ABSORBING_TESTS = (
     "test_absorbs_beside_another_failing_teardown",
     "test_absorbs_in_a_module_fixture_teardown",
 )
+
+#: After the star import, takes ``_report_real_home_refusals`` from a second
+#: copy of tests/conftest.py, loaded under another module name. A run of
+#: ``python -m pytest`` from ``tests/`` makes such a copy: it imports the file
+#: as ``conftest``, and ``-p tests.conftest`` or a conftest there imports it as
+#: ``tests.conftest``. The copy registers no second guard, and its fixture
+#: raises its own ``RealHomeGuardFailure``; the probe stops if that class is
+#: the first copy's.
+_SECOND_COPYS_REFUSAL_FIXTURE = f"""
+
+import importlib.util
+
+_SPEC = importlib.util.spec_from_file_location(
+    "a_second_copy_of_tests_conftest",
+    os.path.join(os.environ[{_REPO_VARIABLE!r}], "tests", "conftest.py"),
+)
+_SECOND = importlib.util.module_from_spec(_SPEC)
+_SPEC.loader.exec_module(_SECOND)
+assert _SECOND.RealHomeGuardFailure is not RealHomeGuardFailure
+_report_real_home_refusals = _SECOND._report_real_home_refusals
+"""
 
 #: The names the call guard gives, as its findings spell them.
 _HOME_NAMES = {"HOME", "USERPROFILE", "Path.home()", "propagation.user_home()"}
@@ -1364,12 +1387,15 @@ def case_the_conftest_loaded_as_a_plugin_stops_a_fixture_that_undoes_it(
 
 
 def _assert_each_absorbed_refusal_errors(
-    result: pytest.RunResult, home: Path, **outcomes: int
+    result: pytest.RunResult,
+    home: Path,
+    tests: tuple[str, ...] = _ABSORBING_TESTS,
+    **outcomes: int,
 ) -> None:
-    """Each absorbing probe errors at teardown, and nothing reached *home*."""
-    result.assert_outcomes(errors=len(_ABSORBING_TESTS), **outcomes)
+    """Each test in *tests* errors at teardown, and nothing reached *home*."""
+    result.assert_outcomes(errors=len(tests), **outcomes)
     expected: list[str] = []
-    for test in _ABSORBING_TESTS:
+    for test in tests:
         expected += [
             f"*_ ERROR at teardown of {test} _*",
             "*Apothem refused a write into the account's real home*",
@@ -1394,6 +1420,35 @@ def case_an_xfail_test_that_absorbs_a_refusal_still_errors(
 
     _assert_each_absorbed_refusal_errors(
         result, fake_real_home, xpassed=len(_ABSORBING_TESTS)
+    )
+
+
+def case_an_xfail_test_errors_when_a_second_copy_reports_the_refusal(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """A failure from a second copy of tests/conftest.py is the guard's too.
+
+    The probe conftest's ``_report_real_home_refusals`` raises the class of a
+    second copy, while the guard, registered once from the first copy, checks.
+    Were the class not recognised, ``skipping`` would turn each teardown error
+    into XFAIL and the run would exit 0. The test with the module fixture is
+    left out: its refusal is logged after the fixture's teardown, and the guard
+    then fails the teardown report itself, so that test would fail the run even
+    if the class were not recognised.
+    """
+    tests = _ABSORBING_TESTS[:-1]
+    pytester.makepyfile(
+        test_probe=_ABSORBING_PROBES.format(
+            home=str(fake_real_home), marker="@pytest.mark.xfail"
+        )
+    )
+    pytester.makeconftest(_STAR_IMPORT + _SECOND_COPYS_REFUSAL_FIXTURE)
+
+    result = _run(pytester, "-k", "not module_fixture")
+
+    assert result.ret == pytest.ExitCode.TESTS_FAILED, result.stdout.str()
+    _assert_each_absorbed_refusal_errors(
+        result, fake_real_home, tests, xpassed=len(tests)
     )
 
 
