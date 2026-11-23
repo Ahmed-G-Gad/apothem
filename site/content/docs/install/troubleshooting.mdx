@@ -444,10 +444,12 @@ file at the lines the warning gives:
 1. Pick the fix for the block that holds Apothem's rules. In a file that
    starts with Apothem's frontmatter, that is the block right below it: an
    uninstall takes that frontmatter out only with the block right below it.
-2. Do that fix's steps in the order given. Each step changes a marker line of
-   another block in place, so its text stays: a marker pair of yours keeps
+2. Do that fix's steps in the order given. Most steps change a marker line
+   of another block in place, so its text stays: a marker pair of yours keeps
    your example, and the text of an older or pasted Apothem block is then
-   yours to keep or delete. Do not delete Apothem's block to keep a pair of
+   yours to keep or delete. When the block sits in a code block of yours
+   that no line closes, the fix also closes that code block above it. Each
+   fix holds for the next update as well as for an uninstall. Do not delete Apothem's block to keep a pair of
    yours: the next uninstall would then take out your pair as the one block
    left. Do not move a pair of yours into a code block either: once
    Apothem's own block is no longer whole (its END marker lost, say), a

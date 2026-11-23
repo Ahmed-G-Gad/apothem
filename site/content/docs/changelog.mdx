@@ -924,8 +924,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   of yours that no line closes. When the file ends inside such a code block, a
   fix that leaves no Apothem block also adds its closing line below the last
   line, and a fix that keeps a block inside one closes it above the BEGIN
-  marker and opens it again below the END marker. The troubleshooting page
-  lists the step formats under "Follow a numbered fix".
+  marker and opens it again below the END marker. A fix for a file with two
+  or more whole blocks is checked for the next update as well as for the
+  uninstall, since an uninstall with no install record leaves the block. The
+  troubleshooting page lists the step formats under "Follow a numbered fix".
 - **The installers and update scripts finish a run that ends as partial.**
   When `apothem install` or `apothem update` leaves a file as it is because of
   its marker lines and exits with code `2`, `install.sh`, `install.ps1`,

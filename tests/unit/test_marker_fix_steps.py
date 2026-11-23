@@ -582,3 +582,24 @@ def test_a_fix_that_takes_the_block_out_closes_the_code_block_too(
         texts, _, _ = _follow(lines, fix)
         _next_update_holds(_text(texts))
     _check(lines, message, removes=True)
+
+
+def test_a_revealed_block_fix_holds_for_the_next_update_too():
+    """The uninstall with no record leaves the block; a later install merges.
+
+    "Lines 4 to 8 are then the one block in the file" must hold for the next
+    update as well as for the uninstall, and the block sits in a code block
+    no line closes.
+    """
+    lines = ["```md", "code KEEP", B, B, "Run:", "~~~", "npm test", E, "", "", E]
+    text = _text(lines)
+    assert whole_blocks(text) == [(4, 8)]
+    message = two_blocks_report(
+        "F.md", text, whole_blocks(text), revealed=(3, 11), removes=True
+    )
+    found = _fixes(message)
+    assert len(found) == 1, message
+    texts, _, _ = _follow(lines, found[0][1])
+    assert len(whole_blocks(_text(texts))) == 1
+    _next_update_holds(_text(texts))
+    assert _check(lines, message, removes=True) == 1

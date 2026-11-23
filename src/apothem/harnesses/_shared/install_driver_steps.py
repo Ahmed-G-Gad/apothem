@@ -308,27 +308,33 @@ def _first_passing(
     label: str,
     block: tuple[int, int] | None,
     removes: bool,
+    update: bool = False,
 ) -> Fix | None:
     """Return the first of *variants* (steps, and whether they keep *block*) that passes.
 
-    A variant that leaves no block is tried first with a step that closes
-    the code block the file then ends in, if it ends in one (see
-    :func:`_open_tail`). A variant that keeps *block* for the next update is
-    tried as it is, then with the steps that take *block* out of a code
-    block no line closes (see :func:`_open_holder`).
+    With *update*, a variant must pass for the next update too, not only for
+    the run *removes* names. A variant that leaves no block is tried first
+    with a step that closes the code block the file then ends in, if it ends
+    in one (see :func:`_open_tail`). A variant that keeps *block* for the next
+    update is tried as it is, then with the steps that take *block* out of a
+    code block no line closes (see :func:`_open_holder`).
     """
+    runs = {removes, False} if update else {removes}
     for steps, keeps in variants:
         tries = [steps]
         tail = None if keeps else _open_tail(lines, steps)
         if tail is not None:
             tries.insert(0, [*steps, tail])
-        elif keeps and block is not None and not removes:
+        elif keeps and block is not None and False in runs:
             holder = _open_holder(lines, block)
             if holder:
                 tries.append([*steps, *holder])
         for tried in tries:
             ordered = _order(tried)
-            if passes(lines, ordered, block=block, keeps=keeps, removes=removes):
+            if all(
+                passes(lines, ordered, block=block, keeps=keeps, removes=run)
+                for run in runs
+            ):
                 return Fix(label, ordered, keeps, block)
     return None
 
@@ -420,8 +426,11 @@ def block_fixes(
     lines of every other block change. With *revealed* (a BEGIN marker above
     the one block and an END marker below it, which make a second block once
     it is out), one fix: those two marker lines change, or the BEGIN marker
-    alone when *quoted* (its END marker reads as code or text). A case whose
-    steps fail :func:`passes` is left out.
+    alone when *quoted* (its END marker reads as code or text). Each fix says
+    the block is then the one in the file, so it must pass :func:`passes` for
+    the next update as well as, with *removes*, for the next uninstall: with
+    no install record the uninstall leaves the block, and a later install
+    merges into it. A case whose steps fail is left out.
     """
     lines = split_lines(text)
     cases: list[tuple[tuple[int, int], list[Step]]]
@@ -448,7 +457,7 @@ def block_fixes(
         label = f"if lines {block[0]} to {block[1]} are Apothem's block"
         variants = [(steps, True), (_every_marker(lines, block), True)]
         found = _first_passing(
-            lines, variants, label=label, block=block, removes=removes
+            lines, variants, label=label, block=block, removes=removes, update=True
         )
         if found is not None:
             fixes.append(found)
