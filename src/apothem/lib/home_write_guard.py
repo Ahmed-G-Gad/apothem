@@ -132,8 +132,10 @@ PYTEST_VARIABLE = "PYTEST_CURRENT_TEST"
 
 #: The variable pytest 8.2 and later sets, to its own version, for the whole
 #: session: collection, module-level code and session hooks run with it,
-#: outside any test. It counts only while it holds the version of the pytest
-#: installed for this Python (see :func:`active`).
+#: outside any test. It counts only while it holds the running pytest's version
+#: (the ``__version__`` of the ``_pytest`` package this process imported) or,
+#: in a process that has not imported pytest, the installed one's (see
+#: :func:`active`).
 PYTEST_SESSION_VARIABLE = "PYTEST_VERSION"
 
 #: What a refusal outside any test names in place of the test.
