@@ -135,6 +135,39 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   ``_report_real_home_refusals`` did not see: one made while a fixture torn down
   after it (an ``_isolate_*`` fixture, a module- or session-scoped one) was
   torn down.
+- ``pytest_make_collect_report``, a wrapper: the report of the node pytest was
+  collecting fails when Apothem logged a refusal while it was collected (in a
+  test module's module-level code, or a conftest pytest imports then), rather
+  than the first test after it.
+- ``pytest_sessionstart`` and ``pytest_collection_finish``, ``tryfirst``
+  wrappers, which finish after every plain implementation and every wrapper
+  that is not ``tryfirst``; ``pytest_runtestloop``, a ``trylast`` wrapper,
+  which starts right before the implementation that runs the tests; and the
+  collect-report wrapper, before the session's own report. Each holds a
+  refusal absorbed outside any test before the first test, named "at the
+  session start, before collection" (a conftest's import, ``pytest_configure``,
+  ``pytest_sessionstart``, a ``pytest_collection`` hook) or "after collection,
+  before the first test" (``pytest_collection_modifyitems``, a
+  collection-finish hook, a ``pytest_runtestloop`` wrapper). Failing the
+  session's collection would drop every test, and failing the first test would
+  blame it; the tests run, and the run fails at its end.
+- ``pytest_sessionfinish``, a ``trylast`` plain implementation: it writes what
+  is held, and a refusal another session-finish hook absorbed, named "after the
+  last test", to the terminal above the summary, and turns the exit code "OK"
+  or "no tests collected" into "tests failed". A ``tryfirst``
+  ``pytest_sessionfinish`` wrapper does the same after pytest's terminal
+  reporter has written the summary, calling every ``pytest_terminal_summary``
+  hook, and a ``tryfirst`` ``pytest_unconfigure`` wrapper does it for a refusal
+  absorbed in ``pytest_unconfigure`` ("after the session finished"): pytest
+  returns the session's exit status after that hook. One absorbed later still,
+  in a cleanup registered with ``config.add_cleanup``, reaches only ``stderr``.
+- ``pytest_testnodedown``, an optional hook that only xdist defines. An xdist
+  worker's ``trylast`` session finish puts what it holds in
+  ``config.workeroutput``, which xdist sends to the controller once every plain
+  session-finish hook has run, and the controller holds it under the worker's
+  name. A refusal a worker finds after that, in its terminal summary or its
+  ``pytest_unconfigure``, reaches only ``stderr``: a worker's terminal output is
+  discarded, and the controller does not use its exit code.
 
 The guard fails a test with ``RealHomeGuardFailure``, ``pytest.fail``'s exception
 under a type of its own, so the report hook can tell it apart. ``-p
@@ -1176,11 +1209,13 @@ class RealHomeGuard:
         pytest's terminal reporter writes the summary after it yields in its own
         ``pytest_sessionfinish`` wrapper, and calls every
         ``pytest_terminal_summary`` hook there; any wrapper's code after its
-        ``yield`` runs after every plain implementation too. This wrapper starts
-        first and so finishes last, so it sees a refusal absorbed in any of
-        them. The refusal is written below the summary and the run's exit code
-        becomes "tests failed". An xdist worker writes it to ``stderr`` only: it
-        has sent its output to the controller by then.
+        ``yield`` runs after every plain implementation too. As a ``tryfirst``
+        wrapper this finishes after every plain implementation and every
+        wrapper that is not ``tryfirst``, the terminal reporter's included, so
+        it sees a refusal absorbed in any of them. The refusal is written below
+        the summary and the run's exit code becomes "tests failed". An xdist
+        worker writes it to ``stderr`` only: it has sent its output to the
+        controller by then.
         """
         session.config.stash[_HELD_SESSION] = session
         try:
@@ -1194,10 +1229,11 @@ class RealHomeGuard:
         """Fail the run on a refusal absorbed in ``pytest_unconfigure``.
 
         pytest calls the hook after the session finished and returns the
-        session's exit status after it, so the status set here is the run's.
-        This wrapper finishes after every other implementation. An xdist worker
-        writes the refusal to ``stderr`` only: it has sent its output to the
-        controller by then.
+        session's exit status after it, so the status set here is the run's. As
+        a ``tryfirst`` wrapper this finishes after every plain implementation
+        and every wrapper that is not ``tryfirst``. An xdist worker writes the
+        refusal to ``stderr`` only: it has sent its output to the controller by
+        then.
         """
         try:
             return (yield)

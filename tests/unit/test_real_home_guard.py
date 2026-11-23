@@ -8,14 +8,17 @@ is set up, when the isolation fixtures of ``tests/conftest.py`` do not apply to
 it. Its call hook fails a test, before its body runs, when its environment points
 Apothem at the home the pytest process started with or at a real folder in it.
 Its report hook keeps such a failure failed when the test is marked ``xfail``.
+Its session hooks fail the run on a refusal of a write into a protected home
+that a caller absorbed outside any test, named for where it happened.
 ``__all__`` makes a star import of ``tests/conftest.py`` carry the isolation
 fixtures, which a star import used to skip because their names start with ``_``.
 
 The ``test_*`` functions run in the suite, where ``tests/conftest.py`` is loaded
 as a conftest. They check that the guard is registered once, with its hooks
-ordered as intended, and that the call hook finds nothing for a suite test, and
-they check the guard's comparison on text: a folder below a real home is
-allowed, but not the home or a real folder in it.
+ordered as intended (the session hooks that read the refusal log included), and
+that the call hook finds nothing for a suite test, and they check the guard's
+comparison on text: a folder below a real home is allowed, but not the home or
+a real folder in it.
 
 Showing the guard stop a test takes a pytest session of its own, because the
 call hook compares with the home its session started with.
@@ -31,10 +34,21 @@ home; the first line of each writes a sentinel file into the probe folder, never
 into a home, so a missing sentinel proves the body never started. The probe
 fixtures that stand for a fixture writing during setup write their sentinels
 there too. One probe test uses no fixture and the other uses ``tmp_path``.
-Two cases use other probes: they protect the fake real home with
+
+The other cases protect the fake real home with
 ``apothem.lib.home_write_guard.also_protect_home`` and absorb a refusal of a
-write into it, in the test body or a fixture's teardown, with and without an
-``xfail`` mark. The guard refuses before any write, so nothing lands in a home.
+write into it. Two absorb it in the test body or a fixture's teardown, with and
+without an ``xfail`` mark, and each test errors at teardown. The rest absorb it
+outside any test: while a test module is imported, which fails that module's
+collection, and in a probe conftest's hook, which leaves the tests to run and
+pass and fails the run: at the session start (also in a run that collects no
+test), in a ``pytest_collection`` or ``pytest_collection_modifyitems`` hook, in
+a ``pytest_runtestloop`` wrapper before it yields, in a ``pytest_sessionfinish``
+hook or after a session-finish wrapper yields, in ``pytest_terminal_summary``,
+in ``pytest_unconfigure``, and under xdist (``-n 2``) at the session start and
+in a worker's session finish. Each names where the refusal happened. A session
+that absorbs nothing exits 0, with and without xdist. The guard refuses before
+any write, so nothing lands in a home.
 """
 
 from __future__ import annotations
