@@ -446,8 +446,9 @@ def test_the_import_registers_one_guard_object(request: pytest.FixtureRequest) -
     ]
     assert guards == [conftest.real_home_guard]
     assert manager.get_plugin(conftest.REAL_HOME_GUARD_PLUGIN) is guards[0]
-    # The conftest module itself holds no guard hook, only the registrar, so a
-    # star import of it registers none of them a second time.
+    # The conftest module itself holds none of the guard's hooks, so a star
+    # import of it registers none of them a second time. Its own module-level
+    # hooks, such as the registrar, are not the guard's.
     for hook in (
         "pytest_runtest_setup",
         "pytest_runtest_call",
