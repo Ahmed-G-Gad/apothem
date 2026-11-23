@@ -701,7 +701,9 @@ inside the home stays allowed. A data home right in the home is refused too,
 whatever name the profile gives it (`workspace.scope: user-home` with a
 `directory_name` of its own), before it is created and before its stores are
 removed. A data home that is a link (a junction on Windows) to a folder right
-in the home is refused the same way.
+in the home is refused the same way, and so is one that leads to the home
+itself, directly or through a chain of links, whose stores would land right
+in the home.
 
 These spellings of a protected folder count: a link or junction into it, and a
 folder swapped for a link during the test. On Windows letter case, short (8.3)

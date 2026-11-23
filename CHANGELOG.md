@@ -221,7 +221,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   project-scope install, update, uninstall or rollback whose project root is
   the home itself is refused before it writes anything. A data home right in
   the home, under a name the profile chose, or one that is a link to a
-  folder right in the home, is refused before it is created and before its
+  folder right in the home or to the home itself (also through a chain of
+  links), is refused before it is created and before its
   stores are removed: an install or update has written the project's files
   by then and undoes those writes (recording a rollback), and an uninstall
   has removed them by then and records itself unfinished. Some passes check

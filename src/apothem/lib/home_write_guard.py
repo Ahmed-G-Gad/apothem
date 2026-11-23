@@ -31,7 +31,8 @@ those folders is refused too. :func:`refuse_project_root_at_home` refuses a
 project root that is the home itself, which a project-scope pass calls before
 its first write, and :func:`refuse_data_home_in_home` a data home right in
 the home under any name (a profile with the ``user-home`` workspace scope and
-its own ``directory_name``), before it is created or its stores are removed.
+its own ``directory_name``), or one that is a link to the home itself, before
+it is created or its stores are removed.
 Nothing else is refused: reads, dry runs and previews, the
 temporary folder, the checkout, and the rest of the home all stay allowed.
 
@@ -522,29 +523,37 @@ def refuse_data_home_in_home(
     :func:`refuse_project_root_at_home` accepts) is refused before it is
     created or its stores are removed. The data home itself is resolved too,
     as the project-root check resolves a root, so one that is a link (a
-    junction on Windows) to a folder right in a home is refused as well; one
-    that does not exist yet is judged by its folder alone. A data home
-    anywhere else, in a project or a tool folder, is left to the write
-    checks. *operation* is a verb phrase for the message. Outside pytest it
-    returns before any path work, so it costs what :func:`active` costs.
+    junction on Windows) to a folder right in a home is refused as well, and
+    so is one that leads to a home itself, directly or through a chain of
+    links, whose stores would land right in that home. One that does not
+    exist yet is judged by its folder alone, and a data home written as a
+    home itself is left alone. A data home anywhere else, in a project or a
+    tool folder, is left to the write checks. *operation* is a verb phrase
+    for the message. Outside pytest it returns before any path work, so it
+    costs what :func:`active` costs.
     """
     if not active():
         return
     text = os.fspath(data_home)
     absolute = _absolute(text)
-    folder = os.path.dirname(absolute)
-    home = _home_among(
-        (
-            _canonical(folder),
-            _real_target(folder),
-            os.path.dirname(_real_target(absolute)),
-        )
-    )
+    folder, leaf = os.path.split(absolute)
+    real_folder = _real_target(folder)
+    real = _real_target(absolute)
+    home = _home_among((_canonical(folder), real_folder, os.path.dirname(real)))
+    reason = "is a data home right in"
+    if home is None and real not in (
+        _canonical(absolute),
+        _canonical(os.path.join(real_folder, leaf)),
+    ):
+        # The data home is a link, or reached through one: where it leads
+        # counts as well.
+        home = _home_among((real,))
+        reason = "leads to"
     if home is not None:
         _refuse(
-            f"Apothem refused to {operation} {text}: it is a data home right in "
-            f"{home}, this account's real home, while {_running()}. Nothing in "
-            f"{text} was changed. Fix: {_FIX}",
+            f"Apothem refused to {operation} {text}: it {reason} {home}, this "
+            f"account's real home, while {_running()}. Nothing in {text} was "
+            f"changed. Fix: {_FIX}",
             path=text,
             root=home,
             operation=operation,

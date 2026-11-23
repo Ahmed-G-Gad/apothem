@@ -33,6 +33,7 @@ from apothem.lib import (
     home_write_guard,
     propagation,
 )
+from apothem.lib.data_home import DataHome
 
 #: Every protected folder, and each protected file outside them, relative to a
 #: home.
@@ -944,6 +945,51 @@ def test_a_data_home_that_links_to_a_folder_right_in_a_home_is_refused(
         )
     assert len(home_write_guard.drain_refusals()) == 2
     assert [path for path in _everything_in(fake_home) if path.is_file()] == []
+
+
+def test_a_data_home_that_leads_to_a_home_itself_is_refused(
+    fake_home: Path, tmp_path: Path
+) -> None:
+    """Its stores, ``plans``, ``memory`` and the rest, would land right in the home.
+
+    A link straight to the home, and a link to a link that leads there. A
+    data home written as the home itself sits right in no home and stays
+    allowed.
+    """
+    project = tmp_path / "project"
+    project.mkdir()
+    straight = project / ".apothem"
+    hop = tmp_path / "hop"
+    chained = project / "chained-data"
+    _link_folder(straight, fake_home)
+    try:
+        _link_folder(hop, fake_home)
+        try:
+            _link_folder(chained, hop)
+            try:
+                for linked in (straight, chained):
+                    with pytest.raises(home_write_guard.RealHomeWriteError) as caught:
+                        home_write_guard.refuse_data_home_in_home(
+                            linked, operation="create the data home"
+                        )
+                    assert caught.value.protected_root == str(fake_home)
+                    assert caught.value.path == str(linked)
+                    assert f"it leads to {fake_home}, this account's real home" in str(
+                        caught.value
+                    )
+                with pytest.raises(home_write_guard.RealHomeWriteError):
+                    DataHome.from_root(straight).ensure()
+            finally:
+                _remove_folder_link(chained)
+        finally:
+            _remove_folder_link(hop)
+    finally:
+        _remove_folder_link(straight)
+    home_write_guard.refuse_data_home_in_home(
+        fake_home, operation="create the data home"
+    )
+    assert len(home_write_guard.drain_refusals()) == 3
+    assert _everything_in(fake_home) == []
 
 
 def test_a_link_into_a_protected_folder_is_refused(tmp_path: Path) -> None:
