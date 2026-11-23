@@ -412,8 +412,8 @@ which one is its own:
   [An uninstall that did not finish](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish)).
   With no install record, it leaves Claude Code's `CLAUDE.md` or a profile
   document that holds two blocks as it is too, and its warning names each
-  block the same way. That warning ends by saying to run `apothem update`,
-  then `apothem uninstall` again, after the fix, and it does not stop the
+  block the same way. That warning says to run `apothem update`, then
+  `apothem uninstall` again, after the fix, and it does not stop the
   uninstall. The uninstall run then names any marker lines of yours around
   Apothem's block before it takes the block out.
 
@@ -498,9 +498,9 @@ BEGIN marker outside code whose END marker sits in code with another marker
 pair after them, they do so with or without a record. Each such run ends as
 partial: in place of its `✓` line it prints a `✗` line that names the file,
 its `--format json` `status` is `"partial"`, and it exits with code `2`. The
-warning ends by saying so: "Until you fix these marker lines as this text
-says, install and update leave this file as it is and end as partial (exit
-code 2)." That lasts as long as the marker lines stay as they are, a marker
+warning says so: "Until you fix these marker lines as this text says, install
+and update leave this file as it is and end as partial (exit code 2)." That
+lasts as long as the marker lines stay as they are, a marker
 example of yours in a code block included: such a pair may be Apothem's block
 inside a code block of yours, so the warning adds that your example holds the
 file back the same way until you change its two marker lines, for example by
@@ -512,13 +512,14 @@ the file is quoted in code below it: the marker may be what is left of
 Apothem's block after its END marker was lost, but a pair in code may be
 Apothem's block inside a code block of yours. The warning names such a BEGIN
 marker first: delete or change it, with any old Apothem text below it. The
-`apothem verify` note and the fix `apothem doctor` prints end the same way
-only where install and update would leave the file as it is: with no install
-record, a marker pair you quote in code does not hold the file back (see
+`apothem verify` note and the fix `apothem doctor` prints give the same
+sentence about ending as partial only where install and update would leave
+the file as it is: with no install record, a marker pair you quote in code
+does not hold the file back (see
 below), unless the pair holds exactly the block the install writes. The note
 and the fix do not check for that block, so for such a pair they leave that
-ending out; the next update leaves the file as it is, ends as partial and
-gives it.
+sentence out; the next update leaves the file as it is, ends as partial and
+says so.
 
 Apothem closes a code block that a rule in your profile opens and never
 closes, at the end of the block it writes, so the END marker of that block

@@ -836,10 +836,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   line it prints a `✗` line on standard error that names the file, its
   `--format json` `status` is `"partial"` (the file's warning carries
   `"detail": {"left_as_is": "1"}`), and it exits with code `2`; a dry run
-  still ends with `status` `"dry_run"` and exit code `0`. The warning ends by
-  saying that install and update leave the file as it is, and end as partial,
-  until you fix those marker lines, and that a marker example of yours in a
-  code block holds the file back the same way until you change its two marker
+  still ends with `status` `"dry_run"` and exit code `0`. The warning says
+  that install and update leave the file as it is, and end as partial, until
+  you fix those marker lines, and that a marker example of yours in a code
+  block holds the file back the same way until you change its two marker
   lines: while an install record lists the file, nothing else ends that.
   Until you fix those lines, `verify` fails, `doctor` reports the file (as
   `harness.stray_begin`) and, for a file the current install writes,
