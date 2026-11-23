@@ -179,13 +179,15 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   own hooks logged while the workers ran the tests, named "in the xdist
   controller, during the test run". A ``tryfirst`` ``pytest_unconfigure``
   wrapper does it for a refusal absorbed in ``pytest_unconfigure`` ("after the
-  session finished"), and in an xdist controller for what the workers found
-  after they handed their refusals over (see below): pytest returns the
-  session's exit status after that hook. That wrapper also turns "OK" or "no
-  tests collected" into "tests failed" again once the guard has reported a
-  refusal in the session, which ``pytest.exit(returncode=0)`` in a plain
-  ``pytest_sessionfinish`` hook would otherwise undo: pytest sets the status
-  from that call after every session-finish wrapper has finished. One
+  session finished", or "while pytest ran no test session" when no session
+  started: a ``pytest_configure`` hook ended the run with ``pytest.exit``, or
+  ``--markers`` or ``--help`` ran), and in an xdist controller for what the
+  workers found after they handed their refusals over (see below): pytest
+  returns the session's exit status after that hook. That wrapper also turns
+  "OK" or "no tests collected" into "tests failed" again once the guard has
+  reported a refusal in the session, which ``pytest.exit(returncode=0)`` in a
+  plain ``pytest_sessionfinish`` hook would otherwise undo: pytest sets the
+  status from that call after every session-finish wrapper has finished. One
   absorbed later still, in a cleanup registered with ``config.add_cleanup``,
   reaches only ``stderr``. These ``tryfirst`` wrappers finish after every
   wrapper except a ``tryfirst`` one that pytest registered after the guard (a
@@ -1363,13 +1365,28 @@ class RealHomeGuard:
         catches that call after every session-finish wrapper has finished,
         the guard's included, and sets the status to its code. A code other
         than 0 or 5 is kept.
+
+        When no session started, what it holds is named "while pytest ran
+        no test session": a refusal from a conftest's import or a
+        ``pytest_configure`` hook that then ended the run with
+        ``pytest.exit``, or one under ``--markers`` or ``--help``, which
+        start none. pytest made a session before it configured and returns
+        its exit status after this hook, so that status is set too; the
+        session registered itself as the plugin ``session``. ``--markers``
+        and ``--help`` make none, and exit 0.
         """
         try:
             return (yield)
         finally:
             _take_late(config)
-            _hold(config, _AFTER_THE_SESSION)
             session = config.stash.get(_HELD_SESSION, None)
+            if session is not None:
+                _hold(config, _AFTER_THE_SESSION)
+            else:
+                _hold(config, _WITHOUT_A_SESSION)
+                # A session pytest made but never started (pytest.exit in
+                # pytest_configure, say) registered itself as "session".
+                session = config.pluginmanager.get_plugin("session")
             _report_held(config, session)
             if config.stash.get(_REPORTED, False):
                 _fail_the_run(session)
@@ -1486,6 +1503,7 @@ _BETWEEN_TWO_TESTS = "between two tests"
 _IN_THE_CONTROLLER_DURING_THE_RUN = "in the xdist controller, during the test run"
 _AFTER_THE_LAST_TEST = "after the last test"
 _AFTER_THE_SESSION = "after the session finished"
+_WITHOUT_A_SESSION = "while pytest ran no test session"
 
 #: The refusals the guard holds for the end of the run, as ``(where, messages)``.
 _HELD = pytest.StashKey[list[tuple[str, tuple[str, ...]]]]()

@@ -50,7 +50,8 @@ the collection, between two collect reports (a ``pytest_itemcollected`` hook, an
 ``pytest_runtestloop`` hook (also with ``--co`` and with every test deselected,
 when no test runs), between two tests (a ``pytest_runtest_logreport``
 hook for a teardown report), in a ``pytest_sessionfinish`` hook (also one that
-then calls ``pytest.exit(returncode=0)``) or after a session-finish wrapper
+then calls ``pytest.exit(returncode=0)``, as a ``pytest_configure`` hook does
+before any session starts) or after a session-finish wrapper
 yields, in ``pytest_terminal_summary``, in ``pytest_unconfigure`` (with ``-p
 no:xdist``), and under xdist (``-n 2``) at the session start and in a worker's
 session finish, also in a ``trylast`` hook of a conftest that pytest finds
@@ -1652,6 +1653,40 @@ def case_pytest_exit_with_code_0_after_a_refusal_still_fails_the_run(
     assert not (fake_real_home / ".apothem").exists()
     exit_4 = _ABSORBED_BEFORE_PYTEST_EXIT.format(code=4)
     assert _run_absorbing(pytester, fake_real_home, exit_4).ret == 4
+
+
+#: A configure hook that absorbs the refusal and then ends the run with
+#: ``pytest.exit`` and the exit code 0, before any session starts.
+_ABSORBED_BEFORE_PYTEST_EXIT_AT_CONFIGURE = """
+
+def pytest_configure(config):
+    _absorb()
+    pytest.exit("probe", returncode=0)
+"""
+
+
+def case_pytest_exit_with_code_0_while_pytest_configures_still_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """No session starts, so the refusal is named for a run that ran none.
+
+    pytest returns the exit status of the session it made before it
+    configured, whose start it never called, after ``pytest_unconfigure``.
+    """
+    result = _run_absorbing(
+        pytester,
+        fake_real_home,
+        _ABSORBED_BEFORE_PYTEST_EXIT_AT_CONFIGURE,
+        "-p",
+        "no:xdist",
+    )
+
+    assert result.ret == pytest.ExitCode.TESTS_FAILED
+    output = " ".join(f"{result.stdout.str()}\n{result.stderr.str()}".split())
+    named = "outside any test, while pytest ran no test session, and the refusal"
+    assert named in output, output
+    assert "after the session finished" not in output
+    assert not (fake_real_home / ".apothem").exists()
 
 
 def case_an_xdist_workers_refusal_after_its_last_test_fails_the_run(
