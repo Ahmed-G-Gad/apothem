@@ -551,6 +551,46 @@ def test_a_rollback_checks_the_data_stores_it_would_remove_first(
     assert (_snapshot(home), _snapshot(project)) == before
 
 
+def test_a_rollback_checks_the_home_folders_it_would_tidy_first(
+    home: Path, tmp_path: Path
+) -> None:
+    """A record that names no home path is still refused before any change.
+
+    Cursor's rollback ends by tidying ``~/.agents/skills`` and ``~/.agents``,
+    which a record from before the shared skills does not name. With them in
+    a protected folder, the rollback is refused before the project changes.
+    """
+    project = tmp_path / "project"
+    (project / ".cursor").mkdir(parents=True)
+    written = project / ".cursor" / "a.md"
+    written.write_bytes(b"made by the install\n")
+    (home / ".agents" / "skills").mkdir(parents=True)
+    record = LedgerRecord.create(
+        harness="cursor",
+        root=project,
+        kind="install",
+        targets=(
+            install_ledger.LedgerTarget(
+                str(written),
+                "write_text",
+                "apothem-owned",
+                outcome="created",
+                digest=install_driver_digests.file_digest(written),
+            ),
+        ),
+    )
+    before = (_snapshot(home), _snapshot(project))
+    home_write_guard.also_protect_home(home)
+    assert not any(home_write_guard.would_refuse(t.path) for t in record.targets)
+
+    with pytest.raises(Refused) as caught:
+        install_driver_reversal.rollback_install(
+            record, harness_name="cursor", project_root=project
+        )
+    assert caught.value.protected_root == str(home / ".agents")
+    assert (_snapshot(home), _snapshot(project)) == before
+
+
 def test_a_stale_sweep_is_refused_before_its_first_removal(home: Path) -> None:
     first = home / "old-layout.txt"
     first.write_bytes(b"an earlier layout\n")
