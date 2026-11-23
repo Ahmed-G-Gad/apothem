@@ -57,8 +57,10 @@ session finish, also in a ``trylast`` hook of a conftest that pytest finds
 during collection, and after a worker handed its refusals to the controller:
 in its ``pytest_terminal_summary``, in its ``pytest_unconfigure`` and after
 its own ``tryfirst`` session-finish wrapper yields, which the worker writes to
-a file the controller reads and removes (a later run with the same
-``--basetemp`` passes, and no such file is made in a protected folder); a
+a file the controller reads and removes, also once a controller hook ended
+the run with ``pytest.exit`` before xdist ended the workers (a later run with
+the same ``--basetemp`` passes, and no such file is made in a protected
+folder); a
 worker that stops on Ctrl-C has its refusal reported once, and one the
 controller absorbs while its workers run the tests is named for the run. Each
 names where the refusal happened. A session that absorbs nothing exits 0, with
@@ -1738,6 +1740,56 @@ def case_an_xdist_workers_refusal_after_its_first_session_finish_wrapper_fails(
     _assert_each_worker_sent_it_late(
         result, fake_real_home, "after the session finished"
     )
+
+
+#: A ``tryfirst`` session-finish hook that ends the run with ``pytest.exit``
+#: and the code 0 in the xdist controller. pluggy calls no plain hook after
+#: one that raises, so xdist's own, which tells the workers to exit and waits
+#: for them, does not run.
+_EXITS_BEFORE_XDIST_ENDS_THE_WORKERS = """
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_sessionfinish(session):
+    if not hasattr(session.config, "workerinput"):
+        pytest.exit("probe", returncode=0)
+"""
+
+#: An unconfigure hook that absorbs the refusal in an xdist worker after a
+#: pause, so the worker is still running when the controller unconfigures.
+_ABSORBED_LATE_AT_A_WORKERS_UNCONFIGURE = """
+
+def pytest_unconfigure(config):
+    if hasattr(config, "workerinput"):
+        import time
+
+        time.sleep(1)
+        _absorb()
+"""
+
+
+def case_the_controller_waits_for_its_workers_before_it_reads_their_files(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """A hook that ends the run before xdist's own leaves the workers running.
+
+    The guard tells them to exit and waits for them before it reads their
+    files, so what they find in their ``pytest_unconfigure`` still fails the
+    run, which ``pytest.exit`` set to 0. pytest writes no summary then.
+    """
+    result = _run_absorbing(
+        pytester,
+        fake_real_home,
+        _EXITS_BEFORE_XDIST_ENDS_THE_WORKERS + _ABSORBED_LATE_AT_A_WORKERS_UNCONFIGURE,
+        "-n",
+        "2",
+    )
+
+    assert result.ret == pytest.ExitCode.TESTS_FAILED
+    output = result.stdout.str()
+    for worker in ("gw0", "gw1"):
+        named = f"in xdist worker {worker}, {_AFTER_THE_HAND_OFF}, after the session"
+        assert output.count(named) == 1, output
+    assert not (fake_real_home / ".apothem").exists()
 
 
 #: Protects the fake real home when the probe conftest is imported, before the

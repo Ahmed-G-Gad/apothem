@@ -208,14 +208,16 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   left is never read, and never in a protected folder of a real home. The
   controller's ``pytest_unconfigure`` wrapper reads the files, holds each
   refusal named "in xdist worker <name>, after it handed its refusals to the
-  controller, ..." and removes the folder. By then xdist's own
-  ``pytest_sessionfinish`` in the controller has told every worker to exit and
-  waited for its process to end: a worker still running 5 seconds after it
-  was told gets a ``KeyboardInterrupt``, and one still running after 10
-  seconds is stopped. What such a worker had not written to its file reaches
-  only ``stderr``, and so does everything a worker finds after the hand-off
-  when the controller could not make the folder or the worker cannot write
-  to it.
+  controller, ..." and removes the folder. Before it reads them, every
+  worker has been told to exit and its process has ended: xdist's own
+  ``pytest_sessionfinish`` in the controller does that, and the wrapper does
+  it again for a worker still running, as when a plain session-finish hook
+  that pluggy calls before xdist's ended the run with ``pytest.exit``. A
+  worker still running 5 seconds after it was told gets a
+  ``KeyboardInterrupt``, and one still running after 10 seconds is stopped.
+  What such a worker had not written to its file reaches only ``stderr``,
+  and so does everything a worker finds after the hand-off when the
+  controller could not make the folder or the worker cannot write to it.
 
 The guard fails a test with ``RealHomeGuardFailure``, ``pytest.fail``'s exception
 under a type of its own, so the report hook can tell it apart. ``-p
@@ -1343,10 +1345,11 @@ class RealHomeGuard:
         to the file the controller gave it, as after the summary.
 
         In an xdist controller this also reports what each worker wrote to
-        that file (:func:`_take_late`). xdist's own ``pytest_sessionfinish``
-        in the controller waits for every worker process to end before any
-        wrapper of that hook finishes, so every worker has run its
-        ``pytest_unconfigure`` hooks by now, or xdist has stopped it.
+        that file (:func:`_take_late`), once every worker process has ended:
+        xdist's own ``pytest_sessionfinish`` in the controller waits for
+        that, and :func:`_take_late` waits again for a worker still running
+        (:func:`_end_the_workers`), which a plain session-finish hook called
+        before xdist's leaves when it ends the run with ``pytest.exit``.
 
         Last, once the guard has reported a refusal in this session, it sets
         "tests failed" again when the exit status is "OK" or "no tests
@@ -1664,14 +1667,18 @@ def _sent_late(
 def _take_late(config: pytest.Config) -> None:
     """Hold what each xdist worker wrote to its file, and remove the folder.
 
-    Each refusal is named for its worker and for where the worker found it
-    (``in xdist worker gw0, after it handed its refusals to the controller,
-    after the session finished``). A worker that found nothing wrote no file.
-    A file that cannot be read is held as a refusal of its own, so the run
-    fails: the worker wrote it only because it found one. Nothing happens
-    outside an xdist controller, which alone names files.
+    It first waits for every worker to end (:func:`_end_the_workers`), so
+    no worker writes to its file after it was read. Each refusal is named
+    for its worker and for where the worker found it (``in xdist worker
+    gw0, after it handed its refusals to the controller, after the session
+    finished``). A worker that found nothing wrote no file. A file that
+    cannot be read is held as a refusal of its own, so the run fails: the
+    worker wrote it only because it found one. Nothing happens outside an
+    xdist controller, which alone names files.
     """
     files = config.stash.get(_LATE_FILES, {})
+    if files:
+        _end_the_workers(config)
     held = config.stash.setdefault(_HELD, [])
     for path, worker in files.items():
         named = f"in xdist worker {worker}, {_AFTER_THE_HAND_OFF}"
@@ -1691,6 +1698,25 @@ def _take_late(config: pytest.Config) -> None:
     if folder is not None:
         _rmtree(folder, ignore_errors=True)
         config.stash[_LATE_FOLDER] = None
+
+
+def _end_the_workers(config: pytest.Config) -> None:
+    """Tell every xdist worker still running to exit, and wait for it to end.
+
+    xdist's own ``pytest_sessionfinish`` in the controller does this, but it
+    is a plain implementation, and pluggy calls none after one that raises:
+    a plain ``pytest_sessionfinish`` hook that pluggy calls before it (a
+    ``tryfirst`` one, or one registered after xdist's) and ends the run with
+    ``pytest.exit`` leaves the workers running. ``teardown_nodes`` waits for
+    each worker process to end, as xdist's hook does, and returns at once
+    when they all have. An error here is dropped, and the files are read
+    all the same.
+    """
+    session = config.pluginmanager.get_plugin("dsession")
+    nodes = getattr(session, "nodemanager", None)
+    if nodes is not None:
+        with contextlib.suppress(Exception):
+            nodes.teardown_nodes()
 
 
 def _late_report(line: str) -> tuple[str, tuple[str, ...]]:
