@@ -212,33 +212,39 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **Apothem refuses to write into the real home while pytest runs.**
   While `PYTEST_CURRENT_TEST` (a test) or `PYTEST_VERSION` (the whole session:
   collection, module-level code and session hooks) is set, a write, removal,
-  copy, rename or lock file in the account's `~/.apothem`, `~/.config/apothem`,
-  a tool folder the harness registry names in the home (`~/.claude`,
-  `~/.codex`, `~/.agents`, `~/.config/opencode`, `~/.gemini` and the rest) or
+  copy, rename or lock file in a protected path of the account's home stops
+  with `RealHomeWriteError` before anything changes. The protected paths are
+  `~/.apothem`, `~/.config/apothem`, each tool folder the harness registry
+  names in the home (`~/.claude`, `~/.codex`, `~/.agents`,
+  `~/.config/opencode`, `~/.gemini` and the rest), and each path outside those
+  folders that the propagation manifest changes in the home: today that is
   `~/.antigravity/profile.yaml`, a file an earlier release wrote that the
-  Antigravity stale sweep removes, stops with
-  `RealHomeWriteError` before anything changes. The home is the one the
-  operating system records for the account, not `HOME`. Reads, dry runs and
-  previews still work, and nothing changes outside pytest. A project-scope
-  install, update, uninstall or rollback whose project root is the home itself
-  is refused before it writes anything, and so is a data home right in the
-  home under a name the profile chose. An OpenClaw uninstall is refused
-  before it changes any workspace's rules file, one outside `~/.openclaw`
-  included. A stale sweep and a rollback check every path they would change
-  first, so they are refused before anything changes. Links and junctions into a protected
-  folder count; on Windows so do letter case, short (8.3) names, the `\\?\`,
-  `\\.\` and `\??\` prefixes, loopback admin shares (IPv6 included), shares
-  reached by the machine's own addresses or a mapped drive and alternate data
-  streams, and on macOS letter case, Unicode normalization and the
-  `/System/Volumes/Data` spelling of a path. The CLI raises
-  the error as it is: a refused uninstall records an unfinished uninstall
-  only for files it had already
-  removed outside the home, in the steps before the shared removal too. The test suite fails a test after which a
-  refusal was absorbed, also when the test is marked `xfail`. With no system
-  record of the account's home (no `passwd` entry), the home is not
-  protected. A test that must run
-  a real install starts Apothem without `PYTEST_CURRENT_TEST` and
-  `PYTEST_VERSION` in the child's environment. `tests/README.md` lists what the refusal does not cover.
+  Antigravity stale sweep removes. The home is the one the operating system
+  records for the account, not `HOME`. Reads, dry runs and previews still
+  work, and nothing changes outside pytest. A project-scope install, update,
+  uninstall or rollback whose project root is the home itself is refused
+  before it writes anything, and so is a data home right in the home under a
+  name the profile chose. A stale sweep, a rollback and an OpenClaw uninstall
+  check every path they would change before the first change, so a refusal
+  leaves everything as it was; for an OpenClaw uninstall that includes a
+  workspace's rules file outside `~/.openclaw`. Links and junctions into a
+  protected folder count; on Windows so do letter case, short (8.3) names,
+  the `\\?\`, `\\.\` and `\??\` prefixes, loopback admin shares (IPv6
+  included), shares reached by the machine's own addresses or through a
+  mapped drive, and alternate data streams; on macOS letter case, Unicode
+  normalization and the `/System/Volumes/Data` spelling of a path. Only the
+  string rules make no network contact: a share path is checked by asking
+  its host. The CLI raises the error as it is. A refused uninstall records an
+  unfinished uninstall only when it had already changed files outside the
+  protected folders, in a step before the shared removal too, so the backups
+  of those files stay referenced. The test suite fails a test after which a
+  refusal was absorbed in the test's own process, also when the test is
+  marked `xfail`. With no system record of the account's home (no `passwd`
+  entry), the home is not protected. A test that must run a real install
+  starts Apothem without `PYTEST_CURRENT_TEST` and `PYTEST_VERSION` in the
+  child's environment. `tests/README.md` lists what the refusal does not
+  cover, such as a bind mount of the home, a refusal absorbed in a child
+  process and a folder swapped for a link between the check and the write.
 - **The Windows test cells in CI get 120 minutes.** The Windows cells of the
   `ci.yml` quality job take 64 to 88 minutes, and the 90-minute limit
   cancelled cells whose tests had passed. They now get 120, as the CI Matrix

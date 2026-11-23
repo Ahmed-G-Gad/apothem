@@ -8,8 +8,9 @@ backups stay outside that home, so the refusal comes from the pass itself and
 not from its bookkeeping. The command must raise
 :class:`~apothem.lib.home_write_guard.RealHomeWriteError` (not report an
 error row or a failed uninstall), change nothing in the home and record no
-unfinished pass, unless the pass had already removed files outside the home:
-then an unfinished uninstall keeps their backups referenced.
+unfinished pass, unless an uninstall had already changed files outside the
+protected folders: then an unfinished uninstall keeps their backups
+referenced.
 """
 
 from __future__ import annotations

@@ -700,19 +700,24 @@ names, the `\\?\`, `\\.\` and `\??\` prefixes, a loopback admin share such as
 machine's own addresses or through a mapped drive, and an alternate data
 stream (`.apothem:name`) count too. On macOS letter case and Unicode
 normalization are ignored as well, and `/System/Volumes/Data/<path>` reads as
-`/<path>`.
+`/<path>`. Only these string rules make no network contact: a share path, or
+a path on a mapped drive, is checked by asking the share's host.
 `tests/README.md` lists the spellings the check does not see, such as a hard
-link to a file in a protected folder.
+link to a file in a protected folder, a bind mount of the home and a
+case-insensitive Linux mount.
 
-The CLI raises the error as it is, for an uninstall too. A refused uninstall
-records an unfinished uninstall in the ledger only when it had already removed
-files outside the protected folders, in the steps before the shared removal
-too, so the backups of those files stay referenced. A
-stale sweep and a rollback check every path they would change before the
-first change, so they are refused before anything changes. A few internal callers absorb
-the error on purpose (a best-effort ledger line, for one), so every refusal is
+The CLI raises the error as it is, for an uninstall too. A stale sweep, a
+rollback and an OpenClaw uninstall check every path they would change before
+the first change, so they are refused before anything changes. A refused
+uninstall records an unfinished uninstall in the ledger only when it had
+already changed files outside the protected folders, in a step before the
+shared removal too (the first step of a native-config uninstall, say), so the
+backups of those files stay referenced. A few internal callers absorb the
+error on purpose (a best-effort ledger line, for one), so every refusal is
 also logged, and `tests/conftest.py` fails the test after which one was
-logged, even when the test is marked `xfail`.
+logged, even when the test is marked `xfail`. The log is kept per process: a
+refusal that a child Apothem process absorbs shows only as a line on the
+child's `stderr`, and the test is not failed for it.
 
 The home is the one the operating system records for the account, not `HOME`
 or `USERPROFILE`. Reads, dry runs and previews still work; the one status
@@ -723,7 +728,9 @@ child's environment.
 
 The refusal does not cover folders moved out of the home by `CODEX_HOME`,
 `CLAUDE_CONFIG_DIR` or `XDG_CONFIG_HOME`, the hook state folder, or programs
-that are not Python, such as the shell installers.
+that are not Python, such as the shell installers. The check runs before
+the write, by path, so a folder swapped for a link between the two is not
+seen.
 When the system has no record of the account's home (a container user with no
 `passwd` entry), the account home is not protected at all. A checkout that sits
 inside a protected folder (under `~/.claude`, say) has its Apothem writes

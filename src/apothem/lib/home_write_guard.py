@@ -49,9 +49,10 @@ drive-letter path. Any other share path, written so or
 reached through a mapped drive, is compared by file identity with the
 protected folders and the folders above them, folder by folder up to the
 share, so one of this machine's own addresses counts too. Only the string
-rules make no network contact: resolving a share path and comparing it by
-identity ask its host, once per folder in a check, and stop at the first
-error that says the host or the share cannot be reached.
+rules make no network contact: resolving a share path (a path on a mapped
+drive included) asks its host, and so does comparing it by identity, which
+reads each share folder at most once in a check and stops at the first error
+that says the host or the share cannot be reached.
 
 On macOS letter case and Unicode normalization are ignored, as the default
 volume format does, and ``/System/Volumes/Data/<path>``, the data volume that
@@ -78,6 +79,9 @@ Every refusal is logged in this process (:func:`refusals`,
 :func:`drain_refusals`) and written to ``stderr`` once per protected folder in
 each test (or, outside any test, in the pytest session), so a caller that
 absorbs the error still leaves a trace that ``tests/conftest.py`` reports.
+The log is per process: a refusal a child process absorbs shows only as the
+child's ``stderr`` line. The check runs before the write and by path, so a
+folder swapped for a link between the two is not seen.
 
 Nothing here holds a path at module level, and nothing is looked up at import:
 the suite's scan for module-level paths naming the real home stays clean.
