@@ -52,7 +52,8 @@ session-finish wrapper yields, in ``pytest_terminal_summary``, in
 ``pytest_unconfigure``, and under xdist (``-n 2``) at the session start and in
 a worker's session finish, also in a ``trylast`` hook of a conftest that pytest
 finds during collection; a worker that stops on Ctrl-C has its refusal reported
-once. Each names where the refusal happened. A session
+once, and one the controller absorbs while its workers run the tests is named for
+the run. Each names where the refusal happened. A session
 that absorbs nothing exits 0, with and without xdist. The guard refuses before
 any write, so nothing lands in a home.
 """
@@ -1611,6 +1612,30 @@ def case_an_interrupted_xdist_workers_refusal_is_reported_once(
     output = result.stdout.str()
     assert output.count(f"in xdist worker gw0, {_AT_SESSION_START}") == 1, output
     assert not (fake_real_home / ".apothem").exists()
+
+
+#: A conftest hook that absorbs the refusal in the xdist controller only,
+#: for each test a worker reports.
+_ABSORBED_IN_THE_CONTROLLER_DURING_THE_RUN = """
+
+def pytest_runtest_logreport(report):
+    if "PYTEST_XDIST_WORKER" not in os.environ and report.when == "call":
+        _absorb()
+"""
+
+
+def case_an_xdist_controllers_refusal_during_the_run_is_named_for_it(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """The controller runs no test, so not after the last test."""
+    result = _run_absorbing(
+        pytester, fake_real_home, _ABSORBED_IN_THE_CONTROLLER_DURING_THE_RUN, "-n", "2"
+    )
+
+    _assert_the_run_failed_on_it(
+        result, fake_real_home, "in the xdist controller, during the test run"
+    )
+    assert "after the last test" not in result.stdout.str()
 
 
 def case_a_passing_session_under_xdist_exits_zero(

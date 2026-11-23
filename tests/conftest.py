@@ -152,9 +152,9 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   which starts after every other wrapper and before every plain implementation
   of the hook, the one that runs the tests among them (a plain one a conftest
   registers runs before pytest's own, and the first test's setup holds what it
-  logs); and the collect-report wrapper, before each report starts. Each holds a refusal
-  absorbed outside any test before the first test, named "at the session
-  start, before collection" (a conftest's import, ``pytest_configure``,
+  logs); and the collect-report wrapper, before each report starts. Each holds
+  a refusal absorbed outside any test before the first test, named "at the
+  session start, before collection" (a conftest's import, ``pytest_configure``,
   ``pytest_sessionstart``, a ``pytest_collection`` hook), "during collection,
   before pytest collected <node>" (a hook that runs between two collect
   reports: ``pytest_itemcollected`` or ``pytest_collectreport`` for the node
@@ -170,13 +170,16 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   whenever it was registered: it writes what is held, and a refusal a plain
   session-finish hook absorbed, named "after the last test", to the terminal
   above the summary, and turns the exit code "OK" or "no tests collected" into
-  "tests failed". A ``tryfirst``
-  ``pytest_sessionfinish`` wrapper does the same after pytest's terminal
-  reporter has written the summary, calling every ``pytest_terminal_summary``
-  hook, and a ``tryfirst`` ``pytest_unconfigure`` wrapper does it for a refusal
-  absorbed in ``pytest_unconfigure`` ("after the session finished"): pytest
-  returns the session's exit status after that hook. One absorbed later still,
-  in a cleanup registered with ``config.add_cleanup``, reaches only ``stderr``.
+  "tests failed". A ``tryfirst`` ``pytest_sessionfinish`` wrapper does the same
+  after pytest's terminal reporter has written the summary, calling every
+  ``pytest_terminal_summary`` hook. In an xdist controller, which runs no test
+  itself, that wrapper first holds, before its ``yield``, what the controller's
+  own hooks logged while the workers ran the tests, named "in the xdist
+  controller, during the test run". A ``tryfirst`` ``pytest_unconfigure``
+  wrapper does it for a refusal absorbed in ``pytest_unconfigure`` ("after the
+  session finished"): pytest returns the session's exit status after that
+  hook. One absorbed later still, in a cleanup registered with
+  ``config.add_cleanup``, reaches only ``stderr``.
 - ``pytest_testnodedown``, an optional hook that only xdist defines. An xdist
   worker's ``trylast`` session-finish wrapper puts what it holds in
   ``config.workeroutput`` once every plain session-finish hook has run, which
@@ -1260,8 +1263,16 @@ class RealHomeGuard:
         the summary and the run's exit code becomes "tests failed". An xdist
         worker writes it to ``stderr`` only: it has handed its refusals to the
         controller by then.
+
+        Before its ``yield`` it holds what an xdist controller logged since the
+        test loop started. The controller runs no test itself, so that came
+        from one of its own hooks while its workers ran the tests (a
+        ``pytest_runtest_logreport`` hook of a reporting plugin, say), not
+        after the last test.
         """
         session.config.stash[_HELD_SESSION] = session
+        if session.config.pluginmanager.get_plugin("dsession") is not None:
+            _hold(session.config, _IN_THE_CONTROLLER_DURING_THE_RUN)
         try:
             return (yield)
         finally:
@@ -1362,6 +1373,7 @@ _AT_SESSION_START = "at the session start, before collection"
 _DURING_COLLECTION = "during collection"
 _BEFORE_THE_FIRST_TEST = "after collection, before the first test"
 _BETWEEN_TWO_TESTS = "between two tests"
+_IN_THE_CONTROLLER_DURING_THE_RUN = "in the xdist controller, during the test run"
 _AFTER_THE_LAST_TEST = "after the last test"
 _AFTER_THE_SESSION = "after the session finished"
 
