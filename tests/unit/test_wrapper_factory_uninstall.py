@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 
 import pytest
-from click.testing import CliRunner
+from click.testing import CliRunner, Result
 
 from apothem.cli import main
 from apothem.harnesses._shared import install_driver
@@ -378,6 +378,38 @@ def _install_with_a_linked_workspace() -> Path:
     return link
 
 
+def _uninstall_open_claw_as(output_format: str) -> Result:
+    """Run the open-claw uninstall with plain or JSON output."""
+    args = ["uninstall", "--harness", "open-claw", "--yes", "--no-color"]
+    return CliRunner().invoke(main, [*args, "--format", output_format])
+
+
+def _assert_the_link_is_named(result: Result, link: Path, output_format: str) -> None:
+    """Check that the uninstall named *link*, where it leads and its fix.
+
+    In JSON output the harness's ``results`` row ends its message with the
+    link's line and names the link and the folder it leads to in ``detail``.
+    In plain output that line follows ``✗ open-claw uninstall did not
+    finish:`` on standard error. OpenClaw still loads the rules file behind
+    the link, since ``openclaw.json`` still names it.
+    """
+    line = (
+        f"1 installed path(s) stay because they are reached through the link {link}, "
+        "and open-claw still loads them; replace the link with a real folder that "
+        "holds the same files, then run the command again"
+    )
+    if output_format == "json":
+        row = json.loads(result.stdout)["results"][0]
+        assert row["detail"] == {
+            "symlink": str(link),
+            "leads_to": str(link.parent / "apothem-real"),
+        }
+        assert " ".join(str(row["message"]).split()).endswith(f"; {line}")
+    else:
+        flat = " ".join(result.stderr.split())
+        assert f"✗ open-claw uninstall did not finish: {line}" in flat
+
+
 @pytest.mark.parametrize("output_format", ["plain", "json"])
 def test_a_stopped_native_uninstall_names_the_rules_file_behind_a_link(
     monkeypatch: pytest.MonkeyPatch, output_format: str
@@ -386,24 +418,17 @@ def test_a_stopped_native_uninstall_names_the_rules_file_behind_a_link(
 
     The first workspace's rules file goes, the second one's is reached
     through a link, and the ``openclaw.json`` step then stops. The report
-    names the link and its fix, as an uninstall that finished its steps does,
-    so the operator does not learn of it only from the next run.
+    names the link, where it leads and its fix, as an uninstall that finished
+    its steps does, so the operator does not learn of it only from the next
+    run.
     """
     link = _install_with_a_linked_workspace()
     _deny_the_native_config(monkeypatch, Path.home() / ".openclaw" / "openclaw.json")
 
-    args = ["uninstall", "--harness", "open-claw", "--yes", "--no-color"]
-    result = CliRunner().invoke(main, [*args, "--format", output_format])
+    result = _uninstall_open_claw_as(output_format)
 
     assert result.exit_code == 2, result.output
     assert (link / "AGENTS.md").is_file()
-    if output_format == "json":
-        row = json.loads(result.stdout)["results"][0]
-        assert row["detail"]["symlink"] == str(link)
-        reported = str(row["message"])
-    else:
+    if output_format == "plain":
         assert "open-claw uninstall stopped after removing files" in result.stderr
-        reported = result.stderr
-    flat = " ".join(reported.split())
-    assert f"stay because they are reached through the link {link}" in flat
-    assert "replace the link with a real folder" in flat
+    _assert_the_link_is_named(result, link, output_format)
