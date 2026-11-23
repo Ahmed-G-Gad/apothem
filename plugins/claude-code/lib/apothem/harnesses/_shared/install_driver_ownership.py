@@ -141,9 +141,10 @@ def prior_ownership(harness_name: str, root: Path, target: Path) -> PriorOwnersh
 def fold_block(before: str | None, content: str, prior: PriorOwnership) -> str:
     """Return *before* with *content* merged in as Apothem's managed block.
 
-    *prior* is :func:`prior_ownership` for the file: when an install record
-    lists it, a marker pair with no certain place may be Apothem's block, so
-    the merge leaves the file as it is (see :func:`merge_managed_block`).
+    *prior* is ``install_driver_evidence.block_prior`` for the file: when an
+    install record lists it, under any spelling of the folder, a marker pair
+    with no certain place may be Apothem's block, so the merge leaves the
+    file as it is (see :func:`merge_managed_block`).
     """
     return merge_managed_block(before or "", content, recorded=prior != ())
 

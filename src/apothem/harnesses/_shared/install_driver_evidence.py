@@ -5,7 +5,9 @@
 :func:`install_driver_lifecycle.detect_install` asks two questions here: does
 a manifest entry's target hold something only Apothem produces
 (:func:`_entry_proves_install`), and did an uninstall stop with Apothem's
-files still in place (:func:`_unfinished_here`)?
+files still in place (:func:`_unfinished_here`)? An install or update asks a
+third before it merges Apothem's block into a file: does an install record
+list that file (:func:`entry_prior`)? All three read the record the same way.
 """
 
 from __future__ import annotations
@@ -26,6 +28,7 @@ from apothem.lib.propagation import InstallEntry, resolve_target
 from .install_driver_blocks import markers_left
 from .install_driver_keys import one_install
 from .install_driver_outcome import end_other_spellings, last_uninstall_finished
+from .install_driver_ownership import LEGACY_OWNERSHIP, PriorOwnership, prior_ownership
 from .install_driver_pathsafety import _APOTHEM_SUBTREE, _holds_content
 from .install_driver_written import still_written
 
@@ -47,6 +50,35 @@ def listed_in_record(harness_name: str, root: Path, target: Path) -> bool:
         return True
     wanted = str(target)
     return bool(active) and any(entry.path == wanted for entry in active[-1].targets)
+
+
+def block_prior(harness_name: str, root: Path, target: Path) -> PriorOwnership:
+    """Return what a merge of Apothem's block into *target* reads of its record.
+
+    A managed-block file carries no owned entries: what the merge reads (see
+    :func:`install_driver_ownership.fold_block`) is whether an install
+    record lists the file, and it reads that as detection and the uninstall
+    do (:func:`listed_in_record`): under every spelling of the folder, an
+    unreadable ledger counting as a record. Otherwise an install under a
+    spelling whose newest record leaves the file out would read a marker
+    pair in code there as text of the operator's and add a second block,
+    while the uninstall takes that pair for Apothem's block.
+    :data:`LEGACY_OWNERSHIP` stands for a record that lists the file.
+    """
+    return LEGACY_OWNERSHIP if listed_in_record(harness_name, root, target) else ()
+
+
+def entry_prior(
+    mode: str, harness_name: str, root: Path, target: Path
+) -> PriorOwnership:
+    """Return what Apothem owned in *target*, which an entry of *mode* writes.
+
+    A managed-block file (``sentinel_merge``) reads :func:`block_prior`, any
+    other file :func:`install_driver_ownership.prior_ownership`.
+    """
+    if mode == "sentinel_merge":
+        return block_prior(harness_name, root, target)
+    return prior_ownership(harness_name, root, target)
 
 
 def _carries_managed_block(

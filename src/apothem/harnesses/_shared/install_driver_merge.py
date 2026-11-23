@@ -17,12 +17,10 @@ from string import Template
 from typing import Any, Final
 
 from apothem.lib.install_ledger import OwnedEntry
-from apothem.lib.propagation import (
-    InstallEntry,
-    resolve_target,
-)
+from apothem.lib.propagation import InstallEntry, resolve_target
 
 from .install_driver_backup import write_bytes_safely
+from .install_driver_evidence import block_prior, entry_prior
 from .install_driver_jsonmerge import (
     _LossyRewriteError,
     _merge_json_settings,
@@ -90,9 +88,7 @@ def apply_managed_block_anchor(
         before = _read_existing(target)
     except _LossyRewriteError as refusal:
         return _refused_result("sentinel_merge", target, refusal, {})
-    merged = fold_block(
-        before, body, prior_ownership(harness_name, install_root, target)
-    )
+    merged = fold_block(before, body, block_prior(harness_name, install_root, target))
     if dry_run:
         return prospective_result(
             target, before=before, after=merged, operation="sentinel_merge"
@@ -551,8 +547,8 @@ def _operator_owned_preview(
             content,
             before=existing_text,
             hook_root=harness_root or project_root,
-            prior=prior_ownership(
-                harness_name, _root_for(harness_root, project_root), target
+            prior=entry_prior(
+                entry.mode, harness_name, _root_for(harness_root, project_root), target
             ),
             project_scope=harness_root is None,
         ).text
@@ -612,7 +608,7 @@ def _apply_operator_owned_file(
             content,
             before=existing_text,
             hook_root=harness_root or project_root,
-            prior=prior_ownership(harness_name, root, target),
+            prior=entry_prior(entry.mode, harness_name, root, target),
             project_scope=harness_root is None,
         )
     except _LossyRewriteError as refusal:

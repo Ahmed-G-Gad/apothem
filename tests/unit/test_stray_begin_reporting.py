@@ -37,7 +37,7 @@ from click.testing import CliRunner
 import apothem
 from apothem.cli import main
 from apothem.cli._stray_begin_report import stray_begin_note
-from apothem.harnesses._shared import install_driver
+from apothem.harnesses._shared import install_driver, install_driver_merge
 from apothem.harnesses._shared import install_driver_blocks as blocks
 from apothem.harnesses._shared.install_driver_blocks import (
     stray_begin_files,
@@ -48,6 +48,8 @@ from apothem.harnesses._shared.install_driver_evidence import (
     _carries_managed_block,
     listed_in_record,
 )
+from apothem.harnesses._shared.install_driver_layout import _load_rules
+from apothem.harnesses._shared.install_driver_ownership import current_target
 from apothem.lib import install_ledger
 from apothem.lib.harness_materializer import (
     APOTHEM_BLOCK_BEGIN,
@@ -2629,3 +2631,140 @@ def test_deleting_the_opening_line_with_old_text_deletes_the_closing_line_too(
     del kept[9]
     del kept[1:5]
     assert "my tail" not in _code_text("\n".join(kept))
+
+
+# --- the record a hold-back reads ---------------------------------------------
+
+#: Apothem's block inside a code block of yours that a later fence closes.
+_FENCED = f"Intro\n```\ncode\n\n{OLD}New:\n```bash\nnpm ci\n```\n"
+
+
+def _link(link: Path, target: Path) -> None:
+    """Make *link* lead to the folder *target*, or skip the test when none can."""
+    target.mkdir(parents=True, exist_ok=True)
+    link.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        link.symlink_to(target, target_is_directory=True)
+        return
+    except OSError:
+        if sys.platform != "win32":
+            pytest.skip("this host cannot make a symbolic link")
+    try:
+        import _winapi
+
+        _winapi.CreateJunction(str(target), str(link))
+    except OSError:
+        pytest.skip("this host can make neither a symbolic link nor a junction")
+
+
+def _spell_home(monkeypatch: pytest.MonkeyPatch, home: Path) -> None:
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+
+
+def test_the_record_under_the_other_spelling_of_the_folder_lists_the_file(
+    tmp_path: Path,
+) -> None:
+    """merge-4: no test read the record through every spelling of the folder.
+
+    The newest record under the link's spelling leaves the file out, and the
+    record under the folder's own spelling lists it: the file is listed, as
+    the uninstall reads it, so the pair in code there is evidence.
+    """
+    real, linked = tmp_path / "real-home", tmp_path / "link-home"
+    _link(linked, real)
+    anchor = real / ".codex" / "AGENTS.md"
+    anchor.parent.mkdir(parents=True)
+    anchor.write_bytes(_FENCED.encode())
+    _record("codex", real / ".codex", anchor)
+    _record("codex", linked / ".codex")
+    spelled = linked / ".codex" / "AGENTS.md"
+
+    assert current_target("codex", linked / ".codex", spelled) is None
+    assert listed_in_record("codex", linked / ".codex", spelled)
+    assert install_driver.detect_install("codex", harness_root=linked / ".codex")
+
+
+def test_an_install_under_another_spelling_holds_a_recorded_file_back(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """merge-2: the install read only the record under its own spelling.
+
+    Detection and the uninstall read the records under every spelling of the
+    folder, so the pair in code counted as Apothem's block there. An install
+    under a spelling whose newest record leaves the file out read the same
+    pair as your quote, added a second block without a warning, and verify
+    then passed. The install now reads the record as the uninstall does: it
+    leaves the file as it is and ends as partial.
+    """
+    real, linked = tmp_path / "real-home", tmp_path / "link-home"
+    _link(linked, real)
+    profile = str(profile_minimal_path())
+    runner = CliRunner()
+    for home in (linked, real):
+        _spell_home(monkeypatch, home)
+        result = runner.invoke(
+            main, ["install", "--harness", "codex", "--profile", profile, "--json"]
+        )
+        assert result.exit_code == 0, result.output
+    anchor = real / ".codex" / "AGENTS.md"
+    _fence_the_block(anchor)
+    before = anchor.read_bytes()
+    link_root = linked / ".codex"
+    newest = install_ledger.current_install_record("codex", root=link_root)
+    assert newest is not None
+    install_ledger.append_record(
+        LedgerRecord.create(
+            harness="codex",
+            root=link_root,
+            kind="install",
+            targets=tuple(
+                target
+                for target in newest.targets
+                if Path(target.path).name != "AGENTS.md"
+            ),
+        )
+    )
+
+    _spell_home(monkeypatch, linked)
+    result = runner.invoke(
+        main, ["install", "--harness", "codex", "--profile", profile, "--json"]
+    )
+
+    assert result.exit_code == 2, result.output
+    assert json.loads(result.output)["status"] == "partial"
+    assert anchor.read_bytes() == before
+    assert before.count(B.encode()) == 1
+
+
+def test_the_hold_back_reads_an_unreadable_ledger_as_a_record(tmp_path: Path) -> None:
+    """merge-2, merge-1: the hold-back read an unreadable ledger as no record.
+
+    The pair in code then read as your quote, and the install added a second
+    block beside it. Detection and the uninstall read such a ledger as a
+    record, and so does the hold-back now, on both write paths: the
+    instruction file of a tool's manifest, and a file such as CLAUDE.md or a
+    profile document.
+    """
+    root = tmp_path / ".codex"
+    anchor = root / "AGENTS.md"
+    anchor.parent.mkdir(parents=True)
+    anchor.write_bytes(_FENCED.encode())
+    _record("codex", root, anchor)
+    _damage_ledger("codex")
+    [entry] = [
+        entry
+        for entry in _load_rules("codex").install
+        if entry.mode == "sentinel_merge" and entry.target.endswith("AGENTS.md")
+    ]
+
+    preview = install_driver_merge._operator_owned_preview(
+        entry, harness_root=root, project_root=None, harness_name="codex"
+    )
+    written = install_driver.apply_managed_block_anchor(
+        anchor, "new rules", install_root=root, harness_name="codex", dry_run=True
+    )
+
+    assert preview is not None
+    assert preview.outcome == "unchanged"
+    assert written.outcome == "unchanged"

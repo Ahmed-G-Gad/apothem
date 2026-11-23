@@ -51,10 +51,8 @@ from apothem.harnesses._shared.install_driver_blocks import (
     unclear_block_warning,
 )
 from apothem.harnesses._shared.install_driver_blocktext import TAKES_OUT
-from apothem.harnesses._shared.install_driver_ownership import (
-    fold_block,
-    prior_ownership,
-)
+from apothem.harnesses._shared.install_driver_evidence import block_prior
+from apothem.harnesses._shared.install_driver_ownership import fold_block
 from apothem.harnesses._shared.install_driver_pathsafety import _unsafe_symlink
 from apothem.harnesses._shared.install_driver_types import KEPT_REASON, _path_text
 from apothem.harnesses.open_claw.materializer import (
@@ -666,7 +664,7 @@ def file_text(
     prior = (
         ()
         if harness_root is None
-        else prior_ownership(_HARNESS_NAME, harness_root, workspace.rules_file)
+        else block_prior(_HARNESS_NAME, harness_root, workspace.rules_file)
     )
     return fold_block(existing, body, prior)
 
