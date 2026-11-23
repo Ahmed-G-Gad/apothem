@@ -1093,23 +1093,73 @@ class RealHomeGuard:
         """Fail the run when Apothem logged a refusal after the last test.
 
         A ``pytest_sessionfinish`` hook that runs before this one can absorb a
-        refusal after the last teardown report. The refusal is written to the
-        terminal and the run's exit code becomes "tests failed". One absorbed
-        later, in ``pytest_unconfigure``, shows only as the line the guard
-        writes to ``stderr``, and so does one in an xdist worker's session
-        finish, whose exit code the controller does not use.
+        refusal after the last teardown report. It is written to the terminal
+        above the summary, with every refusal the guard holds for the end of the
+        run (those an xdist worker sent, see :meth:`pytest_testnodedown`), and
+        the run's exit code becomes "tests failed". An xdist worker hands them
+        to the controller instead, in ``config.workeroutput``: the worker's
+        terminal output is discarded and the controller does not use its exit
+        code. xdist sends that output once every plain ``pytest_sessionfinish``
+        hook has run, so after this one.
         """
-        refused = home_write_guard.drain_refusals()
-        if not refused:
+        _hold(session.config, _AFTER_THE_LAST_TEST)
+        _report_held(session.config, session, to_the_controller=True)
+
+    @pytest.hookimpl(wrapper=True, tryfirst=True, specname="pytest_sessionfinish")
+    def pytest_sessionfinish_after_the_summary(
+        self, session: pytest.Session
+    ) -> Generator[None, None, None]:
+        """Fail the run on a refusal absorbed after :meth:`pytest_sessionfinish`.
+
+        pytest's terminal reporter writes the summary after it yields in its own
+        ``pytest_sessionfinish`` wrapper, and calls every
+        ``pytest_terminal_summary`` hook there; any wrapper's code after its
+        ``yield`` runs after every plain implementation too. This wrapper starts
+        first and so finishes last, so it sees a refusal absorbed in any of
+        them. The refusal is written below the summary and the run's exit code
+        becomes "tests failed". An xdist worker writes it to ``stderr`` only: it
+        has sent its output to the controller by then.
+        """
+        session.config.stash[_HELD_SESSION] = session
+        try:
+            return (yield)
+        finally:
+            _hold(session.config, _AFTER_THE_LAST_TEST)
+            _report_held(session.config, session)
+
+    @pytest.hookimpl(wrapper=True, tryfirst=True)
+    def pytest_unconfigure(self, config: pytest.Config) -> Generator[None, None, None]:
+        """Fail the run on a refusal absorbed in ``pytest_unconfigure``.
+
+        pytest calls the hook after the session finished and returns the
+        session's exit status after it, so the status set here is the run's.
+        This wrapper finishes after every other implementation. An xdist worker
+        writes the refusal to ``stderr`` only: it has sent its output to the
+        controller by then.
+        """
+        try:
+            return (yield)
+        finally:
+            _hold(config, _AFTER_THE_SESSION)
+            _report_held(config, config.stash.get(_HELD_SESSION, None))
+
+    @pytest.hookimpl(optionalhook=True)
+    def pytest_testnodedown(self, node: object) -> None:
+        """Hold the refusals an xdist worker sent, for the controller to report.
+
+        xdist calls this in the controller when a worker has finished, with the
+        ``config.workeroutput`` the worker sent (see :meth:`pytest_sessionfinish`);
+        a worker that crashed sent none. Only xdist defines the hook, so it is
+        optional: without xdist pytest neither calls it nor rejects it.
+        """
+        output = getattr(node, "workeroutput", None)
+        config = getattr(node, "config", None)
+        if not isinstance(output, dict) or not isinstance(config, pytest.Config):
             return
-        message = _outside_any_test(refused, "after the last test")
-        reporter = session.config.pluginmanager.get_plugin("terminalreporter")
-        if reporter is not None:
-            reporter.write_line(message, red=True)
-        else:
-            sys.stderr.write(message + "\n")
-        if session.exitstatus == pytest.ExitCode.OK:
-            session.exitstatus = pytest.ExitCode.TESTS_FAILED
+        worker = getattr(getattr(node, "gateway", None), "id", "?")
+        held = config.stash.setdefault(_HELD, [])
+        for where, messages in output.get(_TO_THE_CONTROLLER, ()):
+            held.append((f"in xdist worker {worker}, {where}", tuple(messages)))
 
 
 def _is_guard_failure(error: BaseException) -> bool:
@@ -1154,13 +1204,78 @@ def _fail_on_late_refusals(report: pytest.TestReport) -> None:
     )
 
 
-def _outside_any_test(refused: tuple[BaseException, ...], where: str) -> str:
+def _outside_any_test(refused: Iterable[object], where: str) -> str:
     """Return the report of refusals Apothem logged outside any test, *where*."""
     return (
         "Apothem refused a write into the account's real home outside any "
         f"test, {where}, and the refusal was not raised:\n"
         + "\n".join(f"  - {error}" for error in refused)
     )
+
+
+#: Where Apothem logged a refusal outside any test, as its report names it.
+_AFTER_THE_LAST_TEST = "after the last test"
+_AFTER_THE_SESSION = "after the session finished"
+
+#: The refusals the guard holds for the end of the run, as ``(where, messages)``.
+_HELD = pytest.StashKey[list[tuple[str, tuple[str, ...]]]]()
+#: The session whose exit status a refusal found in ``pytest_unconfigure`` fails.
+_HELD_SESSION = pytest.StashKey[pytest.Session]()
+#: The ``config.workeroutput`` key an xdist worker sends its held refusals under.
+_TO_THE_CONTROLLER = "apothem-real-home-refusals"
+
+
+def _hold(config: pytest.Config, where: str) -> None:
+    """Move what the refusal log holds into what the guard holds, *where*."""
+    refused = home_write_guard.drain_refusals()
+    if refused:
+        config.stash.setdefault(_HELD, []).append(
+            (where, tuple(str(error) for error in refused))
+        )
+
+
+def _report_held(
+    config: pytest.Config,
+    session: pytest.Session | None,
+    *,
+    to_the_controller: bool = False,
+) -> None:
+    """Report every refusal the guard holds, and fail the run.
+
+    The report goes to the terminal, on a line of its own (xdist leaves the
+    progress line open), or to ``stderr`` when there is no terminal reporter or
+    this is an xdist worker, whose terminal output is discarded. With
+    *to_the_controller*, a worker puts the refusals in ``config.workeroutput``
+    instead, which xdist sends to the controller. The exit status of *session*
+    becomes "tests failed" when it was "OK".
+    """
+    held = config.stash.get(_HELD, [])
+    if not held:
+        return
+    reports = [*held]
+    held.clear()
+    output = getattr(config, "workeroutput", None)
+    worker = isinstance(output, dict)  # an xdist worker
+    if worker and to_the_controller:
+        output.setdefault(_TO_THE_CONTROLLER, []).extend(reports)
+        return
+    name = getattr(config, "workerinput", {}).get("workerid", "?")
+    prefix = f"in xdist worker {name}, " if worker else ""
+    message = "\n".join(
+        _outside_any_test(each, prefix + where) for where, each in reports
+    )
+    reporter = config.pluginmanager.get_plugin("terminalreporter")
+    if worker:
+        sys.stderr.write(
+            f"{message}\nThe worker found it after it sent its results to the "
+            "controller, so the run does not fail on it.\n"
+        )
+    elif reporter is not None:
+        reporter.write_line(f"\n{message}", red=True)
+    else:
+        sys.stderr.write(message + "\n")
+    if session is not None and session.exitstatus == pytest.ExitCode.OK:
+        session.exitstatus = pytest.ExitCode.TESTS_FAILED
 
 
 #: The name the guard is registered under, once per session.

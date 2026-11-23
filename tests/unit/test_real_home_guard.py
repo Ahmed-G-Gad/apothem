@@ -867,6 +867,7 @@ def case_a_star_import_isolates_and_runs(
     result = _run(pytester, f"--basetemp={fake_real_home / 'temp'}")
 
     result.assert_outcomes(passed=2)
+    assert result.ret == pytest.ExitCode.OK
     assert _written(pytester, _SENTINELS) == list(_SENTINELS)
 
 
@@ -1323,3 +1324,109 @@ def case_a_refusal_absorbed_after_the_last_test_fails_the_run(
     assert result.ret == pytest.ExitCode.TESTS_FAILED
     result.stdout.fnmatch_lines(["*outside any test, after the last test*"])
     assert not (fake_real_home / ".apothem").exists()
+
+
+#: A conftest hook that absorbs the refusal in the terminal summary. pytest's
+#: terminal reporter writes the summary after every plain session-finish hook.
+_ABSORBED_IN_THE_TERMINAL_SUMMARY = """
+
+def pytest_terminal_summary(terminalreporter):
+    _absorb()
+"""
+
+#: A session-finish wrapper that absorbs the refusal after it yields, which is
+#: after every plain session-finish hook.
+_ABSORBED_AFTER_A_SESSION_FINISH_WRAPPER = """
+
+@pytest.hookimpl(wrapper=True)
+def pytest_sessionfinish(session):
+    try:
+        return (yield)
+    finally:
+        _absorb()
+"""
+
+#: A conftest hook that absorbs the refusal when pytest unconfigures.
+_ABSORBED_AT_UNCONFIGURE = """
+
+def pytest_unconfigure(config):
+    _absorb()
+"""
+
+#: A session-finish hook that absorbs the refusal in an xdist worker only.
+_ABSORBED_AT_A_WORKERS_SESSION_FINISH = """
+
+def pytest_sessionfinish(session):
+    if hasattr(session.config, "workerinput"):
+        _absorb()
+"""
+
+
+def _run_absorbing(
+    pytester: pytest.Pytester, home: Path, hook: str, *args: str
+) -> pytest.RunResult:
+    """Run the two probe tests under a conftest whose *hook* absorbs a refusal."""
+    pytester.makeconftest(_STAR_IMPORT + _ABSORB_ONE.format(home=str(home)) + hook)
+    return _run(pytester, *args)
+
+
+def _assert_the_run_failed_on_it(
+    result: pytest.RunResult, home: Path, where: str
+) -> None:
+    """Both probe tests pass, and the run fails on the refusal, named *where*."""
+    result.assert_outcomes(passed=len(_PROBE_TESTS))
+    assert result.ret == pytest.ExitCode.TESTS_FAILED
+    result.stdout.fnmatch_lines([f"*outside any test, {where}, and the refusal*"])
+    assert "during this test" not in result.stdout.str()
+    assert not (home / ".apothem").exists()
+
+
+def case_a_refusal_absorbed_in_the_terminal_summary_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    result = _run_absorbing(pytester, fake_real_home, _ABSORBED_IN_THE_TERMINAL_SUMMARY)
+
+    _assert_the_run_failed_on_it(result, fake_real_home, "after the last test")
+
+
+def case_a_refusal_absorbed_after_a_session_finish_wrapper_yields_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    result = _run_absorbing(
+        pytester, fake_real_home, _ABSORBED_AFTER_A_SESSION_FINISH_WRAPPER
+    )
+
+    _assert_the_run_failed_on_it(result, fake_real_home, "after the last test")
+
+
+def case_a_refusal_absorbed_at_unconfigure_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    result = _run_absorbing(pytester, fake_real_home, _ABSORBED_AT_UNCONFIGURE)
+
+    _assert_the_run_failed_on_it(result, fake_real_home, "after the session finished")
+
+
+def case_an_xdist_workers_refusal_after_its_last_test_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """The worker hands it to the controller, which ignores the worker's exit code."""
+    result = _run_absorbing(
+        pytester, fake_real_home, _ABSORBED_AT_A_WORKERS_SESSION_FINISH, "-n", "2"
+    )
+
+    _assert_the_run_failed_on_it(
+        result, fake_real_home, "in xdist worker gw?, after the last test"
+    )
+
+
+def case_a_passing_session_under_xdist_exits_zero(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    pytester.makeconftest(_STAR_IMPORT)
+
+    result = _run(pytester, "-n", "2")
+
+    result.assert_outcomes(passed=len(_PROBE_TESTS))
+    assert result.ret == pytest.ExitCode.OK
+    assert "refused" not in result.stdout.str()
