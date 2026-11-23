@@ -120,9 +120,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
     uninstall reported unfinished (exit 2); a rules file Apothem cannot rewrite
     gets an error that names it, and the uninstall cleans the other
     workspaces' rules files, records their backups and stops before
-    `openclaw.json` changes. In each case the install record stays, so a second
-    uninstall after the hand fix finishes. `apothem verify` reports a missing
-    file or registration.
+    `openclaw.json` changes. When the step that changes `openclaw.json` stops
+    with an error after the rules files changed (a backup that cannot be
+    written, say), the uninstall records itself unfinished with their backups,
+    so retention keeps them, and exits 2 with `uninstall stopped after
+    removing files`; an interrupt (`Ctrl+C`) there is recorded the same way.
+    An error inside the rules-file step itself leaves the backups it took
+    before the error unrecorded. In each case the install record stays, so a
+    second uninstall after the hand fix finishes. `apothem verify` reports a
+    missing file or registration.
 
 - **The operator-file parsers are fuzzed.** Five Atheris fuzz targets in
   `tests/fuzz/` cover the JSONC / JSON5 config reader, the hook-file merge and
@@ -211,7 +217,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 - **Apothem refuses to write into the real home while pytest runs.**
   While `PYTEST_CURRENT_TEST` is set (a test), or `PYTEST_VERSION` holds the
-  installed pytest's version (the whole session: collection, module-level
+  running pytest's version (the whole session: collection, module-level
   code and session hooks), a write, removal, copy, rename or lock file in a
   protected path of the account's home stops with `RealHomeWriteError`
   before anything changes. The protected paths are
@@ -222,13 +228,17 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `~/.antigravity/profile.yaml`, a file an earlier release wrote that the
   Antigravity stale sweep removes. The home is the one the operating system
   records for the account, not `HOME`. Reads, dry runs and previews still
-  work, and outside pytest nothing is refused. A `PYTEST_VERSION` with any
-  other value, such as a version pin that a shell or a CI job exports, does
-  not count, and the error names the variable that turned the refusal on. A
+  work, and outside pytest nothing is refused unless the environment carries
+  `PYTEST_CURRENT_TEST`, or the installed pytest's exact version in
+  `PYTEST_VERSION` (a shell or a CI job may export it to pin what it
+  installs). A `PYTEST_VERSION` with any other value, such as a pin like
+  `9.1` for `9.1.0`, does not count, and the error names the variable that
+  turned the refusal on. A
   project-scope install, update, uninstall or rollback whose project root is
   the home itself is refused before it writes anything. A data home right in
   the home, under a name the profile chose, or one that is a link to a
-  folder right in the home, is refused before it is created and before its
+  folder right in the home or to the home itself (also through a chain of
+  links), is refused before it is created and before its
   stores are removed: an install or update has written the project's files
   by then and undoes those writes (recording a rollback), and an uninstall
   has removed them by then and records itself unfinished. Some passes check
@@ -258,8 +268,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   marked `xfail`; one absorbed outside any test fails the collection of the
   node pytest was collecting then, or else the run when the session
   finishes, named for where it happened, also in a parallel run (one a
-  worker process absorbs after it sent its results to the main process
-  shows only on `stderr`). With no system record of the account's home (no
+  worker process absorbs after it handed its refusals to the main process,
+  once its plain session-finish hooks have run, shows only on `stderr`). With no system record of the account's home (no
   `passwd` entry), the home is not protected. A test that must run a real
   install starts Apothem without `PYTEST_CURRENT_TEST` and `PYTEST_VERSION`
   in the child's environment. `tests/README.md` lists what the refusal does
@@ -1259,22 +1269,6 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   <file>, an Apothem-only file`, exits 2 when it removed other files, and
   keeps the install recorded, so running it again once the file is closed
   finishes it.
-- **An OpenClaw uninstall that stops partway is recorded and reported as
-  partial.** The uninstall first takes Apothem's block out of each
-  workspace's rules file, backing each file up, and then changes
-  `openclaw.json`. When that second step stopped with an error (a backup
-  that cannot be written, say), the uninstall recorded nothing: no ledger
-  record named the rules files' backups, so backup retention was free to
-  delete them, and the install still read as fully in place. It also
-  exited `1` with `uninstall failed`, as if nothing had changed. It now
-  appends an `uninstall-incomplete` record that names those backups, so
-  retention keeps them and the next uninstall continues from the same
-  install, and it exits `2` with `uninstall stopped after removing files`.
-  An interrupt (`Ctrl+C`) at that step is recorded the same way. This holds
-  for every run, not only while pytest runs. When the rules-file step itself
-  stops with an error partway, the backups it took before the error are
-  still named by no record; a rules file it cannot rewrite is reported and
-  recorded, as before.
 - **A write that a link leads out of the allowed folder names the link.**
   A write refused with `target escapes the allowed materialization root`
   because a link inside the folder leads it out, such as `~/.agents/skills`

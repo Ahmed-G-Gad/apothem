@@ -9,7 +9,7 @@ against the account's real home. This module stops such a write before it
 happens.
 
 While ``PYTEST_CURRENT_TEST`` is set, or ``PYTEST_VERSION`` holds the version
-of the pytest installed for this Python (pytest sets the first for each test's
+of the pytest that runs in this process (pytest sets the first for each test's
 setup, call and teardown, and pytest 8.2 and later the second, to its own
 version, for the whole session, so collection, module-level code and session
 hooks count too), :func:`refuse_real_home_write` raises
@@ -31,19 +31,29 @@ those folders is refused too. :func:`refuse_project_root_at_home` refuses a
 project root that is the home itself, which a project-scope pass calls before
 its first write, and :func:`refuse_data_home_in_home` a data home right in
 the home under any name (a profile with the ``user-home`` workspace scope and
-its own ``directory_name``), before it is created or its stores are removed.
+its own ``directory_name``), or one that is a link to the home itself, before
+it is created or its stores are removed.
 Nothing else is refused: reads, dry runs and previews, the
 temporary folder, the checkout, and the rest of the home all stay allowed.
 
-A ``PYTEST_VERSION`` with any other value (an empty one, or a pin such as
-``8.2`` that a shell or a CI job exports) does not count. The installed
-pytest's version is read from its package metadata only while
-``PYTEST_VERSION`` is set, and a version found is kept for the process. With
-both variables unset a check is two environment lookups. A
-``PYTEST_VERSION`` that does not count adds a comparison with the installed
-version, or, where this Python has no pytest installed, a package metadata
-lookup on every check, since a failed lookup is not kept. The refusal message
-names the variable that turned the guard on.
+The running pytest's version is the ``__version__`` of its ``_pytest``
+package, the string pytest puts in ``PYTEST_VERSION``, so a stale
+``pytest-*.dist-info`` earlier on ``sys.path``, or a pytest run from a source
+tree that names itself ``unknown``, changes nothing. In a process that has not
+imported pytest (a child process a session started, say), ``PYTEST_VERSION``
+counts when it holds the version of the pytest installed for this Python,
+read from its package metadata only while ``PYTEST_VERSION`` is set; the
+answer is kept for the process, a failed lookup (no pytest installed)
+included. A ``PYTEST_VERSION`` with any other
+value (an empty one, or a pin such as ``8.2`` that a shell or a CI job
+exports) does not count. One that a shell or a CI job exports with the
+installed pytest's exact version (``9.1.0`` beside ``pip install
+pytest==9.1.0``) counts all the same, outside pytest too: the refusal message
+then says that ``PYTEST_VERSION`` alone turned the guard on, in a process that
+runs no pytest. With both variables unset a check is two environment lookups.
+A ``PYTEST_VERSION`` that does not count adds a comparison with that version,
+and, in a process that runs no pytest, one package metadata lookup on the
+first check. The refusal message names the variable that turned the guard on.
 
 A path is compared as written and as resolved through links, afresh on every
 check, so a folder swapped for a link during a test counts at once. The
@@ -312,10 +322,12 @@ def active() -> bool:
     """Return True while pytest runs.
 
     That is while ``PYTEST_CURRENT_TEST`` is set, whatever its value (a test),
-    or while ``PYTEST_VERSION`` holds the version of the pytest installed for
-    this Python (the whole session, pytest 8.2 and later). Any other
-    ``PYTEST_VERSION`` (an empty one, or a pin such as ``8.2``) does not
-    count: a shell or a CI job may export that name for its own use.
+    or while ``PYTEST_VERSION`` holds the version of the pytest that runs in
+    this process (the whole session, pytest 8.2 and later), or, in a process
+    that has not imported pytest, of the pytest installed for this Python.
+    Any other ``PYTEST_VERSION`` (an empty one, or a pin such as ``8.2``) does
+    not count: a shell or a CI job may export that name for its own use. An
+    exported value equal to the installed version counts, outside pytest too.
     """
     return _turned_on_by() is not None
 
@@ -323,38 +335,59 @@ def active() -> bool:
 def _turned_on_by() -> str | None:
     """Return the variable that turns the guard on now, or None.
 
-    The installed pytest's version is looked up only while ``PYTEST_VERSION``
-    is set and not empty, so with both variables unset this is two
-    environment lookups.
+    The pytest version is looked up only while ``PYTEST_VERSION`` is set and
+    not empty, so with both variables unset this is two environment lookups.
     """
     environ = os.environ
     if PYTEST_VARIABLE in environ:
         return PYTEST_VARIABLE
-    value = environ.get(PYTEST_SESSION_VARIABLE)
-    if not value:
-        return None
-    try:
-        installed = _pytest_version()
-    except _LOOKUP_ERRORS:
-        return None
-    return PYTEST_SESSION_VARIABLE if value == installed else None
+    if _session_counts(environ.get(PYTEST_SESSION_VARIABLE)):
+        return PYTEST_SESSION_VARIABLE
+    return None
 
 
-@functools.lru_cache(maxsize=1)
-def _pytest_version() -> str:
-    """Return the version of the pytest installed for this Python.
+def _session_counts(value: str | None) -> bool:
+    """Return True when *value*, as ``PYTEST_VERSION``, turns the guard on.
+
+    That is when it is the version :func:`_pytest_version` returns.
+    """
+    return bool(value) and value == _pytest_version()
+
+
+def _pytest_version() -> str | None:
+    """Return the version ``PYTEST_VERSION`` has to hold to turn the guard on.
+
+    In a process that has imported pytest, that is the ``__version__`` of its
+    ``_pytest`` package: the string pytest's ``main`` puts in the variable,
+    whatever the package metadata says. In any other process (a child process
+    a session started, say) it is the version of the pytest installed for
+    this Python (:func:`_installed_pytest_version`). None when the one it
+    needs is not known: then no ``PYTEST_VERSION`` counts.
+    """
+    running = sys.modules.get("_pytest")
+    if running is None:
+        return _installed_pytest_version()
+    found: object = getattr(running, "__version__", None)
+    return found if isinstance(found, str) and found else None
+
+
+@functools.cache
+def _installed_pytest_version() -> str | None:
+    """Return the version of the pytest installed for this Python, or None.
 
     It comes from the package metadata (``importlib.metadata``), looked up on
-    first use, never at import, and kept for the process. ``lru_cache`` keeps
-    no failure: with no pytest installed, or metadata that cannot be read,
-    this raises, ``PYTEST_VERSION`` does not count, and the next call tries
-    again.
+    first use, never at import. The answer is kept for the process, a failed
+    lookup (no pytest installed, or metadata that cannot be read) included:
+    a process that runs no pytest does not gain one, and an installer's copy
+    of Apothem in a Python with no pytest would otherwise read the metadata
+    again on each of the thousands of checks a run makes.
     """
-    metadata = importlib.import_module("importlib.metadata")
-    found: object = metadata.version("pytest")
-    if not isinstance(found, str) or not found:
-        raise LookupError("the installed pytest names no version")
-    return found
+    try:
+        metadata = importlib.import_module("importlib.metadata")
+        found: object = metadata.version("pytest")
+    except _LOOKUP_ERRORS:
+        return None
+    return found if isinstance(found, str) and found else None
 
 
 def account_home() -> str | None:
@@ -490,29 +523,37 @@ def refuse_data_home_in_home(
     :func:`refuse_project_root_at_home` accepts) is refused before it is
     created or its stores are removed. The data home itself is resolved too,
     as the project-root check resolves a root, so one that is a link (a
-    junction on Windows) to a folder right in a home is refused as well; one
-    that does not exist yet is judged by its folder alone. A data home
-    anywhere else, in a project or a tool folder, is left to the write
-    checks. *operation* is a verb phrase for the message. Outside pytest it
-    returns before any path work, so it costs what :func:`active` costs.
+    junction on Windows) to a folder right in a home is refused as well, and
+    so is one that leads to a home itself, directly or through a chain of
+    links, whose stores would land right in that home. One that does not
+    exist yet is judged by its folder alone, and a data home written as a
+    home itself is left alone. A data home anywhere else, in a project or a
+    tool folder, is left to the write checks. *operation* is a verb phrase
+    for the message. Outside pytest it returns before any path work, so it
+    costs what :func:`active` costs.
     """
     if not active():
         return
     text = os.fspath(data_home)
     absolute = _absolute(text)
-    folder = os.path.dirname(absolute)
-    home = _home_among(
-        (
-            _canonical(folder),
-            _real_target(folder),
-            os.path.dirname(_real_target(absolute)),
-        )
-    )
+    folder, leaf = os.path.split(absolute)
+    real_folder = _real_target(folder)
+    real = _real_target(absolute)
+    home = _home_among((_canonical(folder), real_folder, os.path.dirname(real)))
+    reason = "is a data home right in"
+    if home is None and real not in (
+        _canonical(absolute),
+        _canonical(os.path.join(real_folder, leaf)),
+    ):
+        # The data home is a link, or reached through one: where it leads
+        # counts as well.
+        home = _home_among((real,))
+        reason = "leads to"
     if home is not None:
         _refuse(
-            f"Apothem refused to {operation} {text}: it is a data home right in "
-            f"{home}, this account's real home, while {_running()}. Nothing in "
-            f"{text} was changed. Fix: {_FIX}",
+            f"Apothem refused to {operation} {text}: it {reason} {home}, this "
+            f"account's real home, while {_running()}. Nothing in {text} was "
+            f"changed. Fix: {_FIX}",
             path=text,
             root=home,
             operation=operation,
@@ -535,17 +576,33 @@ def _running() -> str:
 
     That is the test, while ``PYTEST_CURRENT_TEST`` is set, and otherwise the
     pytest session, outside any test, whose ``PYTEST_VERSION`` matches the
-    installed pytest (:func:`active`).
+    running pytest (:func:`active`). In a process that has not imported
+    pytest (one a session started, or one whose shell or CI job exports the
+    installed pytest's exact version), no pytest is running: the message says
+    that ``PYTEST_VERSION`` alone turned the guard on.
+
+    Each variable is read once. pytest takes ``PYTEST_CURRENT_TEST`` out of the
+    environment at the end of each test's teardown, so a check made just before
+    (in a test's background thread, say) can find it set and this find it gone;
+    with ``PYTEST_VERSION`` not counting either, the message then names the
+    pytest session alone, and the refusal is still raised as it is.
     """
     environ = os.environ
-    if PYTEST_VARIABLE in environ:
-        test = environ[PYTEST_VARIABLE]
+    test = environ.get(PYTEST_VARIABLE)
+    if test is not None:
         shown = f": {test}" if test else ""
         return f"a pytest test is running ({PYTEST_VARIABLE} is set{shown})"
     version = environ.get(PYTEST_SESSION_VARIABLE, "")
+    if not _session_counts(version):
+        return f"pytest is running ({_SESSION}, outside any test)"
+    if "_pytest" not in sys.modules:
+        return (
+            f"{PYTEST_SESSION_VARIABLE} holds the installed pytest's version, "
+            f"{version}, though no pytest runs in this process"
+        )
     return (
         f"pytest is running ({_SESSION}, outside any test: "
-        f"{PYTEST_SESSION_VARIABLE} matches the installed pytest {version})"
+        f"{PYTEST_SESSION_VARIABLE} matches the running pytest {version})"
     )
 
 

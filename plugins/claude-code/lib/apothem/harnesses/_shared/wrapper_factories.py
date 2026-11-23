@@ -660,10 +660,12 @@ def _record_stopped_prepass(
     guard, any other error, or a stop such as Ctrl-C), in every run, not only
     while pytest runs, so the backups the pre-pass took stay referenced.
     Returns the run so far, for the caller to raise as a stopped uninstall:
-    *done*, a warning that names the ledger when the record could not be
-    taken, and the files a removal in *done* kept. Returns ``None`` when
-    *done* changed nothing: no record is due. A refusal, or any other error
-    writing the record, is dropped so the first error propagates.
+    *done*, a warning that names the ledger when appending the record fails,
+    and the files a removal in *done* kept. Returns ``None`` when *done*
+    changed nothing and took no backup: no record is due. A refusal of the
+    record, a failure to read the install record, or any other error that
+    escapes writing it is dropped with no warning, so the first error
+    propagates.
     """
     if not any(result.changed or result.backup_path is not None for result in done):
         return None
@@ -728,10 +730,10 @@ def make_native_config_uninstall(
     then raised as a :class:`MaterializationError` that carries those
     results, with the error as its cause, so the CLI reports a partial
     uninstall (exit 2); a refusal and Ctrl-C are raised as they are, and so
-    is any error when *before_fn* changed nothing. An error inside
-    *before_fn* itself records nothing: the files it changed before the
-    error keep their backups, but no record names them. A backup root or
-    ledger in a protected folder is refused before *before_fn* runs.
+    is any error when *before_fn* changed nothing and took no backup. An
+    error inside *before_fn* itself records nothing: the files it changed
+    before the error keep their backups, but no record names them. A backup
+    root or ledger in a protected folder is refused before *before_fn* runs.
     """
 
     @install_driver.backup_session()
