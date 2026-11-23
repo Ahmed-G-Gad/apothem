@@ -54,8 +54,10 @@ then calls ``pytest.exit(returncode=0)``, as a ``pytest_configure`` hook does
 before any session starts) or after a session-finish wrapper
 yields, in ``pytest_terminal_summary``, in ``pytest_unconfigure`` (with ``-p
 no:xdist``), and under xdist (``-n 2``) at the session start and in a worker's
-session finish, also in a ``trylast`` hook of a conftest that pytest finds
-during collection, and after a worker handed its refusals to the controller:
+session finish (reported once, and also when a controller hook ended its
+test loop with ``pytest.exit`` before it took the worker's output), also in a
+``trylast`` hook of a conftest that pytest finds during collection, and after
+a worker handed its refusals to the controller:
 in its ``pytest_terminal_summary``, in its ``pytest_unconfigure`` and after
 its own ``tryfirst`` session-finish wrapper yields, which the worker writes to
 a file the controller reads and removes, also once a controller hook ended
@@ -1692,7 +1694,11 @@ def case_pytest_exit_with_code_0_while_pytest_configures_still_fails_the_run(
 def case_an_xdist_workers_refusal_after_its_last_test_fails_the_run(
     pytester: pytest.Pytester, fake_real_home: Path
 ) -> None:
-    """The worker hands it to the controller, which ignores the worker's exit code."""
+    """The worker hands it to the controller, which ignores the worker's exit code.
+
+    The worker also writes a copy to its file, which the controller skips:
+    each refusal is reported once.
+    """
     result = _run_absorbing(
         pytester, fake_real_home, _ABSORBED_AT_A_WORKERS_SESSION_FINISH, "-n", "2"
     )
@@ -1700,6 +1706,53 @@ def case_an_xdist_workers_refusal_after_its_last_test_fails_the_run(
     _assert_the_run_failed_on_it(
         result, fake_real_home, "in xdist worker gw?, after the last test"
     )
+    output = result.stdout.str()
+    for worker in ("gw0", "gw1"):
+        named = f"in xdist worker {worker}, after the last test, and the refusal"
+        assert output.count(named) == 1, output
+
+
+#: A report hook that ends the xdist controller's test loop with
+#: ``pytest.exit`` and the exit code 0 at the first test call a worker
+#: reports, so the controller never takes what the worker hands over at its
+#: session finish. The controller is told apart by its config, as below.
+_ENDS_THE_CONTROLLERS_TEST_LOOP = """
+
+CONFIGS = []
+
+
+def pytest_configure(config):
+    CONFIGS.append(config)
+
+
+def pytest_runtest_logreport(report):
+    if not hasattr(CONFIGS[-1], "workerinput") and report.when == "call":
+        pytest.exit("probe", returncode=0)
+"""
+
+
+def case_a_workers_refusal_fails_the_run_after_the_controllers_loop_ended(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """The worker also writes what it hands over to its file.
+
+    The controller's loop ended before it took the worker's output, so it
+    reports the refusal from the file, named as the output would name it.
+    """
+    result = _run_absorbing(
+        pytester,
+        fake_real_home,
+        _ENDS_THE_CONTROLLERS_TEST_LOOP + _ABSORBED_AT_A_WORKERS_SESSION_FINISH,
+        "-n",
+        "1",
+    )
+
+    assert result.ret == pytest.ExitCode.TESTS_FAILED
+    output = result.stdout.str()
+    named = "in xdist worker gw0, after the last test, and the refusal"
+    assert output.count(named) == 1, output
+    assert _AFTER_THE_HAND_OFF not in output
+    assert not (fake_real_home / ".apothem").exists()
 
 
 #: How the controller names a refusal an xdist worker found after it handed
