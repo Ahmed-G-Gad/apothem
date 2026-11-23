@@ -513,7 +513,11 @@ closes, at the end of the block it writes, so the END marker of that block
 never sits in code. A block an earlier release wrote from such a rule has no
 closing line. With a marker pair of yours after it, install and update leave
 the file as it is, and the warning says that the code block comes from a rule
-in your profile: close it above the END marker and fix that rule.
+in your profile: close it above the END marker and fix that rule. When the
+line that closes that code block further down would then open a code block
+of its own that nothing closes, the warning says instead to move that line up
+above the END marker, for example "move line 5, which closes it further down,
+up above line 4".
 
 That closing line, or the closing line of a code block a rule in your profile
 writes, can also close a code block of yours that opens above Apothem's block
@@ -590,7 +594,14 @@ marker pair and BEGIN marker it names:
    block above its BEGIN marker (add the closing fence, such as a line of
    three backticks, where your example or code ends), or start both marker
    lines at the left margin when they sit in indented code or under a
-   paragraph. When the warning says to delete the pair by hand (its two marker
+   paragraph. When the warning says to move a line that closes the code block
+   further down, as in "move line 40, which closes that code block further
+   down, up above line 6", move that line up rather than add a closing
+   fence: added, a second closing line would turn the old one into the start
+   of a code block that runs to the end of the file, so a Markdown viewer
+   would show the rest of your text as code. When the warning says to delete
+   the opening line with old Apothem text instead, it names that closing line
+   to delete too. When the warning says to delete the pair by hand (its two marker
    lines sit in different code blocks, say), delete those lines and the lines
    between them, keeping your own text. When it also says to delete or change
    a BEGIN marker above the pair, do that too: if the pair is Apothem's block,
@@ -603,7 +614,8 @@ marker pair and BEGIN marker it names:
    margin if it sits in indented code or reads as part of a paragraph; if it
    sits in a code block, a rule in your profile opened that code block inside
    a block an earlier release wrote, so close the code block above the END
-   marker and fix the rule in your profile.
+   marker, or move the line the warning names up above it, and fix the rule in
+   your profile.
 5. If the warning says a BEGIN marker starts no marker pair, delete or change
    it by hand, with any old Apothem text below it, and keep your own text.
    Left in place, it can pair with an END marker below it once you fix the

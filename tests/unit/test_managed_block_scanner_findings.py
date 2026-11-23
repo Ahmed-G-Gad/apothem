@@ -1019,3 +1019,99 @@ def test_a_frontmatter_block_whose_end_rule_3_hides_is_left_as_it_is() -> None:
 def test_a_text_with_only_a_bom_comes_back_unchanged() -> None:
     """cr-10: no block, so remove changes nothing, the byte order mark included."""
     assert remove_managed_block("\ufeff") == "\ufeff"
+
+
+# --- the line that closes a code block around a pair --------------------------
+
+
+def _code_lines(text: str) -> str:
+    """Return every line a CommonMark reading of *text* shows as code, joined."""
+    from markdown_it import MarkdownIt
+
+    tokens = MarkdownIt("commonmark").parse(text)
+    return "".join(t.content for t in tokens if t.type in {"fence", "code_block"})
+
+
+def _move_line(text: str, line: int, above: int) -> str:
+    """Return *text* with its 1-based line *line* moved up above line *above*."""
+    lines = text.split("\n")
+    moved = lines.pop(line - 1)
+    lines.insert(above - 1, moved)
+    return "\n".join(lines)
+
+
+#: Apothem's block (lines 6 to 8) inside a code block of yours that opens at
+#: line 3 and that a fence closes at line 9, below it, then text of yours.
+_WRAPPED = f"My notes:\n\n```\nmake test\n\n{OLD}```\n\nafter fence\n\nmy tail\n"
+
+#: The same with a code block of yours further down: added, a closing line
+#: above the block would turn line 9 into an opener that line 11 closes, so
+#: the opener on line 13 would run to the end of the file.
+_CASCADE = f"My notes:\n\n```\nmake test\n\n{OLD}```\n\n```\nlater\n```\nmy tail\n"
+
+
+def test_a_closing_line_that_would_open_a_code_block_is_named_to_move() -> None:
+    """lifecycle-r4-4: a closing fence added above the BEGIN marker, as the fix
+    said, turned the old closing line below the block into an opener, and a
+    Markdown viewer showed the rest of the file as code. The pair now names
+    that line, and moving it as the fix says leaves no code block open.
+    """
+    [pair] = harness_materializer.uncertain_pairs(_WRAPPED)
+    added = _WRAPPED.replace("make test\n\n", "make test\n```\n\n", 1)
+    moved = _move_line(_WRAPPED, 9, above=6)
+    [cascade] = harness_materializer.uncertain_pairs(_CASCADE)
+
+    assert (pair.begin.line, pair.end.line, pair.closer) == (6, 8, 9)
+    assert cascade.closer == 9
+    assert "my tail" not in _code_lines(_move_line(_CASCADE, 9, above=6))
+    assert "after fence" in _code_lines(added)
+    assert "after fence" not in _code_lines(moved)
+    assert "my tail" not in _code_lines(moved)
+    assert complete_managed_block(moved) == OLD.rstrip("\n")
+    assert merge_managed_block(moved, "new body", recorded=True) == moved.replace(
+        OLD.rstrip("\n"), NEW.rstrip("\n")
+    )
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        pytest.param(
+            f"My notes:\n\n```\nmake test\n\n{OLD}More:\n\n```sh\nls\n```\n",
+            id="closes-a-later-code-block-of-yours",
+        ),
+        pytest.param(
+            f"My notes:\n\n```\nmake test\n\n{OLD}```\nmore code\n```\n",
+            id="a-later-line-closes-what-it-opens",
+        ),
+        pytest.param(
+            f"- item\n\n  ```\n  make test\n\n  {B}\n  old body\n  {E}\nafter list\n",
+            id="its-list-item-ends-it",
+        ),
+    ],
+)
+def test_a_closing_line_that_then_opens_nothing_left_open_is_not_moved(
+    text: str,
+) -> None:
+    """Closing the code block above the pair then leaves no code block open.
+
+    The closing line below the block closes a code block of yours whose
+    opener the first one held, or a later line closes what it opens (moving
+    it would leave that later line open instead), or no closing line ends
+    the code block at all: the fix adds a closing line.
+    """
+    [pair] = harness_materializer.uncertain_pairs(text)
+
+    assert pair.closer is None
+
+
+def test_the_end_marker_a_rule_s_code_block_hides_names_its_closing_line() -> None:
+    """The pair rule 3 fired on: closing the rule's code block above the END
+    marker would turn the old closing line below it into an opener.
+    """
+    text = f"{B}\nop text A\n```\n{E}\n```\nop text B\n\n{OLD}"
+    split, later = harness_materializer.uncertain_pairs(text)
+    moved = _move_line(text, 5, above=4)
+
+    assert (split.split, split.closer, later.closer) == (True, 5, None)
+    assert "op text B" not in _code_lines(moved)

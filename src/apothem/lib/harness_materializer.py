@@ -334,7 +334,8 @@ class _MarkdownState:
     indented that far stays in that item, so only such a line is held to the
     rules for a line under a paragraph; a line left of it goes on the
     paragraph lazily (CommonMark), and the column stays for the lines after
-    it.
+    it. ``closed`` is the line of the fence the last line read closed with a
+    closing run of its own (``None`` when it closed none that way).
     """
 
     lines: list[_Line]
@@ -346,6 +347,7 @@ class _MarkdownState:
     empty_item: bool = False
     para_column: int = 0
     raw_html: bool = False
+    closed: int | None = None
 
     def reset(self) -> None:
         """Start afresh after an Apothem block, which ends every open construct."""
@@ -359,6 +361,7 @@ class _MarkdownState:
 
     def step(self, index: int) -> _Kind:
         """Advance over line *index* and return what it is."""
+        self.closed = None
         columns, chars = _indent(self.lines[index].text)
         content = self.lines[index].text[chars:]
         if not content.strip():
@@ -466,6 +469,7 @@ class _MarkdownState:
         ):
             self.fence = None
             self.can_interrupt = True
+            self.closed = fence.line
         return True
 
     def _opens_fence(self, index: int, rest: str) -> bool:
@@ -537,12 +541,15 @@ class _Scan:
     another BEGIN/END pair after it (rule 3): no block is certain then.
     ``places`` maps each marker line of a candidate pair (see
     :func:`_candidate_pairs`) the reading went through to what it read as, and
-    the line of the fence holding it when that is fenced code.
+    the line of the fence holding it when that is fenced code. ``closers``
+    maps the line of each fence the reading saw closed by a closing run to
+    that run's line.
     """
 
     markers: list[_Marker]
     hidden: int | None = None
     places: dict[int, tuple[_Kind, int | None]] = field(default_factory=dict)
+    closers: dict[int, int] = field(default_factory=dict)
 
     @property
     def unclear(self) -> bool:
@@ -593,12 +600,15 @@ def _scan(lines: list[_Line], pairs: dict[int, int]) -> _Scan:
     state = _MarkdownState(lines, _Lookahead(lines))
     found: list[_Marker] = []
     places: dict[int, tuple[_Kind, int | None]] = {}
+    closers: dict[int, int] = {}
     marked = {*pairs, *pairs.values()}
     last = max(pairs, default=-1)
     hidden: int | None = None
     index = 0
     while index < len(lines):
         kind = state.step(index)
+        if state.closed is not None:
+            closers[state.closed] = index
         if index in marked:
             fence = state.fence if kind is _Kind.CODE else None
             places[index] = (kind, None if fence is None else fence.line)
@@ -616,7 +626,7 @@ def _scan(lines: list[_Line], pairs: dict[int, int]) -> _Scan:
                 state.reset()
                 index = end
         index += 1
-    return _Scan(found, hidden, places)
+    return _Scan(found, hidden, places, closers)
 
 
 def _read(text: str) -> tuple[list[_Line], dict[int, int], _Scan]:
@@ -762,12 +772,18 @@ class UncertainPair:
 
     ``split`` is True for the pair rule 3 fired on: its BEGIN marker is
     outside code, its END marker reads as code, and another pair follows, so
-    either pair can be Apothem's block.
+    either pair can be Apothem's block. ``closer`` is the 1-based line of the
+    closing run that closes, below the END marker, the code block holding
+    that marker, given only when that line has to move: once the code block
+    is closed above the pair, the line would open a code block that no later
+    line closes, and a Markdown viewer would show the rest of the file as
+    code (see :func:`_closer_of`).
     """
 
     begin: MarkerLine
     end: MarkerLine
     split: bool = False
+    closer: int | None = None
 
 
 def _marker_line(index: int, scan: _Scan) -> MarkerLine:
@@ -796,15 +812,76 @@ def uncertain_pairs(text: str) -> list[UncertainPair]:
         # No pair to place, so no reading for code: an install check reads
         # every anchor, most of which hold no marker line at all.
         return []
-    _, pairs, scan = _read(text)
+    lines, pairs, scan = _read(text)
     if any(marker.paired for marker in scan.markers):
         return []
     return [
         UncertainPair(
-            _marker_line(begin, scan), _marker_line(end, scan), begin == scan.hidden
+            _marker_line(begin, scan),
+            _marker_line(end, scan),
+            begin == scan.hidden,
+            _closer_of(lines, end, scan),
         )
         for begin, end in sorted(pairs.items())
     ]
+
+
+def _closer_of(lines: list[_Line], end: int, scan: _Scan) -> int | None:
+    """Return the 1-based line a fix moves for the END marker on line *end*, if any.
+
+    The fix for a pair whose END marker reads as fenced code closes that
+    code block above a marker of the pair, and the pair then reads as a
+    whole block. When the code block's own closing run below the END marker
+    would then open a code block that runs to the end of the text (see
+    :func:`_left_open_by`), a Markdown viewer would show the rest of the file
+    as code: the fix moves that run up instead of adding a closing line.
+    ``None`` otherwise, also when no closing run ends that code block.
+    """
+    kind, fence = scan.places.get(end, (_Kind.TEXT, None))
+    if kind is not _Kind.CODE or fence is None:
+        return None
+    close = scan.closers.get(fence)
+    if close is None or close <= end or not _left_open_by(lines, end, close):
+        return None
+    return close + 1
+
+
+def _left_open_by(lines: list[_Line], end: int, close: int) -> bool:
+    """Return True when line *close* would leave a code block open to the end.
+
+    The lines after the END marker on line *end* are read afresh twice, as a
+    Markdown viewer reads them (every fence opener opens): with line *close*,
+    and with it left out (moved up above the pair). True when only the first
+    reading ends in a code block. A run that then closes a code block of the
+    operator's whose opener the first code block held (a line such as ```sh
+    in it, say) leaves none open. The two readings agree up to *close*, and
+    once they read a line alike after it they agree to the end, so the
+    reading stops there.
+    """
+    kept = _MarkdownState(lines, None)
+    for index in range(end + 1, close):
+        kept.step(index)
+    moved = replace(kept, items=list(kept.items))
+    kept.step(close)
+    for index in range(close + 1, len(lines)):
+        if _alike(kept, moved):
+            return False
+        kept.step(index)
+        moved.step(index)
+    return kept.fence is not None and moved.fence is None
+
+
+def _alike(first: _MarkdownState, second: _MarkdownState) -> bool:
+    """Return True when two readings of the same lines are in the same state."""
+    return (
+        first.fence == second.fence
+        and first.code_column == second.code_column
+        and first.items == second.items
+        and first.can_interrupt == second.can_interrupt
+        and first.empty_item == second.empty_item
+        and first.para_column == second.para_column
+        and first.raw_html == second.raw_html
+    )
 
 
 def lone_begins(text: str) -> list[int]:

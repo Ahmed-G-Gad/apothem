@@ -527,7 +527,12 @@ def test_the_install_warning_names_every_pair_and_conditions_each_fix(
 def test_the_rule_3_warning_names_the_begin_and_the_later_pair(
     tmp_path: Path,
 ) -> None:
-    """lifecycle-3, tests-6, oracle-2, tests-4: each pair once, each fix conditional."""
+    """lifecycle-3, tests-6, oracle-2, tests-4: each pair once, each fix conditional.
+
+    Added above the END marker, a closing line would turn line 5, which closes
+    the code block below it, into an opener, so the fix moves line 5 up
+    (lifecycle-r4-4).
+    """
     target, [message] = _held(tmp_path, _RESIDUAL)
 
     assert message == (
@@ -538,8 +543,9 @@ def test_the_rule_3_warning_names_the_begin_and_the_later_pair(
         "comes after them: that pair may be Apothem's block. If the BEGIN marker at "
         "line 1 is yours, delete or change it: the next update then replaces lines "
         "8 to 10. If lines 1 to 4 are Apothem's block, the code block that opens at "
-        "line 3 comes from a rule in your profile: close it above line 4 and fix "
-        "that rule; the next update then replaces those lines. Until you fix these "
+        "line 3 comes from a rule in your profile: move line 5, which closes it "
+        "further down, up above line 4 and fix that rule; the next update then "
+        "replaces those lines. Until you fix these "
         "marker lines as this text says, install and update leave this file as it "
         "is and end as partial (exit code 2). Then run apothem update again. "
         "apothem verify fails for this tool until you fix the file."
@@ -2465,3 +2471,93 @@ def test_a_quickstart_over_a_file_it_leaves_ends_as_partial(
     [step] = [s for s in payload["steps"] if s["step"] == "install"]
     assert step["status"] == "partial"
     assert anchor.read_bytes() == before
+
+
+# --- the code block around Apothem's block, closed below it ---------------------
+
+
+def _code_text(text: str) -> str:
+    """Return every line a CommonMark reading of *text* shows as code, joined."""
+    from markdown_it import MarkdownIt
+
+    tokens = MarkdownIt("commonmark").parse(text)
+    return "".join(t.content for t in tokens if t.type in {"fence", "code_block"})
+
+
+#: The step the update's text gives for Apothem's block inside a code block
+#: of yours whose closing line below the block has to move.
+_MOVE_STEP = re.compile(
+    r"If lines (\d+) to (\d+) are Apothem's block, move line (\d+), which closes "
+    r"that code block further down, up above line (\d+)"
+)
+
+
+@pytest.mark.parametrize("harness_id", ["codex", "claude-code"])
+def test_following_the_fix_for_a_block_in_your_code_block_leaves_no_code_open(
+    harness_id: str, sandbox_factory: SandboxFactory
+) -> None:
+    """lifecycle-r4-4, markers-r4-4: done as the text said, your text became code.
+
+    Apothem's block sits in a code block of yours that a closing line below
+    the block ends, with your own text after it. The text said to close that
+    code block above the BEGIN marker; done that way, the old closing line
+    below the block opened a code block that nothing closes, so a Markdown
+    viewer showed every line of yours after it as code. The text now says to
+    move that closing line up; done as it says, the update replaces the
+    block, verify passes, and no line of yours after the block reads as code.
+    """
+    box = sandbox_factory(harness_id)
+    box.install()
+    anchor = _anchor(box)
+    text = anchor.read_bytes().decode("utf-8")
+    wrapped = f"My notes:\n\n```\nmake test\n\n{text}```\n\nafter fence\n\nmy tail\n"
+    anchor.write_bytes(wrapped.encode())
+    profile = str(profile_minimal_path())
+
+    payload = box.partial("update", "--profile", profile)
+    [message] = [_flat(str(w["message"])) for w in payload["warnings"] if _left(w)]
+    found = _MOVE_STEP.search(message)
+    assert found is not None, message
+    begin, end, closer, above = (int(group) for group in found.groups())
+    lines = wrapped.split("\n")
+    lines.insert(above - 1, lines.pop(closer - 1))
+    anchor.write_bytes("\n".join(lines).encode())
+    code, output = box.invoke("update", "--profile", profile, "--json")
+    verify, verify_output = box.invoke("verify")
+    after = anchor.read_bytes().decode("utf-8")
+
+    assert (wrapped.split("\n")[begin - 1], wrapped.split("\n")[end - 1]) == (B, E)
+    assert above == begin
+    assert wrapped.split("\n")[closer - 1] == "```"
+    assert code == 0, output
+    assert json.loads(output)["status"] == "success"
+    assert verify == 0, verify_output
+    assert after.count(B) == 1
+    assert "make test" in _code_text(after)
+    assert "after fence" not in _code_text(after)
+    assert "my tail" not in _code_text(after)
+
+
+def test_deleting_the_opening_line_with_old_text_deletes_the_closing_line_too(
+    tmp_path: Path,
+) -> None:
+    """lifecycle-r4-4: the other way to end the code block left its closing line.
+
+    The code block around the pair opens in the old Apothem text below a
+    BEGIN marker that starts no pair. Deleting that opening line with the old
+    text ends the code block too, but the closing line below the block would
+    then open one that nothing closes, so the fix names it as well.
+    """
+    text = f"# top\n{B}\nold rules\n```bash\nnpm ci\n\n{OLD}```\n\nmy tail\n"
+    _, [message] = _held(tmp_path, text)
+
+    assert (
+        "If lines 7 to 9 are Apothem's block, move line 10, which closes that code "
+        "block further down, up above line 7, or, if line 4 is part of the old "
+        "Apothem text below the BEGIN marker at line 2, delete it with that text, "
+        "and delete line 10: the next update then replaces those lines."
+    ) in _flat(message)
+    kept = text.split("\n")
+    del kept[9]
+    del kept[1:5]
+    assert "my tail" not in _code_text("\n".join(kept))

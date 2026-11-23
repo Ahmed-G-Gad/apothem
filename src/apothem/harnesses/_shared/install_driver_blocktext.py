@@ -87,6 +87,23 @@ def _pair_text(pair: UncertainPair, later: UncertainPair | None) -> str:
     )
 
 
+def _close_above(pair: UncertainPair, block: str, line: int) -> str:
+    """Return the step that closes *block*, the code block holding *pair*, above *line*.
+
+    When the line that closes that code block further down would then open
+    a code block of its own that nothing closes (see
+    :attr:`UncertainPair.closer`), the step moves that line up instead of
+    adding a closing line: added, the old closing line would turn the rest of
+    the file into code in a Markdown viewer.
+    """
+    if pair.closer is None:
+        return f"close {block} above line {line}"
+    return (
+        f"move line {pair.closer}, which closes {block} further down, up above "
+        f"line {line}"
+    )
+
+
 def _split_fix(pair: UncertainPair, later: UncertainPair | None, outcome: str) -> str:
     """Return how to fix the pair rule 3 fired on, each choice with its result.
 
@@ -101,9 +118,10 @@ def _split_fix(pair: UncertainPair, later: UncertainPair | None, outcome: str) -
         yours += f": {outcome.format(lines=span)}"
     done = outcome.format(lines="those lines")
     if end.place is MarkerPlace.FENCE:
+        close = _close_above(pair, "it", end.line)
         ours = (
             f"the code block that opens at line {end.fence} comes from a rule in "
-            f"your profile: close it above line {end.line} and fix that rule; {done}"
+            f"your profile: {close} and fix that rule; {done}"
         )
     else:
         ours = f"start line {end.line} at the left margin: {done}"
@@ -153,7 +171,9 @@ def _pair_fix(
     BEGIN marker whose old text may hold the line that opens the code block
     (see :func:`_old_text`): deleting that line with that text ends the code
     block too, and a line added above the BEGIN marker after that would open
-    a new one.
+    a new one. When the line that closes that code block below the END marker
+    must move (see :func:`_close_above`), the step moves it, and deleting the
+    opening line with the old text deletes that closing line too.
     """
     if pair.split:
         return _split_fix(pair, later, outcome)
@@ -170,10 +190,11 @@ def _pair_fix(
         if old is None
         else f", or, if line {begin.fence} is part of the old Apothem text below "
         f"the BEGIN marker at line {old}, delete it with that text"
+        + ("" if pair.closer is None else f", and delete line {pair.closer}")
     )
     if begin.place is end.place and begin.fence == end.fence:
         step = (
-            f"close that code block above line {begin.line}{unless}"
+            f"{_close_above(pair, 'that code block', begin.line)}{unless}"
             if begin.place is MarkerPlace.FENCE
             else f"start lines {begin.line} and {end.line} at the left margin"
         )
