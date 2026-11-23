@@ -864,14 +864,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   a second run included), so the install record stays and a later install
   still leaves the file as it is. While the install ledger cannot be read,
   such a file counts as an install too: the uninstall stops on the damaged
-  ledger and names it (exit code `1`), and `doctor` reports the install,
-  where both used to read the tool as not installed. `doctor` names the
-  ledger in its `ledger.unreadable` check when it goes on to start the
-  tool's hooks, as it does for a tool that verifies and for one whose failed
-  check names files with Apothem markers; a ledger it cannot open (another
-  program holds it open, say) gets that check too, with a fix that says to
-  make the file readable. The uninstall's warning for such a file says to
-  delete Apothem's block by
+  ledger and names it (exit code `1`), and `doctor` reports the install.
+  `doctor` names the ledger in its `ledger.unreadable` check when it goes on
+  to start the tool's hooks, as it does for a tool that verifies and for one
+  whose failed check names files with Apothem markers; a ledger it cannot
+  open (another program holds it open, say) gets that check too, with a fix
+  that says to make the file readable. The uninstall's warning for such a
+  file says to delete Apothem's block by
   hand and to change or delete the two marker lines of each pair of yours,
   then to run the uninstall again, which then finishes: any marker pair left in
   the file keeps it unfinished, one of yours included. For a BEGIN marker
@@ -903,15 +902,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   cannot tell its block from your text (see the entry above). For a marker
   pair of yours the warning says to change or delete its two marker lines, and
   not to delete Apothem's block instead: the next run would then read your
-  pair as Apothem's block. It does not offer to move your pair into a code
-  block: once Apothem's own block there is no longer whole, a pair in code
-  holds the file back. Of Apothem's own blocks, an older one
-  or one pasted in a second time, it says to keep one (in a file that starts
-  with Apothem's frontmatter, the one right below it) and to delete each other
-  one from its BEGIN marker line to its END marker line, keeping any line of
-  yours inside it. The uninstall gives the same text. When a BEGIN marker
-  above Apothem's block and an END marker below it make a second block only
-  once Apothem's block is out, the uninstall's warning names Apothem's block
+  pair as Apothem's block. Do not move your pair into a code block either:
+  once Apothem's own block there is no longer whole, a pair in code holds the
+  file back while an install record lists it. Of Apothem's own blocks, an
+  older one or one pasted in a second time, the warning says to keep one (in
+  a file that starts with Apothem's frontmatter, the one right below it) and
+  to delete each other one from its BEGIN marker line to its END marker line,
+  keeping any line of yours inside it. The uninstall gives the same text.
+  When a BEGIN marker above Apothem's block and an END marker below it make a
+  second block only once Apothem's block is out, the uninstall's warning names
+  Apothem's block
   and those two marker lines, and says to change or delete those marker
   lines, not Apothem's block, and to delete the old Apothem text below that
   BEGIN marker if it is what is left of an older block; when that END marker
