@@ -196,7 +196,7 @@ this file, so in ``--shard 1/2`` with no test path it takes ``1/2`` for a path,
 never loads this file and stops at ``--shard`` as an unknown argument. K and N
 are plain ASCII digits. A conftest that star-imports this file registers the
 option a second time; that second registration is ignored, and the split is
-the same.
+the same. A ``--shard`` that another plugin adds still fails as a duplicate.
 ``tests/unit/test_shard_option.py`` checks the parts.
 """
 
@@ -471,27 +471,37 @@ def _shard(value: str) -> tuple[int, int]:
     return shard
 
 
+#: The attribute this file sets on pytest's parser once it has added ``--shard``.
+_SHARD_ADDED = "_apothem_shard_added"
+
+
 def pytest_addoption(parser: pytest.Parser) -> None:
     """Add ``--shard=K/N``.
 
     A conftest that star-imports this file, the documented way to carry the
-    isolation, registers this hook a second time, and the second ``addoption``
-    raises ``ValueError``; it is ignored. ``pytest_collection_modifyitems`` runs
-    twice as well, and its second pass drops nothing.
+    isolation, registers this hook a second time, and the second call adds
+    nothing. The mark that says so is on the parser, not in this module: pytest
+    can import this file and the star import as two separate modules. A
+    ``--shard`` that another plugin added first is not marked, so ``addoption``
+    still fails with pytest's "already added" error, instead of the shard hook
+    reading that plugin's value. ``pytest_collection_modifyitems`` runs twice as
+    well, and its second pass drops nothing.
     """
-    with contextlib.suppress(ValueError):
-        parser.addoption(
-            "--shard",
-            type=_shard,
-            default=None,
-            metavar="K/N",
-            help=(
-                "run only the K-th of N parts of the collected tests "
-                "(1 <= K <= N); a hash of each test's node id picks its part. "
-                "Write it as --shard=K/N: with a space and no test path, pytest "
-                "takes K/N for a path before it loads tests/conftest.py."
-            ),
-        )
+    if getattr(parser, _SHARD_ADDED, False):
+        return
+    parser.addoption(
+        "--shard",
+        type=_shard,
+        default=None,
+        metavar="K/N",
+        help=(
+            "run only the K-th of N parts of the collected tests "
+            "(1 <= K <= N); a hash of each test's node id picks its part. "
+            "Write it as --shard=K/N: with a space and no test path, pytest "
+            "takes K/N for a path before it loads tests/conftest.py."
+        ),
+    )
+    setattr(parser, _SHARD_ADDED, True)
 
 
 def pytest_collection_modifyitems(

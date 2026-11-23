@@ -23,7 +23,8 @@ Two mechanisms keep the stub honest, and these tests pin both:
 `ci.yml`'s `coverage` job combines what the `coverage-shard` cells measured,
 each on its part of `pytest --shard=K/N`. Three more tests pin that the cells
 cover every part and cannot read as passed when they fail, that the job combines
-every part's data file by name and enforces the coverage floor, and that the job
+every part's data file by name and enforces the coverage floor with nothing that
+lets a failure pass, and that the job
 runs, and fails, when a shard did not pass: GitHub would skip it otherwise, and a
 skipped required check counts as passed.
 """
@@ -117,9 +118,12 @@ def test_the_coverage_check_combines_every_shard_and_enforces_the_floor() -> Non
     # combine the files that are there, and half the suite can still clear the
     # floor. coverage report takes fail_under = 80 from pyproject, and a
     # --fail-under or an "|| true" would lower or skip that floor.
+    # continue-on-error on the job or a step, or a set +e in a step, would let a
+    # missing data file or a floor failure end this required check green.
     ci = _load("ci.yml")
     parts = _shard_parts(ci)
-    steps = ci["jobs"]["coverage"]["steps"]
+    job = ci["jobs"]["coverage"]
+    steps = job["steps"]
     [step] = [s for s in steps if "coverage combine" in s.get("run", "")]
     run = step["run"]
     combine = re.search(r"python -m coverage combine (.*)", run)
@@ -128,6 +132,10 @@ def test_the_coverage_check_combines_every_shard_and_enforces_the_floor() -> Non
     assert re.search(r"^python -m coverage report$", run, re.MULTILINE), run
     assert "--fail-under" not in run
     assert "|| true" not in run
+    assert "continue-on-error" not in job
+    for each in steps:
+        assert "continue-on-error" not in each, each.get("name")
+        assert "set +e" not in each.get("run", ""), each.get("name")
 
 
 def test_the_coverage_check_fails_unless_every_shard_passed() -> None:

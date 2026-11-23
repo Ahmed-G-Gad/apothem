@@ -214,6 +214,26 @@ def case_a_conftest_that_star_imports_still_splits(suite: pytest.Pytester) -> No
     assert parts[0] | parts[1] == everything, "a test is in neither part"
 
 
+def case_another_plugin_shard_option_still_fails(suite: pytest.Pytester) -> None:
+    """Only this file's own second ``--shard`` is ignored.
+
+    A plugin that adds its own ``--shard`` before ``tests/conftest.py`` loads
+    makes the run fail with pytest's duplicate-option error. Were it ignored too,
+    the shard hook would read that plugin's value as ``K/N``.
+    """
+    suite.makepyfile(
+        other_shard='def pytest_addoption(parser):\n    parser.addoption("--shard")\n'
+    )
+    suite.syspathinsert()
+
+    result = suite.runpytest("-p", "other_shard", *_args("--collect-only", "-q"))
+
+    assert result.ret != pytest.ExitCode.OK
+    output = f"{result.stdout.str()}\n{result.stderr.str()}"
+    assert "already added" in output, output
+    assert "--shard" in output, output
+
+
 def case_every_process_picks_the_same_part(
     suite: pytest.Pytester, monkeypatch: pytest.MonkeyPatch
 ) -> None:
