@@ -35,13 +35,16 @@ def listed_in_record(harness_name: str, root: Path, target: Path) -> bool:
 
     The install is the one the uninstall removes (see :func:`one_install`), so
     a file its records under the folder's other spellings list counts too, as
-    the uninstall then reads it as recorded. An unreadable ledger reads as no
-    record.
+    the uninstall then reads it as recorded. An unreadable ledger reads as
+    listed, as :func:`install_driver_blocks.install_may_be_open` reads it as
+    open: nothing then shows that the install is gone, so the file's marker
+    pair keeps counting, and the uninstall reaches the ledger and reports it
+    instead of finding nothing installed.
     """
     try:
         active = one_install(harness_name, root)[0]
     except (install_ledger.LedgerError, OSError):
-        return False
+        return True
     wanted = str(target)
     return bool(active) and any(entry.path == wanted for entry in active[-1].targets)
 
@@ -61,8 +64,9 @@ def _carries_managed_block(
     the install is closed the file no longer reads as installed. A marker
     pair no rule can place (see :func:`uncertain_block`), such as Apothem's
     block in a code block of the operator's, counts only while the current
-    install record lists the file (*listed*): a file Apothem never wrote may
-    quote the markers in a code example. The markers are ASCII, so a file
+    install record lists the file (*listed*, which an unreadable ledger
+    passes): a file Apothem never wrote may quote the markers in a code
+    example. The markers are ASCII, so a file
     that is not UTF-8 is read with its bad bytes replaced: the uninstall then
     reaches the step that says how to fix it, instead of a decoding error.
     """

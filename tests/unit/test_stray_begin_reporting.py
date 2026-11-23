@@ -44,7 +44,10 @@ from apothem.harnesses._shared.install_driver_blocks import (
     stray_begin_install_warnings,
 )
 from apothem.harnesses._shared.install_driver_blocktext import TAKES_OUT
-from apothem.harnesses._shared.install_driver_evidence import _carries_managed_block
+from apothem.harnesses._shared.install_driver_evidence import (
+    _carries_managed_block,
+    listed_in_record,
+)
 from apothem.lib import install_ledger
 from apothem.lib.harness_materializer import (
     APOTHEM_BLOCK_BEGIN,
@@ -1211,6 +1214,71 @@ def test_a_recorded_unclear_anchor_counts_as_an_install(tmp_path: Path) -> None:
     _record("codex", root, anchor)
 
     assert install_driver.detect_install("codex", harness_root=root)
+
+
+def _damage_ledger(package_key: str) -> None:
+    """Put a line that is not JSON in the middle of *package_key*'s ledger."""
+    ledger = install_ledger.ledger_path(package_key)
+    lines = ledger.read_bytes().splitlines(keepends=True)
+    ledger.write_bytes(b"".join([lines[0], b"{not json\n", *lines]))
+
+
+def test_an_unreadable_ledger_reads_as_a_record_of_an_unclear_anchor(
+    tmp_path: Path,
+) -> None:
+    """merge-1: an unreadable ledger read as no record, so nothing was installed.
+
+    The pair in code then counted for nothing, and with no other evidence
+    the tool read as not installed. Like a BEGIN marker that lost its END,
+    whose evidence counts while the ledger cannot say the install was
+    closed, the pair now counts while the ledger cannot be read.
+    """
+    root = tmp_path / ".codex"
+    anchor = root / "AGENTS.md"
+    anchor.parent.mkdir(parents=True)
+    anchor.write_bytes(
+        f"Intro\n```\ncode\n\n{OLD}New:\n```bash\nnpm ci\n```\n".encode()
+    )
+    _record("codex", root, anchor)
+    _damage_ledger("codex")
+
+    assert listed_in_record("codex", root, anchor)
+    assert install_driver.detect_install("codex", harness_root=root)
+
+
+def test_an_unreadable_ledger_and_an_unclear_block_do_not_read_as_no_install(
+    sandbox_factory: SandboxFactory,
+) -> None:
+    """merge-1: uninstall said "not installed" and doctor not_installed, exit 0.
+
+    The tool's hooks, agents and Apothem's block stayed loaded, and neither
+    named the damaged ledger. The uninstall now reaches the ledger and stops
+    on it, as it does for a whole block, and doctor reports the install and
+    the ledger.
+    """
+    box = sandbox_factory("codex")
+    box.install()
+    anchor = _anchor(box)
+    _fence_the_block(anchor)
+    before = anchor.read_bytes()
+    _damage_ledger("codex")
+
+    code, output = box.invoke("uninstall", "--yes", "--json")
+    doctor = CliRunner().invoke(main, ["doctor", "--json"])
+
+    payload = json.loads(output)
+    assert code == 1, output
+    assert payload["status"] == "error"
+    assert "not installed" not in json.dumps(payload["results"])
+    assert "is not valid JSON" in json.dumps(payload["results"])
+    assert anchor.read_bytes() == before
+    assert (box.home / ".codex" / "hooks.json").is_file()
+    assert doctor.exit_code == 1, doctor.output
+    report = json.loads(doctor.stdout)
+    [row] = [row for row in report["harnesses"] if row["name"] == "codex"]
+    assert row["installed"] is True
+    assert row["status"] != "not_installed"
+    assert [c for c in report["checks"] if c["code"] == "ledger.unreadable"]
 
 
 # --- a BEGIN marker whose END marker came back: two whole blocks -------------

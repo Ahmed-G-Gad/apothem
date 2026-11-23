@@ -162,7 +162,11 @@ TTY) — the command refuses up front with a structured
 `uninstall.confirmation_required` error (exit 1) unless `--yes` is supplied.
 If a selected harness is not installed, the command succeeds (exit 0) and, in
 plain output, prints `NAME is not installed; nothing to remove.`, where `NAME`
-is the harness id.
+is the harness id. A file with marker lines Apothem cannot tell from your
+text counts as installed while an install record lists it, and also while the
+install ledger cannot be read: the uninstall then stops on the damaged ledger
+(exit 1) and names it, as it does for a file with a whole block, rather than
+reporting the harness as not installed.
 
 The uninstall stops before it removes anything when a link leads a tool's
 folder in your home directory out of it, such as `~/work/tool` with `~/work`

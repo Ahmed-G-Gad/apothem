@@ -841,7 +841,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   naming the file. With an install record, the uninstall leaves such a file as
   it is, removes the rest of the install, and stays unfinished (exit code `2`,
   a second run included), so the install record stays and a later install
-  still leaves the file as it is. Its warning says to delete Apothem's block by
+  still leaves the file as it is. While the install ledger cannot be read,
+  such a file counts as an install too: the uninstall stops on the damaged
+  ledger and names it (exit code `1`), and `doctor` reports the install with
+  its `ledger.unreadable` check, where both used to read the tool as not
+  installed. The uninstall's warning for such a file says to delete Apothem's
+  block by
   hand and to change or delete the two marker lines of each pair of yours,
   then to run the uninstall again, which then finishes: any marker pair left in
   the file keeps it unfinished, one of yours included. For a BEGIN marker
