@@ -152,15 +152,17 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   which starts after every other wrapper and before every plain implementation
   of the hook, the one that runs the tests among them (a plain one a conftest
   registers runs before pytest's own, and the first test's setup holds what it
-  logs); and the collect-report wrapper, before each report starts. Each holds
-  a refusal absorbed outside any test before the first test, named "at the
-  session start, before collection" (a conftest's import, ``pytest_configure``,
+  logs, or, when the loop runs no test, this wrapper after its ``yield``,
+  named "after collection, in a test loop that ran no test"); and the
+  collect-report wrapper, before each report starts. Each holds a refusal
+  absorbed outside any test before the first test, named "at the session
+  start, before collection" (a conftest's import, ``pytest_configure``,
   ``pytest_sessionstart``, a ``pytest_collection`` hook), "during collection,
   before pytest collected <node>" (a hook that runs between two collect
   reports: ``pytest_itemcollected`` or ``pytest_collectreport`` for the node
   before, ``pytest_collectstart`` for that one) or "after collection, before
-  the first test" (``pytest_collection_modifyitems``, a collection-finish hook,
-  a ``pytest_runtestloop`` wrapper, and the last node's
+  the first test" (``pytest_collection_modifyitems``, a collection-finish
+  hook, a ``pytest_runtestloop`` wrapper, and the last node's
   ``pytest_collectreport``). Failing the session's collection would drop
   every test, failing the next node's would blame it and stop the run before
   any test, and failing the first test would blame it; the tests run, and the
@@ -1244,9 +1246,23 @@ class RealHomeGuard:
         yields. A plain implementation a conftest registers runs before
         pytest's own, after this: the first test's setup holds what it logs
         (:func:`_hold_before_the_test`).
+
+        When the loop ran no test (``--co``, every test deselected, or a
+        collection error that stops the run), no setup took what such a plain
+        implementation logged, so this holds it after its ``yield``, named
+        "after collection, in a test loop that ran no test" rather than, at
+        the session finish, "after the last test". An xdist controller runs
+        no test itself: what it logged in the loop is named for the run, in
+        :meth:`pytest_sessionfinish_after_the_summary`.
         """
-        _hold(session.config, _BEFORE_THE_FIRST_TEST)
-        return (yield)
+        config = session.config
+        _hold(config, _BEFORE_THE_FIRST_TEST)
+        try:
+            return (yield)
+        finally:
+            ran_a_test = config.stash.get(_A_TEST_STARTED, False)
+            if not ran_a_test and not _is_controller(config):
+                _hold(config, _IN_A_LOOP_WITHOUT_TESTS)
 
     @pytest.hookimpl(wrapper=True, trylast=True)
     def pytest_sessionfinish(
@@ -1301,7 +1317,7 @@ class RealHomeGuard:
         after the last test.
         """
         session.config.stash[_HELD_SESSION] = session
-        if session.config.pluginmanager.get_plugin("dsession") is not None:
+        if _is_controller(session.config):
             _hold(session.config, _IN_THE_CONTROLLER_DURING_THE_RUN)
         try:
             return (yield)
@@ -1452,6 +1468,7 @@ def _outside_any_test(refused: Iterable[object], where: str) -> str:
 _AT_SESSION_START = "at the session start, before collection"
 _DURING_COLLECTION = "during collection"
 _BEFORE_THE_FIRST_TEST = "after collection, before the first test"
+_IN_A_LOOP_WITHOUT_TESTS = "after collection, in a test loop that ran no test"
 _BETWEEN_TWO_TESTS = "between two tests"
 _IN_THE_CONTROLLER_DURING_THE_RUN = "in the xdist controller, during the test run"
 _AFTER_THE_LAST_TEST = "after the last test"
@@ -1479,6 +1496,11 @@ _AFTER_THE_HAND_OFF = "after it handed its refusals to the controller"
 _REPORTED = pytest.StashKey[bool]()
 #: The exit statuses a held refusal turns into "tests failed".
 _PASSED_OR_EMPTY = (pytest.ExitCode.OK, pytest.ExitCode.NO_TESTS_COLLECTED)
+
+
+def _is_controller(config: pytest.Config) -> bool:
+    """Return whether *config* is an xdist controller's, which runs no test."""
+    return config.pluginmanager.get_plugin("dsession") is not None
 
 
 def _hold(config: pytest.Config, where: str) -> None:

@@ -47,7 +47,8 @@ in a ``pytest_collection_finish`` hook while a path that does not exist stops
 the collection, between two collect reports (a ``pytest_itemcollected`` hook, and the
 ``pytest_collectreport`` hook of the session's own report), in a
 ``pytest_runtestloop`` wrapper before it yields and in a plain
-``pytest_runtestloop`` hook, between two tests (a ``pytest_runtest_logreport``
+``pytest_runtestloop`` hook (also with ``--co`` and with every test deselected,
+when no test runs), between two tests (a ``pytest_runtest_logreport``
 hook for a teardown report), in a ``pytest_sessionfinish`` hook (also one that
 then calls ``pytest.exit(returncode=0)``) or after a session-finish wrapper
 yields, in ``pytest_terminal_summary``, in ``pytest_unconfigure`` (with ``-p
@@ -1985,6 +1986,31 @@ def case_a_refusal_absorbed_in_a_plain_test_loop_fails_the_run_not_the_first_tes
     result = _run_absorbing(pytester, fake_real_home, _ABSORBED_IN_A_PLAIN_TEST_LOOP)
 
     _assert_the_run_failed_on_it(result, fake_real_home, _BEFORE_THE_FIRST_TEST)
+
+
+#: How a refusal from the test loop is named when the loop ran no test.
+_IN_A_LOOP_WITHOUT_TESTS = "after collection, in a test loop that ran no test"
+
+
+def case_a_refusal_absorbed_in_a_plain_test_loop_is_named_when_no_test_runs(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """``--co`` runs no test, and neither does a run that deselects every test.
+
+    No test's setup takes the refusal, so the loop names it when it ends,
+    not as made after the last test.
+    """
+    for args in (["--co"], ["-k", "no_such_test"]):
+        result = _run_absorbing(
+            pytester, fake_real_home, _ABSORBED_IN_A_PLAIN_TEST_LOOP, *args
+        )
+
+        assert result.ret == pytest.ExitCode.TESTS_FAILED, args
+        result.stdout.fnmatch_lines(
+            [f"*outside any test, {_IN_A_LOOP_WITHOUT_TESTS}, and the refusal*"]
+        )
+        assert "after the last test" not in result.stdout.str(), args
+        assert not (fake_real_home / ".apothem").exists()
 
 
 def case_a_session_start_refusal_fails_a_run_that_collects_no_test(
