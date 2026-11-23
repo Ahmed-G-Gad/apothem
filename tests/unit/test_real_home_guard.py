@@ -59,7 +59,8 @@ in its ``pytest_terminal_summary``, in its ``pytest_unconfigure`` and after
 its own ``tryfirst`` session-finish wrapper yields, which the worker writes to
 a file the controller reads and removes, also once a controller hook ended
 the run with ``pytest.exit`` before xdist ended the workers (a later run with
-the same ``--basetemp`` passes, and no such file is made in a protected
+the same ``--basetemp`` and no refusal passes and reads none of the files an
+earlier run left in its folder, and no such file is made in a protected
 folder), a worker whose session ends at its start, which handed nothing
 over, is not named as if it had, and an empty file a worker left, a line it
 cut short and a file the controller cannot read each fail the run; a
@@ -1724,30 +1725,62 @@ def case_an_xdist_workers_refusal_in_its_terminal_summary_fails_the_run(
     """The worker writes it to a file the controller reads once it is down.
 
     The controller makes that file's folder in its temporary folder and
-    removes it when it has read it. A later run with the same ``--basetemp``
-    and no refusal passes: nothing of the first run is read again.
+    removes it when it has read it.
     """
     temp = tmp_path_factory.mktemp("controller-temp")
     monkeypatch.setattr(tempfile, "tempdir", str(temp))
-    basetemp = f"--basetemp={fake_real_home / 'temp'}"
 
     result = _run_absorbing(
-        pytester,
-        fake_real_home,
-        _ABSORBED_IN_A_WORKERS_TERMINAL_SUMMARY,
-        "-n",
-        "2",
-        basetemp,
+        pytester, fake_real_home, _ABSORBED_IN_A_WORKERS_TERMINAL_SUMMARY, "-n", "2"
     )
 
     _assert_each_worker_sent_it_late(result, fake_real_home, "after the last test")
     assert list(temp.iterdir()) == []
+
+
+#: Keeps the folder of late-refusal files the xdist controller made, as a run
+#: stopped before it removed its folder would: the guard's removal does
+#: nothing in this session.
+_THE_LATE_FOLDER_KEPT = """
+
+import tests.conftest as _guard_module
+
+_guard_module._rmtree = lambda *args, **kwargs: None
+"""
+
+
+def case_a_folder_an_earlier_run_left_is_never_read(
+    pytester: pytest.Pytester,
+    fake_real_home: Path,
+    tmp_path_factory: pytest.TempPathFactory,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A later run makes a folder of its own and never reads the earlier one.
+
+    The first run keeps its folder, with each worker's file in it. A second
+    run with the same ``--basetemp`` and no refusal passes and names none of
+    the first run's refusals, and the first run's files are still there.
+    """
+    temp = tmp_path_factory.mktemp("controller-temp")
+    monkeypatch.setattr(tempfile, "tempdir", str(temp))
+    basetemp = f"--basetemp={fake_real_home / 'temp'}"
+    kept_and_absorbed = _THE_LATE_FOLDER_KEPT + _ABSORBED_IN_A_WORKERS_TERMINAL_SUMMARY
+
+    first = _run_absorbing(
+        pytester, fake_real_home, kept_and_absorbed, "-n", "2", basetemp
+    )
+
+    _assert_each_worker_sent_it_late(first, fake_real_home, "after the last test")
+    (kept,) = temp.iterdir()
+    files = sorted(path.name for path in kept.iterdir())
+    assert files == ["gw0.jsonl", "gw1.jsonl"]
     pytester.makeconftest(_STAR_IMPORT)
     again = _run(pytester, "-n", "2", basetemp)
     again.assert_outcomes(passed=len(_PROBE_TESTS))
     assert again.ret == pytest.ExitCode.OK
     assert "refused" not in again.stdout.str()
-    assert list(temp.iterdir()) == []
+    assert list(temp.iterdir()) == [kept]
+    assert sorted(path.name for path in kept.iterdir()) == files
 
 
 def case_an_xdist_workers_refusal_at_its_unconfigure_fails_the_run(
