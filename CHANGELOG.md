@@ -212,9 +212,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `~/.antigravity/profile.yaml`, a file an earlier release wrote that the
   Antigravity stale sweep removes. The home is the one the operating system
   records for the account, not `HOME`. Reads, dry runs and previews still
-  work, and outside pytest nothing is refused. A `PYTEST_VERSION` with any
-  other value, such as a version pin that a shell or a CI job exports, does
-  not count, and the error names the variable that turned the refusal on. A
+  work, and outside pytest nothing is refused unless the environment carries
+  `PYTEST_CURRENT_TEST`, or the installed pytest's exact version in
+  `PYTEST_VERSION` (a shell or a CI job may export it to pin what it
+  installs). A `PYTEST_VERSION` with any other value, such as a pin like
+  `9.1` for `9.1.0`, does not count, and the error names the variable that
+  turned the refusal on. A
   project-scope install, update, uninstall or rollback whose project root is
   the home itself is refused before it writes anything. A data home right in
   the home, under a name the profile chose, or one that is a link to a

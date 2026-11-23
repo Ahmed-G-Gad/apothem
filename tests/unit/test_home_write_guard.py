@@ -18,6 +18,7 @@ import ctypes
 import importlib.metadata
 import os
 import pickle
+import subprocess
 import sys
 from collections.abc import Callable, Iterator
 from pathlib import Path
@@ -258,6 +259,75 @@ def test_a_failed_pytest_lookup_is_tried_again_and_a_found_one_is_kept(
     finally:
         monkeypatch.setattr(importlib.metadata, "version", real_version)
         home_write_guard._pytest_version.cache_clear()
+
+
+#: The ``src`` folder a child Python imports Apothem from.
+_SRC = Path(__file__).resolve().parents[2] / "src"
+
+
+def _in_a_child(code: str, **environ: str) -> str:
+    """Run *code* in a Python that has not imported pytest, and return its output.
+
+    The child runs isolated (``-I``) with ``src`` first on ``sys.path``, and with
+    this test's environment less every ``PYTEST_*`` variable (pytest sets
+    ``PYTEST_CURRENT_TEST`` for this test) plus *environ*. So, as in a process
+    a pytest session starts or a CI job that exports ``PYTEST_VERSION``, the
+    guard there is on only when ``PYTEST_VERSION`` counts. *code* only checks
+    paths: it writes nothing.
+    """
+    env = {
+        name: value
+        for name, value in os.environ.items()
+        if not name.startswith("PYTEST_")
+    }
+    env.update(environ)
+    done = subprocess.run(
+        [
+            sys.executable,
+            "-I",
+            "-c",
+            f"import sys\nsys.path.insert(0, {str(_SRC)!r})\n{code}",
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=300,
+        check=False,
+    )
+    assert done.returncode == 0, done.stdout + done.stderr
+    return done.stdout
+
+
+def test_outside_pytest_the_refusal_says_pytest_version_alone_turned_it_on(
+    tmp_path: Path,
+) -> None:
+    """A shell or a CI job may export the installed pytest's exact version.
+
+    The guard is then on in a process that runs no pytest, as in a child that
+    a session started outside any test, and the message says why: not that
+    pytest is running.
+    """
+    installed = importlib.metadata.version("pytest")
+    home = tmp_path / "account-home"
+    claude = home / ".claude" / "settings.json"
+    output = _in_a_child(
+        "from apothem.lib import home_write_guard as guard\n"
+        f"guard.also_protect_home({str(home)!r})\n"
+        "try:\n"
+        f"    guard.refuse_real_home_write({str(claude)!r}, operation='write')\n"
+        "except guard.RealHomeWriteError as error:\n"
+        "    print(error)\n"
+        "print('pytest imported:', '_pytest' in sys.modules)\n",
+        PYTEST_VERSION=installed,
+    )
+    assert (
+        f", while PYTEST_VERSION holds the installed pytest's version, {installed}, "
+        "though no pytest runs in this process. "
+    ) in output
+    assert "pytest is running" not in output
+    assert "pytest imported: False" in output
+    assert not home.exists()
 
 
 @pytest.mark.parametrize(

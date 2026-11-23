@@ -36,7 +36,11 @@ Nothing else is refused: reads, dry runs and previews, the
 temporary folder, the checkout, and the rest of the home all stay allowed.
 
 A ``PYTEST_VERSION`` with any other value (an empty one, or a pin such as
-``8.2`` that a shell or a CI job exports) does not count. The installed
+``8.2`` that a shell or a CI job exports) does not count. One that a shell or
+a CI job exports with the installed pytest's exact version (``9.1.0`` beside
+``pip install pytest==9.1.0``) counts all the same, outside pytest too: the
+refusal message then says that ``PYTEST_VERSION`` alone turned the guard on,
+in a process that runs no pytest. The installed
 pytest's version is read from its package metadata only while
 ``PYTEST_VERSION`` is set, and a version found is kept for the process. With
 both variables unset a check is two environment lookups. A
@@ -315,7 +319,8 @@ def active() -> bool:
     or while ``PYTEST_VERSION`` holds the version of the pytest installed for
     this Python (the whole session, pytest 8.2 and later). Any other
     ``PYTEST_VERSION`` (an empty one, or a pin such as ``8.2``) does not
-    count: a shell or a CI job may export that name for its own use.
+    count: a shell or a CI job may export that name for its own use. An
+    exported value equal to the installed version counts, outside pytest too.
     """
     return _turned_on_by() is not None
 
@@ -535,7 +540,10 @@ def _running() -> str:
 
     That is the test, while ``PYTEST_CURRENT_TEST`` is set, and otherwise the
     pytest session, outside any test, whose ``PYTEST_VERSION`` matches the
-    installed pytest (:func:`active`).
+    installed pytest (:func:`active`). In a process that has not imported
+    pytest (one a session started, or one whose shell or CI job exports the
+    installed pytest's exact version), no pytest is running: the message says
+    that ``PYTEST_VERSION`` alone turned the guard on.
     """
     environ = os.environ
     if PYTEST_VARIABLE in environ:
@@ -543,6 +551,11 @@ def _running() -> str:
         shown = f": {test}" if test else ""
         return f"a pytest test is running ({PYTEST_VARIABLE} is set{shown})"
     version = environ.get(PYTEST_SESSION_VARIABLE, "")
+    if "_pytest" not in sys.modules:
+        return (
+            f"{PYTEST_SESSION_VARIABLE} holds the installed pytest's version, "
+            f"{version}, though no pytest runs in this process"
+        )
     return (
         f"pytest is running ({_SESSION}, outside any test: "
         f"{PYTEST_SESSION_VARIABLE} matches the installed pytest {version})"
