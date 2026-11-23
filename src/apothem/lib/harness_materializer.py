@@ -934,6 +934,36 @@ def _alike(first: _MarkdownState, second: _MarkdownState) -> bool:
     )
 
 
+def line_roles(text: str) -> list[str | None]:
+    """Return how a Markdown viewer reads each line of *text*, in order.
+
+    ``"opener"`` for the line that opens a fenced code block, ``"closer"`` for
+    the line that closes one, ``"code"`` for a line inside one or of indented
+    code, ``"text"`` for any other line that is not blank, and ``None`` for a
+    blank line. The lines are numbered and read as :func:`whole_blocks` numbers
+    and reads them, but as CommonMark does: every fence opener opens, and
+    the lines of an Apothem block are read too. The advice for marker lines
+    Apothem cannot place checks with it that a fix keeps each line of the
+    operator's reading as before.
+    """
+    lines = _split_lines(text)
+    state = _MarkdownState(lines, None)
+    roles: list[str | None] = []
+    for index in range(len(lines)):
+        kind = state.step(index)
+        if kind is _Kind.BLANK:
+            roles.append(None)
+        elif kind is not _Kind.CODE:
+            roles.append("text")
+        elif state.closed is not None:
+            roles.append("closer")
+        elif state.fence is not None and state.fence.line == index:
+            roles.append("opener")
+        else:
+            roles.append("code")
+    return roles
+
+
 def lone_begins(text: str) -> list[int]:
     """Return the 1-based lines of the BEGIN markers outside code that start no pair.
 
