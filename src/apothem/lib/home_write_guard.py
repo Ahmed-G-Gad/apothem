@@ -335,14 +335,23 @@ def _turned_on_by() -> str | None:
     environ = os.environ
     if PYTEST_VARIABLE in environ:
         return PYTEST_VARIABLE
-    value = environ.get(PYTEST_SESSION_VARIABLE)
+    if _session_counts(environ.get(PYTEST_SESSION_VARIABLE)):
+        return PYTEST_SESSION_VARIABLE
+    return None
+
+
+def _session_counts(value: str | None) -> bool:
+    """Return True when *value*, as ``PYTEST_VERSION``, turns the guard on.
+
+    That is when it is the installed pytest's version (:func:`active`).
+    """
     if not value:
-        return None
+        return False
     try:
         installed = _pytest_version()
     except _LOOKUP_ERRORS:
-        return None
-    return PYTEST_SESSION_VARIABLE if value == installed else None
+        return False
+    return value == installed
 
 
 @functools.lru_cache(maxsize=1)
@@ -544,13 +553,21 @@ def _running() -> str:
     pytest (one a session started, or one whose shell or CI job exports the
     installed pytest's exact version), no pytest is running: the message says
     that ``PYTEST_VERSION`` alone turned the guard on.
+
+    Each variable is read once. pytest takes ``PYTEST_CURRENT_TEST`` out of the
+    environment at the end of each test's teardown, so a check made just before
+    (in a test's background thread, say) can find it set and this find it gone;
+    with ``PYTEST_VERSION`` not counting either, the message then names the
+    pytest session alone, and the refusal is still raised as it is.
     """
     environ = os.environ
-    if PYTEST_VARIABLE in environ:
-        test = environ[PYTEST_VARIABLE]
+    test = environ.get(PYTEST_VARIABLE)
+    if test is not None:
         shown = f": {test}" if test else ""
         return f"a pytest test is running ({PYTEST_VARIABLE} is set{shown})"
     version = environ.get(PYTEST_SESSION_VARIABLE, "")
+    if not _session_counts(version):
+        return f"pytest is running ({_SESSION}, outside any test)"
     if "_pytest" not in sys.modules:
         return (
             f"{PYTEST_SESSION_VARIABLE} holds the installed pytest's version, "

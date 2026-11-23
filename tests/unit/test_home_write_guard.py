@@ -388,6 +388,35 @@ def test_the_refusal_names_the_variable_that_turned_the_guard_on(
     assert len(home_write_guard.drain_refusals()) == len(checks)
 
 
+class _TestEnding(dict[str, str]):
+    """An environment that pytest empties of the test id while it is read.
+
+    pytest takes ``PYTEST_CURRENT_TEST`` out at the end of each teardown, so a
+    refusal in a test's background thread can find it set and then gone.
+    """
+
+    def __contains__(self, key: object) -> bool:
+        return key == home_write_guard.PYTEST_VARIABLE or super().__contains__(key)
+
+
+def test_a_test_id_gone_before_the_message_names_the_session(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The message still builds, so the refusal is raised as it is.
+
+    A ``KeyError`` in its place would escape a caller that absorbs an
+    ``OSError``. ``PYTEST_VERSION`` holds a pin that does not count, so neither
+    variable says why the check found the guard on.
+    """
+    ending = _TestEnding({home_write_guard.PYTEST_SESSION_VARIABLE: "8.2"})
+    monkeypatch.setattr(os, "environ", ending)
+    try:
+        running = home_write_guard._running()
+    finally:
+        monkeypatch.undo()
+    assert running == "pytest is running (the pytest session, outside any test)"
+
+
 @pytest.mark.parametrize("primitive", sorted(_PRIMITIVES))
 @pytest.mark.parametrize("root", _ROOTS)
 def test_each_primitive_refuses_each_root_and_leaves_the_home_empty(
