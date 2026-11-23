@@ -238,26 +238,33 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   home it would tidy last; a rollback and an uninstall the backup root and
   the ledger; and an OpenClaw uninstall `openclaw.json` and every workspace's
   rules file, one outside `~/.openclaw` included. The stale sweep now also
-  decides which stale paths it keeps (a link, a path reached through one,
-  a live folder under another name) before it removes the first, in every
-  run; it never removes a link, so it keeps the same paths as before. Links
-  and junctions into a protected folder count; on Windows so do letter case,
-  short (8.3) names, the `\\?\`, `\\.\` and `\??\` prefixes, loopback admin
-  shares (IPv6 included), shares reached by the machine's own addresses or
-  through a mapped drive, alternate data streams and device paths behind
-  a prefix (`GLOBALROOT\Device\HarddiskVolume2`, `Volume{GUID}`); on macOS
-  letter case, Unicode normalization and the `/System/Volumes/Data` spelling
-  of a path. Only the string rules make no network contact: a share path is
-  checked by asking its host. The CLI raises the error as it is. A refused
-  uninstall records an unfinished uninstall only when it had already changed
-  files outside the protected folders, in a step before the shared removal
-  too, so the backups of those files stay referenced. The test suite fails
-  a test after which a refusal was absorbed in the test's own process, also
-  when the test is marked `xfail`; one absorbed outside any test fails the
-  collection of the node pytest was collecting then, or else the run when the
-  session finishes, named for where it happened, also in a parallel run (one
-  a worker process absorbs after it handed its refusals to the main process,
-  once its plain session-finish hooks have run, shows only on `stderr`). With
+  decides which stale paths it keeps (a link, a path reached through one, a
+  live folder under another name) before it removes the first, in every run;
+  it never removes a link, so it keeps the same paths as before. Links and
+  junctions into a protected folder count; on Windows so do letter case, short
+  (8.3) names, the `\\?\`, `\\.\` and `\??\` prefixes, loopback admin shares
+  (IPv6 included), shares reached by the machine's own addresses or through
+  a mapped drive, alternate data streams and device paths behind a prefix
+  (`GLOBALROOT\Device\HarddiskVolume2`, `Volume{GUID}`); on macOS letter case,
+  Unicode normalization and the `/System/Volumes/Data` spelling of a path.
+  Only the string rules make no network contact: a share path is checked by
+  asking its host. The CLI raises the error as it is. A refused uninstall
+  records an unfinished uninstall only when it had already changed files
+  outside the protected folders, in a step before the shared removal too,
+  so the backups of those files stay referenced. The test suite fails a test
+  after which a refusal was absorbed in the test's own process, also when the
+  test is marked `xfail`; one absorbed outside any test fails the collection
+  of the node pytest was collecting then, or else the run when the session
+  finishes, named for where it happened, also when a worker process of a
+  parallel run absorbs it, before or after it handed its refusals to the main
+  process. Three cases still show only on `stderr` and leave the exit code as
+  it is: one absorbed after the `yield` of a `tryfirst` `pytest_unconfigure`
+  wrapper that pytest registered after the guard, one absorbed in a cleanup
+  registered with `config.add_cleanup`, and one a worker absorbs after that
+  hand-off but never writes to the file the main process reads, because the
+  worker was stopped first (a worker still running 5 seconds after the main
+  process's session finishes is interrupted, and one still running after
+  10 seconds is stopped) or that file could not be made or written. With
   no system record of the account's home (no `passwd` entry), the home is
   not protected. A test that must run a real install starts Apothem without
   `PYTEST_CURRENT_TEST` and `PYTEST_VERSION` in the child's environment.
