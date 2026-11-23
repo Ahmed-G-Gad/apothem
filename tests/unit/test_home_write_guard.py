@@ -207,6 +207,31 @@ def test_a_pytest_version_that_is_not_the_installed_one_leaves_the_guard_off(
     assert home_write_guard.refusals() == ()
 
 
+def test_an_empty_pytest_current_test_leaves_the_guard_off(
+    fake_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """pytest sets ``PYTEST_CURRENT_TEST`` to the test's id and phase, never empty.
+
+    An empty one comes from outside pytest (a shell, a container image or a CI
+    template that exports the name with no value), so, like an empty
+    ``PYTEST_VERSION``, it does not count: a real install from that
+    environment writes as before.
+    """
+    monkeypatch.setenv(home_write_guard.PYTEST_VARIABLE, "")
+    monkeypatch.delenv(home_write_guard.PYTEST_SESSION_VARIABLE, raising=False)
+    assert not home_write_guard.active()
+    claude = fake_home / ".claude" / "settings.json"
+    assert not home_write_guard.would_refuse(claude)
+    assert not home_write_guard.would_refuse_project_root(fake_home)
+    home_write_guard.refuse_project_root_at_home(fake_home, operation="install")
+    home_write_guard.refuse_data_home_in_home(
+        fake_home / "data", operation="create the data home"
+    )
+    _write(claude)
+    assert claude.read_bytes() == b"data"
+    assert home_write_guard.refusals() == ()
+
+
 def test_the_pytest_version_is_looked_up_only_while_pytest_version_is_set(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -221,6 +246,9 @@ def test_the_pytest_version_is_looked_up_only_while_pytest_version_is_set(
     monkeypatch.delenv(home_write_guard.PYTEST_SESSION_VARIABLE)
     assert not home_write_guard.active()
     monkeypatch.setenv(home_write_guard.PYTEST_SESSION_VARIABLE, "")
+    assert not home_write_guard.active()
+    # An empty PYTEST_CURRENT_TEST counts no more than an empty PYTEST_VERSION.
+    monkeypatch.setenv(home_write_guard.PYTEST_VARIABLE, "")
     assert not home_write_guard.active()
 
 
@@ -406,7 +434,11 @@ def test_a_python_with_no_pytest_reads_the_metadata_once_for_every_check(
             "a pytest test is running (PYTEST_CURRENT_TEST is set: "
             "probe.py::test_one (call))",
         ),
-        ("", "a pytest test is running (PYTEST_CURRENT_TEST is set)"),
+        (
+            "",
+            "pytest is running (the pytest session, outside any test: "
+            "PYTEST_VERSION matches the running pytest {version})",
+        ),
         (
             None,
             "pytest is running (the pytest session, outside any test: "
@@ -422,7 +454,11 @@ def test_the_refusal_names_the_variable_that_turned_the_guard_on(
     current: str | None,
     running: str,
 ) -> None:
-    """The message and its ``stderr`` notice say why the guard is on."""
+    """The message and its ``stderr`` notice say why the guard is on.
+
+    An empty ``PYTEST_CURRENT_TEST`` does not count, so the message names
+    ``PYTEST_VERSION``, as it does with no test id at all.
+    """
     version = sys.modules["_pytest"].__version__
     monkeypatch.setenv(home_write_guard.PYTEST_SESSION_VARIABLE, version)
     if current is None:

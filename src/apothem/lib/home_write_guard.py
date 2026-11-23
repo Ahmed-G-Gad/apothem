@@ -8,13 +8,13 @@ run with ``-c``, ``-o addopts=`` or ``--rootdir`` elsewhere) runs Apothem
 against the account's real home. This module stops such a write before it
 happens.
 
-While ``PYTEST_CURRENT_TEST`` is set, or ``PYTEST_VERSION`` holds the version
-of the pytest that runs in this process (pytest sets the first for each test's
-setup, call and teardown, and pytest 8.2 and later the second, to its own
-version, for the whole session, so collection, module-level code and session
-hooks count too), :func:`refuse_real_home_write` raises
-:class:`RealHomeWriteError` for a path at or inside one of these folders of
-the account's home:
+While ``PYTEST_CURRENT_TEST`` is set and not empty, or ``PYTEST_VERSION`` holds
+the version of the pytest that runs in this process (pytest sets the first, to
+the test's id and phase, for each test's setup, call and teardown, and pytest
+8.2 and later the second, to its own version, for the whole session, so
+collection, module-level code and session hooks count too),
+:func:`refuse_real_home_write` raises :class:`RealHomeWriteError` for a path at
+or inside one of these folders of the account's home:
 
 - ``.apothem`` (install records, locks, backup sets, a user-scope data home);
 - ``.config/apothem``;
@@ -322,13 +322,15 @@ class _UnreachableShareError(Exception):
 def active() -> bool:
     """Return True while pytest runs.
 
-    That is while ``PYTEST_CURRENT_TEST`` is set, whatever its value (a test),
-    or while ``PYTEST_VERSION`` holds the version of the pytest that runs in
-    this process (the whole session, pytest 8.2 and later), or, in a process
-    that has not imported pytest, of the pytest installed for this Python.
-    Any other ``PYTEST_VERSION`` (an empty one, or a pin such as ``8.2``) does
-    not count: a shell or a CI job may export that name for its own use. An
-    exported value equal to the installed version counts, outside pytest too.
+    That is while ``PYTEST_CURRENT_TEST`` is set and not empty (a test), or
+    while ``PYTEST_VERSION`` holds the version of the pytest that runs in this
+    process (the whole session, pytest 8.2 and later), or, in a process that
+    has not imported pytest, of the pytest installed for this Python. An empty
+    ``PYTEST_CURRENT_TEST`` does not count (pytest sets it to the test's id and
+    phase), and neither does any other ``PYTEST_VERSION`` (an empty one, or a
+    pin such as ``8.2``): a shell or a CI job may export either name for its
+    own use. An exported ``PYTEST_VERSION`` equal to the installed version
+    counts, outside pytest too.
     """
     return _turned_on_by() is not None
 
@@ -337,10 +339,11 @@ def _turned_on_by() -> str | None:
     """Return the variable that turns the guard on now, or None.
 
     The pytest version is looked up only while ``PYTEST_VERSION`` is set and
-    not empty, so with both variables unset this is two environment lookups.
+    not empty, so with both variables unset or empty this is two environment
+    lookups.
     """
     environ = os.environ
-    if PYTEST_VARIABLE in environ:
+    if environ.get(PYTEST_VARIABLE):
         return PYTEST_VARIABLE
     if _session_counts(environ.get(PYTEST_SESSION_VARIABLE)):
         return PYTEST_SESSION_VARIABLE
@@ -575,12 +578,12 @@ _FIX = (
 def _running() -> str:
     """Return what is running, for a message, and the variable that says so.
 
-    That is the test, while ``PYTEST_CURRENT_TEST`` is set, and otherwise the
-    pytest session, outside any test, whose ``PYTEST_VERSION`` matches the
-    running pytest (:func:`active`). In a process that has not imported
-    pytest (one a session started, or one whose shell or CI job exports the
-    installed pytest's exact version), no pytest is running: the message says
-    that ``PYTEST_VERSION`` alone turned the guard on.
+    That is the test, while ``PYTEST_CURRENT_TEST`` is set and not empty, and
+    otherwise the pytest session, outside any test, whose ``PYTEST_VERSION``
+    matches the running pytest (:func:`active`). In a process that has not
+    imported pytest (one a session started, or one whose shell or CI job
+    exports the installed pytest's exact version), no pytest is running: the
+    message says that ``PYTEST_VERSION`` alone turned the guard on.
 
     Each variable is read once. pytest takes ``PYTEST_CURRENT_TEST`` out of the
     environment at the end of each test's teardown, so a check made just before
@@ -590,9 +593,8 @@ def _running() -> str:
     """
     environ = os.environ
     test = environ.get(PYTEST_VARIABLE)
-    if test is not None:
-        shown = f": {test}" if test else ""
-        return f"a pytest test is running ({PYTEST_VARIABLE} is set{shown})"
+    if test:
+        return f"a pytest test is running ({PYTEST_VARIABLE} is set: {test})"
     version = environ.get(PYTEST_SESSION_VARIABLE, "")
     if not _session_counts(version):
         return f"pytest is running ({_SESSION}, outside any test)"
