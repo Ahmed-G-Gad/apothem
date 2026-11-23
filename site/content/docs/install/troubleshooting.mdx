@@ -515,7 +515,10 @@ marker first: delete or change it, with any old Apothem text below it. The
 `apothem verify` note and the fix `apothem doctor` prints end the same way
 only where install and update would leave the file as it is: with no install
 record, a marker pair you quote in code does not hold the file back (see
-below).
+below), unless the pair holds exactly the block the install writes. The note
+and the fix do not check for that block, so for such a pair they leave that
+ending out; the next update leaves the file as it is, ends as partial and
+gives it.
 
 Apothem closes a code block that a rule in your profile opens and never
 closes, at the end of the block it writes, so the END marker of that block

@@ -80,7 +80,9 @@ def record_lists(
     :func:`apothem.harnesses._shared.install_driver_evidence.listed_in_record`),
     at the root the install driver checks (see :func:`_harness_roots`): only
     while it lists a file do install and update leave a marker pair in code
-    there as it is. Without a root (a project-scope tool without
+    there as it is, apart from a pair that holds exactly the block they
+    write, which they leave as it is with or without a record and which this
+    lookup does not check. Without a root (a project-scope tool without
     ``--project``) no file is listed.
     """
     harness_root, scoped_project = _harness_roots(entry, adapter, project_root)
@@ -94,8 +96,10 @@ def _named(path: Path, listed: Callable[[Path], bool]) -> str | None:
     """Return the text for *path* when it holds more than a lone BEGIN marker.
 
     *listed* says whether an install record lists *path* (see
-    :func:`record_lists`): only then do install and update leave a file with
-    marker pairs in code as it is, so only then does its text say they do.
+    :func:`record_lists`): only then, or for a pair that holds exactly the
+    block they write (not checked here), do install and update leave a file
+    with marker pairs in code as it is, so only then does its text say they
+    do.
     """
     blocks = whole_blocks_at(path)
     if len(blocks) > 1:

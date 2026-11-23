@@ -323,9 +323,13 @@ def _held_until(pairs: Sequence[UncertainPair], held: bool) -> str:
     merge holds the file back: the pair rule 3 fired on does with or without
     an install record, and while *held* (an install record lists the file,
     as an install or update reads it, or will once the run that gives the
-    text is recorded) every pair does. A pair in code may then be Apothem's
-    block, so a marker example of the operator's in code holds the file back
-    too, and nothing else ends that. Each such run ends as partial. Empty
+    text is recorded, or that run left the file as it is) every pair does.
+    A pair in code may then be Apothem's block, so a marker example of the
+    operator's in code holds the file back too, and nothing else ends that.
+    A pair that holds exactly the block the merge writes holds the file back
+    with or without a record: an install or update that met one left the
+    file as it is and passes *held*, but verify and doctor do not check for
+    it, so their text then leaves this out. Each such run ends as partial. Empty
     when nothing holds the file back: the next update then adds its block
     after the pairs, so the text must not say it leaves the file as it is.
     """
