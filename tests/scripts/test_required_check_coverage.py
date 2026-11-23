@@ -24,9 +24,9 @@ Two mechanisms keep the stub honest, and these tests pin both:
 each on its part of `pytest --shard=K/N`. Three more tests pin that the cells
 cover every part and cannot read as passed when they fail, that the job combines
 every part's data file by name and enforces the coverage floor with nothing that
-lets a failure pass, and that the job
-runs, and fails, when a shard did not pass: GitHub would skip it otherwise, and a
-skipped required check counts as passed.
+lets a failure pass, and that the job runs, and fails, when a shard did not
+pass: GitHub would skip it otherwise, and a skipped required check counts as
+passed.
 """
 
 from __future__ import annotations
@@ -37,6 +37,10 @@ from pathlib import Path
 import yaml
 
 _WORKFLOWS = Path(__file__).resolve().parents[2] / ".github" / "workflows"
+
+# A set command that turns -e off for the rest of a step: "set +e", "set +xe",
+# "set -x +e" or "set +o errexit".
+_ERREXIT_OFF = re.compile(r"\bset\b[^\n;&|#]*\+(?:[a-z]*e|o\s+errexit\b)")
 
 
 def _on(doc: dict) -> dict:
@@ -118,11 +122,12 @@ def test_the_coverage_check_combines_every_shard_and_enforces_the_floor() -> Non
     # combine the files that are there, and half the suite can still clear the
     # floor. coverage report takes fail_under = 80 from pyproject, and a
     # --fail-under or an "|| true" would lower or skip that floor.
-    # continue-on-error on the job or a step, or a set +e in a step, would let a
-    # missing data file or a floor failure end this required check green. So
-    # would a shell without -e, such as "bash {0}": the xml and html commands
-    # after a failed report succeed and the step ends green. With no shell, or
-    # "bash", GitHub runs the script with -e. An if: on the step would skip it.
+    # continue-on-error on the job or a step, or a set +e or set +o errexit in a
+    # step, would let a missing data file or a floor failure end this required
+    # check green. So would a shell without -e, such as "bash {0}": the xml and
+    # html commands after a failed report succeed and the step ends green. With
+    # no shell, or "bash", GitHub runs the script with -e. An if: on the step
+    # would skip it.
     ci = _load("ci.yml")
     parts = _shard_parts(ci)
     job = ci["jobs"]["coverage"]
@@ -139,7 +144,7 @@ def test_the_coverage_check_combines_every_shard_and_enforces_the_floor() -> Non
     assert "continue-on-error" not in job
     for each in steps:
         assert "continue-on-error" not in each, each.get("name")
-        assert "set +e" not in each.get("run", ""), each.get("name")
+        assert not _ERREXIT_OFF.search(each.get("run", "")), each.get("name")
         assert each.get("shell", "bash") == "bash", each.get("name")
     for defaults in (ci.get("defaults", {}), job.get("defaults", {})):
         assert defaults.get("run", {}).get("shell", "bash") == "bash", defaults
