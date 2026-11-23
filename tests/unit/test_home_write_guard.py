@@ -530,6 +530,44 @@ def test_a_data_home_right_in_a_home_is_refused_whatever_its_name(
     assert _everything_in(fake_home) == []
 
 
+@pytest.mark.parametrize("pytest_version", [None, "8.2"], ids=["unset", "pin"])
+def test_outside_pytest_no_check_does_any_path_work(
+    fake_home: Path, monkeypatch: pytest.MonkeyPatch, pytest_version: str | None
+) -> None:
+    """Every check returns at the environment lookups, before any path work.
+
+    ``DataHome.ensure`` calls the data-home check on every production run.
+    """
+
+    def no_path_work(*_args: object, **_kwargs: object) -> str:
+        raise AssertionError("a check outside pytest did path work")
+
+    monkeypatch.delenv(home_write_guard.PYTEST_VARIABLE)
+    if pytest_version is None:
+        monkeypatch.delenv(home_write_guard.PYTEST_SESSION_VARIABLE, raising=False)
+    else:
+        monkeypatch.setenv(home_write_guard.PYTEST_SESSION_VARIABLE, pytest_version)
+    for name in (
+        "_absolute",
+        "_canonical",
+        "_real_target",
+        "_realpath",
+        "_roots",
+        "account_home",
+    ):
+        monkeypatch.setattr(home_write_guard, name, no_path_work)
+    claude = fake_home / ".claude" / "settings.json"
+    assert not home_write_guard.would_refuse(claude)
+    assert not home_write_guard.would_refuse(fake_home, tree=True)
+    assert not home_write_guard.would_refuse_project_root(fake_home)
+    home_write_guard.refuse_real_home_write(claude, operation="write")
+    home_write_guard.refuse_project_root_at_home(fake_home, operation="install")
+    home_write_guard.refuse_data_home_in_home(
+        fake_home / "data", operation="create the data home"
+    )
+    assert home_write_guard.refusals() == ()
+
+
 def _fresh_account_home() -> str | None:
     home_write_guard._os_account_home.cache_clear()
     return home_write_guard.account_home()

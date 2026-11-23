@@ -488,8 +488,11 @@ def refuse_data_home_in_home(
     :func:`refuse_project_root_at_home` accepts) is refused before it is
     created or its stores are removed. A data home anywhere else, in a
     project or a tool folder, is left to the write checks. *operation* is a
-    verb phrase for the message.
+    verb phrase for the message. Outside pytest it returns before any path
+    work, so it costs what :func:`active` costs.
     """
+    if not active():
+        return
     text = os.fspath(data_home)
     home = _home_at(os.path.dirname(_absolute(text)))
     if home is not None:
