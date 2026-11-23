@@ -508,7 +508,7 @@ apothem uninstall --harness cursor --project A --yes     # removes it: no instal
 | Code | Meaning |
 |---|---|
 | 0 | Adapter uninstalled, or was not installed |
-| 1 | Harness not found, confirmation declined or unavailable (non-interactive or JSON mode without `--yes`), or nothing was removed because each installed harness failed before removing anything |
+| 1 | Harness not found, confirmation declined or unavailable (non-interactive or JSON mode without `--yes`), nothing was removed because each installed harness failed before removing anything, or the command was interrupted (`Ctrl+C`, which prints `Aborted!`), whatever it had removed by then |
 | 2 | Partial removal — an uninstall failed or stopped after removing files, at least one harness was removed and another failed, an uninstall left Apothem's own files in place because a link leads to them, files of an install an earlier release recorded differ from what this release writes, or an install has no record to show which files Apothem wrote |
 | 64 | Usage error: an unknown option or command, or a missing or invalid option value. Under `--json` the error is a JSON envelope with code `cli.usage`. |
 

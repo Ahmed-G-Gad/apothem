@@ -103,22 +103,23 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
     If you added the `skills.load.extraDirs` entry by hand, as these docs said
     before, install and update now print the hook entry to add as well;
     `apothem verify` fails until you add it.
-  - **Uninstall** removes the managed blocks, the files and folders they leave
-    empty, and only the hook entries Apothem added. Apothem's entries in a
-    commented `openclaw.json` stop it before anything changes, with an error
-    naming what to remove; a rules file behind a link is left in place and the
-    uninstall reported unfinished (exit 2); a rules file Apothem cannot rewrite
-    gets an error that names it, and the uninstall cleans the other
-    workspaces' rules files, records their backups and stops before
+  - **Uninstall** removes the managed blocks, the files and folders they
+    leave empty, and only the hook entries Apothem added. Apothem's entries
+    in a commented `openclaw.json` stop it before anything changes, with an
+    error naming what to remove; a rules file behind a link is left in place
+    and the uninstall reported unfinished (exit 2); a rules file Apothem
+    cannot rewrite gets an error that names it, and the uninstall cleans the
+    other workspaces' rules files, records their backups and stops before
     `openclaw.json` changes. When the step that changes `openclaw.json` stops
     with an error after the rules files changed (a backup that cannot be
     written, say), the uninstall records itself unfinished with their backups,
     so retention keeps them, and exits 2 with `uninstall stopped after
     removing files`; an interrupt (`Ctrl+C`) there is recorded the same way.
-    An error inside the rules-file step itself leaves the backups it took
-    before the error unrecorded. In each case the install record stays, so a
-    second uninstall after the hand fix finishes. `apothem verify` reports a
-    missing file or registration.
+    The command then prints `Aborted!` and exits 1, though files were removed;
+    run the uninstall again to finish it. An error inside the rules-file step
+    itself leaves the backups it took before the error unrecorded. In each
+    case the install record stays, so a second uninstall after the hand fix
+    finishes. `apothem verify` reports a missing file or registration.
 
 - **The operator-file parsers are fuzzed.** Five Atheris fuzz targets in
   `tests/fuzz/` cover the JSONC / JSON5 config reader, the hook-file merge and
