@@ -226,7 +226,13 @@ current Apothem block from that file: in place of the `✓` line it prints a
 `--format json` envelope's `status` is `"partial"` and that file's warning
 carries `"detail": {"left_as_is": "1"}`, and the exit code is `2`. Every
 install and update ends that way until you fix the marker lines the warning
-names. In a dry run, the warning for a file left as it is says that Apothem
+names. Without `--quiet`, such an install with `--harness all` ends with a
+summary line that starts with `!` in place of `✓` and counts the files left
+as they are:
+`! Installed <n> harnesses (<m> files written); <k> file(s) left as they are, named above.`
+With `--clean`, such an install does not print its next step,
+`apothem verify`, which fails until you fix the file. In a dry run, the
+warning for a file left as it is says that Apothem
 "would leave the file as it is", and the run still ends with `status`
 `"dry_run"` and exit code `0`. A rule in your profile that opens a code block and never
 closes it does not hide the END marker of the block the install writes: the

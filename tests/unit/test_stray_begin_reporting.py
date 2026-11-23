@@ -2635,6 +2635,73 @@ def test_a_plain_quickstart_over_a_file_it_leaves_prints_its_next_steps(
     assert anchor.read_bytes() == before
 
 
+@pytest.mark.parametrize("left", [True, False], ids=["left", "written"])
+def test_a_clean_install_names_the_verify_step_only_when_it_left_no_file(
+    left: bool, sandbox_factory: SandboxFactory
+) -> None:
+    """docs-tests-7: a clean install that left a file said to verify it.
+
+    Its next step said to confirm the fresh install with apothem verify,
+    which fails for the file left as it is. Such a run now ends with the ✗
+    line and exit code 2, without that step; a clean install that leaves no
+    file still prints it.
+    """
+    box = sandbox_factory("gemini-cli")
+    anchor = _anchor(box)
+    anchor.write_bytes((_TWO_BLOCKS if left else "# Notes\n").encode())
+
+    code, output = box.invoke(
+        "install", "--profile", str(profile_minimal_path()), "--clean", "--yes"
+    )
+
+    flat = _flat_lines(output)
+    assert code == (2 if left else 0), output
+    assert ("✗ gemini-cli install left 1 file(s) as they are" in flat) is left
+    step = "Next step: confirm the fresh install with apothem verify"
+    assert (step in flat) is not left, output
+
+
+def test_a_batch_that_leaves_a_file_counts_it_in_the_summary_line(
+    sandbox_factory: SandboxFactory, tmp_path: Path
+) -> None:
+    """docs-tests-7: no test read the summary line of a partial batch.
+
+    Of the two tools an all batch installs, one leaves its file as it is:
+    its ✗ line names the file, and the summary line below starts with "!"
+    and counts that file. The exit code is 2.
+    """
+    box = sandbox_factory("codex")
+    anchor = _anchor(box)
+    anchor.parent.mkdir(parents=True)
+    anchor.write_bytes(_TWO_BLOCKS.encode())
+    data = yaml.safe_load(Path(profile_minimal_path()).read_text(encoding="utf-8"))
+    data["exclude_harnesses"] = [
+        entry.public_id
+        for entry in HARNESS_REGISTRY
+        if entry.public_id not in {"codex", "claude-code"}
+    ]
+    profile = tmp_path / "two-tools.yaml"
+    profile.write_text(yaml.safe_dump(data), encoding="utf-8")
+
+    result = CliRunner().invoke(
+        main, ["install", "--harness", "all", "--profile", str(profile)]
+    )
+
+    output = _flat_lines(result.output)
+    assert result.exit_code == 2, result.output
+    summary = re.search(
+        r"^! Installed 2 harnesses \(\d+ files written\); 1 file\(s\) left as "
+        r"they are, named above\.$",
+        output,
+        re.MULTILINE,
+    )
+    assert summary is not None, output
+    left = output.find("✗ codex install left 1 file(s) as they are")
+    assert -1 < left < summary.start(), output
+    assert "✓ Installed claude-code -> " in output
+    assert anchor.read_bytes() == _TWO_BLOCKS.encode()
+
+
 # --- the code block around Apothem's block, closed below it ---------------------
 
 

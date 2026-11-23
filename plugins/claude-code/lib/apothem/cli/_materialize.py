@@ -229,14 +229,18 @@ def _materialize(
         clean_result=clean_result,
         payload_sink=payload_sink,
     )
+    if totals.left_as_is:
+        # verify fails for a file left as it is, so a partial run ends here,
+        # without the --clean next step below; a sink's caller takes the exit.
+        if payload_sink is None:
+            sys.exit(_EXIT_PARTIAL)
+        return
     if clean and not dry_run and fmt != "json" and not quiet:
         verify_harness = "all" if run.is_batch else harness
         con.print(
             "[bold]Next step:[/] confirm the fresh install with "
             f"[cyan]apothem verify --harness {escape(verify_harness)}[/]"
         )
-    if totals.left_as_is and payload_sink is None:
-        sys.exit(_EXIT_PARTIAL)
 
 
 def _load_run_inputs(
