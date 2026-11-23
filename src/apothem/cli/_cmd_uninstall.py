@@ -541,19 +541,28 @@ def _failed_adapter(
     with ``run``): its warnings and failed steps are reported, and the files
     it removed make the uninstall partial. The warnings print where
     :func:`_report_run` prints them: on *con*, or with the failure on
-    standard error under ``--quiet``.
+    standard error under ``--quiet``. Apothem's files the run left behind a
+    link are reported as :func:`_report_run` reports them: a ``did not
+    finish`` line for each link (see :func:`_link_problems`), the same text
+    added to the row's message, and the link in its ``detail`` when it is
+    the only one the run names.
     """
     run = getattr(exc, "run", None)
     run = run if isinstance(run, MaterializationRun) else None
     removed = run is not None and any(
         result.outcome == "updated" for result in run.results
     )
+    links: list[str] = []
+    named: dict[str, str] = {}
     if run is not None:
         warnings.extend(
             {"harness": harness_id, **group}
             for group in _warning_groups(run)
             if not _is_blocked(group)
         )
+        blocked = _blocked_by_link(run)
+        links = list(_link_problems(harness_id, run, blocked))
+        named = _one_named_link(run, blocked) if blocked else {}
     caveat = _stopped_caveat(run)
     if fmt != "json":
         err = get_error_console(no_color=no_color)
@@ -570,9 +579,14 @@ def _failed_adapter(
         ]
         message = kept_listing(f"{exc}{caveat}", stuck, None)
         err.print(f"[red]✗[/] {harness_id} uninstall {verb}: {escape(message)}")
+        for line in links:
+            err.print(
+                f"[red]✗[/] {harness_id} uninstall did not finish: {escape(line)}"
+            )
     row = _adapter_failure_result(harness_id, "uninstall", output_path, exc)
-    if caveat:
-        row["message"] = f"{row['message']}{caveat}"
+    row["message"] = "; ".join([f"{row['message']}{caveat}", *links])
+    if named:
+        row["detail"] = named
     return [row, *_step_rows(harness_id, run)], removed
 
 

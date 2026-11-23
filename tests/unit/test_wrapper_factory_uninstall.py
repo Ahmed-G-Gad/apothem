@@ -8,11 +8,14 @@ component count, not a hardcoded ``parents[N]`` magic index, so a manifest
 target-depth change can never silently derive the wrong root. Also covers
 what every uninstall shim does with an ``error`` result: it raises, so the CLI
 does not report a refused uninstall as done. A native-config uninstall whose
-native-config step raises after its first step removed files exits as partial.
+native-config step raises after its first step removed files exits as partial
+and still names Apothem's rules file left behind a link.
 """
 
 from __future__ import annotations
 
+import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -300,3 +303,72 @@ def test_a_native_uninstall_stopped_before_any_change_still_fails(
     assert "open-claw uninstall failed: [Errno 13] denied" in stderr
     records = install_ledger.read_records("open_claw")
     assert [record.kind for record in records] == ["install"]
+
+
+def _link_folder(link: Path, target: Path) -> None:
+    """Create a folder link, a junction on Windows; skip where none can be made."""
+    try:
+        if sys.platform == "win32":
+            import _winapi
+
+            _winapi.CreateJunction(str(target), str(link))
+        else:
+            link.symlink_to(target, target_is_directory=True)
+    except (OSError, NotImplementedError, AttributeError) as exc:
+        pytest.skip(f"cannot create a folder link here: {exc}")
+
+
+def _install_with_a_linked_workspace() -> Path:
+    """Install open-claw into two workspaces; link the second one's rules folder.
+
+    Returns the link: the second workspace's ``apothem`` folder, moved aside
+    and linked back, so the uninstall cannot take the rules file out of it.
+    """
+    home = Path.home()
+    for name in ("ws-a", "ws-b"):
+        (home / name).mkdir()
+        (home / name / "AGENTS.md").write_text("# My agent\n", encoding="utf-8")
+    config = home / ".openclaw" / "openclaw.json"
+    config.parent.mkdir()
+    workspaces = {
+        "defaults": {"workspace": "~/ws-a"},
+        "entries": {"b": {"workspace": "~/ws-b"}},
+    }
+    config.write_text(json.dumps({"agents": workspaces}), encoding="utf-8")
+    OpenClawAdapter().install({})
+    link = home / "ws-b" / "apothem"
+    moved = home / "ws-b" / "apothem-real"
+    link.rename(moved)
+    _link_folder(link, moved)
+    return link
+
+
+@pytest.mark.parametrize("output_format", ["plain", "json"])
+def test_a_stopped_native_uninstall_names_the_rules_file_behind_a_link(
+    monkeypatch: pytest.MonkeyPatch, output_format: str
+) -> None:
+    """A stopped uninstall still reports Apothem's rules file behind a link.
+
+    The first workspace's rules file goes, the second one's is reached
+    through a link, and the ``openclaw.json`` step then stops. The report
+    names the link and its fix, as an uninstall that finished its steps does,
+    so the operator does not learn of it only from the next run.
+    """
+    link = _install_with_a_linked_workspace()
+    _deny_the_native_config(monkeypatch, Path.home() / ".openclaw" / "openclaw.json")
+
+    args = ["uninstall", "--harness", "open-claw", "--yes", "--no-color"]
+    result = CliRunner().invoke(main, [*args, "--format", output_format])
+
+    assert result.exit_code == 2, result.output
+    assert (link / "AGENTS.md").is_file()
+    if output_format == "json":
+        row = json.loads(result.stdout)["results"][0]
+        assert row["detail"]["symlink"] == str(link)
+        reported = str(row["message"])
+    else:
+        assert "open-claw uninstall stopped after removing files" in result.stderr
+        reported = result.stderr
+    flat = " ".join(reported.split())
+    assert f"stay because they are reached through the link {link}" in flat
+    assert "replace the link with a real folder" in flat
