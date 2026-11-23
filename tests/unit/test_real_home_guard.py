@@ -17,9 +17,10 @@ would skip otherwise because their names start with ``_``.
 The ``test_*`` functions run in the suite, where ``tests/conftest.py`` is
 loaded as a conftest. They check that the guard is registered once, with its
 hooks ordered as intended (the session hooks that read the refusal log
-included), and that the call hook finds nothing for a suite test, and they
-check the guard's comparison on text: a folder below a real home is allowed,
-but not the home or a real folder in it.
+included), that ``tests/conftest.py`` holds none of the hooks the guard
+object implements, and that the call hook finds nothing for a suite test,
+and they check the guard's comparison on text: a folder below a real home
+is allowed, but not the home or a real folder in it.
 
 Showing the guard stop a test takes a pytest session of its own, because the
 call hook compares with the home its session started with.
@@ -142,18 +143,6 @@ _UNDERSCORE_EXPORTS = {
     "_isolate_hook_state",
     "_report_real_home_refusals",
 }
-#: The guard's hooks that read the refusal log outside any test, and the two
-#: xdist hooks that carry what the workers found to the controller.
-_SESSION_HOOKS = (
-    "pytest_sessionstart",
-    "pytest_make_collect_report",
-    "pytest_collection_finish",
-    "pytest_runtestloop",
-    "pytest_sessionfinish",
-    "pytest_unconfigure",
-    "pytest_testnodedown",
-    "pytest_configure_node",
-)
 #: The functions the pytester session collects, and the suite does not.
 _CASE_PREFIX = "case_"
 
@@ -485,6 +474,26 @@ def _guard_impl(request: pytest.FixtureRequest, hook: str) -> HookImpl:
     return impls[0]
 
 
+def _implemented_hooks(manager: pytest.PytestPluginManager, plugin: object) -> set[str]:
+    """Return every hook *plugin* implements, read from its attributes.
+
+    pytest's own rule decides which attribute is a hook implementation (its
+    name starts with ``pytest_`` and it is a function or a method), and each
+    one counts under the hook its ``specname`` names, if it has one.
+    """
+    hooks: set[str] = set()
+    for name in dir(plugin):
+        opts = manager.parse_hookimpl_opts(plugin, name)
+        if opts is not None:
+            hooks.add(opts.get("specname") or name)
+    return hooks
+
+
+def _registered_hooks(manager: pytest.PytestPluginManager, plugin: object) -> set[str]:
+    """Return every hook pytest registered *plugin* under."""
+    return {caller.name for caller in manager.get_hookcallers(plugin) or ()}
+
+
 def test_the_import_registers_one_guard_object(request: pytest.FixtureRequest) -> None:
     conftest = _suite_conftest(request.config)
     manager = request.config.pluginmanager
@@ -495,17 +504,19 @@ def test_the_import_registers_one_guard_object(request: pytest.FixtureRequest) -
     ]
     assert guards == [conftest.real_home_guard]
     assert manager.get_plugin(conftest.REAL_HOME_GUARD_PLUGIN) is guards[0]
-    # The conftest module itself holds none of the guard's hooks, so a star
-    # import of it registers none of them a second time. Its own module-level
-    # hooks, such as the registrar, are not the guard's.
-    for hook in (
-        "pytest_runtest_setup",
-        "pytest_runtest_call",
-        "pytest_pyfunc_call",
-        *_SESSION_HOOKS,
-    ):
-        caller = getattr(request.node.ihook, hook)
-        assert [i for i in caller.get_hookimpls() if i.plugin is conftest] == []
+    # The guard's hooks are read from the object, so one added to
+    # RealHomeGuard is checked below with no list to update. They are the
+    # hooks pytest registered the object under.
+    hooks = _implemented_hooks(manager, guards[0])
+    assert hooks, "the guard implements no hook"
+    assert hooks == _registered_hooks(manager, guards[0])
+    # The conftest module itself defines none of them at module level, and
+    # pytest registered it under none of them (a function of another name
+    # with that specname would count), so a star import of it registers
+    # none of them a second time. Its own module-level hooks, such as the
+    # registrar, are not the guard's.
+    assert [name for name in sorted(hooks) if callable(vars(conftest).get(name))] == []
+    assert _registered_hooks(manager, conftest) & hooks == set()
     registrars = [
         impl
         for impl in request.config.hook.pytest_configure.get_hookimpls()
