@@ -921,7 +921,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   closing line above the BEGIN marker and a copy of the opening line below
   the END marker, so those lines stay code. For an older block whose END
   marker a rule hid in code, the fix that calls it Apothem's block also
-  changes the marker lines of the pair after it. The troubleshooting page
+  changes the marker lines of the pair after it. The check also merges rules
+  that hold a code block, since such a rule's closing line closes a code block
+  of yours that no line closes. When the file ends inside such a code block, a
+  fix that leaves no Apothem block also adds its closing line below the last
+  line, and a fix that keeps a block inside one closes it above the BEGIN
+  marker and opens it again below the END marker. The troubleshooting page
   lists the step formats under "Follow a numbered fix".
 - **The installers and update scripts finish a run that ends as partial.**
   When `apothem install` or `apothem update` leaves a file as it is because of

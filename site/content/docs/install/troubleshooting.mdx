@@ -645,12 +645,24 @@ the steps in the order printed, and checks that the file then holds the one
 block the fix names (or none), that the next update or uninstall then does
 what the fix says, and that each line of yours that is left reads as it did
 in a Markdown viewer: as text, as code, or as the line that opens or closes a
-code block. A fix whose steps fail that check is left out. When no fix passes,
+code block. It checks the next update with rules that hold a code block too.
+A fix whose steps fail that check is left out. When no fix passes,
 the warning says "Apothem has no step-by-step fix it could check for this
 file" and gives no numbered step: change every Apothem marker line in the file
 instead, by adding a word inside each comment. That adds and removes no line,
 so nothing else in the file reads differently; old Apothem text between those
 lines is then yours to delete.
+
+A code block of yours that no line closes runs to the end of the file in a
+Markdown viewer, but Apothem reads its opening line as text. A code block in
+your profile's rules would close it, and the BEGIN marker of Apothem's block
+would then read as code. So when your file ends inside such a code block, a
+fix that leaves no Apothem block in the file also adds that code block's
+closing line below the last line, as in "B1. Below line 7, add a line of 3
+backticks.": the next install or update adds its block at the end of the
+file. A fix that keeps a block inside such a code block adds a closing line
+above the block's BEGIN marker and, when lines of yours follow its END
+marker, a copy of the opening line below it.
 
 ### Hooks not firing in Claude Code
 

@@ -30,8 +30,15 @@ from apothem.lib.harness_materializer import (
 #: The word a CHANGE step adds inside a marker line's comment.
 WORD = "(example)"
 
-#: The body the check merges into a fixed file (see :func:`passes`).
-_PROBE = "Apothem probe rule."
+#: The bodies the check merges into a fixed file (see :func:`passes`): a
+#: plain rule, a rule that holds a closed code block, and one that leaves a
+#: code block open (the merge closes it). A code block's closing line in the
+#: body closes a code block of the operator's that no line of theirs closes.
+_PROBES = (
+    "Apothem probe rule.",
+    "Run:\n```sh\nnpm test\n```",
+    "Run:\n```sh\nnpm test",
+)
 
 _EOL = re.compile(r"\r\n|\r|\n")
 
@@ -76,7 +83,7 @@ def split_lines(text: str) -> list[str]:
     return lines
 
 
-def _joined(lines: Sequence[str]) -> str:
+def joined(lines: Sequence[str]) -> str:
     """Return *lines* as one text, each line ended by LF."""
     return "".join(f"{line}\n" for line in lines)
 
@@ -87,7 +94,7 @@ def _changed(text: str) -> str:
     return f"{text[:cut].rstrip()} {WORD} {text[cut:]}"
 
 
-def _apply(
+def apply_steps(
     lines: Sequence[str], steps: Iterable[Step], *, literal: bool
 ) -> tuple[list[str], list[int | None]] | None:
     """Return *lines* after *steps*, with the 0-based first line of each line.
@@ -252,12 +259,12 @@ def passes(
       by a step) reads as before (see :func:`_roles`), after the steps and
       after the uninstall.
     """
-    done = _apply(lines, steps, literal=False)
-    literal = _apply(lines, steps, literal=True)
+    done = apply_steps(lines, steps, literal=False)
+    literal = apply_steps(lines, steps, literal=True)
     if done is None or literal is None or literal[0] != done[0]:
         return False
     texts, tags = done
-    fixed = _joined(texts)
+    fixed = joined(texts)
     want: list[tuple[int, int]] = []
     if keeps and block is not None:
         first, last = block[0] - 1, block[1] - 1
@@ -266,21 +273,44 @@ def passes(
         want = [(tags.index(first) + 1, tags.index(last) + 1)]
     if whole_blocks(fixed) != want or has_stray_begin(fixed) or uncertain_pairs(fixed):
         return False
-    before = _roles(_joined(lines))
+    before = _roles(joined(lines))
     skip = _named(steps)
     if block is not None:
         skip.update(range(block[0] - 1, block[1]))
     if not _keeps_roles(before, fixed, tags, skip):
         return False
     if not removes:
-        merged = merge_managed_block(fixed, _PROBE, recorded=True)
-        return len(whole_blocks(merged)) == 1 and not has_stray_begin(merged)
+        return _next_update_holds(fixed)
     if not want:
         return True
     left = remove_managed_block(fixed)
     if whole_blocks(left) or has_stray_begin(left) or uncertain_pairs(left):
         return False
     rest, rest_tags = _removed(texts, tags, want[0])
-    if _joined(rest) != left:
+    if joined(rest) != left:
         return False
     return _keeps_roles(before, left, rest_tags, skip)
+
+
+def _next_update_holds(fixed: str) -> bool:
+    """Return True when the next update holds one whole block in *fixed*.
+
+    With each body of :data:`_PROBES`, with and without an install record:
+    the merge gives exactly one whole block, no BEGIN marker that starts
+    none and no marker pair no rule can place, and an uninstall after it
+    leaves none of the three.
+    """
+    for body in _PROBES:
+        for recorded in (True, False):
+            merged = merge_managed_block(fixed, body, recorded=recorded)
+            left = remove_managed_block(merged)
+            if (
+                len(whole_blocks(merged)) != 1
+                or has_stray_begin(merged)
+                or uncertain_pairs(merged)
+                or whole_blocks(left)
+                or has_stray_begin(left)
+                or uncertain_pairs(left)
+            ):
+                return False
+    return True

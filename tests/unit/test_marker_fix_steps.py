@@ -467,3 +467,118 @@ def test_the_revealed_block_report_changes_the_lines_around_the_block():
         message
     )
     assert _check(lines, message, removes=True) == 1
+
+
+#: Bodies the next update can write: plain, a closed code block, and a rule
+#: that leaves a code block open (the merge closes that one).
+BODIES = ("new rule", "Run:\n```sh\nnpm test\n```", "Run:\n```sh\nnpm test")
+
+#: Files whose text ends inside a code block that no line closes: the pair in
+#: a code block of yours, then an open one (Fix B changes the marker lines);
+#: and a pair whose fix deletes it, with an open one below.
+OPEN_TAIL = {
+    "pair-in-code": ["```", B, "rule", E, "```", "```sh", "tail KEEP1"],
+    "deleted-pair": [
+        "  `````",
+        "code",
+        B,
+        "Run:",
+        "~~~",
+        "npm test",
+        f"   {E}",
+        "  `````",
+        "```md",
+        "",
+        "",
+        "  ~~~",
+        "   ~~~",
+    ],
+}
+
+
+def _next_update_holds(fixed: str) -> None:
+    """Assert the next update, with any body in :data:`BODIES`, gives one block."""
+    for body in BODIES:
+        for recorded in (True, False):
+            merged = merge_managed_block(fixed, body, recorded=recorded)
+            assert len(whole_blocks(merged)) == 1, (body, recorded, merged)
+            assert not has_stray_begin(merged), (body, merged)
+            assert not uncertain_pairs(merged), (body, merged)
+            left = remove_managed_block(merged)
+            assert not whole_blocks(left), (body, left)
+
+
+@pytest.mark.parametrize("name", sorted(OPEN_TAIL))
+def test_a_fix_closes_the_code_block_the_file_ends_in(name: str):
+    """An appended block must not land in an open code block of yours.
+
+    A profile rule that holds a code block would close that code block, and
+    the BEGIN marker of the new block would read as code.
+    """
+    lines = OPEN_TAIL[name]
+    message = _report(lines, held=True)
+    found = _fixes(message)
+    assert found, message
+    for label, fix in found:
+        texts, _, _ = _follow(lines, fix)
+        fixed = _text(texts)
+        if "are Apothem's block" in label and whole_blocks(fixed):
+            continue
+        _next_update_holds(fixed)
+    _check(lines, message, removes=False)
+
+
+def test_the_closing_line_goes_below_the_last_line():
+    message = _report(OPEN_TAIL["pair-in-code"], held=True)
+    assert (
+        "Fix B, if lines 2 to 4 are text of yours: B1. Below line 7, add a line "
+        "of 3 backticks. B2. Change line 4" in message
+    )
+
+
+def test_the_check_tries_a_body_that_holds_a_code_block():
+    """With the code block left open, a body's closing line closes it."""
+    lines = OPEN_TAIL["pair-in-code"]
+    changed = (Step(Edit.CHANGE, 4), Step(Edit.CHANGE, 2))
+    assert not steps.passes(lines, changed, block=None, keeps=False, removes=False)
+    closed = (Step(Edit.ADD, 7, fence="```", below=True), *changed)
+    assert steps.passes(lines, closed, block=None, keeps=False, removes=False)
+
+
+def test_a_kept_block_in_a_code_block_no_line_closes_is_taken_out_of_it():
+    """A viewer reads the code block from line 1 to the end; Apothem reads text.
+
+    A code block in the rules the next update writes would close it, so each
+    fix closes it above the block it keeps and opens it again below.
+    """
+    lines = ["```", "My notes:", "My notes:", *BLOCK, B, "old rule", *BLOCK]
+    text = _text(lines)
+    blocks = whole_blocks(text)
+    assert blocks == [(4, 6), (9, 11)]
+    message = two_blocks_report("F.md", text, blocks, removes=False)
+    found = _fixes(message)
+    assert len(found) == 2, message
+    for _label, fix in found:
+        texts, _, _ = _follow(lines, fix)
+        _next_update_holds(_text(texts))
+    assert "Below line 6, add a copy of line 1. A5. Above line 4, add a line " in (
+        message
+    )
+    assert "B1. Above line 9, add a line of 3 backticks." in message
+    assert _check(lines, message, removes=False) == 2
+
+
+@pytest.mark.parametrize("outcome", [TAKES_OUT, None], ids=["retire", "uninstall"])
+def test_a_fix_that_takes_the_block_out_closes_the_code_block_too(
+    outcome: str | None,
+):
+    """A later install adds Apothem's block at the end of the file."""
+    lines = OPEN_TAIL["deleted-pair"]
+    message = _report(lines, outcome=outcome, held=True)
+    found = _fixes(message)
+    assert found, message
+    for _label, fix in found:
+        assert "add a line of 3 backticks" in fix, fix
+        texts, _, _ = _follow(lines, fix)
+        _next_update_holds(_text(texts))
+    _check(lines, message, removes=True)

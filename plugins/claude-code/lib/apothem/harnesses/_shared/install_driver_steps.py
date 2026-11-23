@@ -48,10 +48,18 @@ from apothem.lib.harness_materializer import (
     APOTHEM_BLOCK_END,
     MarkerPlace,
     UncertainPair,
+    line_roles,
 )
 
 from .install_driver_stepcheck import WORD as _WORD
-from .install_driver_stepcheck import Edit, Step, passes, split_lines
+from .install_driver_stepcheck import (
+    Edit,
+    Step,
+    apply_steps,
+    joined,
+    passes,
+    split_lines,
+)
 
 #: A BEGIN marker line once a CHANGE step has changed it.
 _EXAMPLE = APOTHEM_BLOCK_BEGIN.replace(" -->", f" {_WORD} -->")
@@ -242,6 +250,57 @@ def _both(pairs: Iterable[UncertainPair]) -> tuple[bool, ...]:
     return (False, True) if any(pair.split for pair in pairs) else (False,)
 
 
+def _open_tail(lines: Sequence[str], steps: Sequence[Step]) -> Step | None:
+    """Return the step that closes the code block the file ends in after *steps*.
+
+    An ADD, below the file's last line, of a closing line for that code block
+    (see :func:`_closing_line`). An install or update adds Apothem's block at
+    the end of a file that holds none, and a code block in its rules would
+    otherwise close the operator's, so the block's BEGIN marker would read
+    as code. ``None`` when the file then ends in no open code block, its
+    last line is one a step adds, or the line would not close that code block.
+    """
+    done = apply_steps(lines, steps, literal=False)
+    if done is None:
+        return None
+    texts, tags = done
+    roles = line_roles(joined(texts))
+    opener = next(
+        (at for at in range(len(texts) - 1, -1, -1) if roles[at] not in {None, "code"}),
+        None,
+    )
+    if opener is None or roles[opener] != "opener" or tags[-1] is None:
+        return None
+    closing = _closing_line(texts[opener])
+    if closing is None or line_roles(joined([*texts, closing]))[-1] != "closer":
+        return None
+    return Step(Edit.ADD, tags[-1] + 1, fence=closing, below=True)
+
+
+def _open_holder(lines: Sequence[str], block: tuple[int, int]) -> list[Step]:
+    """Return the steps that take *block* out of a code block no line closes.
+
+    A CommonMark viewer reads such a code block as running to the end of the
+    file (or of its list item), so it holds *block*, while Apothem reads its
+    opening line as text. A code block in the rules the next update writes
+    would close it, and the BEGIN marker would then read as code. The steps
+    close it above the BEGIN marker and, when a line that is not blank
+    follows the END marker, open it again below (see :func:`_close_steps`).
+    Empty when no such code block holds *block*.
+    """
+    roles = line_roles(joined(lines))
+    holder = next(
+        (at for at in range(block[0] - 2, -1, -1) if roles[at] not in {None, "code"}),
+        None,
+    )
+    if holder is None or roles[holder] != "opener":
+        return []
+    after = (role for role in roles[block[1] :] if role not in {None, "code"})
+    if next(after, None) == "closer":
+        return []
+    return _close_steps(lines, holder + 1, block[0], block[1], None) or []
+
+
 def _first_passing(
     lines: Sequence[str],
     variants: Iterable[tuple[list[Step], bool]],
@@ -250,11 +309,27 @@ def _first_passing(
     block: tuple[int, int] | None,
     removes: bool,
 ) -> Fix | None:
-    """Return the first of *variants* (steps, and whether they keep *block*) that passes."""
+    """Return the first of *variants* (steps, and whether they keep *block*) that passes.
+
+    A variant that leaves no block is tried first with a step that closes
+    the code block the file then ends in, if it ends in one (see
+    :func:`_open_tail`). A variant that keeps *block* for the next update is
+    tried as it is, then with the steps that take *block* out of a code
+    block no line closes (see :func:`_open_holder`).
+    """
     for steps, keeps in variants:
-        ordered = _order(steps)
-        if passes(lines, ordered, block=block, keeps=keeps, removes=removes):
-            return Fix(label, ordered, keeps, block)
+        tries = [steps]
+        tail = None if keeps else _open_tail(lines, steps)
+        if tail is not None:
+            tries.insert(0, [*steps, tail])
+        elif keeps and block is not None and not removes:
+            holder = _open_holder(lines, block)
+            if holder:
+                tries.append([*steps, *holder])
+        for tried in tries:
+            ordered = _order(tried)
+            if passes(lines, ordered, block=block, keeps=keeps, removes=removes):
+                return Fix(label, ordered, keeps, block)
     return None
 
 
