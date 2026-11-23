@@ -1278,12 +1278,15 @@ class RealHomeGuard:
         on after its own. The refusal is written there to the terminal above
         the summary, with every refusal the guard holds for the end of the run
         (one from before the first test, see :meth:`pytest_sessionstart` and
-        :meth:`pytest_collection_finish`, or one an xdist worker sent, see
+        :meth:`pytest_collection_finish`, one from a test loop that ran no
+        test, see :meth:`pytest_runtestloop`, or one an xdist worker sent, see
         :meth:`pytest_testnodedown`), and the run's exit code becomes "tests
         failed". An xdist worker hands them to the controller instead, in
         ``config.workeroutput``: the worker's terminal output is discarded and
         the controller does not use its exit code. xdist's own wrapper sends
-        that output after its ``yield``, so after this one.
+        that output after its ``yield``, so after this one. What the worker
+        finds after that reaches the controller in a file (see
+        :meth:`pytest_configure_node`).
         """
         try:
             return (yield)
@@ -1371,8 +1374,10 @@ class RealHomeGuard:
         ``config.workeroutput`` the worker sent (see :meth:`pytest_sessionfinish`);
         a worker that crashed sent none. For a worker that stopped on Ctrl-C it
         calls this twice, so the refusals are taken out of that output the
-        first time. Only xdist defines the hook, so it is optional: without
-        xdist pytest neither calls it nor rejects it.
+        first time. What a worker finds after it sent that output reaches the
+        controller in a file instead (see :meth:`pytest_configure_node`). Only
+        xdist defines the hook, so it is optional: without xdist pytest
+        neither calls it nor rejects it.
         """
         output = getattr(node, "workeroutput", None)
         config = getattr(node, "config", None)
@@ -1476,7 +1481,8 @@ _AFTER_THE_SESSION = "after the session finished"
 
 #: The refusals the guard holds for the end of the run, as ``(where, messages)``.
 _HELD = pytest.StashKey[list[tuple[str, tuple[str, ...]]]]()
-#: The session whose exit status a refusal found in ``pytest_unconfigure`` fails.
+#: The session whose exit status ``pytest_unconfigure`` sets: for a refusal
+#: found there, and again after ``pytest.exit`` reset it.
 _HELD_SESSION = pytest.StashKey[pytest.Session]()
 #: Set once the first test's setup has started.
 _A_TEST_STARTED = pytest.StashKey[bool]()
