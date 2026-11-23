@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MIT
 
-"""Suite-wide pytest configuration: source bootstrap + state and HOME isolation.
+"""Suite-wide pytest configuration: source bootstrap, state and HOME isolation, shards.
 
 The ``sys.path`` inserts make ``apothem`` importable from a plain checkout
 (no editable install) for every test subtree — unit, integration, property,
@@ -185,15 +185,31 @@ What the guard cannot see or stop:
 
 ``tests/unit/test_real_home_guard.py`` runs the guard in a pytester session, with
 this file loaded as a plugin and with probe conftests that import it.
+
+``--shard=K/N`` keeps the K-th of N parts of the collected tests and deselects
+the rest. A test belongs to part ``int(sha256(node id)) % N + 1``, which is the
+same in every process: the xdist workers of one run keep the same tests, and the
+N runs of one split neither overlap nor leave a test out. The CI ``coverage``
+check runs the suite in two parts on two runners and combines their coverage
+data. Write the option with ``=``. pytest reads its command line before it loads
+this file, so in ``--shard 1/2`` with no test path it takes ``1/2`` for a path,
+never loads this file and stops at ``--shard`` as an unknown argument. K and N
+are plain ASCII digits. A conftest that star-imports this file registers the
+option a second time; that second registration is ignored, and the split is
+the same. A ``--shard`` that another plugin adds still fails as a duplicate.
+``tests/unit/test_shard_option.py`` checks the parts.
 """
 
 from __future__ import annotations
 
 import contextlib
 import os
+import re as _re
 import sys
 import tempfile
+from argparse import ArgumentTypeError as _ArgumentTypeError
 from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Sequence
+from hashlib import sha256 as _sha256
 from inspect import unwrap as _unwrap
 from pathlib import Path
 from typing import Any
@@ -243,6 +259,8 @@ __all__ = [
     "os",
     "propagation",
     "pytest",
+    "pytest_addoption",
+    "pytest_collection_modifyitems",
     "pytest_register_real_home_guard",
     "real_home_guard",
     "resolve_shared_data_home",
@@ -430,6 +448,88 @@ def _isolate_hook_state(
     monkeypatch.setenv(
         "APOTHEM_HOOK_STATE_DIR", str(tmp_path_factory.mktemp("hook-state"))
     )
+
+
+# --- Shards -----------------------------------------------------------------
+#
+# ``--shard=K/N`` runs one of N disjoint parts of the suite. The
+# ``coverage-shard`` job in ``.github/workflows/ci.yml`` runs two in parallel.
+
+
+def _shard(value: str) -> tuple[int, int]:
+    """Read the value of ``--shard``: ``K/N``, two whole numbers, ``1 <= K <= N``.
+
+    Each number is plain ASCII digits. ``int`` alone would also take a sign,
+    spaces, ``_`` and other scripts' digits, so ``1_0/20`` would run part 10.
+    argparse reports the error, and pytest makes it a usage error (exit code 4).
+    """
+    match = _re.fullmatch(r"([0-9]+)/([0-9]+)", value)
+    shard = (int(match[1]), int(match[2])) if match else None
+    if shard is None or not 1 <= shard[0] <= shard[1]:
+        msg = f"expected K/N, two whole numbers with 1 <= K <= N, not {value!r}"
+        raise _ArgumentTypeError(msg)
+    return shard
+
+
+#: The attribute this file sets on pytest's parser once it has added ``--shard``.
+_SHARD_ADDED = "_apothem_shard_added"
+
+
+def pytest_addoption(parser: pytest.Parser) -> None:
+    """Add ``--shard=K/N``.
+
+    A conftest that star-imports this file, the documented way to carry the
+    isolation, registers this hook a second time, and the second call adds
+    nothing. The mark that says so is on the parser, not in this module: pytest
+    can import this file and the star import as two separate modules. A
+    ``--shard`` that another plugin added first is not marked, so ``addoption``
+    still fails with pytest's "already added" error, instead of the shard hook
+    reading that plugin's value. ``pytest_collection_modifyitems`` runs twice as
+    well, and its second pass drops nothing.
+    """
+    if getattr(parser, _SHARD_ADDED, False):
+        return
+    parser.addoption(
+        "--shard",
+        type=_shard,
+        default=None,
+        metavar="K/N",
+        help=(
+            "run only the K-th of N parts of the collected tests "
+            "(1 <= K <= N); a hash of each test's node id picks its part. "
+            "Write it as --shard=K/N: with a space and no test path, pytest "
+            "takes K/N for a path before it loads tests/conftest.py."
+        ),
+    )
+    setattr(parser, _SHARD_ADDED, True)
+
+
+def pytest_collection_modifyitems(
+    config: pytest.Config, items: list[pytest.Item]
+) -> None:
+    """Deselect every test outside the part ``--shard=K/N`` names.
+
+    A test is in part ``int(sha256(node id)) % N + 1``. Each xdist worker
+    collects the whole suite and runs this hook itself; the node id and its hash
+    are the same in every worker and on every machine, so the workers keep the
+    same tests and the N parts cover each test once. Python's own ``hash`` of a
+    string would not do: it changes from one process to the next.
+    """
+    shard: tuple[int, int] | None = config.getoption("shard")
+    if shard is None:
+        return
+    index, count = shard
+    keep: list[pytest.Item] = []
+    drop: list[pytest.Item] = []
+    for item in items:
+        digest = _sha256(item.nodeid.encode("utf-8")).digest()
+        if int.from_bytes(digest, "big") % count == index - 1:
+            keep.append(item)
+        else:
+            drop.append(item)
+    if drop:
+        config.hook.pytest_deselected(items=drop)
+        items[:] = keep
 
 
 # --- Real-home guard --------------------------------------------------------
