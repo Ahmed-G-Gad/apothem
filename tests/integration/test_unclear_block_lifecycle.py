@@ -8,8 +8,9 @@ of the operator's that a later fence closes, as an operator who left a fence
 open above it and added an example below would. No rule can say whether that
 marker pair is Apothem's block or a quote of the operator's, so:
 
-* a re-install changes no byte of the file, adds no second block, and names
-  the file and the line of the code block in a warning;
+* a re-install changes no byte of the file, adds no second block, names the
+  file and the line of the code block in a warning, and ends as partial
+  (exit code 2), since the tool gets no current block from that file;
 * verify fails until the operator fixes the file, and still reads the tool as
   installed;
 * uninstall removes Apothem's other files, keeps every byte of the file,
@@ -102,6 +103,21 @@ class _Sandbox:
 
     def install(self) -> dict[str, Any]:
         return self.run("install", "--profile", _PROFILE)
+
+    def partial(self, *args: str) -> dict[str, Any]:
+        """Run *args* with --json over a file it leaves as it is.
+
+        The run ends as partial: exit code 2, status ``partial``, and the
+        file's warning carries ``left_as_is``.
+        """
+        code, output = self.invoke(*args, "--json")
+        assert code == 2, output
+        payload: dict[str, Any] = json.loads(output)
+        assert payload["status"] == "partial", payload["status"]
+        assert [
+            w for w in payload["warnings"] if w.get("detail", {}).get("left_as_is")
+        ], payload["warnings"]
+        return payload
 
 
 SandboxFactory = Callable[[str], _Sandbox]
@@ -226,7 +242,7 @@ def test_a_recorded_block_inside_an_operator_code_block_is_left_alone(
     lines = {anchor: _fence_around_the_block(anchor, edit=edit) for anchor in anchors}
     before = {anchor: anchor.read_bytes() for anchor in anchors}
 
-    again = box.install()
+    again = box.partial("install", "--profile", _PROFILE)
     after_install = {anchor: anchor.read_bytes() for anchor in anchors}
     verify, verify_output = box.invoke("verify", "--json")
     _assert_uninstall_unfinished(box, anchors, others)
@@ -257,7 +273,7 @@ def test_a_stray_begin_whose_end_is_quoted_in_code_cuts_nothing(
     anchor.write_bytes(stray + anchor.read_bytes())
     before = anchor.read_bytes()
 
-    again = box.install()
+    again = box.partial("install", "--profile", _PROFILE)
     after_install = anchor.read_bytes()
     verify, verify_output = box.invoke("verify", "--json")
     _assert_uninstall_unfinished(box, [anchor], others)
@@ -287,7 +303,7 @@ def test_an_unclear_block_keeps_the_install_open_until_you_fix_it(
     before = anchor.read_bytes()
 
     first, first_output = box.invoke("uninstall", "--yes", "--json")
-    again = box.run("install", "--profile", _profile_with(tmp_path, ["A rule."]))
+    again = box.partial("install", "--profile", _profile_with(tmp_path, ["A rule."]))
     after_install = anchor.read_bytes()
     second, second_output = box.invoke("uninstall", "--yes", "--json")
 
@@ -298,6 +314,32 @@ def test_an_unclear_block_keeps_the_install_open_until_you_fix_it(
     assert _unclear_text(json.loads(second_output), anchor)
     assert _kinds(box)[-1] == "uninstall-incomplete"
     assert anchor.read_bytes() == before
+
+
+@pytest.mark.parametrize("harness_id", ["codex", "claude-code"])
+def test_a_new_profile_adds_no_second_block_beside_your_code_block(
+    harness_id: str, sandbox_factory: SandboxFactory, tmp_path: Path
+) -> None:
+    """lifecycle-r4-1: why the install record holds such a file back.
+
+    Apothem's block, as the install wrote it, sits in a code block of yours,
+    and the profile has changed since, so the pair matches no block this
+    release renders for it. Holding back only a pair that matches such a
+    block would add a second block here, which the tool would load beside
+    the old one; the install record holds the file back instead, and the
+    update ends as partial.
+    """
+    box = sandbox_factory(harness_id)
+    box.install()
+    [anchor] = _recorded_anchors(harness_id)
+    line = _fence_around_the_block(anchor, edit=False)
+    before = anchor.read_bytes()
+
+    again = box.partial("update", "--profile", _profile_with(tmp_path, ["A rule."]))
+
+    assert anchor.read_bytes() == before
+    assert before.count(APOTHEM_BLOCK_BEGIN.encode()) == 1
+    assert _warnings_naming(again, anchor, line), again["warnings"]
 
 
 def test_an_anchor_saved_with_cr_endings_shows_no_drift(
@@ -482,7 +524,7 @@ def test_following_the_text_when_a_rule_leaves_a_code_block_open_keeps_your_line
     anchor.write_bytes(_STRAY.encode() + earlier.encode())
     mine = _op_lines(anchor)
 
-    again = box.run("install", "--profile", profile)
+    again = box.partial("install", "--profile", profile)
     code, output = box.invoke("uninstall", "--yes", "--json")
     assert code == 2, output
     _follow(anchor, _unclear_text(json.loads(output), anchor))

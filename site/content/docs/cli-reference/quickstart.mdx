@@ -87,6 +87,11 @@ supported harness and is always an explicit choice.
 }
 ```
 
+When the install step leaves a file as it is because of its Apothem marker
+lines (see [`install`](/docs/cli-reference/install#capability-notes)), both
+`status` values are `"partial"` and the exit code is `2`; in plain mode the
+run stops after the install's `✗` line, without the recommended next steps.
+
 ## Examples
 
 ```bash
@@ -102,7 +107,7 @@ apothem quickstart --harness claude-code --json
 |---|---|
 | 0 | Guided run completed |
 | 1 | Expected validation, profile, harness, project, or adapter error |
-| 2 | Partial batch materialization after at least one write |
+| 2 | Partial: a batch stopped after at least one write, or the install left a file Apothem keeps its block in as it is because of its Apothem marker lines |
 | 64 | Usage error: an unknown option or command, or a missing or invalid option value. Under `--json` the error is a JSON envelope with code `cli.usage`. |
 
 ## See also

@@ -81,6 +81,13 @@ ANOTHER_BLOCK = "another-block"
 #: operator fixes the marker lines, and a second uninstall then finishes.
 UNCLEAR_BLOCK = "unclear-block"
 
+#: ``detail`` key (``"1"``) of an install or update warning for a file the
+#: merge left as it is because of its markers: two or more whole blocks, or
+#: marker pairs no rule can place (see :func:`stray_begin_install_warnings`).
+#: The tool gets no current Apothem block from that file, so the CLI reports
+#: the run as partial (exit code 2), not as a success.
+LEFT_AS_IS = "left_as_is"
+
 
 def stray_begin_at(path: Path) -> bool:
     """Return True when *path* holds a BEGIN marker that starts no whole block."""
@@ -244,7 +251,9 @@ def stray_begin_install_warnings(
     that names each block. A preview of a write whose pairs are all quoted (a
     first install appends its block after a pair the operator quotes) gets no
     such warning. With *dry_run* (a preview), a warning says Apothem would
-    leave the file as it is.
+    leave the file as it is. The warning for a file the merge left as it is
+    because of its markers (two or more whole blocks, or marker pairs no
+    rule can place) carries :data:`LEFT_AS_IS`, except in a preview.
     """
     held: dict[str, bool] = {}
     for result in results:
@@ -253,22 +262,31 @@ def stray_begin_install_warnings(
             held[result.path] = held.get(result.path, False) or unchanged
     warnings: list[MaterializationResult] = []
     for path, unchanged in held.items():
-        message = _install_warning(path, unchanged=unchanged, dry_run=dry_run)
-        if message is not None:
-            warnings.append(_result("warning", "stray_begin", Path(path), message))
+        found = _install_warning(path, unchanged=unchanged, dry_run=dry_run)
+        if found is not None:
+            message, left = found
+            detail = {LEFT_AS_IS: "1"} if left and not dry_run else None
+            warning = _result(
+                "warning", "stray_begin", Path(path), message, detail=detail
+            )
+            warnings.append(warning)
     return warnings
 
 
-def _install_warning(path: str, *, unchanged: bool, dry_run: bool) -> str | None:
+def _install_warning(
+    path: str, *, unchanged: bool, dry_run: bool
+) -> tuple[str, bool] | None:
     """Return the install or update warning for the managed-block file *path*.
 
     See :func:`stray_begin_install_warnings`; ``None`` when it needs none.
+    With the text comes whether the merge left the file as it is because of
+    its markers: two or more whole blocks, or marker pairs no rule can place.
     """
     target = Path(path)
     blocks = whole_blocks_at(target)
     if len(blocks) > 1:
         report = two_blocks_report(path, blocks, left=unchanged, dry_run=dry_run)
-        return f"{report}{_UPDATE_AGAIN}"
+        return f"{report}{_UPDATE_AGAIN}", unchanged
     pairs = unclear_pairs_at(target)
     # A write that leaves no whole block gets the same text, without the claim
     # that the file was left as it is: a code block of the operator's left
@@ -281,7 +299,7 @@ def _install_warning(path: str, *, unchanged: bool, dry_run: bool) -> str | None
         report = unclear_block_report(
             path, pairs, left=unchanged, lone=lone, dry_run=dry_run
         )
-        return f"{report}{_UPDATE_AGAIN}"
+        return f"{report}{_UPDATE_AGAIN}", unchanged
     if not stray_begin_at(target):
         return None
     # With no whole block yet (a preview reads the file before the write),
@@ -309,7 +327,7 @@ def _install_warning(path: str, *, unchanged: bool, dry_run: bool) -> str | None
         f"lines; apothem verify fails for this tool until you do. {back}: the "
         "file would then hold two Apothem blocks, which install and update leave "
         "as they are."
-    )
+    ), False
 
 
 def whole_block_left(entry: LedgerTarget) -> bool:

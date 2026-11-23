@@ -94,6 +94,21 @@ class _Sandbox:
         payload: dict[str, Any] = json.loads(output)
         return payload
 
+    def partial(self, *args: str) -> dict[str, Any]:
+        """Run *args* with --json; it leaves a file as it is, so it is partial.
+
+        The exit code is 2, the status ``partial``, and a warning carries
+        ``left_as_is``.
+        """
+        code, output = self.invoke(*args, "--json")
+        assert code == 2, output
+        payload: dict[str, Any] = json.loads(output)
+        assert payload["status"] == "partial", payload["status"]
+        assert [
+            w for w in payload["warnings"] if w.get("detail", {}).get("left_as_is")
+        ], payload["warnings"]
+        return payload
+
 
 SandboxFactory = Callable[[str], _Sandbox]
 
@@ -524,8 +539,10 @@ def test_the_rule_3_warning_names_the_begin_and_the_later_pair(
         "line 1 is yours, delete or change it: the next update then replaces lines "
         "8 to 10. If lines 1 to 4 are Apothem's block, the code block that opens at "
         "line 3 comes from a rule in your profile: close it above line 4 and fix "
-        "that rule; the next update then replaces those lines. Then run apothem "
-        "update again. apothem verify fails for this tool until you fix the file."
+        "that rule; the next update then replaces those lines. Until you fix these "
+        "marker lines as this text says, install and update leave this file as it "
+        "is and end as partial (exit code 2). Then run apothem update again. "
+        "apothem verify fails for this tool until you fix the file."
     )
     assert message.count("may be Apothem's block") == 1
 
@@ -893,9 +910,12 @@ def test_a_write_whose_block_reads_as_code_names_it_and_the_code_block(
         "block that opens at line 3, and the END marker at line 11 is outside code. "
         "If lines 6 to 11 are Apothem's block, close the code block that opens at "
         "line 3 above line 6: the next update then replaces those lines. If they "
-        "are text of yours, change or delete those two marker lines. Then run "
-        "apothem update again. apothem verify fails for this tool until you fix "
-        "the file."
+        "are text of yours, change or delete those two marker lines. Until you fix "
+        "these marker lines as this text says, install and update leave this file "
+        "as it is and end as partial (exit code 2). A marker example of yours in "
+        "code holds the file back the same way, until you change its two marker "
+        "lines. Then run apothem update again. apothem verify fails for this tool "
+        "until you fix the file."
     )
 
 
@@ -1127,7 +1147,7 @@ def test_a_recorded_block_in_your_code_block_still_reads_as_installed(
     box.install()
     anchor = _anchor(box)
     begin, end, fence = _fence_the_block(anchor)
-    box.install()
+    box.partial("install", "--profile", str(profile_minimal_path()))
 
     code, output = box.invoke("verify", "--json")
     result = CliRunner().invoke(main, ["doctor", "--json"])
@@ -1136,12 +1156,18 @@ def test_a_recorded_block_in_your_code_block_still_reads_as_installed(
     payload = json.loads(output)
     assert payload["installed"] is True
     [row] = payload["results"]
-    note = row["stray_begin"]["message"]
+    note = _flat(row["stray_begin"]["message"])
     assert (
         f"The BEGIN marker at line {begin} and the END marker at line {end} sit "
         f"inside a code block that opens at line {fence}."
     ) in note
     assert f"If lines {begin} to {end} are Apothem's block" in note
+    assert (
+        "Until you fix these marker lines as this text says, install and update "
+        "leave this file as it is and end as partial (exit code 2). A marker "
+        "example of yours in code holds the file back the same way, until you "
+        "change its two marker lines."
+    ) in note
     assert result.exit_code == 1, result.output
     [check] = [c for c in json.loads(result.output)["checks"] if c["status"] == "fail"]
     assert check["code"] == "harness.stray_begin"
@@ -1288,6 +1314,8 @@ def test_a_file_with_two_whole_blocks_names_each_block(
     frontmatter, and that an Apothem block goes whole (lifecycle-2, advice-2).
     A marker pair of yours comes first, and the text says not to delete
     Apothem's block instead: your pair would then read as Apothem's block.
+    It no longer offers to move your pair into a code block (lifecycle-r4-1):
+    once Apothem's block is not whole, a pair in code holds the file back.
     """
     target = tmp_path / "AGENTS.md"
     target.write_bytes(_TWO_BLOCKS.encode())
@@ -1302,7 +1330,7 @@ def test_a_file_with_two_whole_blocks_names_each_block(
         "and lines 8 to 10). Apothem writes one block per file and cannot tell "
         f"which one is its own, {left} the file as it is. For a marker pair of "
         "yours (an example you quote, say), change or delete its two marker lines, "
-        "or move them inside a code block, keeping your own text; do not delete "
+        "keeping your own text; do not delete "
         "Apothem's block instead, since the next run would then read your pair as "
         "Apothem's block and replace or take out the lines between its markers. "
         "Of Apothem's own blocks (an older one, or one pasted in a second time), "
@@ -1311,6 +1339,38 @@ def test_a_file_with_two_whole_blocks_names_each_block(
         "marker line, keeping any line of your own inside it. Then run apothem "
         "update again. apothem verify fails for this tool until you fix the file."
     )
+
+
+@pytest.mark.parametrize(
+    ("text", "outcome", "dry_run", "left"),
+    [
+        pytest.param(_TWO_BLOCKS, "unchanged", False, True, id="two-blocks"),
+        pytest.param(_EXAMPLE_ABOVE, "unchanged", False, True, id="unclear"),
+        pytest.param(_TWO_BLOCKS, "unchanged", True, False, id="preview"),
+        pytest.param(_HIDDEN_BLOCK, "updated", False, False, id="written"),
+        pytest.param(f"{B}\nold\n\n{OLD}", "unchanged", False, False, id="stray"),
+    ],
+)
+def test_only_a_file_the_merge_left_for_its_markers_is_marked_left_as_is(
+    tmp_path: Path, text: str, outcome: str, dry_run: bool, left: bool
+) -> None:
+    """lifecycle-r4-5: the CLI reads this detail to report the run as partial.
+
+    A file the merge left as it is because of its markers got no current
+    Apothem block. A preview leaves nothing, a write that left the block in
+    code wrote it, and a stray BEGIN marker gets a block written apart from
+    it, so none of those is marked.
+    """
+    target = tmp_path / "AGENTS.md"
+    target.write_bytes(text.encode())
+    result = install_driver.MaterializationResult(
+        outcome=outcome, operation="sentinel_merge", path=str(target), message=""
+    )
+
+    [warning] = stray_begin_install_warnings([result], dry_run=dry_run)
+
+    assert (warning.detail == {blocks.LEFT_AS_IS: "1"}) is left
+    assert bool(warning.detail) is left
 
 
 def test_the_verify_note_names_both_blocks(tmp_path: Path) -> None:
@@ -1346,6 +1406,8 @@ def test_an_end_marker_put_back_leaves_two_blocks_the_update_does_not_touch(
     the END marker was put back where it was: the file holds two Apothem
     blocks, so the tool loads both. Update now leaves the file as it is and
     names both, and verify and verify --profile fail until one is deleted.
+    The update ends as partial, not as a success (lifecycle-r4-5): the file
+    got no block from the new profile.
     """
     box = sandbox_factory("claude-code")
     box.install()
@@ -1360,18 +1422,15 @@ def test_an_end_marker_put_back_leaves_two_blocks_the_update_does_not_touch(
     before = anchor.read_bytes()
     changed = _profile_named(tmp_path, "Changed Person")
 
-    code, output = box.invoke("update", "--profile", changed, "--json")
+    payload = box.partial("update", "--profile", changed)
     verify, verify_output = box.invoke("verify", "--json")
     faithful, faithful_output = box.invoke("verify", "--profile", changed)
     result = CliRunner().invoke(main, ["doctor", "--json"])
 
-    assert code == 0, output
     assert anchor.read_bytes() == before
-    [message] = [
-        str(w["message"])
-        for w in json.loads(output)["warnings"]
-        if _names(str(w["message"]), anchor)
-    ]
+    [warning] = [w for w in payload["warnings"] if _names(str(w["message"]), anchor)]
+    message = str(warning["message"])
+    assert warning["detail"] == {"left_as_is": "1"}
     assert "holds 2 whole blocks between Apothem's markers (lines " in message
     assert verify == 1, verify_output
     [row] = json.loads(verify_output)["results"]
@@ -1391,7 +1450,10 @@ def test_a_marker_pair_of_yours_above_the_block_is_not_written_over(
     """lifecycle-2: an update used to write Apothem's block over your pair.
 
     Your marker pair outside code is a whole block too, so the file holds
-    two, and the update leaves it as it is.
+    two, and the update leaves it as it is. It ended with the success line
+    and exit code 0 (lifecycle-r4-5); a line on standard error now names the
+    file it left, in place of the success line, and the exit code is 2, also
+    under --quiet.
     """
     box = sandbox_factory("codex")
     box.install()
@@ -1399,12 +1461,35 @@ def test_a_marker_pair_of_yours_above_the_block_is_not_written_over(
     mine = f"# Notes\n\nThe markers:\n{B}\nMY EXAMPLE\n{E}\n\n".encode()
     anchor.write_bytes(mine + anchor.read_bytes())
     before = anchor.read_bytes()
+    profile = str(profile_minimal_path())
 
-    code, output = box.invoke("update", "--profile", str(profile_minimal_path()))
+    code, output = box.invoke("update", "--profile", profile)
+    quiet = CliRunner().invoke(
+        main, ["update", "--harness", "codex", "--profile", profile, "--quiet"]
+    )
 
-    assert code == 0, output
+    assert code == 2, output
     assert anchor.read_bytes() == before
     assert "holds 2 whole blocks" in " ".join(output.split())
+    assert "Updated codex" not in output
+    line = (
+        "✗ codex update left 1 file(s) as they are, without Apothem's current "
+        "block, because of their Apothem marker lines; fix those lines as each "
+        "warning says, keeping your own text, then run apothem update again"
+    )
+    named = os.path.normcase(f"{line}\n    {anchor}")
+    assert named in os.path.normcase(_flat_lines(output)), output
+    assert quiet.exit_code == 2, quiet.output
+    assert "Updated codex" not in quiet.output
+    assert named in os.path.normcase(_flat_lines(quiet.stderr)), quiet.output
+
+
+def _flat_lines(text: str) -> str:
+    """Return *text* with each line's runs of spaces after its indent made one."""
+    return "\n".join(
+        line[: len(line) - len(line.lstrip())] + " ".join(line.split())
+        for line in text.splitlines()
+    )
 
 
 # --- an uninstall over two blocks: following its text keeps your pair --------
@@ -1462,8 +1547,8 @@ def test_the_uninstall_puts_a_pair_of_yours_first_and_finishes_once_you_fix_it(
     assert kept == shaped.encode()
     assert (
         "For a marker pair of yours (an example you quote, say), change or delete "
-        "its two marker lines, or move them inside a code block, keeping your own "
-        "text; do not delete Apothem's block instead, since the next run would "
+        "its two marker lines, keeping your own text; do not delete Apothem's "
+        "block instead, since the next run would "
         "then read your pair as Apothem's block and replace or take out the lines "
         "between its markers."
     ) in warning
@@ -1910,7 +1995,9 @@ def test_the_two_block_step_keeps_a_line_of_yours_inside_an_older_block(
     verify, verify_output = box.invoke("verify")
 
     assert first == 0, first_output
-    assert second == 0, second_output
+    # Two whole blocks: the update leaves the file as it is, so it is partial.
+    assert second == 2, second_output
+    assert json.loads(second_output)["status"] == "partial"
     [message] = [
         _flat(str(warning["message"]))
         for warning in json.loads(second_output)["warnings"]
@@ -1999,8 +2086,8 @@ def test_with_no_record_a_pair_of_yours_in_claude_md_gets_the_two_block_text(
         f"and lines {block} to {block_end}). Apothem writes one block per file and "
         "cannot tell which one is its own, so it left the file as it is. For a "
         "marker pair of yours (an example you quote, say), change or delete its "
-        "two marker lines, or move them inside a code block, keeping your own "
-        "text; do not delete Apothem's block instead"
+        "two marker lines, keeping your own text; do not delete Apothem's block "
+        "instead"
     ) in warning["message"]
     assert warning["message"].endswith(
         f"keeping any line of your own inside it{_UNLISTED_AGAIN}"
@@ -2266,3 +2353,115 @@ def test_a_recorded_lost_end_above_a_quoted_pair_names_the_begin_marker_first(
         "The BEGIN marker at line 8 and the END marker at line 10 sit inside a code "
         "block that opens at line 7."
     ) in message
+
+
+# --- a marker example of yours in a recorded file ------------------------------
+
+#: A section of yours that quotes Apothem's two marker lines in a code block.
+_DOCUMENTED = (
+    "\n## How Apothem marks its block\n\n```md\n"
+    f"{B}\n(Apothem's rules)\n{E}\n```\n\nmy closing words\n"
+)
+
+
+def _left(warning: dict[str, Any]) -> bool:
+    """Return True when *warning* names a file the run left as it is."""
+    return bool(warning.get("detail", {}).get("left_as_is"))
+
+
+def test_a_file_your_example_holds_back_ends_as_partial_until_you_change_it(
+    sandbox_factory: SandboxFactory, tmp_path: Path
+) -> None:
+    """lifecycle-r4-1: install and update ended as a success and wrote nothing.
+
+    A recorded CLAUDE.md quotes Apothem's marker lines in a code block of
+    yours, and Apothem's own block lost its END line. Each update left the
+    file as it is (the quoted pair may be Apothem's block in a code block of
+    yours), yet ended with "success" and exit code 0, so the tool loaded no
+    profile block, and nothing said that the hold lasts until your example
+    changes. Each such run now ends as partial and the warning says what ends
+    it. Done as each warning says, the next update writes a fresh block,
+    keeps your example and every line of yours, and the uninstall finishes.
+    """
+    box = sandbox_factory("claude-code")
+    box.install()
+    anchor = _anchor(box)
+    text = anchor.read_bytes().decode("utf-8")
+    end = text.index(E)
+    lost = text[:end] + text[end + len(E) + 1 :] + _DOCUMENTED
+    anchor.write_bytes(lost.encode())
+    changed = _profile_named(tmp_path, "Changed Person")
+
+    first = box.partial("update", "--profile", changed)
+    after_first = anchor.read_bytes()
+    # As the first warning says: the BEGIN marker that starts no pair goes,
+    # with the old Apothem text below it.
+    anchor.write_bytes(lost[lost.index("## How Apothem") :].encode())
+    second = box.partial("update", "--profile", changed)
+    after_second = anchor.read_bytes()
+    # As the second warning says: change the two marker lines of your example.
+    example = after_second.decode("utf-8")
+    example = example.replace(B, B.replace(" -->", " (example) -->"))
+    example = example.replace(E, E.replace(" -->", " (example) -->"))
+    anchor.write_bytes(example.encode())
+    code, output = box.invoke("update", "--profile", changed, "--json")
+    written = anchor.read_bytes().decode("utf-8")
+    verify, verify_output = box.invoke("verify", "--profile", changed)
+    gone, gone_output = box.invoke("uninstall", "--yes", "--json")
+    left = anchor.read_bytes().decode("utf-8")
+
+    assert after_first == lost.encode()
+    [held] = [_flat(str(w["message"])) for w in first["warnings"] if _left(w)]
+    assert "The BEGIN marker at line 1 starts no marker pair" in held
+    assert after_second == lost[lost.index("## How Apothem") :].encode()
+    [message] = [_flat(str(w["message"])) for w in second["warnings"] if _left(w)]
+    assert (
+        "If they are text of yours, change or delete those two marker lines. Until "
+        "you fix these marker lines as this text says, install and update leave "
+        "this file as it is and end as partial (exit code 2). A marker example of "
+        "yours in code holds the file back the same way, until you change its two "
+        "marker lines."
+    ) in message
+    assert code == 0, output
+    assert json.loads(output)["status"] == "success"
+    assert written.startswith(example)
+    assert "Changed Person" in written
+    assert written.count(B) == 1
+    assert verify == 0, verify_output
+    assert gone == 0, gone_output
+    assert left == example
+
+
+def test_a_quickstart_over_a_file_it_leaves_ends_as_partial(
+    sandbox_factory: SandboxFactory,
+) -> None:
+    """lifecycle-r4-5: the guided run's summary said success too.
+
+    Its install step leaves a recorded file as it is, so the summary and the
+    install step are partial and the exit code is 2.
+    """
+    box = sandbox_factory("codex")
+    box.install()
+    anchor = _anchor(box)
+    _fence_the_block(anchor)
+    before = anchor.read_bytes()
+
+    result = CliRunner().invoke(
+        main,
+        [
+            "quickstart",
+            "--harness",
+            "codex",
+            "--profile",
+            str(profile_minimal_path()),
+            "--yes",
+            "--json",
+        ],
+    )
+
+    assert result.exit_code == 2, result.output
+    payload = json.loads(result.output)
+    assert payload["status"] == "partial"
+    [step] = [s for s in payload["steps"] if s["step"] == "install"]
+    assert step["status"] == "partial"
+    assert anchor.read_bytes() == before

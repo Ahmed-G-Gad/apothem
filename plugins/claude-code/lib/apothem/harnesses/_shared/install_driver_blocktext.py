@@ -293,6 +293,26 @@ def _delete_by_hand(pairs: Sequence[UncertainPair]) -> str:
     return f"{fix} Then run the uninstall again."
 
 
+def _held_until(pairs: Sequence[UncertainPair]) -> str:
+    """Return how long install and update leave a file with *pairs* as it is.
+
+    Until its marker lines are fixed, whoever wrote them: a pair in code may
+    be Apothem's block, so a marker example of the operator's in code holds
+    the file back too (while an install record lists it), and nothing else
+    ends that. Each such run ends as partial.
+    """
+    text = (
+        "Until you fix these marker lines as this text says, install and update "
+        "leave this file as it is and end as partial (exit code 2)."
+    )
+    if any(not pair.split and not _outside(pair) for pair in pairs):
+        text += (
+            " A marker example of yours in code holds the file back the same "
+            "way, until you change its two marker lines."
+        )
+    return text
+
+
 def unclear_block_report(
     path: str | Path,
     pairs: Sequence[UncertainPair],
@@ -323,7 +343,10 @@ def unclear_block_report(
     is, or, with *dry_run*, that it would. *lone* names the BEGIN markers
     outside code that start no pair (see
     :func:`install_driver_blocks.lone_begins_at`): each must go too, or it can
-    pair with an END marker once the pairs are fixed.
+    pair with an END marker once the pairs are fixed. With :data:`REPLACES`,
+    the text ends by saying that install and update leave the file as it is,
+    and end as partial, until its marker lines are fixed (see
+    :func:`_held_until`).
     """
     head = (
         f"{path}: Apothem cannot tell whether the marker lines in this file mark "
@@ -348,31 +371,35 @@ def unclear_block_report(
         if split is not None:
             parts.append(_begin_first(split))
         parts.append(_delete_by_hand(pairs))
+    elif outcome == REPLACES:
+        parts.append(_held_until(pairs))
     return " ".join(part for part in parts if part)
 
 
 #: How to fix a file with two or more blocks (see :func:`two_blocks_report`).
 #: A marker pair of the operator's comes first: it keeps its text and loses
-#: its marker lines. Deleting Apothem's block instead would leave that pair
-#: the one block in the file, which the next update replaces and the next
-#: uninstall takes out. An Apothem block that is not the one kept (an older
-#: one, or one pasted in a second time) goes whole, since deleting only its
-#: marker lines would leave its text behind where no later run finds it; a
-#: line of the operator's inside it (an END marker put back below that line
-#: makes it part of the block) stays. In a file that starts with Apothem's
-#: frontmatter the block kept is the one right below it: only there does the
-#: frontmatter count as Apothem's, so an uninstall takes it out with that
-#: block.
+#: its marker lines. Moving the pair into a code block is not offered: once
+#: Apothem's own block in the file is not whole (its END marker lost, say),
+#: a pair in code holds the file as it is while an install record lists it
+#: (see :func:`_held_until`). Deleting Apothem's block instead would leave
+#: that pair the one block in the file, which the next update replaces and
+#: the next uninstall takes out. An Apothem block that is not the one kept
+#: (an older one, or one pasted in a second time) goes whole, since deleting
+#: only its marker lines would leave its text behind where no later run
+#: finds it; a line of the operator's inside it (an END marker put back
+#: below that line makes it part of the block) stays. In a file that starts
+#: with Apothem's frontmatter the block kept is the one right below it: only
+#: there does the frontmatter count as Apothem's, so an uninstall takes it
+#: out with that block.
 _FIX_BLOCKS = (
     "For a marker pair of yours (an example you quote, say), change or delete "
-    "its two marker lines, or move them inside a code block, keeping your own "
-    "text; do not delete Apothem's block instead, since the next run would "
-    "then read your pair as Apothem's block and replace or take out the lines "
-    "between its markers. Of Apothem's own blocks (an older one, or one pasted "
-    "in a second time), keep one (in a file that starts with Apothem's "
-    "frontmatter, the one right below it) and delete each other one from its "
-    "BEGIN marker line to its END marker line, keeping any line of your own "
-    "inside it"
+    "its two marker lines, keeping your own text; do not delete Apothem's "
+    "block instead, since the next run would then read your pair as Apothem's "
+    "block and replace or take out the lines between its markers. Of Apothem's "
+    "own blocks (an older one, or one pasted in a second time), keep one (in a "
+    "file that starts with Apothem's frontmatter, the one right below it) and "
+    "delete each other one from its BEGIN marker line to its END marker line, "
+    "keeping any line of your own inside it"
 )
 
 

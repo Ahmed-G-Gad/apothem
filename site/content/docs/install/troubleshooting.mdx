@@ -394,8 +394,11 @@ which one is its own:
 
 - `apothem install` and `apothem update` leave the file as it is and print a
   warning that names each block by its lines, for example "holds 2 whole
-  blocks between Apothem's markers (lines 1 to 32, and lines 36 to 67)". In a
-  dry run the warning says Apothem "would leave the file as it is".
+  blocks between Apothem's markers (lines 1 to 32, and lines 36 to 67)". The
+  run ends as partial: in place of its `✓` line it prints a `✗` line that
+  names the file, its `--format json` `status` is `"partial"`, and it exits
+  with code `2`, until you fix the file. In a dry run the warning says Apothem
+  "would leave the file as it is".
 - `apothem verify`, with or without `--profile`, and `apothem doctor` fail and
   name the file with each block (doctor's check is `harness.stray_begin`, and
   its message says the file holds "Apothem markers to fix by hand") until you
@@ -415,15 +418,21 @@ which one is its own:
   Apothem's block before it takes the block out.
 
 The warning starts with a pair of yours: "For a marker pair of yours (an
-example you quote, say), change or delete its two marker lines, or move them
-inside a code block, keeping your own text; do not delete Apothem's block
-instead". Open the named file at the lines the warning gives:
+example you quote, say), change or delete its two marker lines, keeping your
+own text; do not delete Apothem's block instead". Open the named file at the
+lines the warning gives:
 
-1. For a marker pair of yours, change or delete its two marker lines, or move
-   them inside a code block. Left as the one whole block in the file, your pair
-   would read as Apothem's block, and the next update would replace the lines
-   between them. Do not delete Apothem's block instead: the next uninstall
-   would then take out your pair as the one block left.
+1. For a marker pair of yours, change or delete its two marker lines, for
+   example by adding a word inside each comment, as in
+   `<!-- BEGIN APOTHEM MANAGED BLOCK (example) -->`. Left as the one whole
+   block in the file, your pair would read as Apothem's block, and the next
+   update would replace the lines between them. Do not delete Apothem's block
+   instead: the next uninstall would then take out your pair as the one block
+   left. Do not move the pair into a code block either: once Apothem's own
+   block is no longer whole (its END marker lost, say), a marker pair in code
+   keeps install and update from writing Apothem's block while an install
+   record lists the file (see
+   [Apothem cannot tell its block from your text](#apothem-cannot-tell-its-block-from-your-text)).
 2. Of Apothem's own blocks (an older one, or one pasted in a second time), keep
    one, and delete each other one from its BEGIN marker line to its END marker
    line, keeping any line of yours inside it (an END marker put back below a
@@ -481,7 +490,18 @@ While an install record lists the file (until an uninstall finishes),
 `apothem install` and `apothem update` change nothing in it and print that
 warning; in a dry run it says Apothem "would leave the file as it is". For a
 BEGIN marker outside code whose END marker sits in code with another marker
-pair after them, they do so with or without a record. A BEGIN marker outside
+pair after them, they do so with or without a record. Each such run ends as
+partial: in place of its `✓` line it prints a `✗` line that names the file,
+its `--format json` `status` is `"partial"`, and it exits with code `2`. The
+warning ends by saying so: "Until you fix these marker lines as this text
+says, install and update leave this file as it is and end as partial (exit
+code 2)." That lasts as long as the marker lines stay as they are, a marker
+example of yours in a code block included: such a pair may be Apothem's block
+inside a code block of yours, so the warning adds that your example holds the
+file back the same way until you change its two marker lines, for example by
+adding a word inside each comment, as in
+`<!-- END APOTHEM MANAGED BLOCK (example) -->`. Nothing else ends it: the
+uninstall does not finish while the pair is there either. A BEGIN marker outside
 code that starts no pair does not change that, even when every marker pair in
 the file is quoted in code below it: the marker may be what is left of
 Apothem's block after its END marker was lost, but a pair in code may be

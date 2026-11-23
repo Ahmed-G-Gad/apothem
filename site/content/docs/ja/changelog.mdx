@@ -825,6 +825,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   install record lists the file, even when every marker pair is quoted in code
   below it: a pair in code may be Apothem's block inside a code block of
   yours, so the file is left as it is.
+  An install or update that leaves such a file as it is ends as partial,
+  since the tool gets no current Apothem block from it: in place of its `✓`
+  line it prints a `✗` line on standard error that names the file, its
+  `--format json` `status` is `"partial"` (the file's warning carries
+  `"detail": {"left_as_is": "1"}`), and it exits with code `2`; a dry run
+  still ends with `status` `"dry_run"` and exit code `0`. The warning ends by
+  saying that install and update leave the file as it is, and end as partial,
+  until you fix those marker lines, and that a marker example of yours in a
+  code block holds the file back the same way until you change its two marker
+  lines: while an install record lists the file, nothing else ends that.
   Until you fix those lines, `verify` fails, `doctor` reports the file (as
   `harness.stray_begin`) and, for a file the current install writes,
   `status --profile` shows drift; then run `apothem update` again. A dry run's
@@ -862,10 +872,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   Apothem writes one block per file and cannot tell which one is its own, so
   install and update now leave such a file as it is and print a warning that
   names each block by its lines, for example "holds 2 whole blocks between
-  Apothem's markers (lines 1 to 32, and lines 36 to 67)". For a marker pair of
-  yours it says to change or delete its two marker lines, or move them inside
-  a code block, and not to delete Apothem's block instead: the next run would
-  then read your pair as Apothem's block. Of Apothem's own blocks, an older one
+  Apothem's markers (lines 1 to 32, and lines 36 to 67)". Such a run ends as
+  partial (exit code `2`, `status` `"partial"`), as for a file where Apothem
+  cannot tell its block from your text (see the entry above). For a marker
+  pair of yours the warning says to change or delete its two marker lines, and
+  not to delete Apothem's block instead: the next run would then read your
+  pair as Apothem's block. It does not offer to move your pair into a code
+  block: once Apothem's own block there is no longer whole, a pair in code
+  holds the file back. Of Apothem's own blocks, an older one
   or one pasted in a second time, it says to keep one (in a file that starts
   with Apothem's frontmatter, the one right below it) and to delete each other
   one from its BEGIN marker line to its END marker line, keeping any line of

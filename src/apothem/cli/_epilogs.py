@@ -26,7 +26,9 @@ Related commands:
 Exit codes:
   0  Adapter installed successfully
   1  Expected validation, profile, harness, project, or adapter error
-  2  Partial batch materialization after at least one write
+  2  Partial: a batch stopped after at least one write, or a file Apothem
+     keeps its block in was left as it is because of its Apothem marker
+     lines (fix them as the warning says, then run apothem update again)
   64 Usage error: unknown option or command, or a missing or invalid value
 """
 
@@ -89,7 +91,9 @@ Related commands:
 Exit codes:
   0  Adapter updated successfully
   1  Expected validation, profile, harness, project, or adapter error
-  2  Partial batch materialization after at least one write
+  2  Partial: a batch stopped after at least one write, or a file Apothem
+     keeps its block in was left as it is because of its Apothem marker
+     lines (fix them as the warning says, then run apothem update again)
   64 Usage error: unknown option or command, or a missing or invalid value
 """
 
@@ -331,7 +335,9 @@ Related commands:
 Exit codes:
   0  Guided run completed
   1  Expected validation, profile, harness, project, or adapter error
-  2  Partial batch materialization after at least one write
+  2  Partial: a batch stopped after at least one write, or a file Apothem
+     keeps its block in was left as it is because of its Apothem marker
+     lines (fix them as the warning says, then run apothem update again)
   64 Usage error: unknown option or command, or a missing or invalid value
 """
 

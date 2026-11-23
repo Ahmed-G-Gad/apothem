@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import sys
+
 import click
 from rich.markup import escape
 
@@ -19,6 +21,7 @@ from apothem.cli._epilogs import (
     _EP_QUICKSTART,
 )
 from apothem.cli._helpers import (
+    _EXIT_PARTIAL,
     _CliUserError,
     _complete_harness,
     _emit_expected_error,
@@ -281,15 +284,20 @@ def quickstart(
             }
         )
         steps.append({"step": "recommend", "next": recommended})
+        status = install_payload.get("status", "success")
         emit_json(
             {
-                "status": install_payload.get("status", "success"),
+                "status": status,
                 "command": "quickstart",
                 "profile_path": str(profile_path),
                 "steps": steps,
                 "recommended_next": recommended,
             }
         )
+        if status == "partial":
+            # The install left a file as it is because of its Apothem
+            # markers; ``_materialize`` handed the exit to this summary.
+            sys.exit(_EXIT_PARTIAL)
         return
 
     _materialize(

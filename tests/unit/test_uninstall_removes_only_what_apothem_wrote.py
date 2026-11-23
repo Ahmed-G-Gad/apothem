@@ -2707,8 +2707,8 @@ def test_the_another_block_advice_names_each_block_and_which_to_delete_whole(
     ) in message
     assert (
         "For a marker pair of yours (an example you quote, say), change or delete "
-        "its two marker lines, or move them inside a code block, keeping your own "
-        "text; do not delete Apothem's block instead, since the next run would "
+        "its two marker lines, keeping your own text; do not delete Apothem's "
+        "block instead, since the next run would "
         "then read your pair as Apothem's block and replace or take out the lines "
         "between its markers. Of Apothem's own blocks (an older one, or one pasted "
         "in a second time), keep one (in a file that starts with Apothem's "
@@ -2764,7 +2764,9 @@ def test_an_update_leaves_a_recorded_file_that_only_quotes_the_markers_as_it_is(
 
     assert first == cli._EXIT_PARTIAL
     assert before_update.startswith(quoted.rstrip(b"\n")), before_update[:200]
-    assert code == 0, envelope
+    # The update leaves the file as it is, so it ends as partial.
+    assert code == cli._EXIT_PARTIAL, envelope
+    assert envelope["status"] == "partial"
     assert after_update == before_update
     named = [
         str(w["message"])
