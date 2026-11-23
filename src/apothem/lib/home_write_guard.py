@@ -39,9 +39,11 @@ A ``PYTEST_VERSION`` with any other value (an empty one, or a pin such as
 ``8.2`` that a shell or a CI job exports) does not count. The installed
 pytest's version is read from its package metadata only while
 ``PYTEST_VERSION`` is set, and a version found is kept for the process. With
-both variables unset a check is two environment lookups; a
-``PYTEST_VERSION`` that does not count adds one comparison with that version.
-The refusal message names the variable that turned the guard on.
+both variables unset a check is two environment lookups. A
+``PYTEST_VERSION`` that does not count adds a comparison with the installed
+version, or, where this Python has no pytest installed, a package metadata
+lookup on every check, since a failed lookup is not kept. The refusal message
+names the variable that turned the guard on.
 
 A path is compared as written and as resolved through links, afresh on every
 check, so a folder swapped for a link during a test counts at once. The
