@@ -48,20 +48,21 @@ the collection, between two collect reports (a ``pytest_itemcollected`` hook, an
 ``pytest_collectreport`` hook of the session's own report), in a
 ``pytest_runtestloop`` wrapper before it yields and in a plain
 ``pytest_runtestloop`` hook, between two tests (a ``pytest_runtest_logreport``
-hook for a teardown report), in a ``pytest_sessionfinish`` hook or after a
-session-finish wrapper yields, in ``pytest_terminal_summary``, in
-``pytest_unconfigure`` (with ``-p no:xdist``), and under xdist (``-n 2``) at the
-session start and in a worker's session finish, also in a ``trylast`` hook of a
-conftest that pytest finds during collection, and after a worker handed its
-refusals to the controller: in its ``pytest_terminal_summary``, in its
-``pytest_unconfigure`` and after its own ``tryfirst`` session-finish wrapper
-yields, which the worker writes to a file the controller reads and removes (a
-later run with the same ``--basetemp`` passes, and no such file is made in a
-protected folder); a worker that stops on Ctrl-C has its refusal reported
-once, and one the controller absorbs while its workers run the tests is named
-for the run. Each names where the refusal happened. A session that absorbs
-nothing exits 0, with and without xdist. The guard refuses before any write,
-so nothing lands in a home.
+hook for a teardown report), in a ``pytest_sessionfinish`` hook (also one that
+then calls ``pytest.exit(returncode=0)``) or after a session-finish wrapper
+yields, in ``pytest_terminal_summary``, in ``pytest_unconfigure`` (with ``-p
+no:xdist``), and under xdist (``-n 2``) at the session start and in a worker's
+session finish, also in a ``trylast`` hook of a conftest that pytest finds
+during collection, and after a worker handed its refusals to the controller:
+in its ``pytest_terminal_summary``, in its ``pytest_unconfigure`` and after
+its own ``tryfirst`` session-finish wrapper yields, which the worker writes to
+a file the controller reads and removes (a later run with the same
+``--basetemp`` passes, and no such file is made in a protected folder); a
+worker that stops on Ctrl-C has its refusal reported once, and one the
+controller absorbs while its workers run the tests is named for the run. Each
+names where the refusal happened. A session that absorbs nothing exits 0, with
+and without xdist. The guard refuses before any write, so nothing lands in a
+home.
 """
 
 from __future__ import annotations
@@ -1558,6 +1559,37 @@ def case_a_refusal_absorbed_at_unconfigure_fails_the_run(
     )
 
     _assert_the_run_failed_on_it(result, fake_real_home, "after the session finished")
+
+
+#: A session-finish hook that absorbs the refusal and then ends the run with
+#: ``pytest.exit`` and the exit code ``{code}``.
+_ABSORBED_BEFORE_PYTEST_EXIT = """
+
+def pytest_sessionfinish(session):
+    _absorb()
+    pytest.exit("probe", returncode={code})
+"""
+
+
+def case_pytest_exit_with_code_0_after_a_refusal_still_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """pytest sets the code ``pytest.exit`` gives after every session-finish wrapper.
+
+    The guard sets "tests failed" again in ``pytest_unconfigure``. Any code
+    other than 0 or 5 is the hook's own, and stays.
+    """
+    exit_0 = _ABSORBED_BEFORE_PYTEST_EXIT.format(code=0)
+
+    result = _run_absorbing(pytester, fake_real_home, exit_0)
+
+    assert result.ret == pytest.ExitCode.TESTS_FAILED
+    result.stdout.fnmatch_lines(
+        ["*outside any test, after the last test, and the refusal*"]
+    )
+    assert not (fake_real_home / ".apothem").exists()
+    exit_4 = _ABSORBED_BEFORE_PYTEST_EXIT.format(code=4)
+    assert _run_absorbing(pytester, fake_real_home, exit_4).ret == 4
 
 
 def case_an_xdist_workers_refusal_after_its_last_test_fails_the_run(

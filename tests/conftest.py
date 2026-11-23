@@ -179,13 +179,17 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   wrapper does it for a refusal absorbed in ``pytest_unconfigure`` ("after the
   session finished"), and in an xdist controller for what the workers found
   after they handed their refusals over (see below): pytest returns the
-  session's exit status after that hook. One absorbed later still, in a
-  cleanup registered with ``config.add_cleanup``, reaches only ``stderr``.
-  These ``tryfirst`` wrappers finish after every wrapper except a ``tryfirst``
-  one that pytest registered after the guard (a conftest's): a refusal
-  absorbed after such a ``pytest_sessionfinish`` wrapper's ``yield`` is named
-  "after the session finished", and one after such a ``pytest_unconfigure``
-  wrapper's ``yield`` reaches only ``stderr``.
+  session's exit status after that hook. That wrapper also turns "OK" or "no
+  tests collected" into "tests failed" again once the guard has reported a
+  refusal in the session, which ``pytest.exit(returncode=0)`` in a plain
+  ``pytest_sessionfinish`` hook would otherwise undo: pytest sets the status
+  from that call after every session-finish wrapper has finished. One
+  absorbed later still, in a cleanup registered with ``config.add_cleanup``,
+  reaches only ``stderr``. These ``tryfirst`` wrappers finish after every
+  wrapper except a ``tryfirst`` one that pytest registered after the guard (a
+  conftest's): a refusal absorbed after such a ``pytest_sessionfinish``
+  wrapper's ``yield`` is named "after the session finished", and one after
+  such a ``pytest_unconfigure`` wrapper's ``yield`` reaches only ``stderr``.
 - ``pytest_testnodedown`` and ``pytest_configure_node``, optional hooks that
   only xdist defines and calls in the controller. A worker's terminal output
   is discarded and the controller does not use its exit code, so a worker
@@ -1324,13 +1328,24 @@ class RealHomeGuard:
         in the controller waits for every worker process to end before any
         wrapper of that hook finishes, so every worker has run its
         ``pytest_unconfigure`` hooks by now, or xdist has stopped it.
+
+        Last, once the guard has reported a refusal in this session, it sets
+        "tests failed" again when the exit status is "OK" or "no tests
+        collected". A plain ``pytest_sessionfinish`` hook that calls
+        ``pytest.exit(returncode=0)`` would otherwise pass the run: pytest
+        catches that call after every session-finish wrapper has finished,
+        the guard's included, and sets the status to its code. A code other
+        than 0 or 5 is kept.
         """
         try:
             return (yield)
         finally:
             _take_late(config)
             _hold(config, _AFTER_THE_SESSION)
-            _report_held(config, config.stash.get(_HELD_SESSION, None))
+            session = config.stash.get(_HELD_SESSION, None)
+            _report_held(config, session)
+            if config.stash.get(_REPORTED, False):
+                _fail_the_run(session)
 
     @pytest.hookimpl(optionalhook=True)
     def pytest_testnodedown(self, node: object) -> None:
@@ -1460,6 +1475,8 @@ _LATE_FOLDER = pytest.StashKey[str | None]()
 _LATE_FILES = pytest.StashKey[dict[str, str]]()
 #: How the controller names what a worker wrote to that file.
 _AFTER_THE_HAND_OFF = "after it handed its refusals to the controller"
+#: Set once the guard has reported a refusal and failed the run.
+_REPORTED = pytest.StashKey[bool]()
 #: The exit statuses a held refusal turns into "tests failed".
 _PASSED_OR_EMPTY = (pytest.ExitCode.OK, pytest.ExitCode.NO_TESTS_COLLECTED)
 
@@ -1547,6 +1564,16 @@ def _report_held(
         reporter.write_line(f"\n{message}", red=True)
     else:
         sys.stderr.write(message + "\n")
+    if not worker:
+        config.stash[_REPORTED] = True
+    _fail_the_run(session)
+
+
+def _fail_the_run(session: pytest.Session | None) -> None:
+    """Turn the exit status "OK" or "no tests collected" into "tests failed".
+
+    Some jobs accept either as a pass. Any other status is kept.
+    """
     if session is not None and session.exitstatus in _PASSED_OR_EMPTY:
         session.exitstatus = pytest.ExitCode.TESTS_FAILED
 
