@@ -130,10 +130,10 @@ def test_pytest_marks_the_whole_session_for_the_guard(
 
     It is set before any conftest or plugin is imported and stays set through
     collection and the session hooks; an xdist worker inherits it. The value is
-    the installed pytest's version, so it turns the guard on by itself.
+    the running pytest's ``__version__``, so it turns the guard on by itself.
     """
     session = os.environ[home_write_guard.PYTEST_SESSION_VARIABLE]
-    assert session == importlib.metadata.version("pytest")
+    assert session == sys.modules["_pytest"].__version__
     monkeypatch.delenv(home_write_guard.PYTEST_VARIABLE)
     assert home_write_guard.active()
 
@@ -144,7 +144,7 @@ def test_a_write_outside_any_test_is_refused_and_names_the_session(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     """Collection, module-level code and session hooks run with no test id."""
-    version = importlib.metadata.version("pytest")
+    version = sys.modules["_pytest"].__version__
     monkeypatch.delenv(home_write_guard.PYTEST_VARIABLE)
     monkeypatch.setenv(home_write_guard.PYTEST_SESSION_VARIABLE, version)
     assert home_write_guard.active()
@@ -156,7 +156,7 @@ def test_a_write_outside_any_test_is_refused_and_names_the_session(
     message = str(caught.value)
     assert (
         "while pytest is running (the pytest session, outside any test: "
-        f"PYTEST_VERSION matches the installed pytest {version}). "
+        f"PYTEST_VERSION matches the running pytest {version}). "
     ) in message
     assert "()" not in message
     assert "without PYTEST_CURRENT_TEST and PYTEST_VERSION" in message
@@ -190,6 +190,7 @@ def test_a_pytest_version_that_is_not_the_installed_one_leaves_the_guard_off(
     before.
     """
     assert value != importlib.metadata.version("pytest")
+    assert value != sys.modules["_pytest"].__version__
     monkeypatch.delenv(home_write_guard.PYTEST_VARIABLE)
     monkeypatch.setenv(home_write_guard.PYTEST_SESSION_VARIABLE, value)
     assert not home_write_guard.active()
@@ -205,11 +206,11 @@ def test_a_pytest_version_that_is_not_the_installed_one_leaves_the_guard_off(
     assert home_write_guard.refusals() == ()
 
 
-def test_the_installed_pytest_is_looked_up_only_while_pytest_version_is_set(
+def test_the_pytest_version_is_looked_up_only_while_pytest_version_is_set(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     def unexpected() -> str:
-        raise AssertionError("the installed pytest was looked up")
+        raise AssertionError("the pytest version was looked up")
 
     monkeypatch.setattr(home_write_guard, "_pytest_version", unexpected)
     # A test counts by itself, whatever PYTEST_VERSION holds.
@@ -222,16 +223,43 @@ def test_the_installed_pytest_is_looked_up_only_while_pytest_version_is_set(
     assert not home_write_guard.active()
 
 
-def test_a_failed_pytest_lookup_is_tried_again_and_a_found_one_is_kept(
+def test_in_a_pytest_process_the_running_pytest_counts_not_its_metadata(
     fake_home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A Python with no pytest installed is not running a pytest session.
+    """pytest puts its own ``__version__`` in ``PYTEST_VERSION``, so that counts.
 
-    That is a child process whose Python has no pytest, say, which inherited
-    ``PYTEST_VERSION`` from a session: the variable does not count there.
+    The package metadata can name another version than the pytest that runs: a
+    stale ``pytest-*.dist-info`` earlier on ``sys.path`` (``8.0.0`` here), or a
+    pytest run from a source tree, which names itself ``unknown``.
+    """
+    running = sys.modules["_pytest"]
+    monkeypatch.delenv(home_write_guard.PYTEST_VARIABLE)
+    monkeypatch.setattr(importlib.metadata, "version", lambda _name: "8.0.0")
+    home_write_guard._installed_pytest_version.cache_clear()
+    try:
+        for version in (running.__version__, "unknown"):
+            monkeypatch.setattr(running, "__version__", version)
+            monkeypatch.setenv(home_write_guard.PYTEST_SESSION_VARIABLE, version)
+            assert home_write_guard.active(), version
+            assert home_write_guard.would_refuse(fake_home / ".claude" / "x")
+        monkeypatch.setenv(home_write_guard.PYTEST_SESSION_VARIABLE, "8.0.0")
+        assert not home_write_guard.active()
+        assert not home_write_guard.would_refuse(fake_home / ".claude" / "x")
+    finally:
+        monkeypatch.undo()
+        home_write_guard._installed_pytest_version.cache_clear()
+
+
+def test_a_failed_pytest_lookup_is_tried_again_and_a_found_one_is_kept(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """In a process that runs no pytest, the installed pytest is looked up.
+
+    That is a child process a session started, which inherited
+    ``PYTEST_VERSION``. Where its Python has no pytest installed, the variable
+    does not count there.
     """
     real_version = importlib.metadata.version
-    installed = real_version("pytest")
     asked: list[str] = []
 
     def missing(name: str) -> str:
@@ -242,23 +270,20 @@ def test_a_failed_pytest_lookup_is_tried_again_and_a_found_one_is_kept(
         asked.append(name)
         return real_version(name)
 
-    monkeypatch.delenv(home_write_guard.PYTEST_VARIABLE)
-    monkeypatch.setenv(home_write_guard.PYTEST_SESSION_VARIABLE, installed)
-    home_write_guard._pytest_version.cache_clear()
+    lookup = home_write_guard._installed_pytest_version
+    lookup.cache_clear()
     monkeypatch.setattr(importlib.metadata, "version", missing)
     try:
-        assert not home_write_guard.active()
-        assert not home_write_guard.would_refuse(fake_home / ".claude" / "x")
-        failed = len(asked)
-        assert failed >= 2
-        assert set(asked) == {"pytest"}
+        for _ in range(2):
+            with pytest.raises(importlib.metadata.PackageNotFoundError):
+                lookup()
+        assert asked == ["pytest", "pytest"]
         monkeypatch.setattr(importlib.metadata, "version", found)
-        assert home_write_guard.active()
-        assert home_write_guard.would_refuse(fake_home / ".claude" / "x")
-        assert len(asked) == failed + 1
+        assert lookup() == lookup() == real_version("pytest")
+        assert asked == ["pytest", "pytest", "pytest"]
     finally:
         monkeypatch.setattr(importlib.metadata, "version", real_version)
-        home_write_guard._pytest_version.cache_clear()
+        lookup.cache_clear()
 
 
 #: The ``src`` folder a child Python imports Apothem from.
@@ -342,7 +367,7 @@ def test_outside_pytest_the_refusal_says_pytest_version_alone_turned_it_on(
         (
             None,
             "pytest is running (the pytest session, outside any test: "
-            "PYTEST_VERSION matches the installed pytest {version})",
+            "PYTEST_VERSION matches the running pytest {version})",
         ),
     ],
     ids=["test", "empty-test-id", "session"],
@@ -355,7 +380,7 @@ def test_the_refusal_names_the_variable_that_turned_the_guard_on(
     running: str,
 ) -> None:
     """The message and its ``stderr`` notice say why the guard is on."""
-    version = importlib.metadata.version("pytest")
+    version = sys.modules["_pytest"].__version__
     monkeypatch.setenv(home_write_guard.PYTEST_SESSION_VARIABLE, version)
     if current is None:
         monkeypatch.delenv(home_write_guard.PYTEST_VARIABLE)

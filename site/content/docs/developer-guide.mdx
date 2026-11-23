@@ -669,7 +669,7 @@ temporary folders.
 Apothem also refuses these writes itself while pytest runs, so a test
 file copied out of `tests/` and run without `tests/conftest.py` cannot reach
 the real home through Apothem. While `PYTEST_CURRENT_TEST` is set (a test),
-or `PYTEST_VERSION` holds the version of the installed pytest (the whole
+or `PYTEST_VERSION` holds the version of the running pytest (the whole
 session, collection and session hooks included), a write, removal, copy,
 rename or lock file in the account's `~/.apothem`, `~/.config/apothem`, a
 tool folder the harness registry names in the home (`~/.claude`, `~/.qwen`,
@@ -688,7 +688,7 @@ changed. ...
 
 A `PYTEST_VERSION` with any other value, such as a pin like `8.2` that a
 shell or a CI job exports, does not count. Outside any test the error says
-`PYTEST_VERSION matches the installed pytest <version>` in place of the test.
+`PYTEST_VERSION matches the running pytest <version>` in place of the test.
 One that a shell or a CI job exports with the installed pytest's exact
 version counts all the same, outside pytest too, and the error then says
 `PYTEST_VERSION holds the installed pytest's version, <version>, though no

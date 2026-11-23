@@ -9,7 +9,7 @@ against the account's real home. This module stops such a write before it
 happens.
 
 While ``PYTEST_CURRENT_TEST`` is set, or ``PYTEST_VERSION`` holds the version
-of the pytest installed for this Python (pytest sets the first for each test's
+of the pytest that runs in this process (pytest sets the first for each test's
 setup, call and teardown, and pytest 8.2 and later the second, to its own
 version, for the whole session, so collection, module-level code and session
 hooks count too), :func:`refuse_real_home_write` raises
@@ -35,19 +35,24 @@ its own ``directory_name``), before it is created or its stores are removed.
 Nothing else is refused: reads, dry runs and previews, the
 temporary folder, the checkout, and the rest of the home all stay allowed.
 
-A ``PYTEST_VERSION`` with any other value (an empty one, or a pin such as
-``8.2`` that a shell or a CI job exports) does not count. One that a shell or
-a CI job exports with the installed pytest's exact version (``9.1.0`` beside
-``pip install pytest==9.1.0``) counts all the same, outside pytest too: the
-refusal message then says that ``PYTEST_VERSION`` alone turned the guard on,
-in a process that runs no pytest. The installed
-pytest's version is read from its package metadata only while
-``PYTEST_VERSION`` is set, and a version found is kept for the process. With
-both variables unset a check is two environment lookups. A
-``PYTEST_VERSION`` that does not count adds a comparison with the installed
-version, or, where this Python has no pytest installed, a package metadata
-lookup on every check, since a failed lookup is not kept. The refusal message
-names the variable that turned the guard on.
+The running pytest's version is the ``__version__`` of its ``_pytest``
+package, the string pytest puts in ``PYTEST_VERSION``, so a stale
+``pytest-*.dist-info`` earlier on ``sys.path``, or a pytest run from a source
+tree that names itself ``unknown``, changes nothing. In a process that has not
+imported pytest (a child process a session started, say), ``PYTEST_VERSION``
+counts when it holds the version of the pytest installed for this Python,
+read from its package metadata only while ``PYTEST_VERSION`` is set; a
+version found is kept for the process. A ``PYTEST_VERSION`` with any other
+value (an empty one, or a pin such as ``8.2`` that a shell or a CI job
+exports) does not count. One that a shell or a CI job exports with the
+installed pytest's exact version (``9.1.0`` beside ``pip install
+pytest==9.1.0``) counts all the same, outside pytest too: the refusal message
+then says that ``PYTEST_VERSION`` alone turned the guard on, in a process that
+runs no pytest. With both variables unset a check is two environment lookups.
+A ``PYTEST_VERSION`` that does not count adds a comparison with that version,
+or, in a process that runs no pytest where this Python has no pytest
+installed, a package metadata lookup on every check, since a failed lookup is
+not kept. The refusal message names the variable that turned the guard on.
 
 A path is compared as written and as resolved through links, afresh on every
 check, so a folder swapped for a link during a test counts at once. The
@@ -316,10 +321,11 @@ def active() -> bool:
     """Return True while pytest runs.
 
     That is while ``PYTEST_CURRENT_TEST`` is set, whatever its value (a test),
-    or while ``PYTEST_VERSION`` holds the version of the pytest installed for
-    this Python (the whole session, pytest 8.2 and later). Any other
-    ``PYTEST_VERSION`` (an empty one, or a pin such as ``8.2``) does not
-    count: a shell or a CI job may export that name for its own use. An
+    or while ``PYTEST_VERSION`` holds the version of the pytest that runs in
+    this process (the whole session, pytest 8.2 and later), or, in a process
+    that has not imported pytest, of the pytest installed for this Python.
+    Any other ``PYTEST_VERSION`` (an empty one, or a pin such as ``8.2``) does
+    not count: a shell or a CI job may export that name for its own use. An
     exported value equal to the installed version counts, outside pytest too.
     """
     return _turned_on_by() is not None
@@ -328,9 +334,8 @@ def active() -> bool:
 def _turned_on_by() -> str | None:
     """Return the variable that turns the guard on now, or None.
 
-    The installed pytest's version is looked up only while ``PYTEST_VERSION``
-    is set and not empty, so with both variables unset this is two
-    environment lookups.
+    The pytest version is looked up only while ``PYTEST_VERSION`` is set and
+    not empty, so with both variables unset this is two environment lookups.
     """
     environ = os.environ
     if PYTEST_VARIABLE in environ:
@@ -343,19 +348,38 @@ def _turned_on_by() -> str | None:
 def _session_counts(value: str | None) -> bool:
     """Return True when *value*, as ``PYTEST_VERSION``, turns the guard on.
 
-    That is when it is the installed pytest's version (:func:`active`).
+    That is when it is the version :func:`_pytest_version` returns.
     """
     if not value:
         return False
     try:
-        installed = _pytest_version()
+        version = _pytest_version()
     except _LOOKUP_ERRORS:
         return False
-    return value == installed
+    return value == version
+
+
+def _pytest_version() -> str:
+    """Return the version ``PYTEST_VERSION`` has to hold to turn the guard on.
+
+    In a process that has imported pytest, that is the ``__version__`` of its
+    ``_pytest`` package: the string pytest's ``main`` puts in the variable,
+    whatever the package metadata says. In any other process (a child process
+    a session started, say) it is the version of the pytest installed for
+    this Python (:func:`_installed_pytest_version`). Raises when the one it
+    needs is not known.
+    """
+    running = sys.modules.get("_pytest")
+    if running is None:
+        return _installed_pytest_version()
+    found: object = getattr(running, "__version__", None)
+    if not isinstance(found, str) or not found:
+        raise LookupError("the running pytest names no version")
+    return found
 
 
 @functools.lru_cache(maxsize=1)
-def _pytest_version() -> str:
+def _installed_pytest_version() -> str:
     """Return the version of the pytest installed for this Python.
 
     It comes from the package metadata (``importlib.metadata``), looked up on
@@ -549,7 +573,7 @@ def _running() -> str:
 
     That is the test, while ``PYTEST_CURRENT_TEST`` is set, and otherwise the
     pytest session, outside any test, whose ``PYTEST_VERSION`` matches the
-    installed pytest (:func:`active`). In a process that has not imported
+    running pytest (:func:`active`). In a process that has not imported
     pytest (one a session started, or one whose shell or CI job exports the
     installed pytest's exact version), no pytest is running: the message says
     that ``PYTEST_VERSION`` alone turned the guard on.
@@ -575,7 +599,7 @@ def _running() -> str:
         )
     return (
         f"pytest is running ({_SESSION}, outside any test: "
-        f"{PYTEST_SESSION_VARIABLE} matches the installed pytest {version})"
+        f"{PYTEST_SESSION_VARIABLE} matches the running pytest {version})"
     )
 
 

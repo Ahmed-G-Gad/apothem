@@ -201,7 +201,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 - **Apothem refuses to write into the real home while pytest runs.**
   While `PYTEST_CURRENT_TEST` is set (a test), or `PYTEST_VERSION` holds the
-  installed pytest's version (the whole session: collection, module-level
+  running pytest's version (the whole session: collection, module-level
   code and session hooks), a write, removal, copy, rename or lock file in a
   protected path of the account's home stops with `RealHomeWriteError`
   before anything changes. The protected paths are
