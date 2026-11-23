@@ -3,22 +3,23 @@
 """The real-home guard in ``tests/conftest.py`` stops a test before it can write.
 
 Importing ``tests/conftest.py`` registers ``real_home_guard`` with the pytest
-session doing the import. Its setup hook fails a test, before any of its fixtures
-is set up, when the isolation fixtures of ``tests/conftest.py`` do not apply to
-it. Its call hook fails a test, before its body runs, when its environment points
-Apothem at the home the pytest process started with or at a real folder in it.
-Its report hook keeps such a failure failed when the test is marked ``xfail``.
-Its session hooks fail the run on a refusal of a write into a protected home
-that a caller absorbed outside any test, named for where it happened.
-``__all__`` makes a star import of ``tests/conftest.py`` carry the isolation
-fixtures, which a star import used to skip because their names start with ``_``.
+session doing the import. Its setup hook fails a test, before any of its
+fixtures is set up, when the isolation fixtures of ``tests/conftest.py`` do not
+apply to it. Its call hook fails a test, before its body runs, when its
+environment points Apothem at the home the pytest process started with or at a
+real folder in it. Its report hook keeps such a failure failed when the test is
+marked ``xfail``. Its session hooks fail the run on a refusal of a write into a
+protected home that a caller absorbed outside any test, named for where it
+happened. ``__all__`` makes a star import of ``tests/conftest.py`` carry the
+isolation fixtures, which a star import used to skip because their names start
+with ``_``.
 
-The ``test_*`` functions run in the suite, where ``tests/conftest.py`` is loaded
-as a conftest. They check that the guard is registered once, with its hooks
-ordered as intended (the session hooks that read the refusal log included), and
-that the call hook finds nothing for a suite test, and they check the guard's
-comparison on text: a folder below a real home is allowed, but not the home or
-a real folder in it.
+The ``test_*`` functions run in the suite, where ``tests/conftest.py`` is
+loaded as a conftest. They check that the guard is registered once, with its
+hooks ordered as intended (the session hooks that read the refusal log
+included), and that the call hook finds nothing for a suite test, and they
+check the guard's comparison on text: a folder below a real home is allowed,
+but not the home or a real folder in it.
 
 Showing the guard stop a test takes a pytest session of its own, because the
 call hook compares with the home its session started with.
@@ -29,11 +30,12 @@ the ``pytester`` plugin stays out of the suite's own session. Each case points
 ones, writes a probe folder with pytester and runs it in-process. The probe
 session imports ``tests/conftest.py`` anew (one case imports it just before, in
 a thread, with the fake real home already set), so the fake real home is its
-real home, and the developer's own home is never named. The probe tests only read the
-home; the first line of each writes a sentinel file into the probe folder, never
-into a home, so a missing sentinel proves the body never started. The probe
-fixtures that stand for a fixture writing during setup write their sentinels
-there too. One probe test uses no fixture and the other uses ``tmp_path``.
+real home, and the developer's own home is never named. The probe tests only
+read the home; the first line of each writes a sentinel file into the probe
+folder, never into a home, so a missing sentinel proves the body never started.
+The probe fixtures that stand for a fixture writing during setup write their
+sentinels there too. One probe test uses no fixture and the other uses
+``tmp_path``.
 
 The other cases protect the fake real home with
 ``apothem.lib.home_write_guard.also_protect_home`` and absorb a refusal of a
@@ -42,36 +44,35 @@ without an ``xfail`` mark, and each test errors at teardown. The rest absorb it
 outside any test: while a test module is imported, which fails that module's
 collection, and in a probe conftest's hook, which leaves the tests to run and
 pass and fails the run: at the session start (also in a run that collects no
-test), in a ``pytest_collection`` or ``pytest_collection_modifyitems`` hook,
-in a ``pytest_collection_finish`` hook while a path that does not exist stops
-the collection, between two collect reports (a ``pytest_itemcollected`` hook, and the
-``pytest_collectreport`` hook of the session's own report), in a
+test), in a ``pytest_collection`` or ``pytest_collection_modifyitems`` hook, in
+a ``pytest_collection_finish`` hook while a path that does not exist stops the
+collection, between two collect reports (a ``pytest_itemcollected`` hook, and
+the ``pytest_collectreport`` hook of the session's own report), in a
 ``pytest_runtestloop`` wrapper before it yields and in a plain
 ``pytest_runtestloop`` hook (also with ``--co`` and with every test deselected,
-when no test runs), between two tests (a ``pytest_runtest_logreport``
-hook for a teardown report), in a ``pytest_sessionfinish`` hook (also one that
-then calls ``pytest.exit(returncode=0)``, as a ``pytest_configure`` hook does
-before any session starts) or after a session-finish wrapper
-yields, in ``pytest_terminal_summary``, in ``pytest_unconfigure`` (with ``-p
-no:xdist``), and under xdist (``-n 2``) at the session start and in a worker's
-session finish (reported once, and also when a controller hook ended its
-test loop with ``pytest.exit`` before it took the worker's output), also in a
-``trylast`` hook of a conftest that pytest finds during collection, and after
-a worker handed its refusals to the controller:
-in its ``pytest_terminal_summary``, in its ``pytest_unconfigure`` and after
-its own ``tryfirst`` session-finish wrapper yields, which the worker writes to
-a file the controller reads and removes, also once a controller hook ended
-the run with ``pytest.exit`` before xdist ended the workers (a later run with
-the same ``--basetemp`` and no refusal passes and reads none of the files an
-earlier run left in its folder, and no such file is made in a protected
-folder), a worker whose session ends at its start, which handed nothing
-over, is not named as if it had, and an empty file a worker left, a line it
-cut short and a file the controller cannot read each fail the run; a
-worker that stops on Ctrl-C has its refusal reported once, and one the
-controller absorbs while its workers run the tests is named for the run. Each
-names where the refusal happened. A session that absorbs nothing exits 0, with
-and without xdist. The guard refuses before any write, so nothing lands in a
-home.
+when no test runs), between two tests (a ``pytest_runtest_logreport`` hook for
+a teardown report), in a ``pytest_sessionfinish`` hook (also one that then
+calls ``pytest.exit(returncode=0)``, as a ``pytest_configure`` hook does before
+any session starts) or after a session-finish wrapper yields, in
+``pytest_terminal_summary``, in ``pytest_unconfigure`` (with ``-p no:xdist``),
+and under xdist (``-n 2``) at the session start and in a worker's session
+finish (reported once, and also when a controller hook ended its test loop with
+``pytest.exit`` before it took the worker's output), also in a ``trylast`` hook
+of a conftest that pytest finds during collection, and after a worker handed
+its refusals to the controller: in its ``pytest_terminal_summary``, in its
+``pytest_unconfigure`` and after its own ``tryfirst`` session-finish wrapper
+yields, which the worker writes to a file the controller reads and removes,
+also once a controller hook ended the run with ``pytest.exit`` before xdist
+ended the workers (a later run with the same ``--basetemp`` and no refusal
+passes and reads none of the files an earlier run left in its folder, and no
+such file is made in a protected folder), a worker whose session ends at its
+start, which handed nothing over, is not named as if it had, and an empty file
+a worker left, a line it cut short and a file the controller cannot read each
+fail the run; a worker that stops on Ctrl-C has its refusal reported once, and
+one the controller absorbs while its workers run the tests is named for the
+run. Each names where the refusal happened. A session that absorbs nothing
+exits 0, with and without xdist. The guard refuses before any write, so nothing
+lands in a home.
 """
 
 from __future__ import annotations
