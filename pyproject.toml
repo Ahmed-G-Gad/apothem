@@ -391,9 +391,10 @@ exclude_lines = [
 # Packages measured beside the engine, each with its own floor. The conformity
 # gate runs as a per-Write hook and gates releases; the audit package builds the
 # inventory and drift reports. Neither is folded into the engine figure above,
-# and neither lowers it. coverage.py ignores this table: the CI `metrics` job
-# measures src/apothem in one run and `scripts/dev/collect_metrics.py
-# --check-floors` fails when a package drops below its floor. Each floor is the
+# and neither lowers it. coverage.py ignores this table: the CI coverage shards
+# measure src/apothem whole, the `metrics` job combines their data, and
+# `scripts/dev/collect_metrics.py --check-floors` fails when a package drops
+# below its floor. Each floor is the
 # measured value rounded down; raise it as coverage rises, never lower it to
 # make a change pass.
 [tool.coverage.package-floors]

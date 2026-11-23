@@ -223,6 +223,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   machine, so the halves never overlap or leave a test out. The
   `home-isolation` job's limit goes from 20 to 30 minutes: 20 cancelled it on
   `main` and on pull requests.
+- **The CI metrics job reuses the coverage shards' data instead of running the
+  test suite again.** The `ci.yml` metrics job ran the whole suite under
+  coverage on one runner in 18 to 30 minutes, and its 30-minute limit cancelled
+  some runs. The two coverage shards now measure all of `src/apothem`, and the
+  metrics job combines their data and reports the same per-package figures and
+  floors in about a minute, so the suite runs under coverage once per CI run
+  instead of twice. The `coverage` job's reports keep only the engine folders,
+  read from `[tool.coverage.run] source` in `pyproject.toml`, so the engine
+  figure and its 80% floor stay the same.
 - **The Windows test cells in CI get 120 minutes.** The Windows cells of the
   `ci.yml` quality job take 64 to 88 minutes, and the 90-minute limit
   cancelled cells whose tests had passed. They now get 120, as the CI Matrix
