@@ -657,8 +657,8 @@ def _record_stopped_prepass(
     """Record an unfinished uninstall when the pre-pass *done* changed a file.
 
     Called while the native-config step raises (a refusal of the real-home
-    guard or any other error), in every run, not only while pytest runs, so
-    the backups the pre-pass took stay referenced.
+    guard, any other error, or a stop such as Ctrl-C), in every run, not only
+    while pytest runs, so the backups the pre-pass took stay referenced.
     Returns the run so far, for the caller to raise as a stopped uninstall:
     *done*, a warning that names the ledger when the record could not be
     taken, and the files a removal in *done* kept. Returns ``None`` when
@@ -720,16 +720,18 @@ def make_native_config_uninstall(
     uninstall, after the fix, does the whole job. Otherwise its results join
     the uninstall's: their paths are not handled again, and a ``blocked``
     warning (Apothem's file behind a link) leaves the uninstall unfinished
-    like any other. When the native-config step raises after *before_fn*
-    changed files elsewhere (a refusal of the real-home guard or any other
-    error), the uninstall is recorded unfinished with their backups first,
-    in every run, not only while pytest runs (the shared driver does the
-    same for an error later on). An ordinary error is then raised as a
-    :class:`MaterializationError` that carries those results, with the error
-    as its cause, so the CLI reports a partial uninstall (exit 2); a refusal
-    is raised as it is, and so is any error when *before_fn* changed
-    nothing. A backup root or ledger in a protected folder is refused before
-    *before_fn* runs.
+    like any other. When the native-config step stops after *before_fn*
+    changed files elsewhere, whatever stopped it (a refusal of the real-home
+    guard, any other error, or Ctrl-C), the uninstall is recorded unfinished
+    with their backups first, in every run, not only while pytest runs (the
+    shared driver does the same for an error later on). An ordinary error is
+    then raised as a :class:`MaterializationError` that carries those
+    results, with the error as its cause, so the CLI reports a partial
+    uninstall (exit 2); a refusal and Ctrl-C are raised as they are, and so
+    is any error when *before_fn* changed nothing. An error inside
+    *before_fn* itself records nothing: the files it changed before the
+    error keep their backups, but no record names them. A backup root or
+    ledger in a protected folder is refused before *before_fn* runs.
     """
 
     @install_driver.backup_session()
@@ -771,9 +773,13 @@ def make_native_config_uninstall(
                 retired=_retired_at_uninstall(retired_fn),
                 relocated=relocated_fn,
             )
-        except Exception as exc:
+        except BaseException as exc:
             stopped = _record_stopped_prepass(harness_name, output_path.parent, before)
-            if stopped is None or isinstance(exc, home_write_guard.RealHomeWriteError):
+            if (
+                stopped is None
+                or not isinstance(exc, Exception)
+                or isinstance(exc, home_write_guard.RealHomeWriteError)
+            ):
                 raise
             # Hand the CLI what before_fn removed, so it reports a partial
             # uninstall (exit 2), as run_uninstall does for its own pass.

@@ -682,17 +682,17 @@ def test_a_stale_sweep_is_refused_before_its_first_removal(home: Path) -> None:
     assert _snapshot(home) == before
 
 
-@pytest.mark.parametrize("stop", ["refused", "error"])
+@pytest.mark.parametrize("stop", ["refused", "error", "interrupt"])
 def test_a_native_uninstall_stopped_after_its_first_step_records_the_backups(
     home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, stop: str
 ) -> None:
     """What the step before the native config removed stays referenced.
 
-    The native-config step stops on a refusal of the guard, or on an ordinary
-    error such as a file the system will not let it change. The ordinary
-    error is raised as a stopped uninstall that carries what the first step
-    removed, with the error as its cause, so the CLI reports it as partial;
-    the refusal is raised as it is.
+    The native-config step stops on a refusal of the guard, on an ordinary
+    error such as a file the system will not let it change, or on Ctrl-C. The
+    ordinary error is raised as a stopped uninstall that carries what the
+    first step removed, with the error as its cause, so the CLI reports it as
+    partial; the refusal and Ctrl-C are raised as they are.
     """
     root = home / ".openclaw"
     root.mkdir()
@@ -722,6 +722,8 @@ def test_a_native_uninstall_stopped_after_its_first_step_records_the_backups(
         )
 
     def stopped(*_args: object, **_kwargs: object) -> None:
+        if stop == "interrupt":
+            raise KeyboardInterrupt
         raise PermissionError(13, "denied", str(config))
 
     if stop != "refused":
@@ -731,6 +733,7 @@ def test_a_native_uninstall_stopped_after_its_first_step_records_the_backups(
     expected: type[BaseException] = {
         "refused": Refused,
         "error": install_driver.MaterializationError,
+        "interrupt": KeyboardInterrupt,
     }[stop]
     uninstall = make_native_config_uninstall(
         "open_claw", lambda profile: "{}", before_fn=remove_elsewhere
