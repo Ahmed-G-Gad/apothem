@@ -51,7 +51,8 @@ hook for a teardown report), in a ``pytest_sessionfinish`` hook or after a
 session-finish wrapper yields, in ``pytest_terminal_summary``, in
 ``pytest_unconfigure``, and under xdist (``-n 2``) at the session start and in
 a worker's session finish, also in a ``trylast`` hook of a conftest that pytest
-finds during collection. Each names where the refusal happened. A session
+finds during collection; a worker that stops on Ctrl-C has its refusal reported
+once. Each names where the refusal happened. A session
 that absorbs nothing exits 0, with and without xdist. The guard refuses before
 any write, so nothing lands in a home.
 """
@@ -1588,6 +1589,28 @@ def case_a_later_conftests_refusal_at_a_workers_session_finish_fails_the_run(
     _assert_the_run_failed_on_it(
         result, fake_real_home, "in xdist worker gw?, after the last test"
     )
+
+
+def case_an_interrupted_xdist_workers_refusal_is_reported_once(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """xdist reports a worker that stopped on Ctrl-C down twice."""
+    pytester.makepyfile(test_probe="def test_stops():\n    raise KeyboardInterrupt\n")
+
+    result = _run_absorbing(
+        pytester,
+        fake_real_home,
+        _ABSORBED_AT_SESSION_START,
+        "-n",
+        "1",
+        "--max-worker-restart",
+        "0",
+    )
+
+    assert result.ret == pytest.ExitCode.INTERRUPTED
+    output = result.stdout.str()
+    assert output.count(f"in xdist worker gw0, {_AT_SESSION_START}") == 1, output
+    assert not (fake_real_home / ".apothem").exists()
 
 
 def case_a_passing_session_under_xdist_exits_zero(

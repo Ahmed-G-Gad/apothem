@@ -181,7 +181,8 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   worker's ``trylast`` session-finish wrapper puts what it holds in
   ``config.workeroutput`` once every plain session-finish hook has run, which
   xdist's own wrapper then sends to the controller, and the controller holds
-  it under the worker's name. A refusal a worker finds after that hand-off,
+  it under the worker's name, once also for a worker that stopped on Ctrl-C,
+  which xdist reports down twice. A refusal a worker finds after that hand-off,
   after another session-finish wrapper's ``yield``, in its terminal summary or
   in its ``pytest_unconfigure``, reaches only ``stderr``: a worker's terminal
   output is discarded, and the controller does not use its exit code.
@@ -1290,8 +1291,10 @@ class RealHomeGuard:
 
         xdist calls this in the controller when a worker has finished, with the
         ``config.workeroutput`` the worker sent (see :meth:`pytest_sessionfinish`);
-        a worker that crashed sent none. Only xdist defines the hook, so it is
-        optional: without xdist pytest neither calls it nor rejects it.
+        a worker that crashed sent none. For a worker that stopped on Ctrl-C it
+        calls this twice, so the refusals are taken out of that output the
+        first time. Only xdist defines the hook, so it is optional: without
+        xdist pytest neither calls it nor rejects it.
         """
         output = getattr(node, "workeroutput", None)
         config = getattr(node, "config", None)
@@ -1299,7 +1302,7 @@ class RealHomeGuard:
             return
         worker = getattr(getattr(node, "gateway", None), "id", "?")
         held = config.stash.setdefault(_HELD, [])
-        for where, messages in output.get(_TO_THE_CONTROLLER, ()):
+        for where, messages in output.pop(_TO_THE_CONTROLLER, ()):
             held.append((f"in xdist worker {worker}, {where}", tuple(messages)))
 
 
