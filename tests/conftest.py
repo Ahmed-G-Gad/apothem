@@ -1572,9 +1572,9 @@ def _report_held(
     instead: with *to_the_controller* in ``config.workeroutput``, which xdist
     sends, and after that in the file the controller gave it
     (:func:`_sent_late`). A worker that has no such file, or cannot write to
-    it, writes the refusals to ``stderr``. The exit status of *session* becomes
-    "tests failed" when it was "OK" or "no tests collected", which some jobs
-    accept as a pass.
+    it, writes the refusals to ``stderr``, with why it could not send them.
+    The exit status of *session* becomes "tests failed" when it was "OK" or
+    "no tests collected", which some jobs accept as a pass.
     """
     held = config.stash.get(_HELD, [])
     if not held:
@@ -1586,7 +1586,8 @@ def _report_held(
     if worker and to_the_controller:
         output.setdefault(_TO_THE_CONTROLLER, []).extend(reports)
         return
-    if worker and _sent_late(config, reports):
+    unsent = _sent_late(config, reports) if worker else None
+    if worker and unsent is None:
         return
     name = getattr(config, "workerinput", {}).get("workerid", "?")
     prefix = f"in xdist worker {name}, " if worker else ""
@@ -1603,8 +1604,8 @@ def _report_held(
             "does at its session finish"
         )
         sys.stderr.write(
-            f"{message}\nThe worker found it {when}, and could not write it to "
-            "the controller's file, so the run does not fail on it.\n"
+            f"{message}\nThe worker found it {when}, and could not send it to "
+            f"the controller: {unsent}. The run does not fail on it.\n"
         )
     elif reporter is not None:
         reporter.write_line(f"\n{message}", red=True)
@@ -1650,7 +1651,7 @@ def _late_folder(config: pytest.Config) -> str | None:
 
 def _sent_late(
     config: pytest.Config, reports: Sequence[tuple[str, tuple[str, ...]]]
-) -> bool:
+) -> str | None:
     """Append *reports* to the file the xdist controller gave this worker.
 
     The file is the one :meth:`RealHomeGuard.pytest_configure_node` named in
@@ -1658,9 +1659,10 @@ def _sent_late(
     in one call, and no other process writes to the file. Each line says
     whether the worker had handed its refusals to the controller by then
     (``handed_off``): a worker whose session stopped before its session
-    finish never did. Returns whether they were written: not when the
-    controller named no file, or the file cannot be written (the
-    controller's folder is gone, say).
+    finish never did. Returns ``None`` once they are written, or why they
+    were not: the controller named no file (see :func:`_late_folder`), or
+    the file could not be written (the controller's folder is gone, say),
+    with the system's reason.
     """
     workerinput = getattr(config, "workerinput", None)
     path = (
@@ -1669,7 +1671,10 @@ def _sent_late(
         else None
     )
     if not isinstance(path, str) or not path:
-        return False
+        return (
+            "the controller named no file for it (it could not make a folder "
+            "for the files, or Apothem would refuse a write there)"
+        )
     handed_off = config.stash.get(_HANDED_OFF, False)
     lines = "".join(
         _dumps({"where": where, "messages": list(messages), "handed_off": handed_off})
@@ -1679,9 +1684,9 @@ def _sent_late(
     try:
         with Path(path).open("a", encoding="utf-8") as stream:
             stream.write(lines)
-    except OSError:
-        return False
-    return True
+    except OSError as error:
+        return f"writing {path} failed: {error.strerror or error}"
+    return None
 
 
 def _take_late(config: pytest.Config) -> None:

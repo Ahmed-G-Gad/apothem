@@ -816,6 +816,41 @@ def test_a_controller_with_no_usable_temporary_folder_names_no_file(
     assert conftest._late_folder(config) is None
 
 
+def test_a_worker_that_cannot_send_a_refusal_says_why(
+    request: pytest.FixtureRequest,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """A worker's ``stderr`` note names why the refusal did not reach the file.
+
+    It held a refusal after its session finished, with no file named by the
+    controller in one run and a file in a folder that is gone in the other.
+    """
+    conftest = _suite_conftest(request.config)
+    gone = tmp_path / "gone" / "gw0.jsonl"
+    reasons = {
+        "the controller named no file for it": {},
+        f"writing {gone} failed: ": {conftest._LATE_TO_THE_CONTROLLER: str(gone)},
+    }
+    for reason, named in reasons.items():
+        config = SimpleNamespace(
+            stash=pytest.Stash(),
+            workeroutput={},
+            workerinput={"workerid": "gw0", **named},
+            pluginmanager=SimpleNamespace(get_plugin=lambda name: None),
+        )
+        refusal = ("after the session finished", ("a refusal",))
+        config.stash[conftest._HELD] = [refusal]
+
+        conftest._report_held(config, None)
+
+        note = " ".join(capsys.readouterr().err.split())
+        assert "in xdist worker gw0, after the session finished" in note
+        assert f"could not send it to the controller: {reason}" in note, note
+        assert "The run does not fail on it." in note
+        assert not gone.exists()
+
+
 def test_the_pytester_cases_pass(tmp_path: Path) -> None:
     """Run the ``case_*`` functions below in a pytester session of their own."""
     session = tmp_path / "session"
