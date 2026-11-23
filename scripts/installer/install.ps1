@@ -6,6 +6,10 @@
 #          to install.sh).
 # Contract: Idempotent on rerun (a re-run fetches, checks and checks out the
 #           clone, then re-materializes). Throws on unrecoverable error.
+#           When the engine ends as partial (exit code 2: it left some
+#           files as they are because of their Apothem marker lines), the
+#           run still verifies, places the shim and prints the banner,
+#           then ends with code 2 (see the end of this script).
 #
 # Trust model (tag-pinned, verified-by-default; PowerShell parity to
 # install.sh): with no APOTHEM_REF set, the installer resolves the latest
@@ -1602,6 +1606,7 @@ $EnginePyPath = "$VendorPath$([System.IO.Path]::PathSeparator)$SrcPath"
 # scratch folder is removed however the run stops, Ctrl+C included.
 $PriorPyPath = $env:PYTHONPATH
 $PriorSafePath = $env:PYTHONSAFEPATH
+$EngineCode = 0
 try {
     # Profile setup ---------------------------------------------------------------
     # A first run with no profile creates one from the example and carries on to
@@ -1647,14 +1652,24 @@ try {
     $env:PYTHONPATH = Get-SafePythonPath $EnginePyPath $PriorPyPath
     $env:PYTHONSAFEPATH = '1'
     & $PY -c $EngineProgram install --harness $Harness --profile $EngineProfile @EngineFlags
-    if ($LASTEXITCODE -ne 0) { Write-Fail "Harness materialization failed for $Harness" }
+    # Exit code 2 means the engine ended as partial: it left some files as
+    # they are because of their Apothem marker lines, and its warning above
+    # says how to fix them. The install then goes on as on success, through
+    # verify, the shim and the banner, and the run ends with code 2 (see the
+    # end of this script). Any other non-zero code stops the run here.
+    $EngineCode = $LASTEXITCODE
+    if ($EngineCode -eq 2) {
+        Write-Warn "The engine left some files as they are (exit code 2). Fix them as its warning above says, then run 'apothem update --harness $Harness' again."
+    } elseif ($EngineCode -ne 0) {
+        Write-Fail "Harness materialization failed for $Harness"
+    }
 
     if ($DryRun) {
         # Dry-run previews only; skip the verify block and banner so no
         # post-install action runs. The finally block still restores PYTHONPATH.
         Write-Bold "Dry-run complete - no changes were made."
     } else {
-        Write-Ok "Harness $Harness installed"
+        if ($EngineCode -eq 0) { Write-Ok "Harness $Harness installed" }
 
         # Verify --------------------------------------------------------------
         if ($env:APOTHEM_SKIP_VERIFY -ne '1') {
@@ -1790,4 +1805,14 @@ completion (opt-in; appends to your profile):
   apothem completion powershell >> `$PROFILE   # or bash / zsh / fish
 
 "@
+}
+
+# A partial engine run (exit code 2) ends the run with that code. Run by
+# path (pwsh -File, & .\install.ps1, install.bat), the script exits with
+# it. A piped run (irm ... | iex) has no $PSCommandPath, and exit there
+# would close the PowerShell session it runs in, so the run leaves
+# $LASTEXITCODE at 2 instead and the session open.
+if ($EngineCode -eq 2) {
+    if ($PSCommandPath) { exit 2 }
+    $global:LASTEXITCODE = 2
 }

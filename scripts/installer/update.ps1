@@ -4,6 +4,10 @@
 #          installation) and re-materialize harness config (PowerShell
 #          parity to update.sh).
 # Usage:   pwsh -NoProfile -File scripts/installer/update.ps1
+# Contract: When the engine ends as partial (exit code 2: it left some
+#           files as they are because of their Apothem marker lines),
+#           the update still finishes, then ends with code 2 (see the
+#           end of this script).
 #
 # Trust model (tag-pinned, verified-by-default; PowerShell parity to
 # update.sh): with no APOTHEM_REF set, the updater resolves the latest
@@ -658,10 +662,22 @@ $PriorPyPath = $env:PYTHONPATH
 $PriorSafePath = $env:PYTHONSAFEPATH
 $env:PYTHONPATH = Get-SafePythonPath $EnginePyPath $PriorPyPath
 $env:PYTHONSAFEPATH = '1'
+$EngineCode = 0
 try {
     & $PY -c $EngineProgram update --harness $Harness --profile $ApothemProfile
-    if ($LASTEXITCODE -ne 0) { Write-Fail "Harness re-materialization failed for $Harness" }
-    Write-Ok "Harness $Harness updated"
+    # Exit code 2 means the engine ended as partial (mirrors install.ps1): it
+    # left some files as they are because of their Apothem marker lines,
+    # and its warning above says how to fix them. The update then finishes
+    # and the run ends with code 2 (see the end of this script). Any other
+    # non-zero code stops the run here.
+    $EngineCode = $LASTEXITCODE
+    if ($EngineCode -eq 2) {
+        Write-Warn "The engine left some files as they are (exit code 2). Fix them as its warning above says, then run 'apothem update --harness $Harness' again."
+    } elseif ($EngineCode -ne 0) {
+        Write-Fail "Harness re-materialization failed for $Harness"
+    } else {
+        Write-Ok "Harness $Harness updated"
+    }
 }
 finally {
     $env:PYTHONPATH = $PriorPyPath
@@ -669,3 +685,13 @@ finally {
 }
 
 Write-Bold "Update complete."
+
+# A partial engine run (exit code 2) ends the run with that code (mirrors
+# install.ps1). Run by path (pwsh -File, & .\update.ps1, update.bat), the
+# script exits with it. A piped run (irm ... | iex) has no $PSCommandPath,
+# and exit there would close the PowerShell session it runs in, so the run
+# leaves $LASTEXITCODE at 2 instead and the session open.
+if ($EngineCode -eq 2) {
+    if ($PSCommandPath) { exit 2 }
+    $global:LASTEXITCODE = 2
+}

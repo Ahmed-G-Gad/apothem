@@ -3,7 +3,10 @@
 
 # Purpose: Re-fetch the bundled Apothem source (self-contained — no package
 #          installation) and re-materialize harness configuration.
-# Contract: Idempotent. Exits 0 on success, non-zero on failure.
+# Contract: Idempotent. Exits 0 on success, non-zero on failure. When the
+#           engine ends as partial (exit code 2: it left some files as they
+#           are because of their Apothem marker lines), the update still
+#           finishes, then exits 2.
 #           POSIX sh only (no bashisms): runs under dash/ash as well as bash.
 #
 # Trust model (tag-pinned, verified-by-default): mirrors install.sh. With no
@@ -583,9 +586,23 @@ echo
 
 bold "Re-materializing harness: ${HARNESS}"
 [ -f "$PROFILE" ] || die "Profile not found at $PROFILE — run install.sh first or set APOTHEM_PROFILE"
+# Exit code 2 means the engine ended as partial (mirrors install.sh): it left
+# some files as they are because of their Apothem marker lines, and its
+# warning above says how to fix them. The update then finishes and the script
+# ends with code 2. Any other non-zero code ends the script here with that
+# code, as set -e does.
+ENGINE_CODE=0
 PYTHONSAFEPATH=1 PYTHONPATH="$(engine_pythonpath)" \
-    "$PY" -c "$ENGINE_PROGRAM" update --harness "$HARNESS" --profile "$PROFILE"
-ok "Harness ${HARNESS} updated"
+    "$PY" -c "$ENGINE_PROGRAM" update --harness "$HARNESS" --profile "$PROFILE" \
+    || ENGINE_CODE=$?
+if [ "$ENGINE_CODE" = "2" ]; then
+    warn "The engine left some files as they are (exit code 2). Fix them as its warning above says, then run 'apothem update --harness ${HARNESS}' again."
+elif [ "$ENGINE_CODE" != "0" ]; then
+    exit "$ENGINE_CODE"
+else
+    ok "Harness ${HARNESS} updated"
+fi
 echo
 
 bold "Update complete."
+exit "$ENGINE_CODE"

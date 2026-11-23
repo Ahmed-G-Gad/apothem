@@ -924,6 +924,17 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   reports the file (as `harness.stray_begin`, with "Apothem markers to fix by
   hand") and, for a file the current install writes, `status --profile` shows
   drift.
+- **The installers and update scripts finish a run that ends as partial.**
+  When `apothem install` or `apothem update` leaves a file as it is because of
+  its marker lines and exits with code `2`, `install.sh`, `install.ps1`,
+  `update.sh` and `update.ps1` print one line, which says that the engine left
+  some files as they are, to fix them as its warning above says, and then to
+  run `apothem update --harness <name>` again. The installers then run verify,
+  place the `apothem` command and print their closing banner, and the update
+  scripts print "Update complete.", as after a full success. Each script then
+  ends with exit code `2`. A piped PowerShell run (`irm ... | iex`) leaves
+  `$LASTEXITCODE` at `2` instead and keeps your PowerShell session open. Any
+  other non-zero exit code from the engine stops the script there.
 - **`verify --profile` and `status --profile` no longer report drift for a
   project's own `CLAUDE.md`.** A project-scope tool with no install record on
   this machine read the project's `CLAUDE.md` as its own profile file and

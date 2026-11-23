@@ -6,7 +6,10 @@
 #          running `python -m apothem` directly from that tree.
 # Contract: Idempotent on rerun (a re-run fetches an existing clone, checks
 #           the tag, and only then checks it out, then re-materializes).
-#           Exits 0 on success, non-zero on failure.
+#           Exits 0 on success, non-zero on failure. When the engine ends as
+#           partial (exit code 2: it left some files as they are because of
+#           their Apothem marker lines), the run still verifies, places the
+#           shim and prints the banner, then exits 2.
 #           POSIX sh only (no bashisms): the documented `curl … | sh`
 #           one-liner runs under dash/ash on Debian/Ubuntu/Alpine.
 #
@@ -1774,9 +1777,20 @@ set --
 [ "$CLEAN" = "1" ]      && set -- "$@" --clean
 [ "$DRY_RUN" = "1" ]    && set -- "$@" --dry-run
 [ "$ASSUME_YES" = "1" ] && set -- "$@" --yes
+# Exit code 2 means the engine ended as partial: it left some files as they
+# are because of their Apothem marker lines, and its warning above says how to
+# fix them. The install then goes on as on success, through verify, the shim
+# and the banner, and the script ends with code 2. Any other non-zero code
+# ends the script here with that code, as set -e does.
+ENGINE_CODE=0
 PYTHONSAFEPATH=1 PYTHONPATH="$(engine_pythonpath)" \
-    "$PY" -c "$ENGINE_PROGRAM" install --harness "$HARNESS" --profile "$ENGINE_PROFILE" "$@"
-if [ "$DRY_RUN" = "1" ]; then
+    "$PY" -c "$ENGINE_PROGRAM" install --harness "$HARNESS" --profile "$ENGINE_PROFILE" "$@" \
+    || ENGINE_CODE=$?
+if [ "$ENGINE_CODE" = "2" ]; then
+    warn "The engine left some files as they are (exit code 2). Fix them as its warning above says, then run 'apothem update --harness ${HARNESS}' again."
+elif [ "$ENGINE_CODE" != "0" ]; then
+    exit "$ENGINE_CODE"
+elif [ "$DRY_RUN" = "1" ]; then
     ok "Harness ${HARNESS} preview generated (dry-run)"
 else
     ok "Harness ${HARNESS} installed"
@@ -1786,7 +1800,7 @@ echo
 if [ "$DRY_RUN" = "1" ]; then
     echo
     bold "Dry-run complete — no changes were made."
-    exit 0
+    exit "$ENGINE_CODE"
 fi
 
 # Verify -------------------------------------------------------------------------
@@ -1920,3 +1934,6 @@ completion (opt-in; appends to your shell rc):
 
 EOF
 fi
+
+# A partial engine run (exit code 2) ends the script with that code.
+exit "$ENGINE_CODE"

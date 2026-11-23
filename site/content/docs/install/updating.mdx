@@ -102,6 +102,31 @@ the release. SHA256SUMS comes from the same release as the archive, so a match
 only shows the download isn't damaged; anyone who can change the release's
 files can change both.
 
+### When the engine leaves a file as it is
+
+The engine can leave a file that holds Apothem's block (`CLAUDE.md` or
+`AGENTS.md`, say) as it is because of its Apothem marker lines: for example,
+when the file holds two whole blocks between Apothem's markers. It then writes
+everything else, prints a warning that names the file and says how to fix it,
+and ends as partial with exit code `2`. The installer and the update script
+then print one more line:
+
+```text
+! The engine left some files as they are (exit code 2). Fix them as its warning above says, then run 'apothem update --harness claude-code' again.
+```
+
+They finish the run as after a full success: the installer still runs verify,
+places the `apothem` command and prints its closing banner, and the update
+script still prints "Update complete." as its last line. Each script then ends
+with exit code `2`. A piped PowerShell run (`irm ... | iex`) leaves
+`$LASTEXITCODE` at `2` instead, so your PowerShell session stays open. Fix the
+file as the engine's warning says, keeping your own text (see
+[A file holds two blocks between Apothem's markers](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)
+and
+[Apothem cannot tell its block from your text](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)),
+then run `apothem update --harness <name>`, or the update script, again. Any
+other non-zero exit code from the engine stops the script there.
+
 ## Re-materialize harness output
 
 After updating the engine or editing `~/.config/apothem/profile.yaml`,
