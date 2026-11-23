@@ -708,9 +708,14 @@ a path on a mapped drive, is checked by asking the share's host.
 link to a file in a protected folder, a bind mount of the home and a
 case-insensitive Linux mount.
 
-The CLI raises the error as it is, for an uninstall too. A stale sweep, a
-rollback and an OpenClaw uninstall check every path they would change before
-the first change, so they are refused before anything changes. A refused
+The CLI raises the error as it is, for an uninstall too. Some passes check
+their paths before the first change, so a refusal there leaves everything as
+it was. A stale sweep checks every stale path. A rollback checks every path
+its install record names (even one it would leave in place), the data stores
+it would remove and the user-level folders in the home it would tidy last. A
+rollback and an uninstall check the backup root and the ledger, and an
+OpenClaw uninstall also checks `openclaw.json` and every workspace rules
+file. A refused
 uninstall records an unfinished uninstall in the ledger only when it had
 already changed files outside the protected folders, in a step before the
 shared removal too (the first step of a native-config uninstall, say), so the

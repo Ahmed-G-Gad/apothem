@@ -214,10 +214,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   work, and nothing changes outside pytest. A project-scope install, update,
   uninstall or rollback whose project root is the home itself is refused
   before it writes anything, and so is a data home right in the home under a
-  name the profile chose. A stale sweep, a rollback and an OpenClaw uninstall
-  check every path they would change before the first change, so a refusal
-  leaves everything as it was; for an OpenClaw uninstall that includes a
-  workspace's rules file outside `~/.openclaw`. Links and junctions into a
+  name the profile chose. Some passes check their paths before the first
+  change, so a refusal there leaves everything as it was: a stale sweep
+  every stale path; a rollback every path its install record names, the data
+  stores it would remove and the user-level folders in the home it would
+  tidy last; a rollback and an uninstall the backup root and the ledger; and
+  an OpenClaw uninstall `openclaw.json` and every workspace's rules file,
+  one outside `~/.openclaw` included. Links and junctions into a
   protected folder count; on Windows so do letter case, short (8.3) names,
   the `\\?\`, `\\.\` and `\??\` prefixes, loopback admin shares (IPv6
   included), shares reached by the machine's own addresses or through a
