@@ -355,6 +355,22 @@ def test_outside_pytest_the_refusal_says_pytest_version_alone_turned_it_on(
     assert not home.exists()
 
 
+def test_importing_the_guard_looks_no_pytest_version_up() -> None:
+    """Every Apothem start imports the guard, so the import stays this cheap.
+
+    ``PYTEST_VERSION`` holds the installed version, as it would in a child
+    process a session started. Importing ``importlib.metadata`` alone takes
+    about 0.14 s; the first check pays for it, not the import.
+    """
+    output = _in_a_child(
+        "from apothem.lib import home_write_guard as guard\n"
+        "print(guard._installed_pytest_version.cache_info().misses)\n"
+        "print('importlib.metadata' in sys.modules, '_pytest' in sys.modules)\n",
+        PYTEST_VERSION=importlib.metadata.version("pytest"),
+    )
+    assert output.split() == ["0", "False", "False"]
+
+
 def test_a_python_with_no_pytest_reads_the_metadata_once_for_every_check(
     tmp_path: Path,
 ) -> None:
