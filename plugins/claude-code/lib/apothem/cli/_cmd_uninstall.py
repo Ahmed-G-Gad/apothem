@@ -534,7 +534,7 @@ def _failed_adapter(
     con: Console,
     no_color: bool,
 ) -> tuple[list[dict[str, object]], bool]:
-    """Report an uninstall that raised; return its rows and whether it removed files.
+    """Report an uninstall that raised; return its rows and whether it is partial.
 
     An uninstall that stops after removing files carries the run so far (a
     :class:`~apothem.harnesses._shared.install_driver.MaterializationError`
@@ -545,7 +545,8 @@ def _failed_adapter(
     link are reported as :func:`_report_run` reports them: a ``did not
     finish`` line for each link (see :func:`_link_problems`), the same text
     added to the row's message, and the link in its ``detail`` when it is
-    the only one the run names.
+    the only one the run names. Such a link makes the uninstall partial too,
+    also when it removed nothing, as in :func:`_report_run`.
     """
     run = getattr(exc, "run", None)
     run = run if isinstance(run, MaterializationRun) else None
@@ -554,6 +555,7 @@ def _failed_adapter(
     )
     links: list[str] = []
     named: dict[str, str] = {}
+    blocked: Counter[str] = Counter()
     if run is not None:
         warnings.extend(
             {"harness": harness_id, **group}
@@ -587,7 +589,7 @@ def _failed_adapter(
     row["message"] = "; ".join([f"{row['message']}{caveat}", *links])
     if named:
         row["detail"] = named
-    return [row, *_step_rows(harness_id, run)], removed
+    return [row, *_step_rows(harness_id, run)], removed or bool(blocked)
 
 
 def _finished_row(
@@ -819,7 +821,7 @@ def _uninstall_impl(
             raise  # neither is a failed uninstall
         except Exception as exc:
             errored = True
-            rows, removed = _failed_adapter(
+            rows, partial = _failed_adapter(
                 harness_id,
                 exc,
                 output_path,
@@ -829,7 +831,7 @@ def _uninstall_impl(
                 no_color=no_color,
             )
             results.extend(rows)
-            removed_any |= removed
+            removed_any |= partial
             continue
         scoped = project_root if is_project_scope(adapter) else None
         failures, partial = _report_run(
