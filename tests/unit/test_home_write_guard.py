@@ -15,6 +15,7 @@ from __future__ import annotations
 import contextlib
 import copy
 import ctypes
+import importlib.metadata
 import os
 import pickle
 import sys
@@ -121,13 +122,19 @@ def test_a_write_is_refused_while_a_test_runs(fake_home: Path) -> None:
         _write(fake_home / ".claude" / "settings.json")
 
 
-def test_pytest_marks_the_whole_session_for_the_guard() -> None:
-    """pytest 8.2 and later sets ``PYTEST_VERSION`` for the session.
+def test_pytest_marks_the_whole_session_for_the_guard(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """pytest 8.2 and later sets ``PYTEST_VERSION``, to its version, for the session.
 
     It is set before any conftest or plugin is imported and stays set through
-    collection and the session hooks; an xdist worker inherits it.
+    collection and the session hooks; an xdist worker inherits it. The value is
+    the installed pytest's version, so it turns the guard on by itself.
     """
-    assert home_write_guard.PYTEST_SESSION_VARIABLE in os.environ
+    session = os.environ[home_write_guard.PYTEST_SESSION_VARIABLE]
+    assert session == importlib.metadata.version("pytest")
+    monkeypatch.delenv(home_write_guard.PYTEST_VARIABLE)
+    assert home_write_guard.active()
 
 
 def test_a_write_outside_any_test_is_refused_and_names_the_session(
@@ -136,8 +143,9 @@ def test_a_write_outside_any_test_is_refused_and_names_the_session(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     """Collection, module-level code and session hooks run with no test id."""
+    version = importlib.metadata.version("pytest")
     monkeypatch.delenv(home_write_guard.PYTEST_VARIABLE)
-    monkeypatch.setenv(home_write_guard.PYTEST_SESSION_VARIABLE, pytest.__version__)
+    monkeypatch.setenv(home_write_guard.PYTEST_SESSION_VARIABLE, version)
     assert home_write_guard.active()
     claude = fake_home / ".claude" / "settings.json"
     assert home_write_guard.would_refuse(claude)
@@ -145,7 +153,10 @@ def test_a_write_outside_any_test_is_refused_and_names_the_session(
     with pytest.raises(home_write_guard.RealHomeWriteError) as caught:
         _write(claude)
     message = str(caught.value)
-    assert "while pytest is running (the pytest session" in message
+    assert (
+        "while pytest is running (the pytest session, outside any test: "
+        f"PYTEST_VERSION matches the installed pytest {version}). "
+    ) in message
     assert "()" not in message
     assert "without PYTEST_CURRENT_TEST and PYTEST_VERSION" in message
     with pytest.raises(home_write_guard.RealHomeWriteError):
@@ -164,6 +175,147 @@ def test_a_write_outside_any_test_is_refused_and_names_the_session(
     assert all("the pytest session" in line for line in notices)
     assert len(home_write_guard.drain_refusals()) == 3
     assert _everything_in(fake_home) == []
+
+
+@pytest.mark.parametrize(
+    "value", ["", "8.2", "1.0.0"], ids=["empty", "pin", "another-version"]
+)
+def test_a_pytest_version_that_is_not_the_installed_one_leaves_the_guard_off(
+    fake_home: Path, monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    """A shell or a CI job may export ``PYTEST_VERSION`` to pin what it installs.
+
+    Outside pytest, a real install with that pin in its environment writes as
+    before.
+    """
+    assert value != importlib.metadata.version("pytest")
+    monkeypatch.delenv(home_write_guard.PYTEST_VARIABLE)
+    monkeypatch.setenv(home_write_guard.PYTEST_SESSION_VARIABLE, value)
+    assert not home_write_guard.active()
+    claude = fake_home / ".claude" / "settings.json"
+    assert not home_write_guard.would_refuse(claude)
+    assert not home_write_guard.would_refuse_project_root(fake_home)
+    home_write_guard.refuse_project_root_at_home(fake_home, operation="install")
+    home_write_guard.refuse_data_home_in_home(
+        fake_home / "data", operation="create the data home"
+    )
+    _write(claude)
+    assert claude.read_bytes() == b"data"
+    assert home_write_guard.refusals() == ()
+
+
+def test_the_installed_pytest_is_looked_up_only_while_pytest_version_is_set(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def unexpected() -> str:
+        raise AssertionError("the installed pytest was looked up")
+
+    monkeypatch.setattr(home_write_guard, "_pytest_version", unexpected)
+    # A test counts by itself, whatever PYTEST_VERSION holds.
+    monkeypatch.setenv(home_write_guard.PYTEST_SESSION_VARIABLE, "8.2")
+    assert home_write_guard.active()
+    monkeypatch.delenv(home_write_guard.PYTEST_VARIABLE)
+    monkeypatch.delenv(home_write_guard.PYTEST_SESSION_VARIABLE)
+    assert not home_write_guard.active()
+    monkeypatch.setenv(home_write_guard.PYTEST_SESSION_VARIABLE, "")
+    assert not home_write_guard.active()
+
+
+def test_a_failed_pytest_lookup_is_tried_again_and_a_found_one_is_kept(
+    fake_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A Python with no pytest installed is not running a pytest session.
+
+    That is a child process whose Python has no pytest, say, which inherited
+    ``PYTEST_VERSION`` from a session: the variable does not count there.
+    """
+    real_version = importlib.metadata.version
+    installed = real_version("pytest")
+    asked: list[str] = []
+
+    def missing(name: str) -> str:
+        asked.append(name)
+        raise importlib.metadata.PackageNotFoundError(name)
+
+    def found(name: str) -> str:
+        asked.append(name)
+        return real_version(name)
+
+    monkeypatch.delenv(home_write_guard.PYTEST_VARIABLE)
+    monkeypatch.setenv(home_write_guard.PYTEST_SESSION_VARIABLE, installed)
+    home_write_guard._pytest_version.cache_clear()
+    monkeypatch.setattr(importlib.metadata, "version", missing)
+    try:
+        assert not home_write_guard.active()
+        assert not home_write_guard.would_refuse(fake_home / ".claude" / "x")
+        failed = len(asked)
+        assert failed >= 2
+        assert set(asked) == {"pytest"}
+        monkeypatch.setattr(importlib.metadata, "version", found)
+        assert home_write_guard.active()
+        assert home_write_guard.would_refuse(fake_home / ".claude" / "x")
+        assert len(asked) == failed + 1
+    finally:
+        monkeypatch.setattr(importlib.metadata, "version", real_version)
+        home_write_guard._pytest_version.cache_clear()
+
+
+@pytest.mark.parametrize(
+    ("current", "running"),
+    [
+        (
+            "probe.py::test_one (call)",
+            "a pytest test is running (PYTEST_CURRENT_TEST is set: "
+            "probe.py::test_one (call))",
+        ),
+        ("", "a pytest test is running (PYTEST_CURRENT_TEST is set)"),
+        (
+            None,
+            "pytest is running (the pytest session, outside any test: "
+            "PYTEST_VERSION matches the installed pytest {version})",
+        ),
+    ],
+    ids=["test", "empty-test-id", "session"],
+)
+def test_the_refusal_names_the_variable_that_turned_the_guard_on(
+    fake_home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    current: str | None,
+    running: str,
+) -> None:
+    """The message and its ``stderr`` notice say why the guard is on."""
+    version = importlib.metadata.version("pytest")
+    monkeypatch.setenv(home_write_guard.PYTEST_SESSION_VARIABLE, version)
+    if current is None:
+        monkeypatch.delenv(home_write_guard.PYTEST_VARIABLE)
+    else:
+        monkeypatch.setenv(home_write_guard.PYTEST_VARIABLE, current)
+    wanted = f", while {running.format(version=version)}. "
+    checks: list[Callable[[], None]] = [
+        lambda: home_write_guard.refuse_real_home_write(
+            fake_home / ".claude" / "x", operation="write"
+        ),
+        lambda: home_write_guard.refuse_project_root_at_home(
+            fake_home, operation="install"
+        ),
+        lambda: home_write_guard.refuse_data_home_in_home(
+            fake_home / "data", operation="create the data home"
+        ),
+    ]
+    for check in checks:
+        with pytest.raises(home_write_guard.RealHomeWriteError) as caught:
+            check()
+        assert wanted in str(caught.value)
+    notices = [
+        line
+        for line in capsys.readouterr().err.splitlines()
+        if line.startswith("RealHomeWriteError: ")
+    ]
+    # One notice for .claude and one for the home, each the message itself.
+    assert len(notices) == 2
+    assert all(wanted in line for line in notices)
+    assert len(home_write_guard.drain_refusals()) == len(checks)
 
 
 @pytest.mark.parametrize("primitive", sorted(_PRIMITIVES))
@@ -608,7 +760,10 @@ def test_the_refusal_names_the_path_the_folder_the_test_and_the_fix(
     # Only the protected folder is known to be untouched, so only it is named.
     assert f"Nothing in {root} was changed." in message
     assert "Nothing was changed" not in message
-    assert os.environ[home_write_guard.PYTEST_VARIABLE] in message
+    current = os.environ[home_write_guard.PYTEST_VARIABLE]
+    assert f"a pytest test is running (PYTEST_CURRENT_TEST is set: {current})" in (
+        message
+    )
     assert "tests/conftest.py" in message
     assert "without PYTEST_CURRENT_TEST" in message
     assert isinstance(error, OSError)
@@ -675,7 +830,7 @@ def test_a_refusal_is_written_once_per_folder_in_each_test(
     # test that refuses again after another one ran is announced again.
     assert [
         (
-            line.split(" (probe.py::")[1].split(" (")[0],
+            line.split("PYTEST_CURRENT_TEST is set: probe.py::")[1].split(" (")[0],
             str(fake_home / ".claude") in line,
         )
         for line in notices

@@ -8,9 +8,10 @@ run with ``-c``, ``-o addopts=`` or ``--rootdir`` elsewhere) runs Apothem
 against the account's real home. This module stops such a write before it
 happens.
 
-While ``PYTEST_CURRENT_TEST`` or ``PYTEST_VERSION`` is set (pytest sets the
-first for each test's setup, call and teardown, and pytest 8.2 and later the
-second for the whole session, so collection, module-level code and session
+While ``PYTEST_CURRENT_TEST`` is set, or ``PYTEST_VERSION`` holds the version
+of the pytest installed for this Python (pytest sets the first for each test's
+setup, call and teardown, and pytest 8.2 and later the second, to its own
+version, for the whole session, so collection, module-level code and session
 hooks count too), :func:`refuse_real_home_write` raises
 :class:`RealHomeWriteError` for a path at or inside one of these folders of
 the account's home:
@@ -33,7 +34,14 @@ the home under any name (a profile with the ``user-home`` workspace scope and
 its own ``directory_name``), before it is created or its stores are removed.
 Nothing else is refused: reads, dry runs and previews, the
 temporary folder, the checkout, and the rest of the home all stay allowed.
-With both variables unset the check is two environment lookups.
+
+A ``PYTEST_VERSION`` with any other value (an empty one, or a pin such as
+``8.2`` that a shell or a CI job exports) does not count. The installed
+pytest's version is read from its package metadata only while
+``PYTEST_VERSION`` is set, and a version found is kept for the process. With
+both variables unset a check is two environment lookups; a
+``PYTEST_VERSION`` that does not count adds one comparison with that version.
+The refusal message names the variable that turned the guard on.
 
 A path is compared as written and as resolved through links, afresh on every
 check, so a folder swapped for a link during a test counts at once. The
@@ -82,8 +90,10 @@ Every refusal is logged in this process (:func:`refusals`,
 each test (or, outside any test, in the pytest session), so a caller that
 absorbs the error still leaves a trace that ``tests/conftest.py`` reports.
 The log is per process: a refusal a child process absorbs shows only as the
-child's ``stderr`` line. The check runs before the write and by path, so a
-folder swapped for a link between the two is not seen.
+child's ``stderr`` line. A child process that inherits only
+``PYTEST_VERSION`` (one started outside any test) is guarded only when its
+Python has the same pytest installed. The check runs before the write and by
+path, so a folder swapped for a link between the two is not seen.
 
 Nothing here holds a path at module level, and nothing is looked up at import:
 the suite's scan for module-level paths naming the real home stays clean.
@@ -109,8 +119,10 @@ from typing import Any, TypeGuard
 #: The variable pytest sets for each test's setup, call and teardown.
 PYTEST_VARIABLE = "PYTEST_CURRENT_TEST"
 
-#: The variable pytest 8.2 and later sets for the whole session: collection,
-#: module-level code and session hooks run with it, outside any test.
+#: The variable pytest 8.2 and later sets, to its own version, for the whole
+#: session: collection, module-level code and session hooks run with it,
+#: outside any test. It counts only while it holds the version of the pytest
+#: installed for this Python (see :func:`active`).
 PYTEST_SESSION_VARIABLE = "PYTEST_VERSION"
 
 #: What a refusal outside any test names in place of the test.
@@ -297,11 +309,50 @@ class _UnreachableShareError(Exception):
 def active() -> bool:
     """Return True while pytest runs.
 
-    That is while ``PYTEST_CURRENT_TEST`` (a test) or ``PYTEST_VERSION`` (the
-    whole session, pytest 8.2 and later) is set.
+    That is while ``PYTEST_CURRENT_TEST`` is set, whatever its value (a test),
+    or while ``PYTEST_VERSION`` holds the version of the pytest installed for
+    this Python (the whole session, pytest 8.2 and later). Any other
+    ``PYTEST_VERSION`` (an empty one, or a pin such as ``8.2``) does not
+    count: a shell or a CI job may export that name for its own use.
+    """
+    return _turned_on_by() is not None
+
+
+def _turned_on_by() -> str | None:
+    """Return the variable that turns the guard on now, or None.
+
+    The installed pytest's version is looked up only while ``PYTEST_VERSION``
+    is set and not empty, so with both variables unset this is two
+    environment lookups.
     """
     environ = os.environ
-    return PYTEST_VARIABLE in environ or PYTEST_SESSION_VARIABLE in environ
+    if PYTEST_VARIABLE in environ:
+        return PYTEST_VARIABLE
+    value = environ.get(PYTEST_SESSION_VARIABLE)
+    if not value:
+        return None
+    try:
+        installed = _pytest_version()
+    except _LOOKUP_ERRORS:
+        return None
+    return PYTEST_SESSION_VARIABLE if value == installed else None
+
+
+@functools.lru_cache(maxsize=1)
+def _pytest_version() -> str:
+    """Return the version of the pytest installed for this Python.
+
+    It comes from the package metadata (``importlib.metadata``), looked up on
+    first use, never at import, and kept for the process. ``lru_cache`` keeps
+    no failure: with no pytest installed, or metadata that cannot be read,
+    this raises, ``PYTEST_VERSION`` does not count, and the next call tries
+    again.
+    """
+    metadata = importlib.import_module("importlib.metadata")
+    found: object = metadata.version("pytest")
+    if not isinstance(found, str) or not found:
+        raise LookupError("the installed pytest names no version")
+    return found
 
 
 def account_home() -> str | None:
@@ -464,11 +515,22 @@ _FIX = (
 
 
 def _running() -> str:
-    """Return what is running, for a message: the test, or the pytest session."""
-    test = os.environ.get(PYTEST_VARIABLE, "")
-    if test:
-        return f"a pytest test is running ({test})"
-    return f"pytest is running ({_SESSION}: collection or a session hook)"
+    """Return what is running, for a message, and the variable that says so.
+
+    That is the test, while ``PYTEST_CURRENT_TEST`` is set, and otherwise the
+    pytest session, outside any test, whose ``PYTEST_VERSION`` matches the
+    installed pytest (:func:`active`).
+    """
+    environ = os.environ
+    if PYTEST_VARIABLE in environ:
+        test = environ[PYTEST_VARIABLE]
+        shown = f": {test}" if test else ""
+        return f"a pytest test is running ({PYTEST_VARIABLE} is set{shown})"
+    version = environ.get(PYTEST_SESSION_VARIABLE, "")
+    return (
+        f"pytest is running ({_SESSION}, outside any test: "
+        f"{PYTEST_SESSION_VARIABLE} matches the installed pytest {version})"
+    )
 
 
 def _refuse(message: str, *, path: str, root: str, operation: str) -> None:

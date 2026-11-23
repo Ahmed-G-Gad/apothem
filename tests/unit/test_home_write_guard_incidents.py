@@ -346,7 +346,8 @@ def case_module_level_code_and_session_hooks_are_refused(
 
     The probe session gets neither pytest variable from this one, so only the
     ``PYTEST_VERSION`` its own pytest sets can switch the guard on while the
-    conftest is imported, the session starts and the module is collected.
+    conftest is imported, the session starts and the module is collected. It
+    does, because pytest sets it to its own version, the installed one.
     """
     for name in ("PYTEST_CURRENT_TEST", "PYTEST_VERSION"):
         monkeypatch.delenv(name, raising=False)
@@ -370,6 +371,7 @@ def case_module_level_code_and_session_hooks_are_refused(
     for name, outcome in outcomes.items():
         assert outcome.startswith("refused: "), (name, outcome, output)
         assert "while pytest is running (the pytest session" in outcome, outcome
+        assert "PYTEST_VERSION matches the installed pytest" in outcome, outcome
     result.assert_outcomes(passed=1)
 
 
