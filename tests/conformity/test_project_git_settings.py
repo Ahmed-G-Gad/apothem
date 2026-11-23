@@ -2386,6 +2386,59 @@ def test_in_checkout_agrees_with_git_about_ceilings(
     assert in_checkout(inner) is (found.returncode == 0), found.stderr
 
 
+@pytest.mark.skipif(os.name != "nt", reason="drive letters are a Windows matter")
+@pytest.mark.usefixtures("hermetic_git")
+def test_a_ceiling_without_a_drive_is_read_on_the_checked_folders_drive(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A ceiling with no drive letter means the drive git runs on, not ours.
+
+    git runs in the checked folder, so ``\\work\\top\\a`` names that folder's
+    drive. Read on the drive this process was started on (a build agent often
+    keeps its checkout and its temporary folders on two drives), the entry
+    named nothing and was dropped: git stopped at the ceiling while
+    ``in_checkout`` went on to the ``.git`` above it.
+    """
+    letter = next(
+        (name for name in "ZYXWVUTSRQP" if not Path(f"{name}:\\").exists()), None
+    )
+    if letter is None:
+        pytest.skip("no free drive letter to map")
+    elsewhere = tmp_path / "another-drive"
+    elsewhere.mkdir()
+    mapped = subprocess.run(
+        ["subst", f"{letter}:", str(elsewhere)],
+        capture_output=True,
+        check=False,
+        timeout=60,
+    )
+    if mapped.returncode != 0:
+        pytest.skip(f"cannot map a drive letter: {mapped.stdout!r}")
+    try:
+        top = _empty_repo((tmp_path / "top").resolve())
+        inner = top / "a" / "b"
+        inner.mkdir(parents=True)
+        monkeypatch.chdir(f"{letter}:\\")
+        for case in ("no drive letter", "no drive letter, forward slashes"):
+            monkeypatch.setenv("GIT_CEILING_DIRECTORIES", _CEILING_CASES[case](top))
+            found = subprocess.run(
+                ["git", "rev-parse", "--git-dir"],
+                cwd=str(inner),
+                env=hermetic_git_env(),
+                capture_output=True,
+                check=False,
+                timeout=60,
+            )
+            assert found.returncode != 0, case  # git stops at the ceiling
+            assert in_checkout(inner) is False, case
+    finally:
+        # Leave the mapped drive before it goes away.
+        os.chdir(tmp_path)
+        subprocess.run(
+            ["subst", f"{letter}:", "/D"], capture_output=True, check=False, timeout=60
+        )
+
+
 @pytest.mark.parametrize(
     ("value", "expected"),
     [

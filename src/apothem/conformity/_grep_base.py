@@ -440,16 +440,19 @@ def _git_reads_as_full_path(entry: str) -> bool:
     return entry[:1] in ("\\", "/") or (entry[:1].isalpha() and entry[1:2] == ":")
 
 
-def _ceiling_folders() -> tuple[frozenset[str], frozenset[str]]:
+def _ceiling_folders(start: Path) -> tuple[frozenset[str], frozenset[str]]:
     """Return the folders ``GIT_CEILING_DIRECTORIES`` names, as git reads them.
 
-    git ignores an entry that is not a full path. Up to the first empty entry
-    it resolves each entry (links, ``..``, a missing drive letter) and drops
-    one it cannot resolve; those come back first, in the platform's case
-    form. After an empty entry git compares each entry as it is written, with
-    forward slashes, against its own current folder; those come back second,
-    without the one slash git lets such an entry end with (an entry that ends
-    with two never matches a folder, for git as here).
+    *start* is the folder git would run in. git ignores an entry that is not a
+    full path. Up to the first empty entry it resolves each entry (links,
+    ``..``, a missing drive letter) and drops one it cannot resolve; those
+    come back first, in the platform's case form. A Windows entry with no
+    drive letter is read on the drive of *start*, which is git's current
+    folder, and not on the drive this process happens to be on. After an
+    empty entry git compares each entry as it is written, with forward
+    slashes, against its own current folder; those come back second, without
+    the one slash git lets such an entry end with (an entry that ends with
+    two never matches a folder, for git as here).
     """
     resolved: set[str] = set()
     as_written: set[str] = set()
@@ -464,11 +467,25 @@ def _ceiling_folders() -> tuple[frozenset[str], frozenset[str]]:
             as_written.add(entry[:-1] if ends_with_slash else entry)
         else:
             try:
-                real = str(Path(entry).resolve(strict=True))
+                real = str(Path(_on_drive_of(start, entry)).resolve(strict=True))
             except OSError:
                 continue
             resolved.add(os.path.normcase(_without_long_path_prefix(real)))
     return frozenset(resolved), frozenset(as_written)
+
+
+def _on_drive_of(start: Path, entry: str) -> str:
+    r"""Return a Windows path that has no drive letter with the drive of *start*.
+
+    ``\work\projects`` names a folder on the current drive, and for git that
+    is the drive of the folder it runs in. A path that names its own drive or
+    server (``C:\work``, ``\\server\share``), and any path elsewhere than
+    Windows, comes back unchanged.
+    """
+    if os.name != "nt":
+        return entry
+    rooted = entry[:1] in ("\\", "/") and entry[1:2] not in ("\\", "/")
+    return start.drive + entry if rooted else entry
 
 
 def _without_long_path_prefix(path: str) -> str:
@@ -497,7 +514,7 @@ def checkout_search_folders(directory: Path) -> Iterator[Path]:
     another file system unless ``GIT_DISCOVERY_ACROSS_FILESYSTEM`` is set.
     """
     start = directory.resolve()
-    resolved, as_written = _ceiling_folders()
+    resolved, as_written = _ceiling_folders(start)
     one_file_system = _STOPS_AT_FILE_SYSTEM and not _git_flag_is_set(
         "GIT_DISCOVERY_ACROSS_FILESYSTEM"
     )
