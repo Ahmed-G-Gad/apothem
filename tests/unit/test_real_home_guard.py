@@ -76,7 +76,7 @@ import sys
 import tempfile
 import threading
 from pathlib import Path
-from types import ModuleType
+from types import ModuleType, SimpleNamespace
 from typing import TYPE_CHECKING
 
 import pytest
@@ -790,6 +790,27 @@ def test_a_folder_below_a_resolved_one_resolves_as_realpath_does(
         expected = os.path.normcase(os.path.realpath(path))
         assert conftest._resolved(str(path), known) == expected, path
         assert conftest._resolved(str(path)) == expected, path
+
+
+def test_a_controller_with_no_usable_temporary_folder_names_no_file(
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """With no usable temporary folder, the xdist controller names no file.
+
+    Python raises ``FileNotFoundError`` when no candidate temporary folder
+    can be written (a full disk, say). The controller then names no file for
+    its workers, which write what they find after the hand-off to
+    ``stderr``, instead of the error stopping the session.
+    """
+    conftest = _suite_conftest(request.config)
+
+    def no_folder() -> str:
+        raise FileNotFoundError(2, "No usable temporary directory found")
+
+    monkeypatch.setattr(tempfile, "gettempdir", no_folder)
+    config = SimpleNamespace(stash=pytest.Stash())
+
+    assert conftest._late_folder(config) is None
 
 
 def test_the_pytester_cases_pass(tmp_path: Path) -> None:

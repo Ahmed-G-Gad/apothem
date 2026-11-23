@@ -1613,16 +1613,18 @@ def _late_folder(config: pytest.Config) -> str | None:
     ``tempfile.mkdtemp``, which never takes a name that exists: a folder an
     earlier run left behind (one stopped before it removed its own) is never
     read, also when that run used the same ``--basetemp``. ``None`` when it
-    cannot be made, or when Apothem would refuse a write into the temporary
-    folder (``home_write_guard.would_refuse``): the guard never writes into a
-    protected folder of a real home. The workers then write what they find
-    after the hand-off to ``stderr`` (see :func:`_report_held`).
+    cannot be made, when Python finds no usable temporary folder (``tempfile``
+    raises ``FileNotFoundError`` then), or when Apothem would refuse a write
+    into the temporary folder (``home_write_guard.would_refuse``): the guard
+    never writes into a protected folder of a real home. The workers then
+    write what they find after the hand-off to ``stderr`` (see
+    :func:`_report_held`).
     """
     if _LATE_FOLDER not in config.stash:
         folder = None
-        parent = tempfile.gettempdir()
-        if not home_write_guard.would_refuse(parent):
-            with contextlib.suppress(OSError):
+        with contextlib.suppress(OSError):
+            parent = tempfile.gettempdir()
+            if not home_write_guard.would_refuse(parent):
                 folder = tempfile.mkdtemp(prefix="apothem-late-refusals-", dir=parent)
         config.stash[_LATE_FOLDER] = folder
     return config.stash[_LATE_FOLDER]
