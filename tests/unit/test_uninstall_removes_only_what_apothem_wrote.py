@@ -2683,11 +2683,11 @@ def test_the_another_block_advice_names_each_block_and_which_to_delete_whole(
 
     Deleting only the marker lines of a block pasted in a second time left its
     text where no later run finds it, and two Apothem blocks got no step. The
-    warning now gives the install's text: each block by its lines, a pair of
-    yours to unmark first, one Apothem block to keep and each other one to
-    delete whole. Not "delete it", nor "keep one block": deleting Apothem's
-    block would leave the retry to take out the pair you quoted, as the one
-    block left, so the text says not to.
+    warning now gives the install's text: each block by its lines, and one
+    numbered fix for each block, for the case that it is Apothem's block,
+    which changes the marker lines of the other one. Not "delete it", nor
+    "keep one block": deleting Apothem's block would leave the retry to take
+    out the pair you quoted, as the one block left.
     """
     ClaudeCodeAdapter().install({})
     anchor = claude / "CLAUDE.md"
@@ -2706,21 +2706,17 @@ def test_the_another_block_advice_names_each_block_and_which_to_delete_whole(
         f"and lines {quoted} to {quoted_end})"
     ) in message
     assert (
-        "For a marker pair of yours (an example you quote, say), change or delete "
-        "its two marker lines, keeping your own text; do not delete Apothem's "
-        "block instead, since the next run would "
-        "then read your pair as Apothem's block and replace or take out the lines "
-        "between its markers. Of Apothem's own blocks (an older one, or one pasted "
-        "in a second time), keep one (in a file that starts with Apothem's "
-        "frontmatter, the one right below it) and delete each other one from its "
-        "BEGIN marker line to its END marker line, keeping any line of your own "
-        "inside it; then run the uninstall again."
+        f"Fix A, if lines {begin} to {end} are Apothem's block: A1. Change line "
+        f"{quoted_end}: add a word inside its comment. A2. Change line {quoted}: "
+        "add a word inside its comment."
     ) in message
+    assert message.endswith(" Then run the uninstall again.")
     assert (
         "1 file(s) hold two different blocks between Apothem's markers, so "
         "Apothem left them as they are; fix each as its warning says, keeping "
-        "your own text (change the marker lines of a pair of yours, and delete "
-        "only an older or pasted Apothem block), then run apothem uninstall again"
+        "your own text (follow one of its numbered fixes, which change the "
+        "marker lines of each block that is not Apothem's), then run apothem "
+        "uninstall again"
     ) in failure
     for text in (message, failure):
         assert "marker lines you added" not in text
@@ -2781,7 +2777,7 @@ def test_an_update_leaves_a_recorded_file_that_only_quotes_the_markers_as_it_is(
         for w in last_envelope["warnings"]
         if w.get("detail", {}).get("kept_reason") == "unclear-block"
     ]
-    assert "if they are text of yours, change or delete those two marker" in note
+    assert "are text of yours: B1. Change line" in note
     assert after_last == before_update
     assert finished == 0, finished_envelope
     assert _unfinished(claude) is None
@@ -2792,9 +2788,9 @@ def test_the_update_step_says_to_remove_another_block_first_not_that_it_is_kept(
 ) -> None:
     # An update does not fix a file with two different blocks (here it leaves
     # two whole blocks, one of them the pair you quote, as they are), so the
-    # advice is to fix that file first, as its warning says: change the marker
-    # lines of a pair of yours, and delete only an older or pasted Apothem
-    # block (advice-2: not only the marker lines you added; not "keep one
+    # advice is to fix that file first, as its warning says: follow one of its
+    # numbered fixes, which change the marker lines of each block that is not
+    # Apothem's (advice-2: not only the marker lines you added; not "keep one
     # block", which led to deleting Apothem's block and keeping your pair).
     # It no longer says an update leaves such a file as it is: in a file whose
     # second block shows only once Apothem's is out, an update rewrites
@@ -2816,9 +2812,9 @@ def test_the_update_step_says_to_remove_another_block_first_not_that_it_is_kept(
     failure = str(envelope["results"][0]["message"])
     another = (
         "fix the 1 file(s) that hold two different blocks as each warning says "
-        "(change the marker lines of a pair of yours, and delete only an older or "
-        "pasted Apothem block): an update does not fix such a file, and apothem "
-        "verify fails until you fix it"
+        "(follow one of its numbered fixes, which change the marker lines of each "
+        "block that is not Apothem's): an update does not fix such a file, and "
+        "apothem verify fails until you fix it"
     )
     assert f"first copy any listed file you edited or added, and {another}" in failure
     assert "an update keeps that marker" not in failure

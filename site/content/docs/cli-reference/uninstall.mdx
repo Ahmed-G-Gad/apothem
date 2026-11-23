@@ -424,22 +424,16 @@ its lines, and each BEGIN marker outside code that starts no marker pair. With
 no install record, only a BEGIN marker whose END marker is hidden that way
 gets the warning: a pair inside a code block of yours is then your text, and
 the uninstall stays unfinished for that marker and for the paths no record
-shows. For such a BEGIN marker, the warning says, for example, "If the BEGIN
-marker at line 1 is yours, delete or change it before you run the uninstall
-again: left in place once no marker pair comes after it, it pairs with the END
-marker at line 4, and the uninstall then takes lines 1 to 4 out, as a later
-install or update replaces them." The warning ends, for example, "If lines 6
-to 38 are Apothem's block, delete them by hand, keeping your own text; if they
-are text of yours, change or delete those two marker lines. Then run the
-uninstall again." or, with several pairs, "If one of these pairs is Apothem's
-block (lines 1 to 4, or lines 8 to 10), delete it by hand, keeping your own
-text, and change or delete the two marker lines of each pair of yours (for the
-pair from line 1 to line 4, its BEGIN marker alone). Then run the uninstall
-again." Do each of those steps: a marker pair left in that file keeps the
-uninstall unfinished, one of yours included, and a BEGIN marker left above an
-END marker you quote in code, with no marker pair after them, reads with it as
-Apothem's block, so the uninstall you run again takes the lines between them
-out, and a later install replaces them (see
+shows. The warning then gives numbered fixes, one for each case, and ends with
+"Then run the uninstall again.", for example "Fix A, if lines 6 to 38 are
+Apothem's block: A1. Delete lines 6 to 38. The uninstall run again then finds
+no Apothem block in this file. Fix B, if lines 6 to 38 are text of yours: B1.
+Change line 38: add a word inside its comment. B2. Change line 6: add a word
+inside its comment." Pick the fix whose case is true and do each of its steps
+in the order given: a marker pair left in that file keeps the uninstall
+unfinished, one of yours included, so each fix changes the marker lines of
+every pair it does not call Apothem's block, and of each BEGIN marker that
+starts no pair (see
 [Apothem cannot tell its block from your text](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
 Once the file holds no such pair, running the uninstall again finishes it.
 
@@ -463,17 +457,15 @@ block you pasted in a second time) is left as it is and named, and the
 uninstall does not finish: it prints `✗ <harness> uninstall did not finish:`
 followed by "1 file(s) hold two different blocks between Apothem's markers, so
 Apothem left them as they are; fix each as its warning says, keeping your own
-text (change the marker lines of a pair of yours, and delete only an older or
-pasted Apothem block), then run apothem uninstall again", and exits `2`, a
-second run included. Its warning names each block by its lines, as install and
-update do, and starts with a pair of yours: "For a marker pair of yours (an
-example you quote, say), change or delete its two marker lines, keeping your
-own text; do not delete Apothem's block instead". Of Apothem's own blocks (an older one, or one pasted in a second
-time), it says to keep one (in a file that starts with Apothem's frontmatter,
-the one right below it) and to delete each other one from its BEGIN marker line
-to its END marker line, keeping any line of yours inside it. Do not delete
-Apothem's block to keep a pair of yours: the next uninstall would then take
-out the one block left, your own. An
+text (follow one of its numbered fixes, which change the marker lines of each
+block that is not Apothem's), then run apothem uninstall again", and exits `2`,
+a second run included. Its warning names each block by its lines, as install and
+update do, and gives one numbered fix for each block, for the case that it is
+Apothem's block: the fix changes the marker lines of each other block and
+keeps their text (in a file that starts with Apothem's frontmatter, Apothem's
+block is the one right below it). Do not delete Apothem's block to keep a pair
+of yours: the next uninstall would then take out the one block left, your own.
+An
 `apothem update` does not fix such a file: it leaves a file with two whole
 blocks as it is, with the same warning, and `verify` fails until you fix it
 (see
@@ -484,13 +476,13 @@ block that shows only once Apothem's block is out. The uninstall's warning then
 names Apothem's block and those two marker lines, for example "once the block
 from line 5 to line 36 is out, the BEGIN marker at line 2 and the END marker at
 line 39 make another", and says not to delete Apothem's block: the next run
-would then read lines 2 to 39 as Apothem's block. Delete or change the two
+would then read lines 2 to 39 as Apothem's block. Its one fix changes the two
 marker lines it names instead, keeping your own text; if that BEGIN marker is
-what is left of an older Apothem block, delete the old Apothem text below it
-too. Do not put both lines in one code block: it would hold Apothem's block
-too. When that END marker sits in code or text of yours (an example you quote
-in a code block, say), the warning asks for the BEGIN marker alone and says
-the END marker can stay as it is. An `apothem update` does not fix such a file
+what is left of an older Apothem block, the old Apothem text below it is then
+yours to keep or delete. Do not put both lines in one code block: it would
+hold Apothem's block too. When that END marker sits in code or text of yours
+(an example you quote in a code block, say), the fix changes the BEGIN marker
+alone. An `apothem update` does not fix such a file
 either, and `verify` fails until you fix it. The line numbers count a CR on
 its own as the end of a line, as CRLF and LF are (see
 [A file has an Apothem BEGIN marker with no END marker](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).

@@ -25,9 +25,10 @@ quoted in code above the real block, and an anchor saved with CR line endings,
 are run through the CLI the same way.
 
 The uninstall's text for such a stray BEGIN marker is followed too, with and
-without an install record: you delete Apothem's block by hand, and each BEGIN
-marker the text says may be yours; the uninstall run again then finishes, and
-a later install or update keeps every line of yours.
+without an install record: you follow its numbered fix for the case that the
+last pair is Apothem's block, which changes each BEGIN marker of yours; the
+uninstall run again then finishes, and a later install or update keeps every
+line of yours.
 """
 
 from __future__ import annotations
@@ -55,6 +56,8 @@ from apothem.lib.harness_registry import (
     package_key_for_public_id,
 )
 from apothem.schemas import profile_minimal_path
+from tests.unit.test_marker_fix_steps import _fixes
+from tests.unit.test_marker_fix_steps import _follow as _follow_fix
 
 _IDS = [entry.public_id for entry in HARNESS_REGISTRY]
 _PROFILE = str(profile_minimal_path())
@@ -411,21 +414,21 @@ def _unclear_text(payload: dict[str, Any], anchor: Path) -> str:
 def _follow(anchor: Path, message: str) -> None:
     """Edit *anchor* as you would after reading the uninstall's *message*.
 
-    Apothem's block is the last marker pair the text lists, so delete it, and
-    each BEGIN marker the text says may be yours or starts no pair: here they
-    are all yours.
+    Apothem's block is the last marker pair the text names, so follow the
+    numbered fix for the case that it is Apothem's block, step by step in the
+    order printed: it changes each BEGIN marker of yours and each that starts
+    no pair.
     """
-    spans = re.findall(r"lines (\d+) to (\d+)", message.split("If one of these")[-1])
-    first, last = (int(line) for line in spans[-1])
-    yours = re.findall(r"If the BEGIN marker at line (\d+) is yours", message)
-    lone = re.search(
-        r"BEGIN markers? at lines? ([\d, and]+?) starts? no marker", message
-    )
-    lone_lines = re.findall(r"\d+", lone.group(1)) if lone else []
-    drop = {*range(first, last + 1), *map(int, yours), *map(int, lone_lines)}
-    lines = anchor.read_bytes().decode("utf-8").split("\n")
-    kept = [line for number, line in enumerate(lines, 1) if number not in drop]
-    anchor.write_bytes("\n".join(kept).encode("utf-8"))
+    fixes = [
+        (int(claim[1]), fix)
+        for label, fix in _fixes(message)
+        if (claim := re.fullmatch(r"lines (\d+) to \d+ are Apothem's block", label))
+    ]
+    _, fix = max(fixes)
+    text = anchor.read_bytes().decode("utf-8")
+    lines = text.split("\n")[:-1] if text.endswith("\n") else text.split("\n")
+    kept, _, _ = _follow_fix(lines, fix)
+    anchor.write_bytes("".join(f"{line}\n" for line in kept).encode("utf-8"))
 
 
 def _profile_with(tmp_path: Path, rules: list[str]) -> str:
@@ -509,9 +512,8 @@ def test_following_the_text_when_a_rule_leaves_a_code_block_open_keeps_your_line
 
     The block is one an earlier release wrote: this release closes the code
     block the rule opens before the END marker (markers-4), so here that
-    closer is taken out again. The install text's fix for that pair says to
-    delete your BEGIN marker at line 1 as well, and the uninstall text says
-    so in a step of its own.
+    closer is taken out again. The install text's fix for that pair changes
+    your BEGIN marker at line 1 as well, and so does the uninstall's.
     """
     box = sandbox_factory("codex")
     profile = _profile_with(tmp_path, [_OPEN_RULE])
@@ -536,5 +538,5 @@ def test_following_the_text_when_a_rule_leaves_a_code_block_open_keeps_your_line
     assert [
         warning
         for warning in again["warnings"]
-        if "and delete or change the BEGIN marker at line 1" in str(warning["message"])
+        if "Change line 1: add a word inside its comment." in str(warning["message"])
     ], again["warnings"]

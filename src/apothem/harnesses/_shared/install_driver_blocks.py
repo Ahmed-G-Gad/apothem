@@ -89,6 +89,14 @@ UNCLEAR_BLOCK = "unclear-block"
 LEFT_AS_IS = "left_as_is"
 
 
+def text_at(path: Path) -> str:
+    """Return the text of *path*, or ``""`` when it cannot be read."""
+    try:
+        return path.read_bytes().decode("utf-8", errors="replace")
+    except OSError:
+        return ""
+
+
 def stray_begin_at(path: Path) -> bool:
     """Return True when *path* holds a BEGIN marker that starts no whole block."""
     try:
@@ -121,11 +129,7 @@ def unclear_pairs_at(path: Path) -> list[UncertainPair]:
     See :func:`apothem.lib.harness_materializer.uncertain_pairs`. Empty when
     the file holds a whole block, no such pair, or cannot be read.
     """
-    try:
-        text = path.read_bytes().decode("utf-8", errors="replace")
-    except OSError:
-        return []
-    return uncertain_pairs(text)
+    return uncertain_pairs(text_at(path))
 
 
 def lone_begins_at(path: Path) -> list[int]:
@@ -134,11 +138,7 @@ def lone_begins_at(path: Path) -> list[int]:
     See :func:`apothem.lib.harness_materializer.lone_begins`. Empty when the
     file cannot be read.
     """
-    try:
-        text = path.read_bytes().decode("utf-8", errors="replace")
-    except OSError:
-        return []
-    return lone_begins(text)
+    return lone_begins(text_at(path))
 
 
 def whole_blocks_at(path: Path) -> list[tuple[int, int]]:
@@ -147,11 +147,7 @@ def whole_blocks_at(path: Path) -> list[tuple[int, int]]:
     See :func:`apothem.lib.harness_materializer.whole_blocks`. Empty when the
     file cannot be read.
     """
-    try:
-        text = path.read_bytes().decode("utf-8", errors="replace")
-    except OSError:
-        return []
-    return whole_blocks(text)
+    return whole_blocks(text_at(path))
 
 
 def markers_to_fix_at(path: Path) -> bool:
@@ -283,11 +279,12 @@ def _install_warning(
     its markers: two or more whole blocks, or marker pairs no rule can place.
     """
     target = Path(path)
-    blocks = whole_blocks_at(target)
+    text = text_at(target)
+    blocks = whole_blocks(text)
     if len(blocks) > 1:
-        report = two_blocks_report(path, blocks, left=unchanged, dry_run=dry_run)
+        report = two_blocks_report(path, text, blocks, left=unchanged, dry_run=dry_run)
         return f"{report}{_UPDATE_AGAIN}", unchanged
-    pairs = unclear_pairs_at(target)
+    pairs = uncertain_pairs(text)
     # A write that leaves no whole block gets the same text, without the claim
     # that the file was left as it is: a code block of the operator's left
     # open above the block, which a line in the block closes, or the pair rule
@@ -297,12 +294,12 @@ def _install_warning(
     # only when that is so: this run left it as it is, or wrote it, and the
     # record of the run then lists it, so the next run leaves it.
     if pairs and (unchanged or not dry_run or any(pair.split for pair in pairs)):
-        lone, held = lone_begins_at(target), unchanged or not dry_run
+        lone, held = lone_begins(text), unchanged or not dry_run
         report = unclear_block_report(
-            path, pairs, left=unchanged, lone=lone, dry_run=dry_run, held=held
+            path, text, pairs, left=unchanged, lone=lone, dry_run=dry_run, held=held
         )
         return f"{report}{_UPDATE_AGAIN}", unchanged
-    if not stray_begin_at(target):
+    if not has_stray_begin(text):
         return None
     # With no whole block yet (a preview reads the file before the write),
     # nothing is written apart from the marker: putting the END marker back
@@ -531,7 +528,8 @@ def unclear_block_warning(
     lists the file: a file Apothem never wrote may quote a pair, and that is
     not Apothem's to report (rule 3 aside, see :func:`endless_block_warning`).
     """
-    pairs = unclear_pairs_at(target)
+    text = text_at(target)
+    pairs = uncertain_pairs(text)
     if not pairs:
         return None
     return _result(
@@ -540,9 +538,10 @@ def unclear_block_warning(
         target,
         unclear_block_report(
             _path_text(target),
+            text,
             pairs,
             outcome=outcome,
-            lone=lone_begins_at(target),
+            lone=lone_begins(text),
             dry_run=dry_run,
         ),
         detail={KEPT_REASON: UNCLEAR_BLOCK, MARKER_LEFT: "1"},
@@ -593,15 +592,18 @@ def another_block_report(
     install record gives for a bolt-on anchor (see
     :func:`install_driver_retention.unlisted_block_warnings`).
     """
-    found = whole_blocks_at(target)
+    text = text_at(target)
+    found = whole_blocks(text)
     revealed = _revealed_block(target, found[0]) if len(found) == 1 else None
     return two_blocks_report(
         _path_text(target),
+        text,
         found,
         dry_run=dry_run,
         then=then,
         revealed=None if revealed is None else revealed[0],
         quoted=None if revealed is None else revealed[1],
+        removes=True,
     )
 
 

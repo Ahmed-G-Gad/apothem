@@ -418,17 +418,19 @@ def _close_steps(
     *end* is the marker line that code block holds lowest, and *closer* the
     line that closes it below *end* (``None`` when no line does). With only
     blank lines between *end* and *closer*, that line moves up above *at*;
-    otherwise a closing line goes above *at*, and a copy of line *fence*
-    below *end* opens the code block again for the lines down to *closer*.
+    otherwise a closing line goes above *at*, and, when a line that is not
+    blank follows *end* in that code block, a copy of line *fence* below
+    *end* opens the code block again for the lines down to *closer*.
     """
-    if closer is not None and not any(
-        lines[index].strip() for index in range(end, closer - 1)
-    ):
+    below = range(end, len(lines) if closer is None else closer - 1)
+    held = any(lines[index].strip() for index in below)
+    if closer is not None and not held:
         return [Step(Edit.MOVE, closer, at)]
     closing = _closing_line(lines[fence - 1])
     if closing is None:
         return None
-    return [Step(Edit.ADD, at, fence=closing), Step(Edit.ADD, end, fence, below=True)]
+    steps = [Step(Edit.ADD, at, fence=closing)]
+    return [*steps, Step(Edit.ADD, end, fence, below=True)] if held else steps
 
 
 def _whole_steps(lines: Sequence[str], pair: UncertainPair) -> list[Step] | None:
@@ -437,8 +439,9 @@ def _whole_steps(lines: Sequence[str], pair: UncertainPair) -> list[Step] | None
     Both marker lines in one code block: close it above the BEGIN marker (see
     :func:`_close_steps`). The BEGIN marker in a code block whose closing
     line sits in the pair, the END marker outside code: a closing line above
-    the BEGIN marker. The pair rule 3 fired on, whose END marker sits in a
-    code block that opens in the pair: close it above the END marker.
+    the BEGIN marker. The BEGIN marker outside code and the END marker in a
+    code block that opens in the pair (the pair rule 3 fired on, or an older
+    block whose rule left a code block open): close it above the END marker.
     ``None`` for any other pair: no step of these four makes it whole.
     """
     begin, end = pair.begin, pair.end
@@ -451,7 +454,12 @@ def _whole_steps(lines: Sequence[str], pair: UncertainPair) -> list[Step] | None
                 None if closing is None else [Step(Edit.ADD, begin.line, fence=closing)]
             )
         return None
-    if pair.split and end.place is MarkerPlace.FENCE and end.fence is not None:
+    if (
+        begin.place is MarkerPlace.OUTSIDE
+        and end.place is MarkerPlace.FENCE
+        and end.fence is not None
+        and end.fence > begin.line
+    ):
         return _close_steps(lines, end.fence, end.line, end.line, pair.closer)
     return None
 

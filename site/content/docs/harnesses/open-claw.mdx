@@ -297,11 +297,9 @@ END marker), the update names the file: delete that line by hand, with any old
 Apothem text below it, and keep your own lines; `apothem verify` fails until
 you do. If such a file holds two different blocks between Apothem's markers,
 the update leaves it as it is and names each block by its lines, or Apothem's
-block and the marker lines around it. Do as the warning says: change the
-marker lines of a pair of yours, or move them inside a code block; around
-Apothem's block, change or delete the marker lines it names; and delete only
-an older or pasted Apothem block. The next install, update or uninstall then
-takes Apothem's block out. If Apothem cannot tell its block in that
+block and the marker lines around it. Follow one of the warning's numbered
+fixes, which change the marker lines of each block that is not Apothem's. The
+next install, update or uninstall then takes Apothem's block out. If Apothem cannot tell its block in that
 file from your text (the block sits inside a code block of yours, say), the
 update leaves the file as it is too, and its warning names each marker pair
 with how to fix it; once you fix it, the next install, update or uninstall
@@ -344,10 +342,9 @@ Some leftovers need your hand:
 - **A rules file where Apothem cannot tell its block from your text** (the
   block sits inside a code block of yours, say). Uninstall removes everything
   else, leaves that file as it is, and reports the uninstall as unfinished
-  (exit code 2). Its warning names each marker pair: delete Apothem's block
-  there by hand, change or delete the two marker lines of each pair of yours,
-  and delete or change each BEGIN marker the warning tells you to, before you
-  run the uninstall again.
+  (exit code 2). Its warning names each marker pair and gives numbered
+  fixes: follow the one whose case is true before you run the uninstall
+  again.
 
 In each case Apothem records the uninstall as unfinished and keeps its install
 record, even if you later add your own text beside the block. Remove the named

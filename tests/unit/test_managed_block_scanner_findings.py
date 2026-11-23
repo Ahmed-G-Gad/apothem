@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import pytest
 
+from apothem.harnesses._shared import install_driver_steps as steps
 from apothem.lib import harness_materializer
 from apothem.lib.harness_materializer import (
     APOTHEM_BLOCK_BEGIN,
@@ -1120,9 +1121,9 @@ def test_a_closing_line_that_would_open_a_code_block_is_named_to_move(
     agreed again at the last line of that example, so the fix still said to
     add a closing line: done that way, your text between (and the line that
     opens your example) read as code, and the next update and verify passed.
-    The pair now names that line when, moved, it keeps more lines of yours
-    below it reading as before than an added closing line would; moved as
-    the fix says, every line of yours reads as before.
+    The pair now names that line, and with only a blank line or none between
+    it and the END marker the fix moves it up; moved, every line of yours
+    reads as before.
     """
     [pair] = harness_materializer.uncertain_pairs(text)
     lines = text.split("\n")
@@ -1197,17 +1198,21 @@ def test_a_closing_line_is_added_where_moving_it_changes_more_lines_below() -> N
     """r13-F2: a line of yours between the END marker and the line that closes
     the code block around the pair starts a list item, and an indented line of
     yours follows the closing line. Moved up, the closing line would let the
-    indented line join the list item as text; added, a closing line above the
-    block keeps it code. The fix said to move the line; it now says to add one.
+    indented line join the list item as text. With a line of yours between
+    the END marker and the closing line, the fix adds a closing line above the
+    block and a copy of the opening line below the END marker instead, so
+    every line of yours keeps how it reads (markers-r5-1).
     """
     text = f"My notes:\n\n```\nmake test\n\n{OLD}1. one\n```\n    indented code\n```\n"
     [pair] = harness_materializer.uncertain_pairs(text)
     below = range(10, len(text.split("\n")))
     moved = _move_line(text, 10, above=6)
+    [fix, _] = steps.unclear_fixes(text, [pair], [], removes=False)
 
-    assert pair.closer is None
-    assert not _read_differently(
-        text, _add_closer(text, pair), {at: at + 1 for at in below}
+    assert pair.closer == 10
+    assert fix.steps == (
+        steps.Step(steps.Edit.ADD, 8, 3, below=True),
+        steps.Step(steps.Edit.ADD, 6, fence="```"),
     )
     assert _read_differently(text, moved, {at: at for at in below}) == [
         "    indented code"
@@ -1242,21 +1247,20 @@ def test_a_closing_line_is_added_where_that_changes_no_line_below(
     """The fix adds a closing line above the pair, and no line below changes.
 
     The closing line below the block (*close*) is the last line of a code
-    example of yours whose opening line the first code block held: added, a
-    closing line above the block leaves it closing that example, where moved
-    it would leave the example open. Or no closing line ends the code block
-    at all: its list item does. Every line of yours below that line (below
-    the END marker, without one) reads as it does now.
+    example of yours whose opening line the first code block held, with lines
+    of yours between it and the END marker, or no closing line ends the code
+    block at all: its list item does. So the fix adds a closing line above
+    the block, and, for the lines of yours below the END marker that the code
+    block held, a copy of its opening line below that marker (fixes-1): no
+    step moves the closing line, and the fix holds on a copy of the file.
     """
     [pair] = harness_materializer.uncertain_pairs(text)
-    start = pair.end.line if close is None else close
+    fixes = steps.unclear_fixes(text, [pair], [], removes=False)
 
-    assert pair.closer is None
-    assert not _read_differently(
-        text,
-        _add_closer(text, pair),
-        {at: at + 1 for at in range(start, len(text.split("\n")))},
-    )
+    assert pair.closer == close
+    assert fixes[0].block == (pair.begin.line, pair.end.line)
+    assert fixes[0].keeps
+    assert steps.Edit.MOVE not in {step.edit for step in fixes[0].steps}
 
 
 def test_moving_the_last_line_of_your_example_would_leave_it_open() -> None:

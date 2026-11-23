@@ -1998,10 +1998,10 @@ def test_an_update_that_cannot_retire_a_file_with_two_blocks_says_what_comes_nex
 
     assert target.read_bytes() == before
     (update_note,) = updated
-    assert "the next install, update or uninstall then takes" in update_note
+    assert "The next install, update or uninstall then takes" in update_note
     assert "uninstall again" not in update_note
     (uninstall_note,) = uninstalled
-    assert "then run the uninstall again" in uninstall_note
+    assert "Then run the uninstall again" in uninstall_note
 
 
 def test_an_update_that_retires_a_file_names_a_begin_marker_it_leaves(
@@ -2302,10 +2302,9 @@ def test_a_rules_file_with_your_pair_below_a_quoted_end_keeps_it_to_the_end(
         f"holds 2 whole blocks between Apothem's markers (lines {inner} to "
         f"{inner_end}, and lines {mine} to {mine_end})"
     ) in _note(first_envelope, target)
-    assert (
-        f"Delete or change the BEGIN marker at line {outer} instead, keeping your "
-        "own text"
-    ) in _note(second_envelope, target)
+    assert f"A1. Change line {outer}: add a word inside its comment." in _note(
+        second_envelope, target
+    )
     assert not [m for m in _warning_messages(third_envelope) if str(target) in m]
     assert APOTHEM_BLOCK_BEGIN not in left
     for line in ("my own text above", "my note", "my own text below", "MY EXAMPLE"):

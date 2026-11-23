@@ -782,51 +782,28 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   it is and print a warning that names each marker pair in it by the lines of
   its two markers and says where each of those lines reads: inside a code
   block that opens at a given line, in indented code, as part of the
-  paragraph above it, or outside code. For each case it gives a fix with what
-  follows from it. If the pair is Apothem's block, close that code block above
-  its BEGIN marker (also when only that marker sits in it) or start its marker
-  lines at the left margin, and the next update replaces those lines; when its
-  two marker lines read differently in another way (in two separate code
-  blocks, say), delete them by hand, keeping your own text. When the line that
-  closes that code block below the END marker would then open a code block of
-  its own, so that a Markdown viewer would show lines of yours below it as
-  code, or a code example of yours further down as text or with its own
-  opening line as code, the fix says to move that line up above the BEGIN marker
-  instead of adding a closing line, and, when it offers to delete the line
-  that opens the code block with old Apothem text, to delete that closing line
-  too. The fix still adds a closing line when that line is the last line of a
-  code example of yours that starts below the block, or when moving it would
-  change how more of your lines below it read (a line of yours between the
-  block and that line that starts a list item takes in an indented line below
-  it, say). If the pair is
-  yours, change or delete its two marker lines. The same happens, record or
+  paragraph above it, or outside code. It then gives its fixes as numbered
+  steps (see the entry "Each fix for marker lines Apothem cannot place is a
+  list of checked steps" below): one for each pair, for the case that it is
+  Apothem's block, and one for the case that no pair is. The same happens, record or
   not, when a BEGIN marker outside code has its END marker in code and another
   marker pair follows. A block an earlier release wrote from a rule in your
   profile that opens a code block and never closes it can cause that: the
-  warning then says to close that code block above the END marker and fix the
-  rule, or, in the same case as above, to move the line that closes it further
-  down up above the END marker. This release closes such a code block at the
+  fix for the case that the older block is Apothem's closes that code block
+  above its END marker and changes the marker lines of the pair after it.
+  This release closes such a code block at the
   end of the block it
   writes, so that block stays whole beside a marker example of yours. That
   closing line, or one a rule writes, can still close a code block of yours
   that opens above Apothem's block and never closes. The block then reads as
   code from its BEGIN marker on, and the install or update that writes it
-  prints the warning at once, which says to close your code block above that
-  BEGIN marker. So does an update that writes its block below an older block
-  that lost its END marker, where a rule left a code block open; its warning
-  also names that older BEGIN marker. When the line that opens the code block
-  may be part of the old Apothem text below that BEGIN marker, the fix also
-  says you can delete that line with that text instead: that ends the code
-  block too, so you add no closing line then. The fix for a marker pair after
-  such a BEGIN marker says to delete or change that BEGIN marker as well. The
-  warning also names, before the pairs, each BEGIN marker that starts no
-  marker pair (its END marker is gone, or the marker is yours) and says to
-  delete or change it, with any old Apothem text below it: left in place, it
-  can pair with an END marker below it once the pairs are fixed, and a later
-  install or update then replaces the lines between them. The uninstall's
-  warning says that the uninstall run again then takes those lines out, and
-  an update's warning for an OpenClaw rules file in a workspace the install no
-  longer uses says that a later install, update or uninstall takes them out.
+  prints the warning at once, whose fix for that case adds the closing fence
+  above that BEGIN marker. So does an update that writes its block below an
+  older block that lost its END marker, where a rule left a code block open;
+  its warning also names that older BEGIN marker. The warning also names,
+  before the pairs, each BEGIN marker that starts no marker pair (its END
+  marker is gone, or the marker is yours), and each fix changes it: left in
+  place, it can pair with an END marker below it once the pairs are fixed.
   Such a BEGIN marker does not change what install and update do while an
   install record lists the file, even when every marker pair is quoted in code
   below it: a pair in code may be Apothem's block inside a code block of
@@ -864,16 +841,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   whose failed check names files with Apothem markers; a ledger it cannot
   open (another program holds it open, say) gets that check too, with a fix
   that says to make the file readable. The uninstall's warning for such a
-  file says to delete Apothem's block by
-  hand and to change or delete the two marker lines of each pair of yours,
-  then to run the uninstall again, which then finishes: any marker pair left in
-  the file keeps it unfinished, one of yours included. For a BEGIN marker
-  outside code whose END marker sits in code, the uninstall's warning also
-  says to delete or change that marker, if it is yours, before you run the
-  uninstall again: once no marker pair follows it, it pairs with that END
-  marker, and the uninstall then takes the lines between them out, as a later
-  install or update replaces them. Of that pair it asks for the BEGIN marker
-  alone, since the END marker sits in your own code. With no install record,
+  file gives numbered fixes the same way, then says to run the uninstall
+  again, which then finishes: any marker pair left in the file keeps it
+  unfinished, one of yours included, so each fix changes the marker lines of
+  every pair it does not call Apothem's block. With no install record,
   only such a BEGIN marker gets the uninstall's warning, and the uninstall
   stays unfinished (exit code `2`) for it and for the paths no record shows; a
   marker pair you quote in code is then your text, and the install adds its
@@ -893,23 +864,19 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   names each block by its lines, for example "holds 2 whole blocks between
   Apothem's markers (lines 1 to 32, and lines 36 to 67)". Such a run ends as
   partial (exit code `2`, `status` `"partial"`), as for a file where Apothem
-  cannot tell its block from your text (see the entry above). For a marker
-  pair of yours the warning says to change or delete its two marker lines, and
-  not to delete Apothem's block instead: the next run would then read your
-  pair as Apothem's block. Do not move your pair into a code block either:
-  once Apothem's own block there is no longer whole, a pair in code holds the
-  file back while an install record lists it. Of Apothem's own blocks, an
-  older one or one pasted in a second time, the warning says to keep one (in
-  a file that starts with Apothem's frontmatter, the one right below it) and
-  to delete each other one from its BEGIN marker line to its END marker line,
-  keeping any line of yours inside it. The uninstall gives the same text.
-  When a BEGIN marker above Apothem's block and an END marker below it make a
-  second block only once Apothem's block is out, the uninstall's warning names
-  Apothem's block
-  and those two marker lines, and says to change or delete those marker
-  lines, not Apothem's block, and to delete the old Apothem text below that
-  BEGIN marker if it is what is left of an older block; when that END marker
-  sits in code or text of yours, it asks for the BEGIN marker alone. An update
+  cannot tell its block from your text (see the entry above). The warning
+  gives one numbered fix for each block, for the case that it is Apothem's
+  block: the fix changes the marker lines of each other block, which keeps a
+  marker pair of yours as your text, and keeps an older or pasted Apothem
+  block's text for you to keep or delete (in a file that starts with
+  Apothem's frontmatter, Apothem's block is the one right below it). Do not
+  delete Apothem's block to keep a pair of yours: the next run would then
+  read your pair as Apothem's block. The uninstall gives the same text. When
+  a BEGIN marker above Apothem's block and an END marker below it make a
+  second block only once Apothem's block is out, the uninstall's warning
+  names Apothem's block and those two marker lines, and its one fix changes
+  those marker lines, not Apothem's block (the BEGIN marker alone when that
+  END marker sits in code or text of yours). An update
   does not fix such a file either. Every line number these warnings give
   counts lines as Apothem reads the file, where a line ends at CRLF, at LF or
   at a CR on its own, so in a file with CR endings, or one stray CR, the
@@ -918,6 +885,30 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   reports the file (as `harness.stray_begin`, with "Apothem markers to fix by
   hand") and, for a file the current install writes, `status --profile` shows
   drift.
+- **Each fix for marker lines Apothem cannot place is a list of checked
+  steps.** The warnings for a file whose marker lines Apothem cannot place,
+  and for a file with two or more whole blocks, from `install`, `update`,
+  `uninstall`, `verify` and `doctor`, give each fix as numbered steps under a
+  label that names its case, such as "Fix A, if lines 6 to 38 are Apothem's
+  block: A1. Move line 39 to just above line 6." Each step is one of four
+  edits: change a marker line in place by adding a word inside its comment,
+  add a closing fence line or a copy of a line above or below a line, move a
+  line up, or delete a range of lines. Line numbers are those of the file as
+  it is, and the steps run from the bottom of the file up, so no step moves
+  a line a later step names. Before it prints a fix, Apothem follows its
+  steps on a copy of the file and checks that the file then holds the one
+  block the fix names (or none), that the next update or uninstall does what
+  the fix says, and that each line of yours left reads as before in a
+  Markdown viewer. A fix that fails is left out; when none passes, the
+  warning numbers no edit and says to change every Apothem marker line in
+  the file instead. For Apothem's block inside a code block of yours, the fix
+  moves the code block's closing line from right below the END marker to
+  above the BEGIN marker; when lines of yours sit between them, it adds a
+  closing line above the BEGIN marker and a copy of the opening line below
+  the END marker, so those lines stay code. For an older block whose END
+  marker a rule hid in code, the fix that calls it Apothem's block also
+  changes the marker lines of the pair after it. The troubleshooting page
+  lists the step formats under "Follow a numbered fix".
 - **The installers and update scripts finish a run that ends as partial.**
   When `apothem install` or `apothem update` leaves a file as it is because of
   its marker lines and exits with code `2`, `install.sh`, `install.ps1`,

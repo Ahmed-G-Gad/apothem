@@ -379,21 +379,20 @@ _FIX_STRAY = (
 #: file), and in a file whose second block shows only once Apothem's is out
 #: (a BEGIN marker above Apothem's block and an END marker below it) it
 #: rewrites Apothem's block and keeps those two marker lines. So the operator
-#: changes the marker lines of each pair of theirs and deletes each older or
-#: pasted Apothem block, as the file's warning says, before any update.
+#: follows one numbered fix of the file's warning, which changes the marker
+#: lines of each block that is not Apothem's, before any update.
 _FIX_ANOTHER = (
     "fix the {count} file(s) that hold two different blocks as each warning "
-    "says (change the marker lines of a pair of yours, and delete only an "
-    "older or pasted Apothem block): an update does not fix such a file, and "
-    "apothem verify fails until you fix it"
+    "says (follow one of its numbered fixes, which change the marker lines of "
+    "each block that is not Apothem's): an update does not fix such a file, "
+    "and apothem verify fails until you fix it"
 )
 
 #: What to do first with each file whose marker pairs Apothem cannot place
 #: (``kept_reason`` ``unclear-block``): an update leaves such a file as it is,
 #: and verify fails until the operator fixes the marker lines its warning
 #: names (each pair and where it reads, each BEGIN marker that starts no pair,
-#: the BEGIN marker to delete or change when its END marker reads as code,
-#: and Apothem's block to delete by hand).
+#: and a numbered fix for each case).
 _FIX_UNCLEAR = (
     "fix the marker lines the warnings name in the {count} file(s) where "
     "Apothem cannot tell its block from your text: an update leaves those "
@@ -426,8 +425,8 @@ def _marker_fix(run: MaterializationRun) -> str:
 _ANOTHER_BLOCK_LINE = (
     "{count} file(s) hold two different blocks between Apothem's markers, so "
     "Apothem left them as they are; fix each as its warning says, keeping your "
-    "own text (change the marker lines of a pair of yours, and delete only an "
-    "older or pasted Apothem block), then run apothem uninstall again"
+    "own text (follow one of its numbered fixes, which change the marker lines "
+    "of each block that is not Apothem's), then run apothem uninstall again"
 )
 
 

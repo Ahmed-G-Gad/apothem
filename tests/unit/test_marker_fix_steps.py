@@ -21,6 +21,12 @@ import pytest
 from markdown_it import MarkdownIt
 
 from apothem.harnesses._shared import install_driver_steps as steps
+from apothem.harnesses._shared.install_driver_blocktext import (
+    REPLACES,
+    TAKES_OUT,
+    two_blocks_report,
+    unclear_block_report,
+)
 from apothem.harnesses._shared.install_driver_steps import Edit, Step
 from apothem.lib.harness_materializer import (
     APOTHEM_BLOCK_BEGIN,
@@ -135,8 +141,9 @@ def _follow(lines: list[str], fix: str) -> tuple[list[str], list[int | None], se
     tags: list[int | None] = list(range(len(texts)))
     named: set[int] = set()
     found = list(_STEP.finditer(fix))
-    # No number in a fix is left unread: each one is in a step or its label.
-    rest = _STEP.sub("", fix)
+    # No number in a fix is left unread: up to its last step, each one is in
+    # a step or the fix's label.
+    rest = _STEP.sub("", fix[: found[-1].end()] if found else fix.split(":")[0])
     rest = _FIX.sub("", rest)
     assert not re.search(r"\d", rest), rest
     for match in found:
@@ -403,3 +410,60 @@ def test_every_fix_for_generated_files_holds_when_followed():
     assert files > 300
     assert followed > files
     assert fallbacks * 50 < files
+
+
+def _report(lines: list[str], **kwargs: object) -> str:
+    text = _text(lines)
+    return unclear_block_report(
+        "F.md", text, uncertain_pairs(text), lone=lone_begins(text), **kwargs
+    )
+
+
+@pytest.mark.parametrize("outcome", [REPLACES, TAKES_OUT, None])
+@pytest.mark.parametrize("name", sorted(SHAPES))
+def test_every_report_fix_holds_when_followed(name: str, outcome: str | None):
+    """Install, update, verify, the OpenClaw retire and the uninstall alike."""
+    lines = SHAPES[name]
+    message = _report(lines, outcome=outcome, held=True)
+    assert _check(lines, message, removes=outcome != REPLACES) >= 2
+    assert "close that code block" not in message
+    assert "delete line " not in message
+
+
+def test_the_split_pair_report_promises_what_the_next_update_does():
+    """markers-r5-3: the later pair's lines change, so one block is left."""
+    message = _report(SHAPES["sE-b"], held=True)
+    fix = _fixes(message)[0][1]
+    assert fix.startswith("Fix A, if lines 2 to 7 are Apothem's block:")
+    texts, _, _ = _follow(SHAPES["sE-b"], fix)
+    assert whole_blocks(_text(texts)) == [(2, 8)]
+    assert "The next update then replaces Apothem's block." in fix
+
+
+def test_a_closing_line_with_text_below_moves_up_in_the_report():
+    """markers-r5-1, fixes-1, lifecycle-r5-4: sA2 gets the move, not an added line."""
+    message = _report(SHAPES["sA2"], held=True)
+    assert "Fix A, if lines 5 to 7 are Apothem's block: A1. Move line 8 to just " in (
+        message
+    )
+    assert "add a line of" not in message
+
+
+def test_two_blocks_report_fixes_hold_for_update_and_uninstall():
+    lines = ["mine", *BLOCK, "more", B, "example", E, "tail"]
+    text = _text(lines)
+    for removes in (False, True):
+        message = two_blocks_report("F.md", text, whole_blocks(text), removes=removes)
+        assert _check(lines, message, removes=removes) == 2
+
+
+def test_the_revealed_block_report_changes_the_lines_around_the_block():
+    lines = [B, "mine KEEP", *BLOCK, "tail KEEP", E]
+    text = _text(lines)
+    message = two_blocks_report(
+        "F.md", text, whole_blocks(text), revealed=(1, 7), removes=True
+    )
+    assert "A1. Change line 7: add a word inside its comment. A2. Change line 1:" in (
+        message
+    )
+    assert _check(lines, message, removes=True) == 1

@@ -23,8 +23,8 @@ from pathlib import Path
 
 from apothem.cli._helpers import _Adapter, _harness_roots
 from apothem.harnesses._shared.install_driver_blocks import (
-    lone_begins_at,
     stray_begin_files,
+    text_at,
     unclear_pairs_at,
     whole_blocks_at,
 )
@@ -33,6 +33,11 @@ from apothem.harnesses._shared.install_driver_blocktext import (
     unclear_block_report,
 )
 from apothem.harnesses._shared.install_driver_evidence import listed_in_record
+from apothem.lib.harness_materializer import (
+    lone_begins,
+    uncertain_pairs,
+    whole_blocks,
+)
 from apothem.lib.harness_registry import HarnessRegistryEntry
 
 
@@ -101,13 +106,14 @@ def _named(path: Path, listed: Callable[[Path], bool]) -> str | None:
     with marker pairs in code as it is, so only then does its text say they
     do.
     """
-    blocks = whole_blocks_at(path)
+    text = text_at(path)
+    blocks = whole_blocks(text)
     if len(blocks) > 1:
-        return two_blocks_report(path, blocks, left=False)
-    pairs = unclear_pairs_at(path)
+        return two_blocks_report(path, text, blocks, left=False)
+    pairs = uncertain_pairs(text)
     if pairs:
         return unclear_block_report(
-            path, pairs, left=False, lone=lone_begins_at(path), held=listed(path)
+            path, text, pairs, left=False, lone=lone_begins(text), held=listed(path)
         )
     return None
 
