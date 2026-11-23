@@ -50,13 +50,18 @@ the collection, between two collect reports (a ``pytest_itemcollected`` hook, an
 ``pytest_runtestloop`` hook, between two tests (a ``pytest_runtest_logreport``
 hook for a teardown report), in a ``pytest_sessionfinish`` hook or after a
 session-finish wrapper yields, in ``pytest_terminal_summary``, in
-``pytest_unconfigure``, and under xdist (``-n 2``) at the session start and in
-a worker's session finish, also in a ``trylast`` hook of a conftest that pytest
-finds during collection; a worker that stops on Ctrl-C has its refusal reported
-once, and one the controller absorbs while its workers run the tests is named for
-the run. Each names where the refusal happened. A session
-that absorbs nothing exits 0, with and without xdist. The guard refuses before
-any write, so nothing lands in a home.
+``pytest_unconfigure`` (with ``-p no:xdist``), and under xdist (``-n 2``) at the
+session start and in a worker's session finish, also in a ``trylast`` hook of a
+conftest that pytest finds during collection, and after a worker handed its
+refusals to the controller: in its ``pytest_terminal_summary``, in its
+``pytest_unconfigure`` and after its own ``tryfirst`` session-finish wrapper
+yields, which the worker writes to a file the controller reads and removes (a
+later run with the same ``--basetemp`` passes, and no such file is made in a
+protected folder); a worker that stops on Ctrl-C has its refusal reported
+once, and one the controller absorbs while its workers run the tests is named
+for the run. Each names where the refusal happened. A session that absorbs
+nothing exits 0, with and without xdist. The guard refuses before any write,
+so nothing lands in a home.
 """
 
 from __future__ import annotations
@@ -116,7 +121,8 @@ _ISOLATION = (
     "_isolate_install_ledger",
     "_isolate_backup_root",
 )
-#: The guard's hooks that read the refusal log outside any test.
+#: The guard's hooks that read the refusal log outside any test, and the two
+#: xdist hooks that carry what the workers found to the controller.
 _SESSION_HOOKS = (
     "pytest_sessionstart",
     "pytest_make_collect_report",
@@ -125,6 +131,7 @@ _SESSION_HOOKS = (
     "pytest_sessionfinish",
     "pytest_unconfigure",
     "pytest_testnodedown",
+    "pytest_configure_node",
 )
 #: The functions the pytester session collects, and the suite does not.
 _CASE_PREFIX = "case_"
@@ -605,6 +612,9 @@ def test_the_session_hooks_read_the_log_after_what_they_follow(
     assert calls.index(after_the_summary) < calls.index(summary)
     (worker_down,) = guard_impls("pytest_testnodedown")
     assert worker_down.optionalhook, "only xdist defines the hook"
+    (worker_up,) = guard_impls("pytest_configure_node")
+    assert worker_up.optionalhook, "only xdist defines the hook"
+    assert not worker_up.wrapper
 
 
 def test_a_star_import_carries_the_isolation_and_the_guard(
@@ -1542,7 +1552,10 @@ def case_a_refusal_absorbed_after_a_session_finish_wrapper_yields_fails_the_run(
 def case_a_refusal_absorbed_at_unconfigure_fails_the_run(
     pytester: pytest.Pytester, fake_real_home: Path
 ) -> None:
-    result = _run_absorbing(pytester, fake_real_home, _ABSORBED_AT_UNCONFIGURE)
+    """Without xdist too, whose two hooks the guard implements as optional."""
+    result = _run_absorbing(
+        pytester, fake_real_home, _ABSORBED_AT_UNCONFIGURE, "-p", "no:xdist"
+    )
 
     _assert_the_run_failed_on_it(result, fake_real_home, "after the session finished")
 
@@ -1558,6 +1571,155 @@ def case_an_xdist_workers_refusal_after_its_last_test_fails_the_run(
     _assert_the_run_failed_on_it(
         result, fake_real_home, "in xdist worker gw?, after the last test"
     )
+
+
+#: How the controller names a refusal an xdist worker found after it handed
+#: what it held to the controller.
+_AFTER_THE_HAND_OFF = "after it handed its refusals to the controller"
+
+#: A terminal-summary hook that absorbs the refusal in an xdist worker only,
+#: after the worker handed its refusals to the controller.
+_ABSORBED_IN_A_WORKERS_TERMINAL_SUMMARY = """
+
+def pytest_terminal_summary(terminalreporter, config):
+    if hasattr(config, "workerinput"):
+        _absorb()
+"""
+
+#: An unconfigure hook that absorbs the refusal in an xdist worker only.
+_ABSORBED_AT_A_WORKERS_UNCONFIGURE = """
+
+def pytest_unconfigure(config):
+    if hasattr(config, "workerinput"):
+        _absorb()
+"""
+
+#: A ``tryfirst`` session-finish wrapper, registered after the guard and so
+#: finishing after the guard's own, that absorbs the refusal after its
+#: ``yield`` in an xdist worker only.
+_ABSORBED_AFTER_A_WORKERS_FIRST_SESSION_FINISH_WRAPPER = """
+
+@pytest.hookimpl(wrapper=True, tryfirst=True)
+def pytest_sessionfinish(session):
+    try:
+        return (yield)
+    finally:
+        if hasattr(session.config, "workerinput"):
+            _absorb()
+"""
+
+
+def _assert_each_worker_sent_it_late(
+    result: pytest.RunResult, home: Path, where: str
+) -> None:
+    """Both workers found the refusal after the hand-off; the run failed on it."""
+    _assert_the_run_failed_on_it(
+        result, home, f"in xdist worker gw?, {_AFTER_THE_HAND_OFF}, {where}"
+    )
+    output = result.stdout.str()
+    for worker in ("gw0", "gw1"):
+        named = f"in xdist worker {worker}, {_AFTER_THE_HAND_OFF}, {where}"
+        assert output.count(named) == 1, output
+
+
+def case_an_xdist_workers_refusal_in_its_terminal_summary_fails_the_run(
+    pytester: pytest.Pytester,
+    fake_real_home: Path,
+    tmp_path_factory: pytest.TempPathFactory,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The worker writes it to a file the controller reads once it is down.
+
+    The controller makes that file's folder in its temporary folder and
+    removes it when it has read it. A later run with the same ``--basetemp``
+    and no refusal passes: nothing of the first run is read again.
+    """
+    temp = tmp_path_factory.mktemp("controller-temp")
+    monkeypatch.setattr(tempfile, "tempdir", str(temp))
+    basetemp = f"--basetemp={fake_real_home / 'temp'}"
+
+    result = _run_absorbing(
+        pytester,
+        fake_real_home,
+        _ABSORBED_IN_A_WORKERS_TERMINAL_SUMMARY,
+        "-n",
+        "2",
+        basetemp,
+    )
+
+    _assert_each_worker_sent_it_late(result, fake_real_home, "after the last test")
+    assert list(temp.iterdir()) == []
+    pytester.makeconftest(_STAR_IMPORT)
+    again = _run(pytester, "-n", "2", basetemp)
+    again.assert_outcomes(passed=len(_PROBE_TESTS))
+    assert again.ret == pytest.ExitCode.OK
+    assert "refused" not in again.stdout.str()
+    assert list(temp.iterdir()) == []
+
+
+def case_an_xdist_workers_refusal_at_its_unconfigure_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    result = _run_absorbing(
+        pytester, fake_real_home, _ABSORBED_AT_A_WORKERS_UNCONFIGURE, "-n", "2"
+    )
+
+    _assert_each_worker_sent_it_late(
+        result, fake_real_home, "after the session finished"
+    )
+
+
+def case_an_xdist_workers_refusal_after_its_first_session_finish_wrapper_fails(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """The wrapper finishes after the guard's, so the worker's unconfigure sees it."""
+    result = _run_absorbing(
+        pytester,
+        fake_real_home,
+        _ABSORBED_AFTER_A_WORKERS_FIRST_SESSION_FINISH_WRAPPER,
+        "-n",
+        "2",
+    )
+
+    _assert_each_worker_sent_it_late(
+        result, fake_real_home, "after the session finished"
+    )
+
+
+#: Protects the fake real home when the probe conftest is imported, before the
+#: xdist controller starts its workers.
+_PROTECTED_AT_IMPORT = """
+
+home_write_guard.also_protect_home({home!r})
+"""
+
+
+def case_an_xdist_controller_makes_no_folder_in_a_protected_temporary_folder(
+    pytester: pytest.Pytester, fake_real_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Apothem would refuse a write into it, so the guard writes nothing there.
+
+    The workers then have no file for what they find after the hand-off and
+    write it to ``stderr`` instead, and the run passes, as it did before the
+    file.
+    """
+    temp = fake_real_home / ".apothem" / "temp"
+    temp.mkdir(parents=True)
+    monkeypatch.setattr(tempfile, "tempdir", str(temp))
+
+    result = _run_absorbing(
+        pytester,
+        fake_real_home,
+        _PROTECTED_AT_IMPORT.format(home=str(fake_real_home))
+        + _ABSORBED_AT_A_WORKERS_UNCONFIGURE,
+        "-n",
+        "2",
+    )
+
+    result.assert_outcomes(passed=len(_PROBE_TESTS))
+    assert result.ret == pytest.ExitCode.OK
+    assert "refused" not in result.stdout.str()
+    assert list(temp.iterdir()) == []
 
 
 #: A session-finish hook that pytest calls after the guard's own, in a
