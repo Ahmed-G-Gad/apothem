@@ -48,11 +48,12 @@ included. A ``PYTEST_VERSION`` with any other value (an empty one, or a pin
 such as ``8.2`` that a shell or a CI job exports) does not count. One that
 holds the installed pytest's exact version (``9.1.0`` beside ``pip install
 pytest==9.1.0``) counts all the same, outside pytest too: the refusal message
-then says that ``PYTEST_VERSION`` alone turned the guard on, in a process that
-runs no pytest. With both variables unset a check is two environment lookups.
-A ``PYTEST_VERSION`` that does not count adds a comparison with that version,
-and, in a process that runs no pytest, one package metadata lookup on the
-first check. The refusal message names the variable that turned the guard on.
+then says that ``PYTEST_VERSION`` alone turned the guard on, in a process
+that has not imported pytest. With both variables unset a check is two
+environment lookups. A ``PYTEST_VERSION`` that does not count adds a
+comparison with that version, and, in a process that has not imported
+pytest, one package metadata lookup on the first check. The refusal message
+names the variable that turned the guard on.
 
 A path is compared as written and as resolved through links, afresh on every
 check, so a folder swapped for a link during a test counts at once. The
