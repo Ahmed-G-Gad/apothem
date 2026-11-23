@@ -2404,33 +2404,56 @@ def test_a_ceiling_without_a_drive_is_read_on_the_checked_folders_drive(
     )
     if letter is None:
         pytest.skip("no free drive letter to map")
-    elsewhere = tmp_path / "another-drive"
-    elsewhere.mkdir()
-    mapped = subprocess.run(
-        ["subst", f"{letter}:", str(elsewhere)],
-        capture_output=True,
-        check=False,
-        timeout=60,
-    )
+    # The letter names the folder above the repository, so the repository can
+    # be reached both by its own path and through the mapped drive.
+    above = tmp_path.resolve()
+    try:
+        mapped = subprocess.run(
+            ["subst", f"{letter}:", str(above)],
+            capture_output=True,
+            check=False,
+            timeout=60,
+        )
+    except OSError as exc:
+        pytest.skip(f"cannot run subst: {exc}")
     if mapped.returncode != 0:
         pytest.skip(f"cannot map a drive letter: {mapped.stdout!r}")
+
+    def git_finds_a_repository(folder: Path) -> bool:
+        found = subprocess.run(
+            ["git", "rev-parse", "--git-dir"],
+            cwd=str(folder),
+            env=hermetic_git_env(),
+            capture_output=True,
+            check=False,
+            timeout=60,
+        )
+        return found.returncode == 0
+
     try:
-        top = _empty_repo((tmp_path / "top").resolve())
+        top = _empty_repo(above / "top")
         inner = top / "a" / "b"
         inner.mkdir(parents=True)
         monkeypatch.chdir(f"{letter}:\\")
+
+        # 1. The process is on the mapped drive, the checked folder on its
+        # own: the entry is read on the checked folder's drive and stops git.
         for case in ("no drive letter", "no drive letter, forward slashes"):
             monkeypatch.setenv("GIT_CEILING_DIRECTORIES", _CEILING_CASES[case](top))
-            found = subprocess.run(
-                ["git", "rev-parse", "--git-dir"],
-                cwd=str(inner),
-                env=hermetic_git_env(),
-                capture_output=True,
-                check=False,
-                timeout=60,
-            )
-            assert found.returncode != 0, case  # git stops at the ceiling
+            assert not git_finds_a_repository(inner), case
             assert in_checkout(inner) is False, case
+
+        # 2. The checked folder is reached through the mapped letter. git
+        # runs on that letter, so an entry that spells the folder's real
+        # path names nothing there and git finds the repository ...
+        through_letter = Path(f"{letter}:\\") / "top" / "a" / "b"
+        monkeypatch.setenv("GIT_CEILING_DIRECTORIES", _without_drive(top / "a"))
+        assert git_finds_a_repository(through_letter)
+        assert in_checkout(through_letter) is True
+        # ... while an entry that spells the path on the mapped drive stops it.
+        monkeypatch.setenv("GIT_CEILING_DIRECTORIES", "\\top\\a")
+        assert not git_finds_a_repository(through_letter)
+        assert in_checkout(through_letter) is False
     finally:
         # Leave the mapped drive before it goes away.
         os.chdir(tmp_path)

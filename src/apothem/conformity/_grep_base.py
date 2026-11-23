@@ -443,12 +443,14 @@ def _git_reads_as_full_path(entry: str) -> bool:
 def _ceiling_folders(start: Path) -> tuple[frozenset[str], frozenset[str]]:
     """Return the folders ``GIT_CEILING_DIRECTORIES`` names, as git reads them.
 
-    *start* is the folder git would run in. git ignores an entry that is not a
-    full path. Up to the first empty entry it resolves each entry (links,
-    ``..``, a missing drive letter) and drops one it cannot resolve; those
-    come back first, in the platform's case form. A Windows entry with no
-    drive letter is read on the drive of *start*, which is git's current
-    folder, and not on the drive this process happens to be on. After an
+    *start* is the folder git would run in, as it is named: its full path
+    with links and mapped drive letters left as they are. git ignores an entry
+    that is not a full path. Up to the first empty entry it resolves each
+    entry (links, ``..``, a missing drive letter) and drops one it cannot
+    resolve; those come back first, in the platform's case form. A Windows
+    entry with no drive letter is read on the drive of *start*, which is
+    git's current folder: not on the drive this process happens to be on, and
+    not on the drive a mapped letter resolves to. After an
     empty entry git compares each entry as it is written, with forward
     slashes, against its own current folder; those come back second, without
     the one slash git lets such an entry end with (an entry that ends with
@@ -514,7 +516,10 @@ def checkout_search_folders(directory: Path) -> Iterator[Path]:
     another file system unless ``GIT_DISCOVERY_ACROSS_FILESYSTEM`` is set.
     """
     start = directory.resolve()
-    resolved, as_written = _ceiling_folders(start)
+    # The drive of a ceiling entry with no drive letter is the drive git runs
+    # on: the folder as it is named, not as it resolves. A mapped drive letter
+    # (``subst V:``) resolves to the folder behind it on another drive.
+    resolved, as_written = _ceiling_folders(directory.absolute())
     one_file_system = _STOPS_AT_FILE_SYSTEM and not _git_flag_is_set(
         "GIT_DISCOVERY_ACROSS_FILESYSTEM"
     )
