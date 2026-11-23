@@ -244,10 +244,10 @@ def test_an_open_claw_uninstall_is_refused_before_a_workspace_outside_its_folder
     _installed("--harness", "open-claw", "--profile", str(profile))
     rules_file = workspace / "apothem" / "AGENTS.md"
     assert rules_file.is_file()
-    assert not home_write_guard.would_refuse(rules_file)
     before = _snapshot(home)
     kinds = _kinds("open_claw")
     home_write_guard.also_protect_home(home)
+    assert not home_write_guard.would_refuse(rules_file)
 
     result = _run("uninstall", "--harness", "open-claw", "--yes")
 
@@ -469,9 +469,9 @@ def test_a_data_home_right_in_the_home_is_refused_under_any_name(
     _installed(*argv, "--profile", str(profile))
     data_home = home / "apothem-data"
     assert (data_home / "memory").is_dir()
-    assert not home_write_guard.would_refuse(data_home / "memory", tree=True)
     before = _snapshot(home)
     home_write_guard.also_protect_home(home)
+    assert not home_write_guard.would_refuse(data_home / "memory", tree=True)
 
     for verb in ("install", "uninstall"):
         extra = ("--profile", str(profile)) if verb == "install" else ("--yes",)
@@ -569,9 +569,9 @@ def test_a_rollback_with_the_project_outside_is_refused_before_any_change(
         "--harness", "cursor", "--project", str(project), "--profile", str(profile)
     )
     record = install_ledger.read_records("cursor")[-1]
-    assert any(not home_write_guard.would_refuse(t.path) for t in record.targets)
     before = (_snapshot(home), _snapshot(project), _snapshot(tmp_path / "outside"))
     home_write_guard.also_protect_home(home)
+    assert any(not home_write_guard.would_refuse(t.path) for t in record.targets)
     assert any(home_write_guard.would_refuse(t.path) for t in record.targets)
 
     result = _run("rollback", "--harness", "cursor", "--project", str(project), "--yes")
