@@ -1813,11 +1813,21 @@ def case_an_interrupted_xdist_workers_refusal_is_reported_once(
 
 
 #: A conftest hook that absorbs the refusal in the xdist controller only,
-#: for each test a worker reports.
+#: for each test a worker reports. The controller is told apart by its config,
+#: which has no ``workerinput``, not by ``PYTEST_XDIST_WORKER``: the pytester
+#: session runs in the process of the case, which has that variable when the
+#: cases themselves run in an xdist worker.
 _ABSORBED_IN_THE_CONTROLLER_DURING_THE_RUN = """
 
+CONFIGS = []
+
+
+def pytest_configure(config):
+    CONFIGS.append(config)
+
+
 def pytest_runtest_logreport(report):
-    if "PYTEST_XDIST_WORKER" not in os.environ and report.when == "call":
+    if not hasattr(CONFIGS[-1], "workerinput") and report.when == "call":
         _absorb()
 """
 
