@@ -327,6 +327,10 @@ def sweep_stale(
 
     While pytest runs, every stale path that would go is checked against the
     real-home guard before the first one goes, so a refusal changes nothing.
+    What keeps each stale path in place is decided before the first removal
+    too, in every run. The sweep never removes a link, so an earlier removal
+    cannot change a later path's outcome, and a later path that an earlier
+    removal took away is reported absent.
     """
     results: list[MaterializationResult] = []
     boundary = _write_boundary(allowed_root, root)
