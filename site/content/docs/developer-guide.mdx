@@ -735,9 +735,10 @@ refused quietly and reported. A test that must run a real install on purpose
 starts Apothem without `PYTEST_CURRENT_TEST` and `PYTEST_VERSION` in the
 child's environment.
 
-The refusal does not cover folders moved out of the home by `CODEX_HOME`,
-`CLAUDE_CONFIG_DIR` or `XDG_CONFIG_HOME`, the hook state folder, or programs
-that are not Python, such as the shell installers. The check runs before
+The refusal does not cover folders that `CODEX_HOME`, `CLAUDE_CONFIG_DIR` or
+`XDG_CONFIG_HOME` move away from their default names, outside the home or
+inside it (`XDG_CONFIG_HOME=~/xdg` puts OpenCode's folder at
+`~/xdg/opencode`), the hook state folder, or programs that are not Python, such as the shell installers. The check runs before
 the write, by path, so a folder swapped for a link between the two is not
 seen.
 When the system has no record of the account's home (a container user with no

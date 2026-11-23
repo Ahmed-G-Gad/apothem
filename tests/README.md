@@ -109,7 +109,7 @@ Apothem also refuses these writes itself, so a test run that skips `tests/confte
 
 Known gaps:
 
-- folders moved out of the home by `CODEX_HOME`, `CLAUDE_CONFIG_DIR` or `XDG_CONFIG_HOME`;
+- folders that `CODEX_HOME`, `CLAUDE_CONFIG_DIR` or `XDG_CONFIG_HOME` move away from their default names, outside the home or inside it: a copied test that inherits `XDG_CONFIG_HOME=~/xdg` writes OpenCode's folder `~/xdg/opencode` with no refusal;
 - the hook state folder (`~/.local/state/apothem`, `%LOCALAPPDATA%\apothem`, `CLAUDE_PLUGIN_DATA`);
 - programs that are not Python (`pwsh`, the shell installers, `git`), and the developer tools (`plugin_tree`, the audit writers);
 - a checkout that itself sits inside a protected folder (under `~/.claude`, say): its Apothem writes are refused during tests;
