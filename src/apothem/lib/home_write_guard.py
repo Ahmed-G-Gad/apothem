@@ -19,8 +19,8 @@ or inside one of these folders of the account's home:
 - ``.apothem`` (install records, locks, backup sets, a user-scope data home);
 - ``.config/apothem``;
 - the tools' own folders that the harness registry's ``~/`` targets and shared
-  roots name (``.claude``, ``.codex``, ``.agents``, ``.config/opencode`` and the
-  rest);
+  roots name (``.claude``, ``.codex``, ``.agents``, ``.config/opencode`` and
+  the rest);
 - each path outside those folders that the propagation manifest's installs
   and stale sweeps change in the home, by itself: the file an earlier release
   wrote, ``.antigravity/profile.yaml``, which the Antigravity stale sweep
@@ -29,12 +29,12 @@ or inside one of these folders of the account's home:
 With ``tree=True`` (removing or moving a whole folder) a path that holds one of
 those folders is refused too. :func:`refuse_project_root_at_home` refuses a
 project root that is the home itself, which a project-scope pass calls before
-its first write, and :func:`refuse_data_home_in_home` a data home right in
-the home under any name (a profile with the ``user-home`` workspace scope and
-its own ``directory_name``), or one that is a link to the home itself, before
-it is created or its stores are removed.
-Nothing else is refused: reads, dry runs and previews, the
-temporary folder, the checkout, and the rest of the home all stay allowed.
+its first write, and :func:`refuse_data_home_in_home` a data home right in the
+home under any name (a profile with the ``user-home`` workspace scope and its
+own ``directory_name``), or one that is a link to the home itself, before it is
+created or its stores are removed. Nothing else is refused: reads, dry runs and
+previews, the temporary folder, the checkout, and the rest of the home all stay
+allowed.
 
 The running pytest's version is the ``__version__`` of its ``_pytest``
 package, the string pytest puts in ``PYTEST_VERSION``, so a stale
@@ -83,28 +83,28 @@ compared, so a bind mount of the home or a case-insensitive Linux mount is
 judged by its spelling.
 
 The account home comes from the operating system (``FOLDERID_Profile`` on
-Windows, the ``passwd`` entry elsewhere), never from ``HOME`` or ``USERPROFILE``:
-under ``tests/conftest.py`` those name a temporary folder. The system functions
-the lookup calls are bound when this module is imported, so a test that later
-replaces ``pwd.getpwuid``, part of ``ctypes`` or ``winreg`` cannot change the
-home found or poison its cache. When the system has no answer (a container user
-with no ``passwd`` entry, say), the account home is not protected at all: only
-the homes a test added with :func:`also_protect_home` are, and the failed lookup
-is tried again on the next check. ``HOME`` is no fallback, because under
-``tests/conftest.py`` it can already name a test's temporary folder. No
-environment variable, setting or flag turns the refusal off; a test that runs a
-real install on purpose starts Apothem without ``PYTEST_CURRENT_TEST`` and
-``PYTEST_VERSION`` in the child's environment.
+Windows, the ``passwd`` entry elsewhere), never from ``HOME`` or
+``USERPROFILE``: under ``tests/conftest.py`` those name a temporary folder. The
+system functions the lookup calls are bound when this module is imported, so a
+test that later replaces ``pwd.getpwuid``, part of ``ctypes`` or ``winreg``
+cannot change the home found or poison its cache. When the system has no answer
+(a container user with no ``passwd`` entry, say), the account home is not
+protected at all: only the homes a test added with :func:`also_protect_home`
+are, and the failed lookup is tried again on the next check. ``HOME`` is no
+fallback, because under ``tests/conftest.py`` it can already name a test's
+temporary folder. No environment variable, setting or flag turns the refusal
+off; a test that runs a real install on purpose starts Apothem without
+``PYTEST_CURRENT_TEST`` and ``PYTEST_VERSION`` in the child's environment.
 
 Every refusal is logged in this process (:func:`refusals`,
 :func:`drain_refusals`) and written to ``stderr`` once per protected folder in
 each test (or, outside any test, in the pytest session), so a caller that
-absorbs the error still leaves a trace that ``tests/conftest.py`` reports.
-The log is per process: a refusal a child process absorbs shows only as the
-child's ``stderr`` line. A child process that inherits only
-``PYTEST_VERSION`` (one started outside any test) is guarded only when its
-Python has the same pytest installed. The check runs before the write and by
-path, so a folder swapped for a link between the two is not seen.
+absorbs the error still leaves a trace that ``tests/conftest.py`` reports. The
+log is per process: a refusal a child process absorbs shows only as the child's
+``stderr`` line. A child process that inherits only ``PYTEST_VERSION`` (one
+started outside any test) is guarded only when its Python has the same pytest
+installed. The check runs before the write and by path, so a folder swapped for
+a link between the two is not seen.
 
 Nothing here holds a path at module level, and nothing is looked up at import:
 the suite's scan for module-level paths naming the real home stays clean.
@@ -213,11 +213,11 @@ _IPV6_LITERAL = ".ipv6-literal.net"
 _SETTLE_NS = 100_000_000
 
 #: The NT object-namespace prefixes, lower case, with what replaces each. A
-#: file call passes ``\\??\\C:\\x`` through to the NT path ``C:\\x`` as written,
-#: while ``os.path.abspath`` reads it as a folder ``??`` on the current drive.
-#: ``\\\\?\\`` passes a path through the same way, so a device path after the
-#: prefix (``GLOBALROOT\\Device\\HarddiskVolume2``, ``Volume{GUID}``) stays
-#: absolute and is resolved like any other path.
+#: file call passes ``\\??\\C:\\x`` through to the NT path ``C:\\x`` as
+#: written, while ``os.path.abspath`` reads it as a folder ``??`` on the
+#: current drive. ``\\\\?\\`` passes a path through the same way, so a device
+#: path after the prefix (``GLOBALROOT\\Device\\HarddiskVolume2``,
+#: ``Volume{GUID}``) stays absolute and is resolved like any other path.
 _NT_PREFIXES: tuple[tuple[str, str], ...] = (
     ("\\??\\unc\\", "\\\\"),
     ("\\??\\", "\\\\?\\"),
@@ -235,9 +235,8 @@ _PREFIXES: tuple[tuple[str, str], ...] = (
 )
 
 #: The Windows errors that say a share's host, or the share itself, cannot be
-#: reached: bad network path or name, no network, host or network
-#: unreachable, a dropped or timed-out connection, a mapped drive not
-#: connected.
+#: reached: bad network path or name, no network, host or network unreachable,
+#: a dropped or timed-out connection, a mapped drive not connected.
 _UNREACHABLE_ERRORS = frozenset({51, 53, 59, 64, 67, 121, 1222, 1231, 1232, 2250})
 
 #: Homes a test added with :func:`also_protect_home` (temporary folders only).
@@ -698,14 +697,14 @@ def _absolute(path: str) -> str:
     """Return *path* made absolute, with an NT object-namespace prefix read first.
 
     On Windows ``\\??\\UNC\\host\\share\\x`` (with either slash) reads as
-    ``\\\\host\\share\\x`` and any other ``\\??\\x`` as ``\\\\?\\x``, which a file
-    call passes through to the same NT path. So ``\\??\\C:\\x`` reads as
+    ``\\\\host\\share\\x`` and any other ``\\??\\x`` as ``\\\\?\\x``, which a
+    file call passes through to the same NT path. So ``\\??\\C:\\x`` reads as
     ``C:\\x``, and a device path such as
-    ``\\??\\GLOBALROOT\\Device\\HarddiskVolume2\\x`` or ``\\??\\Volume{GUID}\\x``
-    stays absolute and is resolved to the drive path it names.
-    ``os.path.abspath`` alone would read each as a folder ``??`` on the current
-    drive, and dropping the prefix would leave a device path relative to the
-    current folder.
+    ``\\??\\GLOBALROOT\\Device\\HarddiskVolume2\\x`` or
+    ``\\??\\Volume{GUID}\\x`` stays absolute and is resolved to the drive path
+    it names. ``os.path.abspath`` alone would read each as a folder ``??`` on
+    the current drive, and dropping the prefix would leave a device path
+    relative to the current folder.
     """
     if os.name == "nt":
         flipped = path.replace("/", "\\")
@@ -1237,8 +1236,8 @@ def narrowest_roots(folders: tuple[str, ...], paths: list[str]) -> tuple[str, ..
 def _os_account_home() -> str:
     """Return the account's home from the operating system, looked up once.
 
-    Raises :class:`_HomeLookupError` when every lookup fails; ``lru_cache`` keeps
-    no failure, so the next call tries again. An error from one lookup (a
+    Raises :class:`_HomeLookupError` when every lookup fails; ``lru_cache``
+    keeps no failure, so the next call tries again. An error from one lookup (a
     broken system library, say) moves on to the next lookup, so a broken step
     never stops the check itself. The lookups call the system functions bound
     at import (:data:`_SYSTEM`; a missing one is a ``KeyError``), so a test's
