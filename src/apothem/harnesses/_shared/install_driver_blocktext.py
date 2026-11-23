@@ -314,19 +314,26 @@ def _delete_by_hand(pairs: Sequence[UncertainPair]) -> str:
     return f"{fix} Then run the uninstall again."
 
 
-def _held_until(pairs: Sequence[UncertainPair]) -> str:
+def _held_until(pairs: Sequence[UncertainPair], held: bool) -> str:
     """Return how long install and update leave a file with *pairs* as it is.
 
-    Until its marker lines are fixed, whoever wrote them: a pair in code may
-    be Apothem's block, so a marker example of the operator's in code holds
-    the file back too (while an install record lists it), and nothing else
-    ends that. Each such run ends as partial.
+    Until its marker lines are fixed, whoever wrote them, but only where the
+    merge holds the file back: the pair rule 3 fired on does with or without
+    an install record, and while *held* (an install record lists the file,
+    as an install or update reads it, or will once the run that gives the
+    text is recorded) every pair does. A pair in code may then be Apothem's
+    block, so a marker example of the operator's in code holds the file back
+    too, and nothing else ends that. Each such run ends as partial. Empty
+    when nothing holds the file back: the next update then adds its block
+    after the pairs, so the text must not say it leaves the file as it is.
     """
+    if not held and not any(pair.split for pair in pairs):
+        return ""
     text = (
         "Until you fix these marker lines as this text says, install and update "
         "leave this file as it is and end as partial (exit code 2)."
     )
-    if any(not pair.split and not _outside(pair) for pair in pairs):
+    if held and any(not pair.split and not _outside(pair) for pair in pairs):
         text += (
             " A marker example of yours in code holds the file back the same "
             "way, until you change its two marker lines."
@@ -342,6 +349,7 @@ def unclear_block_report(
     left: bool = True,
     lone: Sequence[int] = (),
     dry_run: bool = False,
+    held: bool = False,
 ) -> str:
     """Return what is wrong with *path*, whose marker pairs are *pairs*, and the fix.
 
@@ -366,7 +374,8 @@ def unclear_block_report(
     :func:`install_driver_blocks.lone_begins_at`): each must go too, or it can
     pair with an END marker once the pairs are fixed. With :data:`REPLACES`,
     the text ends by saying that install and update leave the file as it is,
-    and end as partial, until its marker lines are fixed (see
+    and end as partial, until its marker lines are fixed, where the merge
+    holds the file back: while *held*, or for the pair rule 3 fired on (see
     :func:`_held_until`).
     """
     head = (
@@ -393,7 +402,7 @@ def unclear_block_report(
             parts.append(_begin_first(split))
         parts.append(_delete_by_hand(pairs))
     elif outcome == REPLACES:
-        parts.append(_held_until(pairs))
+        parts.append(_held_until(pairs, held))
     return " ".join(part for part in parts if part)
 
 

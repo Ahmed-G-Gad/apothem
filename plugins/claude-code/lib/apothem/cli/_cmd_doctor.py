@@ -46,6 +46,7 @@ from apothem.cli._helpers import (
 from apothem.cli._json_formatter import emit_json
 from apothem.cli._stray_begin_report import (
     markers_to_fix_by_hand,
+    record_lists,
     stray_begin_note,
     stray_begin_paths,
 )
@@ -221,7 +222,11 @@ def _report_verify_failure(
             "fail",
             f"{name} is installed but does not verify: {held} {what}.",
             harness=name,
-            fix=stray_begin_note(stray, then=_update_fix(name, project, lead="run")),
+            fix=stray_begin_note(
+                stray,
+                then=_update_fix(name, project, lead="run"),
+                listed=record_lists(entry, adapter, project_root),
+            ),
         )
     )
     _probe_install_hooks(entry, adapter, project_root, row, checks)

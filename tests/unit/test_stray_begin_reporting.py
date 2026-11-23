@@ -2812,3 +2812,100 @@ def test_the_hold_back_reads_an_unreadable_ledger_as_a_record(tmp_path: Path) ->
     assert preview is not None
     assert preview.outcome == "unchanged"
     assert written.outcome == "unchanged"
+
+
+# --- the hold the text claims ---------------------------------------------------
+
+#: The sentence that says install and update leave a file as it is, and the
+#: one that says a marker example of yours in code does the same.
+_HOLDS = (
+    "Until you fix these marker lines as this text says, install and update leave "
+    "this file as it is and end as partial (exit code 2)."
+)
+_EXAMPLE_HOLDS = (
+    "A marker example of yours in code holds the file back the same way, until "
+    "you change its two marker lines."
+)
+
+
+@pytest.mark.parametrize("recorded", [True, False], ids=["recorded", "no-record"])
+@pytest.mark.parametrize("harness_id", ["codex", "gemini-cli"])
+def test_verify_and_doctor_say_the_file_is_left_as_it_is_only_when_it_is(
+    harness_id: str, recorded: bool, sandbox_factory: SandboxFactory, tmp_path: Path
+) -> None:
+    """The verify note and the doctor fix said so for a file no record lists.
+
+    Apothem's block sits in a code block of yours and the install ledger is
+    gone. The text said install and update leave the file as it is until you
+    fix its marker lines, but with no record the merge reads the pair in code
+    as text of yours: the next update ended as a success and wrote a block
+    of its own. The text now says so only where the merge holds the file
+    back, as it does while an install record lists the file. Without a
+    record, Codex shows no other sign of the install, so doctor reports it
+    as not installed; a project keeps its .apothem folder, so doctor checks
+    the Gemini CLI install there.
+    """
+    box = sandbox_factory(harness_id)
+    box.install()
+    anchor = _anchor(box)
+    _fence_the_block(anchor)
+    if not recorded:
+        install_ledger.ledger_path(box.entry.package_key).unlink()
+    changed = _profile_named(tmp_path, "Changed Person")
+
+    code, output = box.invoke("verify", "--json")
+    doctor = CliRunner().invoke(main, ["doctor", "--json", *box.scope()])
+    update, update_output = box.invoke("update", "--profile", changed, "--json")
+
+    assert code == 1, output
+    [row] = json.loads(output)["results"]
+    texts = [_flat(row["stray_begin"]["message"])]
+    texts += [
+        _flat(str(check["fix"]))
+        for check in json.loads(doctor.stdout)["checks"]
+        if check["code"] == "harness.stray_begin"
+    ]
+    assert len(texts) == (1 if harness_id == "codex" and not recorded else 2)
+    for text in texts:
+        assert _names(text, anchor)
+        assert "If lines" in text
+        assert (_HOLDS in text) is recorded
+        assert (_EXAMPLE_HOLDS in text) is recorded
+    assert update == (2 if recorded else 0), update_output
+
+
+def test_the_note_says_a_file_is_left_as_it_is_only_where_the_merge_does(
+    tmp_path: Path,
+) -> None:
+    """A pair in code holds a file back only while an install record lists it.
+
+    The pair rule 3 fired on holds the file back with or without a record, so
+    the note says install and update leave that file as it is either way, but
+    says that a marker example of yours in code does the same only while a
+    record lists the file.
+    """
+    quoted = tmp_path / "quoted.md"
+    quoted_text = f"# Notes\n\n```md\n{B}\nexample\n{E}\n```\n"
+    quoted.write_bytes(quoted_text.encode())
+    split = tmp_path / "split.md"
+    split_text = _RESIDUAL + _QUOTED_BELOW
+    split.write_bytes(split_text.encode())
+
+    def listed(path: Path) -> bool:
+        return True
+
+    unlisted = {
+        path: _flat(stray_begin_note([path], then="x")) for path in (quoted, split)
+    }
+    recorded = {
+        path: _flat(stray_begin_note([path], then="x", listed=listed))
+        for path in (quoted, split)
+    }
+
+    assert merge_managed_block(quoted_text, "new body") != quoted_text
+    assert merge_managed_block(split_text, "new body") == split_text
+    assert _HOLDS not in unlisted[quoted]
+    assert _HOLDS in unlisted[split]
+    assert _EXAMPLE_HOLDS not in unlisted[split]
+    for text in recorded.values():
+        assert f"{_HOLDS} {_EXAMPLE_HOLDS}" in text

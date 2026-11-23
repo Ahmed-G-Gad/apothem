@@ -509,7 +509,11 @@ code that starts no pair does not change that, even when every marker pair in
 the file is quoted in code below it: the marker may be what is left of
 Apothem's block after its END marker was lost, but a pair in code may be
 Apothem's block inside a code block of yours. The warning names such a BEGIN
-marker first: delete or change it, with any old Apothem text below it.
+marker first: delete or change it, with any old Apothem text below it. The
+`apothem verify` note and the fix `apothem doctor` prints end the same way
+only where install and update would leave the file as it is: with no install
+record, a marker pair you quote in code does not hold the file back (see
+below).
 
 Apothem closes a code block that a rule in your profile opens and never
 closes, at the end of the block it writes, so the END marker of that block

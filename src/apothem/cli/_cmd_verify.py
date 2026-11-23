@@ -41,7 +41,11 @@ from apothem.cli._helpers import (
     _resolve_project_root,
 )
 from apothem.cli._json_formatter import emit_json
-from apothem.cli._stray_begin_report import stray_begin_note, stray_begin_paths
+from apothem.cli._stray_begin_report import (
+    record_lists,
+    stray_begin_note,
+    stray_begin_paths,
+)
 from apothem.cli._user_level_report import is_project_scope, verify_hint
 from apothem.lib.install_advisories import instruction_override_advisories
 from apothem.lib.profile import ProfileValidationError
@@ -303,11 +307,8 @@ def _failure_notes(
     if hint is not None:
         row["user_level"] = hint
         notes.append(str(hint["message"]))
-    stray = _stray_begin_paths(harness_id, adapter, project_root)
+    stray, note = _stray_begin_note(harness_id, adapter, project_root)
     if stray:
-        note = stray_begin_note(
-            stray, then="run apothem update and apothem verify again"
-        )
         row["stray_begin"] = {"files": [str(path) for path in stray], "message": note}
         notes.append(note)
     if notes:
@@ -364,18 +365,30 @@ def _user_level_hint(
         return None
 
 
-def _stray_begin_paths(
+def _stray_begin_note(
     harness_id: str, adapter: _Adapter, project_root: Path | None
-) -> list[Path]:
-    """Return the files a stray BEGIN marker fails *harness_id*'s verify in.
+) -> tuple[list[Path], str]:
+    """Return the files whose markers fail *harness_id*'s verify, and the note.
 
-    Empty for a harness id the registry does not know (a test double).
+    The note names each file and how to fix it (see :func:`stray_begin_note`;
+    whether an install record lists a file, see :func:`record_lists`, decides
+    whether it says that install and update leave the file as it is). No
+    files and an empty note for a harness id the registry does not know (a
+    test double), or when no file holds such a marker.
     """
     try:
         entry = _pkg.get_harness_entry(harness_id)
     except KeyError:
-        return []
-    return stray_begin_paths(entry, adapter, project_root)
+        return [], ""
+    stray = stray_begin_paths(entry, adapter, project_root)
+    if not stray:
+        return [], ""
+    note = stray_begin_note(
+        stray,
+        then="run apothem update and apothem verify again",
+        listed=record_lists(entry, adapter, project_root),
+    )
+    return stray, note
 
 
 def _verify_message(

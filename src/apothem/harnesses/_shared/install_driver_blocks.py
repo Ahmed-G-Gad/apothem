@@ -293,11 +293,13 @@ def _install_warning(
     # open above the block, which a line in the block closes, or the pair rule
     # 3 fired on (a code block in Apothem's block hides its END marker). A
     # preview reads the file as it was before the write, so there only the
-    # rule 3 pair counts.
+    # rule 3 pair counts. The text says install and update hold the file back
+    # only when that is so: this run left it as it is, or wrote it, and the
+    # record of the run then lists it, so the next run leaves it.
     if pairs and (unchanged or not dry_run or any(pair.split for pair in pairs)):
-        lone = lone_begins_at(target)
+        lone, held = lone_begins_at(target), unchanged or not dry_run
         report = unclear_block_report(
-            path, pairs, left=unchanged, lone=lone, dry_run=dry_run
+            path, pairs, left=unchanged, lone=lone, dry_run=dry_run, held=held
         )
         return f"{report}{_UPDATE_AGAIN}", unchanged
     if not stray_begin_at(target):
