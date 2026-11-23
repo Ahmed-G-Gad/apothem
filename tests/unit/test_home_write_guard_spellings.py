@@ -463,13 +463,19 @@ def test_an_append_and_a_lock_through_the_nt_prefix_leave_the_home_alone(
     assert len(home_write_guard.drain_refusals()) == 4
 
 
-def _device_spellings(folder: Path) -> dict[str, str]:
-    """Return *folder* as NT device paths, or skip when Windows names none.
+#: The prefixes a device path follows, each with the id its cases carry: the
+#: NT object namespace, the long-path prefix and the device prefix.
+_DEVICE_PREFIXES = {"nt": "\\??\\", "long": "\\\\?\\", "device": "\\\\.\\"}
 
-    ``\\??\\GLOBALROOT\\Device\\HarddiskVolumeN\\...`` (the volume's device),
-    ``\\??\\Volume{GUID}\\...`` (its volume name) and
-    ``\\??\\GLOBALROOT\\GLOBAL??\\C:\\...`` (the drive's global link). None of
-    them holds a drive letter or a share after the prefix.
+
+def _device_spellings(folder: Path, prefix: str = "\\??\\") -> dict[str, str]:
+    """Return *folder* as device paths behind *prefix*, or skip when none exist.
+
+    ``GLOBALROOT\\Device\\HarddiskVolumeN\\...`` (the volume's device),
+    ``Volume{GUID}\\...`` (its volume name) and
+    ``GLOBALROOT\\GLOBAL??\\C:\\...`` (the drive's global link), each after
+    *prefix* (``\\??\\``, ``\\\\?\\`` or ``\\\\.\\``). None of them holds a
+    drive letter or a share after the prefix.
     """
     import ctypes
 
@@ -491,30 +497,33 @@ def _device_spellings(folder: Path) -> dict[str, str]:
     rest = text[len(root) :]
     guid = volume.value.removeprefix("\\\\?\\").rstrip("\\")
     return {
-        "globalroot-device": f"\\??\\GLOBALROOT{device.value}\\{rest}",
-        "volume-guid": f"\\??\\{guid}\\{rest}",
-        "globalroot-drive": f"\\??\\GLOBALROOT\\GLOBAL??\\{drive}\\{rest}",
+        "globalroot-device": f"{prefix}GLOBALROOT{device.value}\\{rest}",
+        "volume-guid": f"{prefix}{guid}\\{rest}",
+        "globalroot-drive": f"{prefix}GLOBALROOT\\GLOBAL??\\{drive}\\{rest}",
     }
 
 
-@pytest.mark.skipif(sys.platform != "win32", reason="the NT namespace is Windows")
+@pytest.mark.skipif(sys.platform != "win32", reason="device paths are Windows")
 @pytest.mark.parametrize(
     "form", ["globalroot-device", "volume-guid", "globalroot-drive"]
 )
+@pytest.mark.parametrize("prefix", sorted(_DEVICE_PREFIXES))
 @pytest.mark.parametrize("slash", ["\\", "/"])
-def test_a_device_path_behind_the_nt_prefix_is_refused(
-    fake_home: Path, tmp_path: Path, form: str, slash: str
+def test_a_device_path_behind_a_prefix_is_refused(
+    fake_home: Path, tmp_path: Path, form: str, prefix: str, slash: str
 ) -> None:
-    """``\\??\\`` before a device path reaches the protected folder too.
+    """``\\??\\``, ``\\\\?\\`` or ``\\\\.\\`` before a device path reaches it too.
 
-    Dropping the prefix left a relative path, joined to the current folder, so
-    neither check saw the protected folder while the write landed in it.
+    A file call passes each through to the device path after it. Dropping the
+    prefix would leave a relative path, joined to the current folder, so
+    neither check would see the protected folder while the write landed in it.
     """
     state = fake_home / ".apothem" / "state"
     state.mkdir(parents=True)
     ledger = state / "ledger.jsonl"
     ledger.write_bytes(b"kept\n")
-    home = _device_spellings(fake_home)[form].replace("\\", slash)
+    spelled = _DEVICE_PREFIXES[prefix]
+    home = _device_spellings(fake_home, spelled)[form].replace("\\", slash)
 
     def under(*parts: str) -> str:
         return slash.join((home, *parts))
@@ -545,18 +554,24 @@ def test_a_device_path_behind_the_nt_prefix_is_refused(
     assert not home_write_guard.would_refuse(under("notes.txt"))
     project = tmp_path / "project"
     project.mkdir()
-    outside = _device_spellings(project)[form].replace("\\", slash)
+    outside = _device_spellings(project, spelled)[form].replace("\\", slash)
     assert not home_write_guard.would_refuse_project_root(outside)
+    assert not home_write_guard.would_refuse(slash.join((outside, ".claude")))
     assert ledger.read_bytes() == b"kept\n"
     assert _everything_in(fake_home) == [fake_home / ".apothem", state, ledger]
 
 
-@pytest.mark.skipif(sys.platform != "win32", reason="the NT namespace is Windows")
+@pytest.mark.skipif(sys.platform != "win32", reason="device paths are Windows")
 @pytest.mark.parametrize(
     "form", ["globalroot-device", "volume-guid", "globalroot-drive"]
 )
+@pytest.mark.parametrize("prefix", sorted(_DEVICE_PREFIXES))
 def test_a_device_path_is_not_read_against_the_current_folder(
-    fake_home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, form: str
+    fake_home: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    form: str,
+    prefix: str,
 ) -> None:
     """With the current folder in a protected folder, a path elsewhere is allowed."""
     inside = fake_home / ".claude"
@@ -564,7 +579,7 @@ def test_a_device_path_is_not_read_against_the_current_folder(
     monkeypatch.chdir(inside)
     other = tmp_path / "other"
     other.mkdir()
-    spelled = _device_spellings(other)[form]
+    spelled = _device_spellings(other, _DEVICE_PREFIXES[prefix])[form]
     assert not home_write_guard.would_refuse(f"{spelled}\\settings.json")
     assert not home_write_guard.would_refuse_project_root(spelled)
     home_write_guard.refuse_real_home_write(
