@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 from collections.abc import Callable
@@ -1526,6 +1527,120 @@ def test_the_uninstall_names_the_marker_lines_of_yours_around_apothem_s_block(
         "END (my marker)\n"
     )
     assert "code block" not in warning
+
+
+#: Where Apothem's reader ends a line: CRLF, a lone CR and LF.
+_LINE_END = re.compile(r"(\r\n|\r|\n)")
+
+
+def _with_line_ends(text: str, ends: str) -> str:
+    """Return *text*, written with LF endings, with the line endings *ends* names.
+
+    ``cr``: every line ends with a lone CR. ``one-cr``: the first line holds a
+    lone CR of its own (pasted from an old tool, say), so it reads as two
+    lines. ``bom-cr``: CR endings after a byte order mark.
+    """
+    if ends == "cr":
+        return text.replace("\n", "\r")
+    if ends == "one-cr":
+        return text.replace(" ", "\r", 1)
+    return "﻿" + text.replace("\n", "\r")
+
+
+def _reader_lines(path: Path) -> list[str]:
+    """Return the lines of *path* as Apothem numbers them in its warnings.
+
+    The file is split at CRLF, a lone CR and LF, and a byte order mark at
+    offset 0 is not part of line 1.
+    """
+    text = path.read_bytes().decode("utf-8").removeprefix("﻿")
+    return _LINE_END.split(text)[::2]
+
+
+def _change_lines(path: Path, changes: dict[int, str]) -> None:
+    """Replace the 1-based lines *changes* names, as the reader numbers them.
+
+    Every line ending, and a byte order mark, stays as it is.
+    """
+    text = path.read_bytes().decode("utf-8")
+    bom = "﻿" if text.startswith("﻿") else ""
+    parts = _LINE_END.split(text.removeprefix(bom))
+    for number, line in changes.items():
+        parts[2 * (number - 1)] = line
+    path.write_bytes((bom + "".join(parts)).encode("utf-8"))
+
+
+@pytest.mark.parametrize("ends", ["cr", "one-cr", "bom-cr"])
+def test_the_lines_named_around_the_block_count_a_lone_cr_as_a_line_end(
+    ends: str, tmp_path: Path
+) -> None:
+    """markers-r4-1: the lines were counted at LF alone.
+
+    The block between them was found with a lone CR as a line end, so in a
+    file with one, the text named the marker lines of Apothem's own block as
+    the ones to change. Each line named is now the one the reader numbers so.
+    """
+    target = tmp_path / "AGENTS.md"
+    shaped = f"my own text above\n{B}\nmy note\n\n{OLD}\nmy own text below\n{E}\n"
+    target.write_bytes(_with_line_ends(shaped, ends).encode("utf-8"))
+    lines = _reader_lines(target)
+    outer, outer_end = lines.index(B) + 1, len(lines) - 1
+    inner, inner_end = lines.index(B, outer) + 1, lines.index(E) + 1
+
+    message = _flat(blocks.another_block_report(target, then=None))
+
+    assert lines[outer] == "my note"
+    assert lines[outer_end - 2] == "my own text below"
+    assert (
+        f"once the block from line {inner} to line {inner_end} is out, the BEGIN "
+        f"marker at line {outer} and the END marker at line {outer_end} make "
+        f"another. Apothem writes one block per file and cannot tell which one is "
+        "its own, so it left the file as it is. Do not delete the block from line "
+        f"{inner} to line {inner_end}: the next run would then read lines {outer} "
+        f"to {outer_end} as Apothem's block, and replace or take out what is "
+        "between them. Delete or change the marker lines at lines "
+        f"{outer} and {outer_end} instead"
+    ) in message
+
+
+@pytest.mark.parametrize("ends", ["cr", "one-cr", "bom-cr"])
+@pytest.mark.parametrize("harness_id", ["codex", "claude-code"])
+def test_following_the_marker_line_text_in_a_file_with_lone_crs_keeps_your_lines(
+    harness_id: str, ends: str, sandbox_factory: SandboxFactory
+) -> None:
+    """markers-r4-1: following the text let the next uninstall delete your lines.
+
+    A file with a lone CR line ending, a BEGIN marker above Apothem's block
+    and an END marker below it: the uninstall named the marker lines of
+    Apothem's own block as the ones to delete or change. Done as it said,
+    the BEGIN marker above and the END marker below made a whole block, and
+    the next uninstall took it out with your lines between them, exit 0. The
+    text now names the two marker lines around the block; done as it says,
+    the next uninstall finishes and keeps every line of yours.
+    """
+    box = sandbox_factory(harness_id)
+    box.install()
+    anchor = _anchor(box)
+    text = anchor.read_bytes().decode("utf-8")
+    shaped = f"my own text above\n{B}\nmy note KEEP1\n\n{text}\nmy tail KEEP2\n{E}\n"
+    anchor.write_bytes(_with_line_ends(shaped, ends).encode("utf-8"))
+
+    code, output, warning, _ = _uninstall_warning(box, anchor)
+    named = re.search(r"change the marker lines at lines (\d+) and (\d+)", warning)
+    assert named is not None, warning
+    outer, outer_end = int(named[1]), int(named[2])
+    _change_lines(anchor, {outer: "BEGIN (my marker)", outer_end: "END (my marker)"})
+    again, again_output = box.invoke("uninstall", "--yes", "--json")
+    left = _reader_lines(anchor)
+
+    assert code == 2, output
+    assert again == 0, again_output
+    for mine in ("my note KEEP1", "my tail KEEP2", "BEGIN (my marker)"):
+        assert mine in left, left
+    assert "END (my marker)" in left, left
+    assert B not in left
+    assert E not in left
+    assert left.index("my note KEEP1") < left.index("my tail KEEP2")
 
 
 @pytest.mark.parametrize("harness_id", ["codex", "claude-code"])

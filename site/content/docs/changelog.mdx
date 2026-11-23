@@ -874,7 +874,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   lines, not Apothem's block, and to delete the old Apothem text below that
   BEGIN marker if it is what is left of an older block; when that END marker
   sits in code or text of yours, it asks for the BEGIN marker alone. An update
-  does not fix such a file either.
+  does not fix such a file either. Every line number these warnings give
+  counts lines as Apothem reads the file, where a line ends at CRLF, at LF or
+  at a CR on its own, so in a file with CR endings, or one stray CR, the
+  marker lines named are the ones around Apothem's block, not its own.
   Until you fix the file, `verify` and `verify --profile` fail, `doctor`
   reports the file (as `harness.stray_begin`, with "Apothem markers to fix by
   hand") and, for a file the current install writes, `status --profile` shows

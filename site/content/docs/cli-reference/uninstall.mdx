@@ -488,7 +488,9 @@ too. Do not put both lines in one code block: it would hold Apothem's block
 too. When that END marker sits in code or text of yours (an example you quote
 in a code block, say), the warning asks for the BEGIN marker alone and says
 the END marker can stay as it is. An `apothem update` does not fix such a file
-either, and `verify` fails until you fix it.
+either, and `verify` fails until you fix it. The line numbers count a CR on
+its own as the end of a line, as CRLF and LF are (see
+[A file has an Apothem BEGIN marker with no END marker](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
 
 When the uninstall's next step is to run `apothem update` and a warning names
 a file for an Apothem marker (in the `--format json` envelope, its `detail`

@@ -591,18 +591,22 @@ def _revealed_block(
     """Return the whole block *path* shows once *block* is out, and its END line.
 
     The lines of *block* are blanked, not cut, so every other line keeps its
-    number. The END marker line is given when it reads as code or as text
-    (one the operator quotes in a code block, say): with no pair after them,
-    such a pair still reads as a whole block, and a pair added after the text
-    shows it, since rule 3 then fires on that pair (see
+    number. They are split and numbered as
+    :func:`apothem.lib.harness_materializer.whole_blocks` numbers *block*'s:
+    at CRLF, a lone CR and LF, with a byte order mark at offset 0 kept out of
+    the first line. The END marker line is given when it reads as code or as
+    text (one the operator quotes in a code block, say): with no pair after
+    them, such a pair still reads as a whole block, and a pair added after
+    the text shows it, since rule 3 then fires on that pair (see
     :func:`apothem.lib.harness_materializer.uncertain_pairs`). Only the BEGIN
     marker of such a block needs to go. ``None`` when no whole block shows
     then, or the file cannot be read.
     """
     try:
-        lines = path.read_bytes().decode("utf-8", errors="replace").split("\n")
+        text = path.read_bytes().decode("utf-8", errors="replace")
     except OSError:
         return None
+    lines = _EOL.split(text.removeprefix(_BOM))
     begin, end = block
     lines[begin - 1 : end] = [""] * (end - begin + 1)
     text = "\n".join(lines)

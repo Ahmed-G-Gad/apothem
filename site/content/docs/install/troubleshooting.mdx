@@ -365,6 +365,11 @@ Markers inside an HTML block or a block quote, or after a list item whose text
 goes on at the left margin, can still be read differently from a Markdown
 viewer.
 
+Every line number these warnings give counts lines as Apothem reads the file:
+a line ends at CRLF, at LF, or at a CR on its own. In a file saved with CR
+endings, or with one stray CR inside a line, count the lines the same way
+before you change the lines a warning names.
+
 To fix it, open the named file and find the stray BEGIN marker: the one with no
 END marker before the next BEGIN marker, or none at all. Delete that line and
 any old Apothem text below it, which repeats Apothem's rules, and keep your own
