@@ -802,12 +802,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   blocks, say), delete them by hand, keeping your own text. When the line that
   closes that code block below the END marker would then open a code block of
   its own, so that a Markdown viewer would show lines of yours below it as
-  code (and could show a code example of yours further down as text), the
-  fix says to move that line up above the BEGIN marker instead of adding a
-  closing line, and, when it offers to delete the line
+  code, or a code example of yours further down as text or with its own
+  opening line as code, the fix says to move that line up above the BEGIN marker
+  instead of adding a closing line, and, when it offers to delete the line
   that opens the code block with old Apothem text, to delete that closing line
-  too; when that line is the last line of a code example of yours that starts
-  below the block, the fix still adds a closing line. If the pair is
+  too. The fix still adds a closing line when that line is the last line of a
+  code example of yours that starts below the block, or when moving it would
+  change how more of your lines below it read (a line of yours between the
+  block and that line that starts a list item takes in an indented line below
+  it, say). If the pair is
   yours, change or delete its two marker lines. The same happens, record or
   not, when a BEGIN marker outside code has its END marker in code and another
   marker pair follows. A block an earlier release wrote from a rule in your

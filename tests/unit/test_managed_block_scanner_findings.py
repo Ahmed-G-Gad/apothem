@@ -1120,9 +1120,9 @@ def test_a_closing_line_that_would_open_a_code_block_is_named_to_move(
     agreed again at the last line of that example, so the fix still said to
     add a closing line: done that way, your text between (and the line that
     opens your example) read as code, and the next update and verify passed.
-    The pair now names that line whenever, added, a closing line would change
-    how a line below it reads; moved as the fix says, every line of yours
-    reads as before.
+    The pair now names that line when, moved, it keeps more lines of yours
+    below it reading as before than an added closing line would; moved as
+    the fix says, every line of yours reads as before.
     """
     [pair] = harness_materializer.uncertain_pairs(text)
     lines = text.split("\n")
@@ -1139,6 +1139,79 @@ def test_a_closing_line_that_would_open_a_code_block_is_named_to_move(
     assert merge_managed_block(moved, "new body", recorded=True) == moved.replace(
         OLD.rstrip("\n"), NEW.rstrip("\n")
     )
+
+
+#: Code examples of yours right below the line that closes the code block
+#: around Apothem's block, or after a blank line: added, a closing line above
+#: the block turns that line into an opener whose code block takes in the
+#: example's opening line (```sh closes nothing) and the blank line before
+#: it, while no line of yours that is not blank turns from text into code.
+_EXAMPLES_BELOW = {
+    "an-example-right-below": "```sh\nls\n```\n\nmy tail\n",
+    "a-blank-line-then-an-example": "\n```sh\nls\n```\n\nmy tail\n",
+    "a-longer-fence": "\n````sh\nls\n````\n\nmy tail\n",
+    "an-example-quoting-the-markers": f"\n```md\n{B}\nx\n{E}\n```\n\nmy tail\n",
+}
+
+
+def _code_blocks_below(text: str, line: int) -> list[tuple[str, str, str]]:
+    """Return each code block a CommonMark reading of *text* opens below *line*.
+
+    *line* is 0-based. Each code block is its kind, info string and text.
+    """
+    from markdown_it import MarkdownIt
+
+    return [
+        (token.type, token.info, token.content)
+        for token in MarkdownIt("commonmark").parse(text)
+        if token.type in {"fence", "code_block"}
+        and token.map is not None
+        and token.map[0] > line
+    ]
+
+
+@pytest.mark.parametrize(
+    "tail", list(_EXAMPLES_BELOW.values()), ids=list(_EXAMPLES_BELOW)
+)
+def test_a_closing_line_with_your_example_below_is_named_to_move(tail: str) -> None:
+    """r13-F1: with a code example of yours right below the line that closes
+    the code block around the pair, or after a blank line, the fix still said
+    to add a closing line above the block. Done that way, the old closing
+    line opened a code block that took in the example's opening line (and
+    the blank line before it): the example lost its info string and showed
+    that line as code. The readings were compared only by whether a line that
+    is not blank reads as code, which that change leaves as it was. The pair
+    now names that line to move; moved, every code block of yours below it
+    reads as before.
+    """
+    text = f"My notes:\n\n```\nmake test\n\n{OLD}```\n{tail}"
+    pair = harness_materializer.uncertain_pairs(text)[0]
+    yours = _code_blocks_below(text, 8)
+
+    assert (pair.begin.line, pair.end.line, pair.closer) == (6, 8, 9)
+    assert _code_blocks_below(_move_line(text, 9, above=6), 8) == yours
+    assert _code_blocks_below(_add_closer(text, pair), 8) != yours
+
+
+def test_a_closing_line_is_added_where_moving_it_changes_more_lines_below() -> None:
+    """r13-F2: a line of yours between the END marker and the line that closes
+    the code block around the pair starts a list item, and an indented line of
+    yours follows the closing line. Moved up, the closing line would let the
+    indented line join the list item as text; added, a closing line above the
+    block keeps it code. The fix said to move the line; it now says to add one.
+    """
+    text = f"My notes:\n\n```\nmake test\n\n{OLD}1. one\n```\n    indented code\n```\n"
+    [pair] = harness_materializer.uncertain_pairs(text)
+    below = range(10, len(text.split("\n")))
+    moved = _move_line(text, 10, above=6)
+
+    assert pair.closer is None
+    assert not _read_differently(
+        text, _add_closer(text, pair), {at: at + 1 for at in below}
+    )
+    assert _read_differently(text, moved, {at: at for at in below}) == [
+        "    indented code"
+    ]
 
 
 #: The block in your code block, then a code example of yours whose opening

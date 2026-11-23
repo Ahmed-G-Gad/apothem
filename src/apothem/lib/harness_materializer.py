@@ -776,9 +776,10 @@ class UncertainPair:
     closing run that closes, below the END marker, the code block holding
     that marker, given only when that line has to move: once the code block
     is closed above the pair by an added closing line, the line would open a
-    code block of its own, and a Markdown viewer would show lines of the
-    operator's below it as code, or a code example of theirs further down as
-    text (see :func:`_closer_of`).
+    code block of its own, and a Markdown viewer would show more lines of
+    the operator's below it otherwise than with the line moved up: as code,
+    or a code example of theirs further down as text or with its own opening
+    line as code (see :func:`_closer_of`).
     """
 
     begin: MarkerLine
@@ -833,10 +834,10 @@ def _closer_of(lines: list[_Line], end: int, scan: _Scan) -> int | None:
     The fix for a pair whose END marker reads as fenced code closes that
     code block above a marker of the pair, and the pair then reads as a
     whole block. When, with a closing line added there, the code block's own
-    closing run below the END marker would open a code block of its own that
-    changes how a line after it reads (see :func:`_kept_run_misreads`), the
-    fix moves that run up instead. ``None`` otherwise, also when no closing
-    run ends that code block.
+    closing run below the END marker would open a code block of its own, and
+    moving that run up instead keeps more lines after it reading as they do
+    now (see :func:`_kept_run_misreads`), the fix moves the run up. ``None``
+    otherwise, also when no closing run ends that code block.
     """
     kind, fence = scan.places.get(end, (_Kind.TEXT, None))
     if kind is not _Kind.CODE or fence is None:
@@ -848,24 +849,27 @@ def _closer_of(lines: list[_Line], end: int, scan: _Scan) -> int | None:
 
 
 def _kept_run_misreads(lines: list[_Line], end: int, close: int) -> bool:
-    """Return True when the run on line *close*, left in place, changes a later line.
+    """Return True when moving the run on line *close* keeps more lines as they read.
 
     That run closes, below the END marker on line *end*, the code block a
     fix closes above the pair: by adding a closing line there, which leaves
-    the run in place, or by moving the run up there. The lines after the END
-    marker are read afresh twice, as a Markdown viewer reads them (every
-    fence opener opens): with the run, and with it moved. The two readings
-    agree up to *close*. When the run then closes a code block that a line
-    after the END marker opens (a code example of the operator's, such as one
-    that opens with ```sh, whose opening line the first code block held), it
-    is that example's closing line, and moved it would leave the example
-    open: False. Otherwise the run opens a code block of its own (or sits in
-    one a line after the END marker opens, where moving it changes nothing):
-    True when a line after it then reads as code in one reading and not in
-    the other, however far down a later code example of the operator's
-    carries the change, or when only the reading with the run ends in a code
-    block. Once the two readings are alike they agree to the end, so the
-    reading stops there.
+    the run in place, or by moving the run up there. In the text as it is,
+    the run closes that code block, so the lines after it read afresh. The
+    lines after the END marker are read afresh twice more, as a Markdown
+    viewer reads them (every fence opener opens): with the run, and with it
+    moved. The two readings agree up to *close*. When the run then closes a
+    code block that a line after the END marker opens (a code example of the
+    operator's, such as one that opens with ```sh, whose opening line the
+    first code block held), it is that example's closing line, and moved it
+    would leave the example open: False. Otherwise each reading of the lines
+    after the run is held to how they read now (see :func:`_read_as`): True
+    when the reading with the run moved shows fewer of them as code where
+    they are not, or the other way round, or, as many, fewer in another part
+    of a code block (the opening line of a code example of the operator's
+    read as code inside it, say). A reading that opens a code block on the
+    last line, where the text as it is opens none there, shows an empty code
+    block: that counts as one more such line. Once the two readings are alike
+    they agree to the end, so the reading stops there.
     """
     kept = _MarkdownState(lines, None)
     for index in range(end + 1, close):
@@ -874,12 +878,47 @@ def _kept_run_misreads(lines: list[_Line], end: int, close: int) -> bool:
     kept.step(close)
     if kept.closed is not None:
         return False
+    now = _MarkdownState(lines, None)
+    readings = ((kept, [0, 0]), (moved, [0, 0]))
     for index in range(close + 1, len(lines)):
         if _alike(kept, moved):
-            return False
-        if kept.step(index) is not moved.step(index):
-            return True
-    return kept.fence is not None and moved.fence is None
+            break
+        code, role = _read_as(now, index)
+        for state, misread in readings:
+            read_code, read_role = _read_as(state, index)
+            misread[0] += read_code != code
+            misread[1] += read_role != role
+    else:
+        last = len(lines) - 1
+        for state, misread in readings:
+            if (
+                state.fence is not None
+                and state.fence.line == last
+                and now.fence is None
+            ):
+                misread[0] += 1
+                misread[1] += 1
+    return readings[1][1] < readings[0][1]
+
+
+def _read_as(state: _MarkdownState, index: int) -> tuple[bool, str]:
+    """Advance *state* over line *index*; return whether it shows as code, and how.
+
+    How: a fence's opening line, a line inside a fence (a blank line too), a
+    fence's closing line, indented code, a blank line outside code, a marker
+    line or text.
+    """
+    kind = state.step(index)
+    if kind is _Kind.BLANK:
+        inside = state.fence is not None
+        return inside, "fenced" if inside else "blank"
+    if kind is not _Kind.CODE:
+        return False, kind.value
+    if state.closed is not None:
+        return True, "closer"
+    if state.fence is None:
+        return True, "indented"
+    return True, "opener" if state.fence.line == index else "fenced"
 
 
 def _alike(first: _MarkdownState, second: _MarkdownState) -> bool:

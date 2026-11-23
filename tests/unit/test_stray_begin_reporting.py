@@ -2634,13 +2634,32 @@ _CLOSE_STEP = re.compile(
 
 #: What follows the line that closes the code block around Apothem's block:
 #: your text, and code examples of yours whose opening line carries an info
-#: string (```sh), which closes nothing.
+#: string (```sh), which closes nothing, also right below that line or after
+#: a blank line only.
 _YOUR_LINES_BELOW = {
     "text": "\nafter fence\n\nmy tail\n",
     "text-then-an-example": "\nafter fence\n\nMore:\n\n```sh\nls\n```\n\nmy tail\n",
     "a-line-then-an-example": "\nsome prose\n\n```sh\nls\n```\n",
     "two-examples": ("\nafter\n\n```sh\nls\n```\n\nmid\n\n```py\nx = 1\n```\n\ntail\n"),
+    "an-example-right-below": "```sh\nls\n```\n\nmy tail\n",
+    "a-blank-line-then-an-example": "\n```sh\nls\n```\n\nmy tail\n",
 }
+
+
+def _code_blocks_from(text: str, line: int) -> list[tuple[str, str]]:
+    """Return the info string and text of each code block *text* opens from *line* on.
+
+    *line* is 0-based; the reading is CommonMark's.
+    """
+    from markdown_it import MarkdownIt
+
+    return [
+        (token.info, token.content)
+        for token in MarkdownIt("commonmark").parse(text)
+        if token.type in {"fence", "code_block"}
+        and token.map is not None
+        and token.map[0] >= line
+    ]
 
 
 def _follow_the_step(text: str, message: str) -> tuple[str, int, int, int]:
@@ -2683,11 +2702,15 @@ def test_following_the_fix_for_a_block_in_your_code_block_leaves_no_code_open(
     the file: with a code example of yours further down, whose last line
     closed it, the text still said to add a closing line, and done that way
     your text above that example (and the line that opens it) read as code,
-    while the next update and verify passed (r12). The text now says to move
-    the closing line up; done as it says, the update replaces the block,
-    verify passes, and every line of yours reads as before: your code above
-    the block stays code, and each line below it reads as code only where it
-    did. The test follows whichever step the text gives.
+    while the next update and verify passed (r12). With the example right
+    below the closing line, or after a blank line only, it still said so, and
+    the example showed its opening line as code without its info string
+    (r13). The text now says to move the closing line up; done as it says,
+    the update replaces the block, verify passes, and every line of yours
+    reads as before: your code above the block stays code, each line below
+    it reads as code only where it did, and each code example of yours
+    below it keeps its info string and text. The test follows whichever
+    step the text gives.
     """
     box = sandbox_factory(harness_id)
     box.install()
@@ -2723,6 +2746,9 @@ def test_following_the_fix_for_a_block_in_your_code_block_leaves_no_code_open(
         for at in yours
         if (at in was) != ((at if at < begin else at - len(old) + len(new)) in now)
     ]
+    assert _code_blocks_from(after, len(new) - rest) == _code_blocks_from(
+        wrapped, len(old) - rest
+    )
 
 
 def test_deleting_the_opening_line_with_old_text_deletes_the_closing_line_too(
