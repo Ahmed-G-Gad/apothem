@@ -7,7 +7,8 @@ must derive the project root from the adapter's declared ``relative_target``
 component count, not a hardcoded ``parents[N]`` magic index, so a manifest
 target-depth change can never silently derive the wrong root. Also covers
 what every uninstall shim does with an ``error`` result: it raises, so the CLI
-does not report a refused uninstall as done.
+does not report a refused uninstall as done. A native-config uninstall whose
+native-config step raises after its first step removed files exits as partial.
 """
 
 from __future__ import annotations
@@ -28,7 +29,9 @@ from apothem.harnesses._shared.wrapper_factories import (
 from apothem.harnesses.antigravity.uninstall import uninstall as antigravity_uninstall
 from apothem.harnesses.claude_code.uninstall import uninstall as claude_code_uninstall
 from apothem.harnesses.kimi_code.uninstall import uninstall as kimi_code_uninstall
+from apothem.harnesses.open_claw import OpenClawAdapter
 from apothem.harnesses.opencode import OpenCodeAdapter
+from apothem.lib import install_ledger
 
 
 def _record_project_root(monkeypatch: pytest.MonkeyPatch) -> list[Path | None]:
@@ -228,3 +231,72 @@ def test_a_refused_uninstall_is_not_reported_as_done(
     assert result.exit_code != 0
     assert "Uninstalled" not in result.output
     assert "uninstall did not finish" in result.output
+
+
+def _deny_the_native_config(monkeypatch: pytest.MonkeyPatch, config: Path) -> None:
+    """Make the native-config step raise, as for a file the system keeps locked."""
+
+    def denied(*_args: object, **_kwargs: object) -> None:
+        raise PermissionError(13, "denied", str(config))
+
+    monkeypatch.setattr(install_driver, "surgically_remove_materialized_config", denied)
+
+
+def _uninstall_open_claw() -> tuple[int, str]:
+    result = CliRunner().invoke(
+        main, ["uninstall", "--harness", "open-claw", "--yes", "--no-color"]
+    )
+    return result.exit_code, result.stderr
+
+
+def test_a_native_uninstall_stopped_after_its_first_step_exits_partial(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An error at ``openclaw.json`` after the rules file went is a partial uninstall.
+
+    The first step took Apothem's rules file out of the workspace, so the CLI
+    exits 2 and says the uninstall stopped after removing files, and the
+    unfinished uninstall it records names that file's backup.
+    """
+    workspace = Path.home() / ".openclaw" / "workspace"
+    workspace.mkdir(parents=True)
+    (workspace / "AGENTS.md").write_text("# My agent\n", encoding="utf-8")
+    OpenClawAdapter().install({})
+    rules = workspace / "apothem" / "AGENTS.md"
+    written = rules.read_bytes()
+    config = Path.home() / ".openclaw" / "openclaw.json"
+    before = config.read_bytes()
+    _deny_the_native_config(monkeypatch, config)
+
+    code, stderr = _uninstall_open_claw()
+
+    assert code == 2, stderr
+    assert "open-claw uninstall stopped after removing files" in stderr
+    assert "denied" in stderr
+    assert not rules.exists()
+    assert config.read_bytes() == before
+    records = install_ledger.read_records("open_claw")
+    assert [record.kind for record in records] == ["install", "uninstall-incomplete"]
+    backups = {target.path: target.backup_ref for target in records[-1].targets}
+    assert backups[str(rules)] is not None
+    assert Path(backups[str(rules)]).read_bytes() == written
+    assert all(ref is not None and Path(ref).exists() for ref in backups.values())
+
+
+def test_a_native_uninstall_stopped_before_any_change_still_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """With no rules file to take out, the same error fails the uninstall (exit 1).
+
+    Nothing changed, so nothing is recorded and the error is raised as it is.
+    """
+    OpenClawAdapter().install({})
+    config = Path.home() / ".openclaw" / "openclaw.json"
+    _deny_the_native_config(monkeypatch, config)
+
+    code, stderr = _uninstall_open_claw()
+
+    assert code == 1, stderr
+    assert "open-claw uninstall failed: [Errno 13] denied" in stderr
+    records = install_ledger.read_records("open_claw")
+    assert [record.kind for record in records] == ["install"]

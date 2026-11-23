@@ -689,7 +689,10 @@ def test_a_native_uninstall_stopped_after_its_first_step_records_the_backups(
     """What the step before the native config removed stays referenced.
 
     The native-config step stops on a refusal of the guard, or on an ordinary
-    error such as a file the system will not let it change.
+    error such as a file the system will not let it change. The ordinary
+    error is raised as a stopped uninstall that carries what the first step
+    removed, with the error as its cause, so the CLI reports it as partial;
+    the refusal is raised as it is.
     """
     root = home / ".openclaw"
     root.mkdir()
@@ -718,20 +721,26 @@ def test_a_native_uninstall_stopped_after_its_first_step_records_the_backups(
             _result("updated", "rules_file", elsewhere, "removed", backup_path=backup),
         )
 
-    def denied(*_args: object, **_kwargs: object) -> None:
+    def stopped(*_args: object, **_kwargs: object) -> None:
         raise PermissionError(13, "denied", str(config))
 
-    expected: type[OSError] = Refused
-    if stop == "error":
+    if stop != "refused":
         monkeypatch.setattr(
-            install_driver, "surgically_remove_materialized_config", denied
+            install_driver, "surgically_remove_materialized_config", stopped
         )
-        expected = PermissionError
+    expected: type[BaseException] = {
+        "refused": Refused,
+        "error": install_driver.MaterializationError,
+    }[stop]
     uninstall = make_native_config_uninstall(
         "open_claw", lambda profile: "{}", before_fn=remove_elsewhere
     )
-    with pytest.raises(expected):
+    with pytest.raises(expected) as caught:
         uninstall(config)
+    if stop == "error":
+        assert isinstance(caught.value, install_driver.MaterializationError)
+        assert isinstance(caught.value.__cause__, PermissionError)
+        assert [result.path for result in caught.value.run.results] == [str(elsewhere)]
     assert config.read_bytes() == b"{}\n"
     records = install_ledger.read_records("open_claw")
     assert [record.kind for record in records] == ["install", "uninstall-incomplete"]
