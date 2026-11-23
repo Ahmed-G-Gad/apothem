@@ -280,24 +280,10 @@ def _remove_data_home(
     if not home.exists():
         return None
     boundary = _store_boundary(home, allowed_root=allowed_root)
-    if (
-        _validate_target_path(
-            home, allowed_root=boundary, operation="remove_data_home", mutating=False
-        )
-        is not None
-    ):
+    if not _removable(home, boundary):
         return None
 
-    # Last-harness guard: retain the shared home while another harness still
-    # references it. An uncertain ledger read raises and is caught here, falling
-    # back to RETAIN — the safe default that never risks shared-data loss.
-    try:
-        retain = _other_harness_shares_home(
-            current_harness=harness_name, shared_home=home, current_root=root
-        )
-    except Exception:  # pragma: no cover - defensive: ledger read is robust
-        retain = True
-    if retain:
+    if _retained(harness_name, root=root, home=home):
         try:
             holder = _holder(
                 current_harness=harness_name, shared_home=home, current_root=root
@@ -321,21 +307,11 @@ def _remove_data_home(
             + (f" ({holder[0]} installed at {holder[1]})" if holder else ""),
         )
 
-    spec = DataHome.from_root(home)
     backups: list[Path] = []
     kept: list[Path] = []
-    # plans/ is intentionally excluded — operator planning state is never
-    # auto-removed by uninstall.
-    stores = (spec.memory, spec.contexts, spec.learning)
-    present = [child for child in stores if child.exists()]
+    present = _refuse_store_removal(home)
     if not present:
         return None
-    home_write_guard.refuse_real_home_write(
-        *present, operation="apply 'remove_data_home' to", tree=True
-    )
-    home_write_guard.refuse_data_home_in_home(
-        home, operation="apply 'remove_data_home' to"
-    )
     for child in present:
         backup = backup_existing(
             child,
@@ -354,3 +330,63 @@ def _remove_data_home(
         backup_path=backups[0] if backups else None,
         detail=kept_links_detail(kept),
     )
+
+
+def _removable(home: Path, boundary: Path) -> bool:
+    """Return True when *home* is inside *boundary* and reached through no link."""
+    return (
+        _validate_target_path(
+            home, allowed_root=boundary, operation="remove_data_home", mutating=False
+        )
+        is None
+    )
+
+
+def _retained(harness_name: str, *, root: Path, home: Path) -> bool:
+    """Return True when another installed harness still shares *home*.
+
+    An uncertain ledger read keeps the home, the safe default that never
+    risks shared-data loss.
+    """
+    try:
+        return _other_harness_shares_home(
+            current_harness=harness_name, shared_home=home, current_root=root
+        )
+    except Exception:  # pragma: no cover - defensive: ledger read is robust
+        return True
+
+
+def _refuse_store_removal(home: Path) -> list[Path]:
+    """Return the data stores present in *home*, refusing them in the real home.
+
+    ``plans/`` is never among them: operator planning state is never removed.
+    """
+    spec = DataHome.from_root(home)
+    stores = (spec.memory, spec.contexts, spec.learning)
+    present = [child for child in stores if child.exists()]
+    if present:
+        home_write_guard.refuse_real_home_write(
+            *present, operation="apply 'remove_data_home' to", tree=True
+        )
+        home_write_guard.refuse_data_home_in_home(
+            home, operation="apply 'remove_data_home' to"
+        )
+    return present
+
+
+def refuse_data_home_removal(
+    harness_name: str, *, root: Path, allowed_root: Path, home: Path
+) -> None:
+    """Raise the refusal :func:`_remove_data_home` would raise, changing nothing.
+
+    A pass that removes the stores last (rollback) calls this before its first
+    change, so a refusal of the real-home guard comes before anything changes.
+    A home that is absent, out of bounds or kept for another harness raises
+    nothing, as its removal would not.
+    """
+    if not home.exists():
+        return
+    if _removable(home, _store_boundary(home, allowed_root=allowed_root)) and not (
+        _retained(harness_name, root=root, home=home)
+    ):
+        _refuse_store_removal(home)

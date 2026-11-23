@@ -37,7 +37,11 @@ from apothem.lib.propagation import resolve_target
 
 from . import install_driver_homelink
 from .install_driver_backup import backup_existing, write_bytes_safely
-from .install_driver_datahome import _data_home_for, _remove_data_home
+from .install_driver_datahome import (
+    _data_home_for,
+    _remove_data_home,
+    refuse_data_home_removal,
+)
 from .install_driver_pathsafety import (
     _allowed_write_root,
     _is_lexically_within,
@@ -480,6 +484,9 @@ def rollback_install(
     The rollback holds the user-level lock (see ``shared_scope``). A project
     root that is the account home is refused first while a pytest test runs
     (see :func:`apothem.lib.home_write_guard.refuse_project_root_at_home`).
+    So is a record that names a path in a protected folder of the real home,
+    before anything changes, even a path the rollback would leave in place:
+    no rollback stops partway with its reversals unrecorded.
     """
     if project_root is not None:
         home_write_guard.refuse_project_root_at_home(
@@ -504,6 +511,18 @@ def rollback_install(
     blocked = gate.ledger_blocked(target.path for target in record.targets)
     if blocked is not None:
         return [blocked]
+    created = {Path(path) for path in record.created_dirs}
+    # The stores live where the reversed install wrote them, as its record says.
+    home = _data_home_for(record, root=root)
+    stores = DataHome.from_root(home)
+    seeded = bool(created & {stores.memory, stores.contexts, stores.learning})
+    home_write_guard.refuse_real_home_write(
+        *(target.path for target in record.targets), *created, operation="roll back"
+    )
+    if seeded:
+        refuse_data_home_removal(
+            harness_name, root=root, allowed_root=allowed_root, home=home
+        )
     results: list[MaterializationResult] = []
     for recorded in reversed(record.targets):
         result: MaterializationResult | None = None
@@ -550,11 +569,7 @@ def rollback_install(
                 )
         if result is not None:
             results.append(result)
-    created = {Path(path) for path in record.created_dirs}
-    # The stores live where the reversed install wrote them, as its record says.
-    home = _data_home_for(record, root=root)
-    stores = DataHome.from_root(home)
-    if created & {stores.memory, stores.contexts, stores.learning}:
+    if seeded:
         removal = _remove_data_home(
             harness_name, root=root, home=home, allowed_root=allowed_root
         )

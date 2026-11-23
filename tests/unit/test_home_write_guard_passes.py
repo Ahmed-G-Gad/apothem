@@ -26,6 +26,7 @@ from apothem.cli import main
 from apothem.harnesses._shared import (
     install_driver,
     install_driver_datahome,
+    install_driver_digests,
     install_driver_lifecycle,
     install_driver_reversal,
 )
@@ -476,6 +477,77 @@ def test_a_stopped_native_uninstall_raises_its_refused_record(
     with pytest.raises(Refused):
         uninstall(root / "openclaw.json")
     assert _snapshot(home) == before
+
+
+def test_a_rollback_with_the_project_outside_is_refused_before_any_change(
+    home: Path, profile: Path, tmp_path: Path
+) -> None:
+    """The project files stay as they are when a later target is protected.
+
+    Cursor's install writes its project files and the shared skills in
+    ``~/.agents/skills``. The rollback reverses the project files first, so
+    every target is checked before the first one changes.
+    """
+    project = tmp_path / "project"
+    project.mkdir()
+    _installed(
+        "--harness", "cursor", "--project", str(project), "--profile", str(profile)
+    )
+    record = install_ledger.read_records("cursor")[-1]
+    assert any(not home_write_guard.would_refuse(t.path) for t in record.targets)
+    before = (_snapshot(home), _snapshot(project), _snapshot(tmp_path / "outside"))
+    home_write_guard.also_protect_home(home)
+    assert any(home_write_guard.would_refuse(t.path) for t in record.targets)
+
+    result = _run("rollback", "--harness", "cursor", "--project", str(project), "--yes")
+
+    assert isinstance(result.exception, Refused), (result.exit_code, result.output)
+    assert (_snapshot(home), _snapshot(project), _snapshot(tmp_path / "outside")) == (
+        before
+    )
+    assert _kinds("cursor") == ["install"]
+
+
+def test_a_rollback_checks_the_data_stores_it_would_remove_first(
+    home: Path, tmp_path: Path
+) -> None:
+    """Stores the rollback removes last are refused before any target changes.
+
+    The data home sits right in the home under a name of its own, so only the
+    store check refuses it, not the check of the targets and folders.
+    """
+    project = tmp_path / "project"
+    (project / "notes").mkdir(parents=True)
+    written = project / "notes" / "a.md"
+    written.write_bytes(b"made by the install\n")
+    data_home = home / "apothem-data"
+    (data_home / "memory").mkdir(parents=True)
+    (data_home / "memory" / "note.md").write_bytes(b"kept\n")
+    record = LedgerRecord.create(
+        harness="gemini_cli",
+        root=project,
+        kind="install",
+        targets=(
+            install_ledger.LedgerTarget(
+                str(written),
+                "write_text",
+                "apothem-owned",
+                outcome="created",
+                digest=install_driver_digests.file_digest(written),
+            ),
+        ),
+        created_dirs=(str(data_home / "memory"),),
+        data_home=str(data_home),
+    )
+    before = (_snapshot(home), _snapshot(project))
+    home_write_guard.also_protect_home(home)
+    assert not home_write_guard.would_refuse(data_home / "memory", tree=True)
+
+    with pytest.raises(Refused, match="a data home right in"):
+        install_driver_reversal.rollback_install(
+            record, harness_name="gemini_cli", project_root=project
+        )
+    assert (_snapshot(home), _snapshot(project)) == before
 
 
 def test_a_stale_sweep_is_refused_before_its_first_removal(home: Path) -> None:
