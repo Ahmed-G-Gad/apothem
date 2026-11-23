@@ -22,6 +22,7 @@ from apothem.harnesses._shared.install_driver import (
     MaterializationResult,
     check_fidelity,
 )
+from apothem.harnesses._shared.install_driver_blocks import LEFT_AS_IS
 from apothem.harnesses._shared.install_driver_jsonmerge import is_handler_map
 from apothem.harnesses.open_claw import OpenClawAdapter, rules_file
 from apothem.harnesses.open_claw.install import install
@@ -854,6 +855,49 @@ def test_the_size_check_reads_a_recorded_unclear_file_as_the_write_does(
     assert fits
     assert target.read_bytes() == fenced.encode()
     assert _entry(home) == {"enabled": True, "paths": [RULES_FILE_RELATIVE]}
+    assert not any("fits no workspace" in message for message in _messages(run))
+
+
+def test_the_size_check_reads_an_unreadable_ledger_as_the_write_does(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    """docs-tests-1: no test pinned how the size check reads the install record.
+
+    The block sits in a code block of yours, one line edited, and the install
+    ledger cannot be read. The write reads such a ledger as a record that lists
+    the file, so it leaves the file as it is. The size check and the hook
+    registration must read the ledger the same way. The limit leaves room for
+    the file as it is, not for a second block appended to it. Read as no
+    record, the ledger makes the run refuse the file as too large and say it
+    fits no workspace, with no warning that it left the file as it is.
+    """
+    workspace = _workspace(home / ".openclaw" / "workspace")
+    adapter.install({})
+    target = workspace / RULES_FILE_RELATIVE
+    text = target.read_bytes().decode("utf-8")
+    at = text.index(APOTHEM_BLOCK_BEGIN) + len(APOTHEM_BLOCK_BEGIN) + 1
+    fenced = _fenced(text[:at] + "a line I added\n" + text[at:])
+    target.write_bytes(fenced.encode())
+    config = _config(home)
+    config["agents"] = {"defaults": {"bootstrapMaxChars": chars(fenced) + 10}}
+    _write_config(home, config)
+    ledger = install_ledger.ledger_path("open_claw")
+    lines = ledger.read_bytes().splitlines(keepends=True)
+    ledger.write_bytes(b"".join([lines[0], b"{not json\n", *lines]))
+    with pytest.raises(install_ledger.LedgerError):
+        install_ledger.read_records("open_claw")
+    space = rules_file.Workspace(workspace)
+    body, _ = rules_file.rules_text(home / ".openclaw", {})
+
+    sized = rules_file.file_text(space, body, harness_root=home / ".openclaw")
+    reason = rules_file.refusal(sized, config, space)
+    run = adapter.update({})
+
+    assert sized == fenced
+    assert reason is None
+    assert target.read_bytes() == fenced.encode()
+    [held] = [warning for warning in run.warnings if warning.path == str(target)]
+    assert held.detail.get(LEFT_AS_IS) == "1", held.message
     assert not any("fits no workspace" in message for message in _messages(run))
 
 
