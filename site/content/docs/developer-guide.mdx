@@ -668,22 +668,27 @@ temporary folders.
 
 Apothem also refuses these writes itself while pytest runs, so a test
 file copied out of `tests/` and run without `tests/conftest.py` cannot reach
-the real home through Apothem. While `PYTEST_CURRENT_TEST` (a test) or
-`PYTEST_VERSION` (the whole session, collection and session hooks included)
-is set, a write, removal, copy, rename or lock file in the account's
-`~/.apothem`, `~/.config/apothem`, a tool folder the harness registry names
-in the home (`~/.claude`, `~/.qwen`, `~/.config/opencode` and the rest) or a
-file outside those folders that the propagation manifest changes (the
-`~/.antigravity/profile.yaml` an earlier release wrote) stops before anything
-changes, with an error like this:
+the real home through Apothem. While `PYTEST_CURRENT_TEST` is set (a test),
+or `PYTEST_VERSION` holds the version of the installed pytest (the whole
+session, collection and session hooks included), a write, removal, copy,
+rename or lock file in the account's `~/.apothem`, `~/.config/apothem`, a
+tool folder the harness registry names in the home (`~/.claude`, `~/.qwen`,
+`~/.config/opencode` and the rest) or a file outside those folders that the
+propagation manifest changes (the `~/.antigravity/profile.yaml` an earlier
+release wrote) stops before anything changes, with an error like this:
 
 ```text
 RealHomeWriteError: Apothem refused to create the lock file
 C:\Users\you\.apothem\state\codex\<id>.install.lock: it is inside or holds
 C:\Users\you\.apothem, a protected path in this account's real home, while a
-pytest test is running (test_probe.py::test_install (call)). Nothing
-in C:\Users\you\.apothem was changed. ...
+pytest test is running (PYTEST_CURRENT_TEST is set:
+test_probe.py::test_install (call)). Nothing in C:\Users\you\.apothem was
+changed. ...
 ```
+
+A `PYTEST_VERSION` with any other value, such as a pin like `8.2` that a
+shell or a CI job exports, does not count. Outside any test the error says
+`PYTEST_VERSION matches the installed pytest <version>` in place of the test.
 
 A project-scope install, update, uninstall or rollback whose project root is
 the account home itself is refused the same way, before it writes anything:
@@ -691,7 +696,8 @@ its project files would otherwise land straight in the home. A project folder
 inside the home stays allowed. A data home right in the home is refused too,
 whatever name the profile gives it (`workspace.scope: user-home` with a
 `directory_name` of its own), before it is created and before its stores are
-removed.
+removed. A data home that is a link (a junction on Windows) to a folder right
+in the home is refused the same way.
 
 These spellings of a protected folder count: a link or junction into it, and a
 folder swapped for a link during the test. On Windows letter case, short (8.3)
@@ -723,8 +729,12 @@ backups of those files stay referenced. A few internal callers absorb the
 error on purpose (a best-effort ledger line, for one), so every refusal is
 also logged, and `tests/conftest.py` fails the test after which one was
 logged, even when the test is marked `xfail`. One logged outside any test
-fails the collection of the node pytest was collecting then, or the run when
-a session-finish hook absorbed it. The log is kept per process: a
+while pytest collects a node fails that node's collection. Any other one
+logged outside any test, at the session start, after collection, after the
+last test, in the summary or in `pytest_unconfigure`, is reported when the
+session finishes, named for where it happened, and fails the run, also when
+a parallel worker (`-n`) sends it; one a worker logs after it sent its
+results shows only on `stderr`. The log is kept per process: a
 refusal that a child Apothem process absorbs shows only as a line on the
 child's `stderr`, and the test is not failed for it.
 
@@ -744,8 +754,10 @@ seen.
 When the system has no record of the account's home (a container user with no
 `passwd` entry), the account home is not protected at all. A checkout that sits
 inside a protected folder (under `~/.claude`, say) has its Apothem writes
-refused during tests. The refusal does nothing outside pytest, which is why
-the rule above still applies. `tests/README.md` lists every gap.
+refused during tests. The refusal does nothing outside pytest, that is with
+neither `PYTEST_CURRENT_TEST` nor the installed pytest's version in
+`PYTEST_VERSION` in the environment, which is why the rule above still
+applies. `tests/README.md` lists every gap.
 
 ### Coverage per package
 
