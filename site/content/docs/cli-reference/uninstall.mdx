@@ -267,32 +267,36 @@ tells it apart from what that release wrote. Replace the link with a real
 folder that holds the same files, then follow the steps for such an install
 above: copy any file you edited, run `apothem update`, then uninstall again.
 
-When a removal step reports an error (an installed file whose path leads out
-of your home folder, say), the command prints `✗ <harness> uninstall did not
-finish: <reason>` instead of `Uninstalled`, once per reason with the number of
-paths it applies to. When a link in a folder of your home leads those paths
-out of it (`target escapes the allowed materialization root`), the line also
-names the link and the folder it leads to, and says to replace the link with
-a real folder; paths behind two links give two lines. The link still gets its
-warning that it was left in place. The install stays recorded, so running the
-command again removes what the first run left. The retention notes are not
-printed, because the folders they describe were not released. In JSON output
-the harness gets a `results` row with `"outcome": "error"` and `"operation":
-"uninstall"`, followed by one row for each failed step. When the reasons name
-one link, that row carries it in `detail.symlink` and the folder it leads to
-in `detail.leads_to`. A step's row lists the files it kept as `files` and the
-files Apothem wrote that it could not remove as `stuck`. The envelope's
-`status` is `"partial"` and the exit code `2` when the uninstall removed
-files before the step failed, or when another harness was removed; otherwise
-`status` is `"error"` and the exit code `1`. The top-level `error` stays
-`null`: the
-reasons are in `results`. An uninstall that stops with an exception (a backup
-that cannot be written, say) prints `✗ <harness> uninstall stopped after
-removing files:` (or `failed:` when it removed nothing) with the message, and
-gets a `results` row with its message, followed by one row for each step that
-failed before it. It exits `2` with `status` `"partial"` when it removed files
-first, otherwise `1`. A refused uninstall (a link that leads the folder out of
-your home directory, say) removes nothing and exits `1`.
+When a removal step reports an error (an installed file whose path leads
+out of your home folder, say), the command prints `✗ <harness> uninstall
+did not finish: <reason>` instead of `Uninstalled`, once per reason with the
+number of paths it applies to. When a link in a folder of your home leads
+those paths out of it (`target escapes the allowed materialization root`),
+the line also names the link and the folder it leads to, and says to replace
+the link with a real folder; paths behind two links give two lines. The link
+still gets its warning that it was left in place. The install stays recorded,
+so running the command again removes what the first run left. The retention
+notes are not printed, because the folders they describe were not released.
+In JSON output the harness gets a `results` row with `"outcome": "error"` and
+`"operation": "uninstall"`, followed by one row for each failed step. When the
+reasons name one link, that row carries it in `detail.symlink` and the folder
+it leads to in `detail.leads_to`. A step's row lists the files it kept as
+`files` and the files Apothem wrote that it could not remove as `stuck`. The
+envelope's `status` is `"partial"` and the exit code `2` when the uninstall
+removed files before the step failed, or when another harness was removed;
+otherwise `status` is `"error"` and the exit code `1`. The top-level `error`
+stays `null`: the reasons are in `results`. An uninstall that stops with an
+exception (a backup that cannot be written, say) prints `✗ <harness> uninstall
+stopped after removing files:` (or `failed:` when it removed nothing) with
+the message, and gets a `results` row with its message, followed by one row
+for each step that failed before it. When it had found Apothem's own files
+behind a link before it stopped, a `✗ <harness> uninstall did not finish:`
+line follows for each such link, as above, and the same text is added to the
+end of the row's message; when the reasons name one link, the row carries it
+in `detail.symlink` and the folder it leads to in `detail.leads_to`. It exits
+`2` with `status` `"partial"` when it removed files first, otherwise `1`. A
+refused uninstall (a link that leads the folder out of your home directory,
+say) removes nothing and exits `1`.
 
 ### An uninstall that did not finish
 

@@ -749,40 +749,43 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   looking at anything; it now removes the rest and exits 2, and names that
   file, left in place, with the fix: save it as UTF-8 or delete the Apothem
   block in it by hand, then run the uninstall again.
-- **Uninstall removes only the files Apothem wrote.** Each install now
-  records the SHA-256 of every file it copies into place (skills, commands,
-  rules and the like),
-  and an uninstall removes a file only while it still has that content. A file
-  you added to an Apothem folder, an Apothem file you edited, and a file of
-  your own with an Apothem name stay, with a warning, and so does the folder
-  that holds them. Before, an uninstall removed the whole folder, and after a
-  partial uninstall followed by cleaning up by hand it could remove files you
-  had put there since. For an install recorded by an earlier release, which
-  does not say which files Apothem wrote, the uninstall removes the files that
-  have the same bytes as what this release writes there; a file that differs
-  leaves the uninstall unfinished (exit `2`) with the next step: copy any of
-  those files you edited and move your own files out of Apothem's folders
-  (an update replaces them), then run `apothem update` and `apothem uninstall`
-  again. An uninstall that does not finish
-  (a failed step, an error, or Apothem's own files reached through a link)
-  appends an `uninstall-incomplete` record to the install ledger, so running
-  it again finishes the job; an install, update, rollback or finished
-  uninstall replaces that state, and so does removing the files by hand. A
-  file where Apothem keeps a managed block (such as `CLAUDE.md`) counts as
-  Apothem's while the block is there, even after you add text of your own
-  beside it, so the second run still finishes the job. A
-  linked folder that holds only your own files no longer stops an uninstall:
-  it is left in place with a warning and the uninstall finishes. An uninstall
-  that removed files before a step failed now exits `2` with the status
-  `partial`, and the `--format json` warnings are grouped like the printed
-  ones, with `count` and `paths`. An uninstall that stops with an error after
-  removing files exits `2` too. `apothem rollback` now undoes the newest
-  install still in place, so a second rollback undoes the one before, refuses
-  an `--install-id` that was already rolled back or uninstalled, and removes a
-  file an install created only while it still has the content that install
-  wrote. Uninstalling a tool from one project no longer removes the shared
-  memory, contexts and learning stores in your home folder while the same tool
-  installed in another project still uses them.
+- **Uninstall removes only the files Apothem wrote.** Each install now records
+  the SHA-256 of every file it copies into place (skills, commands, rules
+  and the like), and an uninstall removes a file only while it still has
+  that content. A file you added to an Apothem folder, an Apothem file you
+  edited, and a file of your own with an Apothem name stay, with a warning,
+  and so does the folder that holds them. Before, an uninstall removed the
+  whole folder, and after a partial uninstall followed by cleaning up by
+  hand it could remove files you had put there since. For an install recorded
+  by an earlier release, which does not say which files Apothem wrote, the
+  uninstall removes the files that have the same bytes as what this release
+  writes there; a file that differs leaves the uninstall unfinished (exit
+  `2`) with the next step: copy any of those files you edited and move your
+  own files out of Apothem's folders (an update replaces them), then run
+  `apothem update` and `apothem uninstall` again. An uninstall that does not
+  finish (a failed step, an error, or Apothem's own files reached through
+  a link) appends an `uninstall-incomplete` record to the install ledger,
+  so running it again finishes the job; an install, update, rollback or
+  finished uninstall replaces that state, and so does removing the files
+  by hand. A file where Apothem keeps a managed block (such as `CLAUDE.md`)
+  counts as Apothem's while the block is there, even after you add text of
+  your own beside it, so the second run still finishes the job. A linked
+  folder that holds only your own files no longer stops an uninstall: it is
+  left in place with a warning and the uninstall finishes. An uninstall that
+  removed files before a step failed now exits `2` with the status `partial`,
+  and the `--format json` warnings are grouped like the printed ones, with
+  `count` and `paths`. An uninstall that stops with an error after removing
+  files exits `2` too. A stopped uninstall now also names each link it
+  found keeping Apothem's own files in place, as one that ran all its steps
+  does: on a `✗ <harness> uninstall did not finish:` line, at the end of its
+  `results` row's message and, when the reasons name one link, in that row's
+  `detail.symlink` and `detail.leads_to`. `apothem rollback` now undoes the
+  newest install still in place, so a second rollback undoes the one before,
+  refuses an `--install-id` that was already rolled back or uninstalled, and
+  removes a file an install created only while it still has the content that
+  install wrote. Uninstalling a tool from one project no longer removes the
+  shared memory, contexts and learning stores in your home folder while the
+  same tool installed in another project still uses them.
 - **Uninstall checks more strictly which files are Apothem's.** An install
   recorded by an earlier release does not say which files Apothem wrote, so
   the uninstall compares them with what this release writes. In the two places
