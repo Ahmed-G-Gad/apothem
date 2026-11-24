@@ -444,7 +444,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   example on `diff.renameLimit = abc`, was read as no staged change and
   passed. `conventional-commit-grep` run on a subfolder of a checkout passed
   without reading any commit; it now reads the repository above, as git does,
-  when that repository tracks or stages a file in the subfolder. A folder the
+  when that repository tracks or stages a file in the subfolder. Where the
+  repository ignores case, as on Windows and macOS, a tracked subfolder whose
+  name was changed on disk only in upper or lower case counts too. A folder the
   repository above does not track, such as a new project inside a home-folder
   dotfiles repository, still passes. An empty `.git` folder above it, with no
   repository further up, makes it fail with `git-failed`.
@@ -465,11 +467,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   the search itself never looks that path up, so it does not connect to the
   host the file names. On Windows the search also refuses, without looking it
   up, a path that Git for Windows refuses: one with a name that ends in a dot
-  or a space or that is a device name such as `aux` or `aux.d`, or with a
-  `:`, a control character or one of `<>"|?*` after the drive. A byte that
-  is not UTF-8 is read as Git for Windows reads it (from `0xA0` up as that
-  character, any lower one refused), and on Linux and macOS byte for byte,
-  as git reads it, so such a worktree is not taken for a broken one. A project
+  or a space or that is a device name such as `aux`, `aux.d` or `CONIN$`, or
+  with a `:`, a control character or one of `<>"|?*` after the drive. A byte
+  that is not UTF-8 is read as Git for Windows reads it: from `0xA0` up as
+  that character, a lower one as its two hex digits (`0x9F` reads `9f`), an
+  encoded surrogate pair as the character it stands for, and a lone encoded
+  surrogate refused. On Linux and macOS it is read byte for byte, as git
+  reads it. So such a worktree is not taken for a broken one. A project
   without the package still passes without running git. The check also names
   `src/apothem` after `--`, so git reads it as a path where that folder is
   missing.
@@ -1791,12 +1795,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   at once, such as the real `git` behind Git for Windows' launcher, is stopped
   with it. A program the gate cannot resume is stopped, and the error says
   whether it is in the job. A `git` that cannot be resumed, or that something
-  else ended before it ran, counts as a failed `git` with exit code `128`,
-  never as a missing one or as `git`'s own answer, so the `git` checks named
-  next fail rather than pass. When the gate itself starts the program, a
-  Ctrl+C that arrives during the start waits until the program runs, so it
-  does not leave a program suspended, and a start that fails once Popen has
-  the program's process ID stops that program. Ctrl+C prints one line and
+  else told to end before it was resumed, even with exit code `0`, counts as
+  a failed `git` with exit code `128`, never as a missing one or as `git`'s
+  own answer, so the `git` checks named next fail rather than pass. A `git`
+  ended just after the resume cannot be told apart from one that ran. On
+  every platform, when the gate itself starts the program, a Ctrl+C that
+  arrives during the start waits until the program runs (on Windows, until
+  the gate has tried to resume it), so it does not leave a program suspended
+  or running past its time limit, and a start that fails once Popen has the
+  program's process ID stops that program. Ctrl+C prints one line and
   exits `130`. The `git` commands of `conventional-commit-grep`,
   `agents-md-coverage-grep` and the `--staged` checks of
   `production-ready-pr-grep` and `semver-stability-grep` had limits
