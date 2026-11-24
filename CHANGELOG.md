@@ -446,7 +446,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   without reading any commit; it now reads the repository above, as git does,
   when that repository tracks or stages a file in the subfolder. Where the
   repository ignores case, as on Windows and macOS, a tracked subfolder whose
-  name was changed on disk only in upper or lower case counts too. A folder the
+  name was changed on disk only in upper or lower case counts too. The check
+  reads the case setting only when git lists no file in the subfolder, so a
+  tracked subfolder costs one `git` command. A folder the
   repository above does not track, such as a new project inside a home-folder
   dotfiles repository, still passes. An empty `.git` folder above it, with no
   repository further up, makes it fail with `git-failed`.
@@ -467,7 +469,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   the search itself never looks that path up, so it does not connect to the
   host the file names. On Windows the search also refuses, without looking it
   up, a path that Git for Windows refuses: one with a name that ends in a dot
-  or a space or that is a device name such as `aux`, `aux.d` or `CONIN$`, or
+  or a space or that is a device name such as `aux`, `aux.d`, `lpt0` or
+  `CONIN$` (but not `com0`, which Git for Windows accepts), or
   with a `:`, a control character or one of `<>"|?*` after the drive. A byte
   that is not UTF-8 is read as Git for Windows reads it: from `0xA0` up as
   that character, a lower one as its two hex digits (`0x9F` reads `9f`), an
@@ -1789,7 +1792,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   program it started, and reported with `passed: false` and a `check_error`
   that says it did not finish. Each validator runs in a session of its own on
   Linux and macOS, where a `SIGTERM` or `SIGHUP` to the gate stops it before
-  the gate exits, and in a job object on Windows, which ends its programs when
+  the gate exits, even one that arrives while the gate starts or stops it,
+  and in a job object on Windows, which ends its programs when
   the gate ends too. On Windows, when Windows grants the job, each program the
   gate starts waits, suspended, until it is in the job, so a program it starts
   at once, such as the real `git` behind Git for Windows' launcher, is stopped
@@ -1798,12 +1802,21 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   else told to end before it was resumed, even with exit code `0`, counts as
   a failed `git` with exit code `128`, never as a missing one or as `git`'s
   own answer, so the `git` checks named next fail rather than pass. A `git`
-  ended just after the resume cannot be told apart from one that ran. On
-  every platform, when the gate itself starts the program, a Ctrl+C that
-  arrives during the start waits until the program runs (on Windows, until
-  the gate has tried to resume it), so it does not leave a program suspended
-  or running past its time limit, and a start that fails once Popen has the
-  program's process ID stops that program. Ctrl+C prints one line and
+  ended just after the resume cannot be told apart from one that ran, and
+  its exit code counts. So does one ended just before the resume when the
+  gate reads its exit code more than 1 ms after the resume, for example
+  while other threads of the gate are busy, and one ended with exit code
+  `259`, the code Windows gives a running program, while Windows is still
+  ending it. A `git` that ran and printed its answer is not taken for one
+  that was ended when other threads of the gate are busy. On every
+  platform, when the gate itself starts the program, a Ctrl+C that arrives
+  during the start waits until the program runs (on Windows, until the gate
+  has tried to resume it), so it does not leave a program suspended or
+  running past its time limit, and a start that fails once Popen has the
+  program's process ID stops that program. A second Ctrl+C that arrives
+  while the gate stops a program waits until the stop is done. The gate then
+  waits up to half a second for the stopped program to end, so on Linux and
+  macOS it does not linger as a defunct process. Ctrl+C prints one line and
   exits `130`. The `git` commands of `conventional-commit-grep`,
   `agents-md-coverage-grep` and the `--staged` checks of
   `production-ready-pr-grep` and `semver-stability-grep` had limits
