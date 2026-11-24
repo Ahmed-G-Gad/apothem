@@ -332,3 +332,19 @@ def _result(path: Path, outcome: str) -> MaterializationResult:
     return MaterializationResult(
         outcome=outcome, operation="sentinel_merge", path=str(path), message=""
     )
+
+
+def test_a_lazy_line_keeps_its_list_item_open() -> None:
+    """A list item's text goes on at the left margin, then a fence in the item.
+
+    CommonMark keeps the item open across that line, so the fence indented
+    three columns sits in it and ends with it at the next line at the margin.
+    Apothem ended the item at that line instead, read the fence as open to
+    the end of the file, and a fix added a closing line there that opened a
+    code block in a viewer.
+    """
+    text = _lines("- item", "lazy", "   ~~~md", "code", "# Head", B, "old")
+    assert trailing_fence(text) is None
+    message = stray_fix_text(text, TAKES_OUT)
+    assert "Below line" not in message
+    assert _changes(message) == [6]

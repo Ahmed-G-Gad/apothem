@@ -738,8 +738,10 @@ The lines of an HTML block, such as a comment that opens with `<!--` and ends
 on a later line with `-->`, are that block's text, so a code fence there
 opens no code block, as a Markdown viewer reads it; a marker line there is
 still read as a marker, though a viewer reads it as part of the HTML block.
-Markers inside a block quote, or after a list item whose text goes on at the
-left margin, can still be read differently from a Markdown viewer.
+A line of a list item's text that goes on at the left margin keeps that
+list item open, as a Markdown viewer reads it, so a code fence indented under
+the item after it sits in the item. Markers inside a block quote can still be
+read differently from a Markdown viewer.
 
 Every line number these warnings give counts lines as Apothem reads the file:
 a line ends at CRLF, at LF, or at a CR on its own. In a file saved with CR

@@ -437,6 +437,15 @@ class _MarkdownState:
             if columns >= self.code_column + _CODE_INDENT:
                 return _Kind.CODE
             self.code_column = None
+        if (
+            not self.can_interrupt
+            and self.items
+            and columns < self.items[-1]
+            and _lazy(content)
+        ):
+            # Paragraph text left of the list item that holds the open
+            # paragraph goes on that paragraph, and the item stays open.
+            return _Kind.TEXT
         while self.items and columns < self.items[-1]:
             self.items.pop()
         if self.raw_html or self.html_end is not None:
@@ -497,8 +506,9 @@ class _MarkdownState:
         Such a line opens nothing: no list item, fence, heading, break, HTML
         block or block quote, and it is no marker. It closes no fence either.
         So it is code in a fence at the left margin, and otherwise it ends
-        every list item and indented code and goes on the open paragraph or
-        starts one, as the full reading in :meth:`step` finds; that reading
+        indented code and goes on the open paragraph, in the list item that
+        holds it, or ends every list item and starts one, as the full reading
+        in :meth:`step` finds; that reading
         costs several pattern matches a line, and most lines of a file are
         such lines.
         """
@@ -508,8 +518,8 @@ class _MarkdownState:
                 return _Kind.CODE
             self.fence = None
         self.code_column = None
-        self.items.clear()
         if self.can_interrupt:
+            self.items.clear()
             self.can_interrupt = False
             self.para_column = 0
         self.html_items = 0
@@ -631,6 +641,27 @@ class _MarkdownState:
             self.items.append(columns)
             rest = after[gap_chars:]
         return rest
+
+
+def _lazy(content: str) -> bool:
+    """Return True when *content*, left of the open paragraph's list item, goes on it.
+
+    CommonMark: a line that starts no block (a marker, a fence, a heading, a
+    break, a list item, a block quote or an HTML block, none of them held to
+    the rules for a line under a paragraph) is a lazy continuation line of
+    the paragraph, so the list item that holds the paragraph stays open.
+    """
+    if content.strip() in _SENTINELS or content.startswith(">"):
+        return False
+    if _fence_opener(content) is not None or _LIST_ITEM.match(content):
+        return False
+    if _THEMATIC_BREAK.match(content) or _ATX_HEADING.match(content):
+        return False
+    return not content.startswith("<") or not (
+        any(start.match(content) for start, _ in _HTML_RUNS)
+        or _HTML_BLOCK_TAG.match(content)
+        or _HTML_LONE_TAG.match(content)
+    )
 
 
 def _may_interrupt(bullet: str, after: str) -> bool:
@@ -778,7 +809,9 @@ def _marker_lines(text: str) -> list[_Marker]:
       a block quote's line, is held to none of them. A fence ends a
       paragraph, and so does an HTML block that ends on the line it starts
       (``<!-- note -->``, say). An item with nothing after its bullet ends at
-      the next blank line.
+      the next blank line. A line left of the item that holds an open
+      paragraph and that starts no block of its own (see :func:`_lazy`) goes
+      on that paragraph and keeps the item open.
     - A line indented four or more columns past the content column of the list
       item it sits in (or past the margin outside a list), after a blank line,
       a heading or break, or at the start, is indented code, as are the lines

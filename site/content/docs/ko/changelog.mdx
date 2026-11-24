@@ -958,7 +958,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   the other warnings for that file. The lines of an HTML block, such as a
   comment that opens with `<!--` and ends on a later line, are read as that
   block's text, as a Markdown viewer reads them, so no fix adds a closing
-  line for a code fence inside one. The fixes are built from the file's
+  line for a code fence inside one, and a line of a list item's text that
+  goes on at the left margin keeps that item open, so no fix adds one for a
+  code fence that ends with the item. The fixes are built from the file's
   lines, with no Markdown reading of their own, and each reading of a file
   for its markers is kept for the rest of the command, so a warning for a
   file of 1 MB takes well under a second. The troubleshooting page lists the
