@@ -392,7 +392,12 @@ def _kept_lines(run: MaterializationRun, earlier: int) -> list[str]:
 
 
 def _problems(
-    harness_id: str, run: MaterializationRun, blocked: Counter[str], earlier: int
+    harness_id: str,
+    run: MaterializationRun,
+    blocked: Counter[str],
+    earlier: int,
+    *,
+    said: str = "",
 ) -> dict[str, list[str]]:
     """Return each reason an uninstall did not finish, with the paths it names.
 
@@ -400,10 +405,14 @@ def _problems(
     :func:`_error_groups`). A failed step that could not remove files Apothem
     wrote names them, so the advice to close what holds them points at files
     the reader can see. The kept paths that leave the uninstall unfinished
-    come last (see :func:`_kept_lines`).
+    come last (see :func:`_kept_lines`). A failed step whose message *said*,
+    the message of the error that stopped the uninstall, already holds (the
+    refusal of a link that leads the folder out of the home) is left out.
     """
     problems = _link_problems(harness_id, run, blocked)
     for first, members in _error_groups(run):
+        if said and first.message in said:
+            continue
         problems[_error_line(first, len(members))] = [
             path for member in members for path in detail_paths(member, "stuck_files")
         ]
@@ -602,7 +611,7 @@ def _failed_adapter(
         )
         blocked = _blocked_by_link(run)
         earlier = _earlier_release_paths(run)
-        problems = _problems(harness_id, run, blocked, earlier)
+        problems = _problems(harness_id, run, blocked, earlier, said=str(exc))
         named = _one_named_link(run, blocked)
         partial = partial or bool(blocked) or bool(earlier)
     if fmt != "json":
