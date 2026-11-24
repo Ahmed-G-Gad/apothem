@@ -720,31 +720,33 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   A BEGIN marker left with no END once Apothem's block is out (a line
   of yours, or what is left of an older block that lost its END marker) is
   named too, also when the uninstall stops part way, and under `--quiet` on
-  standard error; the warning says to delete that line with any old Apothem
-  text below it, which the tool still reads. When the uninstall's next step is
-  to run `apothem update` and a warning names such a file, the step, and the
-  warning of each path it keeps for that reason, say to fix the file first: an
-  update keeps a BEGIN marker with no END and does not fix a file that holds
+  standard error; the warning names the marker's line and gives a numbered
+  step that changes it (see the entry on checked steps below), and says the
+  tool still reads the old Apothem text below it. When the uninstall's next
+  step is to run `apothem update` and a warning names such a file, the step,
+  and the warning of each path it keeps for that reason, say to fix the file
+  first: an update keeps a BEGIN marker with no END and does not fix a file that holds
   two different blocks, and `verify` fails until you fix either. An OpenClaw
   update that cannot retire a rules file with two blocks says the next
   install, update or uninstall tries again, not to run the uninstall. An
   OpenClaw update that takes Apothem's block out of a rules file in a
   workspace the install no longer uses names a BEGIN marker it leaves there
-  too, and says that `verify` fails until you delete it.
+  too, and says that `verify` fails until you change it.
 - **Install and update no longer cut your text after a BEGIN marker with no
   END.** They replaced everything from such a marker to the end of the file,
   with any text you had written below it (a backup was kept). They now keep
   that text as it is, write Apothem's block apart from it, and print a warning
-  that names the file, says to delete that marker line with the old Apothem
-  text below it, and says not to add the END marker back (the file would then
-  hold two Apothem blocks). A dry run reads the file before anything is
-  written, so over a file with no whole block yet it says not to add the END
-  marker back with a line of yours between the two markers (the next run would
-  replace or take out every line between them), nor at all once an install or
-  update has written Apothem's block apart from it. While an install record
+  that names the file and the marker's line, gives a numbered step that
+  changes that line, and says not to add the END marker back instead (the
+  file would then hold two Apothem blocks). A dry run reads the file before
+  anything is written, so over a file with no whole block yet it says to put
+  no line of yours between the two markers if you add the END marker back
+  instead (the next run would replace or take out every line between them),
+  and not to add it back at all once an install or update has written
+  Apothem's block apart from it. While an install record
   lists a file that also holds a marker pair in code and no whole block, they
   leave the file as it is instead (see the next
-  entry). `verify` fails until the stray marker is gone,
+  entry). `verify` fails until the stray marker is changed,
   including a BEGIN marker of yours above or below a whole block, and for a
   file the current install writes, `status --profile` shows drift until then
   too. This covers every file where Apothem keeps a managed block:
@@ -928,8 +930,17 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   line, and a fix that keeps a block inside one closes it above the BEGIN
   marker and opens it again below the END marker. A fix for a file with two
   or more whole blocks is checked for the next update as well as for the
-  uninstall, since an uninstall with no install record leaves the block. The
-  troubleshooting page lists the step formats under "Follow a numbered fix".
+  uninstall, since an uninstall with no install record leaves the block. A
+  BEGIN marker with no END marker gets the same kind of fix from every
+  command that names it (`install`, `update`, `uninstall`, `verify` and
+  `doctor`, and an OpenClaw update that retires a rules file): the warning
+  names the marker's line, and the fix changes that line, with one step for
+  each such marker, from the bottom of the file up, and steps of its own for
+  each file a `verify` note names. Changing the line in place adds and
+  removes no line, so each line of yours reads as before. The old
+  Apothem text below the marker is then yours to keep or delete, and no step
+  names it. The troubleshooting page lists the step formats under "Follow a
+  numbered fix".
 - **The installers and update scripts finish a run that ends as partial.**
   When `apothem install` or `apothem update` leaves a file as it is because of
   its marker lines and exits with code `2`, `install.sh`, `install.ps1`,

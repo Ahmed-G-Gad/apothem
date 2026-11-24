@@ -9,9 +9,10 @@ block in, fails that tool's verify (see
 Install and update keep such a marker, or leave such a file as it is (one
 with marker pairs no rule can place while an install record lists it, or
 rule 3 fired in it), so re-running them does not clear it. A failed
-``verify`` row and ``doctor``'s failed check name each such file and say
-what to delete, so the fix is not a guess, and say that install and update
-leave the file as it is only where they do (see :func:`record_lists`).
+``verify`` row and ``doctor``'s failed check name each such file and give
+the numbered steps that fix it, so the fix is not a guess, and say that
+install and update leave the file as it is only where they do (see
+:func:`record_lists`).
 Everything here reads files and the install ledger and writes nothing.
 """
 
@@ -29,6 +30,9 @@ from apothem.harnesses._shared.install_driver_blocks import (
     whole_blocks_at,
 )
 from apothem.harnesses._shared.install_driver_blocktext import (
+    not_back_text,
+    stray_fix_text,
+    stray_subject,
     two_blocks_report,
     unclear_block_report,
 )
@@ -123,46 +127,38 @@ def stray_begin_note(
 ) -> str:
     """Return one line that names each of *files* and says how to clear its marker.
 
-    The old Apothem text below the marker goes too: an install or update writes
-    a whole block of its own apart from the marker, so that text only repeats
-    Apothem's rules. Once one has, putting the END marker back instead would
-    leave two Apothem blocks, so the line says not to then; before any
-    install or update, putting it back right below the old text leaves one
-    whole block, but with a line of the operator's between the two markers the
-    next run replaces or takes out that line, so the line says not to put it
-    back there either. A file with two or more whole blocks, or whose marker
-    pairs no rule can place, is named on its own, with each block or pair,
-    where its marker lines read, and how to fix it (see
-    :func:`two_blocks_report` and :func:`unclear_block_report`). *then* is the
-    step that follows; both callers name an update, which writes Apothem's
-    block back when the file holds none. *listed* says whether an install
-    record lists a file (see :func:`record_lists`); without it, the text for
-    marker pairs says that install and update leave a file as it is only for
-    the pair rule 3 fired on, which holds the file back with or without one.
+    A file with a BEGIN marker that starts no whole block gets its own text:
+    the marker by its line, and a numbered step that changes that line (see
+    :func:`stray_fix_text`), checked on a copy of the file. The old Apothem
+    text below the marker is the operator's to keep or delete: an install or
+    update writes a whole block of its own apart from the marker, so that
+    text only repeats Apothem's rules. The text says not to add the END
+    marker back instead (see :func:`not_back_text`): once an install or
+    update has written Apothem's block apart from the marker, the file would
+    then hold two Apothem blocks, and before that, with a line of the
+    operator's between the two markers, the next run replaces or takes out
+    that line. A file with two or more whole blocks, or whose marker pairs
+    no rule can place, is named on its own, with each block or pair, where
+    its marker lines read, and how to fix it (see :func:`two_blocks_report`
+    and :func:`unclear_block_report`). *then* is the step that follows; both
+    callers name an update, which writes Apothem's block back when the file
+    holds none. *listed* says whether an install record lists a file (see
+    :func:`record_lists`); without it, the text for marker pairs says that
+    install and update leave a file as it is only for the pair rule 3 fired
+    on, which holds the file back with or without one.
     """
-    named: list[str] = []
-    stray: list[str] = []
+    parts: list[str] = []
     for path in files:
-        text = _named(path, listed)
-        if text is not None:
-            named.append(text)
-        else:
-            stray.append(str(path))
-    lead = ""
-    if stray:
-        if len(stray) == 1:
-            subject = f"{stray[0]} has"
-        else:
-            subject = f"{', '.join(stray[:-1])} and {stray[-1]} each have"
-        lead = (
-            f"{subject} an Apothem BEGIN marker with no END marker: delete that "
-            "marker line and the old Apothem text below it by hand, keep your own "
-            "lines, and do not add the END marker back with a line of yours "
-            "between the two markers (the next run would replace or take out "
-            "every line between them), nor at all once an install or update has "
-            "written Apothem's block apart from it (the file would then hold two "
-            "Apothem blocks)"
+        named = _named(path, listed)
+        if named is not None:
+            parts.append(named)
+            continue
+        text = text_at(path)
+        parts.extend(
+            [
+                f"{path} has {stray_subject(text)} with no END marker.",
+                stray_fix_text(text),
+                not_back_text(text),
+            ]
         )
-    if not named:
-        return f"{lead}, then {then}"
-    return " ".join([*([f"{lead}."] if lead else []), *named, f"Then {then}"])
+    return " ".join([*parts, f"Then {then}"])

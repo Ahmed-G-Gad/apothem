@@ -209,8 +209,9 @@ adapter warning prints on its own `Warning:` line in plain mode too, for example
 the Zed warning that names an instruction file the new `.rules` hides, and the
 warning that names a file holding an Apothem BEGIN marker with no END after it:
 the install keeps the text after that marker and writes Apothem's block apart
-from it, so the warning says not to add the END marker back below that text,
-which would then leave two Apothem blocks (see
+from it, so the warning names the marker's line, gives a numbered step that
+changes that line, and says not to add the END marker back instead, which
+would then leave two Apothem blocks (see
 [Troubleshooting](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
 So do the warning for a file that holds two or more whole blocks between
 Apothem's markers, which names each block by its lines (see

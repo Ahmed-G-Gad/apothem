@@ -173,7 +173,7 @@ def test_a_failed_verify_row_names_the_file_with_the_stray_marker(
     assert row["verified"] is False
     assert [_key(path) for path in row["stray_begin"]["files"]] == [_key(anchor)]
     assert _names(row["message"], anchor)
-    assert "delete that marker line" in row["message"]
+    assert "add a word inside its comment" in row["message"]
     assert row["stray_begin"]["message"] in row["message"]
 
 
@@ -193,7 +193,7 @@ def test_the_plain_verify_line_names_the_marked_file_not_the_adapter_output(
     assert "settings.json" not in output
     [note] = [line for line in output.splitlines() if "Note:" in line]
     assert _names(note, anchor)
-    assert "delete that marker line" in note
+    assert "add a word inside its comment" in note
 
 
 def test_a_verify_failure_without_a_stray_marker_keeps_the_expected_path(
@@ -248,7 +248,7 @@ def test_doctor_names_the_marked_file_in_its_fix_and_still_starts_the_hooks(
     [check] = failed
     assert check["harness"] == "codex"
     assert _names(check["fix"], anchor)
-    assert "delete that marker line" in check["fix"]
+    assert "add a word inside its comment" in check["fix"]
     [row] = [r for r in payload["harnesses"] if r["name"] == "codex"]
     assert row["status"] == "verify_failed"
     assert row["verified"] is False
@@ -336,7 +336,7 @@ def test_a_project_file_of_its_own_is_not_looked_at_without_a_record(
 # --- what the messages say ---------------------------------------------------
 
 
-def test_the_install_warning_says_to_delete_the_marker_and_the_old_text(
+def test_the_install_warning_says_to_change_the_marker_line(
     tmp_path: Path,
 ) -> None:
     target = tmp_path / "AGENTS.md"
@@ -357,18 +357,28 @@ def test_the_install_warning_says_to_delete_the_marker_and_the_old_text(
     assert warning.outcome == "warning"
     assert str(target) in warning.message
     assert APOTHEM_BLOCK_END in warning.message
-    assert "Delete that marker line by hand" in warning.message
-    assert "the old Apothem text below it" in warning.message
-    assert "keep your own lines" in warning.message
+    assert "BEGIN marker at line 1" in warning.message
+    assert "A1. Change line 1: add a word inside its comment." in warning.message
+    assert (
+        "Any old Apothem text below a BEGIN marker line you change is then yours "
+        "to keep or delete."
+    ) in warning.message
 
 
-def test_the_note_names_every_file() -> None:
-    files = [Path("one.md"), Path("two.md"), Path("three.md")]
+def test_the_note_names_every_file(tmp_path: Path) -> None:
+    files = [tmp_path / name for name in ("one.md", "two.md", "three.md")]
+    for path in files:
+        _marked(path)
 
     note = stray_begin_note(files, then="run apothem verify again")
 
-    assert note.startswith("one.md, two.md and three.md each have")
-    assert note.endswith("then run apothem verify again")
+    assert note.startswith(
+        f"{files[0]} has an Apothem BEGIN marker at line 1 with no END marker."
+    )
+    places = [note.index(f"{path} has") for path in files]
+    assert places == sorted(places)
+    assert note.count("A1. Change line 1: add a word inside its comment.") == 3
+    assert note.endswith("Then run apothem verify again")
 
 
 def test_the_report_module_imports_in_a_fresh_interpreter() -> None:
@@ -1434,16 +1444,13 @@ def test_the_stray_warning_says_not_to_put_the_end_marker_back(tmp_path: Path) -
     [warning] = stray_begin_install_warnings([merged])
     note = stray_begin_note([target], then="run apothem update")
 
-    assert warning.message.endswith(
-        "Do not add the END marker back below that text: the file would then hold "
-        "two Apothem blocks, which install and update leave as they are."
+    back = (
+        "Do not add the END marker back instead of changing the marker line: the "
+        "file would then hold two Apothem blocks, which install and update leave "
+        "as they are."
     )
-    assert (
-        "do not add the END marker back with a line of yours between the two "
-        "markers (the next run would replace or take out every line between "
-        "them), nor at all once an install or update has written Apothem's block "
-        "apart from it (the file would then hold two Apothem blocks)"
-    ) in note
+    assert warning.message.endswith(back)
+    assert back in note
 
 
 def test_a_preview_says_not_to_put_the_end_marker_back_only_once_it_is_written(
@@ -1483,11 +1490,12 @@ def test_a_preview_says_not_to_put_the_end_marker_back_only_once_it_is_written(
     assert code == 0, output
     assert "write a block of their own apart from it" in preview
     assert preview.endswith(
-        "Do not add the END marker back with a line of yours between the two "
-        "markers: the next run would replace or take out every line between them. "
-        "Once an install or update has written Apothem's block apart from it, do "
-        "not add the END marker back at all: the file would then hold two Apothem "
-        "blocks, which install and update leave as they are."
+        "If you add the END marker back instead of changing the marker line, put "
+        "no line of yours between the two markers: the next run would replace or "
+        "take out every line between them. Once an install or update has written "
+        "Apothem's block apart from the marker, do not add it back at all: the "
+        "file would then hold two Apothem blocks, which install and update leave "
+        "as they are."
     )
     assert updated == 0, update_output
     assert (after.count(B), after.count(E)) == (1, 1)
@@ -1495,10 +1503,11 @@ def test_a_preview_says_not_to_put_the_end_marker_back_only_once_it_is_written(
     assert verify == 0, verify_output
     assert real == 0, real_output
     assert "write a whole block of their own apart from it" in written
+    assert "verify fails for this tool until you change that marker line" in written
     assert written.endswith(
-        "lines; apothem verify fails for this tool until you do. Do not add the "
-        "END marker back below that text: the file would then hold two Apothem "
-        "blocks, which install and update leave as they are."
+        "Do not add the END marker back instead of changing the marker line: the "
+        "file would then hold two Apothem blocks, which install and update leave "
+        "as they are."
     )
 
 
@@ -2500,14 +2509,15 @@ def test_with_no_record_claude_md_names_the_marker_lines_around_apothem_s_block(
 # --- what an uninstall says about a BEGIN marker it leaves --------------------
 
 
-def test_the_uninstall_says_to_delete_the_old_text_below_a_lone_begin_marker(
+def test_the_uninstall_names_the_old_text_below_a_lone_begin_marker(
     tmp_path: Path,
 ) -> None:
-    """lifecycle-3: deleting only the marker line left old Apothem text behind.
+    """lifecycle-3: no later install, verify or uninstall names the old text.
 
-    No later install, verify or uninstall would name that text again. And
-    after an uninstall, verify does not look at the file, so the warning no
-    longer says it fails until then.
+    The warning names the marker's line, gives the step that changes it, and
+    says the old Apothem text below it is yours to keep or delete, since the
+    tool still reads it. After an uninstall, verify does not look at the
+    file, so the warning does not say it fails until then.
     """
     target = tmp_path / "CLAUDE.md"
     target.write_text(f"# top\n{B}\nold rules\n\nmy own line\n", encoding="utf-8")
@@ -2520,12 +2530,18 @@ def test_the_uninstall_says_to_delete_the_old_text_below_a_lone_begin_marker(
 
     [warning] = blocks.stray_begin_warnings([result])
 
-    assert warning.message == (
-        f"{target} still holds a line that reads as the Apothem BEGIN marker, with "
-        f"no END marker ({E}) after it, now that Apothem's block is out. Delete "
-        "that line by hand, with any old Apothem text below it, and keep your own "
-        "lines: the tool still reads that text, and an install keeps it as it is."
+    assert warning.message.startswith(
+        f"{target} still holds a line that reads as the Apothem BEGIN marker at "
+        f"line 2, with no END marker ({E}) after it, now that Apothem's block is "
+        "out: an install keeps it as it is, and the tool still reads the text "
+        "below it."
     )
+    assert "A1. Change line 2: add a word inside its comment." in warning.message
+    assert warning.message.endswith(
+        "Any old Apothem text below a BEGIN marker line you change is then yours "
+        "to keep or delete."
+    )
+    assert "verify" not in warning.message
 
 
 # --- a preview says what the run would do --------------------------------------

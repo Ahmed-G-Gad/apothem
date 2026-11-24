@@ -2427,9 +2427,9 @@ _FIX_FIRST = (
     "first copy any listed file you edited or added, and fix the 1 file(s) "
     "whose warnings name a BEGIN marker with no END after it: an update keeps "
     "that marker and the text below it as they are, and apothem verify fails "
-    "until you delete that marker line by hand, with any old Apothem text below "
-    "it, keeping your own lines; then run apothem update, then apothem "
-    "uninstall again"
+    "until you follow the numbered step in each warning, which changes that "
+    "marker line so it no longer reads as a marker; then run apothem update, "
+    "then apothem uninstall again"
 )
 
 

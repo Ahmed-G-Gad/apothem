@@ -48,7 +48,13 @@ from apothem.lib.harness_materializer import (
 from apothem.lib.install_ledger import LedgerTarget
 from apothem.lib.propagation import resolve_target
 
-from .install_driver_blocktext import two_blocks_report, unclear_block_report
+from .install_driver_blocktext import (
+    begin_left_report,
+    endless_block_report,
+    stray_install_report,
+    two_blocks_report,
+    unclear_block_report,
+)
 from .install_driver_layout import _load_rules
 from .install_driver_pathsafety import _root_for
 from .install_driver_shared import path_key
@@ -65,9 +71,9 @@ from .install_driver_types import (
 #: whole block (:func:`another_block_warning`), or a marker pair no rule can
 #: place (:func:`unclear_block_warning`). An install or update keeps a BEGIN
 #: marker with no END and writes Apothem's block apart from it, and verify
-#: fails until the operator deletes it; a file with two whole blocks or an
-#: unclear pair it leaves as it is. So an uninstall whose next step is
-#: ``apothem update`` says to fix such a file first.
+#: fails until the operator changes that marker line; a file with two whole
+#: blocks or an unclear pair it leaves as it is. So an uninstall whose next
+#: step is ``apothem update`` says to fix such a file first.
 MARKER_LEFT = "marker_left"
 
 #: ``kept_reason`` of a file that holds another whole block besides Apothem's
@@ -234,7 +240,8 @@ def stray_begin_install_warnings(
     The text after a BEGIN marker with no END is kept as it is, and Apothem's
     own block is written apart from it, so the text an old block left below
     the marker repeats Apothem's rules. The marker stays until the operator
-    deletes it, with that old text; verify reports the file until then. A file
+    changes it, as the warning's numbered step says (see
+    :func:`stray_install_report`); verify reports the file until then. A file
     the merge left as it is (outcome ``unchanged``, a dry run's preview
     included) whose marker pairs no rule can place (:func:`unclear_pairs_at`)
     gets its own warning, which names each pair and how to fix it, and so
@@ -308,32 +315,7 @@ def _install_warning(
         return f"{report}{_UPDATE_AGAIN}", unchanged
     if not has_stray_begin(text):
         return None
-    # With no whole block yet (a preview reads the file before the write),
-    # nothing is written apart from the marker: putting the END marker back
-    # right below the old text then leaves one whole block, a fix that works,
-    # but below a line of the operator's it makes that line Apothem's.
-    block, back = (
-        ("a whole block", "Do not add the END marker back below that text")
-        if blocks
-        else (
-            "a block",
-            "Do not add the END marker back with a line of yours between the two "
-            "markers: the next run would replace or take out every line between "
-            "them. Once an install or update has written Apothem's block apart "
-            "from it, do not add the END marker back at all",
-        )
-    )
-    return (
-        f"{path} has an Apothem BEGIN marker that starts no whole block of its "
-        f"own (its END marker {APOTHEM_BLOCK_END} is gone, or the marker is "
-        "yours). Apothem never cuts the text after it: install and update keep "
-        f"that text as it is and write {block} of their own apart from it. "
-        "Delete that marker line by hand, with the old Apothem text below it "
-        "that repeats the rules in Apothem's whole block, and keep your own "
-        f"lines; apothem verify fails for this tool until you do. {back}: the "
-        "file would then hold two Apothem blocks, which install and update leave "
-        "as they are."
-    ), False
+    return stray_install_report(path, text), False
 
 
 def whole_block_left(entry: LedgerTarget) -> bool:
@@ -409,7 +391,9 @@ def endless_block_warning(
     Apothem's (see :func:`whole_block_left`). A BEGIN marker outside code
     whose END marker reads as code, with another marker pair after it, did
     not lose its END marker: it gets the warning that names each pair (see
-    :func:`unclear_block_warning`), install record or not. With *dry_run* (a
+    :func:`unclear_block_warning`), install record or not. The warning names
+    the marker by its line and gives the step that changes it (see
+    :func:`endless_block_report`). With *dry_run* (a
     preview), the warning says Apothem would leave the file as it is.
     ``None`` when the file holds a whole block, holds no marker, or cannot be
     read.
@@ -427,10 +411,7 @@ def endless_block_warning(
         "warning",
         operation,
         target,
-        f"{_path_text(target)} has the Apothem BEGIN marker but no END marker "
-        f"({APOTHEM_BLOCK_END}) after it, so Apothem cannot tell where its block "
-        f"ends and {left} the file as it is. Delete that marker line, and what "
-        "is left of the block, by hand, keeping your own text.",
+        endless_block_report(_path_text(target), text, left=left),
         detail={MARKER_LEFT: "1"},
     )
 
@@ -654,13 +635,13 @@ def _revealed_block(
     return found[0], quoted
 
 
-#: Why the operator deletes a BEGIN marker an uninstall leaves alone.
-_STILL_READ = "the tool still reads that text, and an install keeps it as it is"
+#: Why the operator changes a BEGIN marker an uninstall leaves alone.
+_STILL_READ = "an install keeps it as it is, and the tool still reads the text below it"
 
 #: The same for a rules file an update took Apothem's block out of because
 #: the install no longer writes it: no install writes there, and verify names
 #: the file while an install record lists it.
-RETIRED_WHY = "apothem verify fails for this tool until you do"
+RETIRED_WHY = "apothem verify fails for this tool until you change it"
 
 
 def stray_begin_warnings(
@@ -671,9 +652,11 @@ def stray_begin_warnings(
     Taking Apothem's whole block out can leave such a line above where it was
     (a stray line of the operator's, or what is left of an older block that
     lost its END marker, with that block's text below it). An install keeps
-    it as it is, so the operator deletes it by hand, with any old Apothem
-    text below it. *why* is the reason the text gives (:data:`RETIRED_WHY`
-    for a rules file an update took Apothem's block out of).
+    it as it is, so the warning names it by its line and gives the step that
+    changes it (see :func:`begin_left_report`); any old Apothem text below it
+    is the operator's to keep or delete. *why* is the reason the text gives
+    (:data:`RETIRED_WHY` for a rules file an update took Apothem's block out
+    of).
     """
     rewritten = {
         result.path: result.operation
@@ -686,10 +669,7 @@ def stray_begin_warnings(
             "warning",
             operation,
             Path(path),
-            f"{path} still holds a line that reads as the Apothem BEGIN marker, "
-            f"with no END marker ({APOTHEM_BLOCK_END}) after it, now that "
-            "Apothem's block is out. Delete that line by hand, with any old "
-            f"Apothem text below it, and keep your own lines: {why}.",
+            begin_left_report(path, text_at(Path(path)), why=why),
             detail={MARKER_LEFT: "1"},
         )
         for path, operation in rewritten.items()

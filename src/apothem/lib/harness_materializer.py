@@ -986,6 +986,21 @@ def has_stray_begin(text: str) -> bool:
     )
 
 
+def stray_begins(text: str) -> list[int]:
+    """Return the 1-based lines of the BEGIN markers :func:`has_stray_begin` reports.
+
+    In order, numbered as :func:`whole_blocks` numbers its lines. Empty when
+    *text* holds no such marker.
+    """
+    lines, _, scan = _read(text)
+    starts = [line.start for line in lines]
+    return [
+        bisect.bisect_right(starts, marker.start)
+        for marker in scan.markers
+        if marker.marker == APOTHEM_BLOCK_BEGIN and not marker.paired
+    ]
+
+
 def extract_managed_block(text: str) -> str | None:
     """Return the managed-block region found in *text*, or ``None``.
 

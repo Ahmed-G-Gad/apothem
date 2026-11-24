@@ -450,11 +450,13 @@ uninstall leaves the file as it is, names it in a warning and finishes
 record); so does a retry after an uninstall that did not finish. If a BEGIN
 marker is left with no END after it once Apothem's block is out (a line of
 yours, or what is left of an older block that lost its END marker), the
-uninstall names that file too. Delete such a BEGIN marker by hand, with any
-old Apothem text below it, keeping your own lines: the tool still reads that
-text. An `install` or `update` keeps the text after it as it is, writes
-Apothem's block apart from it and names the file, and `verify` fails until
-the marker is gone (see
+uninstall names that file and the marker's line too, with a numbered step
+that changes that line (a word added inside its comment), so it no longer
+reads as a marker: an install keeps it as it is, and the tool still reads
+the text below it. Any old Apothem text below it is then yours to keep or
+delete. An `install` or `update` keeps the text after such a marker as it
+is, writes Apothem's block apart from it and names the file, and `verify`
+fails until the marker is changed (see
 [A file has an Apothem BEGIN marker with no END marker](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
 
 A file that holds two different blocks between the markers (a marker pair you

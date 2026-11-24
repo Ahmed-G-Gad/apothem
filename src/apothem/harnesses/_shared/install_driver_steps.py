@@ -2,8 +2,9 @@
 
 """Numbered fixes for Apothem marker lines, each checked on a copy of the file.
 
-The warnings for marker lines Apothem cannot place (see
-:mod:`install_driver_blocktext`) give their fixes as numbered steps built from
+The warnings for marker lines Apothem cannot place, and for a BEGIN marker
+that starts no whole block (see :mod:`install_driver_blocktext`), give their
+fixes as numbered steps built from
 four edits only, so an operator, or a script, can follow them line by line:
 
 - CHANGE: ``Change line N: add a word inside its comment.`` The marker line
@@ -49,6 +50,8 @@ from apothem.lib.harness_materializer import (
     MarkerPlace,
     UncertainPair,
     line_roles,
+    stray_begins,
+    whole_blocks,
 )
 
 from .install_driver_stepcheck import WORD as _WORD
@@ -489,6 +492,43 @@ def delete_fixes(text: str, block: tuple[int, int]) -> list[Fix]:
         label=label,
         block=block,
         removes=False,
+    )
+    return [] if found is None else [found]
+
+
+def stray_fixes(text: str, *, removes: bool) -> list[Fix]:
+    """Return the checked fix for the BEGIN markers in *text* that start no whole block.
+
+    One CHANGE step for each such marker (see
+    :func:`apothem.lib.harness_materializer.stray_begins`), or, when that does
+    not pass, one for every marker line outside the file's one whole block.
+    The old text below such a marker stays: it is the operator's to keep or
+    delete, so no step names it. The fix calls the file's one whole block
+    Apothem's, and that block stays whole; with none, the fix leaves no
+    block. It must pass :func:`passes` for the next update and, with
+    *removes*, for the next uninstall too. Empty when no variant passes, when
+    *text* holds no such marker, or when it holds two or more whole blocks
+    (see :func:`block_fixes`).
+    """
+    lines = split_lines(text)
+    strays = stray_begins(text)
+    blocks = whole_blocks(text)
+    if not strays or len(blocks) > 1:
+        return []
+    block = blocks[0] if blocks else None
+    keeps = block is not None
+    if block is None:
+        label = f"if lines {strays[0]} to {len(lines)} are text of yours"
+    else:
+        label = f"if lines {block[0]} to {block[1]} are Apothem's block"
+    changes = [Step(Edit.CHANGE, line) for line in strays]
+    found = _first_passing(
+        lines,
+        [(changes, keeps), (_every_marker(lines, block), keeps)],
+        label=label,
+        block=block,
+        removes=removes,
+        update=True,
     )
     return [] if found is None else [found]
 

@@ -2071,10 +2071,10 @@ def test_an_update_that_retires_a_file_says_verify_fails_until_the_marker_goes(
 
     assert code == 0, envelope
     (note,) = [m for m in _warning_messages(envelope) if str(target) in m]
-    assert " ".join(note.split()).endswith(
-        "Delete that line by hand, with any old Apothem text below it, and keep "
-        "your own lines: apothem verify fails for this tool until you do."
-    )
+    flat = " ".join(note.split())
+    assert "Apothem BEGIN marker at line 2" in flat
+    assert "apothem verify fails for this tool until you change it." in flat
+    assert "A1. Change line 2: add a word inside its comment." in flat
     assert "the tool still reads that text" not in note
     assert target.read_text(encoding="utf-8") == stray.rstrip("\n") + "\n"
     assert verified == 1, payload

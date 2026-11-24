@@ -364,13 +364,13 @@ _UNPROVEN_PATHS = (
 #: What to do first with each file whose warning names a BEGIN marker with no
 #: END after it (``marker_left`` without ``kept_reason`` ``another-block``): an
 #: update keeps that marker and the text after it, so it is safe, but only the
-#: operator clears the marker, with any old Apothem text below it, and verify
-#: fails until then.
+#: operator clears the marker, by the numbered step each warning gives (it
+#: changes that marker line), and verify fails until then.
 _FIX_STRAY = (
     "fix the {count} file(s) whose warnings name a BEGIN marker with no END "
     "after it: an update keeps that marker and the text below it as they are, "
-    "and apothem verify fails until you delete that marker line by hand, with "
-    "any old Apothem text below it, keeping your own lines"
+    "and apothem verify fails until you follow the numbered step in each "
+    "warning, which changes that marker line so it no longer reads as a marker"
 )
 
 #: What to do first with each file that holds two different blocks

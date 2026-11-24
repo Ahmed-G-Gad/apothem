@@ -2,14 +2,16 @@
 
 """The text of the warnings for Apothem marker lines Apothem cannot place.
 
-Two kinds of file get such a warning, from install, update, verify, doctor and
-uninstall alike (see :mod:`install_driver_blocks`): one whose marker pairs no
-rule can place (:func:`unclear_block_report`), which names each pair and
-where its marker lines read; and one that holds two or more whole blocks
+Three kinds of file get such a warning, from install, update, verify, doctor
+and uninstall alike (see :mod:`install_driver_blocks`): one whose marker
+pairs no rule can place (:func:`unclear_block_report`), which names each pair
+and where its marker lines read; one that holds two or more whole blocks
 (:func:`two_blocks_report`), which names each block by its lines (a block
-that shows only once Apothem's is out, by its two marker lines). A third
-text, :func:`unlisted_block_report`, is for the one whole block an uninstall
-with no install record leaves. Each then
+that shows only once Apothem's is out, by its two marker lines); and one
+with a BEGIN marker that starts no whole block, which each caller names by
+its line (see :func:`stray_fix_text`). Another text,
+:func:`unlisted_block_report`, is for the one whole block an uninstall with
+no install record leaves. Each then
 gives its fixes as numbered steps, one list for each case (this pair is
 Apothem's block, or that one, or none is), each checked on a copy of the file
 before it is printed (see :mod:`install_driver_steps`); a case whose steps
@@ -23,7 +25,14 @@ from __future__ import annotations
 from collections.abc import Sequence
 from pathlib import Path
 
-from apothem.lib.harness_materializer import MarkerLine, MarkerPlace, UncertainPair
+from apothem.lib.harness_materializer import (
+    APOTHEM_BLOCK_END,
+    MarkerLine,
+    MarkerPlace,
+    UncertainPair,
+    stray_begins,
+    whole_blocks,
+)
 
 from .install_driver_steps import (
     FALLBACK,
@@ -31,6 +40,7 @@ from .install_driver_steps import (
     block_fixes,
     delete_fixes,
     render_fixes,
+    stray_fixes,
     unclear_fixes,
 )
 
@@ -377,4 +387,129 @@ def unlisted_block_report(path: str | Path, text: str, block: tuple[int, int]) -
         "the file, so the uninstall leaves it as it is. If you no longer want "
         "the block, take it out by hand. "
         + render_fixes(fixes, [gone] * len(fixes), FALLBACK.format(then=gone))
+    )
+
+
+def _at(lines: Sequence[int]) -> str:
+    """Return where *lines* are, after a marker's name: `` at line 2``, say.
+
+    `` at lines 1 and 4`` for two or more, and empty for none.
+    """
+    if len(lines) < 2:
+        return f" at line {lines[0]}" if lines else ""
+    listed = ", ".join(str(line) for line in lines[:-1])
+    return f" at lines {listed} and {lines[-1]}"
+
+
+def stray_subject(text: str, *, article: str = "an") -> str:
+    """Return the BEGIN markers in *text* that start no whole block, by their lines.
+
+    ``an Apothem BEGIN marker at line 2``, or ``Apothem BEGIN markers at lines
+    1 and 4``; *article* is the word before one marker. Without the line when
+    the text holds no such marker (a file that cannot be read).
+    """
+    lines = stray_begins(text)
+    if len(lines) > 1:
+        return f"Apothem BEGIN markers{_at(lines)}"
+    return f"{article} Apothem BEGIN marker{_at(lines)}"
+
+
+def stray_fix_text(text: str, outcome: str | None = REPLACES) -> str:
+    """Return the numbered fix for the BEGIN markers in *text* that start no whole block.
+
+    One CHANGE step for each (see :func:`install_driver_steps.stray_fixes`),
+    checked on *text*, ended by what the next run then does (*outcome*, as
+    for :func:`unclear_block_report`) and by what the old Apothem text below
+    such a marker then is: the operator's to keep or delete, so no step names
+    it. With no fix that passes, the text that numbers no edit (see
+    :data:`install_driver_steps.FALLBACK`).
+    """
+    fixes = stray_fixes(text, removes=outcome != REPLACES)
+    found = _fixes_text(fixes, outcome)
+    return f"{found} {_OLD_TEXT}" if fixes else found
+
+
+def not_back_text(text: str) -> str:
+    """Return why not to add the END marker back instead of changing the marker line.
+
+    With a whole block in *text* (an install or update wrote Apothem's block
+    apart from the marker), the file would then hold two Apothem blocks. With
+    none, putting it back right below the old Apothem text leaves one whole
+    block, but the next run would take any line of the operator's between the
+    two markers for Apothem's, and once a run writes Apothem's block apart
+    from the marker, two blocks follow. Once the marker line is changed, an
+    END marker below it pairs with nothing, so this holds only for the END
+    marker added back in place of the fix.
+    """
+    if whole_blocks(text):
+        return (
+            "Do not add the END marker back instead of changing the marker line: "
+            "the file would then hold two Apothem blocks, which install and "
+            "update leave as they are."
+        )
+    return (
+        "If you add the END marker back instead of changing the marker line, put "
+        "no line of yours between the two markers: the next run would replace or "
+        "take out every line between them. Once an install or update has written "
+        "Apothem's block apart from the marker, do not add it back at all: the "
+        "file would then hold two Apothem blocks, which install and update leave "
+        "as they are."
+    )
+
+
+def endless_block_report(path: str | Path, text: str, *, left: str) -> str:
+    """Return the warning for *path*, whose block in *text* lost its END marker.
+
+    The marker is named by its line, and the fix changes it (see
+    :func:`stray_fix_text`); *left* is ``left`` or ``would leave``.
+    """
+    return (
+        f"{path} has {stray_subject(text, article='the')} but no END marker "
+        f"({APOTHEM_BLOCK_END}) after it, so Apothem cannot tell where its block "
+        f"ends and {left} the file as it is. {stray_fix_text(text, TAKES_OUT)}"
+    )
+
+
+def begin_left_report(path: str | Path, text: str, *, why: str) -> str:
+    """Return the warning for *path*, which holds a BEGIN marker alone in *text*.
+
+    For a file an uninstall (or an update that retires it) took Apothem's
+    block out of: the marker is named by its line, *why* says why it matters,
+    and the fix changes it (see :func:`stray_fix_text`).
+    """
+    lines = stray_begins(text)
+    which = "lines that read" if len(lines) > 1 else "a line that reads"
+    return (
+        f"{path} still holds {which} as the Apothem BEGIN marker{_at(lines)}, "
+        f"with no END marker ({APOTHEM_BLOCK_END}) "
+        f"after it, now that Apothem's block is out: {why}. "
+        f"{stray_fix_text(text, TAKES_OUT)}"
+    )
+
+
+def stray_install_report(path: str | Path, text: str) -> str:
+    """Return the install or update warning for *path*, whose *text* holds a stray BEGIN.
+
+    A BEGIN marker that starts no whole block, named by its line: install and
+    update keep the text after it and write Apothem's block apart from it, so
+    the fix changes the marker line (see :func:`stray_fix_text`), and the
+    text says not to add the END marker back instead (see
+    :func:`not_back_text`). With no whole block yet (a preview reads the
+    file before the write), the text says a block, not a whole block.
+    """
+    one = len(stray_begins(text)) < 2
+    block = "a whole block" if whole_blocks(text) else "a block"
+    gone = (
+        f"its END marker {APOTHEM_BLOCK_END} is gone, or the marker is yours"
+        if one
+        else f"their END markers {APOTHEM_BLOCK_END} are gone, or the markers are yours"
+    )
+    return (
+        f"{path} has {stray_subject(text)} that {'starts' if one else 'start'} "
+        f"no whole block of {'its' if one else 'their'} own ({gone}). Apothem "
+        "never cuts the text after it: install and update keep that text as it "
+        f"is and write {block} of their own apart from it, and apothem verify "
+        "fails for this tool until you change "
+        f"{'that marker line' if one else 'those marker lines'}. "
+        f"{stray_fix_text(text)} {not_back_text(text)}"
     )

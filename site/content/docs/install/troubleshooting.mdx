@@ -337,22 +337,25 @@ outside a whole block, nothing shows where Apothem's text stops and yours
 starts. So Apothem never cuts the text after that marker:
 
 - `apothem install` and `apothem update` keep it as it is, write Apothem's block
-  apart from it, and print a warning that names the file. The warning also
-  says not to add the END marker back below that text: with Apothem's block
+  apart from it, and print a warning that names the file and the marker's
+  line, with a numbered step that changes that line (see below). The warning
+  also says not to add the END marker back instead: with Apothem's block
   written apart from it, the file would then hold two Apothem blocks, which
   install and update leave as they are. A dry run reads the file before
   anything is written, so when the file holds no whole block yet, its warning
-  says not to add the END marker back with a line of yours between the two
-  markers, since the next run replaces or takes out every line between them,
-  and not at all once an install or update has written Apothem's block apart
-  from it. Until then, putting it back right below the old Apothem text, above
-  your own lines, leaves one whole block, which the next update rewrites.
+  says that if you add the END marker back instead, no line of yours may sit
+  between the two markers, since the next run replaces or takes out every
+  line between them, and not to add it back at all once an install or update
+  has written Apothem's block apart from the marker. Until then, putting it
+  back right below the old Apothem text, above your own lines, leaves one
+  whole block, which the next update rewrites.
 - `apothem uninstall` takes out Apothem's whole block, leaves the rest as it is,
-  and names the file. Its warning says to delete that marker line by hand,
-  with what is left of the old block below it, and to keep your own text: the
-  tool still reads that old text.
-- `apothem verify` and `apothem doctor` fail and name the file until the stray
-  marker is gone; for a file the current install writes,
+  and names the file and the marker's line, with the same numbered step: an
+  install keeps the marker as it is, and the tool still reads the text below
+  it.
+- `apothem verify` and `apothem doctor` fail and name the file and the
+  marker's line, with the same numbered step, until the stray marker is
+  changed; for a file the current install writes,
   `apothem status --profile` shows drift until then too. Running
   `apothem install` again does not clear it. Only the files Apothem keeps a
   block in for that harness count, so a marker in a file of your own does not
@@ -387,14 +390,25 @@ a line ends at CRLF, at LF, or at a CR on its own. In a file saved with CR
 endings, or with one stray CR inside a line, count the lines the same way
 before you change the lines a warning names.
 
-To fix it, open the named file and find the stray BEGIN marker: the one with no
-END marker before the next BEGIN marker, or none at all. Delete that line and
-any old Apothem text below it, which repeats Apothem's rules, and keep your own
-lines. Keep the BEGIN line that opens Apothem's current block, if the file has
-one. Do not add the END marker back below the old text instead: once an install
-or update has written Apothem's block apart from it, the file would then hold
-two Apothem blocks (see
+To fix it, follow the numbered step in the warning, for example
+"Fix A, if lines 77 to 148 are Apothem's block: A1. Change line 3: add a word
+inside its comment." Line 3 is the stray BEGIN marker: the one with no END
+marker before the next BEGIN marker, or none at all. Add a word just before
+its closing `-->`, as in `<!-- BEGIN APOTHEM MANAGED BLOCK (example) -->`, and
+the line no longer reads as a marker. That adds and removes no line, so
+nothing else in the file reads differently, and the BEGIN line that opens
+Apothem's current block stays as it is. A file with two such markers gets one
+step for each, from the bottom of the file up. Apothem checks the step on a
+copy of the file before it prints it (see
+[Follow a numbered fix](#follow-a-numbered-fix)); when the check fails, the
+warning numbers no edit and says to change every Apothem marker line in the
+file instead. The old Apothem text below the marker, which repeats Apothem's
+rules, is then yours to keep or delete. Do not add the END marker back
+instead of changing the marker line: once an install or update has written
+Apothem's block apart from it, the file would then hold two Apothem blocks
+(see
 [A file holds two blocks between Apothem's markers](#a-file-holds-two-blocks-between-apothems-markers)).
+Once you change the marker line, an END marker below it pairs with nothing.
 Then run `apothem update`, which writes Apothem's block back if the file no
 longer holds one, and run `apothem verify` again. A BEGIN marker whose END
 marker sits in code, with another marker pair after them, gets a different
@@ -621,8 +635,9 @@ then `apothem verify` again. After an uninstall that did not finish, run
 ### Follow a numbered fix
 
 The warnings for a file whose marker lines Apothem cannot place, for a file
-with two or more whole blocks, and for Apothem's block that an uninstall with
-no install record leaves, give each fix as numbered steps under a
+with two or more whole blocks, for a BEGIN marker with no END marker, and for
+Apothem's block that an uninstall with no install record leaves, give each
+fix as numbered steps under a
 label that names its case, for example "Fix A, if lines 6 to 38 are Apothem's
 block:". The steps of fix A are "A1.", "A2." and so on, those of fix B "B1.",
 "B2.", in one paragraph, and the fix ends with what the next run then does.
