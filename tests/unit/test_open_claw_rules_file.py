@@ -1550,6 +1550,46 @@ def test_a_strip_that_fails_in_a_later_workspace_records_the_earlier_backup(
     assert _kinds()[-1] == "uninstall"
 
 
+@pytest.mark.parametrize("stop", ["error", "ctrl-c"])
+def test_an_exception_inside_the_rules_file_step_reports_and_records_nothing(
+    adapter: OpenClawAdapter,
+    home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    stop: str,
+) -> None:
+    # A step that raises reports nothing it did: the command prints the
+    # error alone, or Aborted! for Ctrl-C, and exits 1. The rules file it
+    # had already changed keeps its backup, but no record names it.
+    from click.testing import CliRunner
+
+    from apothem.cli import main
+
+    workspace = _workspace(home / ".openclaw" / "workspace")
+    adapter.install({})
+    rules = workspace / RULES_FILE_RELATIVE
+    before = rules.read_bytes()
+    real = rules_file.install_driver.strip_managed_anchor
+
+    def strip_then_stop(path: Path, **kwargs: object) -> MaterializationResult | None:
+        real(path, **kwargs)  # type: ignore[arg-type]
+        if stop == "error":
+            raise OSError("disk went away")
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(
+        rules_file.install_driver, "strip_managed_anchor", strip_then_stop
+    )
+    result = CliRunner().invoke(main, ["uninstall", "--harness", "open-claw", "--yes"])
+
+    assert result.exit_code == 1, result.output
+    said = (
+        "open-claw uninstall failed: disk went away" if stop == "error" else "Aborted!"
+    )
+    assert said in " ".join(result.output.split())
+    assert not rules.exists() or rules.read_bytes() != before
+    assert _kinds() == ["install"]
+
+
 def _unlink_folder(link: Path) -> None:
     link.rmdir() if sys.platform == "win32" else link.unlink()
 
