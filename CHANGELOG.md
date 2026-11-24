@@ -256,24 +256,28 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   after which a refusal was absorbed in the test's own process, also when the
   test is marked `xfail`; one absorbed outside any test fails the collection
   of the node pytest was collecting then, or else the run when the session
-  finishes, named for where it happened, also when a worker process of a
-  parallel run absorbs it, before or after it handed its refusals to the main
-  process. Three cases still show only on `stderr` and leave the exit code as
-  it is: one absorbed after the `yield` of a `tryfirst` `pytest_unconfigure`
-  wrapper that pytest registered after the guard, one absorbed in a cleanup
-  registered with `config.add_cleanup`, and one a worker absorbs after that
-  hand-off, or without reaching it, but never writes to the file the main
-  process reads, because the worker ended or was stopped before it did, or
-  that file could not be made or written. At the end of the run the main
-  process tells each worker to exit; a worker still running Python code
-  5 seconds later is interrupted (on Windows, not one blocked in a sleep or
-  another call), and any worker still running after 10 seconds is stopped.
-  With no system record of the account's home (no `passwd` entry), the home
-  is not protected. A test that must run a real install starts Apothem
-  without `PYTEST_CURRENT_TEST` and `PYTEST_VERSION` in the child's
-  environment. `tests/README.md` lists what the refusal does not cover, such
-  as a bind mount of the home, a refusal absorbed in a child process and a
-  folder swapped for a link between the check and the write.
+  finishes, named for where it happened, also when a session-finish hook then
+  ends the run with `pytest.exit(returncode=0)`, or with `sys.exit(0)` after
+  the refusal was reported, and also when a worker process of a parallel run
+  absorbs it, before or after it handed its refusals to the main process: a
+  worker writes each refusal, as soon as it holds it, to a file the main
+  process reads, so one it held before it crashed or was stopped short of that
+  hand-off still fails the run. Three cases still show only on `stderr` and
+  leave the exit code as it is: one absorbed after the `yield` of a `tryfirst`
+  `pytest_unconfigure` wrapper that pytest registered after the guard, one
+  absorbed in a cleanup registered with `config.add_cleanup`, and one a worker
+  absorbs but neither hands over nor writes to that file, because the worker
+  ended or was stopped first (a session-finish hook absorbed it and then
+  crashed the worker, say) or because that file could not be made or written.
+  At the end of the run the main process tells each worker to exit; a worker
+  still running Python code 5 seconds later is interrupted (on Windows, not
+  one blocked in a sleep or another call), and any worker still running after
+  10 seconds is stopped. With no system record of the account's home (no
+  `passwd` entry), the home is not protected. A test that must run a real
+  install starts Apothem without `PYTEST_CURRENT_TEST` and `PYTEST_VERSION` in
+  the child's environment. `tests/README.md` lists what the refusal does not
+  cover, such as a bind mount of the home, a refusal absorbed in a child
+  process and a folder swapped for a link between the check and the write.
 - **The Windows test cells in CI get 120 minutes.** The Windows cells of the
   `ci.yml` quality job take 64 to 88 minutes, and the 90-minute limit
   cancelled cells whose tests had passed. They now get 120, as the CI Matrix
