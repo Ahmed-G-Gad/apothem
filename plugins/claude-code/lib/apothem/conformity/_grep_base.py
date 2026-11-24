@@ -343,14 +343,49 @@ def has_git_entry(directory: Path) -> bool:
 GIT_ENTRY_NONE: Final[str] = "none"
 GIT_ENTRY_REPOSITORY: Final[str] = "repository"
 GIT_ENTRY_BROKEN: Final[str] = "broken"
-_GITFILE_PREFIX: Final[str] = "gitdir:"
+_GITFILE_PREFIX: Final[bytes] = b"gitdir: "
+# git refuses a ``.git`` file larger than this ("too large to be a .git file").
+_GITFILE_MAX_BYTES: Final[int] = 1 << 20
+# On Windows a path that starts with two separators is a network path
+# (``\\host\share``) or a device path (``\\?\``, ``\\.\``). One that starts
+# with ``\??\`` is an NT path, which can name a host as well
+# (``\??\UNC\host\share``); Python's path joining turns ``/??/`` and the
+# mixed forms into ``\??\``. On POSIX all of these are local paths.
+_NON_LOCAL_START: Final[re.Pattern[str]] = re.compile(r"[\\/](?:[\\/]|\?\?[\\/])")
+
+
+def _names_non_local_path(text: str) -> bool:
+    """Return True when *text* is a network, device or NT path on Windows.
+
+    Looking such a path up makes Windows connect to the named host and offer
+    the user's sign-in. Git for Windows refuses a ``gitdir:`` line in the
+    local device forms ``\\\\?\\C:\\...`` and ``\\\\.\\C:\\...`` and in the
+    NT form ``\\??\\C:\\...`` ("may refer to a non-local directory"); the
+    tests run git on those. They never run git on a line that names a real
+    share, so whether git refuses one before it connects is not tested.
+
+    Only the text is read, so these cases still reach a share:
+
+    - a ``gitdir:`` line that names a mapped network drive (``Z:\\repo``);
+    - a ``.git`` that is a symbolic link to a share, which is followed
+      before the file is read;
+    - a ``gitdir:`` line, with a drive or relative (``C:\\link\\repo``,
+      ``../link/repo``), whose path passes through a symbolic link to a
+      share;
+    - a checked folder that is itself on a share or reached through such a
+      link;
+    - Python built for MSYS2 or Cygwin, where ``os.name`` is ``"posix"``
+      and no path is refused.
+    """
+    return os.name == "nt" and _NON_LOCAL_START.match(text) is not None
 
 
 def _holds_repository(git_dir: Path) -> bool:
     """Return True when *git_dir* looks like a repository to git.
 
     git asks for a ``HEAD`` and for the object and reference stores, which a
-    linked work tree's folder borrows through its ``commondir`` file.
+    linked work tree's folder borrows through its ``commondir`` file. The
+    caller makes sure *git_dir* is no network, device or NT path on Windows.
     """
     if not (git_dir / "HEAD").is_file():
         return False
@@ -366,10 +401,16 @@ def git_entry_state(directory: Path) -> str:
       folder that holds a repository, or a ``.git`` file whose ``gitdir:``
       line names one (a linked work tree, a submodule).
     - :data:`GIT_ENTRY_BROKEN`: git stops here with an error. A ``.git`` file
-      that names no repository, or that is no ``gitdir:`` file at all.
+      that names no repository, that does not start with ``gitdir:`` and
+      one space, that is larger than git reads (1 MiB), or, on Windows,
+      whose path, alone or joined to a folder with no drive, is a network,
+      device or NT path. That last path is never looked up, so Windows does
+      not connect to a host the file names.
     - :data:`GIT_ENTRY_NONE`: git looks further up. No entry, a ``.git``
       folder that holds no repository (an empty one, say), or a ``.git`` link
       that leads nowhere.
+
+    A ``.git`` file is read only up to git's size limit plus one byte.
     """
     entry = directory / GIT_ENTRY
     if entry.is_dir():
@@ -377,12 +418,30 @@ def git_entry_state(directory: Path) -> str:
     if not entry.is_file():
         return GIT_ENTRY_NONE
     try:
-        first_line = entry.read_text(encoding="utf-8", errors="replace").split("\n")[0]
+        with entry.open("rb") as handle:
+            content = handle.read(_GITFILE_MAX_BYTES + 1)
     except OSError:
         return GIT_ENTRY_BROKEN
-    if not first_line.startswith(_GITFILE_PREFIX):
+    if len(content) > _GITFILE_MAX_BYTES:
         return GIT_ENTRY_BROKEN
-    target = directory / first_line[len(_GITFILE_PREFIX) :].strip()
+    # git reads the whole file. It must start with "gitdir: ", one space.
+    # git drops only the CR and LF bytes at the end; the rest is the path as
+    # written, so a second line, a tab or a second space stays in it. git
+    # reads the path as a C string, so it ends at the first NUL byte.
+    if not content.startswith(_GITFILE_PREFIX):
+        return GIT_ENTRY_BROKEN
+    raw = content[len(_GITFILE_PREFIX) :].rstrip(b"\r\n")
+    if not raw:
+        return GIT_ENTRY_BROKEN  # git: "no path in gitfile"
+    named = raw.split(b"\0", 1)[0].decode("utf-8", errors="replace")
+    if _names_non_local_path(named):
+        return GIT_ENTRY_BROKEN
+    target = directory / named
+    # A folder with a root but no drive (``\\``) turns a relative line such as
+    # ``??/UNC/host/share`` into an NT path. A folder with a drive is left
+    # out: a long-path folder (``\\\\?\\C:\\...``) is local.
+    if not directory.drive and _names_non_local_path(str(target)):
+        return GIT_ENTRY_BROKEN
     return GIT_ENTRY_REPOSITORY if _holds_repository(target) else GIT_ENTRY_BROKEN
 
 

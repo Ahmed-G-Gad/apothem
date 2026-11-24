@@ -39,16 +39,20 @@ developer's git configuration changes nothing here.
 from __future__ import annotations
 
 import ast
+import atexit
 import contextlib
+import functools
 import json
 import os
 import re
 import shutil
 import subprocess
 import sys
-from collections.abc import Callable
+import warnings
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
+from typing import IO, Any
 
 import pytest
 
@@ -663,6 +667,9 @@ def test_protective_options_name_every_program_switch() -> None:
     assert settings["gc.auto"] == "0"
     assert settings["maintenance.auto"] == "false"
     assert settings["core.quotePath"] == "false"
+    # diff names come from the top of the work tree, whatever the user's
+    # own diff.relative says.
+    assert settings["diff.relative"] == "false"
     # The hooks path, the signature programs and the excludes file sit below a
     # regular file, where nothing can exist, so none of them can start or be read.
     for key in (
@@ -1689,8 +1696,22 @@ def test_a_name_git_lists_reaches_every_reader_whole(
         path.name for path in gate._corpus_tracked_files(repo)
     }
     # The index entry has no file in the work tree; the corpus run takes that
-    # as it takes any tracked file that is gone from disk.
-    gate._run_all_perwrite(repo)
+    # as it takes any tracked file that is gone from disk: it tries the name
+    # git listed, finds nothing to read, and scans every other tracked file.
+    tracked = gate._corpus_tracked_files(repo)
+    tried: list[Path] = []
+    read_text: Callable[..., str] = Path.read_text
+
+    def recording_read_text(self: Path, *args: object, **kwargs: object) -> str:
+        tried.append(self)
+        return read_text(self, *args, **kwargs)
+
+    with monkeypatch.context() as patched:
+        patched.setattr(Path, "read_text", recording_read_text)
+        passed, report = gate._run_all_perwrite(repo)
+    assert (repo / name).resolve() in tried
+    assert passed is True
+    assert json.loads(report)["files_scanned"] == len(tracked) - 1
     if git_helper.reaches_git_unchanged(name):
         findings = semver_stability_grep.check_staged()
         assert [finding.path for finding in findings] == [name]  # g was dropped
@@ -2163,6 +2184,333 @@ def test_the_version_check_stops_at_a_repository_below_the_package(
     assert "check_error" not in payload
 
 
+# Two separators, or ``\??\`` with either separator: a network, device or NT
+# path on Windows.
+_NON_LOCAL_START = re.compile(r"[\\/](?:[\\/]|\?\?[\\/])")
+
+
+def _spy_on_non_local_lookups(patch: pytest.MonkeyPatch) -> list[str]:
+    """Record every file-system lookup of a network, device or NT path.
+
+    Such a path starts with two separators or with ``\\??\\``. The spy
+    answers each lookup through the calls it wraps as "not there" and never
+    passes it on, so the code under test cannot make Windows connect to a
+    host through them even when it is wrong. The test's own git call is not
+    covered: it runs only for a local path.
+    """
+    seen: list[str] = []
+
+    def non_local(target: object) -> bool:
+        if not isinstance(target, (str, bytes, os.PathLike)):
+            return False
+        text = os.fsdecode(os.fspath(target))
+        if _NON_LOCAL_START.match(text) is None:
+            return False
+        seen.append(text)
+        return True
+
+    def raising(real: Callable[..., object]) -> Callable[..., object]:
+        def spy(target: object, *args: object, **kwargs: object) -> object:
+            if non_local(target):
+                raise FileNotFoundError(str(target))
+            return real(target, *args, **kwargs)
+
+        return spy
+
+    def answering_false(real: Callable[..., object]) -> Callable[..., object]:
+        def spy(target: object, *args: object, **kwargs: object) -> object:
+            if non_local(target):
+                return False
+            return real(target, *args, **kwargs)
+
+        return spy
+
+    for name in ("stat", "lstat", "open"):
+        patch.setattr(Path, name, raising(getattr(Path, name)))
+    for name in ("is_file", "is_dir", "exists", "is_symlink"):
+        patch.setattr(Path, name, answering_false(getattr(Path, name)))
+    for name in ("stat", "lstat"):
+        patch.setattr(os, name, raising(getattr(os, name)))
+    # os.path is ntpath on Windows; from Python 3.12 its isfile, isdir and
+    # exists may be C fast paths, so the names are replaced on the module.
+    for name in ("isfile", "isdir", "exists", "lexists", "islink"):
+        patch.setattr(os.path, name, answering_false(getattr(os.path, name)))
+    return seen
+
+
+def _local_repository(tmp_path: Path) -> Path:
+    """Make a local repository and return its ``.git`` folder."""
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    _git(elsewhere, "-c", "init.defaultBranch=main", "init", "-q")
+    return elsewhere / ".git"
+
+
+def _rev_parse_git_dir(folder: Path) -> subprocess.CompletedProcess[bytes]:
+    """Run ``git rev-parse --git-dir`` in *folder*, with messages in English."""
+    return subprocess.run(
+        ["git", "rev-parse", "--git-dir"],
+        cwd=str(folder),
+        env={**hermetic_git_env(), "LC_ALL": "C", "LANGUAGE": ""},
+        capture_output=True,
+        check=False,
+        timeout=60,
+    )
+
+
+# 192.0.2.1 is a TEST-NET address: no machine answers there. git is never run
+# on these lines, so the test itself never tries to reach a host.
+_NETWORK_GITDIRS = {
+    "network, forward slashes": "//192.0.2.1/share/repo",
+    "network, backslashes": r"\\192.0.2.1\share\repo",
+    "network, mixed separators": "/\\192.0.2.1/share/repo",
+    "network, long UNC form": r"\\?\UNC\192.0.2.1\share\repo",
+    "network, NT form": r"\??\UNC\192.0.2.1\share\repo",
+    "network, NT form, forward slashes": "/??/UNC/192.0.2.1/share/repo",
+}
+# Each line names a local repository through a device or NT path. git is run
+# on these to show it refuses them.
+_DEVICE_GITDIRS = {
+    "local repository, long form": r"\\?\{repo}",
+    "local repository, device form": r"\\.\{repo}",
+    "local repository, long form, forward slashes": "//?/{posix}",
+    "local repository, device form, forward slashes": "//./{posix}",
+    "local repository, NT form": r"\??\{repo}",
+    "local repository, NT form, forward slashes": "/??/{posix}",
+    "local repository, NT form, backslash then slash": "\\??/{posix}",
+    "local repository, NT form, slash then backslash": "/??\\{repo}",
+}
+_NON_LOCAL_CASES = [
+    *(pytest.param(line, False, id=name) for name, line in _NETWORK_GITDIRS.items()),
+    *(pytest.param(line, True, id=name) for name, line in _DEVICE_GITDIRS.items()),
+]
+
+
+@pytest.mark.skipif(os.name != "nt", reason="a network path is a Windows form")
+@pytest.mark.parametrize(("gitdir", "local"), _NON_LOCAL_CASES)
+def test_a_git_file_that_names_a_non_local_path_is_broken_and_never_looked_up(
+    gitdir: str, local: bool, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A ``gitdir:`` line with a network, device or NT path is not looked up.
+
+    Looking it up makes Windows connect to the named host and offer the
+    user's sign-in. Git for Windows refuses such a line before it connects
+    ("may refer to a non-local directory"), even when it names a local
+    repository through a device or NT path, so the entry is broken.
+
+    The folder is given both as a full path and as a relative one. Joined to
+    a relative folder, an NT path stays an NT path, which Windows looks up.
+    """
+    repo = _local_repository(tmp_path)
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    line = gitdir.format(repo=str(repo), posix=repo.as_posix())
+    (folder / ".git").write_bytes(f"gitdir: {line}\n".encode())
+    monkeypatch.chdir(tmp_path)
+
+    with monkeypatch.context() as patch:
+        seen = _spy_on_non_local_lookups(patch)
+        states = [
+            _grep_base.git_entry_state(folder),
+            _grep_base.git_entry_state(Path("folder")),
+        ]
+
+    assert seen == []
+    assert states == [_grep_base.GIT_ENTRY_BROKEN] * 2
+    if not local:
+        return
+    # git stops here with an error too, unless it is too old to check.
+    if _rev_parse_git_dir(folder).returncode == 0:
+        pytest.skip(
+            "this git accepts a device or NT path in a gitdir: line; it predates"
+            " Git for Windows' check for a non-local directory"
+        )
+
+
+@pytest.mark.skipif(os.name != "nt", reason="an NT path is a Windows form")
+@pytest.mark.parametrize(
+    "line",
+    ["??/UNC/192.0.2.1/share/repo", "??\\UNC\\192.0.2.1\\share\\repo"],
+    ids=["forward slashes", "backslashes"],
+)
+def test_a_relative_line_below_a_folder_with_no_drive_is_never_looked_up(
+    line: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A relative line joined to a drive-less root folder is checked as well.
+
+    ``\\`` joined to ``??/UNC/host/share`` is the NT path
+    ``\\??\\UNC\\host\\share``, which Windows looks up on that host. The line
+    alone does not look like one. A free drive letter maps the test's folder,
+    so the root of the current drive holds the ``.git`` file.
+    """
+    root = tmp_path.resolve()
+    (root / ".git").write_bytes(f"gitdir: {line}\n".encode())
+    with _mapped_drive(root) as letter:
+        monkeypatch.chdir(f"{letter}:\\")
+        with monkeypatch.context() as patch:
+            seen = _spy_on_non_local_lookups(patch)
+            states = [
+                _grep_base.git_entry_state(Path("\\")),
+                _grep_base.git_entry_state(Path("/")),
+            ]
+
+    assert seen == []
+    assert states == [_grep_base.GIT_ENTRY_BROKEN] * 2
+
+
+@pytest.mark.skipif(os.name != "nt", reason="a long-path folder is a Windows form")
+def test_a_relative_line_below_a_long_path_folder_names_a_repository(
+    tmp_path: Path,
+) -> None:
+    """A folder in the long-path form (``\\\\?\\C:\\...``) is local.
+
+    The joined path starts with two separators, so a check of every joined
+    path would call this entry broken.
+    """
+    folder = tmp_path.resolve() / "folder"
+    (folder / "inner").mkdir(parents=True)
+    _git(folder / "inner", "-c", "init.defaultBranch=main", "init", "-q")
+    (folder / ".git").write_bytes(b"gitdir: inner/.git\n")
+    long_form = Path("\\\\?\\" + str(folder))
+    assert long_form.drive  # the drive is the long-path prefix and the letter
+
+    assert _grep_base.git_entry_state(long_form) == _grep_base.GIT_ENTRY_REPOSITORY
+    assert _grep_base.git_entry_state(folder) == _grep_base.GIT_ENTRY_REPOSITORY
+
+
+_GITFILE_FORMS = [
+    pytest.param("gitdir: {path}\nextra\n", False, id="second line"),
+    pytest.param("gitdir:{path}\n", False, id="no space"),
+    pytest.param("gitdir:  {path}\n", False, id="two spaces"),
+    pytest.param("gitdir: {path}\t\n", False, id="trailing tab"),
+    pytest.param("gitdir: {path}\r\n", True, id="CRLF ending"),
+    pytest.param("gitdir: {path}\n", True, id="LF ending"),
+    pytest.param("gitdir: {path}", True, id="no newline"),
+    pytest.param("gitdir: {path}\n\r\n\n", True, id="several line endings"),
+    pytest.param("gitdir: {path}\0rest\n", True, id="NUL ends the path"),
+    pytest.param("gitdir: \r\n", False, id="no path"),
+]
+
+
+@pytest.mark.parametrize(("content", "git_accepts"), _GITFILE_FORMS)
+def test_a_git_file_is_read_as_git_reads_it(
+    content: str, git_accepts: bool, tmp_path: Path
+) -> None:
+    """The ``.git`` file is parsed the way ``git rev-parse --git-dir`` parses it.
+
+    git wants ``gitdir:`` and one space, drops only the CR and LF bytes at
+    the end, and takes the rest as the path. A second line, a missing or a
+    second space, or a tab makes git stop with an error, so the entry is
+    broken; a check that kept the first line and stripped it called each of
+    them a repository.
+    """
+    repo = _local_repository(tmp_path)
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    (folder / ".git").write_bytes(content.format(path=repo.as_posix()).encode())
+    found = _rev_parse_git_dir(folder)
+    assert (found.returncode == 0) is git_accepts, found.stderr
+
+    expected = (
+        _grep_base.GIT_ENTRY_REPOSITORY if git_accepts else _grep_base.GIT_ENTRY_BROKEN
+    )
+    assert _grep_base.git_entry_state(folder) == expected
+
+
+@pytest.mark.skipif(os.name == "nt", reason="two slashes start a network path")
+def test_a_git_file_may_name_a_path_that_starts_with_two_slashes_on_posix(
+    tmp_path: Path,
+) -> None:
+    """On POSIX a path that starts with ``//`` is a local path git accepts."""
+    repo = _local_repository(tmp_path)
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    (folder / ".git").write_bytes(f"gitdir: /{repo.as_posix()}\n".encode())
+    _git(folder, "rev-parse", "--git-dir")  # git uses the repository
+
+    assert _grep_base.git_entry_state(folder) == _grep_base.GIT_ENTRY_REPOSITORY
+
+
+class _CountingReader:
+    """A file handle that adds up the size of everything read through it."""
+
+    def __init__(self, handle: IO[Any], sizes: list[int]) -> None:
+        self._handle = handle
+        self._sizes = sizes
+
+    def read(self, size: int = -1) -> bytes | str:
+        data: bytes | str = self._handle.read(size)
+        self._sizes.append(len(data))
+        return data
+
+    def __enter__(self) -> _CountingReader:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self._handle.close()
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self._handle, name)
+
+
+def test_a_git_file_larger_than_git_reads_is_broken_and_read_in_part(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """git refuses a ``.git`` file over 1 MiB, and the check reads no more.
+
+    The first line names a repository, so a check that read the whole file
+    and kept its first line would call the entry a repository.
+    """
+    repo = _local_repository(tmp_path)
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    first_line = f"gitdir: {repo.as_posix()}\n".encode()
+    (folder / ".git").write_bytes(first_line + b"\n" * (4 << 20))
+    refused = _rev_parse_git_dir(folder)
+    assert refused.returncode != 0
+    assert b"too large to be a .git file" in refused.stderr
+    sizes: list[int] = []
+    real_open: Callable[..., IO[Any]] = Path.open
+
+    def counting_open(self: Path, *args: object, **kwargs: object) -> _CountingReader:
+        return _CountingReader(real_open(self, *args, **kwargs), sizes)
+
+    monkeypatch.setattr(Path, "open", counting_open)
+
+    state = _grep_base.git_entry_state(folder)
+
+    assert state == _grep_base.GIT_ENTRY_BROKEN
+    assert sizes  # the file was read through the spy
+    assert sum(sizes) <= (1 << 20) + 1
+
+
+@pytest.mark.parametrize(
+    ("size", "git_accepts"),
+    [(1 << 20, True), ((1 << 20) + 1, False)],
+    ids=["exactly 1 MiB", "one byte more"],
+)
+def test_a_git_file_of_git_s_size_limit_is_read_and_one_byte_more_is_broken(
+    size: int, git_accepts: bool, tmp_path: Path
+) -> None:
+    """git reads a ``.git`` file of exactly 1 MiB and refuses one byte more.
+
+    git drops the newlines at the end of the file, so the padding leaves the
+    path it names whole.
+    """
+    repo = _local_repository(tmp_path)
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    named = f"gitdir: {repo.as_posix()}".encode()
+    (folder / ".git").write_bytes(named + b"\n" * (size - len(named)))
+    assert (folder / ".git").stat().st_size == size
+    assert (_rev_parse_git_dir(folder).returncode == 0) is git_accepts
+
+    expected = (
+        _grep_base.GIT_ENTRY_REPOSITORY if git_accepts else _grep_base.GIT_ENTRY_BROKEN
+    )
+    assert _grep_base.git_entry_state(folder) == expected
+
+
 @pytest.mark.skipif(
     os.name == "nt", reason="Windows keeps a folder in use by a process"
 )
@@ -2386,6 +2734,248 @@ def test_in_checkout_agrees_with_git_about_ceilings(
     assert in_checkout(inner) is (found.returncode == 0), found.stderr
 
 
+def _subst_free_letter(target: Path) -> str:
+    """Map *target* to a free drive letter and return the letter.
+
+    subst refuses a letter that is already mapped, so the mapping itself
+    claims the letter: two runs cannot both take it, and a letter a stopped
+    run left mapped to a deleted folder is passed over. When no letter can be
+    mapped the test is skipped, or fails under CI so the check cannot vanish
+    unseen.
+
+    A subst that does not finish ends the search: a hung subst would hang
+    on every letter. The killed subst may have mapped the letter all the
+    same, so that mapping is removed, or left to the exit hook.
+    """
+    reason = "no free drive letter for subst"
+    for letter in "ZYXWVUTSRQPONMLKJIHGFED":
+        if Path(f"{letter}:\\").exists():
+            continue
+        try:
+            mapped = subprocess.run(
+                ["subst", f"{letter}:", str(target)],
+                capture_output=True,
+                check=False,
+                timeout=_SUBST_SECONDS,
+            )
+        except subprocess.TimeoutExpired:
+            reason = f"subst did not finish within {_SUBST_SECONDS} seconds"
+            stays = _subst_release(letter, target)
+            if stays is not None:
+                atexit.register(functools.partial(_subst_release, letter, target))
+                reason += f"; drive {letter}: may still be mapped: {stays}"
+            break
+        except OSError as exc:
+            reason = f"cannot run subst: {exc}"
+            break
+        if mapped.returncode == 0:
+            return letter
+    if os.environ.get("CI"):
+        pytest.fail(reason)
+    pytest.skip(reason)
+
+
+_SUBST_SECONDS = 60
+
+
+def _subst_remove(letter: str) -> str | None:
+    """Remove the drive mapping for *letter*; return why it failed, or None."""
+    try:
+        removed = subprocess.run(
+            ["subst", f"{letter}:", "/D"],
+            capture_output=True,
+            check=False,
+            timeout=_SUBST_SECONDS,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return f"cannot run subst: {exc}"
+    if removed.returncode != 0:
+        output = (removed.stdout + removed.stderr).decode(errors="replace").strip()
+        return f"subst exited with {removed.returncode}: {output}"
+    return None
+
+
+def _subst_maps(letter: str, target: Path) -> bool | None:
+    """Say whether subst maps *letter* to *target*, or None when unknown.
+
+    subst with no arguments lists one ``Z:\\: => C:\\folder`` line per
+    mapped letter, in the console's OEM code page.
+    """
+    try:
+        listed = subprocess.run(
+            ["subst"], capture_output=True, check=False, timeout=_SUBST_SECONDS
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if listed.returncode != 0:
+        return None
+    for line in listed.stdout.decode("oem", errors="replace").splitlines():
+        drive, arrow, folder = line.partition(" => ")
+        if arrow and drive.upper() == f"{letter.upper()}:\\:":
+            # The OEM code page prints a character it lacks as "?", so the
+            # listed text may not spell the folder; ask the file system first.
+            with contextlib.suppress(OSError):
+                return Path(f"{letter}:\\").samefile(target)
+            return os.path.normcase(folder.strip()) == os.path.normcase(str(target))
+    return False
+
+
+def _subst_release(letter: str, target: Path) -> str | None:
+    """Remove the mapping of *letter* while it names *target*.
+
+    Return None once the letter does not name *target*, or why it may still.
+    A letter that names another folder is left alone: once this run's
+    mapping is gone, another run may map the letter. subst can report a
+    failure yet remove the mapping, so its own listing decides.
+    """
+    owned = _subst_maps(letter, target)
+    if owned is None:
+        return "cannot read the list of subst mappings"
+    if not owned:
+        return None
+    failure = _subst_remove(letter)
+    if failure is None or _subst_maps(letter, target) is False:
+        return None
+    return failure
+
+
+@contextlib.contextmanager
+def _mapped_drive(target: Path) -> Iterator[str]:
+    """Map *target* to a free drive letter for the block; yield the letter.
+
+    The block may move onto the drive. The working folder is put back before
+    the mapping is removed. An exit hook frees the letter if the run stops
+    first; it is dropped once the mapping is gone.
+    """
+    start = Path.cwd()
+    letter = _subst_free_letter(target)
+    release = functools.partial(_subst_release, letter, target)
+    atexit.register(release)
+    try:
+        yield letter
+    finally:
+        os.chdir(start)
+        stays = release()
+        if stays is None:
+            atexit.unregister(release)
+        else:
+            # The exit hook stays to try once more.
+            warnings.warn(
+                f"drive {letter}: may still be mapped: {stays}",
+                RuntimeWarning,
+                stacklevel=1,
+            )
+
+
+class _FakeSubst:
+    """Stands in for subst: keeps a table of mappings and records each call.
+
+    *removal* is ``"works"``, ``"fails but removes"`` or ``"fails"``.
+    """
+
+    def __init__(
+        self,
+        *,
+        hangs: bool = False,
+        removal: str = "works",
+        mapped: dict[str, str] | None = None,
+    ) -> None:
+        self.hangs = hangs
+        self.removal = removal
+        self.mapped = dict(mapped or {})
+        self.calls: list[list[str]] = []
+
+    def __call__(
+        self, argv: list[str], **kwargs: object
+    ) -> subprocess.CompletedProcess[bytes]:
+        self.calls.append(list(argv))
+        assert argv[0] == "subst"
+        if len(argv) == 1:
+            listing = "".join(f"{k}:\\: => {v}\r\n" for k, v in self.mapped.items())
+            return subprocess.CompletedProcess(argv, 0, listing.encode(), b"")
+        letter = argv[1][0]
+        if argv[2] == "/D":
+            if self.removal != "fails":
+                self.mapped.pop(letter, None)
+            failed = self.removal != "works"
+            return subprocess.CompletedProcess(argv, int(failed), b"", b"")
+        if self.hangs:
+            # The mapping is made, then subst hangs and is killed.
+            self.mapped[letter] = argv[2]
+            raise subprocess.TimeoutExpired(argv, _SUBST_SECONDS)
+        if letter in self.mapped:
+            return subprocess.CompletedProcess(argv, 1, b"", b"")
+        self.mapped[letter] = argv[2]
+        return subprocess.CompletedProcess(argv, 0, b"", b"")
+
+    def map_calls(self) -> int:
+        return sum(1 for argv in self.calls if len(argv) == 3 and argv[2] != "/D")
+
+
+@pytest.mark.skipif(os.name != "nt", reason="subst is a Windows program")
+@pytest.mark.parametrize("ci", [False, True], ids=["local", "CI"])
+def test_a_hung_subst_ends_the_search_for_a_letter_and_frees_it(
+    ci: bool, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """One subst that does not finish stops the search; its mapping goes.
+
+    The search went on to the next letter, so a hung subst could stall the
+    test once per letter, and a mapping the killed subst had made stayed.
+    """
+    fake = _FakeSubst(hangs=True)
+    registered: list[object] = []
+    monkeypatch.setattr(subprocess, "run", fake)
+    monkeypatch.setattr(atexit, "register", registered.append)
+    if ci:
+        monkeypatch.setenv("CI", "1")
+    else:
+        monkeypatch.delenv("CI", raising=False)
+    outcome = pytest.fail.Exception if ci else pytest.skip.Exception
+
+    with pytest.raises(outcome, match="did not finish"):
+        _subst_free_letter(tmp_path)
+
+    assert fake.map_calls() == 1
+    assert fake.mapped == {}
+    assert registered == []
+
+
+@pytest.mark.skipif(os.name != "nt", reason="subst is a Windows program")
+@pytest.mark.parametrize(
+    ("removal", "mapped", "stays", "gone"),
+    [
+        pytest.param("works", "ours", False, True, id="removed"),
+        pytest.param("fails but removes", "ours", False, True, id="reported but gone"),
+        pytest.param("fails", "ours", True, False, id="still mapped"),
+        pytest.param("works", "other", False, False, id="another run's letter"),
+    ],
+)
+def test_the_exit_hook_removes_only_a_letter_this_run_still_holds(
+    removal: str,
+    mapped: str,
+    stays: bool,
+    gone: bool,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The hook frees the letter only while it names this run's folder.
+
+    subst can report a failure yet remove the mapping. The hook then stayed,
+    and at exit it removed whatever the letter named by then, which could be
+    another run's drive.
+    """
+    folders = {"ours": str(tmp_path), "other": "C:\\elsewhere"}
+    fake = _FakeSubst(removal=removal, mapped={"Q": folders[mapped]})
+    monkeypatch.setattr(subprocess, "run", fake)
+
+    result = _subst_release("Q", tmp_path)
+
+    assert (result is not None) is stays
+    assert fake.mapped == ({} if gone else {"Q": folders[mapped]})
+    if mapped == "other":
+        assert all("/D" not in argv for argv in fake.calls)
+
+
 @pytest.mark.skipif(os.name != "nt", reason="drive letters are a Windows matter")
 @pytest.mark.usefixtures("hermetic_git")
 def test_a_ceiling_without_a_drive_is_read_on_the_checked_folders_drive(
@@ -2399,25 +2989,9 @@ def test_a_ceiling_without_a_drive_is_read_on_the_checked_folders_drive(
     named nothing and was dropped: git stopped at the ceiling while
     ``in_checkout`` went on to the ``.git`` above it.
     """
-    letter = next(
-        (name for name in "ZYXWVUTSRQP" if not Path(f"{name}:\\").exists()), None
-    )
-    if letter is None:
-        pytest.skip("no free drive letter to map")
     # The letter names the folder above the repository, so the repository can
     # be reached both by its own path and through the mapped drive.
     above = tmp_path.resolve()
-    try:
-        mapped = subprocess.run(
-            ["subst", f"{letter}:", str(above)],
-            capture_output=True,
-            check=False,
-            timeout=60,
-        )
-    except OSError as exc:
-        pytest.skip(f"cannot run subst: {exc}")
-    if mapped.returncode != 0:
-        pytest.skip(f"cannot map a drive letter: {mapped.stdout!r}")
 
     def git_finds_a_repository(folder: Path) -> bool:
         found = subprocess.run(
@@ -2430,7 +3004,7 @@ def test_a_ceiling_without_a_drive_is_read_on_the_checked_folders_drive(
         )
         return found.returncode == 0
 
-    try:
+    with _mapped_drive(above) as letter:
         top = _empty_repo(above / "top")
         inner = top / "a" / "b"
         inner.mkdir(parents=True)
@@ -2454,12 +3028,6 @@ def test_a_ceiling_without_a_drive_is_read_on_the_checked_folders_drive(
         monkeypatch.setenv("GIT_CEILING_DIRECTORIES", "\\top\\a")
         assert not git_finds_a_repository(through_letter)
         assert in_checkout(through_letter) is False
-    finally:
-        # Leave the mapped drive before it goes away.
-        os.chdir(tmp_path)
-        subprocess.run(
-            ["subst", f"{letter}:", "/D"], capture_output=True, check=False, timeout=60
-        )
 
 
 @pytest.mark.parametrize(
