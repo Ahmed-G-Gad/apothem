@@ -170,42 +170,44 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   every test, failing the next node's would blame it and stop the run before
   any test, and failing the first test would blame it; the tests run, and the
   run fails at its end.
-- ``pytest_sessionfinish``, a ``trylast`` wrapper, the innermost one, which
-  goes on after its ``yield`` once every plain implementation has run,
-  whenever it was registered: it writes what is held, and a refusal a plain
-  session-finish hook absorbed, named "after the last test", to the terminal
-  above the summary, and turns the exit code "OK" or "no tests collected" into
-  "tests failed". A ``tryfirst`` ``pytest_sessionfinish`` wrapper does the same
-  after pytest's terminal reporter has written the summary, calling every
+- ``pytest_sessionfinish``, a ``trylast`` wrapper, which goes on after its
+  ``yield`` once every plain implementation has run, whenever it was
+  registered, and once a ``trylast`` wrapper registered after it, which pluggy
+  runs inside it, has gone on after its own: it writes what is held, what such
+  a wrapper absorbed included, and a refusal a plain session-finish hook
+  absorbed, named "after the last test", to the terminal above the summary, and
+  turns the exit code "OK" or "no tests collected" into "tests failed". A
+  ``tryfirst`` ``pytest_sessionfinish`` wrapper does the same after pytest's
+  terminal reporter has written the summary, calling every
   ``pytest_terminal_summary`` hook. In an xdist controller, which runs no test
   itself, that wrapper first holds, before its ``yield``, what the controller's
   own hooks logged while the workers ran the tests, named "in the xdist
-  controller, during the test run"; in an xdist worker it holds there what
-  was logged after the last test (in a ``pytest_runtest_logfinish`` hook,
-  say), named "after the last test", so the worker writes it to its file (see
-  below) before any plain session-finish hook runs. A ``tryfirst``
+  controller, during the test run"; in an xdist worker it holds there what was
+  logged after the last test (in a ``pytest_runtest_logfinish`` hook, say),
+  named "after the last test", so the worker writes it to its file (see below)
+  before any plain session-finish hook runs. A ``tryfirst``
   ``pytest_unconfigure`` wrapper does it for a refusal absorbed in
-  ``pytest_unconfigure`` ("after the session finished", or "while pytest ran
-  no test session" when no session started: a ``pytest_configure`` hook ended
-  the run with ``pytest.exit``, or ``--markers`` or ``--help`` ran), and in an
+  ``pytest_unconfigure`` ("after the session finished", or "while pytest ran no
+  test session" when no session started: a ``pytest_configure`` hook ended the
+  run with ``pytest.exit``, or ``--markers`` or ``--help`` ran), and in an
   xdist controller for what the workers wrote to their files (see below):
   pytest returns the session's exit status after that hook. That wrapper also
   turns "OK" or "no tests collected" into "tests failed" again once the guard
-  has reported a refusal in the session, which ``pytest.exit(returncode=0)``
-  in a plain ``pytest_sessionfinish`` hook would otherwise undo: pytest sets
-  the status from that call after every session-finish wrapper has finished.
-  pytest catches no ``SystemExit`` around either hook, so ``sys.exit(0)``
-  would end the process with 0 whatever that status says: once the guard has
-  reported a refusal, both ``tryfirst`` wrappers raise ``SystemExit(1)`` in
-  place of a ``SystemExit`` with the code 0 or ``None`` from a hook they wrap.
-  Any other code stays, and so does an exit that left the session finish
-  before the guard reported anything. A refusal absorbed later still, in a
-  cleanup registered with ``config.add_cleanup``, reaches only ``stderr``.
-  These ``tryfirst`` wrappers finish after every wrapper except a ``tryfirst``
-  one that pytest registered after the guard (a conftest's): a refusal
-  absorbed after such a ``pytest_sessionfinish`` wrapper's ``yield`` is named
-  "after the session finished", and one after such a ``pytest_unconfigure``
-  wrapper's ``yield`` reaches only ``stderr``.
+  has reported a refusal in the session, which ``pytest.exit(returncode=0)`` in
+  a plain ``pytest_sessionfinish`` hook would otherwise undo: pytest sets the
+  status from that call after every session-finish wrapper has finished. pytest
+  catches no ``SystemExit`` around either hook, so ``sys.exit(0)`` would end
+  the process with 0 whatever that status says: once the guard has reported a
+  refusal, both ``tryfirst`` wrappers raise ``SystemExit(1)`` in place of a
+  ``SystemExit`` with the code 0 or ``None`` from a hook they wrap. Any other
+  code stays, and so does an exit that left the session finish before the guard
+  reported anything. A refusal absorbed later still, in a cleanup registered
+  with ``config.add_cleanup``, reaches only ``stderr``. These ``tryfirst``
+  wrappers finish after every wrapper except a ``tryfirst`` one that pytest
+  registered after the guard (a conftest's): a refusal absorbed after such a
+  ``pytest_sessionfinish`` wrapper's ``yield`` is named "after the session
+  finished", and one after such a ``pytest_unconfigure`` wrapper's ``yield``
+  reaches only ``stderr``.
 - ``pytest_testnodedown`` and ``pytest_configure_node``, optional hooks that
   only xdist defines and calls in the controller. A worker's terminal output is
   discarded and the controller does not use its exit code, so a worker sends
@@ -1319,25 +1321,27 @@ class RealHomeGuard:
         """Fail the run when Apothem logged a refusal after the last test.
 
         A ``pytest_sessionfinish`` hook can absorb a refusal after the last
-        teardown report. As a ``trylast`` wrapper this is the innermost one: it
-        goes on after its ``yield`` once every plain implementation has run,
-        whenever it was registered (a ``trylast`` one of a conftest that pytest
-        found during collection included), and before any other wrapper goes
-        on after its own. The refusal is written there to the terminal above
-        the summary, with every refusal the guard holds for the end of the run
-        (one from before the first test, see :meth:`pytest_sessionstart` and
-        :meth:`pytest_collection_finish`, one from a test loop that ran no
-        test, see :meth:`pytest_runtestloop`, or one an xdist worker sent, see
-        :meth:`pytest_testnodedown`), and the run's exit code becomes "tests
-        failed". An xdist worker hands them to the controller instead, in
-        ``config.workeroutput``: the worker's terminal output is discarded and
-        the controller does not use its exit code. xdist's own wrapper sends
-        that output after its ``yield``, so after this one, and sends it
-        also when another wrapper stopped the session finish before this
-        one started. The worker wrote each of them to a file as it held it
-        (:func:`_write_ahead`), which the controller reads when this
-        hand-off never reached it, and what the worker finds after the
-        hand-off reaches the controller in that file alone (see
+        teardown report. As a ``trylast`` wrapper it goes on after its
+        ``yield`` once every plain implementation has run, whenever it was
+        registered (a ``trylast`` one of a conftest that pytest found during
+        collection included), and before every wrapper registered before it
+        goes on after its own. pluggy runs a ``trylast`` wrapper registered
+        after it (a conftest's) inside it, so this still holds what that
+        wrapper absorbs after its ``yield``. The refusal is written there to
+        the terminal above the summary, with every refusal the guard holds for
+        the end of the run (one from before the first test, see
+        :meth:`pytest_sessionstart` and :meth:`pytest_collection_finish`, one
+        from a test loop that ran no test, see :meth:`pytest_runtestloop`, or
+        one an xdist worker sent, see :meth:`pytest_testnodedown`), and the
+        run's exit code becomes "tests failed". An xdist worker hands them to
+        the controller instead, in ``config.workeroutput``: the worker's
+        terminal output is discarded and the controller does not use its exit
+        code. xdist's own wrapper sends that output after its ``yield``, so
+        after this one, and sends it also when another wrapper stopped the
+        session finish before this one started. The worker wrote each of them
+        to a file as it held it (:func:`_write_ahead`), which the controller
+        reads when this hand-off never reached it, and what the worker finds
+        after the hand-off reaches the controller in that file alone (see
         :meth:`pytest_configure_node`).
         """
         try:
