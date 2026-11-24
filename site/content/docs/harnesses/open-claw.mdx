@@ -24,8 +24,9 @@ existing file keeps its other keys.
 
 **Files written:** `~/.openclaw/openclaw.json`, the profile document
 `~/.openclaw/apothem/rules/00-apothem-profile.md`, the rules file
-`<workspace>/apothem/AGENTS.md` in each workspace, and support files under
-`~/.openclaw/.apothem/support/`
+`<workspace>/apothem/AGENTS.md` in each workspace, and Apothem's data folder
+`~/.openclaw/.apothem/` (its context, learning and memory stores, and the
+support files under `~/.openclaw/.apothem/support/`)
 
 Every install and update deletes every file in `~/.openclaw/apothem/rules/`
 that Apothem did not put there, after saving it in a backup set under
@@ -51,8 +52,8 @@ The adapter authors two config entries:
 Your other keys stay as they are, and Apothem never writes
 `hooks.internal.enabled`. The profile's identity, preferences, and rules go into
 the profile document and into each workspace's rules file. Shared commands,
-skills, rules, templates, and hook prompts are installed as support material
-under `~/.openclaw/.apothem/support/`.
+skills, helper definitions, rules, templates, and hook prompts are installed
+as support material under `~/.openclaw/.apothem/support/`.
 
 ## Compatibility notes
 
@@ -193,9 +194,10 @@ that folder's `skills/` and `.agents/skills/` folders after all of these, so an
 Apothem skill wins over a skill of the same name kept there. The Apothem directory is an
 `extraDirs` entry, so a skill of the same name that you keep in any of the
 earlier sources is the one OpenClaw uses, and the Apothem copy of that skill
-stays unused on disk. Apothem writes only to `openclaw.json` and under
-`~/.openclaw/.apothem/support/`, never into those earlier folders, so install,
-update, and uninstall do not replace a skill you keep there.
+stays unused on disk. Apothem writes only to `openclaw.json`,
+`~/.openclaw/apothem/rules/`, `~/.openclaw/.apothem/` and each workspace's
+`apothem/AGENTS.md`, never into those earlier folders, so install, update, and
+uninstall do not replace a skill you keep there.
 
 `agents.defaults.skills` is the allowlist of skill names, and an
 `agents.entries.<id>.skills` list replaces it for the entry it belongs to.
