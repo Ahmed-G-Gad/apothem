@@ -62,7 +62,8 @@ or ``sys.exit(5)``, as a ``pytest_terminal_summary`` hook does with a bare
 ``sys.exit()``, as a ``pytest_unconfigure`` hook does too, and so does a
 ``sys.exit(0)`` after the guard's other hooks: in a ``tryfirst`` session-finish
 or unconfigure wrapper pytest registered after the guard, in a cleanup, and in
-an xdist controller's session-finish hook before it read its workers' files;
+an xdist controller's session-finish hook before it read its workers' files,
+also after a hook that ended the session finish with ``sys.exit`` or raised;
 these probe sessions run in a child process) or after a session-finish wrapper
 yields, in ``pytest_terminal_summary``, in ``pytest_unconfigure`` (with ``-p
 no:xdist``), and under xdist (``-n 2``) at the session start and in a worker's
@@ -1994,6 +1995,90 @@ def case_sys_exit_after_the_guards_other_hooks_still_fails_the_run(
         pytester, fake_real_home, _EXITS_IN_A_CLEANUP.format(code=3)
     )
     assert kept.ret == 3, kept.stdout.str()
+    assert not (fake_real_home / ".apothem").exists()
+
+
+#: A plain session-finish hook that ends the run with ``sys.exit`` and the
+#: code ``{code}``, after it absorbed the refusal when ``{absorb}`` is true.
+_EXITS_AT_THE_SESSION_FINISH = """
+
+def pytest_sessionfinish(session):
+    if {absorb}:
+        _absorb()
+    sys.exit({code})
+"""
+
+#: A plain session-finish hook that absorbs the refusal and then raises an
+#: exception other than ``SystemExit``.
+_RAISES_AT_THE_SESSION_FINISH = """
+
+def pytest_sessionfinish(session):
+    _absorb()
+    raise RuntimeError("probe")
+"""
+
+#: A plain unconfigure hook that absorbs the refusal.
+_ABSORBED_AT_UNCONFIGURE_ALONE = """
+
+def pytest_unconfigure(config):
+    _absorb()
+"""
+
+
+def case_a_passing_exit_after_one_that_left_the_session_finish_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """An exception that leaves the session finish does not hide a later exit.
+
+    pytest skips ``pytest_unconfigure`` and the cleanups then, and calls
+    them after ``pytest_cmdline_main``, so the guard's wrapper of that hook
+    calls them itself first. A ``sys.exit(0)`` in a cleanup, or in a
+    ``tryfirst`` unconfigure wrapper that pytest registered after the guard,
+    after a session-finish hook absorbed the refusal and ended the run with
+    ``sys.exit`` (0 or 3) or raised another exception, exits 1; so does a
+    session-finish ``sys.exit(0)`` when the only refusal comes in a plain
+    unconfigure hook after it. A code other than 0 or 5 from the later exit
+    stays.
+    """
+    found = {}
+    for label, hook, named in (
+        (
+            "sys.exit(0) at the session finish, then in a cleanup",
+            _EXITS_AT_THE_SESSION_FINISH.format(absorb=True, code=0)
+            + _EXITS_IN_A_CLEANUP.format(code=0),
+            "outside any test, after the last test, and the refusal",
+        ),
+        (
+            "sys.exit(3) at the session finish, then in a later wrapper",
+            _EXITS_AT_THE_SESSION_FINISH.format(absorb=True, code=3)
+            + _EXITS_AFTER_THE_GUARDS_UNCONFIGURE_WRAPPER.format(code=0),
+            "outside any test, after the last test, and the refusal",
+        ),
+        (
+            "RuntimeError at the session finish, then sys.exit(0) in a cleanup",
+            _RAISES_AT_THE_SESSION_FINISH + _EXITS_IN_A_CLEANUP.format(code=0),
+            "outside any test, after the last test, and the refusal",
+        ),
+        (
+            "sys.exit(0) at the session finish, the refusal at unconfigure",
+            _EXITS_AT_THE_SESSION_FINISH.format(absorb=False, code=0)
+            + _ABSORBED_AT_UNCONFIGURE_ALONE,
+            "outside any test, after the session finished, and the refusal",
+        ),
+    ):
+        result = _run_absorbing_in_a_child(pytester, fake_real_home, hook)
+
+        output = " ".join(result.stdout.str().split())
+        found[label] = (result.ret, named in output)
+    failed = pytest.ExitCode.TESTS_FAILED
+    assert dict.fromkeys(found, (failed, True)) == found
+    kept = _run_absorbing_in_a_child(
+        pytester,
+        fake_real_home,
+        _EXITS_AT_THE_SESSION_FINISH.format(absorb=True, code=3)
+        + _EXITS_IN_A_CLEANUP.format(code=4),
+    )
+    assert kept.ret == 4, kept.stdout.str()
     assert not (fake_real_home / ".apothem").exists()
 
 

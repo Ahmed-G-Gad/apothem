@@ -218,9 +218,15 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   When such an exit passes and the guard has reported nothing yet, it reads
   those files, holds what was logged since the guard's other hooks, named
   "after the session finished", and reports it; once the guard has reported a
-  refusal, the exit becomes ``SystemExit(1)``. When the exit left the session
-  finish, pytest runs ``pytest_unconfigure`` after this hook, so a refusal
-  absorbed there after such an exit is reported, and the exit keeps its code.
+  refusal, the exit becomes ``SystemExit(1)``. pytest skips
+  ``pytest_unconfigure`` and the cleanups when an exception leaves the session
+  finish, and calls them after this hook, where it would not see a passing
+  exit they raise. So when an exception (a ``SystemExit``, or any other) leaves
+  the session finish, this wrapper calls them itself
+  (``config._ensure_unconfigure``, which pytest then finds done), takes a
+  ``SystemExit`` they raise as the exit, and judges the exit after them: a
+  passing one fails the run also when the only refusal came in
+  ``pytest_unconfigure``.
 - ``pytest_testnodedown`` and ``pytest_configure_node``, optional hooks that
   only xdist defines and calls in the controller. A worker's terminal output is
   discarded and the controller does not use its exit code, so a worker sends
@@ -1442,11 +1448,10 @@ class RealHomeGuard:
         ``sys.exit(0)`` in a plain ``pytest_unconfigure`` hook would pass the
         run too; it becomes ``SystemExit(1)`` (:func:`_a_passing_exit_fails`),
         as one from a session-finish hook does in
-        :meth:`pytest_sessionfinish_after_the_summary`. A ``SystemExit`` that
-        left the session finish reaches :meth:`pytest_cmdline_main` first,
-        which reports what the guard held by then; it keeps its code when the
-        only refusal is reported here after it: pytest runs this hook while
-        that exit is under way.
+        :meth:`pytest_sessionfinish_after_the_summary`. When an exception
+        left the session finish, :meth:`pytest_cmdline_main` calls this hook
+        while that exception is under way, and then judges a ``SystemExit``
+        with what was reported here too.
 
         When no session started, what it holds is named "while pytest ran
         no test session": a refusal from a conftest's import or a
@@ -1494,22 +1499,44 @@ class RealHomeGuard:
         reads the workers' files (:func:`_take_late`), holds what was logged
         since the guard's other hooks, named "after the session finished",
         and reports it. Once the guard has reported a refusal in the session,
-        such an exit becomes ``SystemExit(1)``. An exit that left the session
-        finish leaves pytest's ``pytest_unconfigure`` for after this hook: a
-        refusal absorbed there is still reported, but the exit keeps its
-        code.
+        such an exit becomes ``SystemExit(1)``.
+
+        An exception that leaves the session finish (a ``SystemExit``, or
+        any other) skips pytest's own call of ``pytest_unconfigure`` and the
+        cleanups, which pytest's ``main`` then makes after this hook, where
+        this wrapper would not see what they raise: a passing ``SystemExit``
+        from a cleanup or from a ``tryfirst`` unconfigure wrapper that pytest
+        registered after the guard would end the process with 0 after the
+        guard reported a refusal. So this wrapper makes that call itself
+        (``config._ensure_unconfigure``, which pytest's ``main`` then finds
+        done) and treats a ``SystemExit`` it raises as the exit, as pytest
+        would. The exit the session finish raised is judged after it, so a
+        passing one fails the run also when the only refusal came in
+        ``pytest_unconfigure``. Without that call (a pytest that no longer
+        has it) the exit is judged as it left the session finish.
         """
         try:
             return (yield)
-        except SystemExit as error:
-            passing = _a_passing_code(error.code)
+        except BaseException as error:
+            ended = error
+            unconfigure = getattr(config, "_ensure_unconfigure", None)
+            if getattr(config, "_configured", False) and callable(unconfigure):
+                try:
+                    unconfigure()
+                except SystemExit as later:
+                    ended = later
+            if not isinstance(ended, SystemExit):
+                raise
+            passing = _a_passing_code(ended.code)
             if passing and not config.stash.get(_REPORTED, False):
                 _take_late(config)
                 _hold(config, _AFTER_THE_SESSION)
                 _report_held(config, config.stash.get(_HELD_SESSION, None))
             if passing and config.stash.get(_REPORTED, False):
-                raise SystemExit(pytest.ExitCode.TESTS_FAILED) from error
-            raise
+                raise SystemExit(pytest.ExitCode.TESTS_FAILED) from ended
+            if ended is error:
+                raise
+            raise ended from error
 
     @pytest.hookimpl(optionalhook=True)
     def pytest_testnodedown(self, node: object) -> None:
