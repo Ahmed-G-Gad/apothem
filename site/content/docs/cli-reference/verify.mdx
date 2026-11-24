@@ -41,8 +41,9 @@ checked: only the record shows that the install wrote them. The OpenClaw
 verify still fails, without naming the file, when the rules file in a
 workspace it finds holds no whole block or a BEGIN marker that starts none.
 The failed row names each such file and
-says what to fix: the stray marker's line, with a numbered step that changes
-that line, for each file on its own (the note also says not to add the END
+says what to fix: the stray marker's line, with numbered steps that change
+that line and every other BEGIN marker line but the one that opens Apothem's
+block, a BEGIN marker you quote in code included, for each file on its own (the note also says not to add the END
 marker back instead, which would leave two Apothem blocks once an install or
 update has written Apothem's block apart from it); each whole block, by its
 lines; or,

@@ -940,10 +940,27 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   the file. When the file ends inside a code block that no line closes, that
   fix first adds the code block's closing line below the last line, so the
   block written at the end is no code. Any old Apothem text below a line you
-  change, with its END marker line, is then yours to delete by hand. The
-  fixes are built from the file's lines, with no Markdown reading of their
-  own, so a warning for a file of 1 MB takes well under a second. The
-  troubleshooting page lists the step formats under "Follow a numbered fix".
+  change, with its END marker line, is then yours to delete by hand. A BEGIN
+  marker you quote in a code block is changed too, so it cannot pair with an
+  END marker once the uninstall takes Apothem's block out. OpenClaw's size
+  refusal for a rules file names the same marker lines and closing line as
+  the other warnings for that file. The lines of an HTML block, such as a
+  comment that opens with `<!--` and ends on a later line, are read as that
+  block's text, as a Markdown viewer reads them, so no fix adds a closing
+  line for a code fence inside one. The fixes are built from the file's
+  lines, with no Markdown reading of their own, and each reading of a file
+  for its markers is kept for the rest of the command, so a warning for a
+  file of 1 MB takes well under a second. The troubleshooting page lists the
+  step formats under "Follow a numbered fix".
+- **The uninstall no longer hangs on a copy of its block after a `---`
+  line.** A file with two copies of Apothem's block, each followed by a `---`
+  line, and a BEGIN marker below them made the uninstall loop for ever. It
+  now stops once it can take no more copies out.
+- **The uninstall keeps opening lines of yours that only look like
+  frontmatter.** A file that opened with a `---` line, a list item and
+  another `---` line right above Apothem's block lost those lines, and with
+  nothing else in it the file was deleted. Only frontmatter that holds keys,
+  as Apothem's own rule files have, now goes with the block.
 - **The installers and update scripts finish a run that ends as partial.**
   `apothem install` and `apothem update` exit with code `2` when they leave a
   file as it is because of its marker lines, or when they stop after they

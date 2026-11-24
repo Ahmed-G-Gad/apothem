@@ -38,8 +38,9 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
 - **Verify.** Each installed harness must pass the same check as
   [`verify`](/docs/cli-reference/verify). When a file holds an Apothem BEGIN
   marker with no END marker, the failed check is `harness.stray_begin`, and its
-  fix names each such file and the marker's line, gives a numbered step that
-  changes that line (a word added inside its comment), and says not to add
+  fix names each such file and the marker's line, gives numbered steps that
+  change that line and every other BEGIN marker line but the one that opens
+  Apothem's block (a word added inside each comment), and says not to add
   the END marker back instead, which would leave two Apothem blocks once an
   install or update has written Apothem's block apart from it: an update
   alone does not clear it
