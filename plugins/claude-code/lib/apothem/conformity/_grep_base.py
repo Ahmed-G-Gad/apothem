@@ -394,9 +394,10 @@ _DRIVE_PREFIX: Final[re.Pattern[str]] = re.compile(r"[A-Za-z]:")
 # colon (an NTFS stream such as ``::$INDEX_ALLOCATION``), the wildcard and
 # redirection characters, and the control characters.
 _REFUSED_WIN32_CHARACTERS: Final[re.Pattern[str]] = re.compile(r'[:<>"|?*\x01-\x1f]')
-# Device names Git for Windows refuses as a path name, alone or before a dot.
+# Device names Git for Windows refuses as a path name, in any case, alone or
+# before spaces, a dot, a colon or a separator.
 _RESERVED_WIN32_NAMES: Final[frozenset[str]] = frozenset(
-    {"aux", "con", "nul", "prn"}
+    {"aux", "con", "conin$", "conout$", "nul", "prn"}
     | {f"com{digit}" for digit in range(1, 10)}
     | {f"lpt{digit}" for digit in range(1, 10)}
 )
@@ -411,10 +412,10 @@ def _refused_by_git_for_windows(text: str) -> bool:
     itself drops such a dot and reads such a colon as a stream, so a lookup
     of ``../repo/.git.`` or ``../repo/.git::$INDEX_ALLOCATION`` finds the
     repository git refuses. It also refuses a reserved device name (``aux``,
-    ``con``, ``nul``, ``prn``, ``com1`` to ``com9``, ``lpt1`` to ``lpt9``),
-    alone or before a dot, such as ``aux.d``, which newer Windows opens as an
-    ordinary folder. On POSIX git takes every such name as written, so
-    nothing is refused.
+    ``con``, ``conin$``, ``conout$``, ``nul``, ``prn``, ``com1`` to ``com9``,
+    ``lpt1`` to ``lpt9``) in any case, alone or before a dot, such as
+    ``aux.d``, which newer Windows opens as an ordinary folder. On POSIX git
+    takes every such name as written, so nothing is refused.
     """
     if os.name != "nt":
         return False
@@ -434,9 +435,13 @@ def _refused_by_git_for_windows(text: str) -> bool:
 def _decode_gitdir(raw: bytes) -> str | None:
     """Return the path a ``gitdir:`` line names, as git reads its bytes.
 
-    Git for Windows reads the line as UTF-8 and reads a byte that is not
-    UTF-8 from 0xA0 to 0xFF as the character of that number (Latin-1); any
-    other byte that is not UTF-8 makes it refuse the line, and then None is
+    Git for Windows reads the line as UTF-8 (``xutftowcsn``). A byte that
+    is not part of valid UTF-8 stands for itself: from 0xA0 up it becomes
+    the character of that number (Latin-1), and below that its two
+    lowercase hex digits, so ``caf\\x9f`` names the folder ``caf9f``. git
+    also reads an encoded surrogate (``ED A0 80`` to ``ED BF BF``) as that
+    surrogate. Two that form a pair name the one character they stand for.
+    A surrogate left alone makes git stop with an error, so None is
     returned. On POSIX git hands the bytes to the system as they are, so
     they are kept (``os.fsdecode``) and a name in another encoding still
     finds its folder.
@@ -447,16 +452,18 @@ def _decode_gitdir(raw: bytes) -> str | None:
     rest = raw
     while rest:
         try:
-            text.append(rest.decode("utf-8"))
+            text.append(rest.decode("utf-8", "surrogatepass"))
             break
         except UnicodeDecodeError as error:
-            text.append(rest[: error.start].decode("utf-8"))
+            text.append(rest[: error.start].decode("utf-8", "surrogatepass"))
             byte = rest[error.start]
-            if byte < 0xA0:
-                return None
-            text.append(chr(byte))
+            text.append(chr(byte) if byte >= 0xA0 else f"{byte:02x}")
             rest = rest[error.start + 1 :]
-    return "".join(text)
+    # A round trip through UTF-16 joins each pair and fails on a lone one.
+    try:
+        return "".join(text).encode("utf-16-le", "surrogatepass").decode("utf-16-le")
+    except UnicodeDecodeError:
+        return None
 
 
 def _holds_repository(git_dir: Path) -> bool:

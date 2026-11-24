@@ -1293,6 +1293,45 @@ def _runner_may_not_use(dotted: str) -> bool:
     return _flagged_name(dotted, _RUNNER_FLAGGED_NAMES)
 
 
+def _reaches_a_starter_indirectly(
+    node: ast.AST, resolve: Callable[[ast.expr], str]
+) -> bool:
+    """Return True when *node* can start a program the name checks miss.
+
+    ``__import__`` and ``sys.modules`` fetch ``os`` or ``subprocess`` by a
+    string. A call with ``shell`` set to anything but ``False`` runs a
+    command line, which may name git, through the shell. A ``Popen`` call
+    with ``*`` or ``**`` arguments, or more than eight in a row (``shell``
+    is the ninth), could set ``shell`` unseen.
+    """
+    if isinstance(node, ast.Name):
+        return node.id == "__import__"
+    if isinstance(node, ast.Attribute):
+        return node.attr == "__import__" or resolve(node) == "sys.modules"
+    if isinstance(node, ast.ImportFrom):
+        wanted = {"sys": "modules", "builtins": "__import__"}.get(node.module or "")
+        return wanted is not None and any(
+            alias.name in {wanted, "*"} for alias in node.names
+        )
+    if not isinstance(node, ast.Call):
+        return False
+    if any(
+        keyword.arg == "shell"
+        and not (
+            isinstance(keyword.value, ast.Constant) and keyword.value.value is False
+        )
+        for keyword in node.keywords
+    ):
+        return True
+    if resolve(node.func).rpartition(".")[2] != "Popen":
+        return False
+    return (
+        len(node.args) > 8
+        or any(isinstance(argument, ast.Starred) for argument in node.args)
+        or any(keyword.arg is None for keyword in node.keywords)
+    )
+
+
 def _names_git_or_finds_programs(source: str) -> list[int]:
     """Return the lines where *source* names git, finds a program, or starts
     one other than through ``subprocess.Popen``.
@@ -1301,7 +1340,9 @@ def _names_git_or_finds_programs(source: str) -> list[int]:
     given through ``subprocess.Popen``, and its ``ctypes`` use is its job. It
     must never pick git or look a program up itself, and never start one
     another way (``os.system``, ``subprocess.run``, an asyncio starter, ...),
-    which would skip its time limit and its job object.
+    which would skip its time limit and its job object. A shell command
+    line, ``__import__`` and ``sys.modules`` count too (see
+    :func:`_reaches_a_starter_indirectly`).
     """
     tree = ast.parse(source)
     bound, _ = _import_bindings(tree)
@@ -1351,7 +1392,7 @@ def _names_git_or_finds_programs(source: str) -> list[int]:
             )
         else:
             flagged = text is not None and bool(_GIT_PROGRAM.search(text.strip()))
-        if flagged:
+        if flagged or _reaches_a_starter_indirectly(node, resolve):
             lines.add(node.lineno)  # type: ignore[attr-defined]
     return sorted(lines)
 
@@ -1538,6 +1579,18 @@ def test_the_runner_may_start_programs_but_never_names_git() -> None:
         "pty": 'import pty\npty.spawn("ls")\n',
         "multiprocessing": "from multiprocessing import Process\nProcess().start()\n",
         "_winapi": "import _winapi\n_winapi.CreateProcess(None, line)\n",
+        "__import__": '__import__("os").system("ls")\n',
+        "builtins.__import__": 'import builtins\nbuiltins.__import__("os")\n',
+        "sys.modules": 'import sys\nsys.modules["os"].system("ls")\n',
+        "from sys import modules": 'from sys import modules\nmodules["os"]\n',
+        "shell=True": 'import subprocess\nsubprocess.Popen("git log", shell=True)\n',
+        "shell from a name": "import subprocess\nsubprocess.Popen(line, shell=flag)\n",
+        "Popen with **": "import subprocess\nsubprocess.Popen(argv, **options)\n",
+        "Popen with *": "import subprocess\nsubprocess.Popen(argv, *options)\n",
+        "shell as the ninth argument": (
+            "from subprocess import Popen\n"
+            "Popen(line, -1, None, None, None, None, None, True, True)\n"
+        ),
     }
     for name, source in others.items():
         assert _names_git_or_finds_programs(source) != [], name
@@ -1564,6 +1617,12 @@ def test_the_runner_may_start_programs_but_never_names_git() -> None:
         "    return subprocess.CompletedProcess(argv, 0, '', '')\n"
     )
     assert _names_git_or_finds_programs(allowed) == []
+    assert (
+        _names_git_or_finds_programs(
+            "import subprocess\nsubprocess.Popen(argv, shell=False)\n"
+        )
+        == []
+    )
     assert _names_git_or_finds_programs(
         'import subprocess\nsubprocess.Popen(["git", "log"])\n'
     ) == [2]
@@ -2604,16 +2663,26 @@ def test_a_git_file_is_read_as_git_reads_it(
 
 
 _WINDOWS_NAME_FORMS = [
-    # Git for Windows reads a byte from 0xA0 to 0xFF that is not UTF-8 as
-    # Latin-1, and refuses a lower one; a strict UTF-8 reading called the
-    # first broken.
+    # Git for Windows reads a byte that is not UTF-8 as Latin-1 from 0xA0 up,
+    # and as its two hex digits below that. A strict UTF-8 reading called
+    # both broken.
     pytest.param("café", b"caf\xe9", True, id="Latin-1 byte"),
     pytest.param("café", "café".encode(), True, id="UTF-8"),
-    pytest.param("café", b"caf\x9f", False, id="byte below 0xA0"),
+    pytest.param("caf9f", b"caf\x9f", True, id="byte below 0xA0"),
+    pytest.param("caf80", b"caf\x80", True, id="byte 0x80"),
+    pytest.param("caf\xe282", b"caf\xe2\x82", True, id="cut UTF-8 sequence"),
+    # git reads an encoded surrogate as that surrogate: a pair names its
+    # character, and a lone one makes git stop.
+    pytest.param(
+        "caf\U0001f600", b"caf\xed\xa0\xbd\xed\xb8\x80", True, id="surrogate pair"
+    ),
+    pytest.param("caf\ud800", b"caf\xed\xa0\x80", False, id="lone surrogate"),
     # Newer Windows opens these as ordinary folders; Git for Windows refuses
-    # a device name alone or before a dot.
+    # a device name in any case, alone or before a dot.
     pytest.param("aux.d", b"aux.d", False, id="device name before a dot"),
     pytest.param("con.x", b"con.x", False, id="another device name"),
+    pytest.param("conin$", b"conin$", False, id="console input name"),
+    pytest.param("conout$.d", b"CONOUT$.d", False, id="console output name"),
 ]
 
 
