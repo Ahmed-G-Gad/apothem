@@ -151,26 +151,46 @@ the stale-companion check too, although its findings are otherwise advisory,
 and the commit-subject check then also reports `inspected: 0` with
 `empty_scope_expected: false`. The stale-companion check reads the whole history
 once, and that read gets 5 minutes, so a large history is slow rather than a
-failure; a history that takes longer to read fails the check. A folder that is
-not a git repository, a repository with no commit yet, or a machine without
-`git` still passes these checks as before. As with any result that does not
-pass, the advisory default reports it and exits `0`, and `--strict` exits `2`.
+failure; a history that takes longer to read fails the check. A folder with
+no `.git` entry in it or in a folder above it, a repository with no commit
+yet, or a machine without `git` still passes these checks as before. As with
+any result that does not pass, the advisory default reports it and exits `0`,
+and `--strict` exits `2`.
 
 For the two `--staged` checks, a value git cannot read for a diff setting,
 such as `diff.renameLimit = abc`, is one such bad line: `git diff` fails, and a
-change set that was not read is not an empty one. These two checks and the
-stale-companion check look for the checkout in the folder they run in and in
-the folders above it, so the same holds in a subfolder of the checkout. They
-stop looking where git stops: at a folder named in `GIT_CEILING_DIRECTORIES`
-and, outside Windows, at a folder on another file system, unless
-`GIT_DISCOVERY_ACROSS_FILESYSTEM` is set. A folder with no repository of its
-own, mounted below one, therefore still passes. `semver-stability-grep --staged` looks for the package in the folder
-it runs in and then in the folders above it, up to the top of the checkout, and
-runs git in the folder that holds it, so a run from a subfolder checks the same
-change set. The search ends at the nearest folder that holds a repository, and
-the nearest folder that holds `src/apothem` is the one checked; it does not
-read `GIT_WORK_TREE`. A project without the package has nothing to check
-there: it passes without running git, whatever state its repository is in.
+change set that was not read is not an empty one. These two checks, the
+commit-subject check and the stale-companion check look for the checkout in
+the folder they run in and in the folders above it, so the same holds in a
+subfolder of the checkout. They stop looking where git stops: at a folder
+named in `GIT_CEILING_DIRECTORIES` and, outside Windows, at a folder on
+another file system, unless `GIT_DISCOVERY_ACROSS_FILESYSTEM` is set. A
+folder with no repository of its own, mounted below one, therefore still
+passes. The commit-subject check run on a subfolder of a checkout checks the
+checkout's latest commit. An empty `.git` folder above the folder it runs in,
+with no repository further up, makes git fail, and the check reports
+`git-failed`.
+
+Both `--staged` checks read the staged names from the top of the work tree,
+whatever your own `diff.relative` setting is, so a subfolder setting never
+hides a staged file.
+
+`semver-stability-grep --staged` looks for the package in the folder it runs
+in and then in the folders above it, up to the nearest folder that holds a
+repository or where git stops looking, and runs git in the folder that holds
+the package, so a run from a subfolder checks the same change set. It reads
+the version file from that folder too, so a package below the top of the
+repository is checked. When a `.git` file that git refuses lies between the
+folder it runs in and the package, git runs in the folder it runs in
+instead, stops at that file, and the check reports a `check_error`. git
+refuses a `.git` file that names no repository, that is larger than 1 MiB, or
+that does not hold `gitdir:`, one space and a path, with only line endings
+after it. On Windows the check also refuses a `.git` file that names a network,
+device or NT path (`\\host\share`, `\\?\`, `\??\`), and it does not look that
+path up itself. The nearest folder that holds `src/apothem/__init__.py` is the
+one checked; it does not read `GIT_WORK_TREE`. A project without the package
+has nothing to check there: it passes without running git, whatever state its
+repository is in.
 
 The gate reads each list of path names from git byte for byte, so a name that
 holds a line break, a carriage return or a byte that is not UTF-8 names the
@@ -179,16 +199,19 @@ name that is not UTF-8, which only an index made on another system can hold.
 `semver-stability-grep --staged` then reports a `check_error` for the change
 set; it does not skip that file. The history read of the stale-companion check
 is the exception to the first sentence: there git prints a name with a control
-character in its quoted form, and a byte that is not UTF-8 reads as U+FFFD, so
-that check cannot match a folder with such a name.
+character in its quoted form, and a byte that is not UTF-8 reads as the
+replacement character, so that check cannot match a folder with such a name.
 
 The stale-companion check treats only the `AGENTS.md` at the top of the
 repository as the canon. When you run it on a subfolder that has a README of
-its own, that subfolder's `AGENTS.md` is a per-folder companion, and the run
-reports it as a run on the whole repository does. A subfolder without a README
-is not checked as a folder of its own this way; run the check on a folder
-above it. A companion that was deleted in a commit and written again counts as
-new until you commit it.
+its own, that subfolder's `AGENTS.md` is a per-folder companion. When the
+subfolder is the top of a repository of its own, such as a submodule or a
+nested clone, its `AGENTS.md` is that repository's canon instead. A run on the
+whole repository skips some subfolders, such as test fixtures and nested
+repositories, that a run on the subfolder itself checks. A subfolder without a
+README is not checked as a folder of its own this way; run the check on a
+folder above it. A companion that was deleted in a commit and written again
+counts as new until you commit it.
 
 Six validators start at the repository root and search the whole tree for the
 files they check:

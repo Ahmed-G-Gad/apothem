@@ -421,39 +421,59 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   root `AGENTS.md`, which is the canon rather than a folder's companion), and
   checks a subfolder root against that subfolder's own history.
   `no-global-plans-grep`, `agents-md-coverage-grep`, and the `--staged` checks
-  of `production-ready-pr-grep` and `semver_stability_grep` received non-ASCII
+  of `production-ready-pr-grep` and `semver-stability-grep` received non-ASCII
   path names in git's quoted form (`"caf\303\251.md"`), which their path rules
   did not match; git now prints non-ASCII names as they are. A repository whose
   `diff.orderFile` named a missing file made both `--staged` checks see an
   empty change set and pass; they no longer read that setting. On Windows,
-  `semver_stability_grep --staged` named `src\apothem\__init__.py` with
+  `semver-stability-grep --staged` named `src\apothem\__init__.py` with
   backslashes, which git does not accept, so a staged MAJOR version bump never
   admitted a breaking change.
 - **The conformity gate reads every byte of a path name, and a failed
   `git diff` does not pass from a subfolder.** The gate read git's lists of
   path names as text, which turned a carriage return in a name into a line
-  feed and a byte that is not UTF-8 into U+FFFD. The changed name matched no
-  file, so `semver_stability_grep --staged` skipped that module and passed a
-  staged change that dropped a public function, and `--all-perwrite` left the
-  file out. `--all-perwrite`, `no-global-plans-grep` and both `--staged`
-  checks now read each name byte for byte. On Windows, git cannot be handed a
-  name that is not UTF-8 (only an index made on another system holds one), so
-  `semver_stability_grep --staged` reports a `check_error` for it and does not
+  feed and a byte that is not UTF-8 into the replacement character. The
+  changed name matched no file, so `semver-stability-grep --staged` skipped
+  that module and passed a staged change that dropped a public function, and
+  `--all-perwrite` left the file out. `--all-perwrite`, `no-global-plans-grep`
+  and both `--staged` checks now read each name byte for byte.
+  `production-ready-pr-grep` matches each of its rules against the whole name,
+  so a name that ends in a line break, such as `CHANGELOG.md` followed by one,
+  does not count as the changelog, and a code file with a line break inside its
+  name counts as code. On Windows, git cannot be handed a name
+  that is not UTF-8 (only an index made on another system holds one), so
+  `semver-stability-grep --staged` reports a `check_error` for it and does not
   pass. The history read of `agents-md-coverage-grep` still gets a name with a
-  control character in git's quoted form, and a byte that is not UTF-8 as
-  U+FFFD. Both `--staged` checks, and
-  `agents-md-coverage-grep` on a subfolder, now look for the checkout in the
-  folders above the one they run in, up to where git stops looking (a
-  `GIT_CEILING_DIRECTORIES` folder, or another file system outside Windows):
-  run from a subfolder, a `git` that failed, for example on
-  `diff.renameLimit = abc`, was read as no staged change and passed.
-  `semver_stability_grep --staged` looked for
+  control character in git's quoted form, and a byte that is not UTF-8 as the
+  replacement character. Both `--staged` checks read the staged names from the
+  top of the work tree whatever your `diff.relative` setting is: with it on, a
+  run from a subfolder got names the check could not use, and it passed.
+  Both `--staged` checks, and `agents-md-coverage-grep` on a subfolder, now
+  look for the checkout in the folders above the one they run in, up to where
+  git stops looking (a `GIT_CEILING_DIRECTORIES` folder, or another file
+  system outside Windows): run from a subfolder, a `git` that failed, for
+  example on `diff.renameLimit = abc`, was read as no staged change and
+  passed. `conventional-commit-grep` run on a subfolder of a checkout passed
+  without reading any commit; it now reads the repository above, as git does.
+  An empty `.git` folder above it, with no repository further up, makes it
+  fail with `git-failed`. `semver-stability-grep --staged` looked for
   `src/apothem` below the current folder only, so from a subfolder it ran no
   git and passed whatever was staged; it now also looks in the folders above,
-  up to the nearest folder that holds a repository, and runs git in the
-  nearest folder that holds the package. A project without the package still passes without running git.
-  The check also names `src/apothem` after `--`, so git reads it as a path
-  where that folder is missing.
+  up to the nearest folder that holds a repository or where git stops
+  looking, and runs git in the nearest folder that holds
+  `src/apothem/__init__.py`. It reads the version file from that folder too:
+  it read `src/apothem/__init__.py` from the top of the repository, so for a
+  package below the top it never saw a MAJOR version bump. When a `.git` file
+  that git refuses lies between the current folder and the package, git runs
+  in the current folder instead, stops at that file, and the check reports a
+  `check_error`. The search reads a `.git` file as git does: it must start
+  with `gitdir:` and one space, only the line endings at its end are dropped,
+  and a file over 1 MiB is refused. On Windows, a `.git` file that names a
+  network, device or NT path (`\\host\share`, `\\?\`, `\??\`) is refused, and
+  the search itself never looks that path up, so it does not connect to the
+  host the file names. A project without the package still passes without
+  running git. The check also names `src/apothem` after `--`, so git reads it
+  as a path where that folder is missing.
 - **`agents-md-coverage-grep` judges a re-created companion and a subfolder
   root as it should.** A per-folder `AGENTS.md` that a commit deleted and that
   was written again was timed by the deleting commit, so the new file was
@@ -1355,7 +1375,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `git ls-files`, turn on `log.showSignature` so that `git log` ran its
   `gpg.program`, or make a partial clone fetch a missing object through
   `remote.<name>.uploadpack`, `core.sshCommand` or an `ext::` address. A
-  staged submodule entry also let `semver_stability_grep --staged` run
+  staged submodule entry also let `semver-stability-grep --staged` run
   `git show` on a commit: a `%G` placeholder in `format.pretty` started the
   signature program, and `diff.submodule=diff` started a second git inside the
   submodule with the submodule's own diff program. Every git command the gate
@@ -1767,10 +1787,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   that says it did not finish. Each validator runs in a session of its own on
   Linux and macOS, where a `SIGTERM` or `SIGHUP` to the gate stops it before
   the gate exits, and in a job object on Windows, which ends its programs when
-  the gate ends too. Ctrl+C prints one line and exits `130`. The `git`
-  commands of `conventional-commit-grep`, `agents-md-coverage-grep` and the
-  `--staged` checks of `production-ready-pr-grep` and `semver-stability-grep`
-  had limits of 5 or 10 seconds, but a command that ran past its limit passed:
+  the gate ends too. On Windows, when Windows grants the job, each program the
+  gate starts waits, suspended, until it is in the job, so a program it starts at once, such as the real
+  `git` behind Git for Windows' launcher, is stopped with it. Ctrl+C prints
+  one line and exits `130`. The `git` commands of `conventional-commit-grep`,
+  `agents-md-coverage-grep` and the `--staged` checks of
+  `production-ready-pr-grep` and `semver-stability-grep` had limits of 5 or
+  10 seconds, but a command that ran past its limit passed:
   the commit-subject check took it for a folder without history, the companion
   check skipped its freshness test, and the `--staged` checks read an empty
   change set or skipped the file. On Windows, where `git` on `PATH` is usually
@@ -1781,10 +1804,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   configuration line, which used to count as a repository with no commit.
   `agents-md-coverage-grep` exits `2` for either although its findings are
   otherwise advisory, and its read of the whole history now gets 5 minutes, so
-  a large history is slow rather than a failure. A folder that is not a git
-  repository, a repository with no commit yet, or a machine without `git`
-  still passes these checks. The gate's advisory default still exits `0` on
-  such a result, and `--strict` exits `2`.
+  a large history is slow rather than a failure. A folder with no `.git` entry
+  in it or above it, a repository with no commit yet, or a machine without
+  `git` still passes these checks. The gate's advisory default still exits `0`
+  on such a result, and `--strict` exits `2`.
 
 ## [1.5.0] - 2026-10-28
 

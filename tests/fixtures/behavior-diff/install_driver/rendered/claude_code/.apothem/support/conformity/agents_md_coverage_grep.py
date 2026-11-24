@@ -444,8 +444,8 @@ def check(root: Path) -> GrepResult:
                 companion_folder = path.rpartition("/")[0] or "."
                 # The AGENTS.md at the top of the repository is its canon, not
                 # a per-folder companion, so it has no folder to fall behind.
-                # The AGENTS.md of a subtree root is a per-folder companion,
-                # as a run on the whole repository sees it.
+                # The AGENTS.md of a subtree root that is not the top of a
+                # repository is a per-folder companion.
                 is_canon = companion_folder == "." and history.root_is_top
                 # A companion whose newest commit deleted it is absent, and
                 # absence passes; one that is on disk again has not been
