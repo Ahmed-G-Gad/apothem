@@ -662,10 +662,9 @@ def _record_stopped_prepass(
     Returns the run so far, for the caller to raise as a stopped uninstall:
     *done*, a warning that names the ledger when appending the record fails,
     and the files a removal in *done* kept. Returns ``None`` when *done*
-    changed nothing and took no backup: no record is due, and the install
-    record stays the latest one, as before the uninstall. A stop in the
-    shared pass, by contrast, is recorded even then (see
-    :func:`install_driver.run_uninstall`).
+    changed nothing and took no backup: no record is due, and the ledger stays
+    as it was. A stop in the shared pass, by contrast, is recorded even then
+    (see :func:`install_driver.run_uninstall`).
 
     Only an :class:`OSError` or a
     :class:`~apothem.lib.install_ledger.LedgerError` that escapes writing the
@@ -737,18 +736,17 @@ def make_native_config_uninstall(
     guard, any other error, or Ctrl-C), the uninstall is recorded unfinished
     with their backups first, in every run, not only while pytest runs (the
     shared driver does the same for an error later on). When *before_fn*
-    changed nothing and took no backup, nothing is recorded, also when it
-    found Apothem's file behind a link, so the install record stays the
-    latest one; a stop in the shared pass is recorded even then. Either way
-    an ordinary error is raised as a :class:`MaterializationError` that
-    carries *before_fn*'s results, with the error as its cause, as the
-    shared driver raises one: the CLI reports what *before_fn* removed (a
-    partial uninstall, exit 2) or found (Apothem's file behind a link, say)
-    with the error, and the same error reads the same with or without such
-    results. A refusal and Ctrl-C are always raised as they are. An exception
-    inside *before_fn* itself records nothing: the files it changed before it
-    keep their backups, but no record names them. A backup root or ledger in a
-    protected folder is refused before *before_fn* runs.
+    changed nothing and took no backup, nothing is recorded, also when it found
+    Apothem's file behind a link, so the ledger stays as it was; a stop in the
+    shared pass is recorded even then. Either way an ordinary error is raised
+    as a :class:`MaterializationError` that carries *before_fn*'s results, with
+    the error as its cause, as the shared driver raises one: the CLI reports
+    what *before_fn* removed (a partial uninstall, exit 2) or found (Apothem's
+    file behind a link, say) with the error, and the same error reads the same
+    with or without such results. A refusal and Ctrl-C are always raised as
+    they are. An exception inside *before_fn* itself records nothing: the files
+    it changed before it keep their backups, but no record names them. A backup
+    root or ledger in a protected folder is refused before *before_fn* runs.
     """
 
     @install_driver.backup_session()

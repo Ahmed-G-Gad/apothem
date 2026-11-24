@@ -348,25 +348,24 @@ exception or `Ctrl+C` stops appends, by the step it stopped in:
   names the folder a `~/.config` link leads to, say): nothing more, so that
   install stays recorded and running the command again closes it.
 
-When nothing is appended, the install record stays the latest one. The install
-stays recorded either way, so `apothem status`, `verify` and `rollback` still
-see it, and the harness reads as installed while something the install wrote
-is still there as it wrote it (see below), so running `uninstall` again
-finishes the job. An install with no record has none to keep: only its files
-on disk make the harness read as installed, and `rollback` has nothing to roll
-back. An `install`, `update`, `rollback` or finished `uninstall` of that
-harness at that location replaces the state, and so does removing the
-remaining files by hand: with none of Apothem's files left as it wrote them
-and nothing left in its `.apothem` folder, the harness reads as not installed,
-whatever else is in the folder. The first command that checks whether the
-harness is installed (`status`, `verify`, `uninstall`) then appends an
-`uninstall` record that closes the install. After an uninstall that finished,
-though, no record lists the files an install wrote, so there only an install,
-an update or an uninstall that finishes replaces the state. `backups prune`
-keeps the record, and the backups it references, while the install it belongs
-to is kept. After an uninstall that finished, it keeps the record together
-with that uninstall's record, so running the uninstall again still works the
-same way.
+When nothing is appended, the ledger stays as it was. The install stays
+recorded either way, so `apothem status`, `verify` and `rollback` still see
+it, and the harness reads as installed while something the install wrote is
+still there as it wrote it (see below), so running `uninstall` again finishes
+the job. An install with no record has none to keep: only its files on disk
+make the harness read as installed, and `rollback` has nothing to roll back.
+An `install`, `update`, `rollback` or finished `uninstall` of that harness at
+that location replaces the state, and so does removing the remaining files by
+hand: with none of Apothem's files left as it wrote them and nothing left in
+its `.apothem` folder, the harness reads as not installed, whatever else is in
+the folder. The first command that checks whether the harness is installed
+(`status`, `verify`, `uninstall`) then appends an `uninstall` record that
+closes the install. After an uninstall that finished, though, no record lists
+the files an install wrote, so there only an install, an update or an
+uninstall that finishes replaces the state. `backups prune` keeps the record,
+and the backups it references, while the install it belongs to is kept. After
+an uninstall that finished, it keeps the record together with that uninstall's
+record, so running the uninstall again still works the same way.
 
 What still counts: a whole file the install wrote, while it is unchanged (for
 an install an earlier release recorded, while it is there); anything in the
