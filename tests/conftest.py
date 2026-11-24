@@ -2120,7 +2120,12 @@ def _take_late(config: pytest.Config) -> None:
     before the text reached it leaves the file empty. An empty file is
     skipped only when ``pytest_testnodedown`` took the worker's output and
     that output says the copy written beside the hand-off failed and left
-    the file empty: the output holds every refusal the file was opened for.
+    the file empty: the output holds every refusal the copy was written
+    for. It does not hold one the worker found after the hand-off. When the
+    write of such a refusal leaves the file empty too, the refusal shows
+    only in the worker's note on ``stderr``, and nowhere when the worker
+    crashed during that write; the run still fails on the refusals the
+    output handed over.
     Nothing happens outside an xdist controller, which alone names files.
     """
     files = config.stash.get(_LATE_FILES, {})
@@ -2140,7 +2145,7 @@ def _take_late(config: pytest.Config) -> None:
             continue
         lines = [line for line in text.splitlines() if line.strip()]
         if not lines and worker in left_empty:
-            continue  # the output it sent holds what the file was opened for
+            continue  # the output it sent holds what the copy was for
         if not lines:
             empty = (
                 f"{path} is empty: the worker creates it only to write a "

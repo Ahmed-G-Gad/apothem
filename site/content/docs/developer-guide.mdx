@@ -759,7 +759,11 @@ because that file could not be made or written (when the worker's last write to
 it fails part way, the part that reached the file stays, and the main process
 fails the run on it, as it does when that write left the file empty, unless
 the copy written beside the hand-off had left it empty already and the main
-process took the worker's output). At the end of the run the main process tells
+process took the worker's output). In that last case the output holds only the
+refusals the worker handed over: one it finds after the hand-off, whose write
+leaves the file empty again, shows only on the worker's `stderr`, and nowhere
+when the worker crashes during that write; the run still fails on the refusals
+it handed over. At the end of the run the main process tells
 each worker to exit; a worker still running Python code 5 seconds later is
 interrupted (on Windows, not one blocked in a sleep or another call), and any
 worker still running after 10 seconds is stopped. The guard cannot change the
