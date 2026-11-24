@@ -81,6 +81,7 @@ from apothem.cli._doctor_hook_text import (
 )
 from apothem.harnesses._shared.install_driver_shared import same_location
 from apothem.lib import install_ledger
+from apothem.lib.harness_registry import get_harness_entry
 from apothem.lib.links import is_link
 
 #: Script names that identify an Apothem hook entry point inside an argv.
@@ -175,12 +176,18 @@ def registered_hooks(
     if not project:
         for target in record.targets:
             if target.path.endswith(".json"):
-                _read_user_file(Path(target.path), keys, args_key, hooks)
+                _read_user_file(
+                    Path(target.path),
+                    keys,
+                    args_key,
+                    hooks,
+                    _may_hold_hooks(package_key, target),
+                )
         return hooks
     # The record's own spelling of the root: every path it lists is under it.
     checked = _ProjectInstall(Path(record.root), record, keys, args_key)
     for target in record.targets:
-        checked.read_file(target, hooks)
+        checked.read_file(target, hooks, _may_hold_hooks(package_key, target))
     return hooks
 
 
@@ -258,14 +265,37 @@ def _command_keys(package_key: str) -> tuple[str, ...]:
     return windows if _on_windows() else posix
 
 
+#: The install modes of a file a tool runs hook commands from: its own hook
+#: file, and a settings file the hooks are merged into. A copy under
+#: ``.apothem/support`` (``merge_tree_entries``) is not one.
+_HOOK_BEARING_MODES: Final = frozenset({_HOOK_FILE_MODE, "write_text"})
+
+
+def _may_hold_hooks(package_key: str, target: install_ledger.LedgerTarget) -> bool:
+    """Return True when *package_key*'s tool may run hook commands from *target*.
+
+    Only a harness whose registry entry gives it native hooks registers hook
+    commands in a file its tool reads (OpenCode and OpenClaw keep theirs in
+    the support folder), and only in a file of :data:`_HOOK_BEARING_MODES`. A
+    file doctor could not read is named only when this is True.
+    """
+    native = get_harness_entry(package_key).capability_status.get("hooks")
+    return native == "native" and target.mode in _HOOK_BEARING_MODES
+
+
 def _read_user_file(
-    path: Path, keys: tuple[str, ...], args_key: str | None, hooks: RegisteredHooks
+    path: Path,
+    keys: tuple[str, ...],
+    args_key: str | None,
+    hooks: RegisteredHooks,
+    may_hold_hooks: bool,
 ) -> None:
     """Collect the hook commands in a file under the operator's own home.
 
     The file is the operator's, so it is read through a link, as a dotfile
     manager may keep it. A file larger than doctor reads, or one that is not a
-    regular file, is noted as unchecked (:func:`unread_reason`). One that
+    regular file, is noted as unchecked (:func:`unread_reason`) when its tool
+    may run hooks from it (*may_hold_hooks*). One that
     cannot be read, is not JSON, or is nested too deep to parse adds nothing
     and no note: a settings file the tool reads more leniently may hold no hook
     at all.
@@ -274,7 +304,7 @@ def _read_user_file(
         document = json.loads(read_hook_file(path, follow_link=True))
     except (OSError, ValueError, RecursionError) as exc:
         reason = unread_reason(path, exc)
-        if reason is not None:
+        if reason is not None and may_hold_hooks:
             hooks.note(reason)
         return
     for handler in user_handlers(document, keys, args_key):
@@ -391,14 +421,19 @@ class _ProjectInstall:
         return True
 
     def read_file(
-        self, target: install_ledger.LedgerTarget, hooks: RegisteredHooks
+        self,
+        target: install_ledger.LedgerTarget,
+        hooks: RegisteredHooks,
+        may_hold: bool,
     ) -> None:
-        """Judge each Apothem-looking hook line in one project file."""
+        """Judge each Apothem-looking hook line in one project file.
+
+        *may_hold* is :func:`_may_hold_hooks` for *target*."""
         path = Path(target.path)
         if not target.path.endswith(".json") or not self._inside(target.path):
             return
         hook_file = target.mode == _HOOK_FILE_MODE
-        document = self._load(path, hook_file, hooks)
+        document = self._load(path, hook_file, hooks, may_hold)
         if document is _UNREAD:
             return
         found = 0
@@ -427,18 +462,24 @@ class _ProjectInstall:
         if hook_file and not found:
             hooks.note(f"{path} holds no hook command doctor can start")
 
-    def _load(self, path: Path, hook_file: bool, hooks: RegisteredHooks) -> object:
+    def _load(
+        self, path: Path, hook_file: bool, hooks: RegisteredHooks, may_hold: bool
+    ) -> object:
         """Return *path*'s JSON, or :data:`_UNREAD` once the reason is noted.
 
-        A lookup error, a file too large or not regular is noted for any file,
-        since a tool reads hooks merged into its settings; a link or text that
-        is not JSON only for a file of nothing but hooks (*hook_file*)."""
+        A lookup error, a file too large or not regular is noted for a file
+        its tool may run hooks from (*may_hold*, :func:`_may_hold_hooks`),
+        hooks merged into settings included; a link or text that is not JSON
+        only for a file of nothing but hooks (*hook_file*)."""
         try:
             link_free = self._cached("link-free", path)
         except OSError as exc:
             # Python 3.10 to 3.13 raise from a lookup in a folder the operator
             # cannot search, where later releases answer False.
-            hooks.note(f"{path} cannot be looked up ({exc}), so no hook in it was read")
+            if may_hold:
+                hooks.note(
+                    f"{path} cannot be looked up ({exc}), so no hook in it was read"
+                )
             return _UNREAD
         if not link_free:
             if hook_file:
@@ -452,7 +493,7 @@ class _ProjectInstall:
             reason = unread_reason(path, exc)
             if reason is None and hook_file:
                 reason = f"{path} cannot be read as JSON, so no hook in it was started"
-            if reason is not None:
+            if reason is not None and may_hold:
                 hooks.note(reason)
             return _UNREAD
         return document

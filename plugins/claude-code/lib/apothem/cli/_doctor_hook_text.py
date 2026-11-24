@@ -184,6 +184,24 @@ class NotARegularFileError(OSError):
     """A path doctor reads names a pipe, a device, a folder or a link, not a file."""
 
 
+def _look(path: Path, *, follow_link: bool) -> os.stat_result:
+    """Return *path*'s stat, following a link only with *follow_link*."""
+    # One os module for every look, the seam the tests replace.
+    return os.stat(path) if follow_link else os.lstat(path)  # noqa: PTH116
+
+
+def _still_regular(path: Path, follow_link: bool) -> bool:
+    """Return False when a second look finds *path* is no longer a regular file.
+
+    A path that cannot be looked at again counts as still regular, so the
+    open's own error is the one reported.
+    """
+    try:
+        return stat.S_ISREG(_look(path, follow_link=follow_link).st_mode)
+    except OSError:
+        return True
+
+
 def _open_regular(path: Path, *, follow_link: bool = False) -> BinaryIO:
     """Open *path* to read, only when it is a regular file and still one once open.
 
@@ -197,20 +215,23 @@ def _open_regular(path: Path, *, follow_link: bool = False) -> BinaryIO:
     swapped for a link or a device in between is not read. On Windows only the
     look before the open guards against such a swap: the system has no flag
     that refuses a link, and Python reports the file ID of a path and of an
-    open file in different widths on some releases and file systems.
+    open file in different widths on some releases and file systems. An open
+    that fails is looked at again, so a file swapped for a folder or a
+    junction in between is named as not a regular file, not left unexplained.
 
     Raises:
         NotARegularFileError: *path* is not a regular file, before or once open.
         OSError: *path* cannot be looked up or opened.
     """
-    # One os module for both looks, the seam the tests replace.
-    before = os.stat(path) if follow_link else os.lstat(path)  # noqa: PTH116
+    before = _look(path, follow_link=follow_link)
     if not stat.S_ISREG(before.st_mode):
         raise NotARegularFileError(errno.EINVAL, "not a regular file", str(path))
     try:
         descriptor = os.open(path, _OPEN_FLAGS | (0 if follow_link else _NO_FOLLOW))
     except OSError as exc:
-        if exc.errno in _LINK_ERRNOS:  # swapped for a link since the look
+        # Swapped for a link since the look, or, on Windows, for a folder or a
+        # junction, which the open refuses as access denied.
+        if exc.errno in _LINK_ERRNOS or not _still_regular(path, follow_link):
             raise NotARegularFileError(
                 errno.EINVAL, "not a regular file", str(path)
             ) from exc

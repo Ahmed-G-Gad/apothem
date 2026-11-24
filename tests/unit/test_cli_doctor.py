@@ -32,6 +32,7 @@ import apothem
 from apothem.cli import _doctor_hook_text, _doctor_hooks, main
 from apothem.harnesses._shared import install_driver, wrapper_factories
 from apothem.lib import install_ledger
+from apothem.lib.propagation import load_manifest
 
 _PROFILE = (
     "schema_version: 1\nidentity:\n  name: Ada Lovelace\n"
@@ -1396,6 +1397,9 @@ def test_doctor_fix_for_a_recorded_python_inside_the_project(
     # that Python instead, which doctor accepts. The update runs from a folder
     # outside the project: "python -m apothem" run in the project folder would
     # import an apothem package committed there, whatever launcher started it.
+    # An active project environment puts its Python first on PATH, where the
+    # npx shim would find it again, so the fix says to deactivate it first and
+    # names the variable that picks the shim's Python.
     from apothem.cli import _cmd_doctor
 
     project = _project(tmp_path)
@@ -1413,10 +1417,12 @@ def test_doctor_fix_for_a_recorded_python_inside_the_project(
     assert recorded not in check["fix"]
     assert "-m apothem" not in check["fix"]
     assert check["fix"].startswith(
-        "From a folder outside the project, with an Apothem that runs under a "
+        "If the project's virtual environment is active, deactivate it. Then "
+        "from a folder outside the project, with an Apothem that runs under a "
         "Python outside the project (not one installed into the project's own "
-        "environment), run this command, then run doctor again: update "
-        "--harness cursor --project "
+        "environment; for npx, set APOTHEM_PYTHON to that Python), run this "
+        "command, then "
+        "run doctor again: update --harness cursor --project "
     )
     assert check["fix"].count("then run") == 1
 
@@ -1969,6 +1975,124 @@ def test_doctor_reports_an_oversize_claude_code_settings_file_as_unchecked(
     ]
 
 
+@pytest.mark.parametrize(
+    ("harness", "config"),
+    [
+        pytest.param(
+            "opencode", (".config", "opencode", "opencode.json"), id="opencode"
+        ),
+        pytest.param("open-claw", (".openclaw", "openclaw.json"), id="open-claw"),
+    ],
+)
+def test_doctor_names_no_oversize_settings_file_its_tool_runs_no_hook_from(
+    runner: CliRunner, home: Path, harness: str, config: tuple[str, ...]
+) -> None:
+    # Apothem writes no hook into these files and the tool runs none from
+    # them, so a large one is no unchecked hook, and an update would not
+    # clear the note.
+    _install(runner, harness)
+    settings = home.joinpath(*config)
+    _pad_past_the_cap(settings)
+    support = home.joinpath(*config[:-1], ".apothem", "support", "hooks", "hooks.json")
+    _pad_past_the_cap(support)
+
+    code, payload = _doctor(runner)
+    plain = runner.invoke(main, ["doctor"])
+
+    assert code == 0, payload
+    assert _unchecked(payload, harness) == []
+    assert plain.exit_code == 0, plain.output
+    assert "were not checked" not in plain.output
+
+
+@pytest.mark.parametrize(
+    ("package_key", "mode", "noted"),
+    [
+        pytest.param("github_copilot", "native_hooks", True, id="hook-file"),
+        pytest.param("github_copilot", "write_text", True, id="merged-settings"),
+        pytest.param("github_copilot", "merge_tree_entries", False, id="support-copy"),
+        pytest.param("opencode", "write_text", False, id="no-native-hooks"),
+    ],
+)
+def test_doctor_names_an_unread_file_only_where_its_tool_runs_hooks(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    package_key: str,
+    mode: str,
+    noted: bool,
+) -> None:
+    # One file padded past the cap, read as a project and as a user install.
+    hook_file, _ = _fake_install(
+        tmp_path, monkeypatch, _copilot_line(tmp_path), mode=mode
+    )
+    _pad_past_the_cap(hook_file)
+    reason = f"{hook_file} is larger than 4 MB, so no hook in it was read"
+    hooks = {
+        project: _doctor_hooks.registered_hooks(
+            package_key, root=tmp_path, project=project
+        )
+        for project in (True, False)
+    }
+
+    for found in hooks.values():
+        assert found is not None
+        assert found.unchecked == ([reason] if noted else [])
+
+
+@pytest.mark.parametrize(
+    ("package_key", "mode"),
+    [
+        pytest.param("github_copilot", "merge_tree_entries", id="support-copy"),
+        pytest.param("opencode", "write_text", id="no-native-hooks"),
+    ],
+)
+def test_doctor_stays_quiet_about_a_file_it_cannot_look_up_that_runs_no_hook(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, package_key: str, mode: str
+) -> None:
+    # The lookup note, like the size one, is only for a file a tool runs
+    # hooks from (a merged settings file is named: the test above).
+    _fake_install(tmp_path, monkeypatch, _copilot_line(tmp_path), mode=mode)
+    _deny_lookups_under(monkeypatch, tmp_path / ".github")
+
+    hooks = _doctor_hooks.registered_hooks(package_key, root=tmp_path, project=True)
+
+    assert hooks is not None
+    assert hooks.argvs == []
+    assert hooks.unchecked == []
+
+
+def _manifest_json_targets() -> Iterator[tuple[str, str, bool]]:
+    """Yield each JSON install target's harness, mode, and whether it holds hooks.
+
+    A target holds hooks when its template names a command a hook runs.
+    """
+    templates = Path(apothem.__file__).parent
+    for package_key, rules in load_manifest().items():
+        for rule in rules.install:
+            if not str(rule.target).endswith(".json"):
+                continue
+            text = (templates / str(rule.source)).read_text(encoding="utf-8")
+            holds = any(key in text for key in ('"command"', '"bash"'))
+            yield package_key, str(rule.mode), holds
+
+
+def test_every_file_a_tool_runs_hooks_from_is_named_when_unread() -> None:
+    # _may_hold_hooks keys on the registry's hook status and the install
+    # mode; a file with hook commands outside both would go unread silently.
+    targets = list(_manifest_json_targets())
+    # Qwen Code's settings file is merged outside the manifest, as write_text.
+    targets.append(("qwen_code", "write_text", True))
+
+    assert any(holds for _, _, holds in targets)
+    for package_key, mode, holds in targets:
+        if holds:
+            target = SimpleNamespace(mode=mode)
+            assert _doctor_hooks._may_hold_hooks(package_key, target), (
+                package_key,
+                mode,
+            )
+
+
 class _StatAs:
     """A stat result with some fields replaced; every other one is the real one.
 
@@ -2116,6 +2240,55 @@ def test_a_file_swapped_after_the_look_is_not_read(
     with pytest.raises(_doctor_hook_text.NotARegularFileError):
         _doctor_hook_text.read_hook_file(path)
     assert len(closed) == 1
+
+
+@pytest.mark.parametrize("follow_link", [False, True])
+def test_a_file_swapped_for_a_folder_before_the_open_is_not_a_regular_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, follow_link: bool
+) -> None:
+    # Windows refuses to open a folder or a junction as access denied; the
+    # second look tells that swap from a file the operator cannot read.
+    path = tmp_path / "settings.json"
+    path.write_text("{}", encoding="utf-8")
+    real = os.lstat, os.stat
+    looks: list[str] = []
+
+    def looked(look: Callable[..., os.stat_result]) -> Callable[..., object]:
+        def swapped(name: object, *args: object, **kwargs: object) -> object:
+            result = look(name, *args, **kwargs)
+            looks.append(str(name))
+            if len(looks) == 1:
+                return result
+            return _StatAs(result, st_mode=stat.S_IFDIR | 0o755)
+
+        return swapped
+
+    def denied(name: object, *args: object, **kwargs: object) -> int:
+        raise PermissionError(errno.EACCES, "Permission denied", str(name))
+
+    monkeypatch.setattr(_doctor_hook_text.os, "lstat", looked(real[0]))
+    monkeypatch.setattr(_doctor_hook_text.os, "stat", looked(real[1]))
+    monkeypatch.setattr(_doctor_hook_text.os, "open", denied)
+
+    with pytest.raises(_doctor_hook_text.NotARegularFileError):
+        _doctor_hook_text.read_hook_file(path, follow_link=follow_link)
+    assert len(looks) == 2
+
+
+def test_a_regular_file_that_cannot_be_opened_keeps_its_own_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "settings.json"
+    path.write_text("{}", encoding="utf-8")
+
+    def denied(name: object, *args: object, **kwargs: object) -> int:
+        raise PermissionError(errno.EACCES, "Permission denied", str(name))
+
+    monkeypatch.setattr(_doctor_hook_text.os, "open", denied)
+
+    with pytest.raises(PermissionError) as raised:
+        _doctor_hook_text.read_hook_file(path)
+    assert not isinstance(raised.value, _doctor_hook_text.NotARegularFileError)
 
 
 @pytest.mark.skipif(

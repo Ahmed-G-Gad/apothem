@@ -250,13 +250,18 @@ def _probe_registered_hooks(
                 # project, which the command names by its absolute root: a
                 # `python -m apothem` run in the project folder would import an
                 # `apothem` package committed there, whatever prefix started it.
+                # An active project environment puts its Python first on PATH,
+                # where the npx shim finds it unless APOTHEM_PYTHON names one.
                 fix=(
                     _update_fix(
                         name,
                         project,
-                        lead="From a folder outside the project, with an Apothem "
-                        "that runs under a Python outside the project (not one "
-                        "installed into the project's own environment), run",
+                        lead="If the project's virtual environment is active, "
+                        "deactivate it. Then from a folder outside the project, "
+                        "with an Apothem that runs under a Python outside the "
+                        "project (not one installed into the project's own "
+                        "environment; for npx, set APOTHEM_PYTHON to that "
+                        "Python), run",
                         same_prefix=False,
                     )
                     if reason in hooks.run_with

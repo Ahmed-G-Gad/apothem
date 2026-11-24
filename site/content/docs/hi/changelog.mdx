@@ -1301,8 +1301,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   for Claude Code, the one tool that runs one; at most 100 commands from one
   file, and no file larger than 4 MB or that is not a regular file, each of
   which a `hook.unchecked` line names, in a project or under your home
-  folder), and starts one only when its interpreter is the one the install
-  recorded (outside the project) or the
+  folder, when the tool runs hooks from it), and starts one only when its
+  interpreter is the one the install recorded (outside the project) or the
   Python Apothem runs under, its options run no code, its script is the hook
   script the install wrote, in a folder whose files still match the SHA-256
   checksums the install recorded and that holds no other Python file and no
@@ -1320,8 +1320,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   release stay unchecked until you run `apothem update`; for a recorded
   interpreter inside the project, the fix runs `apothem update` from a folder
   outside the project, with an Apothem that runs under a Python outside the
-  project, which records that Python instead; run in the project folder,
-  `python -m apothem` would start a folder named `apothem` committed there.
+  project, which records that Python instead, after you deactivate the
+  project's virtual environment if it is active (for npx, `APOTHEM_PYTHON`
+  picks the Python);
+  run in the project folder, `python -m apothem` would start a folder named
+  `apothem` committed there.
   An install now keeps only a true or false `enabled` flag on Kiro's hooks, so
   no other value can ride along in the file.
 - **A checked project's git settings no longer make the conformity gate start
