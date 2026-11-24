@@ -107,6 +107,7 @@ from apothem.conformity._grep_base import (
     is_project_dir,
     iter_tree_files,
     list_real_entries,
+    no_files,
     parse_root_args,
     project_file_target,
 )
@@ -776,9 +777,13 @@ def _suite_dirs(root: Path) -> list[Path]:
     """Return the suite directories to inspect for *root*."""
     plans = root.joinpath(*APOTHEM_PLANS_RELPATH)
     if is_project_dir(root, plans):
-        return sorted(p for p in list_real_entries(plans) if p.is_dir())
+        return sorted(
+            p for p in list_real_entries(plans, wanted_files=no_files) if p.is_dir()
+        )
     if root.name == APOTHEM_PLANS_RELPATH[1] and root.parent.name == ".apothem":
-        return sorted(p for p in list_real_entries(root) if p.is_dir())
+        return sorted(
+            p for p in list_real_entries(root, wanted_files=no_files) if p.is_dir()
+        )
     if project_file_target(root, root / "PROGRESS.md") is not None or is_project_dir(
         root, root / "phases"
     ):

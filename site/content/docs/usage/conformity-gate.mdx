@@ -112,9 +112,11 @@ A few checks still use a link without entering it:
   at another file, the gate reads the link's own text and opens the file it
   names only when that is a regular file inside the project, reached through
   real folders. A per-folder `README.md` link counts the same way. An absolute
-  link counts when it is written through the project folder as it resolves;
-  a validator run on its own also accepts the folder as you typed it, while
-  the gate resolves the folder before it starts each validator. A linked
+  link counts when it is written through the project folder as it resolves,
+  or on Windows through the same path in another letter case; a validator
+  run on its own also accepts the folder as you
+  typed it, unless that path contains `..`, while the gate resolves the
+  folder before it starts each validator. A linked
   `.gitattributes` still counts as missing, because git does not read it;
 - the stray-plans check in `no-global-plans-grep` reports a plans folder or an
   `.apothem` folder that is a link, by its name, wherever the link leads;
@@ -127,9 +129,13 @@ that passes when its folder is missing, such as the workflow validators, does
 not pass when that folder is a link: the files may be behind it, so the run
 fails like one that checked nothing. A hard link is a regular file and is read
 like one, and the checks that run git read the `.git` folder through git
-itself. Every check that runs git first looks at the root's `.git` entry: when
-it is a link, the check does not run git, lists `.git` under `skipped_links`,
-and treats the project as having no checkout.
+itself. The three validators that run git first look at the root's `.git`
+entry. When it is a link, none of them runs git, and each lists `.git` under
+`skipped_links`. `conventional-commit-grep` then fails as it does outside a
+checkout, `no-global-plans-grep` reports the link as a finding and fails,
+and the companion coverage check skips its freshness test, as it does with
+no history. `--all-perwrite` does not look yet: it still lists the tracked
+files through such a link.
 
 Six validators start at the repository root and search the whole tree for the
 files they check:

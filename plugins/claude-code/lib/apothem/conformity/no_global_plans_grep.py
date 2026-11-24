@@ -71,6 +71,7 @@ from apothem.conformity._grep_base import (
 from apothem.conformity._project_paths import (
     DIR_ENTRY,
     LINK_ENTRY,
+    SKIPPED_FOLDER_ENTRY,
     linked_git_entry,
     note_skipped,
     path_kind,
@@ -183,6 +184,14 @@ def _git_ls_files(root: Path) -> list[str]:
     return [name for name in completed.stdout.split("\0") if name]
 
 
+# Finding text for a .git entry that is a link or a junction.
+_LINKED_GIT_DETAIL: Final[str] = (
+    "the .git entry is a link, so git would read another repository's "
+    "index; the tracked-plans check did not run, and the project is "
+    "treated as having no checkout — replace the link with the project's "
+    "own .git folder or file"
+)
+
 # Finding text for a plans location that is a link or a junction.
 _LINKED_PLANS_DETAIL: Final[str] = (
     "a plans location is a link: its plans tree lives wherever the link "
@@ -292,6 +301,11 @@ def _sweep_stray_plans_dirs(
                     # unseen: the report names it under skipped_links.
                     note_skipped(entry)
                 continue
+            if kind == SKIPPED_FOLDER_ENTRY:
+                # Not searched (Win32 would reopen another entry), so a
+                # plans tree inside it would go unseen: name it.
+                note_skipped(entry)
+                continue
             if kind != DIR_ENTRY:
                 continue
             if name == ".plans":
@@ -360,8 +374,13 @@ def check(root: Path) -> GrepResult:
     ``<root>/.apothem/plans`` (a stray suite the index check is blind to).
     Either check's finding fails the validator.
     """
-    tracked = _git_ls_files(root)
     findings: list[Finding] = []
+    if linked_git_entry(root):
+        # git would read another repository's index; the sweep still runs.
+        tracked: list[str] = []
+        findings.append(Finding(path=".git", detail=_LINKED_GIT_DETAIL))
+    else:
+        tracked = _git_ls_files(root)
     for path in tracked:
         if _PLANS_PATH_RE.search(path):
             findings.append(

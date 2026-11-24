@@ -58,6 +58,7 @@ from apothem.conformity._grep_base import (
     finish_root_report,
     is_project_dir,
     list_real_entries,
+    no_files,
     parse_root_args,
     project_file_target,
 )
@@ -428,7 +429,9 @@ def check(root: Path) -> GrepResult:
     for plans_dir in plans_dirs:
         if not is_project_dir(root, plans_dir):
             continue
-        for suite_dir in sorted(p for p in list_real_entries(plans_dir) if p.is_dir()):
+        for suite_dir in sorted(
+            p for p in list_real_entries(plans_dir, wanted_files=no_files) if p.is_dir()
+        ):
             outcome = _inspect_suite(suite_dir, root)
             if outcome is None:
                 continue

@@ -72,6 +72,7 @@ from apothem.conformity._grep_base import (
     is_project_dir,
     is_project_file,
     list_real_entries,
+    no_files,
     parse_root_args,
 )
 
@@ -359,7 +360,9 @@ def _check_phases_dir(suite: str, phases_dir: Path, findings: list[Finding]) -> 
         # Sub-phase folders (directories inside a phase folder) must match
         # NNL-subtopic. Non-matching sub-directories are findings; files
         # (PHASE.md, REPORT.md, ...) are ignored.
-        for sub in sorted(list_real_entries(child), key=lambda p: p.name):
+        for sub in sorted(
+            list_real_entries(child, wanted_files=no_files), key=lambda p: p.name
+        ):
             if not sub.is_dir():
                 continue
             if _SUBPHASE_DIR_RE.match(sub.name) is None:
@@ -388,7 +391,10 @@ def _check_root_numeric_prefixes(
     discipline.
     """
     prefixed: list[tuple[Path, str]] = []
-    for child in list_real_entries(suite_dir):
+    for child in list_real_entries(
+        suite_dir,
+        wanted_files=lambda name: _NUMERIC_PREFIX_FILE_RE.match(name) is not None,
+    ):
         if not child.is_file():
             continue
         match = _NUMERIC_PREFIX_FILE_RE.match(child.name)
@@ -431,7 +437,9 @@ def _real_folders_below(top: Path) -> list[Path]:
     stack = [top]
     while stack:
         folder = stack.pop()
-        children = sorted(p for p in list_real_entries(folder) if p.is_dir())
+        children = sorted(
+            p for p in list_real_entries(folder, wanted_files=no_files) if p.is_dir()
+        )
         found.extend(children)
         stack.extend(reversed(children))
     return found
@@ -495,7 +503,9 @@ def _check_plans_tree(plans_root: Path, label: str, findings: list[Finding]) -> 
     suite_count = 0
     # Root-level suite-locality: the artifact-class directories must NOT
     # appear directly under the plans tree (only inside a suite folder).
-    for entry in sorted(list_real_entries(plans_root), key=lambda p: p.name):
+    for entry in sorted(
+        list_real_entries(plans_root, wanted_files=no_files), key=lambda p: p.name
+    ):
         if entry.is_dir() and entry.name in _ARTIFACT_CLASS_DIRS:
             findings.append(
                 Finding(
@@ -509,7 +519,9 @@ def _check_plans_tree(plans_root: Path, label: str, findings: list[Finding]) -> 
                 )
             )
     # Each remaining sub-directory of the plans tree is a suite folder.
-    for suite_dir in sorted(list_real_entries(plans_root), key=lambda p: p.name):
+    for suite_dir in sorted(
+        list_real_entries(plans_root, wanted_files=no_files), key=lambda p: p.name
+    ):
         if not suite_dir.is_dir():
             continue
         if suite_dir.name in _ARTIFACT_CLASS_DIRS:

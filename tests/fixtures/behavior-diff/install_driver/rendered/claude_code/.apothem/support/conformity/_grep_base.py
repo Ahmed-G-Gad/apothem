@@ -67,6 +67,7 @@ from apothem.conformity._project_paths import (
     FILE_ENTRY,
     LINK_ENTRY,
     SKIPPED_FOLDER_ENTRY,
+    as_opened,
     note_root_spelling,
     note_skipped,
     scan_entries,
@@ -85,6 +86,7 @@ from apothem.conformity._project_paths import is_project_file as is_project_file
 from apothem.conformity._project_paths import (
     list_real_entries as list_real_entries,
 )
+from apothem.conformity._project_paths import no_files as no_files
 from apothem.conformity._project_paths import (
     project_file_target as project_file_target,
 )
@@ -394,12 +396,13 @@ def iter_tree_files(
             elif kind == FILE_ENTRY:
                 if wanted(path.name):
                     files.append(path)
-            elif kind == LINK_ENTRY and include_links:
+            elif kind == LINK_ENTRY and include_links and wanted(path.name):
                 # A caller that checks names only gets the link by its own
                 # name; the walk still never enters it.
-                if wanted(path.name):
-                    files.append(path)
-            elif kind in (LINK_ENTRY, SKIPPED_FOLDER_ENTRY) or wanted(path.name):
+                files.append(path)
+            elif kind in (LINK_ENTRY, SKIPPED_FOLDER_ENTRY) or wanted(
+                as_opened(path.name)
+            ):
                 # A link may hide a folder or a file; a pipe, device or socket
                 # with a wanted name would make the read wait or never end.
                 note_skipped(path)

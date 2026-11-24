@@ -38,6 +38,7 @@ from apothem.conformity import (
     agents_md_coverage_grep,
     conventional_commit_grep,
     dynamism_grep,
+    gate_evidence_grep,
     harden_runner_grep,
     naming_grep,
     no_global_plans_grep,
@@ -49,6 +50,7 @@ from apothem.conformity._grep_base import (
     is_project_file,
     iter_tree_files,
     list_real_entries,
+    no_files,
     project_file_target,
 )
 from apothem.conformity._project_paths import (
@@ -60,6 +62,10 @@ from tests._shared.git_env import hermetic_git_env
 
 _POSIX_ONLY = pytest.mark.skipif(
     os.name == "nt", reason="named pipes and /dev/zero exist only on POSIX systems"
+)
+
+_POSIX_SYMLINKS = pytest.mark.skipif(
+    os.name == "nt", reason="a symbolic link to a file needs a privilege on Windows"
 )
 
 # Enough paths to show a walk that follows a folder link back into the root,
@@ -452,15 +458,28 @@ def test_the_stray_plans_sweep_names_a_link_it_does_not_search(tmp_path: Path) -
 
 
 def _fake_readlink(monkeypatch: pytest.MonkeyPatch, link: Path, text: str) -> None:
-    """Make *link* read as a symbolic link holding *text*, on any host."""
+    """Make *link* read as a symbolic link holding *text*, on any host.
+
+    ``os.readlink`` returns the text as stored; ``Path.readlink`` is patched
+    too, for any caller that reads a link that way.
+    """
     real_readlink = Path.readlink
+    real_os_readlink = os.readlink
 
     def readlink(self: Path) -> Path:
         if self == link:
             return Path(text)
         return real_readlink(self)
 
+    def os_readlink(
+        path: os.PathLike[str] | str, *args: object, **kwargs: object
+    ) -> str:
+        if Path(path) == link:
+            return text
+        return real_os_readlink(path, *args, **kwargs)  # type: ignore[no-any-return,arg-type]
+
     monkeypatch.setattr(Path, "readlink", readlink)
+    monkeypatch.setattr(os, "readlink", os_readlink)
 
 
 def test_a_link_target_is_found_level_by_level(
@@ -773,22 +792,7 @@ def test_the_walk_does_not_list_an_unwanted_trailing_dot_file(tmp_path: Path) ->
         notes.unlink()
 
 
-def test_a_linked_git_folder_stops_every_git_run(tmp_path: Path) -> None:
-    """The plans check and the coverage check do not run git through a link."""
-    elsewhere = tmp_path / "elsewhere"
-    elsewhere.mkdir()
-    root = (tmp_path / "project").resolve()
-    root.mkdir()
-    _link_folder(root / ".git", elsewhere)
-
-    start_skip_log(root)
-    with pytest.raises(RuntimeError, match="link"):
-        no_global_plans_grep._git_ls_files(root)
-    assert agents_md_coverage_grep._last_commit_times(root) is None
-    assert take_skipped_paths() == [".git"]
-
-
-@_POSIX_ONLY
+@_POSIX_SYMLINKS
 def test_a_package_folder_whose_readme_links_out_still_needs_coverage(
     tmp_path: Path,
 ) -> None:
@@ -801,7 +805,7 @@ def test_a_package_folder_whose_readme_links_out_still_needs_coverage(
     assert "src/apothem/foo" in agents_md_coverage_grep.meaningful_folders(root)
 
 
-@_POSIX_ONLY
+@_POSIX_SYMLINKS
 def test_a_companion_that_links_out_is_not_judged_stale(tmp_path: Path) -> None:
     """A committed companion later swapped for an outside link is not read."""
     root = (tmp_path / "project").resolve()
@@ -897,14 +901,391 @@ def test_the_walk_names_a_link_with_a_pruned_name(tmp_path: Path) -> None:
     assert take_skipped_paths() == ["node_modules"]
 
 
-def test_a_linked_git_folder_is_not_taken_as_the_checkout(tmp_path: Path) -> None:
-    """git would follow a ``.git`` link, or climb past a dangling one, so neither runs."""
-    elsewhere = tmp_path / "elsewhere"
-    elsewhere.mkdir()
+# ---------------------------------------------------------------------------
+# Review round 7: the root under another spelling, drive parts, ASCII case,
+# git through a linked .git per caller, listing notes, used links
+# ---------------------------------------------------------------------------
+
+
+def _git(cwd: Path, *args: str) -> None:
+    subprocess.run(
+        ["git", *args], cwd=cwd, env=hermetic_git_env(), check=True, capture_output=True
+    )
+
+
+def _project_with_linked_git(tmp_path: Path) -> Path:
+    """Return a project whose ``.git`` links to another, working repository.
+
+    The other repository tracks a plans file and has history, so a check that
+    ran git through the link would see it: each caller's own result shows
+    whether that caller looked at the link first.
+    """
+    other = tmp_path / "other"
+    _write(other / ".plans" / "x.md")
+    _write(other / "pkg" / "AGENTS.md")
+    _git(other, "init", "-q")
+    _git(other, "config", "user.email", "test@apothem.invalid")
+    _git(other, "config", "user.name", "apothem-test")
+    _git(other, "config", "commit.gpgsign", "false")
+    _git(other, "add", "-A")
+    _git(other, "commit", "-qm", "feat: other repository")
     root = (tmp_path / "project").resolve()
     root.mkdir()
-    _link_folder(root / ".git", elsewhere)
+    _link_folder(root / ".git", other / ".git")
+    return root
 
+
+_LINKED_GIT_MESSAGE = "the .git entry is a link, so git would read another repository"
+
+
+def test_the_plans_listing_refuses_a_linked_git(tmp_path: Path) -> None:
+    root = _project_with_linked_git(tmp_path)
+    start_skip_log(root)
+    with pytest.raises(RuntimeError) as raised:
+        no_global_plans_grep._git_ls_files(root)
+    assert str(raised.value) == _LINKED_GIT_MESSAGE
+    assert take_skipped_paths() == [".git"]
+
+
+def test_the_plans_check_reports_a_linked_git_and_still_sweeps(tmp_path: Path) -> None:
+    root = _project_with_linked_git(tmp_path)
+    (root / ".plans").mkdir()
+    start_skip_log(root)
+    result = no_global_plans_grep.check(root)
+    assert take_skipped_paths() == [".git"]
+    assert result.tracked_count == 0
+    assert sorted(f.path for f in result.findings) == [".git", ".plans/"]
+    assert not result.passed
+
+
+def test_the_plans_command_gives_its_report_for_a_linked_git(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = _project_with_linked_git(tmp_path)
+    code = no_global_plans_grep._main(["no-global-plans-grep", str(root)])
+    payload = json.loads(capsys.readouterr().out)
+    assert code != 0
+    assert payload["skipped_links"] == [".git"]
+    assert payload["passed"] is False
+
+
+def test_the_coverage_history_refuses_a_linked_git(tmp_path: Path) -> None:
+    root = _project_with_linked_git(tmp_path)
+    start_skip_log(root)
+    assert agents_md_coverage_grep._last_commit_times(root) is None
+    assert take_skipped_paths() == [".git"]
+
+
+def test_the_commit_subject_refuses_a_linked_git(tmp_path: Path) -> None:
+    root = _project_with_linked_git(tmp_path)
     start_skip_log(root)
     assert conventional_commit_grep._read_head_subject(root) == (None, "not-a-git-repo")
     assert take_skipped_paths() == [".git"]
+
+
+@_WINDOWS_ONLY
+def test_a_link_through_another_case_of_the_root_counts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """NTFS opens ``proj`` and ``PROJ`` as one folder, so both spellings count."""
+    root = (tmp_path / "Proj").resolve()
+    agents = _write(root / "AGENTS.md")
+    link = root / "CLAUDE.md"
+    lower = str(root).lower() + chr(92) + "AGENTS.md"
+    for text in (lower, "../PROJ/AGENTS.md", "../proj/AGENTS.md"):
+        _fake_readlink(monkeypatch, link, text)
+        assert _project_paths._link_target(root, link) == agents, text
+
+
+@_WINDOWS_ONLY
+def test_a_link_part_with_a_drive_looks_at_nothing_outside(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``D:foo`` or ``E:`` inside a link would replace the folder with another drive."""
+    root = (tmp_path / "project").resolve()
+    _write(root / "sub" / "x" / "AGENTS.md")
+    link = root / "CLAUDE.md"
+    back = chr(92)
+    looked: list[str] = []
+    real_lstat = os.lstat
+
+    def lstat(path: os.PathLike[str] | str, *args: object, **kwargs: object) -> object:
+        looked.append(str(path))
+        return real_lstat(path, *args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(os, "lstat", lstat)
+    texts = [
+        back.join(["sub", "D:foo", "x", "AGENTS.md"]),
+        back.join(["sub", "D:..", "x", "AGENTS.md"]),
+        back.join(["sub", "E:", "AGENTS.md"]),
+        back.join(["sub", "C:..", "..", "x", "AGENTS.md"]),
+        back.join(["sub", "x", "AGENTS.md:stream"]),
+    ]
+    for text in texts:
+        _fake_readlink(monkeypatch, link, text)
+        looked.clear()
+        assert _project_paths._link_target(root, link) is None, text
+        assert [p for p in looked if not p.startswith(str(root))] == [], text
+
+
+@pytest.mark.parametrize(
+    ("root", "path", "inside"),
+    [
+        ("C:/proj", "c:/proj/f.md", True),
+        ("//srv/share/proj", "//SRV/SHARE/proj/f.md", True),
+        ("//srv/stra" + chr(0xDF) + "e/proj", "//srv/STRASSE/proj/f.md", False),
+        ("//srv/share/proj", "//" + chr(0x17F) + "rv/share/proj/f.md", False),
+        ("S:/proj", chr(0x17F) + ":/proj/f.md", False),
+        ("I:/proj", chr(0x131) + ":/proj/f.md", False),
+    ],
+    ids=[
+        "drive-letter",
+        "ascii-share",
+        "sharp-s",
+        "long-s-server",
+        "long-s",
+        "dotless-i",
+    ],
+)
+def test_only_ascii_letters_of_the_first_part_compare_without_case(
+    root: str, path: str, inside: bool
+) -> None:
+    """``str.upper`` folds a sharp s to ``SS``; those name other shares and drives."""
+    from pathlib import PureWindowsPath
+
+    assert (
+        _project_paths._exactly_inside(PureWindowsPath(root), PureWindowsPath(path))  # type: ignore[arg-type]
+        is inside
+    )
+
+
+@_WINDOWS_ONLY
+def test_an_extended_target_takes_dots_and_slashes_literally(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """After ``\\?\\`` Windows does not apply ``..`` or ``/``, so such a link is broken."""
+    root = (tmp_path / "project").resolve()
+    _write(root / "AGENTS.md")
+    (root / "sub").mkdir()
+    link = root / "CLAUDE.md"
+    back = chr(92)
+    prefix = back * 2 + "?" + back
+    for rest in (
+        str(root) + back + "sub" + back + ".." + back + "AGENTS.md",
+        str(root) + back + "." + back + "AGENTS.md",
+        str(root) + "/AGENTS.md",
+    ):
+        _fake_readlink(monkeypatch, link, prefix + rest)
+        assert _project_paths._link_target(root, link) is None, rest
+
+
+def test_a_nul_in_link_text_is_refused_without_an_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = (tmp_path / "project").resolve()
+    _write(root / "sub" / "AGENTS.md")
+    link = root / "CLAUDE.md"
+    _fake_readlink(monkeypatch, link, "sub" + chr(0) + "b/AGENTS.md")
+    looked: list[str] = []
+    real_lstat = os.lstat
+
+    def lstat(path: os.PathLike[str] | str, *args: object, **kwargs: object) -> object:
+        looked.append(str(path))
+        return real_lstat(path, *args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(os, "lstat", lstat)
+    assert _project_paths._link_target(root, link) is None
+    assert looked == []
+
+
+@_WINDOWS_ONLY
+def test_a_folder_listing_notes_a_trailing_dot_file_only_where_names_count(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """``notes.`` is noted for a caller that checks file names, not for one that wants folders."""
+    root = (tmp_path / "project").resolve()
+    plans = root / ".apothem" / "plans"
+    plans.mkdir(parents=True)
+    notes = _extended(plans / "notes.")
+    notes.write_bytes(b"x")
+    try:
+        start_skip_log(root)
+        assert list_real_entries(plans) == []
+        assert take_skipped_paths() == [".apothem/plans/notes."]
+        start_skip_log(root)
+        assert list_real_entries(plans, wanted_files=no_files) == []
+        assert list_real_entries(plans, wanted_files=lambda name: name == "other") == []
+        assert take_skipped_paths() == []
+        start_skip_log(root)
+        assert list_real_entries(plans, wanted_files=lambda name: name == "notes") == []
+        assert take_skipped_paths() == [".apothem/plans/notes."]
+        code = gate_evidence_grep._main(["gate-evidence-grep", str(root)])
+        payload = json.loads(capsys.readouterr().out)
+        assert code == 0
+        assert payload.get("skipped_links", []) == []
+    finally:
+        notes.unlink()
+
+
+@_WINDOWS_ONLY
+def test_the_walk_notes_a_trailing_dot_file_it_would_have_read(tmp_path: Path) -> None:
+    """``page.md.`` opens as ``page.md``, a name the walk wants, so it is named."""
+    root = (tmp_path / "project").resolve()
+    _write(root / "keep.md")
+    page = _extended(root / "page.md.")
+    page.write_bytes(b"x")
+    try:
+        start_skip_log(root)
+        assert _walk(root, ".md") == ["keep.md"]
+        assert take_skipped_paths() == ["page.md."]
+    finally:
+        page.unlink()
+
+
+@_WINDOWS_ONLY
+def test_a_junction_with_a_trailing_dot_is_a_link(tmp_path: Path) -> None:
+    """A link is a link whatever its name, so the walk names it as one."""
+    outside = tmp_path / "outside"
+    _write(outside / "page.md")
+    root = (tmp_path / "project").resolve()
+    root.mkdir()
+    winapi = pytest.importorskip("_winapi")
+    winapi.CreateJunction(str(outside), str(_extended(root / "docs.")))
+    try:
+        assert [(p.name, kind) for p, kind in _project_paths.scan_entries(root)] == [
+            ("docs.", _project_paths.LINK_ENTRY)
+        ]
+    finally:
+        _extended(root / "docs.").rmdir()
+
+
+@_WINDOWS_ONLY
+def test_the_stray_plans_sweep_names_a_trailing_dot_folder(tmp_path: Path) -> None:
+    """A plans tree inside ``work.`` is not searched, so the folder is named."""
+    root = (tmp_path / "project").resolve()
+    root.mkdir()
+    work = _extended(root / "work.")
+    (work / ".plans").mkdir(parents=True)
+    try:
+        start_skip_log(root)
+        assert no_global_plans_grep._sweep_stray_plans_dirs(root, frozenset()) == []
+        assert take_skipped_paths() == ["work."]
+    finally:
+        (work / ".plans").rmdir()
+        work.rmdir()
+
+
+def test_a_name_walk_with_links_names_a_folder_link_it_does_not_want(
+    tmp_path: Path,
+) -> None:
+    """A folder link may hide a README, so a walk that yields links still names it."""
+    outside = tmp_path / "outside"
+    _write(outside / "README.md")
+    root = (tmp_path / "project").resolve()
+    _write(root / "README.md")
+    _link_folder(root / "vend", outside)
+
+    start_skip_log(root)
+    found = list(iter_tree_files(root, names=("README.md",), include_links=True))
+    assert [p.relative_to(root).as_posix() for p in found] == ["README.md"]
+    assert take_skipped_paths() == ["vend"]
+
+
+def test_a_readme_link_the_check_used_is_not_listed_as_skipped(tmp_path: Path) -> None:
+    """A README link that names a project file counts, so it hid nothing."""
+    root = (tmp_path / "project").resolve()
+    _write(root / "src" / "apothem" / "bar" / "mod.py")
+    shared = _write(root / "docs-shared" / "README.md")
+    _symlink_or_skip(root / "src" / "apothem" / "bar" / "README.md", shared)
+
+    start_skip_log(root)
+    folders = agents_md_coverage_grep.meaningful_folders(root)
+    assert "src/apothem/bar" in folders
+    assert take_skipped_paths() == []
+
+
+_KELVIN_NAME = "chec" + chr(0x212A) + ".yml"
+
+
+@pytest.mark.parametrize(
+    ("steps", "expected"),
+    [
+        ((("skip", "check.yml"), ("use", "check.yml")), []),
+        ((("use", "check.yml"), ("skip", "check.yml")), []),
+        ((("skip", _KELVIN_NAME), ("use", "check.yml")), [_KELVIN_NAME]),
+        ((("use", "check.yml"), ("skip", _KELVIN_NAME)), [_KELVIN_NAME]),
+    ],
+    ids=[
+        "skip-then-use",
+        "use-then-skip",
+        "kelvin-skip-then-use",
+        "kelvin-use-then-skip",
+    ],
+)
+def test_only_the_exact_link_read_through_leaves_the_skip_log(
+    tmp_path: Path, steps: tuple[tuple[str, str], ...], expected: list[str]
+) -> None:
+    """``Path`` equality folds case on Windows; a Kelvin-sign sibling is another entry."""
+    root = (tmp_path / "project").resolve()
+    start_skip_log(root)
+    for step, name in steps:
+        if step == "skip":
+            _project_paths.note_skipped(root / name)
+        else:
+            _project_paths._note_used(root / name)
+    assert take_skipped_paths() == expected
+
+
+def _case_sensitive_folder(folder: Path) -> Path:
+    """Make *folder* and turn on NTFS case sensitivity for it, or skip."""
+    folder.mkdir(parents=True)
+    try:
+        subprocess.run(
+            ["fsutil", "file", "setCaseSensitiveInfo", str(folder), "enable"],
+            check=True,
+            capture_output=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        pytest.skip(f"this host cannot make a case-sensitive folder: {exc}")
+    return folder
+
+
+@_WINDOWS_ONLY
+def test_another_case_that_is_another_folder_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """In a case-sensitive folder ``proj`` beside ``Proj`` is a different folder."""
+    base = _case_sensitive_folder(tmp_path / "cs")
+    root = (base / "Proj").resolve()
+    _write(root / "AGENTS.md")
+    _write(base / "proj" / "AGENTS.md")
+    link = root / "CLAUDE.md"
+    for text in ("../proj/AGENTS.md", str(base / "proj" / "AGENTS.md")):
+        _fake_readlink(monkeypatch, link, text)
+        assert _project_paths._link_target(root, link) is None, text
+
+
+@_WINDOWS_ONLY
+def test_an_other_case_ancestor_that_is_a_junction_is_not_crossed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``work`` beside ``Work`` may be a junction; nothing below it is looked at."""
+    base = _case_sensitive_folder(tmp_path / "cs")
+    root = (base / "Work" / "Proj").resolve()
+    _write(root / "AGENTS.md")
+    elsewhere = tmp_path / "elsewhere"
+    _write(elsewhere / "Proj" / "AGENTS.md")
+    _link_folder(base / "work", elsewhere)
+    link = root / "CLAUDE.md"
+    _fake_readlink(monkeypatch, link, str(base / "work" / "Proj" / "AGENTS.md"))
+    looked: list[str] = []
+    real_lstat = os.lstat
+
+    def lstat(path: os.PathLike[str] | str, *args: object, **kwargs: object) -> object:
+        looked.append(str(path))
+        return real_lstat(path, *args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(os, "lstat", lstat)
+    assert _project_paths._link_target(root, link) is None
+    below = str(base / "work") + chr(92)
+    assert [p for p in looked if p.startswith(below)] == []
