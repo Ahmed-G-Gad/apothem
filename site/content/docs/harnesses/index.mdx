@@ -63,8 +63,12 @@ apothem doctor
 
 ## How adapters work
 
-Each adapter implements the `HarnessAdapter` protocol registered via
-setuptools entry-points. On install, the CLI loads and validates the shared
+Each adapter implements the `HarnessAdapter` protocol and is listed in the
+static harness registry (`src/apothem/lib/harness_registry.py`), which the CLI
+resolves adapters from. The `apothem.harnesses` entry points in
+`pyproject.toml` list the same adapters, and a test keeps the two lists equal,
+but the CLI does not read entry points, so another package cannot add an
+adapter by declaring one. On install, the CLI loads and validates the shared
 YAML profile, resolves the adapter through the registry, validates the
 materialization plan, and writes the platform-native config to the harness's
 native user or project location. On update, it re-derives from the current

@@ -244,7 +244,8 @@ after the block is kept on every sync.
 
 ## Compatibility notes
 
-Cursor 0.45+ supports project-level instructions via `.cursor/rules/`. The
+Cursor reads project-level instructions from `.cursor/rules/`, per the
+[Cursor rules documentation](https://cursor.com/docs/rules). The
 adapter writes to the project-scoped `.cursor/rules/` directory by default;
 Cursor has no documented file-based user-global rules path for this adapter to
 manage.

@@ -30,6 +30,10 @@ files, and normalizes Apothem helper definitions as OpenCode subhelpers.
 ~/.config/opencode/.apothem/support/{rules,templates,hooks}/
 ```
 
+The install also creates the Apothem data folder,
+`~/.config/opencode/.apothem/` by default, with `contexts/`, `learning/`,
+`memory/` and `plans/` in it.
+
 These are the default paths. When `XDG_CONFIG_HOME` is set to an absolute
 folder, the adapter writes to `$XDG_CONFIG_HOME/opencode/` instead, the folder
 both OpenCode 1 and OpenCode 2 read. A relative value or a filesystem root is
