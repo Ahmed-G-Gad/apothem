@@ -940,6 +940,45 @@ def test_a_worker_that_cannot_send_a_refusal_says_why(
         assert not gone.exists()
 
 
+def test_a_passing_exit_fails_once_a_refusal_was_reported(
+    request: pytest.FixtureRequest,
+) -> None:
+    """The guard's session-finish and unconfigure wrappers fail a passing exit.
+
+    Its ``pytest_cmdline_main`` wrapper converts the same exits at the end
+    of the run, so the pytester cases pass without the conversion in the
+    other two wrappers; this checks that conversion on its own. A
+    ``SystemExit`` with the code ``None``, 0 or 5 becomes one with the code
+    1 once the guard has reported a refusal; any other code, and any code
+    before such a report, stays.
+    """
+    conftest = _suite_conftest(request.config)
+    config = SimpleNamespace(stash=pytest.Stash())
+
+    def ended(code: object, reported: bool) -> object:
+        config.stash[conftest._REPORTED] = reported
+        with (
+            pytest.raises(SystemExit) as raised,
+            conftest._a_passing_exit_fails(config),
+        ):
+            raise SystemExit(code)
+        return raised.value.code
+
+    codes = (None, 0, 5, 3, "a message")
+    found = {
+        (code, reported): ended(code, reported)
+        for code in codes
+        for reported in (False, True)
+    }
+
+    passing = {None, 0, 5}
+    assert found == {
+        (code, reported): 1 if reported and code in passing else code
+        for code in codes
+        for reported in (False, True)
+    }
+
+
 def test_the_pytester_cases_pass(tmp_path: Path) -> None:
     """Run the ``case_*`` functions below in a pytester session of their own."""
     session = tmp_path / "session"
