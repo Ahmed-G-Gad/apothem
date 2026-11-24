@@ -1110,16 +1110,21 @@ def remove_managed_block(existing: str) -> str:
     the block), the frontmatter is removed together with the block. The first
     whole block goes, and so does each later exact copy of it (a block pasted
     in twice); any other whole block, such as a marker pair the operator
-    quotes, stays. A byte order mark at offset 0 stays in front of what is
-    left, and goes with the file when nothing else is left.
+    quotes, stays. A copy the strip cannot take out (one right after what
+    reads as Apothem's frontmatter once the block above it is out) stays too.
+    A byte order mark at offset 0 stays in front of what is left, and goes
+    with the file when nothing else is left.
     """
     bom, rest = _split_bom(existing)
     first = complete_managed_block(rest)
     if first is None:
         return existing
     text = _remove_block(rest)
-    while first is not None and complete_managed_block(text) == first:
-        text = _remove_block(text)
+    while complete_managed_block(text) == first:
+        shorter = _remove_block(text)
+        if shorter == text:
+            break
+        text = shorter
     return bom + text if text else ""
 
 
