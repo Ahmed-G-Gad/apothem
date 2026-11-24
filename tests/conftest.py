@@ -1822,8 +1822,9 @@ def _report_held(
     hand-off fails writes why to ``stderr``. No try follows that write,
     so what part of it reached the file stays there, and the controller
     fails the run on it, as it does on a file the write left empty; a
-    later write starts on a line of its own after it. The exit status of *session* becomes "tests failed" when it was
-    "OK" or "no tests collected", which some jobs accept as a pass.
+    later write starts on a line of its own after it. The exit status of
+    *session* becomes "tests failed" when it was "OK" or "no tests
+    collected", which some jobs accept as a pass.
     """
     held = config.stash.get(_HELD, [])
     if not held:
