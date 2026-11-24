@@ -283,7 +283,7 @@ argument-hint: "[--focus area] [--fix]"
         {
           "type": "command",
           "command": "${PYTHON_BIN}",
-          "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "<EventName>", "<message-name>"],
+          "args": ["-E", "-s", "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "<EventName>", "<message-name>"],
           "timeout": <seconds>,
           "statusMessage": "<short human-readable label>"
         }
@@ -300,7 +300,7 @@ argument-hint: "[--focus area] [--fix]"
 | <bdi>`matcher`</bdi> | <bdi>string</bdi> | نمط اسم الأداة (أو <bdi>`"*"`</bdi> للأحداث غير المرتبطة بأداة) | <bdi>`"Write"`</bdi> |
 | <bdi>`hooks[].type`</bdi> | القيمة الحرفية <bdi>`"command"`</bdi> | نوع معالِج الخطّاف الوحيد المدعوم حاليًا | <bdi>`"command"`</bdi> |
 | <bdi>`hooks[].command`</bdi> | <bdi>string</bdi> | أمر قابل للتنفيذ؛ يستخدم <bdi>Apothem</bdi> العنصر النائب <bdi>`${PYTHON_BIN}`</bdi>، ويُحلّ عند التثبيت | <bdi>`"${PYTHON_BIN}"`</bdi> |
-| <bdi>`hooks[].args`</bdi> | مصفوفة سلاسل نصية | وسائط بصيغة <bdi>exec</bdi>: مسار نص برمجي تحت <bdi>`${HARNESS_ROOT}/.apothem/support/`</bdi>، ثم وسائطه | <bdi>`["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]`</bdi> |
+| <bdi>`hooks[].args`</bdi> | مصفوفة سلاسل نصية | وسائط بصيغة <bdi>exec</bdi>: مسار نص برمجي تحت <bdi>`${HARNESS_ROOT}/.apothem/support/`</bdi>، ثم وسائطه | <bdi>`["-E", "-s", "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]`</bdi> |
 | <bdi>`hooks[].timeout`</bdi> | <bdi>integer</bdi> بالثواني | الحدّ الأقصى لزمن التشغيل قبل أن يُنهي المضيف الخطّاف | <bdi>`30`</bdi> |
 | <bdi>`hooks[].statusMessage`</bdi> | <bdi>string</bdi> | تسمية قصيرة تظهر في واجهة المضيف | <bdi>`"Session start"`</bdi> |
 

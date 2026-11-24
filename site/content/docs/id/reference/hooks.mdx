@@ -68,7 +68,7 @@ mendelegasikan ke `hooks/emit_hook_context.py` dan
 
 Harness yang bukan Claude Code menjalankan dispatcher yang sama dengan
 `--contract <id>` setelah skripnya, misalnya
-`"<python>" "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`.
+`"<python>" -E -s "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`.
 Kontrak (`hooks/lib/vendor_contract.py`) menerjemahkan ejaan peristiwa dan nama
 tool serta kunci payload milik vendor ke bentuk Claude yang dibaca para
 penangan, menulis ulang amplop ke bentuk yang dibaca vendor, dan membuang

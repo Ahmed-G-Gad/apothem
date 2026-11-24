@@ -291,7 +291,7 @@ The `hooks` top-level key maps event names to arrays of matcher blocks:
         {
           "type": "command",
           "command": "${PYTHON_BIN}",
-          "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "<EventName>", "<message-name>"],
+          "args": ["-E", "-s", "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "<EventName>", "<message-name>"],
           "timeout": <seconds>,
           "statusMessage": "<short human-readable label>"
         }
@@ -308,7 +308,7 @@ The `-m apothem.hooks.dispatch` form is for development from a source checkout w
 | `matcher` | string | Tool-name pattern (or `"*"` for tool-agnostic events) | `"Write"` |
 | `hooks[].type` | literal `"command"` | The only supported hook handler type today | `"command"` |
 | `hooks[].command` | string | Executable command; Apothem uses the `${PYTHON_BIN}` placeholder, resolved at install | `"${PYTHON_BIN}"` |
-| `hooks[].args` | array of strings | Exec-form arguments: a script path under `${HARNESS_ROOT}/.apothem/support/`, then its arguments | `["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
+| `hooks[].args` | array of strings | Exec-form arguments: `-E` and `-s` (Python reads no `PYTHON*` variable and no user site-packages), a script path under `${HARNESS_ROOT}/.apothem/support/`, then its arguments | `["-E", "-s", "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
 | `hooks[].timeout` | integer seconds | Maximum runtime before the host kills the hook | `30` |
 | `hooks[].statusMessage` | string | Short label surfaced in the host UI | `"Session start"` |
 

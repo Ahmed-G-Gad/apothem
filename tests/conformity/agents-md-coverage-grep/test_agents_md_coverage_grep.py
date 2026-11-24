@@ -17,9 +17,18 @@ real git history.
 
 from __future__ import annotations
 
+import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 
+import pytest
+
 from apothem.conformity.agents_md_coverage_grep import check, meaningful_folders
+
+_SRC = Path(__file__).resolve().parents[3] / "src"
+_NON_ASCII_PATH = "docs/Ábaco.md"
 
 
 def _write(path: Path, text: str = "x\n") -> None:
@@ -92,3 +101,80 @@ def test_freshness_skipped_without_git_history(tmp_path: Path) -> None:
 
     assert result.freshness_checked is False
     assert result.passed is True
+
+
+def _git_env() -> dict[str, str]:
+    """Return the caller's environment without GIT_* variables."""
+    return {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+
+
+def _repo_with_non_ascii_path(root: Path) -> Path:
+    """Make a one-commit repository whose git log prints a raw UTF-8 path.
+
+    ``core.quotepath=false`` makes git print the name ``docs/Ábaco.md`` as raw
+    UTF-8 bytes; byte 0x81 in it has no character in code page 1252.
+    """
+    repo = root / "repo"
+    _write(repo / _NON_ASCII_PATH)
+    env = _git_env()
+    for args in (
+        ["init", "-q"],
+        ["config", "core.quotepath", "false"],
+        ["add", "-A"],
+        [
+            "-c",
+            "user.name=Test",
+            "-c",
+            "user.email=test@example.invalid",
+            "-c",
+            "commit.gpgsign=false",
+            "commit",
+            "-q",
+            "-m",
+            "add",
+        ],
+    ):
+        subprocess.run(["git", "-C", str(repo), *args], check=True, env=env)
+    return repo
+
+
+@pytest.mark.skipif(
+    sys.version_info < (3, 11),
+    reason="subprocess asks locale.getencoding() for its text default from 3.11",
+)
+def test_commit_times_read_git_output_as_utf8_under_any_locale(
+    tmp_path: Path,
+) -> None:
+    """git output decodes as UTF-8 even when the locale code page is cp1252.
+
+    The gate starts this validator with ``-E``, which ignores ``PYTHONUTF8``.
+    The child below turns UTF-8 mode off and reports cp1252 as the locale
+    encoding, the default text encoding on many Windows hosts. Read in that
+    code page, git's raw UTF-8 path raises UnicodeDecodeError, which the
+    validator does not catch (POSIX), or leaves the output empty, so the
+    freshness check is skipped (Windows, where subprocess decodes in a reader
+    thread).
+    """
+    repo = _repo_with_non_ascii_path(tmp_path)
+    code = (
+        "import json, locale, sys\n"
+        "locale.getencoding = lambda: 'cp1252'\n"
+        f"sys.path.insert(0, {str(_SRC)!r})\n"
+        "from pathlib import Path\n"
+        "from apothem.conformity.agents_md_coverage_grep import _last_commit_times\n"
+        "print(json.dumps(_last_commit_times(Path(sys.argv[1])) is not None))\n"
+    )
+
+    completed = subprocess.run(
+        [sys.executable, "-X", "utf8=0", "-c", code, str(repo)],
+        cwd=tmp_path,
+        env=_git_env(),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        check=False,
+        timeout=60,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert json.loads(completed.stdout) is True

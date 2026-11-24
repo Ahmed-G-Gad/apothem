@@ -165,7 +165,7 @@ O comando no arquivo de hook tem esta aparência, com o seu interpretador e o ca
 no lugar dos dois caminhos:
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
 ```
 
 `--contract kiro` faz o despachante imprimir o contexto como texto simples, que é

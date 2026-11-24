@@ -169,11 +169,11 @@ CodeBuddy Code v1.16.0 or later.
   `startup|resume|clear|compact` and which has no tool name to match.
 - Shell: commands run through `$SHELL` on macOS and Linux and through Git Bash
   on Windows (cmd.exe and PowerShell are not supported), so the adapter writes
-  bash quoting: `"<interpreter>" "<script>" ...`. The page recommends calling
-  Python as `python3 script.py` because a shebang is unreliable under Git Bash;
-  the adapter names the interpreter Apothem resolved at install time (an absolute
-  path, version-probed), not `python3`. `$CODEBUDDY_PROJECT_DIR` is the project
-  root.
+  bash quoting: `"<interpreter>" -E -s "<script>" ...`. The page recommends
+  calling Python as `python3 script.py` because a shebang is unreliable under
+  Git Bash; the adapter names the interpreter Apothem resolved at install time
+  (an absolute path, version-probed), not `python3`. `$CODEBUDDY_PROJECT_DIR` is
+  the project root.
 - Activation: settings are snapshotted at startup and are not hot-loaded, and
   an externally edited settings file needs review in the `/hooks` panel before
   its hooks apply (the page says the change "Requires review in the `/hooks`

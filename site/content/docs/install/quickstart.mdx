@@ -88,10 +88,11 @@ Recommended first step — the guided setup (profile -> preview -> install):
   The installer writes an `apothem` shim into `$HOME/.local/bin` (POSIX) or
   `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) and never edits your `PATH`.
   Once that directory is on `PATH`, you run the engine directly as
-  `apothem <command>`. If it is not yet on `PATH`,
-  the banner prints a self-contained fallback —
-  `PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>` — that needs no
-  shim; prepend the exact prefix your banner printed to each command.
+  `apothem <command>`. If it is not yet on `PATH`, the banner prints the
+  shim's full path (`~/.local/bin/apothem` by default), or, when no shim was
+  placed, a command that starts the engine with the current folder kept off
+  `sys.path`; use what the banner printed in place of `apothem` in each
+  command.
 </Callout>
 
 The [installation guide](/docs/install) covers the other install paths — the

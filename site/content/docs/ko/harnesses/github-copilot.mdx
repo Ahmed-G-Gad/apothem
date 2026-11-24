@@ -164,7 +164,7 @@ Copilot은 권한 필드와 재작성된 도구 입력만 읽으며, `additional
 자리에 여러분의 인터프리터와 프로젝트 경로가 들어갑니다.
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
 ```
 
 `--contract copilot`은 디스패처가 Copilot의 camelCase 입력을 읽고
