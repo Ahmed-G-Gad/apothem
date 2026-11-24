@@ -1010,6 +1010,42 @@ def test_a_write_that_fails_part_way_leaves_the_workers_file_as_it_was(
     ]
 
 
+def test_a_copy_write_that_fails_part_way_is_cut_back(
+    request: pytest.FixtureRequest, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The copy a worker writes beside its hand-off is cut back on a failure.
+
+    The refusals reach the controller through the output xdist sends, so a
+    line of the copy cut off part way would be one more refusal for the
+    controller to report.
+    """
+    conftest = _suite_conftest(request.config)
+    late = tmp_path / "gw0.jsonl"
+    before = b'{"where": "before", "messages": [], "handed_off": false}\n'
+    late.write_bytes(before)
+    output: dict[str, object] = {}
+    worker = SimpleNamespace(
+        stash=pytest.Stash(),
+        workeroutput=output,
+        workerinput={"workerid": "gw0", conftest._LATE_TO_THE_CONTROLLER: str(late)},
+        pluginmanager=SimpleNamespace(get_plugin=lambda name: None),
+    )
+    worker.stash[conftest._HELD] = [("after the last test", ("a refusal",))]
+    opened = Path.open
+
+    def half_open(path: Path, *args: str, **kwargs: str) -> _HalfWrites:
+        return _HalfWrites(opened(path, *args, **kwargs))
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "open", half_open)
+        conftest._report_held(worker, None, to_the_controller=True)
+
+    assert output[conftest._TO_THE_CONTROLLER] == [
+        ("after the last test", ("a refusal",))
+    ]
+    assert late.read_bytes() == before
+
+
 def test_a_last_write_that_fails_part_way_still_fails_the_run(
     request: pytest.FixtureRequest,
     tmp_path: Path,
