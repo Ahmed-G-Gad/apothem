@@ -835,14 +835,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   OpenCode's uninstall takes after the one that removes what the install
   record lists, which closes an install recorded under another spelling of its
   folder: the uninstall exits `2`, as it had removed files, and that install
-  stays recorded, so OpenCode still reads as installed and the next run closes
-  it. `apothem rollback` now undoes the newest install still in place, so a
-  second rollback undoes the one before, refuses an `--install-id` that was
-  already rolled back or uninstalled, and removes a file an install created
-  only while it still has the content that install wrote. Uninstalling a tool
-  from one project no longer removes the shared memory, contexts and learning
-  stores in your home folder while the same tool installed in another project
-  still uses them.
+  stays recorded. A later run does not close it yet: OpenCode then reads as
+  not installed, so the uninstall skips it. `apothem rollback` now undoes the
+  newest install still in place, so a second rollback undoes the one before,
+  refuses an `--install-id` that was already rolled back or uninstalled, and
+  removes a file an install created only while it still has the content that
+  install wrote. Uninstalling a tool from one project no longer removes the
+  shared memory, contexts and learning stores in your home folder while the
+  same tool installed in another project still uses them.
 - **Uninstall checks more strictly which files are Apothem's.** An install
   recorded by an earlier release does not say which files Apothem wrote, so
   the uninstall compares them with what this release writes. In the two places
