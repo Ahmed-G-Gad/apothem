@@ -1064,6 +1064,19 @@ SHAPES = {
     ],
     "four-open": ["   ````", "   ````", " ````", "  " + B, E, B],
     "list-fence": ["2) item", "prose", "   `````text title", B, E, " `````"],
+    # A lazy list line, then a fence in the item: the fences at the margin
+    # below it pair otherwise in a viewer.
+    "lazy-shift": ["- item K93", "text K14", "  ```md", "````", "````", B],
+    "lazy-shift-tilde": [
+        "2) item K24",
+        "text K59",
+        "   ~~~sh",
+        "~~~",
+        "```",
+        B,
+        " ~~~",
+    ],
+    "lazy-after-blank": ["- item", "", "  more", "lazy", "  ```md", B, "old"],
     "html-end": ["<!-- END APOTHEM MANAGED BLOCK", "~~~md", B],
     "hr-below": ["Intro text KEEP1", B, "rule", E, "---", "more KEEP2"],
     "open-comment": ["notes", "<!-- draft", B, "rule", E, "", "tail KEEP1"],

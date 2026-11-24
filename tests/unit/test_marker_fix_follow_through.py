@@ -381,3 +381,59 @@ def test_a_closing_line_is_still_given_where_a_viewer_reads_alike() -> None:
     assert _NO_STEPS not in message
     lazy = _lines(B, "old", "", "- item", "more", "  ~~~md", "  code")
     assert _NO_STEPS in stray_fix_text(lazy, TAKES_OUT)
+
+
+def test_no_numbered_steps_where_a_lazy_list_line_moves_a_fence_at_the_margin() -> None:
+    """A fence in a list item after a lazy line changes how the fences below it pair.
+
+    CommonMark keeps the item open across ``text``, so the indented opener
+    starts a code block in it, which the first line of four backticks ends
+    by ending the item; that line then opens a code block of its own, which
+    the second one closes. Apothem ends the item at ``text`` and pairs the
+    indented opener with the first line of four backticks, so it reads the
+    second one as opening the code block the file ends in. A closing line
+    added below the last line would open a code block in a viewer, so the
+    fix gives no numbered steps, though that opener is not indented.
+    """
+    text = _lines("- item", "text", "  ```md", "````", "````", B)
+    assert trailing_fence(text) == (5, "````")
+    message = stray_fix_text(text, REPLACES)
+    assert "Below line" not in message
+    assert _changes(message) == []
+    assert _NO_STEPS in message
+    assert "a code block that opens at line 5," in message
+    tilde = _lines("2) item", "text", "   ~~~sh", "~~~", "```", B, " ~~~")
+    assert trailing_fence(tilde) == (5, "```")
+    message = stray_fix_text(tilde, REPLACES)
+    assert _changes(message) == []
+    assert "a code block that opens at line 5," in message
+
+
+def test_no_numbered_steps_after_a_lazy_line_below_a_blank_line_in_the_item() -> None:
+    """A list item stays open across a blank line for a line indented to its text.
+
+    ``more`` sits in the item after the blank line, ``lazy`` goes on its text
+    at the left margin, and the fence below sits in the item for a viewer
+    but not for Apothem.
+    """
+    text = _lines("- item", "", "  more", "lazy", "  ```md", B, "old")
+    assert trailing_fence(text) == (5, "```")
+    message = stray_fix_text(text, TAKES_OUT)
+    assert _changes(message) == []
+    assert "a code block that opens at line 5," in message
+
+
+def test_a_closing_line_is_given_once_the_item_of_a_lazy_line_ends() -> None:
+    """A line at the left margin after a blank line ends the item for a viewer too.
+
+    So does a list item at the left margin: the indented fence after either
+    reads alike, and the fix closes its code block.
+    """
+    text = _lines("- item", "lazy", "", "# Head", "", "  ```md", B, "old")
+    message = stray_fix_text(text, TAKES_OUT)
+    assert _NO_STEPS not in message
+    assert "A1. Below line 8, add a line of 3 backticks." in message
+    sibling = _lines(B, "old", "", "- a", "- b", "  ```md", "  code")
+    message = stray_fix_text(sibling, TAKES_OUT)
+    assert _NO_STEPS not in message
+    assert "A1. Below line 7, add a line of 3 backticks, indented 2 spaces." in message

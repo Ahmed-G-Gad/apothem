@@ -87,9 +87,9 @@ _HTML_START = re.compile(
     re.MULTILINE,
 )
 
-#: A list item's bullet after the indent, with the gap after it: the item's
-#: text starts at the column where the match ends.
-_ITEM = re.compile(r"[ \t]*(?:[-+*]|[0-9]{1,9}[.)])(?:[ \t]+|\Z)")
+#: A line's list bullets after the indent, each with the gap after it: the
+#: text of the innermost item starts at the column where the match ends.
+_ITEM = re.compile(r"[ \t]*(?:(?:[-+*]|[0-9]{1,9}[.)])(?:[ \t]+|\Z))+")
 
 #: Columns of indentation that make a line indented code.
 _CODE_INDENT = 4
@@ -391,29 +391,55 @@ def _viewer_may_differ(layout: _Layout, opener: int) -> bool:
     the left margin, which ends that item for Apothem but not for a viewer
     (see :func:`apothem.lib.harness_materializer._marker_lines`). So a viewer
     may read the code block otherwise when a line above *opener* may start
-    an HTML block (see :data:`_HTML_START`), or when *opener* is indented and
-    a line above it that is not blank sits left of the text of a list item
-    above it, with no blank line between them: the closing line a fix adds
-    can then start a code block in a viewer. Either can hold for a file that
-    Apothem and a viewer read alike, too; the fix gives no numbered steps
-    for it all the same.
+    an HTML block (see :data:`_HTML_START`), or when a list item's text goes
+    on at the left margin above it and an indented line follows while a
+    viewer may still hold that item open (see :func:`_lazy_item_above`): the
+    closing line a fix adds can then start a code block in a viewer. Either
+    can hold for a file that Apothem and a viewer read alike, too; the fix
+    gives no numbered steps for it all the same.
     """
     above = layout.lines[: opener - 1]
     start = sum(len(line) + 1 for line in above)
     if _HTML_START.search(layout.text, 0, start) is not None:
         return True
-    if not _columns(layout.lines[opener - 1]):
-        return False
+    return _lazy_item_above(layout.lines[:opener])
+
+
+def _lazy_item_above(lines: Sequence[str]) -> bool:
+    """Return True when a viewer may keep a list item open over an indented line of *lines*.
+
+    A line that is not blank, starts no list item and sits left of the text
+    of a list item above it, with no blank line between them, may go on
+    that item's text at the left margin: Apothem then ends the item, while a
+    viewer keeps it open. An indented line after it, the last of *lines*
+    included, can then sit in that item for a viewer and outside it for
+    Apothem, so a code fence it opens or closes can pair otherwise, as can
+    every fence line below it. Lines at the left margin up to there read
+    alike: each goes on the item's text, or ends the item for a viewer as
+    for Apothem. The item ends for both at a line at the left margin after a
+    blank line, or at a list item there, so an indented line only after
+    that reads alike, too.
+    """
+    # The text column of the innermost list item a line may sit in; whether a
+    # line went on an item's text at the left margin, the item maybe still open
+    # for a viewer; and whether a blank line came just before.
     column: int | None = None
-    for line in above:
+    lazy = blank = False
+    for line in lines:
         if not line.strip():
-            column = None
+            blank = True
             continue
+        columns = _columns(line)
+        if lazy and columns:
+            return True
         item = _ITEM.match(line)
         if item is not None:
+            lazy = False
             column = len(item.group().expandtabs(_CODE_INDENT))
-        elif column is not None and _columns(line) < column:
-            return True
+        elif lazy or (column is not None and columns < column):
+            lazy = not blank
+            column = None
+        blank = False
     return False
 
 
