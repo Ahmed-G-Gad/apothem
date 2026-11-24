@@ -1486,7 +1486,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   names what would make it write OpenCode 2's own shapes instead. The page also
   states that OpenCode 1 loads the Claude Code block in `~/.claude/CLAUDE.md`.
 - **The always-on bytes metric counts only the instruction files Hermes and
-  Codex load.** Hermes loads one kind of project context per session, the
+  Codex load.** Hermes loads one type of project context per session, the
   first with a non-empty file: `.hermes.md` or `HERMES.md` (the first of the
   two that exists is the only candidate of its kind), `AGENTS.override.md` or
   `AGENTS.md`, `CLAUDE.md`, then `.cursorrules` with every
