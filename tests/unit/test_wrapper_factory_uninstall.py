@@ -10,7 +10,9 @@ what every uninstall shim does with an ``error`` result: it raises, so the CLI
 does not report a refused uninstall as done. A native-config uninstall that
 stops at its native-config step, after its first step removed a file or only
 found Apothem's rules file behind a link, or in the shared pass after both
-steps, exits as partial and names that link.
+steps, exits as partial and names that link. One that stops at that step
+before any change fails with the same stopped-uninstall error whether or
+not its first step found something to report.
 """
 
 from __future__ import annotations
@@ -36,6 +38,7 @@ from apothem.harnesses.kimi_code.uninstall import uninstall as kimi_code_uninsta
 from apothem.harnesses.open_claw import OpenClawAdapter
 from apothem.harnesses.opencode import OpenCodeAdapter
 from apothem.lib import install_ledger
+from apothem.lib.harness_materializer import APOTHEM_BLOCK_END
 
 
 def _record_project_root(monkeypatch: pytest.MonkeyPatch) -> list[Path | None]:
@@ -322,21 +325,42 @@ def test_ctrl_c_after_the_first_step_is_recorded_and_exits_through_click(
     assert Path(str(backups[str(rules)])).read_bytes() == written
 
 
+@pytest.mark.parametrize("endless", [False, True])
 def test_a_native_uninstall_stopped_before_any_change_still_fails(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch, endless: bool
 ) -> None:
-    """With no rules file to take out, the same error fails the uninstall (exit 1).
+    """With nothing changed, the same error fails the uninstall (exit 1).
 
-    Nothing changed, so nothing is recorded and the error is raised as it is.
+    There is no rules file to take out, or the only one lost its END marker,
+    so the first step leaves it as it is, with a warning. Either way nothing
+    is recorded, and the error is raised as a stopped uninstall, as one in
+    the shared pass is: the row names the same error with or without that
+    warning, and the warning is reported.
     """
+    workspace = Path.home() / ".openclaw" / "workspace"
+    rules = workspace / "apothem" / "AGENTS.md"
+    if endless:
+        workspace.mkdir(parents=True)
+        (workspace / "AGENTS.md").write_text("# My agent\n", encoding="utf-8")
     OpenClawAdapter().install({})
+    if endless:
+        rules.write_bytes(rules.read_bytes().replace(APOTHEM_BLOCK_END.encode(), b""))
     config = Path.home() / ".openclaw" / "openclaw.json"
     _deny_the_native_config(monkeypatch, config)
 
     code, stderr = _uninstall_open_claw()
+    result = _uninstall_open_claw_as("json")
 
+    envelope = json.loads(result.stdout)
+    stopped = "uninstall stopped: [Errno 13] denied"
     assert code == 1, stderr
-    assert "open-claw uninstall failed: [Errno 13] denied" in stderr
+    assert f"✗ open-claw uninstall failed: {stopped}" in " ".join(stderr.split())
+    assert result.exit_code == 1, result.output
+    assert envelope["results"][0]["message"].startswith(
+        f"MaterializationError: {stopped}"
+    )
+    reported = [warning["path"] for warning in envelope["warnings"]]
+    assert reported == ([str(rules)] if endless else [])
     records = install_ledger.read_records("open_claw")
     assert [record.kind for record in records] == ["install"]
 
