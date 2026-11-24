@@ -267,24 +267,28 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   after which a refusal was absorbed in the test's own process, also when the
   test is marked `xfail`; one absorbed outside any test fails the collection
   of the node pytest was collecting then, or else the run when the session
-  finishes, named for where it happened, also when a worker process of a
-  parallel run absorbs it, before or after it handed its refusals to the main
-  process. Three cases still show only on `stderr` and leave the exit code as
-  it is: one absorbed after the `yield` of a `tryfirst` `pytest_unconfigure`
-  wrapper that pytest registered after the guard, one absorbed in a cleanup
-  registered with `config.add_cleanup`, and one a worker absorbs after that
-  hand-off, or without reaching it, but never writes to the file the main
-  process reads, because the worker ended or was stopped before it did, or
-  that file could not be made or written. At the end of the run the main
-  process tells each worker to exit; a worker still running Python code
-  5 seconds later is interrupted (on Windows, not one blocked in a sleep or
-  another call), and any worker still running after 10 seconds is stopped.
-  With no system record of the account's home (no `passwd` entry), the home
-  is not protected. A test that must run a real install starts Apothem
-  without `PYTEST_CURRENT_TEST` and `PYTEST_VERSION` in the child's
-  environment. `tests/README.md` lists what the refusal does not cover, such
-  as a bind mount of the home, a refusal absorbed in a child process and a
-  folder swapped for a link between the check and the write.
+  finishes, named for where it happened, also when a session-finish hook then
+  ends the run with `pytest.exit(returncode=0)`, or with `sys.exit(0)` after
+  the refusal was reported, and also when a worker process of a parallel run
+  absorbs it, before or after it handed its refusals to the main process: a
+  worker writes each refusal, as soon as it holds it, to a file the main
+  process reads, so one it held before it crashed or was stopped short of that
+  hand-off still fails the run. Three cases still show only on `stderr` and
+  leave the exit code as it is: one absorbed after the `yield` of a `tryfirst`
+  `pytest_unconfigure` wrapper that pytest registered after the guard, one
+  absorbed in a cleanup registered with `config.add_cleanup`, and one a worker
+  absorbs but neither hands over nor writes to that file, because the worker
+  ended or was stopped first (a session-finish hook absorbed it and then
+  crashed the worker, say) or because that file could not be made or written.
+  At the end of the run the main process tells each worker to exit; a worker
+  still running Python code 5 seconds later is interrupted (on Windows, not
+  one blocked in a sleep or another call), and any worker still running after
+  10 seconds is stopped. With no system record of the account's home (no
+  `passwd` entry), the home is not protected. A test that must run a real
+  install starts Apothem without `PYTEST_CURRENT_TEST` and `PYTEST_VERSION` in
+  the child's environment. `tests/README.md` lists what the refusal does not
+  cover, such as a bind mount of the home, a refusal absorbed in a child
+  process and a folder swapped for a link between the check and the write.
 - **The Windows test cells in CI get 120 minutes.** The Windows cells of the
   `ci.yml` quality job take 64 to 88 minutes, and the 90-minute limit
   cancelled cells whose tests had passed. They now get 120, as the CI Matrix
@@ -777,30 +781,52 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `2`) with the next step: copy any of those files you edited and move your
   own files out of Apothem's folders (an update replaces them), then run
   `apothem update` and `apothem uninstall` again. An uninstall that does not
-  finish (a failed step, an error, or Apothem's own files reached through
-  a link) appends an `uninstall-incomplete` record to the install ledger,
-  so running it again finishes the job; an install, update, rollback or
-  finished uninstall replaces that state, and so does removing the files
-  by hand. A file where Apothem keeps a managed block (such as `CLAUDE.md`)
-  counts as Apothem's while the block is there, even after you add text of
-  your own beside it, so the second run still finishes the job. A linked
-  folder that holds only your own files no longer stops an uninstall: it is
-  left in place with a warning and the uninstall finishes. An uninstall that
-  removed files before a step failed now exits `2` with the status `partial`,
-  and the `--format json` warnings are grouped like the printed ones, with
-  `count` and `paths`. An uninstall that stops with an error after removing
-  files exits `2` too. A stopped uninstall now also names each link it
-  found keeping Apothem's own files in place, as one that ran all its steps
-  does: on a `✗ <harness> uninstall did not finish:` line, at the end of its
-  `results` row's message and, when the reasons name one link, in that row's
-  `detail.symlink` and `detail.leads_to`. Such a link makes it exit `2`, also
-  when it removed nothing. `apothem rollback` now undoes the newest install
-  still in place, so a second rollback undoes the one before, refuses an
-  `--install-id` that was already rolled back or uninstalled, and removes a
-  file an install created only while it still has the content that install
-  wrote. Uninstalling a tool from one project no longer removes the shared
-  memory, contexts and learning stores in your home folder while the same
-  tool installed in another project still uses them.
+  finish (a failed step, an error or an interrupt, or Apothem's own files
+  reached through a link) appends an `uninstall-incomplete` record to the
+  install ledger, so running it again finishes the job. One that an error or
+  `Ctrl+C` stops before its last step, the one that removes what the install
+  record lists, appends it only when a step before the one that stopped had
+  changed or backed up a file: an Open-Claw uninstall stopped at
+  `openclaw.json` appends it when its rules-file step had taken Apothem's
+  block out of a workspace's rules file, and nothing when that step changed
+  nothing (also when it found Apothem's rules file behind a link). One stopped
+  inside that rules-file step, or inside the older-layout sweep of Antigravity
+  or Kimi Code, appends nothing, whatever the step had changed. Then the
+  install record stays the latest one, with the same effect. An install,
+  update, rollback or finished uninstall replaces that state, and so does
+  removing the files by hand. A file where Apothem keeps a managed block (such
+  as `CLAUDE.md`) counts as Apothem's while the block is there, even after you
+  add text of your own beside it, so the second run still finishes the job. A
+  linked folder that holds only your own files no longer stops an uninstall:
+  it is left in place with a warning and the uninstall finishes. An uninstall
+  that removed files before a step failed now exits `2` with the status
+  `partial`, and the `--format json` warnings are grouped like the printed
+  ones, with `count` and `paths`. An uninstall that stops with an error after
+  removing files, or after taking Apothem's entries out of a file such as
+  `openclaw.json`, exits `2` too; one stopped by an error inside the
+  rules-file step of Open-Claw or the older-layout sweep of Antigravity or
+  Kimi Code exits `1`, whatever that step had changed, as it reports nothing
+  the step did, and one stopped by `Ctrl+C` exits `1` with `Aborted!`. A
+  stopped uninstall now also reports what it found that leaves it unfinished,
+  as one that ran all its steps does: each link keeping Apothem's own files in
+  place, the files of an earlier release's install that differ from what this
+  release writes, the files of an install with no record, and a file that
+  holds another block between Apothem's markers. Each gets a `✗ <harness>
+  uninstall did not finish:` line and is added to the end of its `results`
+  row's message; when the reasons, the steps that failed before the stop
+  included, name one link, that row carries it in `detail.symlink` and
+  `detail.leads_to`. Such a link, or such files of an earlier release's
+  install or of an install with no record, make it exit `2`, also when it
+  removed nothing; otherwise one that changed nothing exits `1`. An error that
+  stops the settings-file step of Hermes, Open-Claw, OpenCode or Qwen Code now
+  reads `uninstall stopped: <error>`, as one in a later step does, whether or
+  not an earlier step found something to report. `apothem rollback` now undoes
+  the newest install still in place, so a second rollback undoes the one
+  before, refuses an `--install-id` that was already rolled back or
+  uninstalled, and removes a file an install created only while it still has
+  the content that install wrote. Uninstalling a tool from one project no
+  longer removes the shared memory, contexts and learning stores in your home
+  folder while the same tool installed in another project still uses them.
 - **Uninstall checks more strictly which files are Apothem's.** An install
   recorded by an earlier release does not say which files Apothem wrote, so
   the uninstall compares them with what this release writes. In the two places
