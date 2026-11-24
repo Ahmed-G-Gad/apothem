@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -389,8 +390,23 @@ class TestFindActiveSuite:
     def test_returns_none_when_no_plans_dir(self, tmp_path: Path) -> None:
         assert ssb.find_active_suite(tmp_path / ".plans") is None
 
-    def test_picks_most_recent_suite(self, tmp_path: Path) -> None:
+    @pytest.mark.parametrize("newer_first", [False, True])
+    def test_picks_most_recent_suite(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, newer_first: bool
+    ) -> None:
         plans = tmp_path / ".plans"
+        # The filesystem decides the order iterdir lists the two suites, so
+        # pin it both ways: the newer suite must win whether it comes first
+        # (a later, older entry is passed over) or last (it replaces the best).
+        listed = Path.iterdir
+
+        def ordered(self: Path) -> Iterator[Path]:
+            entries = list(listed(self))
+            if self == plans:
+                entries.sort(key=lambda entry: entry.name, reverse=newer_first)
+            return iter(entries)
+
+        monkeypatch.setattr(Path, "iterdir", ordered)
         plans.mkdir()
         older = plans / "suite-a"
         older.mkdir()

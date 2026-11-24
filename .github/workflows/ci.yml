@@ -342,6 +342,9 @@ jobs:
         with:
           pattern: coverage-data-*
           merge-multiple: true
+          # A folder of its own keeps the artifacts' files apart from the
+          # checked-out code the next steps run.
+          path: coverage-data
       - name: Combine and report coverage
         # The data names files by absolute path, and every ubuntu runner checks
         # out to the same path, so the shards' files and this checkout match.
@@ -354,7 +357,7 @@ jobs:
         # coverage report enforces [tool.coverage.report] fail_under = 80 on
         # that engine figure; show_missing lists the lines no test ran.
         run: |
-          python -m coverage combine .coverage.shard-1 .coverage.shard-2
+          python -m coverage combine coverage-data/.coverage.shard-1 coverage-data/.coverage.shard-2
           engine="$(python -c 'import tomllib; source = tomllib.load(open("pyproject.toml", "rb"))["tool"]["coverage"]["run"]["source"]; print(",".join(f"{path}/*" for path in source))')"
           python -m coverage report --include="${engine}"
           python -m coverage xml --include="${engine}" -o coverage.xml
@@ -764,18 +767,23 @@ jobs:
         with:
           pattern: coverage-data-*
           merge-multiple: true
+          # A folder of its own keeps the artifacts' files apart from the
+          # checked-out code the next steps run.
+          path: coverage-data
       - name: Combine coverage over every package
         # The shards measured src/apothem whole, so the engine, conformity and
         # audit figures come from the same tests. combine names each shard's
         # file, so a missing one fails this step instead of reporting half the
-        # suite. coverage json takes no --include and no floor: the next step
-        # holds each package to its own floor, and the coverage job above
-        # enforces the engine's 80. The package stays installed because the
-        # next step installs Apothem for each harness and times the CLI and
-        # the hooks.
+        # suite. coverage json takes no --include, so it covers every package.
+        # --fail-under=0 turns off [tool.coverage.report] fail_under = 80,
+        # which coverage json would otherwise check against the total over all
+        # of src/apothem, a figure no project rule gates: the next step holds
+        # the engine, conformity and audit each to its own floor. The package
+        # stays installed because the next step installs Apothem for each
+        # harness and times the CLI and the hooks.
         run: |
-          python -m coverage combine .coverage.shard-1 .coverage.shard-2
-          python -m coverage json -o coverage-all.json
+          python -m coverage combine coverage-data/.coverage.shard-1 coverage-data/.coverage.shard-2
+          python -m coverage json --fail-under=0 -o coverage-all.json
       - name: Collect metrics and enforce package coverage floors
         # Floors: [tool.coverage.report] fail_under (engine) and
         # [tool.coverage.package-floors] (conformity, audit) in pyproject.toml.

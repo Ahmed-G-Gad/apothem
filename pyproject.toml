@@ -394,9 +394,8 @@ exclude_lines = [
 # and neither lowers it. coverage.py ignores this table: the CI coverage shards
 # measure src/apothem whole, the `metrics` job combines their data, and
 # `scripts/dev/collect_metrics.py --check-floors` fails when a package drops
-# below its floor. Each floor is the
-# measured value rounded down; raise it as coverage rises, never lower it to
-# make a change pass.
+# below its floor. Each floor is the measured value rounded down; raise it as
+# coverage rises, never lower it to make a change pass.
 [tool.coverage.package-floors]
 conformity = { path = "src/apothem/conformity", fail_under = 81 }
 audit = { path = "src/apothem/audit", fail_under = 70 }

@@ -24,6 +24,7 @@ from __future__ import annotations
 import re
 import subprocess
 import sys
+from fnmatch import fnmatchcase
 from pathlib import Path
 
 import pytest
@@ -36,6 +37,15 @@ else:  # Python 3.10: tomli is in the dev lock for python_full_version < 3.11.
 
 _REPO = Path(__file__).resolve().parents[2]
 _CI = _REPO / ".github" / "workflows" / "ci.yml"
+# The folder both download steps put the shards' data in, apart from the
+# checked-out code.
+_DATA_DIR = "coverage-data"
+# The jobs that write or read the shards' coverage data.
+_DATA_JOBS = ("coverage-shard", "coverage", "metrics")
+
+# A set command that turns -e off for the rest of a step: "set +e", "set +xe",
+# "set -x +e" or "set +o errexit".
+_ERREXIT_OFF = re.compile(r"\bset\b[^\n;&|#]*\+(?:[a-z]*e|o\s+errexit\b)")
 
 
 def _jobs() -> dict:
@@ -46,12 +56,25 @@ def _run(job: dict) -> str:
     return "\n".join(step.get("run", "") for step in job["steps"])
 
 
-def _shard_files(jobs: dict) -> list[str]:
+def _parts(jobs: dict) -> list[int]:
     split = re.search(
         r"--shard=\$\{\{ matrix\.shard \}\}/(\d+)\b", _run(jobs["coverage-shard"])
     )
     assert split, "coverage-shard must run pytest --shard=${{ matrix.shard }}/N"
-    return [f".coverage.shard-{k}" for k in range(1, int(split.group(1)) + 1)]
+    return list(range(1, int(split.group(1)) + 1))
+
+
+def _shard_files(jobs: dict) -> list[str]:
+    return [f"{_DATA_DIR}/.coverage.shard-{k}" for k in _parts(jobs)]
+
+
+def _step_using(job: dict, action: str) -> dict:
+    [step] = [s for s in job["steps"] if s.get("uses", "").startswith(f"{action}@")]
+    return step
+
+
+def _python_version(job: dict) -> str:
+    return str(_step_using(job, "actions/setup-python")["with"]["python-version"])
 
 
 def test_the_shards_measure_the_whole_package() -> None:
@@ -103,13 +126,6 @@ def test_metrics_reads_the_shards_data_instead_of_running_the_suite() -> None:
     assert job["needs"] == ["coverage-shard"]
     run = _run(job)
     assert "pytest" not in run, "metrics must not run the suite again"
-    [download] = [
-        step
-        for step in job["steps"]
-        if step.get("uses", "").startswith("actions/download-artifact@")
-    ]
-    assert download["with"]["pattern"] == "coverage-data-*"
-    assert download["with"]["merge-multiple"] is True
     # Naming each file makes a missing one fail the combine, where a glob
     # would report the shards that are there.
     combine = re.search(r"^python -m coverage combine (.*)$", run, re.MULTILINE)
@@ -119,6 +135,48 @@ def test_metrics_reads_the_shards_data_instead_of_running_the_suite() -> None:
     # audit, which collect_metrics would then report as not measured.
     json_line = re.search(r"^python -m coverage json (.*)$", run, re.MULTILINE)
     assert json_line, run
-    assert json_line.group(1).split() == ["-o", "coverage-all.json"]
+    # --fail-under=0: without it coverage json checks pyproject's fail_under =
+    # 80 against the total over every package, a figure no rule gates, and a
+    # failure there would stop the step before collect_metrics runs.
+    assert json_line.group(1).split() == ["--fail-under=0", "-o", "coverage-all.json"]
     assert "--coverage-json coverage-all.json" in run
     assert "--check-floors" in run
+
+
+def test_each_shards_upload_is_what_both_downloads_fetch() -> None:
+    # A shard artifact renamed away from the download pattern, or an upload of
+    # another path, leaves the combine with no file to read.
+    jobs = _jobs()
+    upload = _step_using(jobs["coverage-shard"], "actions/upload-artifact")["with"]
+    assert upload["include-hidden-files"] is True
+    for name in ("coverage", "metrics"):
+        download = _step_using(jobs[name], "actions/download-artifact")["with"]
+        assert download["merge-multiple"] is True
+        assert download["path"] == _DATA_DIR, name
+        for k in _parts(jobs):
+            artifact = upload["name"].replace("${{ matrix.shard }}", str(k))
+            assert fnmatchcase(artifact, download["pattern"]), (name, artifact)
+            uploaded = upload["path"].replace("${{ matrix.shard }}", str(k))
+            assert f"{_DATA_DIR}/{uploaded}" in _shard_files(jobs), (name, uploaded)
+
+
+def test_the_data_jobs_share_a_runner_image_and_python() -> None:
+    # The data names source files by absolute path, and coverage.py reads the
+    # recorded branches against its own parse of the source. A job on another
+    # image would miss the checkout path; another Python can report branches
+    # that are not there.
+    jobs = _jobs()
+    assert len({jobs[name]["runs-on"] for name in _DATA_JOBS}) == 1
+    assert len({_python_version(jobs[name]) for name in _DATA_JOBS}) == 1
+
+
+def test_a_failure_in_metrics_cannot_end_green() -> None:
+    # continue-on-error, a set +e or a shell without -e would let a missing
+    # shard file or a missed floor pass. metrics is not a required check, but
+    # its result is still read.
+    job = _jobs()["metrics"]
+    assert "continue-on-error" not in job
+    for step in job["steps"]:
+        assert "continue-on-error" not in step, step.get("name")
+        assert not _ERREXIT_OFF.search(step.get("run", "")), step.get("name")
+        assert step.get("shell", "bash") == "bash", step.get("name")
