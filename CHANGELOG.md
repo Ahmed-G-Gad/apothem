@@ -966,8 +966,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   ends or stops on an error. A one-shot `pwsh -Command "irm ... | iex"`
   reports a partial run only through `$LASTEXITCODE`: end it with
   `; exit $LASTEXITCODE`, or run the script by path with `-File`, to get exit
-  code `2` from the process. Any other non-zero exit code from the engine
-  stops the script there.
+  code `2` from the process. From bash or another POSIX shell, put that
+  command in single quotes, so the shell does not replace `$LASTEXITCODE`.
+  Any other non-zero exit code from the engine stops the script there.
 - **`install.ps1 -DryRun` no longer prints "Installation complete."** A dry
   run printed that line and the next-step banner after "Dry-run complete -
   no changes were made.", although it installs nothing and places no
