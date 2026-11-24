@@ -192,6 +192,38 @@ def test_subfolder_of_a_checkout_reads_the_checkout_head(
     assert result.drifts
 
 
+@pytest.mark.parametrize("spelling", ["pkg", "Pkg"], ids=["disk case", "index case"])
+def test_subfolder_renamed_only_in_case_reads_the_checkout_head(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, spelling: str
+) -> None:
+    # A tracked folder renamed on disk only in case: git ignores case here,
+    # so git status shows no change and the folder's files stay tracked. The
+    # check reads HEAD, as for any tracked subfolder, whichever case names
+    # the folder.
+    if not _git_available():
+        pytest.skip("git not available")
+    probe = tmp_path / "CaseProbe"
+    probe.mkdir()
+    if not (tmp_path / "caseprobe").exists():
+        pytest.skip("the file system tells names apart by case")
+    probe.rmdir()
+    _init_git_repo(tmp_path, "Added a feature without a conventional prefix")
+    sub = tmp_path / "Pkg" / "inner"
+    sub.mkdir(parents=True)
+    (sub / "mod.txt").write_text("body\n", encoding="utf-8")
+    _git_in(tmp_path, "add", "Pkg/inner/mod.txt")
+    _git_in(tmp_path, "commit", "-m", "Added the inner module")
+    # Two renames, as a case-only rename in one step may be refused.
+    (tmp_path / "Pkg").rename(tmp_path / "pkg-moving")
+    (tmp_path / "pkg-moving").rename(tmp_path / "pkg")
+    _hermetic_check_env(monkeypatch)
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path.parent))
+    result = _MOD.check_repo(tmp_path / spelling / "inner")
+    assert result.status == "ok", result.to_json()
+    assert not result.passed
+    assert result.drifts
+
+
 @pytest.mark.parametrize(
     ("ignored", "empty_git"),
     [(False, False), (True, False), (False, True)],

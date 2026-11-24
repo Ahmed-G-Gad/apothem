@@ -230,12 +230,15 @@ class GrepResult:
         return json.dumps(payload, indent=2)
 
 
-def _git(root: Path, label: str, *args: str) -> subprocess.CompletedProcess[str]:
+def _git(
+    root: Path, label: str, *args: str, file_names: bool = False
+) -> subprocess.CompletedProcess[str]:
     """Run ``git <args>`` in *root* within ``GIT_TIMEOUT_SECONDS``.
 
     git runs through :func:`~apothem.conformity._git.run_git`, which turns off
     the repository's program-running settings and keeps the limit for every
-    program git starts. Raises
+    program git starts. *file_names* keeps every byte of the output, as
+    ``run_git`` does for a path name. Raises
     :class:`~apothem.conformity._grep_base.GitTimeoutError`, naming the
     command as *label*, past the limit and :class:`OSError` when git cannot be
     started.
@@ -246,9 +249,63 @@ def _git(root: Path, label: str, *args: str) -> subprocess.CompletedProcess[str]
     from apothem.conformity._grep_base import GitTimeoutError
 
     try:
-        return run_git(list(args), cwd=root, timeout=GIT_TIMEOUT_SECONDS)
+        return run_git(
+            list(args), cwd=root, timeout=GIT_TIMEOUT_SECONDS, file_names=file_names
+        )
     except subprocess.TimeoutExpired as exc:
         raise GitTimeoutError(label, GIT_TIMEOUT_SECONDS) from exc
+
+
+def _checked(
+    completed: subprocess.CompletedProcess[str], label: str, *ok: int
+) -> subprocess.CompletedProcess[str]:
+    """Return *completed*, or raise when its exit code is not 0 or in *ok*."""
+    from apothem.conformity._grep_base import GitFailedError
+
+    if completed.returncode != 0 and completed.returncode not in ok:
+        raise GitFailedError(label, completed.returncode)
+    return completed
+
+
+def _tracks_a_file_in(root: Path) -> bool:
+    """Return True when git's repository tracks a file in *root* or below it.
+
+    The index counts, so a staged file is tracked. When the repository
+    ignores case (``core.ignorecase``, as on Windows and macOS), the folder's
+    path below the top is matched without regard to case. A tracked folder
+    renamed on disk only in case then still counts: git status shows no
+    change there, but ``git ls-files -- .`` matches by case and lists
+    nothing. Raises :class:`~apothem.conformity._grep_base.GitFailedError`
+    when a git command fails.
+    """
+    pathspec = "."
+    case = _checked(
+        _git(root, "git config", "config", "--type=bool", "--get", "core.ignorecase"),
+        "git config",
+        1,  # The setting is not there: git then matches by case.
+    )
+    if case.returncode == 0 and case.stdout.strip() == "true":
+        shown = _checked(
+            _git(
+                root,
+                "git rev-parse",
+                "rev-parse",
+                "--show-prefix",
+                file_names=True,
+            ),
+            "git rev-parse",
+        )
+        # The path below the top, with a trailing "/", as git spells it from
+        # the folder on disk. ``top`` reads it from the top, where ``icase``
+        # covers every part of it; ``literal`` keeps "*" or "[" in a name.
+        prefix = shown.stdout.removesuffix("\n")
+        if prefix:
+            pathspec = f":(top,icase,literal){prefix}"
+    tracked = _checked(
+        _git(root, "git ls-files", "ls-files", "-z", "--", pathspec),
+        "git ls-files",
+    )
+    return bool(tracked.stdout)
 
 
 def _repository_is_above(root: Path) -> bool:
@@ -298,18 +355,14 @@ def _read_head_subject(root: Path) -> tuple[str | None, str, str | None]:
     if not in_checkout(root):
         return None, "not-a-git-repo", None
     try:
-        if _repository_is_above(root):
+        if _repository_is_above(root) and not _tracks_a_file_in(root):
             # git uses a repository in a folder above ``root`` (an empty
             # ``.git`` folder in ``root``, say from a ``git init`` that
             # stopped, is one git looks past). Its history belongs to ``root``
             # only when it tracks a file there. A new project inside a
             # home-folder dotfiles repository is not part of it, so it stays
-            # exempt. The index counts, so a staged file is tracked.
-            tracked = _git(root, "git ls-files", "ls-files", "-z", "--", ".")
-            if tracked.returncode != 0:
-                raise GitFailedError("git ls-files", tracked.returncode)
-            if not tracked.stdout:
-                return None, "not-a-git-repo", None
+            # exempt.
+            return None, "not-a-git-repo", None
         completed = _git(root, "git log", "log", "-1", "--pretty=%B")
         if completed.returncode != 0:
             # A branch with no commit yet and a repository git refused both
