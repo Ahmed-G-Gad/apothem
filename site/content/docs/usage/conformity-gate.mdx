@@ -126,8 +126,13 @@ signal's number. A `SIGKILL`, which no program can catch, ends only the gate
 there: a validator it started runs on until it finishes, and a `git` command
 that validator waits on still stops at its own limit. On Windows each validator
 runs in a job object, which also ends its programs when the gate itself ends.
-Ctrl+C prints one line and exits `130`. The limits add up: a run in which
-several validators wait takes the sum of their limits.
+Each program the gate starts there waits, suspended, until it is in the job
+object. A program it cannot resume is stopped, and the error says whether it
+is in the job object, and a program something else ended before it ran fails
+the same way. In the gate's own run, a Ctrl+C that arrives during the start
+waits until the program runs, so no program is left suspended. Ctrl+C prints
+one line and exits `130`. The limits add up: a run in which several
+validators wait takes the sum of their limits.
 
 Five validators also give each `git` command they run a time limit of its own.
 The limits hold on every platform, including on Windows when `git` on `PATH`
@@ -135,6 +140,7 @@ is the launcher that Git for Windows installs, which starts the real git:
 
 ```text
 conventional-commit-grep            git log -1, git rev-parse           1 minute
+                                    git ls-files                        1 minute
 agents-md-coverage-grep             git rev-parse, git config           1 minute
                                     git log over the whole history      5 minutes
 no-global-plans-grep                git ls-files                        1 minute
@@ -154,19 +160,22 @@ when it cannot open or read a repository. A folder whose `.git` entry git
 cannot open counts as such a checkout, because the history the checks need may
 be there unread: an empty `.git` folder outside any other checkout, or a
 `.git` file that names a folder that no longer exists, as an unpacked worktree
-or a copied submodule leaves behind. Remove that entry, or run the gate on a full checkout. That holds for
-the stale-companion check too, although its findings are otherwise advisory,
-and the commit-subject check then also reports `inspected: 0` with
-`empty_scope_expected: false`. The stale-companion check reads the whole history
-once, and that read gets 5 minutes, so a large history is slow rather than a
-failure; a history that takes longer to read fails the check. A plain folder
-that is not inside any git checkout, a repository with no commit yet, or a
-machine without `git` still passes these checks as before. So does a partial
-clone, one made with `git clone --filter`: the gate does not let `git` fetch
-what the clone left out, and git gives no answer that tells an object the clone
-left out from one that was lost. So in a partial clone the stale-companion check
-counts any failed history read as history that is not available: it skips its
-freshness test and passes, as it does with no history. These exemptions, and the
+or a copied submodule leaves behind. Remove that entry, or run the gate on a
+full checkout. That holds for the stale-companion check too, although its
+findings are otherwise advisory, and the commit-subject check then also
+reports `inspected: 0` with `empty_scope_expected: false`. On Windows, a `git`
+that the gate started but could not resume is a failed `git` too: the
+`check_error` gives exit code 128, and it never counts as a missing `git`. The
+stale-companion check reads the whole history once, and that read gets 5
+minutes, so a large history is slow rather than a failure; a history that
+takes longer to read fails the check. A plain folder that is not inside any
+git checkout, a repository with no commit yet, or a machine without `git`
+still passes these checks as before. So does a partial clone, one made with
+`git clone --filter`: the gate does not let `git` fetch what the clone left
+out, and git gives no answer that tells an object the clone left out from one
+that was lost. So in a partial clone the stale-companion check counts any
+failed history read as history that is not available: it skips its freshness
+test and passes, as it does with no history. These exemptions, and the
 `check_error` for a checkout git refuses, are for the other four validators:
 `no-global-plans-grep` needs a checkout git can read, so outside one, on a
 machine without `git`, or in a checkout git refuses, it fails as before, with
@@ -183,8 +192,11 @@ named in `GIT_CEILING_DIRECTORIES` and, outside Windows, at a folder on
 another file system, unless `GIT_DISCOVERY_ACROSS_FILESYSTEM` is set. A
 folder with no repository of its own, mounted below one, therefore still
 passes. The commit-subject check run on a subfolder of a checkout checks the
-checkout's latest commit. An empty `.git` folder above the folder it runs in,
-with no repository further up, makes git fail, and the check reports
+checkout's latest commit when the checkout tracks a file in that subfolder,
+or has one staged there. A folder the checkout does not track, untracked or
+ignored, has no history of its own and passes, such as a new project inside a
+home-folder dotfiles repository. An empty `.git` folder above the folder it
+runs in, with no repository further up, makes git fail, and the check reports
 `git-failed`.
 
 Both `--staged` checks read the staged names from the top of the work tree,
@@ -203,7 +215,9 @@ refuses a `.git` file that names no repository, that is larger than 1 MiB, or
 that does not hold `gitdir:`, one space and a path, with only line endings
 after it. On Windows the check also refuses a `.git` file that names a network,
 device or NT path (`\\host\share`, `\\?\`, `\??\`), and it does not look that
-path up itself. The nearest folder that holds `src/apothem/__init__.py` is the
+path up itself. It also refuses a path Git for Windows refuses: a name that
+ends in a dot or a space or is a device name such as `aux.d`, or a `:` after
+the drive. The nearest folder that holds `src/apothem/__init__.py` is the
 one checked; it does not read `GIT_WORK_TREE`. A project without the package
 has nothing to check there: it passes without running git, whatever state its
 repository is in.
