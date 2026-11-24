@@ -956,8 +956,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   refusal for a rules file names the same marker lines and closing line as
   the other warnings for that file. Where a line above the code block a
   file ends in may start an HTML block, or a list item's text goes on at the
-  left margin above it, a Markdown viewer can read that code block otherwise
-  than Apothem, so the closing line could start a code block in a viewer:
+  left margin above it and an indented line follows, a Markdown viewer can
+  read that code block otherwise than Apothem, so the closing line could
+  start a code block in a viewer:
   that fix then says it cannot give numbered steps and names the line that
   opens the code block. The fixes are built from the file's
   lines, with no Markdown reading of their own, and each reading of a file

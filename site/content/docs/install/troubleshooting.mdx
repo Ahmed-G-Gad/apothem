@@ -1063,8 +1063,8 @@ with `<!--` and ends on a later line, as it reads any other code fence, and a
 line of a list item's text that goes on at the left margin ends that item for
 Apothem. A Markdown viewer does neither. When a line above the code block your
 file ends in may start an HTML block, or a list item's text goes on at the
-left margin above it, that closing line could start a code block in a viewer
-instead. That fix then gives no numbered steps: it says "Apothem cannot give
+left margin above it and an indented line follows, that closing line could
+start a code block in a viewer instead. That fix then gives no numbered steps: it says "Apothem cannot give
 numbered steps for this fix" and names the line that opens the code block.
 Edit the file by hand so that line opens no code block, or so that the code
 block is closed where your viewer shows it ends; the next warning for the file
