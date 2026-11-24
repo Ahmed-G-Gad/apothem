@@ -67,7 +67,10 @@ def uninstall(output_path: Path) -> install_driver.MaterializationRun:
 
     Raises:
         MaterializationError: When a link leads the folder out of the home;
-            nothing was removed.
+            nothing was removed. Or when another error stops the step that
+            closes the installs at another spelling: the error is the
+            cause, and the error's ``run`` holds what the uninstall had
+            removed. Those installs stay recorded, as above.
     """
     refuse_link_leaving_home(output_path, uninstall=True)
     root = output_path.parent
@@ -99,6 +102,15 @@ def uninstall(output_path: Path) -> install_driver.MaterializationRun:
                 f"another Apothem run holds the install lock: {exc}",
             )
         )
+    except home_write_guard.RealHomeWriteError:
+        raise
+    except Exception as exc:
+        # The shared pass ran and recorded itself: hand on what it removed
+        # with the error, as a stop in that pass does.
+        run = install_driver.MaterializationRun(_HARNESS_NAME, False, tuple(results))
+        raise install_driver.MaterializationError(
+            f"uninstall stopped: {exc}", run
+        ) from exc
     return install_driver.MaterializationRun(
         harness=_HARNESS_NAME, dry_run=False, results=tuple(results)
     )

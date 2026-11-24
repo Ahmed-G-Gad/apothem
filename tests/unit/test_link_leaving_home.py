@@ -427,6 +427,41 @@ def test_a_held_install_lock_fails_the_uninstall_cleanly(
     assert any("install lock" in error.message for error in run.errors)
 
 
+def test_an_error_while_closing_the_earlier_spelling_reports_the_removals(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The shared pass has removed the files when the install recorded under
+    # the other spelling is closed. An error there is a stopped uninstall
+    # that removed files (exit 2), and that install stays recorded, so the
+    # next run closes it.
+    from apothem.harnesses.opencode import uninstall as opencode_uninstall
+
+    adapter = OpenCodeAdapter()
+    adapter.install({})
+    spelling = home / ".config" / "opencode"
+    outside = _move_config_out_of_the_home(home, tmp_path)
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(outside))
+    adapter.install({})
+
+    def full(*args: object, **kwargs: object) -> object:
+        raise OSError("ledger full")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(opencode_uninstall, "_finish_same_folder_install", full)
+        result = CliRunner().invoke(
+            main, ["uninstall", "--harness", "opencode", "--yes", "--format", "json"]
+        )
+
+    envelope = json.loads(result.output)
+    assert result.exit_code == 2, result.output
+    assert envelope["status"] == "partial"
+    message = envelope["results"][0]["message"]
+    assert message.startswith("MaterializationError: uninstall stopped: ledger full")
+    assert install_ledger.active_install_records("opencode", root=spelling)
+    adapter.uninstall()
+    assert install_ledger.active_install_records("opencode", root=spelling) == []
+
+
 # -- the relocated entries of a record that owned nothing ---------------------
 
 

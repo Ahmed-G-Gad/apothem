@@ -342,7 +342,11 @@ exception or `Ctrl+C` stops appends, by the step it stopped in:
   a rules file or backed one up, and nothing otherwise, also when that step
   found Apothem's rules file behind a link;
 - in the step that removes what the install record lists, the last step of
-  every uninstall: the record, also when nothing had changed by then.
+  every uninstall but OpenCode's: the record, also when it changed nothing;
+- in the step OpenCode's uninstall takes after it, which closes an install
+  recorded under another spelling of its folder (when `XDG_CONFIG_HOME`
+  names the folder a `~/.config` link leads to, say): nothing more, so that
+  install stays recorded and running the command again closes it.
 
 When nothing is appended, the install record stays the latest one. The install
 stays recorded either way, so `apothem status`, `verify` and `rollback` still
