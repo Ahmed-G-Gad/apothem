@@ -586,9 +586,11 @@ one-shot
 `pwsh -Command "irm ... | iex"` (or `powershell -c`) reports a partial run
 only through `$LASTEXITCODE` and exits `0`: to get exit code `2` from the
 process, end the command with `; exit $LASTEXITCODE`, or run the script by
-path with `-File`. From bash or another POSIX shell, put that command in
-single quotes. In double quotes the shell replaces `$LASTEXITCODE` with an
-empty string, and the process still exits `0`. A dry run writes nothing, so
+path with `-File`. From PowerShell, bash or another POSIX shell, put that
+command in single quotes. In double quotes the calling shell puts in its own
+`$LASTEXITCODE` before the new process starts (a POSIX shell puts in an empty
+string), so the process does not exit with the run's code. From cmd.exe,
+double quotes are fine. A dry run writes nothing, so
 it does not end as partial.
 Fix what the messages name. For a file, keep your own text (see
 [A file holds two blocks between Apothem's markers](#a-file-holds-two-blocks-between-apothems-markers)
