@@ -540,10 +540,11 @@ def _failed_adapter(
     place (see :func:`_link_problems`), then for the paths no record shows
     are Apothem's and for the files that hold another block between
     Apothem's markers (see :func:`_kept_lines`), each added to the end of
-    the row's message too, and the link in the row's ``detail`` when it is
-    the only one the run names. Such a link, and such paths, make the
-    uninstall partial, also when it removed nothing, as in
-    :func:`_report_run`.
+    the row's message too. The row's ``detail`` names the link when it is
+    the only one the run names, one a step that failed before the stop
+    names included (see :func:`_one_named_link`). Such a link that keeps
+    Apothem's files in place, and such paths, make the uninstall partial,
+    also when it removed nothing, as in :func:`_report_run`.
     """
     run = getattr(exc, "run", None)
     run = run if isinstance(run, MaterializationRun) else None
@@ -562,7 +563,7 @@ def _failed_adapter(
         blocked = _blocked_by_link(run)
         earlier = _earlier_release_paths(run)
         lines = [*_link_problems(harness_id, run, blocked), *_kept_lines(run, earlier)]
-        named = _one_named_link(run, blocked) if blocked else {}
+        named = _one_named_link(run, blocked)
         partial = partial or bool(blocked) or bool(earlier)
     if fmt != "json":
         err = get_error_console(no_color=no_color)

@@ -5,7 +5,8 @@
 An adapter's uninstall returns a ``MaterializationRun``. A warning in it (a
 link left in place) prints in plain output and rides the JSON ``warnings``
 array; an error in it (a leftover folder that could not be removed) fails the
-harness instead of printing "Uninstalled".
+harness instead of printing "Uninstalled". A link a failed step names is
+named on the harness row, also when the uninstall stopped after that step.
 """
 
 from __future__ import annotations
@@ -18,7 +19,10 @@ import pytest
 from click.testing import CliRunner
 
 from apothem import cli
-from apothem.harnesses._shared.install_driver import MaterializationRun
+from apothem.harnesses._shared.install_driver import (
+    MaterializationError,
+    MaterializationRun,
+)
 from apothem.harnesses._shared.install_driver_types import _result
 
 
@@ -119,3 +123,41 @@ def test_warnings_for_one_link_print_as_one_line(
     assert plain.exit_code == 0  # type: ignore[attr-defined]
     assert plain.output.count("Warning:") == 1  # type: ignore[attr-defined]
     assert "3 paths reached through the link /old" in plain.output  # type: ignore[attr-defined]
+
+
+class _RefusedAtALink(_Adapter):
+    """An uninstall whose one step was refused at a link, with nothing behind it.
+
+    With the outcome ``stopped`` it then stops with an error, carrying that
+    step in its run.
+    """
+
+    def uninstall(self) -> MaterializationRun:
+        refused = _result(
+            "error",
+            "remove_existing",
+            Path("/old/skills"),
+            "target escapes the allowed materialization root",
+            detail={"symlink": "/old", "leads_to": "/elsewhere"},
+        )
+        run = MaterializationRun(harness="alpha", dry_run=False, results=(refused,))
+        if self._outcome == "stopped":
+            raise MaterializationError("uninstall stopped: disk full", run)
+        return run
+
+
+@pytest.mark.parametrize("outcome", ["finished", "stopped"])
+def test_the_row_names_the_link_a_failed_step_names(
+    monkeypatch: pytest.MonkeyPatch, outcome: str
+) -> None:
+    # The harness row names the only link the failed steps name, whether the
+    # uninstall ran all its steps or stopped after that one.
+    _select(monkeypatch, _RefusedAtALink(outcome))
+
+    as_json = _run("--format", "json")
+
+    envelope = json.loads(as_json.output)  # type: ignore[attr-defined]
+    row, step = envelope["results"]
+    assert as_json.exit_code == cli._EXIT_EXPECTED  # type: ignore[attr-defined]
+    assert row["detail"] == {"symlink": "/old", "leads_to": "/elsewhere"}
+    assert step["detail"]["symlink"] == "/old"
