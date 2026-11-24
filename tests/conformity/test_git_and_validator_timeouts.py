@@ -628,6 +628,72 @@ def test_companion_check_falls_back_in_a_treeless_clone(tmp_path: Path) -> None:
     assert result.freshness_checked is False
 
 
+def _history_with_a_lost_tree(tmp_path: Path) -> Path:
+    """Return a full repository whose older commit's tree object is deleted.
+
+    Fresh commits are loose objects, so deleting the file loses the tree, and
+    reading the history then fails with exit code 128.
+    """
+    repo = _project(tmp_path)
+    (repo / "pkg" / "notes.md").write_text("later\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "docs(pkg): add notes")
+    tree = subprocess.run(
+        ["git", "rev-parse", "HEAD~1^{tree}"],
+        cwd=str(repo),
+        check=True,
+        capture_output=True,
+        encoding="utf-8",
+    ).stdout.strip()
+    lost = repo / ".git" / "objects" / tree[:2] / tree[2:]
+    # git writes objects read-only, and Windows deletes no read-only file.
+    lost.chmod(0o644)
+    lost.unlink()
+    return repo
+
+
+@pytest.mark.parametrize(
+    "setting",
+    [("remote.origin.promisor", "true"), ("extensions.partialClone", "origin")],
+)
+def test_any_failed_history_read_in_a_partial_clone_is_unavailable_history(
+    tmp_path: Path, setting: tuple[str, str]
+) -> None:
+    """In a partial clone, a failed history read passes, whatever the cause.
+
+    git gives no answer that tells a tree the clone left out from one that was
+    lost (``rev-list --missing=allow-promisor`` fails on both), so the check
+    treats every failed read there as history that is not available, as it
+    did before it had limits. A repository's own settings make it a partial
+    clone, recent git writing the promisor setting and older git the
+    extension.
+    """
+    repo = _history_with_a_lost_tree(tmp_path)
+    assert agents_md_coverage_grep.check(repo).check_error == (
+        "git log failed with exit code 128"
+    )
+    _git(repo, "config", *setting)
+
+    result = agents_md_coverage_grep.check(repo)
+    assert result.check_error is None
+    assert result.passed is True
+    assert result.freshness_checked is False
+
+
+def test_a_promisor_outside_the_repository_does_not_make_a_partial_clone(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Only the repository's own settings count, not the user's global ones."""
+    repo = _history_with_a_lost_tree(tmp_path)
+    global_config = tmp_path / "global.gitconfig"
+    global_config.write_text('[remote "origin"]\n\tpromisor = true\n', encoding="utf-8")
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(global_config))
+
+    result = agents_md_coverage_grep.check(repo)
+    assert result.passed is False
+    assert result.check_error == "git log failed with exit code 128"
+
+
 def test_plans_listing_timeout_does_not_pass(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

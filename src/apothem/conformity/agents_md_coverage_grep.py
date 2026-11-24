@@ -48,8 +48,9 @@ absence is not a finding under the root-only convention. The root
 checked against the root folder's content. The log names paths relative to
 the checked root and covers only history under it, so a subtree root checks
 its own folders. Where git history is unavailable (a non-git tree, no commit
-yet, or a partial clone that left out the trees the read needs, which git may
-not fetch here), freshness is skipped and the sweep reports a clean pass — it
+yet, or a partial clone whose history read fails: git may not fetch what
+the clone left out here, and no answer of git's tells that from a lost
+object), freshness is skipped and the sweep reports a clean pass — it
 never blocks a fresh clone. A git command that runs past its time limit (the
 repository's own configuration can make git wait for ever), or a git that
 refuses a checkout it found (another owner, a bad configuration line), is
@@ -339,7 +340,7 @@ def _last_commit_times(root: Path) -> dict[str, int] | None:
     turns off the repository's program-running settings (a signature check,
     say) and prints path names as they are, decoded as UTF-8. Returns None
     when git history is unavailable (no repository, no commit yet, git
-    absent, or a partial clone whose read needs objects it left out) so the
+    absent, or a partial clone whose read failed, whatever the cause) so the
     caller degrades to a presence-only sweep. Raises
     :class:`~apothem.conformity._grep_base.GitTimeoutError` when a git command
     runs past its limit, and
@@ -384,8 +385,11 @@ def _last_commit_times(root: Path) -> dict[str, int] | None:
         return None
     if completed.returncode != 0:
         # A partial clone can lack trees the read needs, and run_git does not
-        # let git fetch them: that history is not here to read. Any other
-        # failure leaves a history that is there unread.
+        # let git fetch them: that history is not here to read. git tells a
+        # left-out object from a lost one in no answer the check can use
+        # (rev-list --missing=allow-promisor fails on both), so any failed
+        # read there counts as unavailable history, as every one did before
+        # the limits. In a full clone the history is there unread.
         if _is_partial_clone(root):
             return None
         raise GitFailedError("git log", completed.returncode)

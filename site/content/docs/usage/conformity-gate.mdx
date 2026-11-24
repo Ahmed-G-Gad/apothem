@@ -158,9 +158,10 @@ failure; a history that takes longer to read fails the check. A plain folder
 that is not inside any git checkout, a repository with no commit yet, or a
 machine without `git` still passes these checks as before. So does a partial
 clone, one made with `git clone --filter`: the gate does not let `git` fetch
-what the clone left out, so where the history read needs it, the
-stale-companion check skips its freshness test and passes, as it does with no
-history. These exemptions, and the `check_error` for a checkout git refuses,
+what the clone left out, and git gives no answer that tells an object the
+clone left out from one that was lost. So in a partial clone the
+stale-companion check counts any failed history read as history that is not
+available: it skips its freshness test and passes, as it does with no history. These exemptions, and the `check_error` for a checkout git refuses,
 are for the other four validators: `no-global-plans-grep` needs a checkout git
 can read, so outside one, on a machine without `git`, or in a checkout git
 refuses, it fails as before, with git's reason on standard error. As with any

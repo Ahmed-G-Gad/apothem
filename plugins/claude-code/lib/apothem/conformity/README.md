@@ -177,8 +177,8 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   `finish_root_report(check_error=...)`, which stamps `check_error` and exits
   `2`, advisory or not. A timeout or a refused checkout is not an exempt state
   (a missing repository, a repository with no commit, a host without git, or a
-  partial clone whose read needs objects it left out, which `run_git` does not
-  let git fetch): the data is there but was not read, and a checked repository's own
+  partial clone, where `run_git` does not let git fetch what the clone left
+  out and any failed history read counts as unavailable): the data is there but was not read, and a checked repository's own
   configuration can make git wait for ever or refuse to read it. The gate gives
   each standalone validator `STANDALONE_TIMEOUT_SECONDS` and reports one it had
   to stop with a `check_error` of its own.
