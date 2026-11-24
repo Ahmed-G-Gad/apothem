@@ -473,13 +473,28 @@ def test_an_error_while_closing_the_earlier_spelling_reports_the_removals(
     assert install_ledger.active_install_records("opencode", root=spelling)
     config = json.loads((outside / "opencode" / "opencode.json").read_text("utf-8"))
     assert config["$schema"] == operator["$schema"]
-    # An install at the folder, then an uninstall, closes that install.
-    adapter.install({})
+    # The documented recovery: an install at the folder, then an uninstall,
+    # closes that install. The default profile is behind the link, so the
+    # install takes a profile made outside it.
+    refused = CliRunner().invoke(main, ["install", "--harness", "opencode"])
+    assert refused.exit_code != 0, refused.output
+    assert "crosses a link" in " ".join(refused.output.split()), refused.output
+    profile = tmp_path / "profile.yaml"
+    made = CliRunner().invoke(main, ["profile", "init", "--profile", str(profile)])
+    assert made.exit_code == 0, made.output
+    installed = CliRunner().invoke(
+        main, ["install", "--harness", "opencode", "--profile", str(profile)]
+    )
+    assert installed.exit_code == 0, installed.output
+    there = outside / "opencode"
+    assert install_ledger.active_install_records("opencode", root=spelling)
+    assert install_ledger.active_install_records("opencode", root=there)
     closed = CliRunner().invoke(
         main, ["uninstall", "--harness", "opencode", "--yes", "--format", "json"]
     )
     assert closed.exit_code == 0, closed.output
     assert install_ledger.active_install_records("opencode", root=spelling) == []
+    assert install_ledger.active_install_records("opencode", root=there) == []
 
 
 # -- the relocated entries of a record that owned nothing ---------------------
