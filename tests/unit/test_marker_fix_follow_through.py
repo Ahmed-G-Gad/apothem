@@ -11,13 +11,26 @@ from __future__ import annotations
 
 import re
 import threading
+import time
+from collections.abc import Callable
 from pathlib import Path
 
+import pytest
+
+from apothem.cli._stray_begin_report import stray_begin_note
+from apothem.harnesses._shared.install_driver_blocks import (
+    sentinel_refusal,
+    stray_begin_install_warnings,
+)
 from apothem.harnesses._shared.install_driver_blocktext import (
     REPLACES,
     TAKES_OUT,
     stray_fix_text,
 )
+from apothem.harnesses._shared.install_driver_retention import (
+    unlisted_block_warnings,
+)
+from apothem.harnesses._shared.install_driver_types import MaterializationResult
 from apothem.harnesses.open_claw import rules_file
 from apothem.lib.harness_materializer import (
     APOTHEM_BLOCK_BEGIN,
@@ -263,3 +276,59 @@ def test_a_marker_line_in_an_html_block_still_reads_as_a_marker() -> None:
     assert whole_blocks(_lines("<!-- draft", B, "rule", E)) == [(2, 4)]
     assert whole_blocks(_lines("<div>", B, "rule", E, "</div>")) == [(2, 4)]
     assert whole_blocks(_lines("<pre>", "```", B, "rule", E, "</pre>")) == [(3, 5)]
+
+
+# -- timing ------------------------------------------------------------------
+
+#: A paragraph, a list and a closed code block, about 100 bytes.
+_FILLER = (
+    "Some text of mine about the project, with a few words.\n\n- item one\n"
+    "- item two\n\n```sh\nmake test\n```\n\n"
+)
+
+
+def _large(seed: int) -> str:
+    """Return a file of about 1 MB with a pair in code and a stray BEGIN marker.
+
+    *seed* goes into the text, so no run reads a text an earlier run read.
+    """
+    part = _FILLER * (250_000 // len(_FILLER)) + f"seed {seed}\n\n"
+    return (
+        f"{part}```\n{B}\nrule\n{E}\n```\n\n{part}{B}\nold\n\n{part}"
+        f"```md\n{B}\nex\n{E}\n```\n\n{part}"
+    )
+
+
+@pytest.mark.parametrize("caller", ["install", "uninstall", "verify", "unlisted"])
+def test_each_message_for_a_1_mb_file_takes_well_under_a_second(
+    tmp_path: Path, caller: str
+) -> None:
+    """lifecycle-r6-1: each message for a 1 MB file took 0.6 to 5.6 seconds.
+
+    Each read of the file for its markers cost about half a second, and a
+    caller read the same text up to ten times. Every run here builds its
+    message from a text no earlier run read, so it is timed as a command
+    meets the file. The best of three runs must stay under a second; each
+    takes about 0.45 seconds where it took 1.4 to 5.6 before.
+    """
+    target = tmp_path / "CLAUDE.md"
+    builds: dict[str, Callable[[], object]] = {
+        "install": lambda: stray_begin_install_warnings([_result(target, "unchanged")]),
+        "uninstall": lambda: sentinel_refusal(target, recorded=True),
+        "verify": lambda: stray_begin_note([target], then="run apothem update"),
+        "unlisted": lambda: unlisted_block_warnings(tmp_path),
+    }
+    took = []
+    for seed in range(3):
+        target.write_bytes(_large(seed).encode("utf-8"))
+        start = time.perf_counter()
+        assert builds[caller]()
+        took.append(time.perf_counter() - start)
+    assert min(took) < 1.0, took
+
+
+def _result(path: Path, outcome: str) -> MaterializationResult:
+    """Return an install result for the managed-block file *path*."""
+    return MaterializationResult(
+        outcome=outcome, operation="sentinel_merge", path=str(path), message=""
+    )

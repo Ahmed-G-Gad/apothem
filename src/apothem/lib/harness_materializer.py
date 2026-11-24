@@ -12,11 +12,12 @@ from __future__ import annotations
 
 import bisect
 import enum
+import functools
 import itertools
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
-from typing import Any, Final
+from typing import Any, Final, NamedTuple
 
 import yaml
 
@@ -95,6 +96,9 @@ def trailing_fence(text: str) -> tuple[int, str] | None:
 
 _SENTINELS: Final[tuple[str, str]] = (APOTHEM_BLOCK_BEGIN, APOTHEM_BLOCK_END)
 
+#: Text both markers hold: a quick test before the exact one.
+_MARKER_WORDS: Final[str] = "APOTHEM MANAGED BLOCK"
+
 #: The byte order mark an editor may put at offset 0 (Notepad's "UTF-8 with
 #: BOM", Windows PowerShell 5.1's ``Set-Content -Encoding UTF8``). It is not
 #: part of the first line, so a marker right after it still counts.
@@ -151,8 +155,7 @@ _MAX_ITEM_GAP: Final = 4
 _QUOTED: Final = 1 << 30
 
 
-@dataclass(frozen=True)
-class _Line:
+class _Line(NamedTuple):
     """One line of text: where it starts and its text, without the line ending."""
 
     start: int
@@ -194,6 +197,13 @@ def _split_lines(text: str) -> list[_Line]:
     A byte order mark at offset 0 is left out of the first line.
     """
     pos = len(_BOM) if text.startswith(_BOM) else 0
+    if "\r" not in text:
+        # LF alone: one split, each line starting one past the end of the last.
+        parts = text[pos:].split("\n")
+        if parts[-1] == "":
+            parts.pop()
+        starts = itertools.accumulate((len(part) + 1 for part in parts), initial=pos)
+        return list(map(_Line, starts, parts))
     lines: list[_Line] = []
     for match in _EOL.finditer(text, pos):
         lines.append(_Line(pos, text[pos : match.start()]))
@@ -243,50 +253,70 @@ class _Lookahead:
     is indented less than *c* (its list item ends), or on a closing run of its
     character at least as long as its opener, indented less than *c* + 4 (see
     :meth:`_MarkdownState._in_fence`); a blank line never closes one. The
-    tables are built once, on the first question, so a text is still read in
-    one pass however many fences it leaves open.
+    tables are built once, on the first question that needs each, so a text
+    is still read in one pass however many fences it leaves open.
     """
 
     def __init__(self, lines: list[_Line]) -> None:
         self._lines = lines
-        self._built: tuple[list[float], dict[tuple[str, int], _Closers]] | None = None
+        self._lowest: list[float] | None = None
+        self._closers: dict[tuple[str, int], _Closers] | None = None
 
-    def _tables(self) -> tuple[list[float], dict[tuple[str, int], _Closers]]:
-        """Return the lowest indent after each line, and the closers by kind.
-
-        ``lowest[i]`` is the lowest indent of the lines after line *i* that are
-        not blank; the closers are keyed by character and indent.
-        """
-        if self._built is not None:
-            return self._built
+    def _lowest_after(self) -> list[float]:
+        """Return the lowest indent of the lines after each line that are not blank."""
+        if self._lowest is not None:
+            return self._lowest
         lowest: list[float] = [float("inf")] * len(self._lines)
-        found: dict[tuple[str, int], list[tuple[int, int]]] = {}
         running = float("inf")
         for index in range(len(self._lines) - 1, -1, -1):
             lowest[index] = running
-            columns, chars = _indent(self._lines[index].text)
-            content = self._lines[index].text[chars:]
-            if not content.strip():
+            text = self._lines[index].text
+            content = text.lstrip(" \t")
+            if content.strip():
+                running = min(running, _columns(text, content))
+        self._lowest = lowest
+        return lowest
+
+    def _closers_by_kind(self) -> dict[tuple[str, int], _Closers]:
+        """Return the closing runs of the text, keyed by character and indent.
+
+        Only a line that holds three backticks or tildes can hold one, so only
+        those lines are read.
+        """
+        if self._closers is not None:
+            return self._closers
+        found: dict[tuple[str, int], list[tuple[int, int]]] = {}
+        for index, line in enumerate(self._lines):
+            if "```" not in line.text and "~~~" not in line.text:
                 continue
-            running = min(running, columns)
+            content = line.text.lstrip(" \t")
             close = _FENCE_CLOSE.match(content)
             if close is not None:
-                run = close.group(1)
+                run, columns = close.group(1), _columns(line.text, content)
                 found.setdefault((run[0], columns), []).append((len(run), index))
-        closers = {key: _Closers.build(runs) for key, runs in found.items()}
-        self._built = (lowest, closers)
-        return self._built
+        self._closers = {key: _Closers.build(runs) for key, runs in found.items()}
+        return self._closers
 
     def closes(self, index: int, char: str, length: int, column: int) -> bool:
         """Return True when a line after *index* closes a fence opened on it."""
-        lowest, closers = self._tables()
-        if lowest[index] < column:
+        if column and self._lowest_after()[index] < column:
             return True
+        closers = self._closers_by_kind()
         return any(
             (found := closers.get((char, indent))) is not None
             and found.last_after(length) > index
             for indent in range(column, column + _CODE_INDENT)
         )
+
+
+def _columns(text: str, content: str) -> int:
+    """Return the columns of the indent of *text*, whose rest is *content*.
+
+    Spaces count one column each; a tab needs the full count (see
+    :func:`_indent`).
+    """
+    columns = len(text) - len(content)
+    return _indent(text)[0] if "\t" in text[:columns] else columns
 
 
 @dataclass(frozen=True)
@@ -314,6 +344,15 @@ class _Closers:
         return self.last[k] if k < len(self.last) else -1
 
 
+def _sentinel_lines(lines: list[_Line]) -> list[int]:
+    """Return the 0-based lines of *lines* that hold only a marker, in or out of code."""
+    return [
+        index
+        for index, line in enumerate(lines)
+        if _MARKER_WORDS in line.text and line.text.strip() in _SENTINELS
+    ]
+
+
 def _candidate_pairs(lines: list[_Line]) -> dict[int, int]:
     """Map each BEGIN marker line whose next marker line is an END to that END.
 
@@ -322,9 +361,7 @@ def _candidate_pairs(lines: list[_Line]) -> dict[int, int]:
     marker in the text it writes (:func:`defuse_sentinels`), so its own block
     is always such a pair.
     """
-    marked = [
-        index for index, line in enumerate(lines) if line.text.strip() in _SENTINELS
-    ]
+    marked = _sentinel_lines(lines)
     return {
         begin: end
         for begin, end in itertools.pairwise(marked)
@@ -385,11 +422,14 @@ class _MarkdownState:
 
     def step(self, index: int) -> _Kind:
         """Advance over line *index* and return what it is."""
-        columns, chars = _indent(self.lines[index].text)
-        content = self.lines[index].text[chars:]
-        if not content.strip():
+        text = self.lines[index].text
+        if not text.strip():
             self._blank()
             return _Kind.BLANK
+        if text[0].isalpha() and not self.raw_html and self.html_end is None:
+            return self._plain(text)
+        columns, chars = _indent(text)
+        content = text[chars:]
         self.empty_item = False
         if self.fence is not None and self._in_fence(self.fence, columns, content):
             return _Kind.CODE
@@ -449,6 +489,30 @@ class _MarkdownState:
             # A paragraph starts on this line, in the innermost list item; a
             # line that goes on one keeps its column.
             self.para_column = self.items[-1] if self.items else 0
+        return _Kind.TEXT
+
+    def _plain(self, text: str) -> _Kind:
+        """Advance over *text*, a line that starts with a letter at the left margin.
+
+        Such a line opens nothing: no list item, fence, heading, break, HTML
+        block or block quote, and it is no marker. It closes no fence either.
+        So it is code in a fence at the left margin, and otherwise it ends
+        every list item and indented code and goes on the open paragraph or
+        starts one, as the full reading in :meth:`step` finds; that reading
+        costs several pattern matches a line, and most lines of a file are
+        such lines.
+        """
+        self.empty_item = False
+        if self.fence is not None:
+            if self.fence.column == 0:
+                return _Kind.CODE
+            self.fence = None
+        self.code_column = None
+        self.items.clear()
+        if self.can_interrupt:
+            self.can_interrupt = False
+            self.para_column = 0
+        self.html_items = 0
         return _Kind.TEXT
 
     def _blank(self) -> None:
@@ -641,15 +705,19 @@ def _scan(lines: list[_Line], pairs: dict[int, int]) -> _Scan:
     (see :func:`_candidate_pairs`) is Apothem's block, and the lines between
     are not read for code. Every other line is read in turn, a BEGIN marker in
     code included, so a pair quoted across two code blocks marks nothing.
+    The lines after the last marker line change nothing found, so the reading
+    stops there.
     """
     state = _MarkdownState(lines, _Lookahead(lines))
+    sentinels = _sentinel_lines(lines)
+    stop = sentinels[-1] + 1 if sentinels else 0
     found: list[_Marker] = []
     places: dict[int, tuple[_Kind, int | None]] = {}
     marked = {*pairs, *pairs.values()}
     last = max(pairs, default=-1)
     hidden: int | None = None
     index = 0
-    while index < len(lines):
+    while index < stop:
         kind = state.step(index)
         if index in marked:
             fence = state.fence if kind is _Kind.CODE else None
@@ -671,10 +739,13 @@ def _scan(lines: list[_Line], pairs: dict[int, int]) -> _Scan:
     return _Scan(found, hidden, places)
 
 
+@functools.lru_cache(maxsize=4)
 def _read(text: str) -> tuple[list[_Line], dict[int, int], _Scan]:
     """Return the lines of *text*, its candidate pairs and its reading.
 
-    See :func:`_marker_lines` for the rules.
+    See :func:`_marker_lines` for the rules. A command reads the same text
+    many times over (the merge, the warning, the steps of each fix), so the
+    last few readings are kept; no caller changes what it gets back.
     """
     lines = _split_lines(text)
     pairs = _candidate_pairs(lines)
@@ -849,11 +920,13 @@ def uncertain_pairs(text: str) -> list[UncertainPair]:
     pair the operator quotes in code. An install that recorded a block in the
     file leaves it as it is (see :func:`merge_managed_block`).
     """
-    if not _candidate_pairs(_split_lines(text)):
+    if APOTHEM_BLOCK_BEGIN not in text or APOTHEM_BLOCK_END not in text:
         # No pair to place, so no reading for code: an install check reads
         # every anchor, most of which hold no marker line at all.
         return []
     _, pairs, scan = _read(text)
+    if not pairs:
+        return []
     if any(marker.paired for marker in scan.markers):
         return []
     return [
