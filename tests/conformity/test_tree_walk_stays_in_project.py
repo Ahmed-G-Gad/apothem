@@ -1078,9 +1078,17 @@ def test_an_extended_target_takes_dots_and_slashes_literally(
         str(root) + back + "." + back + "AGENTS.md",
         str(root) + "/AGENTS.md",
         str(root) + back * 2 + "AGENTS.md",
+        str(root) + back + "AGENTS.md" + back,
     ):
         _fake_readlink(monkeypatch, link, prefix + rest)
         assert _project_paths._link_target(root, link) is None, rest
+    native = back + "??" + back
+    for rest in (
+        str(root) + back * 2 + "AGENTS.md",
+        str(root) + back + "AGENTS.md" + back,
+    ):
+        _fake_readlink(monkeypatch, link, native + rest)
+        assert _project_paths._link_target(root, link) is None, native + rest
 
 
 def test_a_nul_in_link_text_is_refused_without_an_error(
@@ -1313,11 +1321,13 @@ def test_each_listing_caller_names_only_the_trailing_dot_files_it_would_read(
     plans = root / ".apothem" / "plans"
     suite = plans / "demo"
     _write(suite / "PLAN.md")
+    _write(suite / "phases" / "01-intro" / "PHASE.md")
     workflows = root / ".github" / "workflows"
     workflows.mkdir(parents=True)
     for odd in (
         suite / "01-intro.md.",
         suite / "notes.",
+        suite / "phases" / "01-intro" / "notes.",
         plans / "stray.",
         workflows / "publish-py.yml.",
         workflows / "readme.txt.",

@@ -286,7 +286,7 @@ def list_real_entries(
 
 
 def _last_level(root: Path, path: Path) -> os.stat_result | None:
-    """Return ``os.lstat(path)`` when every level above it below *root* is a real folder.
+    """Return ``os.lstat(path)`` when each level between *root* and it is a real folder.
 
     Pre-conditions: *path* was built from *root*, with the same spelling, so
     the test is by name: a path that does not start with *root*, or that has a
@@ -443,11 +443,13 @@ def _link_target(root: Path, link: Path) -> Path | None:
     may climb to the root's parent only to come straight back in under the
     root's own folder (:func:`_names_the_root`). Each named folder must be a
     real folder inside *root* (``os.lstat``), so a ``..`` after a link is
-    never tidied away as text, and nothing outside *root* is looked at
-    beyond the root's own folder under another spelling. A device or
+    never tidied away as text. Outside *root* only the metadata of an entry
+    that differs from one of the root's own folders by letter case is looked
+    at (:func:`_names_the_root`); no content there is read. A device or
     extended path other than a drive path (``\\?\\C:\\``), an extended path
-    that holds ``.``, ``..``, an empty part or ``/`` (Windows takes those literally there),
-    a drive without a root (``C:name``), on Windows a part holding a colon
+    that holds ``.``, ``..``, an empty part or ``/`` (Windows takes those
+    literally there), a drive without a root (``C:name``), on Windows a part
+    holding a colon
     (another drive, or a stream), a rooted path without a drive, a NUL, and
     an absolute path outside *root* give None.
     """
