@@ -72,8 +72,9 @@ from typing import Any, Final
 # (filesystem lock, slow network-backed repo, large object, or a repository
 # configuration that makes git wait) cannot block a commit indefinitely.
 # Mirrors the convention in production_ready_pr_grep.py: a timeout does not
-# pass, because the change set was not read.
-GIT_TIMEOUT_SECONDS: Final[int] = 5
+# pass, because the change set was not read, so the limit leaves room for a
+# large index or object on a slow or busy machine.
+GIT_TIMEOUT_SECONDS: Final[int] = 60
 
 GREP_NAME: Final[str] = "semver-stability-grep"
 RULE_ANCHOR: Final[str] = "M15 semver-stability"
@@ -131,7 +132,7 @@ class GrepResult:
     passed: bool
     findings: list[Finding] = field(default_factory=list)
     # Why the change-set check could not finish (a git command ran past
-    # ``GIT_TIMEOUT_SECONDS``); None otherwise.
+    # ``GIT_TIMEOUT_SECONDS``, or git refused the checkout); None otherwise.
     check_error: str | None = None
 
     def to_json(self) -> str:

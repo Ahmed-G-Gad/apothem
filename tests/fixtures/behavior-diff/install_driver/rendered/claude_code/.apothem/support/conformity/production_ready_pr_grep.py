@@ -85,9 +85,11 @@ STAGED_FLAG: Final[str] = "--staged"
 # Subprocess timeout for the git invocation; the per-grep budget is
 # `gate.PER_GREP_BUDGET_SECONDS` (~520ms) but the staged-diff check is a
 # single git command that completes well under that ceiling on
-# representative repositories. A timeout does not pass: the change set was
-# not read, which is not the same as an empty one.
-GIT_TIMEOUT_SECONDS: Final[int] = 5
+# representative repositories. The time limit is for a git that stalls, not
+# that budget. A timeout does not pass: the change set was not read, which is
+# not the same as an empty one. So the limit leaves room for a large index on a
+# slow or busy machine, since reading the index takes longer as it grows.
+GIT_TIMEOUT_SECONDS: Final[int] = 60
 
 
 @dataclass(frozen=True)

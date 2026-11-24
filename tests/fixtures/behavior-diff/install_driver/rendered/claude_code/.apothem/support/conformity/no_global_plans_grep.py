@@ -64,6 +64,9 @@ from typing import Final
 
 from apothem.conformity._git import run_git
 from apothem.conformity._grep_base import (
+    GIT_LS_FILES_TIMEOUT_SECONDS,
+    GitCheckError,
+    GitTimeoutError,
     finish_root_report,
     has_git_entry,
     parse_root_args,
@@ -154,15 +157,25 @@ def _git_ls_files(root: Path) -> list[str]:
     """Return the git-tracked file list under root.
 
     Raises ``RuntimeError`` when ``git`` is unavailable or root is not
-    a git repository — both are operator errors the caller surfaces. git runs
-    through :func:`run_git`, so the repository's own settings cannot make it
-    start a program.
+    a git repository — both are operator errors the caller surfaces — and
+    :class:`~apothem.conformity._grep_base.GitTimeoutError` when git runs past
+    :data:`GIT_LS_FILES_TIMEOUT_SECONDS` (the repository's own configuration
+    can make git wait for ever), which the report carries as its
+    ``check_error``. git runs through :func:`run_git`, so the repository's own
+    settings cannot make it start a program.
     """
     try:
         # -z: names end with NUL, unquoted, whatever characters they hold.
-        completed = run_git(["ls-files", "-z"], cwd=root, check=True)
+        completed = run_git(
+            ["ls-files", "-z"],
+            cwd=root,
+            check=True,
+            timeout=GIT_LS_FILES_TIMEOUT_SECONDS,
+        )
     except FileNotFoundError as exc:
         raise RuntimeError("git executable not found on PATH") from exc
+    except subprocess.TimeoutExpired as exc:
+        raise GitTimeoutError("git ls-files", GIT_LS_FILES_TIMEOUT_SECONDS) from exc
     except subprocess.CalledProcessError as exc:
         stderr = (exc.stderr or "").strip()
         raise RuntimeError(
@@ -340,6 +353,15 @@ def _main(argv: list[str]) -> int:
     root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     try:
         result = check(root)
+    except GitCheckError as exc:
+        # The listing did not finish, so nothing was inspected and the
+        # report, carrying the reason as ``check_error``, does not pass.
+        unfinished = GrepResult(
+            grep=GREP_NAME, root=str(root), tracked_count=0, passed=False
+        )
+        return finish_root_report(
+            unfinished.to_json(), passed=False, inspected=0, check_error=str(exc)
+        )
     except RuntimeError as exc:
         sys.stderr.write(f"{GREP_NAME}: {exc}\n")
         return EXIT_FAIL

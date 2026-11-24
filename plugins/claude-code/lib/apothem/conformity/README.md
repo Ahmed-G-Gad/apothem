@@ -153,8 +153,8 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   `_bounded_run.py` is the one module that starts a program: `run_git` starts
   git through its `run_bounded`, and gate.py's validator launcher starts Python
   through it; `test_no_conformity_module_starts_a_program_itself` checks those
-  forms. It
-  reads file contents with `git cat-file blob`, never `git show`, which would
+  forms, and holds `_bounded_run.py` to the rest: it names no git and finds no
+  program. It reads file contents with `git cat-file blob`, never `git show`, which would
   show a submodule entry as a commit, and reads a path list with `-z`.
   `tests/conformity/test_project_git_settings.py` plants each setting and drives
   every git-reading path, so a new one belongs in its `_drive_every_gate_git_call`.
@@ -164,7 +164,9 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   walker on a checkout without the gitignored plans tree, a workflow walker
   where no workflow directory exists yet).
 - **No unfinished pass.** A check that could not finish does not pass either.
-  Give every `run_git` call a timeout. `run_git` runs git through `run_bounded`,
+  Give every `run_git` call a timeout, far above what the command takes, since
+  a timeout fails the check: the validators give each command 60 seconds and a
+  read of the whole history 300. `run_git` runs git through `run_bounded`,
   so the limit holds for every program git starts; `subprocess.run` would stop
   only git and, on Windows, then wait for every program that holds the output,
   such as the real git behind Git's launcher. Turn `subprocess.TimeoutExpired`
@@ -173,9 +175,10 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   `_grep_base.py`; their messages name the command in fixed words and never
   repeat git's own output. A corpus walker hands that message to
   `finish_root_report(check_error=...)`, which stamps `check_error` and exits
-  `2`, advisory or not. A timeout or a refused checkout is not the exempt state
-  of a missing repository, a repository with no commit, or a host without git:
-  the data is there but was not read, and a checked repository's own
+  `2`, advisory or not. A timeout or a refused checkout is not an exempt state
+  (a missing repository, a repository with no commit, a host without git, or a
+  partial clone whose read needs objects it left out, which `run_git` does not
+  let git fetch): the data is there but was not read, and a checked repository's own
   configuration can make git wait for ever or refuse to read it. The gate gives
   each standalone validator `STANDALONE_TIMEOUT_SECONDS` and reports one it had
   to stop with a `check_error` of its own.

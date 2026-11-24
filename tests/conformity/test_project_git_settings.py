@@ -731,12 +731,15 @@ def _dotted(node: ast.expr, imported: dict[str, str]) -> str:
     return ""
 
 
-def _program_starts(source: str, *, allowed: frozenset[str] = frozenset()) -> list[int]:
+def _program_starts(
+    source: str, *, allowed: frozenset[str] = frozenset(), starts: bool = True
+) -> list[int]:
     """Return the lines where *source* starts or finds a program, or names git.
 
     Every process-starting call counts, whatever its arguments, and so does any
     ``which``, any use of ``git_argv``, and any string naming the git program.
-    Calls inside a function named in *allowed* are skipped.
+    Calls inside a function named in *allowed* are skipped. With *starts*
+    false, process-starting calls do not count; the rest still does.
     """
     tree = ast.parse(source)
     imported: dict[str, str] = {}
@@ -754,9 +757,11 @@ def _program_starts(source: str, *, allowed: frozenset[str] = frozenset()) -> li
             continue
         if isinstance(node, ast.Call):
             target = _dotted(node.func, imported)
+            starts_one = target in _PROCESS_FUNCTIONS or target.startswith(
+                _PROCESS_PREFIXES
+            )
             if (
-                target in _PROCESS_FUNCTIONS
-                or target.startswith(_PROCESS_PREFIXES)
+                (starts and starts_one)
                 or target == "which"
                 or target.endswith(".which")
             ):
@@ -824,19 +829,30 @@ def test_no_conformity_module_starts_a_program_itself() -> None:
     ``_bounded_run.py`` is the one module that starts a program:
     ``run_git`` starts git through ``run_bounded``, and gate.py's validator
     launcher (``_run_standalone``) starts Python through it, so neither git
-    nor any other program starts anywhere else.
+    nor any other program starts anywhere else. The rest of the guard still
+    holds in ``_bounded_run.py``: it names no git and finds no program.
     """
     package = Path(gate.__file__).resolve().parent
     offenders: list[str] = []
     for module in sorted(package.rglob("*.py")):
-        if module.name in {"_git.py", "_bounded_run.py"}:
+        relative = module.relative_to(package).as_posix()
+        if relative == "_git.py":
             continue
         source = module.read_text(encoding="utf-8")
-        offenders.extend(
-            f"{module.relative_to(package).as_posix()}:{line}"
-            for line in _program_starts(source)
-        )
+        lines = _program_starts(source, starts=relative != "_bounded_run.py")
+        offenders.extend(f"{relative}:{line}" for line in lines)
     assert offenders == []
+
+
+def test_the_guard_still_finds_git_named_where_programs_may_start() -> None:
+    """With program starts allowed, a string naming git is still caught."""
+    source = 'import subprocess\nsubprocess.Popen(["git", "log"])\n'
+    assert _program_starts(source, starts=False) == [2]
+    assert (
+        _program_starts("import subprocess\nsubprocess.Popen(argv)\n", starts=False)
+        == []
+    )
+    assert _program_starts('import shutil\nshutil.which("x")\n', starts=False) == [2]
 
 
 def test_only_the_shared_runner_and_git_helper_start_programs() -> None:

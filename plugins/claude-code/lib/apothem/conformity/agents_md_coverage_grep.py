@@ -47,9 +47,10 @@ absence is not a finding under the root-only convention. The root
 ``AGENTS.md`` is that canon, not a per-folder companion, so it is never
 checked against the root folder's content. The log names paths relative to
 the checked root and covers only history under it, so a subtree root checks
-its own folders. Where git history is unavailable (a shallow clone, a non-git
-tree), freshness is skipped and the sweep reports a clean pass — it never
-blocks a fresh clone. A git command that runs past its time limit (the
+its own folders. Where git history is unavailable (a non-git tree, no commit
+yet, or a partial clone that left out the trees the read needs, which git may
+not fetch here), freshness is skipped and the sweep reports a clean pass — it
+never blocks a fresh clone. A git command that runs past its time limit (the
 repository's own configuration can make git wait for ever), or a git that
 refuses a checkout it found (another owner, a bad configuration line), is
 different: the history is there but was not read, so the sweep reports a
@@ -63,7 +64,8 @@ stale-companion finding surfaces as ``advisory_findings_present`` without
 gating the ``gate --all`` run. CI opts into strict enforcement separately.
 ``_main`` exits 0 on findings so the advisory posture holds; the verdict
 travels in the JSON, not the exit code. It exits 2 only when the sweep did not
-earn a verdict: it inspected no folder, or its ``git log`` ran past its limit.
+earn a verdict: it inspected no folder, a git command ran past its limit, or
+git refused the checkout.
 """
 
 from __future__ import annotations
@@ -102,9 +104,11 @@ README_NAME: Final[str] = "README.md"
 
 # Bound the git invocations so a hung git cannot stall the sweep. A timeout is
 # not missing history: the history is there but was not read, so the sweep
-# reports a check error and does not pass. A quick ``git rev-parse`` gets the
-# short limit: a repository whose own configuration makes git wait stops there.
-GIT_TIMEOUT_SECONDS: Final[int] = 10
+# reports a check error and does not pass. The quick commands (``git
+# rev-parse``, ``git config``) get this limit, far above the fraction of a
+# second they take, so a slow or busy machine does not fail the check; a
+# repository whose own configuration makes git wait stops there.
+GIT_TIMEOUT_SECONDS: Final[int] = 60
 # The one read of the whole history gets a long limit, because its cost grows
 # with the history: about 18 seconds for 200,000 commits on a test machine.
 GIT_HISTORY_TIMEOUT_SECONDS: Final[int] = 300
@@ -169,8 +173,8 @@ class GrepResult:
     freshness_checked: bool
     passed: bool
     findings: list[Finding] = field(default_factory=list)
-    # Why the freshness check could not finish (``git log`` ran past
-    # ``GIT_TIMEOUT_SECONDS``); None otherwise.
+    # Why the freshness check could not finish (a git command ran past its
+    # limit, or git refused the checkout); None otherwise.
     check_error: str | None = None
 
     def to_json(self) -> str:
@@ -281,6 +285,33 @@ def meaningful_folders(root: Path) -> list[str]:
     return sorted(folders)
 
 
+def _is_partial_clone(root: Path) -> bool:
+    """Return True iff the repository at *root* is a partial clone.
+
+    A partial clone (``git clone --filter=...``) leaves objects out and names
+    the remote that can send them later, its promisor: git sets
+    ``remote.<name>.promisor``, and older releases set
+    ``extensions.partialClone``. Raises
+    :class:`~apothem.conformity._grep_base.GitTimeoutError` past
+    ``GIT_TIMEOUT_SECONDS``, like the other git commands here.
+    """
+    try:
+        completed = run_git(
+            [
+                "config",
+                "--get-regexp",
+                r"^(remote\..*\.promisor|extensions\.partialclone)$",
+            ],
+            cwd=root,
+            timeout=GIT_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise GitTimeoutError("git config", GIT_TIMEOUT_SECONDS) from exc
+    except OSError:
+        return False
+    return completed.returncode == 0 and bool(completed.stdout.strip())
+
+
 def _last_commit_times(root: Path) -> dict[str, int] | None:
     """Return a map of tracked-file POSIX path → last-commit unix timestamp.
 
@@ -293,14 +324,15 @@ def _last_commit_times(root: Path) -> dict[str, int] | None:
     is a subtree of the repository. git runs through :func:`run_git`, which
     turns off the repository's program-running settings (a signature check,
     say) and prints path names as they are, decoded as UTF-8. Returns None
-    when git history is unavailable (no repository, no commit yet, or git
-    absent) so the caller degrades to a presence-only sweep. Raises
+    when git history is unavailable (no repository, no commit yet, git
+    absent, or a partial clone whose read needs objects it left out) so the
+    caller degrades to a presence-only sweep. Raises
     :class:`~apothem.conformity._grep_base.GitTimeoutError` when a git command
     runs past its limit, and
     :class:`~apothem.conformity._grep_base.GitFailedError` when git fails
     although *root* holds a ``.git`` entry (git refused the repository) or
-    after it found the history: in both cases the history is there but was
-    not read.
+    after it found the history in a full clone: in both cases the history is
+    there but was not read.
     """
     try:
         head = run_git(
@@ -337,6 +369,11 @@ def _last_commit_times(root: Path) -> dict[str, int] | None:
     except OSError:
         return None
     if completed.returncode != 0:
+        # A partial clone can lack trees the read needs, and run_git does not
+        # let git fetch them: that history is not here to read. Any other
+        # failure leaves a history that is there unread.
+        if _is_partial_clone(root):
+            return None
         raise GitFailedError("git log", completed.returncode)
     if not completed.stdout:
         return None
@@ -459,7 +496,8 @@ def _main(argv: list[str]) -> int:
     # ``advisory_findings_present`` without failing the ``gate --all`` run.
     # CI opts into strict enforcement separately. A sweep that inspected no
     # folder fails: that is a misconfiguration, not advisory drift. So does a
-    # sweep whose ``git log`` ran past its limit: it did not finish.
+    # sweep whose git command ran past its limit or whose checkout git
+    # refused: it did not finish.
     return finish_root_report(
         result.to_json(),
         passed=result.passed,

@@ -1278,8 +1278,10 @@ def _run_all(root: Path) -> tuple[bool, str]:
 
     A validator whose check could not finish (one the gate stopped at
     :data:`STANDALONE_TIMEOUT_SECONDS`, or one whose own git command ran past
-    its time limit) does not pass, advisory or not, and its entry carries the
-    reason as ``check_error``.
+    its time limit or found a checkout git refused) does not pass, advisory or
+    not, and its entry carries the reason as ``check_error``. Such an entry
+    reports no advisory findings, so it leaves ``advisory_findings_present``
+    alone.
     """
     results: list[dict[str, object]] = []
     overall_passed = True
@@ -1299,7 +1301,7 @@ def _run_all(root: Path) -> tuple[bool, str]:
             entry["advisory"] = True
             entry["advisory_passed"] = verdict["passed"]
             entry["findings"] = verdict["findings"]
-            if not verdict["passed"]:
+            if not verdict["passed"] and CHECK_ERROR_KEY not in entry:
                 advisory_findings_present = True
         results.append(entry)
     payload = {
