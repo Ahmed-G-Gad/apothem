@@ -275,32 +275,35 @@ def _tracks_a_file_in(root: Path) -> bool:
     path below the top is matched without regard to case. A tracked folder
     renamed on disk only in case then still counts: git status shows no
     change there, but ``git ls-files -- .`` matches by case and lists
-    nothing. Raises :class:`~apothem.conformity._grep_base.GitFailedError`
-    when a git command fails.
+    nothing. The setting and the folder's path are read only then, so a
+    tracked folder costs one git start. Raises
+    :class:`~apothem.conformity._grep_base.GitFailedError` when a git command
+    fails.
     """
-    pathspec = "."
+    if _lists_a_file(root, "."):
+        return True
     case = _checked(
         _git(root, "git config", "config", "--type=bool", "--get", "core.ignorecase"),
         "git config",
         1,  # The setting is not there: git then matches by case.
     )
-    if case.returncode == 0 and case.stdout.strip() == "true":
-        shown = _checked(
-            _git(
-                root,
-                "git rev-parse",
-                "rev-parse",
-                "--show-prefix",
-                file_names=True,
-            ),
-            "git rev-parse",
-        )
-        # The path below the top, with a trailing "/", as git spells it from
-        # the folder on disk. ``top`` reads it from the top, where ``icase``
-        # covers every part of it; ``literal`` keeps "*" or "[" in a name.
-        prefix = shown.stdout.removesuffix("\n")
-        if prefix:
-            pathspec = f":(top,icase,literal){prefix}"
+    if case.returncode != 0 or case.stdout.strip() != "true":
+        return False
+    shown = _checked(
+        _git(root, "git rev-parse", "rev-parse", "--show-prefix", file_names=True),
+        "git rev-parse",
+    )
+    # The path below the top, with a trailing "/", as git spells it from the
+    # folder on disk. ``top`` reads it from the top, where ``icase`` covers
+    # every part of it. ``literal`` is a guard only: git compares the path as
+    # plain text first, and the trailing "/" keeps a "*" or "[" in a name
+    # from matching another folder, so it changes no result today.
+    prefix = shown.stdout.removesuffix("\n")
+    return bool(prefix) and _lists_a_file(root, f":(top,icase,literal){prefix}")
+
+
+def _lists_a_file(root: Path, pathspec: str) -> bool:
+    """Return True when ``git ls-files`` in *root* lists a file for *pathspec*."""
     tracked = _checked(
         _git(root, "git ls-files", "ls-files", "-z", "--", pathspec),
         "git ls-files",

@@ -192,6 +192,40 @@ def test_subfolder_of_a_checkout_reads_the_checkout_head(
     assert result.drifts
 
 
+def test_tracked_subfolder_skips_the_case_reads(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A subfolder git lists files for needs no case setting or path read:
+    # the check starts only ls-files before the log, whatever the host.
+    if not _git_available():
+        pytest.skip("git not available")
+    _init_git_repo(tmp_path, "Added a feature without a conventional prefix")
+    sub = tmp_path / "pkg"
+    sub.mkdir()
+    (sub / "mod.txt").write_text("body\n", encoding="utf-8")
+    _git_in(tmp_path, "add", "pkg/mod.txt")
+    _git_in(tmp_path, "commit", "-m", "Added the module")
+    _hermetic_check_env(monkeypatch)
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path.parent))
+    labels: list[str] = []
+    real_git = _MOD._git
+
+    def _recording_git(
+        root: Path, label: str, *args: str, **kwargs: bool
+    ) -> subprocess.CompletedProcess[str]:
+        labels.append(label)
+        result: subprocess.CompletedProcess[str] = real_git(
+            root, label, *args, **kwargs
+        )
+        return result
+
+    monkeypatch.setattr(_MOD, "_git", _recording_git)
+    result = _MOD.check_repo(sub)
+    assert result.status == "ok", result.to_json()
+    assert not result.passed
+    assert labels == ["git ls-files", "git log"]
+
+
 @pytest.mark.parametrize("spelling", ["pkg", "Pkg"], ids=["disk case", "index case"])
 def test_subfolder_renamed_only_in_case_reads_the_checkout_head(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, spelling: str
