@@ -56,10 +56,10 @@ without one is a meaningful folder only in a run on the repository, never as
 a root). The log is read as text: a name with a control character comes in
 git's quoted form and a byte that is not UTF-8 as U+FFFD, so a folder with
 such a name is not matched. Where git history is unavailable (a non-git tree,
-no commit yet, a shallow clone, or a partial clone whose history read fails:
-git may not fetch what the clone left out here, and no answer of git's tells
-that from a lost object), freshness is skipped and the sweep reports a clean pass — it
-never blocks a fresh clone. A git command that runs past its time limit (the
+no commit yet, or a partial clone whose history read fails: git may not fetch
+what the clone left out here, and no answer of git's tells that from a lost
+object), freshness is skipped and the sweep reports a clean pass — it never
+blocks a fresh clone. A git command that runs past its time limit (the
 repository's own configuration can make git wait for ever), or a git that
 refuses a checkout it found (another owner, a bad configuration line), is
 different: the history is there but was not read, so the sweep reports a
@@ -364,14 +364,14 @@ def _read_history(root: Path) -> _History | None:
     paths relative to it, so they match :func:`meaningful_folders` when *root*
     is a subtree of the repository. git runs through :func:`run_git`, which
     turns off the repository's program-running settings (a signature check,
-    say) and prints path names as they are, decoded as UTF-8. Returns None
-    when git history is unavailable (no repository, no commit yet, git
-    absent, or a partial clone whose read failed, whatever the cause) so the
-    caller degrades to a presence-only sweep. Raises
+    say) and prints non-ASCII path names as they are, decoded as UTF-8.
+    Returns None when git history is unavailable (no repository, no commit
+    yet, git absent, or a partial clone whose read failed, whatever the cause)
+    so the caller degrades to a presence-only sweep. Raises
     :class:`~apothem.conformity._grep_base.GitTimeoutError` when a git command
     runs past its limit, and
     :class:`~apothem.conformity._grep_base.GitFailedError` when git fails
-    although *root* holds a ``.git`` entry (git refused the repository) or
+    although *root* is inside a checkout (git refused the repository) or
     after it found the history in a full clone: in both cases the history is
     there but was not read.
     """

@@ -157,21 +157,88 @@ def _hermetic_check_env(monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv(name, value)
 
 
+def _git_in(root: Path, *args: str) -> None:
+    subprocess.run(
+        ["git", *args],
+        cwd=str(root),
+        env=hermetic_git_env(),
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+
+@pytest.mark.parametrize("commit", [True, False], ids=["committed", "staged"])
 def test_subfolder_of_a_checkout_reads_the_checkout_head(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, commit: bool
 ) -> None:
-    # git finds the repository above a subfolder, so the check does too: a
-    # drifting HEAD is reported, not taken for a folder outside a checkout.
+    # git finds the repository above a subfolder that holds a tracked file,
+    # so the check does too: a drifting HEAD is reported, not taken for a
+    # folder outside a checkout. A file only in the index counts as tracked.
     if not _git_available():
         pytest.skip("git not available")
     _init_git_repo(tmp_path, "Added a feature without a conventional prefix")
     sub = tmp_path / "pkg" / "inner"
     sub.mkdir(parents=True)
+    (sub / "mod.txt").write_text("body\n", encoding="utf-8")
+    _git_in(tmp_path, "add", "pkg/inner/mod.txt")
+    if commit:
+        _git_in(tmp_path, "commit", "-m", "Added the inner module")
     _hermetic_check_env(monkeypatch)
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path.parent))
     result = _MOD.check_repo(sub)
     assert result.status == "ok", result.to_json()
     assert not result.passed
     assert result.drifts
+
+
+@pytest.mark.parametrize(
+    ("ignored", "empty_git"),
+    [(False, False), (True, False), (False, True)],
+    ids=["untracked", "ignored", "empty .git in the project"],
+)
+def test_folder_an_enclosing_repository_does_not_track_is_exempt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, ignored: bool, empty_git: bool
+) -> None:
+    # A new project inside a home-folder dotfiles repository: the enclosing
+    # repository tracks nothing in the project, so its drifting HEAD is not
+    # the project's history and the check stays exempt. An empty .git folder
+    # in the project (a git init that stopped) is one git looks past, so it
+    # changes nothing.
+    if not _git_available():
+        pytest.skip("git not available")
+    home = tmp_path / "home"
+    home.mkdir()
+    _init_git_repo(home, "update bashrc")
+    if ignored:
+        (home / ".gitignore").write_text("projects/\n", encoding="utf-8")
+    project = home / "projects" / "foo"
+    project.mkdir(parents=True)
+    (project / "main.py").write_text("print()\n", encoding="utf-8")
+    if empty_git:
+        (project / ".git").mkdir()
+    _hermetic_check_env(monkeypatch)
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path))
+    result = _MOD.check_repo(project)
+    assert result.passed, result.to_json()
+    assert result.status == "not-a-git-repo"
+    assert result.check_error is None
+
+
+def test_repository_top_reads_head_without_a_tracked_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # At the repository's own top the history is the folder's, so the check
+    # reads HEAD even when the index is empty.
+    if not _git_available():
+        pytest.skip("git not available")
+    _init_git_repo(tmp_path, "Added a feature without a conventional prefix")
+    _git_in(tmp_path, "rm", "--cached", "-q", "file.txt")
+    _hermetic_check_env(monkeypatch)
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path.parent))
+    result = _MOD.check_repo(tmp_path)
+    assert result.status == "ok", result.to_json()
+    assert not result.passed
 
 
 def test_empty_git_folder_above_fails_the_check(

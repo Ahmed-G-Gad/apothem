@@ -20,11 +20,13 @@ Shallow-clone or no-git contexts (an empty repository, or a folder outside
 any checkout) exit 0 with an informational status, so the validator never
 blocks a fresh clone. A folder is outside any checkout when no ``.git`` entry
 of any kind lies in it or in a folder above it that git's own search reaches.
-A repository in a folder above it counts, and its HEAD subject is checked.
-A ``.git`` entry that git cannot open, such as an empty ``.git`` folder or a
-``.git`` file that names no repository, also counts: when git then finds no
-repository it can use, it fails, and so does the check, with ``git-failed``.
-Two outcomes are not an
+A repository in a folder above it counts when it tracks a file in the folder
+(``git ls-files``), and its HEAD subject is then checked. When it tracks
+nothing there, as for a new project inside a home-folder dotfiles repository,
+the folder is outside any checkout too. A ``.git`` entry that git cannot open,
+such as an empty ``.git`` folder or a ``.git`` file that names no repository,
+also counts: when git then finds no repository it can use, it fails, and so
+does the check, with ``git-failed``. Two outcomes are not an
 exempt context: a git command that runs past ``GIT_TIMEOUT_SECONDS`` (the
 repository's own configuration can make git wait for ever) gives status
 ``git-timeout``, and a git that refuses the repository (another owner, a bad
@@ -249,6 +251,28 @@ def _git(root: Path, label: str, *args: str) -> subprocess.CompletedProcess[str]
         raise GitTimeoutError(label, GIT_TIMEOUT_SECONDS) from exc
 
 
+def _repository_is_above(root: Path) -> bool:
+    """Return True when git's search from *root* uses a folder above it.
+
+    The search looks past a ``.git`` entry that holds no repository and stops
+    at the first one that holds one, or that git refuses. Only a repository
+    in a folder above *root* is a repository *root* may not belong to; a
+    ``.git`` entry git refuses fails the log, as in ``root`` itself.
+    """
+    from apothem.conformity._grep_base import (
+        GIT_ENTRY_NONE,
+        GIT_ENTRY_REPOSITORY,
+        checkout_search_folders,
+        git_entry_state,
+    )
+
+    for index, folder in enumerate(checkout_search_folders(root)):
+        state = git_entry_state(folder)
+        if state != GIT_ENTRY_NONE:
+            return index > 0 and state == GIT_ENTRY_REPOSITORY
+    return False
+
+
 def _read_head_subject(root: Path) -> tuple[str | None, str, str | None]:
     """Return ``(subject, status, check_error)`` for the HEAD commit.
 
@@ -274,6 +298,18 @@ def _read_head_subject(root: Path) -> tuple[str | None, str, str | None]:
     if not in_checkout(root):
         return None, "not-a-git-repo", None
     try:
+        if _repository_is_above(root):
+            # git uses a repository in a folder above ``root`` (an empty
+            # ``.git`` folder in ``root``, say from a ``git init`` that
+            # stopped, is one git looks past). Its history belongs to ``root``
+            # only when it tracks a file there. A new project inside a
+            # home-folder dotfiles repository is not part of it, so it stays
+            # exempt. The index counts, so a staged file is tracked.
+            tracked = _git(root, "git ls-files", "ls-files", "-z", "--", ".")
+            if tracked.returncode != 0:
+                raise GitFailedError("git ls-files", tracked.returncode)
+            if not tracked.stdout:
+                return None, "not-a-git-repo", None
         completed = _git(root, "git log", "log", "-1", "--pretty=%B")
         if completed.returncode != 0:
             # A branch with no commit yet and a repository git refused both
@@ -404,10 +440,11 @@ def check_repo(root: Path) -> GrepResult:
     which can be in a folder above it.
     Post-conditions: ``result.passed`` is True iff HEAD is conformant or the
     repository state is informationally exempt: no ``.git`` entry in ``root``
-    or above it (as far as git's own search goes), or no commits yet. A
-    ``.git`` entry git cannot open (an empty ``.git`` folder, say) is not
-    exempt: when git finds no repository it can use, it fails and the status
-    is ``git-failed``. A git command
+    or above it (as far as git's own search goes), a repository above
+    ``root`` that tracks no file in it, or no commits yet. A ``.git`` entry
+    git cannot open (an empty ``.git`` folder, say) is not exempt: when git
+    finds no repository it can use, it fails and the status is
+    ``git-failed``. A git command
     past ``GIT_TIMEOUT_SECONDS`` gives status ``git-timeout``, and a git that
     refused the repository gives ``git-failed``: both have ``passed`` False
     and a ``check_error`` that names the command.
