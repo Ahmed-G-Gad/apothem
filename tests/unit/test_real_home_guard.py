@@ -948,8 +948,9 @@ def test_a_passing_exit_fails_once_a_refusal_was_reported(
     Its ``pytest_cmdline_main`` wrapper converts the same exits at the end
     of the run, so the pytester cases pass without the conversion in the
     other two wrappers; this checks that conversion on its own. A
-    ``SystemExit`` with the code ``None``, 0 or 5 becomes one with the code
-    1 once the guard has reported a refusal; any other code, and any code
+    ``SystemExit`` with the code ``None``, 0 or 5, or one that a POSIX
+    system cuts to 0 or 5 (256, -256, 261), becomes one with the code 1
+    once the guard has reported a refusal; any other code, and any code
     before such a report, stays.
     """
     conftest = _suite_conftest(request.config)
@@ -964,14 +965,14 @@ def test_a_passing_exit_fails_once_a_refusal_was_reported(
             raise SystemExit(code)
         return raised.value.code
 
-    codes = (None, 0, 5, 3, "a message")
+    codes = (None, 0, 5, 256, -256, 261, 3, 257, "a message")
     found = {
         (code, reported): ended(code, reported)
         for code in codes
         for reported in (False, True)
     }
 
-    passing = {None, 0, 5}
+    passing = {None, 0, 5, 256, -256, 261}
     assert found == {
         (code, reported): 1 if reported and code in passing else code
         for code in codes
@@ -1798,8 +1799,9 @@ def case_pytest_exit_with_code_0_after_a_refusal_still_fails_the_run(
 ) -> None:
     """pytest sets the code ``pytest.exit`` gives after every session-finish wrapper.
 
-    The guard sets "tests failed" again in ``pytest_unconfigure``. Any code
-    other than 0 or 5 is the hook's own, and stays.
+    The guard sets "tests failed" again in ``pytest_unconfigure``, also for
+    261, which a POSIX system cuts to 5. Any other code is the hook's own,
+    and stays.
     """
     exit_0 = _ABSORBED_BEFORE_PYTEST_EXIT.format(code=0)
 
@@ -1810,6 +1812,8 @@ def case_pytest_exit_with_code_0_after_a_refusal_still_fails_the_run(
         ["*outside any test, after the last test, and the refusal*"]
     )
     assert not (fake_real_home / ".apothem").exists()
+    exit_261 = _ABSORBED_BEFORE_PYTEST_EXIT.format(code=261)
+    assert _run_absorbing(pytester, fake_real_home, exit_261).ret == 1
     exit_4 = _ABSORBED_BEFORE_PYTEST_EXIT.format(code=4)
     assert _run_absorbing(pytester, fake_real_home, exit_4).ret == 4
 
@@ -1893,14 +1897,15 @@ def case_sys_exit_with_code_0_after_a_refusal_still_fails_the_run(
     refusal, so the guard raises ``SystemExit`` with the code 1 in its
     place, also in an xdist controller, whose workers run the hook too. So
     does a bare ``sys.exit()``, here in a terminal-summary hook, which runs
-    within the session finish, and ``sys.exit(5)``, as "no tests collected"
-    counts as a pass for some jobs. Any other code is the hook's own, and
-    stays.
+    within the session finish, ``sys.exit(5)``, as "no tests collected"
+    counts as a pass for some jobs, and ``sys.exit(256)``, which a POSIX
+    system cuts to 0. Any other code is the hook's own, and stays.
     """
     for hook, code, where, args in (
         (_ABSORBED_BEFORE_SYS_EXIT, "0", "after the last test", ()),
         (_ABSORBED_BEFORE_SYS_EXIT, "0", "after the last test", ("-n", "2")),
         (_ABSORBED_BEFORE_SYS_EXIT, "5", "after the last test", ()),
+        (_ABSORBED_BEFORE_SYS_EXIT, "256", "after the last test", ()),
         (
             _ABSORBED_BEFORE_SYS_EXIT_IN_THE_TERMINAL_SUMMARY,
             "",

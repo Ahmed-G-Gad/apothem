@@ -199,7 +199,8 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   catches no ``SystemExit`` around either hook, so ``sys.exit(0)`` would end
   the process with 0 whatever that status says: once the guard has reported a
   refusal, both ``tryfirst`` wrappers raise ``SystemExit(1)`` in place of a
-  ``SystemExit`` with the code 0, 5 or ``None`` from a hook they wrap, and the
+  ``SystemExit`` with the code 0, 5 or ``None`` from a hook they wrap (or a
+  code a POSIX system cuts to 0 or 5, such as 256), and the
   ``pytest_cmdline_main`` wrapper below does the same for one they do not see.
   Any other code stays. A refusal absorbed later still, in a cleanup registered
   with ``config.add_cleanup``, reaches only ``stderr``, unless such a passing
@@ -1870,9 +1871,11 @@ def _report_held(
 def _fail_the_run(session: pytest.Session | None) -> None:
     """Turn the exit status "OK" or "no tests collected" into "tests failed".
 
-    Some jobs accept either as a pass. Any other status is kept.
+    Some jobs accept either as a pass. So is a status the system cuts to one
+    of them (see :func:`_a_passing_code`): ``pytest.exit(returncode=256)``
+    ends a POSIX process with 0. Any other status is kept.
     """
-    if session is not None and session.exitstatus in _PASSED_OR_EMPTY:
+    if session is not None and _a_passing_code(session.exitstatus):
         session.exitstatus = pytest.ExitCode.TESTS_FAILED
 
 
@@ -1902,10 +1905,15 @@ def _a_passing_code(code: object) -> bool:
     """Return whether a ``SystemExit`` with *code* ends the run as a pass.
 
     ``None`` exits 0, and so do 0 and ``False``; 5 is "no tests collected",
-    which some jobs accept as a pass (see :func:`_fail_the_run`). Any other
-    code, a message included (which exits 1), is not a pass.
+    which some jobs accept as a pass (see :func:`_fail_the_run`). A POSIX
+    system keeps only the low 8 bits of an exit code, so 256 or -256 exits
+    0 there and 261 exits 5: an int code counts by its remainder modulo
+    256, on Windows too, where such a code fails the run either way. Any
+    other code, a message included (which exits 1), is not a pass.
     """
-    return code is None or code in _PASSED_OR_EMPTY
+    if code is None:
+        return True
+    return isinstance(code, int) and code % 256 in _PASSED_OR_EMPTY
 
 
 def _late_folder(config: pytest.Config) -> str | None:
