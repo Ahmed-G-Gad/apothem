@@ -257,15 +257,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   test is marked `xfail`; one absorbed outside any test fails the collection
   of the node pytest was collecting then, or else the run when the session
   finishes, named for where it happened, also when a hook then ends the run
-  with `pytest.exit(returncode=0)` or `sys.exit(0)` (but not a `sys.exit(0)`
-  that ends the session finish when the only refusal comes in
-  `pytest_unconfigure` after it), and also when a worker process of a parallel
-  run absorbs it, before or after it handed its refusals to the main process:
-  a worker writes each refusal, as soon as it holds it, to a file the main
-  process reads, so one it held before it crashed or was stopped short of that
-  hand-off, or before a session-finish hook stopped it there, still fails the
-  run. Three cases still show only on `stderr` and leave the exit code as it
-  is: one absorbed after the `yield` of a `tryfirst` `pytest_unconfigure`
+  with `pytest.exit(returncode=0)` or `sys.exit(0)` (or a code the system cuts
+  to 0 or 5, such as 256), also after another hook ended the session finish
+  with `sys.exit` or an exception, and also when a worker process of a
+  parallel run absorbs it, before or after it handed its refusals to the main
+  process: a worker writes each refusal, as soon as it holds it, to a file the
+  main process reads, so one it held before it crashed or was stopped short of
+  that hand-off, or before a session-finish hook stopped it there, still fails
+  the run. Three cases still show only on `stderr` and leave the exit code as
+  it is: one absorbed after the `yield` of a `tryfirst` `pytest_unconfigure`
   wrapper that pytest registered after the guard, one absorbed in a cleanup
   registered with `config.add_cleanup` (each unless a passing `sys.exit` then
   ends the run), and one a worker absorbs but neither hands over nor writes to
