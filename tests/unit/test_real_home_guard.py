@@ -425,8 +425,10 @@ _ABSORBING_TESTS = (
 #: ``-p tests.conftest`` and the repository root on ``PYTHONPATH``, which
 #: imports it as ``tests.conftest`` before pytest loads the conftest. The
 #: copy registers no second guard, and its fixture raises its own
-#: ``RealHomeGuardFailure``; the probe stops if that class is the first
-#: copy's.
+#: ``RealHomeGuardFailure``. The probe stops if that class is the first
+#: copy's, and the session at its start if the guard pytest registered is
+#: not the first copy's: with the guard and the fixture from one copy, the
+#: case would pass without the guard meeting a second copy's failure.
 _SECOND_COPYS_REFUSAL_FIXTURE = f"""
 
 import importlib.util
@@ -439,6 +441,11 @@ _SECOND = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_SECOND)
 assert _SECOND.RealHomeGuardFailure is not RealHomeGuardFailure
 _report_real_home_refusals = _SECOND._report_real_home_refusals
+
+
+def pytest_sessionstart(session):
+    guard = session.config.pluginmanager.get_plugin(REAL_HOME_GUARD_PLUGIN)
+    assert guard is real_home_guard, "the guard is not the first copy's"
 """
 
 #: The names the call guard gives, as its findings spell them.
@@ -1466,11 +1473,13 @@ def case_an_xfail_test_errors_when_a_second_copy_reports_the_refusal(
 
     The probe conftest's ``_report_real_home_refusals`` raises the class of a
     second copy, while the guard, registered once from the first copy, checks.
-    Were the class not recognised, ``skipping`` would turn each teardown error
-    into XFAIL and the run would exit 0. The test with the module fixture is
-    left out: its refusal is logged after the fixture's teardown, and the guard
-    then fails the teardown report itself, so that test would fail the run even
-    if the class were not recognised.
+    The probe conftest checks both before any test runs (see
+    ``_SECOND_COPYS_REFUSAL_FIXTURE``). Were the class not recognised,
+    ``skipping`` would turn each teardown error into XFAIL and the run would
+    exit 0. The test with the module fixture is left out: its refusal is
+    logged after the fixture's teardown, and the guard then fails the teardown
+    report itself, so that test would fail the run even if the class were not
+    recognised.
     """
     tests = _ABSORBING_TESTS[:-1]
     pytester.makepyfile(
