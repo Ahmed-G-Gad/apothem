@@ -315,7 +315,8 @@ removed), whatever the step had changed. When Open-Claw's rules-file step
 reports an error instead (a rules file it cannot rewrite, or an
 `openclaw.json` with comments), that is a failed step, as above: the uninstall
 prints `did not finish:`, records itself unfinished with that step's backups,
-and exits `2` when that step had changed a file, otherwise `1`. `Ctrl+C`
+and exits `2` when that step had changed a file or found Apothem's rules file
+behind a link, or when another harness was removed, otherwise `1`. `Ctrl+C`
 prints `Aborted!` and exits `1`, whatever the uninstall had removed by then. A
 refused uninstall (a link that leads the folder out of your home directory,
 say) removes nothing and exits `1`; its row names that link in
@@ -349,7 +350,8 @@ exception or `Ctrl+C` stops appends, by the step it stopped in:
 - in the step OpenCode's uninstall takes after it, which closes an install
   recorded under another spelling of its folder (when `XDG_CONFIG_HOME`
   names the folder a `~/.config` link leads to, say): nothing more, so that
-  install stays recorded and running the command again closes it.
+  install stays recorded, OpenCode still reads as installed, and running the
+  command again closes it.
 
 When nothing is appended, the ledger stays as it was. The install stays
 recorded either way, so `apothem status`, `verify` and `rollback` still see

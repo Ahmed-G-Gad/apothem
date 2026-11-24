@@ -789,31 +789,32 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   the job. A rules-file step that reports an error instead (a rules file it
   cannot rewrite, or an `openclaw.json` with comments) is a failed step: the
   uninstall records itself unfinished with that step's backups, prints `did
-  not finish:` and exits `2` when that step had changed a file, otherwise `1`.
-  An install, update, rollback or finished uninstall replaces the state of an
-  unfinished uninstall, and so does removing the files by hand. A file where
-  Apothem keeps a managed block (such as `CLAUDE.md`) counts as Apothem's
-  while the block is there, even after you add text of your own beside it, so
-  the second run still finishes the job. A linked folder that holds only your
-  own files no longer stops an uninstall: it is left in place with a warning
-  and the uninstall finishes. An uninstall that removed files before a step
-  failed now exits `2` with the status `partial`, and the `--format json`
-  warnings are grouped like the printed ones, with `count` and `paths`. An
-  uninstall that stops with an error after removing files, or after taking
-  Apothem's entries out of a file such as `openclaw.json`, exits `2` too; one
-  stopped by an unexpected error inside the rules-file step of Open-Claw or
-  the older-layout sweep of Antigravity or Kimi Code exits `1`, whatever that
-  step had changed, as it reports nothing the step did, and one stopped by
-  `Ctrl+C` exits `1` with `Aborted!`. A stopped uninstall now also reports
-  what it found that leaves it unfinished, as one that ran all its steps does:
-  each step that failed before it stopped, each link keeping Apothem's own
-  files in place, the files of an earlier release's install that differ from
-  what this release writes, the files of an install with no record, and a file
-  that holds another block between Apothem's markers. Each gets a `✗ <harness>
-  uninstall did not finish:` line and is added to the end of its `results`
-  row's message, and an install with no record also gets its `Note:` line,
-  with the check of the `--project` folder before `apothem update`, and the
-  row's `kept_reason`; when the reasons, the steps that failed before the stop
+  not finish:` and exits `2` when that step had changed a file or found
+  Apothem's rules file behind a link, otherwise `1`. An install, update,
+  rollback or finished uninstall replaces the state of an unfinished
+  uninstall, and so does removing the files by hand. A file where Apothem
+  keeps a managed block (such as `CLAUDE.md`) counts as Apothem's while the
+  block is there, even after you add text of your own beside it, so the second
+  run still finishes the job. A linked folder that holds only your own files
+  no longer stops an uninstall: it is left in place with a warning and the
+  uninstall finishes. An uninstall that removed files before a step failed now
+  exits `2` with the status `partial`, and the `--format json` warnings are
+  grouped like the printed ones, with `count` and `paths`. An uninstall that
+  stops with an error after removing files, or after taking Apothem's entries
+  out of a file such as `openclaw.json`, exits `2` too; one stopped by an
+  unexpected error inside the rules-file step of Open-Claw or the older-layout
+  sweep of Antigravity or Kimi Code exits `1`, whatever that step had changed,
+  as it reports nothing the step did, and one stopped by `Ctrl+C` exits `1`
+  with `Aborted!`. A stopped uninstall now also reports what it found that
+  leaves it unfinished, as one that ran all its steps does: each step that
+  failed before it stopped, each link keeping Apothem's own files in place,
+  the files of an earlier release's install that differ from what this release
+  writes, the files of an install with no record, and a file that holds
+  another block between Apothem's markers. Each gets a `✗ <harness> uninstall
+  did not finish:` line and is added to the end of its `results` row's
+  message, and an install with no record also gets its `Note:` line, with the
+  check of the `--project` folder before `apothem update`, and the row's
+  `kept_reason`; when the reasons, the steps that failed before the stop
   included, name one link, that row carries it in `detail.symlink` and
   `detail.leads_to`, as does the row of an uninstall refused because a link
   leads its folder out of your home directory. Such a link, or such files of
@@ -828,13 +829,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   OpenCode's uninstall takes after the one that removes what the install
   record lists, which closes an install recorded under another spelling of its
   folder: the uninstall exits `2`, as it had removed files, and that install
-  stays recorded for the next run. `apothem rollback` now undoes the newest
-  install still in place, so a second rollback undoes the one before, refuses
-  an `--install-id` that was already rolled back or uninstalled, and removes a
-  file an install created only while it still has the content that install
-  wrote. Uninstalling a tool from one project no longer removes the shared
-  memory, contexts and learning stores in your home folder while the same tool
-  installed in another project still uses them.
+  stays recorded, so OpenCode still reads as installed and the next run closes
+  it. `apothem rollback` now undoes the newest install still in place, so a
+  second rollback undoes the one before, refuses an `--install-id` that was
+  already rolled back or uninstalled, and removes a file an install created
+  only while it still has the content that install wrote. Uninstalling a tool
+  from one project no longer removes the shared memory, contexts and learning
+  stores in your home folder while the same tool installed in another project
+  still uses them.
 - **Uninstall checks more strictly which files are Apothem's.** An install
   recorded by an earlier release does not say which files Apothem wrote, so
   the uninstall compares them with what this release writes. In the two places
