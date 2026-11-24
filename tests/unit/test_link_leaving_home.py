@@ -438,8 +438,12 @@ def test_an_error_while_closing_the_earlier_spelling_reports_the_removals(
     from apothem.harnesses.opencode import uninstall as opencode_uninstall
 
     adapter = OpenCodeAdapter()
-    adapter.install({})
     spelling = home / ".config" / "opencode"
+    spelling.mkdir(parents=True)
+    # The operator's own $schema, written before the install, is theirs.
+    operator = {"$schema": "https://opencode.ai/config.json", "theme": "dark"}
+    (spelling / "opencode.json").write_text(json.dumps(operator), encoding="utf-8")
+    adapter.install({})
     outside = _move_config_out_of_the_home(home, tmp_path)
     monkeypatch.setenv("XDG_CONFIG_HOME", str(outside))
     adapter.install({})
@@ -467,6 +471,8 @@ def test_an_error_while_closing_the_earlier_spelling_reports_the_removals(
     rows = json.loads(again.output)["results"]
     assert [row["outcome"] for row in rows] == ["skipped"], again.output
     assert install_ledger.active_install_records("opencode", root=spelling)
+    config = json.loads((outside / "opencode" / "opencode.json").read_text("utf-8"))
+    assert config["$schema"] == operator["$schema"]
     # An install at the folder, then an uninstall, closes that install.
     adapter.install({})
     closed = CliRunner().invoke(
@@ -545,6 +551,26 @@ def test_a_link_loop_on_the_way_up_is_refused(
     verify = runner.invoke(main, ["verify", "--harness", "opencode"])
     assert verify.exit_code in (0, 1), verify.output
     assert "Traceback" not in verify.output
+
+
+def test_opencode_reads_as_not_installed_through_a_config_link_loop(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Python 3.10-3.12 raise RuntimeError resolving a link loop; reading
+    # whether OpenCode is installed does not raise on it.
+    _link(home / ".config", home / "dotfiles" / "config")
+    real_resolve = Path.resolve
+    config = str(home / ".config")
+
+    def resolve(self: Path, strict: bool = False) -> Path:
+        if str(self).startswith(config):
+            raise RuntimeError(f"Symlink loop from {self!r}")
+        return real_resolve(self, strict=strict)
+
+    monkeypatch.setattr(Path, "resolve", resolve)
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(home / "dotfiles" / "config"))
+
+    assert OpenCodeAdapter().is_installed() is False
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="a real link loop needs POSIX")
