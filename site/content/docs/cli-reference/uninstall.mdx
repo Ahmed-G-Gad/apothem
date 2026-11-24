@@ -352,11 +352,15 @@ exception or `Ctrl+C` stops appends, by the step it stopped in:
   names the folder a `~/.config` link leads to, say): nothing more, so that
   install stays recorded. A later run does not close it yet: with the files
   at the folder gone, OpenCode reads as not installed there, so `uninstall`
-  skips it.
+  skips it, and `status`, `verify` and `rollback` do not see that install
+  either. To close it, install OpenCode at the folder again, then uninstall
+  it: `apothem install --harness opencode --profile PATH` with a profile
+  outside the linked folder (`apothem profile init --profile PATH` makes
+  one), then `apothem uninstall --harness opencode`.
 
-When nothing is appended, the ledger stays as it was. The install stays
-recorded either way, so `apothem status`, `verify` and `rollback` still see
-it, and the harness reads as installed while something the install wrote is
+When nothing is appended, the ledger stays as it was. Except in that last
+case, the install stays recorded either way, so `apothem status`, `verify` and
+`rollback` still see it, and the harness reads as installed while something the install wrote is
 still there as it wrote it (see below), so running `uninstall` again finishes
 the job. An install with no record has none to keep: only its files on disk
 make the harness read as installed, and `rollback` has nothing to roll back.
