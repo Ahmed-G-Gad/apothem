@@ -922,10 +922,16 @@ def test_a_worker_that_cannot_send_a_refusal_says_why(
     conftest = _suite_conftest(request.config)
     gone = tmp_path / "gone" / "gw0.jsonl"
     reasons = {
-        "the controller named no file for it": {},
-        f"writing {gone} failed: ": {conftest._LATE_TO_THE_CONTROLLER: str(gone)},
+        "the controller named no file for it": (
+            {},
+            "The run does not fail on it.",
+        ),
+        f"writing {gone} failed: ": (
+            {conftest._LATE_TO_THE_CONTROLLER: str(gone)},
+            "The run fails on it only when part of it reached that file.",
+        ),
     }
-    for reason, named in reasons.items():
+    for reason, (named, outcome) in reasons.items():
         config = SimpleNamespace(
             stash=pytest.Stash(),
             workeroutput={},
@@ -940,7 +946,7 @@ def test_a_worker_that_cannot_send_a_refusal_says_why(
         note = " ".join(capsys.readouterr().err.split())
         assert "in xdist worker gw0, after the session finished" in note
         assert f"could not send it to the controller: {reason}" in note, note
-        assert "The run fails on it only when part of it reached" in note
+        assert note.endswith(outcome), note
         assert not gone.exists()
 
 

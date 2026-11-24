@@ -1860,10 +1860,15 @@ def _report_held(
             else "before it handed its refusals to the controller, which it "
             "does at its session finish"
         )
+        named = getattr(config, "workerinput", {}).get(_LATE_TO_THE_CONTROLLER)
+        outcome = (
+            "The run fails on it only when part of it reached that file."
+            if named
+            else "The run does not fail on it."
+        )
         sys.stderr.write(
             f"{message}\nThe worker found it {when}, and could not send it to "
-            f"the controller: {unsent}. The run fails on it only when part of "
-            "it reached that file.\n"
+            f"the controller: {unsent}. {outcome}\n"
         )
     elif reporter is not None:
         reporter.write_line(f"\n{message}", red=True)
