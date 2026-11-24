@@ -298,7 +298,8 @@ def _jaccard(a: frozenset[str], b: frozenset[str]) -> float:
     if not a or not b:
         return 0.0
     inter = len(a & b)
-    union = len(a | b)
+    # The union's size is |a| + |b| - |a & b|; counting it builds no new set.
+    union = len(a) + len(b) - inter
     return inter / union if union else 0.0
 
 
@@ -367,16 +368,50 @@ def check_corpus(root: Path, threshold: float = DEFAULT_THRESHOLD) -> GrepResult
     for f in files:
         for text, tokens in _extract_paragraphs(f):
             entries.append((f, text, tokens))
+    # The pass compares every pair of paragraphs, so each per-pair test is
+    # reduced to integer work: a file id stands in for path equality, a folder
+    # id for the parent check in _are_sibling_variants (which is only true for
+    # files in one folder), and the sibling verdict is cached per file pair.
+    # Both ids come from Path equality, so they match the comparisons they
+    # replace on every platform, case-folding on Windows included.
+    file_ids: dict[Path, int] = {}
+    folder_ids: dict[Path, int] = {}
+    entry_file: list[int] = []
+    entry_folder: list[int] = []
+    for path, _text, _tokens in entries:
+        entry_file.append(file_ids.setdefault(path, len(file_ids)))
+        entry_folder.append(folder_ids.setdefault(path.parent, len(folder_ids)))
+    sizes = [len(tokens) for _path, _text, tokens in entries]
+    sibling_cache: dict[tuple[int, int], bool] = {}
     findings: list[Finding] = []
     seen_pairs: set[tuple[int, int]] = set()
     for i in range(len(entries)):
         path_i, text_i, tokens_i = entries[i]
+        file_i = entry_file[i]
+        folder_i = entry_folder[i]
+        size_i = sizes[i]
         for j in range(i + 1, len(entries)):
+            file_j = entry_file[j]
+            if file_i == file_j:
+                continue
+            # The overlap of two sets is at most the smaller one and their union
+            # at least the larger one, so jaccard <= smaller / larger. A pair
+            # whose bound is under the threshold cannot be reported; skipping it
+            # here changes no result, because the checks are side-effect free.
+            size_j = sizes[j]
+            if size_i and size_j:
+                bound = size_i / size_j if size_i <= size_j else size_j / size_i
+                if bound < threshold:
+                    continue
             path_j, _text_j, tokens_j = entries[j]
-            if path_i == path_j:
-                continue
-            if _are_sibling_variants(path_i, path_j):
-                continue
+            if folder_i == entry_folder[j]:
+                pair = (file_i, file_j)
+                sibling = sibling_cache.get(pair)
+                if sibling is None:
+                    sibling = _are_sibling_variants(path_i, path_j)
+                    sibling_cache[pair] = sibling
+                if sibling:
+                    continue
             sim = _jaccard(tokens_i, tokens_j)
             if sim < threshold:
                 continue
