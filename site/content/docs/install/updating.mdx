@@ -137,8 +137,8 @@ everything else, prints a warning that names the file and says how to fix it,
 and ends as partial with exit code `2`. The engine also ends as partial when
 it stops after it has written something: for example, when one tool fails
 after an earlier one in an `APOTHEM_HARNESS=all` run wrote its files. Its
-error says what failed and lists the files written so far, and each tool that
-finished before it has its own line above the error. The installer and the
+error says what failed, and each tool that finished before it has its own
+line above the error. The installer and the
 update script then print one more line:
 
 ```text
