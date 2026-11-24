@@ -196,7 +196,6 @@ strictly before they install it.
   The installers, the `apothem` command and `npx @ahmed-g-gad/apothem` no
   longer load Python modules from the current folder
   ([GHSA-4rh9-7m5x-94j9](https://github.com/ahmed-g-gad/apothem/security/advisories/GHSA-4rh9-7m5x-94j9)).
-  {/* TODO(clarify): confirm the three advisories linked in this post (GHSA-799g-h543-w5gg, GHSA-4rh9-7m5x-94j9, GHSA-qpmp-8g2h-296c) are published at release time; on 2026-11-17 all three were still drafts, so the links are not public yet. */}
 - **Hooks start Python isolated.** Every hook command Apothem writes now
   starts Python with `-E -s`, so `PYTHONPATH` and your user site-packages
   cannot bring code from the opened project into a hook.
