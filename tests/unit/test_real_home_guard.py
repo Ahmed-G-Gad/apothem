@@ -75,7 +75,9 @@ such file is made in a protected folder), a worker whose session ends at its
 start, which handed nothing over, is not named as if it had, a worker that
 ends with ``os._exit(0)`` in its session finish, before it hands anything over,
 still fails the run with what it absorbed between two tests and after its last
-test (a worker that hands the same over has each reported once), and an empty
+test (a worker that hands the same over has each reported once), and so does
+one whose session-finish wrapper raises or calls ``pytest.exit`` before its
+``yield``, which leaves the guard's hand-off out of its output, and an empty
 file a worker left, a line it cut short and a file the controller cannot read
 each fail the run; a worker that stops on Ctrl-C has its refusal reported once,
 and one the controller absorbs while its workers run the tests is named for
@@ -2244,6 +2246,54 @@ def case_a_worker_that_ends_before_it_hands_its_refusals_over_fails_the_run(
     for where in _HELD_BY_A_WORKER:
         named = rf"in xdist worker gw\d, {re.escape(where)}, and"
         assert len(re.findall(named, output)) == 1, output
+    assert not (fake_real_home / ".apothem").exists()
+
+
+#: The same hooks, with a session-finish wrapper in place of the hook that
+#: ends the worker: in a worker that absorbed a refusal, it runs ``STOP``
+#: before its ``yield``, so no implementation it encloses runs.
+_ABSORBED_IN_A_WORKER_WHOSE_WRAPPER_STOPS = (
+    _ABSORBED_IN_A_WORKER_THAT_THEN_ENDS.replace(
+        """
+def pytest_sessionfinish(session):
+    if _in_a_worker() and ABSORBED:
+        os._exit(0)
+""",
+        """
+@pytest.hookimpl(wrapper=True)
+def pytest_sessionfinish(session):
+    if _in_a_worker() and ABSORBED:
+        STOP
+    return (yield)
+""",
+    )
+)
+
+
+def case_a_worker_whose_wrapper_stops_its_session_finish_still_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """The worker's output reaches the controller without the hand-off in it.
+
+    pytest registers a probe conftest in the worker before xdist's worker
+    plugin, so xdist's session-finish wrapper encloses the conftest's and
+    still sends the worker's output, and the conftest's wrapper encloses the
+    guard's ``trylast`` one, which never starts when the conftest's raises
+    or calls ``pytest.exit`` before its ``yield``. The controller then
+    reports what the worker wrote to its file, each refusal once.
+    """
+    args = ("-n", "2", "--dist", "loadfile", "--max-worker-restart", "0")
+    for stop in ('raise RuntimeError("probe")', 'pytest.exit("probe", returncode=0)'):
+        hooks = _ABSORBED_IN_A_WORKER_WHOSE_WRAPPER_STOPS.replace("STOP", stop)
+
+        result = _run_absorbing(pytester, fake_real_home, hooks, *args)
+
+        assert result.ret == pytest.ExitCode.TESTS_FAILED, result.stdout.str()
+        output = " ".join(result.stdout.str().split())
+        for where in _HELD_BY_A_WORKER:
+            named = rf"in xdist worker gw\d, {re.escape(where)}, and"
+            assert len(re.findall(named, output)) == 1, output
+        assert _AFTER_THE_HAND_OFF not in output
     assert not (fake_real_home / ".apothem").exists()
 
 
