@@ -5,8 +5,9 @@
 doctor judges what is installed, not what could be. An uninstalled harness is
 informational. An installed harness must pass its adapter's ``verify``, and
 every hook command its install registered that doctor can trust must start
-with a no-op payload; a project hook command it cannot trust is reported as
-not checked, with the reason (see :mod:`apothem.cli._doctor_hooks`). A
+with a no-op payload; a hook command it cannot trust, or whose install it
+finds no record of, is reported as not checked, with the reason (see
+:mod:`apothem.cli._doctor_hooks`). A
 present profile must validate. Any failed check exits 1; a machine with one
 healthy harness exits 0.
 """
@@ -98,21 +99,23 @@ def _update_fix(
     *,
     lead: str = "Run",
     then: str = "then run doctor again",
+    same_prefix: bool = True,
 ) -> str:
     """Return the fix that runs :func:`_update_command`: *lead*, then *then*.
 
     The command ends the fix, after a colon, with no quotes or punctuation of
     its own around it, so a quoted root ends where the line does. A root the
-    quotes cannot carry ends the fix in its place, named as it is.
+    quotes cannot carry ends the fix in its place, named as it is. With
+    *same_prefix*, the fix says to run it as the install was run.
     """
-    prefix = "with the same command prefix you installed with"
+    prefix = " with the same command prefix you installed with" if same_prefix else ""
     command = _update_command(harness, project)
     if command is None:
         return (
-            f"{lead} update --harness {harness} {prefix} and this folder as "
+            f"{lead} update --harness {harness}{prefix} and this folder as "
             f"--project, {then}: {project}"
         )
-    return f"{lead} this command {prefix}, {then}: {command}"
+    return f"{lead} this command{prefix}, {then}: {command}"
 
 
 def _probe_harness(
@@ -235,19 +238,23 @@ def _probe_registered_hooks(
         )
         return
     for reason in hooks.unchecked:
-        python = hooks.run_with.get(reason)
         checks.append(
             _check(
                 "hook.unchecked",
                 "info",
                 f"{name}: {reason}.",
                 harness=name,
-                # An update would record the same Python inside the project.
+                # Run under the same Python, an update would record that Python
+                # inside the project again, and doctor starts no such one.
                 fix=(
-                    f"Run doctor with the Python the install recorded ({python}), "
-                    "which can start these hooks, or install with a Python "
-                    "outside the project."
-                    if python is not None
+                    _update_fix(
+                        name,
+                        project,
+                        lead="Run <a Python outside the project> -m apothem "
+                        "followed by",
+                        same_prefix=False,
+                    )
+                    if reason in hooks.run_with
                     else _update_fix(
                         name,
                         project,

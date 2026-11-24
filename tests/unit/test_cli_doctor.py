@@ -26,7 +26,7 @@ import pytest
 from click.testing import CliRunner
 
 import apothem
-from apothem.cli import _doctor_hooks, main
+from apothem.cli import _doctor_hook_text, _doctor_hooks, main
 from apothem.harnesses._shared import install_driver, wrapper_factories
 from apothem.lib import install_ledger
 
@@ -644,8 +644,9 @@ def test_doctor_does_not_start_a_hook_line_the_install_did_not_write(
     assert code == 0, payload
     assert _row(payload, harness)["hooks"] == {"probed": 1, "failed": []}
     messages = _unchecked(payload, harness)
-    if shape in {"nested", "commandWindows"}:
+    if shape in {"nested", "commandWindows", "args"}:
         # Not where, or not under a key, the tool reads a handler: not a hook.
+        # Neither tool reads "args", so it runs the bare interpreter there.
         assert messages == []
     else:
         [message] = messages
@@ -1263,8 +1264,7 @@ def test_doctor_reads_at_most_a_hundred_commands_from_a_hook_file(
 
     assert len(hooks.argvs) == 100
     assert hooks.unchecked == [
-        f"{hook_file} holds more than 100 hook commands; doctor read only the "
-        "first of them"
+        f"{hook_file} holds more than 100 hook commands; doctor read only the first 100"
     ]
 
 
@@ -1385,8 +1385,9 @@ def test_doctor_judges_the_key_the_tool_runs_not_another(
 def test_doctor_fix_for_a_recorded_python_inside_the_project(
     runner: CliRunner, home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # An update would record the same Python again, so the fix says to run
-    # doctor with it, or to install with a Python outside the project.
+    # Doctor starts no interpreter inside the project, so the fix never says
+    # to run that one: an update under a Python outside the project records
+    # that Python instead, which doctor accepts.
     from apothem.cli import _cmd_doctor
 
     project = _project(tmp_path)
@@ -1401,9 +1402,10 @@ def test_doctor_fix_for_a_recorded_python_inside_the_project(
 
     assert code == 0, payload
     [check] = [c for c in payload["checks"] if c["code"] == "hook.unchecked"]
-    assert check["fix"] == (
-        f"Run doctor with the Python the install recorded ({recorded}), which can "
-        "start these hooks, or install with a Python outside the project."
+    assert recorded not in check["fix"]
+    assert check["fix"].startswith(
+        "Run <a Python outside the project> -m apothem followed by this "
+        "command, then run doctor again: update --harness cursor --project "
     )
 
 
@@ -1488,3 +1490,365 @@ def test_doctor_hook_probe_imports_in_a_fresh_interpreter() -> None:
         check=False,
     )
     assert result.returncode == 0, result.stderr
+
+
+def _user_install(monkeypatch: pytest.MonkeyPatch, hook_file: Path) -> None:
+    """Fake a user-scope install whose one JSON target is *hook_file*."""
+    target = SimpleNamespace(path=str(hook_file), mode="native_hooks", files=None)
+    record = SimpleNamespace(
+        targets=[target], python_bin=None, root=str(hook_file.parent)
+    )
+    monkeypatch.setattr(
+        install_ledger, "current_install_record", lambda package_key, root: record
+    )
+
+
+def test_doctor_carries_on_past_a_user_hook_file_too_deep_to_parse(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # json.loads itself gives up on nesting this deep; doctor must not.
+    hook_file = tmp_path / "hooks.json"
+    hook_file.write_text(
+        '{"hooks": ' + "[" * 200_000 + "]" * 200_000 + "}", encoding="utf-8"
+    )
+    _user_install(monkeypatch, hook_file)
+
+    hooks = _doctor_hooks.registered_hooks("codex", root=tmp_path)
+
+    assert hooks is not None
+    assert hooks.argvs == []
+
+
+def test_doctor_reads_a_user_hook_file_nested_deeper_than_the_call_depth(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A document nested deeper than Python's call depth: a walk that recursed
+    # per level raised RecursionError out of doctor. json.loads parses such
+    # nesting only from 3.14, so the parsed document is built here instead.
+    depth = sys.getrecursionlimit() * 3
+    line = f"python3 {tmp_path.as_posix()}/hooks/dispatch.py --contract codex x"
+    nested: object = {"command": line}
+    for _ in range(depth):
+        nested = [nested]
+    document = {"hooks": nested}
+    hook_file = tmp_path / "hooks.json"
+    hook_file.write_text("{}", encoding="utf-8")
+    _user_install(monkeypatch, hook_file)
+    monkeypatch.setattr(_doctor_hooks.json, "loads", lambda text: document)
+    monkeypatch.setattr(_doctor_hooks, "_on_windows", lambda: False)
+
+    hooks = _doctor_hooks.registered_hooks("codex", root=tmp_path)
+
+    assert hooks is not None
+    assert hooks.argvs == [shlex.split(line)]
+
+
+def test_doctor_reports_a_hook_folder_it_cannot_list(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    python = Path(sys.executable).as_posix()
+    dispatcher = _dispatcher(tmp_path, "github-copilot")
+    line = _DOUBLE.format(py=python, script=dispatcher.as_posix())
+    _fake_install(tmp_path, monkeypatch, {"type": "command", "bash": line})
+    real = os.scandir
+
+    def scandir(path: object) -> object:
+        if os.path.normcase(str(path)) == os.path.normcase(str(dispatcher.parent)):
+            raise PermissionError(13, "Permission denied", str(path))
+        return real(path)
+
+    monkeypatch.setattr(_doctor_hooks.os, "scandir", scandir)
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    assert hooks.argvs == []
+    assert hooks.unchecked == [
+        f"the hook scripts in {dispatcher.parent} cannot be read, so no hook "
+        "command that runs them was started"
+    ]
+
+
+def test_doctor_judges_a_recorded_python_under_the_resolved_project_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The project is checked through a link (a junction on Windows), and the
+    # install recorded its interpreter resolved, under the link's target. That
+    # interpreter is still inside the project, where others can change it.
+    real = tmp_path / "real"
+    real.mkdir()
+    project = tmp_path / "linked"
+    _link(project, real, folder=True)
+    recorded = real / ".venv" / "Scripts" / "python.exe"
+    recorded.parent.mkdir(parents=True)
+    recorded.write_text("", encoding="utf-8")
+    dispatcher = _dispatcher(project, "github-copilot")
+    line = f'"{recorded.as_posix()}" "{dispatcher.as_posix()}" --contract copilot'
+    _fake_install(
+        project,
+        monkeypatch,
+        {"type": "command", "bash": line},
+        python_bin=str(recorded),
+    )
+
+    hooks = _read_hooks(project, monkeypatch)
+
+    assert hooks.argvs == []
+    assert hooks.unstartable == []
+    [unchecked] = hooks.unchecked
+    assert "the Python the install recorded, which is inside the project" in unchecked
+    assert hooks.run_with == {unchecked: str(recorded)}
+
+
+@pytest.mark.parametrize(
+    ("entry", "outcome"),
+    [
+        pytest.param(
+            {"command": "{py}", "args": ["{script}", "--contract", "copilot"]},
+            "holds no hook command doctor can start",
+            id="args-the-tool-never-reads",
+        ),
+        pytest.param(
+            {"command": _DOUBLE, "args": []},
+            "start",
+            id="a-stray-args-list-beside-a-shell-line",
+        ),
+    ],
+)
+def test_doctor_reads_no_args_list_for_a_tool_that_runs_none(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    entry: dict[str, object],
+    outcome: str,
+) -> None:
+    # GitHub Copilot runs "command" as one shell line and never reads "args":
+    # a bare interpreter there starts nothing, whatever "args" holds, and a
+    # working line is not rebuilt from an "args" list beside it.
+    values = {
+        "py": Path(sys.executable).as_posix(),
+        "script": _dispatcher(tmp_path, "github-copilot").as_posix(),
+    }
+    filled: dict[str, object] = {"type": "command"}
+    for key, value in entry.items():
+        if isinstance(value, list):
+            filled[key] = [part.format(**values) for part in value]
+        else:
+            filled[key] = str(value).format(**values)
+    _fake_install(tmp_path, monkeypatch, filled)
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    if outcome == "start":
+        [argv] = hooks.argvs
+        assert argv[-2:] == ["--contract", "copilot"]
+        assert hooks.unchecked == []
+    else:
+        assert hooks.argvs == []
+        assert hooks.unchecked == [
+            f"{tmp_path / _HOOK_FILES['github-copilot']} {outcome}"
+        ]
+
+
+def test_a_claude_code_argument_list_is_read() -> None:
+    handler = {"command": "/usr/bin/python3", "args": ["/h/hooks/dispatch.py", "Stop"]}
+
+    argv = _doctor_hooks._handler_argv(handler, ("command",), args_key="args")
+
+    assert argv == ["/usr/bin/python3", "/h/hooks/dispatch.py", "Stop"]
+    assert _doctor_hooks._ARGS_KEYS == {"claude_code": "args"}
+
+
+def _deny_lookups_under(monkeypatch: pytest.MonkeyPatch, folder: Path) -> None:
+    """Make a link lookup under *folder* raise, as Python 3.10 to 3.13 do.
+
+    There ``Path.is_symlink`` raises for a folder the operator cannot search
+    (``EACCES``), where later releases return False. Only 3.14 runs here.
+    """
+    real = _doctor_hooks.is_link
+    prefix = os.path.normcase(str(folder))
+
+    def is_link(path: Path) -> bool:
+        if os.path.normcase(str(path)).startswith(prefix):
+            raise PermissionError(13, "Permission denied", str(path))
+        return real(path)
+
+    monkeypatch.setattr(_doctor_hooks, "is_link", is_link)
+
+
+def test_doctor_reports_a_hook_script_it_cannot_look_up(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    python = Path(sys.executable).as_posix()
+    dispatcher = _dispatcher(tmp_path, "github-copilot")
+    line = _DOUBLE.format(py=python, script=dispatcher.as_posix())
+    _fake_install(tmp_path, monkeypatch, {"type": "command", "bash": line})
+    _deny_lookups_under(monkeypatch, tmp_path / ".apothem")
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    assert hooks.argvs == []
+    [unchecked] = hooks.unchecked
+    assert "runs a file doctor cannot look up" in unchecked
+    assert "Permission denied" in unchecked
+
+
+def test_doctor_reports_a_hook_file_it_cannot_look_up(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    python = Path(sys.executable).as_posix()
+    dispatcher = _dispatcher(tmp_path, "github-copilot")
+    line = _DOUBLE.format(py=python, script=dispatcher.as_posix())
+    hook_file, _ = _fake_install(
+        tmp_path, monkeypatch, {"type": "command", "bash": line}
+    )
+    _deny_lookups_under(monkeypatch, tmp_path / ".github")
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    assert hooks.argvs == []
+    [unchecked] = hooks.unchecked
+    assert unchecked.startswith(f"{hook_file} cannot be looked up (")
+    assert unchecked.endswith("so no hook in it was read")
+
+
+def test_doctor_reports_an_interpreter_it_cannot_look_up(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Python 3.10 to 3.13 raise from Path.exists for a folder the operator
+    # cannot search; later releases answer False.
+    python = Path(sys.executable).as_posix()
+    dispatcher = _dispatcher(tmp_path, "github-copilot")
+    line = _DOUBLE.format(py=python, script=dispatcher.as_posix())
+    _fake_install(tmp_path, monkeypatch, {"type": "command", "bash": line})
+    real = Path.exists
+
+    def exists(self: Path, *args: object, **kwargs: object) -> bool:
+        if os.path.normcase(str(self)) == os.path.normcase(sys.executable):
+            raise PermissionError(13, "Permission denied", str(self))
+        return real(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "exists", exists)
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    assert hooks.argvs == []
+    [unchecked] = hooks.unchecked
+    assert "runs a file doctor cannot look up" in unchecked
+
+
+def test_doctor_spells_out_control_characters_in_a_command_that_cannot_start(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The interpreter the install recorded is gone, and its path holds an
+    # escape character: the report names it with that character spelled out.
+    escape = chr(27)
+    recorded = f"{tmp_path.parent.as_posix()}/gone-a{escape}[2Jb/python"
+    dispatcher = _dispatcher(tmp_path, "github-copilot")
+    line = f'"{recorded}" "{dispatcher.as_posix()}" --contract copilot'
+    _fake_install(
+        tmp_path, monkeypatch, {"type": "command", "bash": line}, python_bin=recorded
+    )
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    [probe] = hooks.unstartable
+    assert probe.detail == "the interpreter does not exist"
+    assert escape not in probe.command
+    assert "gone-a<0x1b>[2Jb" in probe.command
+
+
+def test_doctor_spells_out_control_characters_in_a_started_command(
+    tmp_path: Path,
+) -> None:
+    escape = chr(27)
+    missing = str(tmp_path / f"a{escape}[2Jb" / "python")
+
+    [probe] = _doctor_hooks.probe_hooks([[missing, "x/hooks/dispatch.py"]])
+
+    assert probe.ok is False
+    assert escape not in probe.command
+    assert escape not in probe.detail
+    assert "a<0x1b>[2Jb" in probe.command
+
+
+def test_a_note_is_kept_beside_an_argv_that_spells_the_same() -> None:
+    # One list's record of what it holds never hides an entry of another.
+    hooks = _doctor_hooks.RegisteredHooks()
+
+    hooks.add(["note", "a reason"])
+    hooks.note("a reason")
+
+    assert hooks.argvs == [["note", "a reason"]]
+    assert hooks.unchecked == ["a reason"]
+
+
+def test_a_line_beside_a_recorded_python_inside_the_project_names_it_to_run_with(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The install recorded an interpreter inside the project and the line now
+    # runs another: an update under that same Python would record it again,
+    # so the fix is the one for a Python outside the project.
+    recorded = (tmp_path / ".venv" / "Scripts" / "python.exe").as_posix()
+    other = (tmp_path.parent / "elsewhere" / "python.exe").as_posix()
+    dispatcher = _dispatcher(tmp_path, "github-copilot")
+    line = f'"{other}" "{dispatcher.as_posix()}" --contract copilot'
+    _fake_install(
+        tmp_path, monkeypatch, {"type": "command", "bash": line}, python_bin=recorded
+    )
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    assert hooks.argvs == []
+    [unchecked] = hooks.unchecked
+    assert "not the Python the install recorded, which is inside the project" in (
+        unchecked
+    )
+    assert hooks.run_with == {unchecked: recorded}
+
+
+def test_doctor_reads_no_project_hook_file_larger_than_its_cap(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    python = Path(sys.executable).as_posix()
+    dispatcher = _dispatcher(tmp_path, "github-copilot")
+    line = _DOUBLE.format(py=python, script=dispatcher.as_posix())
+    hook_file, _ = _fake_install(
+        tmp_path, monkeypatch, {"type": "command", "bash": line}
+    )
+    text = hook_file.read_text(encoding="utf-8")
+    padding = _doctor_hook_text.MAX_HOOK_FILE_BYTES - len(text.encode("utf-8")) + 1
+    hook_file.write_text(text + " " * padding, encoding="utf-8")
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    assert hooks.argvs == []
+    assert hooks.unchecked == [
+        f"{hook_file} is larger than 4 MB, so no hook in it was read"
+    ]
+
+
+def test_the_checksum_of_a_file_read_in_blocks_is_its_sha256(tmp_path: Path) -> None:
+    path = tmp_path / "big.py"
+    data = bytes(range(256)) * (5 * 1024 * 1024 // 256 // 2)
+    path.write_bytes(data)
+
+    assert _doctor_hook_text.sha256_of(path) == hashlib.sha256(data).hexdigest()
+    assert _doctor_hook_text.sha256_of(tmp_path / "missing.py") is None
+
+
+def test_doctor_starts_the_hooks_of_a_claude_code_install(
+    runner: CliRunner, home: Path
+) -> None:
+    # Claude Code runs a bare interpreter with its script in an "args" list:
+    # read without that list, no handler is Apothem's and nothing is started.
+    _install(runner, "claude-code")
+
+    code, payload = _doctor(runner)
+
+    assert code == 0, payload
+    row = _row(payload, "claude-code")
+    assert row["hooks"]["probed"] > 0
+    assert row["hooks"]["failed"] == []
+    hooks = _doctor_hooks.registered_hooks("claude_code", root=home / ".claude")
+    assert hooks is not None
+    assert hooks.argvs
+    assert any(Path(argv[1]).name == "dispatch.py" for argv in hooks.argvs)

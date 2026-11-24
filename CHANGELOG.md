@@ -1285,23 +1285,29 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `.cursor/hooks.json`, `.github/hooks/apothem.json` or `.kiro/hooks/`, or a
   changed script in `.apothem/support/`, ran when you ran doctor, even if you
   never opened the project in the tool. Doctor now reads each hook command
-  where the tool reads it, from the keys the tool reads (at most 100 from one
-  file), and starts one only when its interpreter is the one the install
-  recorded (outside the project) or the Python Apothem runs under, its options
-  run no code, its script is the hook script the install wrote, in a folder
-  whose files still match the SHA-256 checksums the install recorded and that
-  holds no other Python file and no link, and its arguments are the ones
-  Apothem writes. It starts those known paths rather than the text it read,
-  looks up no other path a hook command names, such as a network share, and
-  follows no link it finds. A recorded interpreter or script that is gone is
-  reported as unable to start, without anything being started; any other
-  command is reported as `hook.unchecked`, which the plain output now shows
-  too, with any control character in it spelled out. Install records now keep
-  the interpreter written into hook commands, so hooks installed by an earlier
+  where the tool reads it, from the keys the tool reads (an `args` list only
+  for Claude Code, the one tool that runs one; at most 100 commands from one
+  file, and no file larger than 4 MB), and starts one only when its
+  interpreter is the one the install recorded (outside the project) or the
+  Python Apothem runs under, its options run no code, its script is the hook
+  script the install wrote, in a folder whose files still match the SHA-256
+  checksums the install recorded and that holds no other Python file and no
+  link, and its arguments are the ones Apothem writes. It starts those known
+  paths rather than the text it read, looks up no other path a hook command
+  names, such as a network share, and follows no link to a project hook file
+  or to the files a hook command runs. A recorded interpreter or script that
+  is gone is reported as unable to start, without anything being started; any
+  other command, or one whose known paths cannot be looked up, is reported as
+  `hook.unchecked`, which the plain output now shows too, with any control
+  character in it spelled out. A missing hook script's fix now runs `update`
+  to put the scripts back, and the last line says "some hook commands" of a
+  harness that also started others that passed. Install records now keep the
+  interpreter written into hook commands, so hooks installed by an earlier
   release stay unchecked until you run `apothem update`; for a recorded
-  interpreter inside the project, doctor says to run it with that interpreter
-  instead. An install now keeps only a true or false `enabled` flag on Kiro's
-  hooks, so no other value can ride along in the file.
+  interpreter inside the project, the fix runs `apothem update` under a Python
+  outside the project, which records that Python instead. An install now keeps
+  only a true or false `enabled` flag on Kiro's hooks, so no other value can
+  ride along in the file.
 - **A checked project's git settings no longer make the conformity gate start
   a program.** `--all`, `--all-perwrite`, three standalone validators
   (`no-global-plans-grep`, `conventional-commit-grep` and
