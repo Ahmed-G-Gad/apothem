@@ -1558,7 +1558,9 @@ class RealHomeGuard:
         it took the output (a hook that called ``pytest.exit``, say) and for
         a worker that crashed or was stopped before it sent any. A worker
         is noted here only when its output holds the refusals it handed
-        over, and :func:`_take_late` then skips that copy. xdist sends the
+        over, and :func:`_take_late` then skips that copy; so is whether
+        that output says the copy failed and left the file empty, which
+        :func:`_take_late` then skips too. xdist sends the
         output also when the hand-off never ran: a session-finish wrapper
         of a conftest, which pytest registers in the worker before xdist's
         own and which encloses the guard's, raised or called ``pytest.exit``
@@ -1576,6 +1578,8 @@ class RealHomeGuard:
             return  # nothing handed over, or taken at a first call already
         worker = getattr(getattr(node, "gateway", None), "id", "?")
         config.stash.setdefault(_TAKEN, set()).add(str(worker))
+        if output.pop(_COPY_LEFT_EMPTY, False):
+            config.stash.setdefault(_LEFT_EMPTY, set()).add(str(worker))
         held = config.stash.setdefault(_HELD, [])
         for where, messages in handed:
             held.append((f"in xdist worker {worker}, {where}", tuple(messages)))
@@ -1696,6 +1700,9 @@ _HELD_SESSION = pytest.StashKey[pytest.Session]()
 _A_TEST_STARTED = pytest.StashKey[bool]()
 #: The ``config.workeroutput`` key an xdist worker sends its held refusals under.
 _TO_THE_CONTROLLER = "apothem-real-home-refusals"
+#: The ``config.workeroutput`` key an xdist worker sets when the copy of its
+#: refusals it wrote beside the hand-off failed and left its file empty.
+_COPY_LEFT_EMPTY = "apothem-real-home-copy-left-empty"
 #: The ``workerinput`` key that names the file an xdist worker appends each
 #: refusal it holds to: a copy of what it hands over, and then what it finds
 #: after that hand-off.
@@ -1718,6 +1725,9 @@ _IN_THE_FILE = pytest.StashKey[int]()
 #: In an xdist controller: the workers whose hand-off ``pytest_testnodedown``
 #: took from their ``config.workeroutput``.
 _TAKEN = pytest.StashKey[set[str]]()
+#: In an xdist controller: the workers of ``_TAKEN`` whose output said that
+#: the copy beside the hand-off left their file empty (``_COPY_LEFT_EMPTY``).
+_LEFT_EMPTY = pytest.StashKey[set[str]]()
 #: Set once the guard has reported a refusal and failed the run.
 _REPORTED = pytest.StashKey[bool]()
 #: The exit statuses a held refusal turns into "tests failed".
@@ -1841,7 +1851,12 @@ def _report_held(
         # The file holds a copy, for a controller whose test loop ends before
         # it takes the output or a worker that ends before xdist sends it;
         # the controller skips the copy otherwise (see _take_late).
-        unsent = _sent_late(config, reports[written:], copy=True)
+        unsent = _sent_late(config, reports[written:])
+        if unsent is not None and _is_empty(config):
+            # Opening the file to append created it, or an earlier write
+            # did, and no byte reached it: the controller skips it only
+            # when it takes this output, which brings every refusal.
+            output[_COPY_LEFT_EMPTY] = True
         if unsent is not None:
             name = getattr(config, "workerinput", {}).get("workerid", "?")
             sys.stderr.write(
@@ -1870,12 +1885,20 @@ def _report_held(
             "does at its session finish"
         )
         named = getattr(config, "workerinput", {}).get(_LATE_TO_THE_CONTROLLER)
-        outcome = (
-            "The run fails on it only when part of it reached that file, or "
-            "when the file is left empty."
-            if named
-            else "The run does not fail on it."
-        )
+        if not named:
+            outcome = "The run does not fail on it."
+        elif output.get(_COPY_LEFT_EMPTY, False):
+            outcome = (
+                "The run fails on it when part of it reached that file. The "
+                "copy beside the hand-off left the file empty, and a "
+                "controller that takes the worker's output skips the file "
+                "while it stays empty."
+            )
+        else:
+            outcome = (
+                "The run fails on it only when part of it reached that file, "
+                "or when the file is left empty."
+            )
         sys.stderr.write(
             f"{message}\nThe worker found it {when}, and could not send it to "
             f"the controller: {unsent}. {outcome}\n"
@@ -1978,7 +2001,6 @@ def _sent_late(
     reports: Sequence[tuple[str, tuple[str, ...]]],
     *,
     last_try: bool = False,
-    copy: bool = False,
 ) -> str | None:
     """Append *reports* to the file the xdist controller gave this worker.
 
@@ -2001,15 +2023,14 @@ def _sent_late(
     on a new line after such a line. With no report it opens
     no file: the worker creates its file only to write a refusal.
 
-    With *copy* the reports are the copy written beside the hand-off, when
-    every refusal the worker held is in the output it hands over. A failed
-    write then also removes the file when it is left empty: one that an
-    earlier write created and no byte reached (a full disk, say). The
-    controller would hold that empty file as one more refusal, though the
-    output brings it every refusal the file was opened for. An empty file
-    left at any other write stays: before the hand-off it is the only sign
-    of a refusal when the worker crashes before it sends its output, and
-    after it the only sign of what the worker found then.
+    Opening the file to append creates it, so a write that fails before any
+    byte lands (a full disk, say) leaves it empty. That file stays: the
+    controller holds it as a refusal of its own, which is the only sign of
+    the refusal when the worker crashes before it sends its output. Only
+    for the copy written beside the hand-off does the worker say so in that
+    output (see :func:`_report_held`), and the controller skips the empty
+    file when it takes the output, which brings every refusal it was
+    opened for.
     """
     if not reports:
         return None
@@ -2051,17 +2072,27 @@ def _sent_late(
         if start is not None and not last_try:
             with contextlib.suppress(OSError):
                 os.truncate(path, start)
-        if copy:
-            _remove_if_empty(Path(path))
         return f"writing {path} failed: {error.strerror or error}"
     return None
 
 
-def _remove_if_empty(path: Path) -> None:
-    """Remove *path* when it holds no byte; leave it on any error."""
-    with contextlib.suppress(OSError):
-        if path.stat().st_size == 0:
-            path.unlink()
+def _is_empty(config: pytest.Config) -> bool:
+    """Return whether this worker's file exists and holds no byte.
+
+    ``False`` when the controller named no file, or on any error.
+    """
+    workerinput = getattr(config, "workerinput", None)
+    path = (
+        workerinput.get(_LATE_TO_THE_CONTROLLER)
+        if isinstance(workerinput, dict)
+        else None
+    )
+    if not isinstance(path, str) or not path:
+        return False
+    try:
+        return Path(path).stat().st_size == 0
+    except OSError:
+        return False
 
 
 def _take_late(config: pytest.Config) -> None:
@@ -2080,16 +2111,18 @@ def _take_late(config: pytest.Config) -> None:
     wrote no file. A file that cannot be read, or that holds no line, is held
     as a refusal of its own, so the run fails: the worker creates its file only
     to write a refusal it found, and one stopped after it created the file and
-    before the text reached it leaves the file empty. A worker whose copy
-    write beside the hand-off fails removes an empty file (see
-    :func:`_sent_late`), as the hand-off holds its refusals. Nothing happens
-    outside an xdist controller, which alone names files.
+    before the text reached it leaves the file empty. An empty file is
+    skipped only when ``pytest_testnodedown`` took the worker's output and
+    that output says the copy written beside the hand-off failed and left
+    the file empty: the output holds every refusal the file was opened for.
+    Nothing happens outside an xdist controller, which alone names files.
     """
     files = config.stash.get(_LATE_FILES, {})
     if files:
         _end_the_workers(config)
     held = config.stash.setdefault(_HELD, [])
     taken = config.stash.get(_TAKEN, set())
+    left_empty = config.stash.get(_LEFT_EMPTY, set())
     for path, worker in files.items():
         named = f"in xdist worker {worker}"
         try:
@@ -2100,6 +2133,8 @@ def _take_late(config: pytest.Config) -> None:
             held.append((named, (f"the guard could not read {path}: {error}",)))
             continue
         lines = [line for line in text.splitlines() if line.strip()]
+        if not lines and worker in left_empty:
+            continue  # the output it sent holds what the file was opened for
         if not lines:
             empty = (
                 f"{path} is empty: the worker creates it only to write a "

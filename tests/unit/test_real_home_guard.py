@@ -1061,21 +1061,26 @@ class _NoWrites(_HalfWrites):
         raise OSError(errno.ENOSPC, "No space left on device")
 
 
+@pytest.mark.parametrize("taken", [True, False], ids=["taken", "not-taken"])
 @pytest.mark.parametrize("ahead", [False, True], ids=["copy", "ahead-and-copy"])
-def test_a_copy_write_that_fails_on_a_new_file_leaves_no_file(
+def test_a_copy_write_that_fails_on_a_new_file_marks_the_output(
     request: pytest.FixtureRequest,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     ahead: bool,
+    taken: bool,
 ) -> None:
-    """A failed copy write removes the worker's file when no byte reached it.
+    """A copy write that leaves a new file empty says so in the output.
 
     Opening the file to append creates it, so a write that fails before any
-    byte lands (a full disk, say) leaves an empty file. Its refusal reaches
-    the controller in the output xdist sends, so an empty file left beside
-    it would be held as a second refusal, said to be from a worker stopped
-    while it wrote. With *ahead* the write the worker made as it held the
-    refusal failed the same way first and created the file.
+    byte lands (a full disk, say) leaves an empty file. The file stays, and
+    the output the worker hands over says the copy left it empty. A
+    controller that takes that output gets the refusal from it and skips the
+    file, which it would otherwise hold as a second refusal, said to be from
+    a worker stopped while it wrote. One that does not take it (its test
+    loop ended first, say) holds the empty file, so the run still fails.
+    With *ahead* the write the worker made as it held the refusal failed
+    the same way first and created the file.
     """
     conftest = _suite_conftest(request.config)
     late = tmp_path / "gw0.jsonl"
@@ -1100,24 +1105,30 @@ def test_a_copy_write_that_fails_on_a_new_file_leaves_no_file(
             assert late.read_bytes() == b""
         conftest._report_held(worker, None, to_the_controller=True)
 
+    assert late.read_bytes() == b""
     assert output[conftest._TO_THE_CONTROLLER] == [refusal]
-    assert not late.exists()
-    controller = SimpleNamespace(
-        stash=pytest.Stash(),
-        pluginmanager=SimpleNamespace(get_plugin=lambda name: None),
-    )
-    # What pytest_testnodedown holds when it takes the worker's output.
-    controller.stash[conftest._HELD] = [
-        ("in xdist worker gw0, after the last test", ("a refusal",))
-    ]
+    assert output[conftest._COPY_LEFT_EMPTY] is True
+    # A Config of no session, for the isinstance check of the hook; the hook
+    # and _take_late read only its stash and plugin manager.
+    controller = pytest.Config.__new__(pytest.Config)
+    controller.stash = pytest.Stash()
+    plugins = SimpleNamespace(get_plugin=lambda name: None)
+    controller.pluginmanager = plugins  # type: ignore[assignment]
     controller.stash[conftest._LATE_FILES] = {str(late): "gw0"}
-    controller.stash[conftest._TAKEN] = {"gw0"}
+    if taken:
+        node = SimpleNamespace(
+            workeroutput=output, config=controller, gateway=SimpleNamespace(id="gw0")
+        )
+        conftest.real_home_guard.pytest_testnodedown(node)
 
     conftest._take_late(controller)
 
-    assert controller.stash[conftest._HELD] == [
-        ("in xdist worker gw0, after the last test", ("a refusal",))
-    ]
+    held = controller.stash.get(conftest._HELD, [])
+    if taken:
+        assert held == [("in xdist worker gw0, after the last test", ("a refusal",))]
+    else:
+        assert [where for where, _ in held] == ["in xdist worker gw0"]
+        assert "is empty" in held[0][1][0]
 
 
 def test_a_write_ahead_that_fails_on_a_new_file_keeps_it(
@@ -1203,6 +1214,47 @@ def test_a_last_write_that_fails_on_a_new_file_says_the_run_fails(
     held = controller.stash.get(conftest._HELD, [])
     assert [where for where, _ in held] == ["in xdist worker gw0"]
     assert "is empty" in held[0][1][0]
+
+
+def test_a_last_write_after_a_copy_left_the_file_empty_says_so(
+    request: pytest.FixtureRequest,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """After a copy left the file empty, an empty file does not fail the run.
+
+    The output the worker handed over says the copy left the file empty, so
+    a controller that takes it skips the file while it stays empty. The
+    worker's note on a later last write that fails says so.
+    """
+    conftest = _suite_conftest(request.config)
+    late = tmp_path / "gw0.jsonl"
+    late.write_bytes(b"")
+    worker = SimpleNamespace(
+        stash=pytest.Stash(),
+        workeroutput={conftest._COPY_LEFT_EMPTY: True},
+        workerinput={"workerid": "gw0", conftest._LATE_TO_THE_CONTROLLER: str(late)},
+        pluginmanager=SimpleNamespace(get_plugin=lambda name: None),
+    )
+    worker.stash[conftest._HANDED_OFF] = True
+    worker.stash[conftest._HELD] = [("after the session finished", ("a refusal",))]
+    opened = Path.open
+
+    def no_open(path: Path, *args: str, **kwargs: str) -> _NoWrites:
+        return _NoWrites(opened(path, *args, **kwargs))
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "open", no_open)
+        conftest._report_held(worker, None)
+
+    note = " ".join(capsys.readouterr().err.split())
+    assert note.endswith(
+        "The run fails on it when part of it reached that file. The copy "
+        "beside the hand-off left the file empty, and a controller that takes "
+        "the worker's output skips the file while it stays empty."
+    ), note
+    assert late.read_bytes() == b""
 
 
 def test_a_last_write_that_fails_part_way_still_fails_the_run(
