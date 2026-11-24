@@ -851,7 +851,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `"detail": {"left_as_is": "1"}`), and it exits with code `2`; a dry run
   still ends with `status` `"dry_run"` and exit code `0`. A `quickstart`
   whose install leaves such a file as it is ends as partial too, after it
-  prints its recommended next steps. Without `--quiet`, the summary line
+  prints its recommended next steps, which then start with fixing each file
+  the install left and running `apothem update`, in place of
+  `apothem verify`, which fails until you fix the file. Without `--quiet`,
+  the summary line
   that ends a `--harness all` run then starts with `!` and counts the files
   left as they are. `install --clean` then does not print its next step,
   `apothem verify`, which fails until you fix the file. The warning says

@@ -275,6 +275,14 @@ def quickstart(
         return
     install_payload = sink[0]
     status = install_payload.get("status", "success")
+    update_cmd = verify_cmd.replace("apothem verify", "apothem update", 1)
+    if status == "partial":
+        # verify fails for a file the install left as it is, so the first
+        # step is that file's fix, then an update.
+        recommended[0] = (
+            "Fix each file the install left as it is, as its warning says, then "
+            f"run {update_cmd}{verify_words}"
+        )
     if fmt == "json":
         steps.append(
             {
@@ -298,15 +306,33 @@ def quickstart(
         )
     elif not quiet:
         con.print("\n[bold]Recommended next step:[/]")
-        confirm = f"[cyan]{escape(verify_cmd)}[/]"
-        if verify_words:
-            confirm = f"run {confirm}{escape(verify_words)}"
-        con.print(f"  Confirm the install:  {confirm}")
+        con.print(f"  {_first_step(status, verify_cmd, verify_words)}")
         con.print(f"  Check system health:  [cyan]{escape(recommended[1])}[/]")
     if status == "partial":
         # The install left a file as it is because of its Apothem markers;
         # ``_materialize`` handed the exit to quickstart.
         sys.exit(_EXIT_PARTIAL)
+
+
+def _first_step(status: object, verify_cmd: str, verify_words: str) -> str:
+    """Return the first next step quickstart prints, with its markup.
+
+    After an install that left a file as it is because of its Apothem marker
+    lines (*status* ``"partial"``), verify fails for that file until it is
+    fixed, so the step is to fix it as its warning says and run the update
+    for the same tools; otherwise it is ``apothem verify``. *verify_cmd* and
+    *verify_words* are as :func:`_verify_next` returns them.
+    """
+    if status == "partial":
+        update = verify_cmd.replace("apothem verify", "apothem update", 1)
+        return (
+            "Fix the files it left:  follow each file's warning, then run "
+            f"[cyan]{escape(update)}[/]{escape(verify_words)}"
+        )
+    confirm = f"[cyan]{escape(verify_cmd)}[/]"
+    if verify_words:
+        confirm = f"run {confirm}{escape(verify_words)}"
+    return f"Confirm the install:  {confirm}"
 
 
 def _verify_next(harness: str, project: str | None) -> tuple[str, str]:

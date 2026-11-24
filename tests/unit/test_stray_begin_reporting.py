@@ -2750,7 +2750,11 @@ def test_a_plain_quickstart_over_a_file_it_leaves_prints_its_next_steps(
     assert result.exit_code == 2, result.output
     left = output.find("✗ codex install left 1 file(s) as they are")
     assert -1 < left < output.find("Recommended next step:"), output
-    assert "Confirm the install: apothem verify --harness codex\n" in output
+    assert (
+        "Fix the files it left: follow each file's warning, then run apothem "
+        "update --harness codex\n"
+    ) in output
+    assert "Confirm the install" not in output
     assert "Check system health: apothem doctor" in output
     assert anchor.read_bytes() == before
 

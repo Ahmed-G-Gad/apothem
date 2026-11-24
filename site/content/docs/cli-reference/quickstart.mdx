@@ -90,7 +90,13 @@ supported harness and is always an explicit choice.
 When the install step leaves a file as it is because of its Apothem marker
 lines (see [`install`](/docs/cli-reference/install#capability-notes)), both
 `status` values are `"partial"` and the exit code is `2`. In plain mode the
-run prints the install's `✗` line, then the recommended next steps.
+run prints the install's `✗` line, then the recommended next steps. Since
+`apothem verify` fails for that file until you fix it, the first step is then
+to fix each file the install left as it is, as its warning says, and run
+`apothem update` for the same tools (`Fix the files it left:` in plain mode,
+and the first `recommended_next` entry in JSON, `Fix each file the install
+left as it is, as its warning says, then run apothem update --harness …`), in
+place of `apothem verify`.
 
 ## Examples
 
