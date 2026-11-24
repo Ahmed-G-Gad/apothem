@@ -1828,13 +1828,18 @@ def _report_held(
     the file when it holds it (:func:`_write_ahead`), so here it writes only
     what did not reach the file then. A worker that has no such file, or
     cannot write to it, writes the refusals it held for that file alone to
-    ``stderr``, with why it could not send them; one whose copy beside the
-    hand-off fails writes why to ``stderr``. No try follows that write,
-    so what part of it reached the file stays there, and the controller
-    fails the run on it, as it does on a file the write left empty; a
-    later write starts on a line of its own after it. The exit status of
-    *session* becomes "tests failed" when it was "OK" or "no tests
-    collected", which some jobs accept as a pass.
+    ``stderr``, with why it could not send them. No try follows that last
+    write, so what part of it reached the file stays there, and the
+    controller fails the run on it, as it does on a file the write left
+    empty, unless the copy beside the hand-off had left the file empty
+    already and the controller took the worker's output; a later write
+    starts on a line of its own after it. A worker whose copy beside the
+    hand-off fails writes why to ``stderr`` too. That write is cut back to
+    where the file ended, and when it leaves the file empty the worker says
+    so in its output, so a controller that takes the output skips the file
+    while it stays empty. The exit status of *session* becomes "tests
+    failed" when it was "OK" or "no tests collected", which some jobs
+    accept as a pass.
     """
     held = config.stash.get(_HELD, [])
     if not held:
