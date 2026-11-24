@@ -74,7 +74,7 @@ _SHORT_TIMEOUT_SECONDS = 2
 # the device then fails fast with MemoryError instead of using up memory.
 _CHILD_ADDRESS_SPACE_BYTES = 1 << 30
 # The largest file the corpus run reads (``_corpus.MAX_FILE_BYTES``).
-_MAX_FILE_BYTES = 8 * 1024 * 1024
+_MAX_FILE_BYTES = 64 * 1024 * 1024
 # The fixed start of the reason a failed ``git ls-files`` reports.
 _GIT_FAILED = "git ls-files failed with exit code"
 
@@ -1069,9 +1069,10 @@ def test_project_under_a_tests_fixtures_folder_is_still_read(tmp_path: Path) -> 
 
 
 def test_names_git_never_writes_or_windows_cannot_hold(tmp_path: Path) -> None:
-    """A ``.git`` part, in any case, is never written by git, so it leaves the
-    project. On Windows, device names and the ``GIT~1`` short alias name
-    something other than a project file, so they are unsupported there."""
+    """A ``.git`` part, in any case, or its short name ``GIT~1``, is never
+    written by git, so it leaves the project. On Windows, device names and
+    other short names such as ``GIT~2`` name something other than a project
+    file, so they are unsupported there."""
     repo = _project(tmp_path)
     _write_index(
         repo,
@@ -1083,6 +1084,7 @@ def test_names_git_never_writes_or_windows_cannot_hold(tmp_path: Path) -> None:
             "nul",
             "COM1",
             "GIT~1/config",
+            "GIT~2/config",
             "git~notes.md",
         ],
     )
@@ -1091,12 +1093,12 @@ def test_names_git_never_writes_or_windows_cannot_hold(tmp_path: Path) -> None:
     _assert_only_clean_file_read(payload, passed=False)
     if os.name == "nt":
         assert _skipped(payload) == {
-            "outside_project": 2,
+            "outside_project": 3,
             "unsupported_name": 4,
             "missing": 1,
         }
     else:
-        assert _skipped(payload) == {"outside_project": 2, "missing": 5}
+        assert _skipped(payload) == {"outside_project": 3, "missing": 5}
 
 
 def test_read_entry_reads_text_as_read_text_does(tmp_path: Path) -> None:
@@ -1128,22 +1130,50 @@ def test_docs_route_that_climbs_out_is_external(tmp_path: Path) -> None:
     assert result.external_count == 1
 
 
-def test_text_over_the_size_limit_fails_but_a_large_binary_does_not(
-    tmp_path: Path,
-) -> None:
-    """A text file over 8 MiB is not read, so a finding in it would go unseen
-    and the run does not pass. A binary over the limit is counted as not
-    text, as it would be at any size."""
-    repo = _project(tmp_path, {"big.yml": "small for now\n", "big.wasm": "x\n"})
-    with (repo / "big.yml").open("wb") as big:
-        big.write(_UNPINNED_WORKFLOW.encode("utf-8"))
-        big.write(b"# padding\n" * (_MAX_FILE_BYTES // 10 + 1))
-    with (repo / "big.wasm").open("wb") as binary:
-        binary.write(b"\0asm" + b"\0" * _MAX_FILE_BYTES)
+def test_large_lockfile_is_read_and_the_run_passes(tmp_path: Path) -> None:
+    """A text file of several MiB, such as a lockfile, is read like any other."""
+    repo = _project(tmp_path, {"package-lock.json": "{}\n"})
+    (repo / "package-lock.json").write_bytes(
+        b'{"x": "' + b"a" * (12 * 1024 * 1024) + b'"}\n'
+    )
 
     payload = _run(repo)
-    _assert_only_clean_file_read(payload, passed=False)
-    assert _skipped(payload) == {"too_large": 1, "not_utf8_text": 1}
+    assert payload["passed"] is True
+    assert payload["files_scanned"] == 2
+    assert _skipped(payload) == {}
+
+
+def _shrink_limit(monkeypatch: pytest.MonkeyPatch, size: int) -> None:
+    """Lower the corpus read limit, so a test needs no huge file."""
+    corpus = importlib.import_module("apothem.conformity._corpus")
+    monkeypatch.setattr(corpus, "MAX_FILE_BYTES", size)
+
+
+@pytest.mark.parametrize(
+    ("body", "reason"),
+    [
+        (_UNPINNED_WORKFLOW.encode("utf-8") + b"# pad\n" * 2000, "too_large"),
+        (b"\0" + _UNPINNED_WORKFLOW.encode("utf-8") + b"# pad\n" * 2000, "too_large"),
+        (b"ok\n" + b"\xff" + b"x" * 10000, "not_utf8_text"),
+        (b"a" * 4095 + "\u00e9".encode("utf-8") + b"a" * 6000, "too_large"),
+    ],
+    ids=["text", "text-with-nul", "invalid-byte", "char-across-limit"],
+)
+def test_file_over_the_limit_is_judged_by_all_its_first_bytes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, body: bytes, reason: str
+) -> None:
+    """Over the limit, a file is text when its first bytes up to the limit
+    decode as UTF-8, the rule a smaller file is read by (a NUL is text). Text
+    over the limit fails the run and is named; anything else does not fail."""
+    repo = _project(tmp_path, {"big.yml": "small\n"})
+    (repo / "big.yml").write_bytes(body)
+    _shrink_limit(monkeypatch, 4096)
+
+    payload = _run(repo)
+    assert _skipped(payload) == {reason: 1}
+    assert payload["passed"] is (reason != "too_large")
+    if reason == "too_large":
+        assert payload["files_not_passed"] == {"too_large": ["big.yml"]}
 
 
 def test_folder_that_cannot_be_looked_at_is_unreadable(
@@ -1195,6 +1225,7 @@ def test_exempt_folders_inside_the_project_are_counted(tmp_path: Path) -> None:
         {
             "node_modules/x.py": "x = 1\n",
             "src/tests/fixtures/y.py": "y = 1\n",
+            "tests/unit/tests/fixtures/w.py": "w = 1\n",
             ".apothem/plans/z.md": "plan\n",
             "logo.png": "image\n",
         },
@@ -1202,7 +1233,7 @@ def test_exempt_folders_inside_the_project_are_counted(tmp_path: Path) -> None:
 
     payload = _run(repo)
     _assert_only_clean_file_read(payload)
-    assert _skipped(payload) == {"exempt": 4}
+    assert _skipped(payload) == {"exempt": 5}
 
 
 @pytest.mark.parametrize(
@@ -1216,7 +1247,7 @@ def test_exempt_folders_inside_the_project_are_counted(tmp_path: Path) -> None:
         "lpt9",
         "CONIN$",
         "conout$",
-        "GIT~1",
+        "GIT~2",
         "git~12",
     ],
 )
@@ -1229,3 +1260,78 @@ def test_windows_device_names_and_git_alias(name: str) -> None:
     assert _corpus.name_skip(name) == expected
     for ordinary in (f"{name.strip()}.md", "git~notes", "console.md"):
         assert _corpus.name_skip(ordinary) is None
+
+
+def test_failing_run_names_the_files(tmp_path: Path) -> None:
+    """A run that fails on an entry outside the project says which entry."""
+    repo = _project(tmp_path)
+    _write_index(repo, ["clean.py", "../above.md", "../../far.md"])
+
+    payload = _run(repo)
+    assert payload["passed"] is False
+    assert payload["files_not_passed"] == {
+        "outside_project": ["../../far.md", "../above.md"]
+    }
+
+
+def test_outside_entry_with_an_exempt_suffix_is_still_counted(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The check that an entry stays inside the root runs before the
+    exemptions, so a path such as ``../x.png`` is never counted as exempt,
+    even when the listing hands it over unjudged."""
+    from apothem.conformity._corpus import TrackedEntry
+
+    repo = _project(tmp_path)
+    entries = [
+        TrackedEntry(repo / "clean.py", "100644"),
+        TrackedEntry(repo / ".." / "x.png", "100644"),
+    ]
+    monkeypatch.setattr(gate, "_corpus_tracked_files", lambda _root: entries)
+
+    payload = _run(repo)
+    _assert_only_clean_file_read(payload, passed=False)
+    assert _skipped(payload) == {"outside_project": 1}
+
+
+def test_file_locked_briefly_is_read_after_one_retry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A refusal that clears on the retry (a file another program held for a
+    moment) does not fail the run."""
+    repo = _project(tmp_path, {"busy.md": "busy\n"})
+    real_open = Path.open
+    refused: list[str] = []
+
+    def once_refusing_open(self: Path, *args: object, **kwargs: object) -> object:
+        if self.name == "busy.md" and not refused:
+            refused.append(self.name)
+            raise PermissionError(13, "Permission denied", str(self))
+        return real_open(self, *args, **kwargs)  # type: ignore[call-overload]
+
+    monkeypatch.setattr(Path, "open", once_refusing_open)
+    payload = _run(repo)
+    assert refused == ["busy.md"]
+    assert payload["passed"] is True
+    assert payload["files_scanned"] == 2
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        ".git/config",
+        ".GIT/x",
+        ".git./x",
+        ".git /x",
+        "git~1/x",
+        "GIT~1. /x",
+        ".git:x/x",
+        ".git::$INDEX_ALLOCATION/x",
+    ],
+)
+def test_every_spelling_of_git_leaves_the_project(name: str) -> None:
+    """git refuses every alias of ``.git`` on every system, so each one means a
+    hand-written index, like ``.git`` itself."""
+    from apothem.conformity import _corpus
+
+    assert _corpus.name_skip(name) == "outside_project"

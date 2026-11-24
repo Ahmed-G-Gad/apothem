@@ -96,6 +96,7 @@ from apothem.conformity._corpus import (
     SKIP_OUTSIDE,
     SKIP_REASONS,
     CorpusListError,
+    TrackedEntry,
     leaves_root,
     read_entry,
 )
@@ -1331,8 +1332,9 @@ def _run_all_perwrite(root: Path) -> tuple[bool, str]:
     ``files_skipped`` counts every other listed path by reason. An index
     entry with an empty, ``.``, ``..`` or ``.git`` part (a leading ``/``
     among them) also fails the run: git never writes one, so the index was
-    written by hand. So does a file over the size limit or one that cannot
-    be read, since a finding it holds would go unseen. The caller
+    written by hand. So does a text file over the size limit or one that
+    cannot be read, since a finding it holds would go unseen; the payload's
+    ``files_not_passed`` names the entries behind each such reason. The caller
     maps ``passed`` to an exit code under the advisory-by-default posture
     (``--strict`` makes a run that did not pass exit non-zero).
     """
@@ -1346,13 +1348,23 @@ def _run_all_perwrite(root: Path) -> tuple[bool, str]:
     advisory: dict[str, dict[str, object]] = {}
     files_scanned = 0
     skipped = dict.fromkeys(SKIP_REASONS, 0)
+    # reason -> names of the entries that fail the run for it.
+    not_passed: dict[str, list[str]] = {}
+
+    def count_skip(reason: str, tracked: TrackedEntry) -> None:
+        skipped[reason] += 1
+        if reason in FAILING_SKIPS:
+            not_passed.setdefault(reason, []).append(
+                tracked.name or tracked.path.as_posix()
+            )
+
     for tracked in entries:
         abs_path = tracked.path
         if tracked.skip is not None or leaves_root(root, abs_path):
             # Counted before the exemptions below, so none of them can hide
             # an entry that leaves the project or a name this system cannot
             # hold.
-            skipped[tracked.skip or SKIP_OUTSIDE] += 1
+            count_skip(tracked.skip or SKIP_OUTSIDE, tracked)
             continue
         # The exemptions are judged on the path inside the project, so a
         # project that itself sits under tests/fixtures or node_modules is
@@ -1372,7 +1384,7 @@ def _run_all_perwrite(root: Path) -> tuple[bool, str]:
             continue
         content, reason = read_entry(root, tracked)
         if content is None:
-            skipped[cast(str, reason)] += 1
+            count_skip(cast(str, reason), tracked)
             continue
         files_scanned += 1
         rel = str(abs_path.relative_to(root))
@@ -1443,6 +1455,11 @@ def _run_all_perwrite(root: Path) -> tuple[bool, str]:
         "passed": passed,
         "files_scanned": files_scanned,
         "files_skipped": skipped,
+        # A bounded, sorted sample per reason; ``files_skipped`` has the count.
+        "files_not_passed": {
+            reason: sorted(names)[:_PERWRITE_FILE_SAMPLE_CAP]
+            for reason, names in sorted(not_passed.items())
+        },
         "blocking_matcher_count": len(_BLOCKING_PER_WRITE_GREPS),
         "advisory_matcher_count": len(_ADVISORY_PER_WRITE_GREPS),
         "blocking_findings_present": not blocking_clean,

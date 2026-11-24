@@ -28,9 +28,11 @@ of them causes.
 
 from __future__ import annotations
 
+import codecs
 import os
 import stat
 import subprocess
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
@@ -38,10 +40,17 @@ from typing import Final
 from apothem.conformity._git import run_git
 from apothem.conformity._grep_base import GIT_LS_FILES_TIMEOUT_SECONDS
 
-# The largest file the corpus run reads, in bytes. Files the matchers check are
-# far smaller; a larger tracked file is skipped and counted, so a huge or sparse
-# file cannot use up the machine's memory.
-MAX_FILE_BYTES: Final[int] = 8 * 1024 * 1024
+# The largest file the corpus run reads, in bytes. It is well above any text a
+# project tracks, lockfiles and notebooks included; a larger tracked file is
+# skipped and counted, so a huge or sparse file cannot use up the machine's
+# memory.
+MAX_FILE_BYTES: Final[int] = 64 * 1024 * 1024
+# The block size for judging whether a file over the limit is text.
+_SNIFF_BLOCK_BYTES: Final[int] = 1024 * 1024
+# How long to wait before the one retry of an open the system refused: a
+# file another program holds for a moment (Windows reports that as a
+# refusal) is usually free again by then.
+_RETRY_DELAY_SECONDS: Final[float] = 0.2
 
 # The index modes git gives a symbolic link and a submodule.
 _LINK_MODE: Final[str] = "120000"
@@ -87,8 +96,6 @@ _WINDOWS_DEVICE_NAMES: Final[frozenset[str]] = frozenset(
     | {f"com{digit}" for digit in "123456789\u00b9\u00b2\u00b3"}
     | {f"lpt{digit}" for digit in "123456789\u00b9\u00b2\u00b3"}
 )
-# How many leading bytes decide whether an oversized file is text.
-_TEXT_SNIFF_BYTES: Final[int] = 8192
 
 # Characters no Windows file name can hold as written: a colon (a drive, as in
 # ``a:b.md``, or a file stream), the folder separator, the characters Windows
@@ -117,12 +124,14 @@ class TrackedEntry:
     """One index entry: its path inside the root, its mode, and any name skip.
 
     *skip* is set when the name itself rules the entry out (see
-    :func:`name_skip`); *path* is then the root, never read.
+    :func:`name_skip`); *path* is then the root, never read. *name* is the
+    entry as git lists it, for a report that names the file.
     """
 
     path: Path
     mode: str
     skip: str | None = None
+    name: str = ""
 
 
 def tracked_entries(root: Path) -> list[TrackedEntry]:
@@ -171,9 +180,10 @@ def tracked_entries(root: Path) -> list[TrackedEntry]:
     for name, mode in modes.items():
         skip = name_skip(name)
         if skip is None:
-            entries.append(TrackedEntry(root.joinpath(*name.split("/")), mode))
+            path = root.joinpath(*name.split("/"))
+            entries.append(TrackedEntry(path, mode, name=name))
         else:
-            entries.append(TrackedEntry(root, mode, skip))
+            entries.append(TrackedEntry(root, mode, skip, name))
     return entries
 
 
@@ -183,34 +193,49 @@ def name_skip(name: str) -> str | None:
     git writes a name as parts joined by ``/``, and never an empty, ``.`` or
     ``..`` part, so a name with one (a leading ``/`` is an empty first part)
     was written by hand to reach outside the project: :data:`SKIP_OUTSIDE`.
-    So is a ``.git`` part, in any case, which git never writes either.
+    So is a part that names ``.git`` on any system (see :func:`_names_git`),
+    which git never writes either.
     On Windows, a part with a colon (``a:b.md`` reads as drive ``a:``, and a
-    colon later in a part names a file stream), a backslash (a folder separator
-    there), one of ``<>"|?*``, a control character, or a trailing dot or space
-    (which Windows drops) cannot be held as written, and a device name such
-    as ``CON`` or ``NUL``, or ``GIT~1``, names something other than a
-    project file. git on another system can
-    write such a name, so it is skipped as :data:`SKIP_UNSUPPORTED`, which does
-    not fail the run.
+    colon later in a part names a file stream), a backslash (a folder
+    separator there), one of ``<>"|?*``, a control character, or a trailing
+    dot or space (which Windows drops) cannot be held as written, and a device
+    name such as ``CON`` or ``NUL``, or a short name such as ``GIT~2``, names
+    something other than a project file. git on another system can write
+    such a name, so it is skipped as :data:`SKIP_UNSUPPORTED`, which does not
+    fail the run.
     """
     parts = name.split("/")
-    if any(part in ("", ".", "..") or part.casefold() == ".git" for part in parts):
+    if any(part in ("", ".", "..") or _names_git(part) for part in parts):
         return SKIP_OUTSIDE
     if os.name == "nt" and any(_windows_cannot_hold(part) for part in parts):
         return SKIP_UNSUPPORTED
     return None
 
 
+def _names_git(part: str) -> bool:
+    """Return True when *part* names the ``.git`` folder on some system.
+
+    That is ``.git`` in any case, followed by nothing but dots and spaces
+    (which Windows drops) or by a colon (a file stream), and ``GIT~1``, its
+    usual Windows short name. git refuses all of these on every system by
+    default (``core.protectNTFS``), so an index that holds one was written
+    by hand.
+    """
+    base = part.split(":", 1)[0].rstrip(". ").casefold()
+    return base in (".git", "git~1")
+
+
 def _windows_cannot_hold(part: str) -> bool:
     """Return True when Windows cannot hold *part* as written, or reads it as
-    something else: a device such as ``CON`` or ``NUL``, or ``GIT~1``,
-    the short alias of ``.git``."""
+    something else: a device such as ``CON`` or ``NUL``, or a short name
+    such as ``GIT~2``, which can stand for ``.git``."""
     if not _WINDOWS_UNHELD.isdisjoint(part) or part.endswith((".", " ")):
         return True
-    bare = part.rstrip(" ").casefold()
+    bare = part.casefold()
     if bare in _WINDOWS_DEVICE_NAMES:
         return True
-    return bare.startswith("git~") and bare[4:].isdigit()
+    digits = bare[4:]
+    return bare.startswith("git~") and digits.isascii() and digits.isdigit()
 
 
 def is_link(info: os.stat_result) -> bool:
@@ -243,9 +268,10 @@ def lstat_inside(root: Path, path: Path) -> os.stat_result | str:
     follows a link, so nothing outside *root* is looked up: the walk stops at
     the first link. The reasons are :data:`SKIP_OUTSIDE`, :data:`SKIP_LINK`,
     :data:`SKIP_MISSING` (a level does not exist, or one on the way is not a
-    folder) and :data:`SKIP_UNREADABLE` (a level exists but cannot be
-    looked at, for example for lack of permission). What the returned result describes (a regular file, a folder, a
-    named pipe) is for the caller to judge.
+    folder) and :data:`SKIP_UNREADABLE` (a level exists but cannot be looked
+    at, for example for lack of permission). What the returned result
+    describes (a regular file, a folder, a named pipe) is for the caller to
+    judge.
     """
     if leaves_root(root, path):
         return SKIP_OUTSIDE
@@ -268,47 +294,72 @@ def lstat_inside(root: Path, path: Path) -> os.stat_result | str:
     return SKIP_MISSING
 
 
-# Windows' error for a file another program holds open without sharing.
-_SHARING_VIOLATION: Final[int] = 32
-
-
 def _missing_or_unreadable(exc: BaseException) -> str:
     """Return the skip reason for an error looking at or opening a path.
 
-    Only a refusal (no permission, or a file another program holds) means the
-    file is there but cannot be read: :data:`SKIP_UNREADABLE`, which fails
-    the run. Any other error, a name the system rejects or one too long for
-    it included, means there is no such file here: :data:`SKIP_MISSING`.
+    Only a refusal (``PermissionError``: no permission, or on Windows a file
+    another program holds, which Python reports the same way) means the file
+    is there but cannot be read: :data:`SKIP_UNREADABLE`, which fails the
+    run. Any other error, a name the system rejects or one too long for it
+    included, means there is no such file here: :data:`SKIP_MISSING`.
     """
     if isinstance(exc, PermissionError):
         return SKIP_UNREADABLE
-    if getattr(exc, "winerror", None) == _SHARING_VIOLATION:
-        return SKIP_UNREADABLE
     return SKIP_MISSING
+
+
+def _read_bytes(path: Path, limit: int) -> bytes | str:
+    """Return up to *limit* + 1 bytes of *path*, or the reason it cannot be read.
+
+    An open the system refuses is tried once more after a short wait, so a
+    file another program holds for a moment does not fail the run.
+    """
+    for attempt in range(2):
+        try:
+            with path.open("rb") as handle:
+                return handle.read(limit + 1)
+        except PermissionError:
+            if attempt == 0:
+                time.sleep(_RETRY_DELAY_SECONDS)
+                continue
+            return SKIP_UNREADABLE
+        except OSError as exc:
+            return _missing_or_unreadable(exc)
+    return SKIP_UNREADABLE  # pragma: no cover - the loop always returns
 
 
 def _oversized_reason(path: Path) -> str:
     """Return the skip reason for a file over :data:`MAX_FILE_BYTES`.
 
-    A file whose first bytes are not UTF-8 text (a NUL among them, or bytes
-    that do not decode) is a binary the matchers would skip anyway:
-    :data:`SKIP_NOT_TEXT`. Only text over the limit is :data:`SKIP_TOO_LARGE`,
-    which fails the run, since a finding in it would go unseen.
+    The file is judged by the rule a smaller file is read by, over all of its
+    first :data:`MAX_FILE_BYTES` bytes, read in blocks: when they decode as
+    UTF-8 (a character cut at the limit included), the file is text the run
+    cannot read, :data:`SKIP_TOO_LARGE`, which fails the run since a finding
+    in it would go unseen. Otherwise it is :data:`SKIP_NOT_TEXT`, as it would
+    be at any size.
     """
-    try:
-        with path.open("rb") as handle:
-            head = handle.read(_TEXT_SNIFF_BYTES)
-    except OSError as exc:
-        return _missing_or_unreadable(exc)
-    if b"\0" in head:
-        return SKIP_NOT_TEXT
-    try:
-        head.decode("utf-8")
-    except UnicodeDecodeError as exc:
-        # A multibyte character cut at the end of the sample is still text.
-        if exc.start < len(head) - 3:
+    decoder = codecs.getincrementaldecoder("utf-8")()
+    left = MAX_FILE_BYTES
+    for attempt in range(2):
+        try:
+            with path.open("rb") as handle:
+                while left > 0:
+                    block = handle.read(min(_SNIFF_BLOCK_BYTES, left))
+                    if not block:
+                        break
+                    left -= len(block)
+                    decoder.decode(block)
+            return SKIP_TOO_LARGE
+        except UnicodeDecodeError:
             return SKIP_NOT_TEXT
-    return SKIP_TOO_LARGE
+        except PermissionError:
+            if attempt == 0:
+                time.sleep(_RETRY_DELAY_SECONDS)
+                continue
+            return SKIP_UNREADABLE
+        except OSError as exc:
+            return _missing_or_unreadable(exc)
+    return SKIP_UNREADABLE  # pragma: no cover - the loop always returns
 
 
 def read_entry(root: Path, entry: TrackedEntry) -> tuple[str | None, str | None]:
@@ -339,11 +390,9 @@ def read_entry(root: Path, entry: TrackedEntry) -> tuple[str | None, str | None]
         return None, SKIP_NOT_REGULAR
     if info.st_size > MAX_FILE_BYTES:
         return None, _oversized_reason(entry.path)
-    try:
-        with entry.path.open("rb") as handle:
-            data = handle.read(MAX_FILE_BYTES + 1)
-    except OSError as exc:
-        return None, _missing_or_unreadable(exc)
+    data = _read_bytes(entry.path, MAX_FILE_BYTES)
+    if isinstance(data, str):
+        return None, data
     if len(data) > MAX_FILE_BYTES:
         # The file grew past the limit after it was checked.
         return None, SKIP_TOO_LARGE

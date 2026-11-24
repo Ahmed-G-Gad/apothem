@@ -56,7 +56,9 @@ write (the hook's own ceiling and the fail-open dispatcher govern hard limits).
   re-issuing.
 - **Strict enforcement (CI / pre-commit corpus):** `gate --all-perwrite . --strict`
   exits non-zero when a **blocking** matcher reports a finding over the tracked
-  corpus; that is where the conformity floor is enforced, not at the tool call.
+  corpus, or when the run read no file, met an index entry that leaves the
+  project, or met a file it could not read or a text file over its size
+  limit; that is where the conformity floor is enforced, not at the tool call.
 - **Fail-disposition:** the dispatcher at `hooks/dispatch.py` is fail-open — any
   exception inside a matcher or the orchestrator converts to a structured failure
   envelope on stdout and the tool call proceeds, so a harness error never
