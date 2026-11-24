@@ -16,6 +16,7 @@ from __future__ import annotations
 import random
 import re
 from collections.abc import Sequence
+from pathlib import Path
 
 import pytest
 from markdown_it import MarkdownIt
@@ -26,6 +27,9 @@ from apothem.harnesses._shared.install_driver_blocktext import (
     TAKES_OUT,
     two_blocks_report,
     unclear_block_report,
+)
+from apothem.harnesses._shared.install_driver_retention import (
+    unlisted_block_warnings,
 )
 from apothem.harnesses._shared.install_driver_steps import Edit, Step
 from apothem.lib.harness_materializer import (
@@ -603,3 +607,93 @@ def test_a_revealed_block_fix_holds_for_the_next_update_too():
     assert len(whole_blocks(_text(texts))) == 1
     _next_update_holds(_text(texts))
     assert _check(lines, message, removes=True) == 1
+
+
+def _unlisted(root: Path, lines: Sequence[str]) -> str:
+    """Return the uninstall's warning for *lines* in a CLAUDE.md no record lists."""
+    (root / "CLAUDE.md").write_bytes(_text(lines).encode("utf-8"))
+    [warning] = unlisted_block_warnings(root)
+    return warning.message
+
+
+_GONE = "No Apothem block is then left in this file"
+
+
+def test_the_unlisted_block_text_deletes_the_block_as_a_numbered_step(
+    tmp_path: Path,
+) -> None:
+    """The uninstall's text for one whole block no record lists.
+
+    It named the lines to delete in prose ("delete lines 3 to 5, from ..."),
+    outside any numbered step, and no check ran on them. It now gives one
+    numbered DELETE step, checked like every other fix.
+    """
+    lines = ["my text KEEP1", "", *BLOCK, "", "my tail KEEP2"]
+    message = _unlisted(tmp_path, lines)
+    assert (
+        f"Fix A, if lines 3 to 5 are Apothem's block: A1. Delete lines 3 to 5. {_GONE}."
+    ) in message
+    assert "delete lines" not in message
+    assert _check(lines, message, removes=False) == 1
+
+
+def test_an_unlisted_block_whose_deletion_changes_your_lines_falls_back(
+    tmp_path: Path,
+) -> None:
+    """Deleting this block let the list item take the code block below it.
+
+    The list item's BEGIN marker and the END marker at the margin are the one
+    whole block. Once they are out, the operator's ``   ~~~md`` line opens a
+    code block inside the list item, and the pair quoted in their code block
+    then reads as Apothem's block. No checked step fits, so the text gives
+    the fallback, which numbers no line.
+    """
+    lines = ["- item KEEP1", f"  {B}", E, "   ~~~md", B, E, "   ~~~~"]
+    text = _text(lines)
+    assert whole_blocks(text) == [(2, 3)]
+    deleted = [*lines[:1], *lines[3:]]
+    assert whole_blocks(_text(deleted)), "the shape no longer shows the class"
+
+    message = _unlisted(tmp_path, lines)
+
+    assert steps.FALLBACK.format(then=_GONE) in message
+    assert not re.search(r"\blines? \d", message)
+    changed = [
+        line.replace(" -->", " (example) -->") if line.strip() in {B, E} else line
+        for line in lines
+    ]
+    fixed = _text(changed)
+    assert not whole_blocks(fixed)
+    assert not has_stray_begin(fixed)
+    assert not uncertain_pairs(fixed)
+    assert _roles(fixed) == _roles(text)
+
+
+@pytest.mark.parametrize(
+    ("above", "changed"),
+    [
+        pytest.param([B, "my note"], [2], id="your-begin-marker"),
+        pytest.param(["```md", B, "example", E, "```"], [5, 3], id="quoted"),
+    ],
+)
+def test_the_unlisted_block_fix_changes_your_marker_lines_left_behind(
+    tmp_path: Path, above: list[str], changed: list[int]
+) -> None:
+    """Once the block is out, a marker line of yours would read as Apothem's.
+
+    A BEGIN marker of yours above the block would start no block, and a pair
+    you quote in a code block would be a pair no rule can place, so the next
+    run would warn again. The fix deletes the block and changes those lines.
+    """
+    lines = ["my own text above", *above, "", *BLOCK, "my own text below"]
+    begin = len(above) + 3
+    message = _unlisted(tmp_path, lines)
+    changes = " ".join(
+        f"A{number}. Change line {line}: add a word inside its comment."
+        for number, line in enumerate(changed, 2)
+    )
+    assert (
+        f"Fix A, if lines {begin} to {begin + 2} are Apothem's block: A1. Delete "
+        f"lines {begin} to {begin + 2}. {changes} {_GONE}."
+    ) in message
+    assert _check(lines, message, removes=False) == 1

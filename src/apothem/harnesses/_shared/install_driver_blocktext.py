@@ -7,7 +7,9 @@ uninstall alike (see :mod:`install_driver_blocks`): one whose marker pairs no
 rule can place (:func:`unclear_block_report`), which names each pair and
 where its marker lines read; and one that holds two or more whole blocks
 (:func:`two_blocks_report`), which names each block by its lines (a block
-that shows only once Apothem's is out, by its two marker lines). Each then
+that shows only once Apothem's is out, by its two marker lines). A third
+text, :func:`unlisted_block_report`, is for the one whole block an uninstall
+with no install record leaves. Each then
 gives its fixes as numbered steps, one list for each case (this pair is
 Apothem's block, or that one, or none is), each checked on a copy of the file
 before it is printed (see :mod:`install_driver_steps`); a case whose steps
@@ -27,6 +29,7 @@ from .install_driver_steps import (
     FALLBACK,
     Fix,
     block_fixes,
+    delete_fixes,
     render_fixes,
     unclear_fixes,
 )
@@ -354,3 +357,24 @@ def two_blocks_report(
     if then is not None:
         parts.append(f"{then[0].upper()}{then[1:]}.")
     return " ".join(parts)
+
+
+def unlisted_block_report(path: str | Path, text: str, block: tuple[int, int]) -> str:
+    """Return the warning for *path*, whose text *text* holds one whole *block*.
+
+    For an uninstall with no install record in place: nothing shows which
+    install wrote the block, so the file is left as it is. The text gives the
+    step that deletes the block by hand, checked on *text* (see
+    :func:`install_driver_steps.delete_fixes`), so it does not start at a
+    BEGIN marker of the operator's above the block or take a marker pair
+    they quote there; with no step that passes, the text that numbers no
+    edit (see :data:`install_driver_steps.FALLBACK`).
+    """
+    gone = _PROMISES[TAKES_OUT][1]
+    fixes = delete_fixes(text, block)
+    return (
+        f"{path} still holds Apothem's managed block: no install record lists "
+        "the file, so the uninstall leaves it as it is. If you no longer want "
+        "the block, take it out by hand. "
+        + render_fixes(fixes, [gone] * len(fixes), FALLBACK.format(then=gone))
+    )

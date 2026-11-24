@@ -2148,7 +2148,7 @@ def test_a_managed_block_no_install_record_lists_stays_and_is_named(
     assert anchor.read_bytes() == before
     (note,) = [w for w in envelope["warnings"] if w["path"] == str(anchor)]
     assert note["message"].startswith(f"{anchor} still holds Apothem's managed block")
-    assert note["message"].endswith("by hand if you no longer want them")
+    assert note["message"].endswith("No Apothem block is then left in this file.")
     assert "detail" not in note
 
 

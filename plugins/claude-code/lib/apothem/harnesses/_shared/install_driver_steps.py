@@ -464,6 +464,35 @@ def block_fixes(
     return fixes
 
 
+def delete_fixes(text: str, block: tuple[int, int]) -> list[Fix]:
+    """Return the checked fix that deletes *block*, the one whole block in *text*.
+
+    For a file whose block the operator takes out by hand (an uninstall with
+    no install record leaves it): one DELETE step for the whole block, or,
+    when that does not pass, the same step with a CHANGE step for every
+    other marker line (a BEGIN marker of the operator's that starts no
+    block, a marker pair they quote in a code block, which no rule can place
+    once the block is out). Either is tried with the step that closes the
+    code block the file then ends in, if it ends in one (see
+    :func:`_first_passing`). The fix must pass :func:`passes` for the next
+    update: no block, marker pair or BEGIN marker reads as Apothem's once
+    the steps are done, and every line of the operator's reads as before.
+    Empty when no variant does, as when a list item above the block would
+    then take a code block below it.
+    """
+    lines = split_lines(text)
+    label = f"if lines {block[0]} to {block[1]} are Apothem's block"
+    delete = Step(Edit.DELETE, block[0], block[1])
+    found = _first_passing(
+        lines,
+        [([delete], False), ([delete, *_every_marker(lines, block)], False)],
+        label=label,
+        block=block,
+        removes=False,
+    )
+    return [] if found is None else [found]
+
+
 def _letter(index: int) -> str:
     """Return the letter of fix number *index* (0-based): A, B, ... Z, then AA."""
     letters = ""

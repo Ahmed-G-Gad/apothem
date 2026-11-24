@@ -21,12 +21,7 @@ from pathlib import Path
 from typing import Final
 
 from apothem.lib import install_ledger
-from apothem.lib.harness_materializer import (
-    APOTHEM_BLOCK_BEGIN,
-    APOTHEM_BLOCK_END,
-    extract_managed_block,
-    whole_blocks,
-)
+from apothem.lib.harness_materializer import extract_managed_block, whole_blocks
 from apothem.lib.install_ledger import LedgerRecord
 
 from .install_driver_blocks import (
@@ -34,6 +29,7 @@ from .install_driver_blocks import (
     another_block_report,
     endless_block_warning,
 )
+from .install_driver_blocktext import unlisted_block_report
 from .install_driver_types import (
     MaterializationResult,
     _handle_rm_error,
@@ -292,11 +288,11 @@ def unlisted_block_warnings(
     around Apothem's block. With two or more whole blocks, that text ends
     with the update and the uninstall again, not with deleting Apothem's
     block by hand (see :data:`_UNLISTED_AGAIN`). A file with one whole block
-    and no other gets a text that names that block by its lines, so the
-    step to delete it by hand does not start at a BEGIN marker of the
-    operator's above it, or take a marker pair they quote there. Like that
-    text, the two-block text carries no ``detail``, so it changes nothing
-    else the uninstall does. A path in *skip* (one the uninstall handled
+    and no other gets a numbered step that deletes that block by its lines,
+    checked on the file first, or the text that numbers no edit when the
+    check fails (see :func:`install_driver_blocktext.unlisted_block_report`).
+    Like that text, the two-block text carries no ``detail``, so it changes
+    nothing else the uninstall does. A path in *skip* (one the uninstall handled
     already) and a file that cannot be read are passed over.
     """
     warnings: list[MaterializationResult] = []
@@ -321,13 +317,7 @@ def unlisted_block_warnings(
         elif another_block_at(anchor):
             message = another_block_report(anchor, then=_UNLISTED_THEN)
         else:
-            begin, end = found[0]
-            message = (
-                f"{anchor} still holds Apothem's managed block: no install record "
-                "lists the file, so the uninstall leaves it as it is; delete lines "
-                f"{begin} to {end}, from {APOTHEM_BLOCK_BEGIN} to "
-                f"{APOTHEM_BLOCK_END}, by hand if you no longer want them"
-            )
+            message = unlisted_block_report(anchor, text, found[0])
         warnings.append(_result("warning", "surgical_uninstall", anchor, message))
     return warnings
 

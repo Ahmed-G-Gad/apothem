@@ -1017,9 +1017,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   uninstall with the unfinished ones after it. With no install record in
   place, Apothem's managed block in `~/.claude/CLAUDE.md`, or in the profile
   document of a tool configured through one settings file, stays as it is,
-  and a warning now names the file and the lines of Apothem's block, so you
-  can delete that block by hand and keep a BEGIN marker of yours, or a marker
-  pair you quote, above it. When that file holds two different blocks between
+  and a warning now names the file and gives a numbered fix that deletes the
+  lines of Apothem's block, so you can take that block out by hand and keep a
+  BEGIN marker of yours, or a marker pair you quote, above it. The fix also
+  changes those marker lines of yours, which would otherwise read as
+  Apothem's once the block is out, and it is checked on a copy of the file
+  like the fixes above. When deleting the block would change how a line of
+  yours reads (a list item above it would take a code block of yours below
+  it, say), the warning numbers no line and says to change every Apothem
+  marker line in the file instead. When that file holds two different blocks between
   Apothem's markers, the warning names each block, or Apothem's block and the
   marker lines around it, with the fix for such a file (see the entry on two
   whole blocks above): deleting from the first BEGIN marker to the next END

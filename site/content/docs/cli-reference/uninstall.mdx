@@ -123,12 +123,18 @@ uninstall also leaves Apothem's managed block where it is: in
 `apothem/rules/00-apothem-profile.md` in the folder of a tool configured
 through one settings file, such as Open-Claw, OpenCode or Qwen Code. Nothing
 shows which install wrote that block, so the file stays as it is, and a
-`Warning:` line names it with the lines of the block, from
-`<!-- BEGIN APOTHEM MANAGED BLOCK -->` to `<!-- END APOTHEM MANAGED BLOCK -->`
-(for example "delete lines 5 to 36"); the warning does not stop the
-uninstall. If you no longer want the block (Claude Code still reads
-`CLAUDE.md`), delete those lines by hand: a BEGIN marker of yours, or a marker
-pair you quote, above the block is not part of it. When that file holds two
+`Warning:` line names it; the warning does not stop the uninstall. If you no
+longer want the block (Claude Code still reads `CLAUDE.md`), take it out by
+hand with the numbered fix the warning gives, for example "Fix A, if lines 5
+to 36 are Apothem's block: A1. Delete lines 5 to 36." (see
+[Follow a numbered fix](/docs/install/troubleshooting#follow-a-numbered-fix)).
+A BEGIN marker of yours, or a marker pair you quote, above the block is not
+part of it: the fix keeps those lines and changes each such marker line,
+which would otherwise read as Apothem's once the block is out. Apothem checks
+the fix on a copy of the file first. When deleting the block would change how
+a line of yours reads (a list item above it would then take a code block of
+yours below it, say), the warning numbers no line and says to change every
+Apothem marker line in the file instead. When that file holds two
 different blocks between Apothem's markers (a marker pair of yours outside
 code, say), deleting from the first BEGIN marker to the next END marker would
 take text of yours with it, so the warning gives the text for such a file

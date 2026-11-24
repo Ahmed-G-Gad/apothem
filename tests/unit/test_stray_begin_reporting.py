@@ -2395,8 +2395,10 @@ def test_with_no_record_the_one_block_text_names_apothem_s_block_by_its_lines(
     With no install record, CLAUDE.md holds a BEGIN marker of yours above
     Apothem's block, or a marker pair you quote in code there. Taken from the
     first BEGIN marker, that step cut your note or your example. The warning
-    now names Apothem's block by its lines, and deleting those lines keeps
-    every line of yours.
+    now names Apothem's block by its lines in a numbered step that deletes
+    them, and changes your marker lines, which would otherwise read as
+    Apothem's once the block is out. Doing those steps keeps every line of
+    yours.
     """
     box = sandbox_factory("claude-code")
     box.install()
@@ -2405,20 +2407,36 @@ def test_with_no_record_the_one_block_text_names_apothem_s_block_by_its_lines(
     shaped = f"my own text above\n{above}\n{text}my own text below\n"
     anchor.write_bytes(shaped.encode())
     [(begin, end)] = whole_blocks(shaped)
+    lines = shaped.split("\n")
+    mine = [
+        number for number, line in enumerate(lines[: begin - 1], 1) if line in {B, E}
+    ]
 
     code, output, warning, _ = _unrecorded_uninstall(box, anchor)
     kept = anchor.read_bytes()
-    lines = shaped.split("\n")
-    anchor.write_bytes("\n".join(lines[: begin - 1] + lines[end:]).encode())
+    left = lines[: begin - 1] + lines[end:]
+    for number in mine:
+        left[number - 1] = left[number - 1].replace(" -->", " (example) -->")
+    anchor.write_bytes("\n".join(left).encode())
 
     assert code == 2, output
     assert kept == shaped.encode()
-    assert warning["message"] == (
-        f"{anchor} still holds Apothem's managed block: no install record lists "
-        f"the file, so the uninstall leaves it as it is; delete lines {begin} to "
-        f"{end}, from {B} to {E}, by hand if you no longer want them"
+    changes = "".join(
+        f" A{step}. Change line {number}: add a word inside its comment."
+        for step, number in enumerate(reversed(mine), 2)
     )
-    assert anchor.read_bytes().decode("utf-8") == (
+    assert warning["message"].startswith(
+        f"{anchor} still holds Apothem's managed block: no install record lists "
+        "the file, so the uninstall leaves it as it is. If you no longer want "
+        "the block, take it out by hand. Each fix below"
+    )
+    assert warning["message"].endswith(
+        f"Fix A, if lines {begin} to {end} are Apothem's block: A1. Delete lines "
+        f"{begin} to {end}.{changes} No Apothem block is then left in this file."
+    )
+    fixed = anchor.read_bytes().decode("utf-8")
+    assert not whole_blocks(fixed)
+    assert fixed.replace(" (example) -->", " -->") == (
         f"my own text above\n{above}\nmy own text below\n"
     )
 
