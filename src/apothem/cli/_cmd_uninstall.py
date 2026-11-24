@@ -529,10 +529,15 @@ def _failed_adapter(
 ) -> tuple[list[dict[str, object]], bool]:
     """Report an uninstall that raised; return its rows and whether it is partial.
 
-    An uninstall that stops after removing files carries the run so far (a
+    When the error carries the run so far (a
     :class:`~apothem.harnesses._shared.install_driver.MaterializationError`
-    with ``run``): its warnings and failed steps are reported, and the files
-    it removed make the uninstall partial. The warnings print where
+    with ``run``, as a stop in the shared pass or at a native-config step
+    does), its warnings and failed steps are reported. An ``updated``
+    result in it makes the uninstall partial and its failure line say
+    ``stopped after removing files``: a file removed, or a file
+    Apothem's entries or block were taken out of (``openclaw.json`` after
+    the native-config step, say), which counts as removing files here as it
+    does for an uninstall that finished its steps. The warnings print where
     :func:`_report_run` prints them: on *con*, or with the failure on
     standard error under ``--quiet``. What the run kept that leaves the
     uninstall unfinished is reported as :func:`_report_run` reports it: a
@@ -570,6 +575,7 @@ def _failed_adapter(
         listing = err if con.quiet else con
         for line in _warning_lines(run) if run is not None else []:
             listing.print(f"[yellow]Warning:[/] {harness_id} - {escape(line)}")
+        # A file changed (Apothem's entries taken out) counts as removed.
         verb = "stopped after removing files" if removed else "failed"
         # Files Apothem wrote that it could not remove are named here, as in
         # an uninstall that finished its steps (see _problems).
