@@ -3273,6 +3273,8 @@ set "PYTHONPATH=$EnginePyPath"
 }
 
 # Next-step banner ------------------------------------------------------------
+# A dry run ends after its "Dry-run complete" line (mirrors install.sh).
+if (-not $DryRun) {
 Write-Bold "Installation complete."
 if ($ShimOnPath) {
     Write-Host @"
@@ -3326,6 +3328,7 @@ completion (opt-in; appends to your profile):
   apothem completion powershell >> `$PROFILE   # or bash / zsh / fish
 
 "@
+}
 }
 } finally {
     # The caller's git variables, the encoding PowerShell read a program's

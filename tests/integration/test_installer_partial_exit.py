@@ -472,15 +472,31 @@ def test_install_ps1_piped_leaves_the_session_open_with_lastexitcode_2(
 @requires_pwsh
 def test_install_ps1_dry_run_warns_and_exits_2(tmp_path: Path) -> None:
     """A dry run by path whose engine exits 2 warns, says the dry run is
-    complete and exits with code 2, with no verify run."""
+    complete and exits with code 2, with no verify run and no next-step
+    banner (mirrors install.sh)."""
     result = _run_ps1_by_path(tmp_path, "install.ps1", "-DryRun", "-Yes", engine_exit=2)
 
     out = _output(result)
     assert result.returncode == 2, out
     assert _squashed(PARTIAL_WARNING) in _squashed(out), out
     assert "Dry-run complete" in out, out
+    assert "Installation complete." not in out, out
     assert [run[0] for run in _engine_runs(tmp_path)] == ["install"], out
     _assert_lock_released(tmp_path, out)
+
+
+@requires_pwsh
+def test_install_ps1_dry_run_prints_no_next_step_banner(tmp_path: Path) -> None:
+    """A dry run whose engine succeeds ends after its dry-run line too: no
+    "Installation complete." and no next-step banner (mirrors install.sh)."""
+    result = _run_ps1_by_path(tmp_path, "install.ps1", "-DryRun", "-Yes", engine_exit=0)
+
+    out = _output(result)
+    assert result.returncode == 0, out
+    assert "Dry-run complete" in out, out
+    assert "Installation complete." not in out, out
+    assert "apothem quickstart" not in out, out
+    assert not (tmp_path / "bin" / "apothem.cmd").exists(), out
 
 
 @requires_pwsh
@@ -491,6 +507,7 @@ def test_install_ps1_piped_dry_run_leaves_lastexitcode_2(tmp_path: Path) -> None
     assert "SESSION-OPEN LASTEXITCODE=[2]" in out, out
     assert _squashed(PARTIAL_WARNING) in _squashed(out), out
     assert "Dry-run complete" in out, out
+    assert "Installation complete." not in out, out
     assert "GIT_DIR=[caller-git-dir] GIT_ALLOW_PROTOCOL=[] LOCK=[False]" in out, out
     _assert_lock_released(tmp_path, out)
 
