@@ -66,6 +66,8 @@ def uninstall(output_path: Path) -> install_driver.MaterializationRun:
     does not close them yet: once the uninstall at the folder has removed its
     files, the adapter reports the harness as not installed, and
     ``apothem uninstall`` skips it.
+    An install of OpenCode at the folder followed by an uninstall closes
+    them.
 
     Raises:
         MaterializationError: When a link leads the folder out of the home;

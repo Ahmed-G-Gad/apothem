@@ -467,6 +467,13 @@ def test_an_error_while_closing_the_earlier_spelling_reports_the_removals(
     rows = json.loads(again.output)["results"]
     assert [row["outcome"] for row in rows] == ["skipped"], again.output
     assert install_ledger.active_install_records("opencode", root=spelling)
+    # An install at the folder, then an uninstall, closes that install.
+    adapter.install({})
+    closed = CliRunner().invoke(
+        main, ["uninstall", "--harness", "opencode", "--yes", "--format", "json"]
+    )
+    assert closed.exit_code == 0, closed.output
+    assert install_ledger.active_install_records("opencode", root=spelling) == []
 
 
 # -- the relocated entries of a record that owned nothing ---------------------
