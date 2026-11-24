@@ -1011,13 +1011,17 @@ def test_a_write_that_fails_part_way_leaves_the_workers_file_as_it_was(
 
 
 def test_a_copy_write_that_fails_part_way_is_cut_back(
-    request: pytest.FixtureRequest, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    request: pytest.FixtureRequest,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     """The copy a worker writes beside its hand-off is cut back on a failure.
 
     The refusals reach the controller through the output xdist sends, so a
     line of the copy cut off part way would be one more refusal for the
-    controller to report.
+    controller to report. The worker says on ``stderr`` that the copy
+    failed, as a worker that ends before xdist sends its output loses them.
     """
     conftest = _suite_conftest(request.config)
     late = tmp_path / "gw0.jsonl"
@@ -1044,6 +1048,9 @@ def test_a_copy_write_that_fails_part_way_is_cut_back(
         ("after the last test", ("a refusal",))
     ]
     assert late.read_bytes() == before
+    err = capsys.readouterr().err
+    assert "In xdist worker gw0, the guard handed its refusals" in err
+    assert "No space left on device" in err
 
 
 class _NoWrites(_HalfWrites):

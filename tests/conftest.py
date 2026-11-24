@@ -1818,7 +1818,8 @@ def _report_held(
     the file when it holds it (:func:`_write_ahead`), so here it writes only
     what did not reach the file then. A worker that has no such file, or
     cannot write to it, writes the refusals it held for that file alone to
-    ``stderr``, with why it could not send them. No try follows that write,
+    ``stderr``, with why it could not send them; one whose copy beside the
+    hand-off fails writes why to ``stderr``. No try follows that write,
     so what part of it reached the file stays there, and the controller
     fails the run on it; a later write starts on a line of its own after
     it. The exit status of *session* becomes "tests failed" when it was
@@ -1839,7 +1840,14 @@ def _report_held(
         # The file holds a copy, for a controller whose test loop ends before
         # it takes the output or a worker that ends before xdist sends it;
         # the controller skips the copy otherwise (see _take_late).
-        _sent_late(config, reports[written:], copy=True)
+        unsent = _sent_late(config, reports[written:], copy=True)
+        if unsent is not None:
+            name = getattr(config, "workerinput", {}).get("workerid", "?")
+            sys.stderr.write(
+                f"In xdist worker {name}, the guard handed its refusals to the "
+                f"controller, but could not write their copy: {unsent}. The "
+                "controller gets them only when the worker sends its output.\n"
+            )
         return
     if worker:
         reports = reports[written:]
