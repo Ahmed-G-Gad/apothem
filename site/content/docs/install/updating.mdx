@@ -156,9 +156,9 @@ When a CI job or script needs the code, end the command with
 `; exit $LASTEXITCODE`, or run the script by path with `-File`. From bash or
 another POSIX shell, put that command in single quotes. In double quotes the
 shell replaces `$LASTEXITCODE` with an empty string, and the process still
-exits `0`. An installer dry run (`--dry-run`, or `-DryRun` on Windows) writes nothing, so the engine
-does not end it as partial. Fix what the engine's messages name. For a file,
-keep your own text (see
+exits `0`. An installer dry run (`--dry-run`, or `-DryRun` on Windows)
+writes nothing, so the engine does not end it as partial. Fix what the
+engine's messages name. For a file, keep your own text (see
 [A file holds two blocks between Apothem's markers](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)
 and
 [Apothem cannot tell its block from your text](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)),
