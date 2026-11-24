@@ -387,6 +387,78 @@ def _names_non_local_path(text: str) -> bool:
     return os.name == "nt" and _NON_LOCAL_START.match(text) is not None
 
 
+# A drive prefix such as ``C:``, which Git for Windows skips before it checks
+# a path.
+_DRIVE_PREFIX: Final[re.Pattern[str]] = re.compile(r"[A-Za-z]:")
+# Characters Git for Windows refuses anywhere in a path after the drive: a
+# colon (an NTFS stream such as ``::$INDEX_ALLOCATION``), the wildcard and
+# redirection characters, and the control characters.
+_REFUSED_WIN32_CHARACTERS: Final[re.Pattern[str]] = re.compile(r'[:<>"|?*\x01-\x1f]')
+# Device names Git for Windows refuses as a path name, alone or before a dot.
+_RESERVED_WIN32_NAMES: Final[frozenset[str]] = frozenset(
+    {"aux", "con", "nul", "prn"}
+    | {f"com{digit}" for digit in range(1, 10)}
+    | {f"lpt{digit}" for digit in range(1, 10)}
+)
+
+
+def _refused_by_git_for_windows(text: str) -> bool:
+    """Return True when Git for Windows refuses *text* as a path.
+
+    Git for Windows checks each path it opens (``is_valid_win32_path``). It
+    refuses a name that ends in a dot or a space, other than ``.`` and
+    ``..``, and a colon or another refused character after the drive. Windows
+    itself drops such a dot and reads such a colon as a stream, so a lookup
+    of ``../repo/.git.`` or ``../repo/.git::$INDEX_ALLOCATION`` finds the
+    repository git refuses. It also refuses a reserved device name (``aux``,
+    ``con``, ``nul``, ``prn``, ``com1`` to ``com9``, ``lpt1`` to ``lpt9``),
+    alone or before a dot, such as ``aux.d``, which newer Windows opens as an
+    ordinary folder. On POSIX git takes every such name as written, so
+    nothing is refused.
+    """
+    if os.name != "nt":
+        return False
+    rest = text[2:] if _DRIVE_PREFIX.match(text) else text
+    if _REFUSED_WIN32_CHARACTERS.search(rest):
+        return True
+    for name in re.split(r"[\\/]", rest):
+        if name in {".", ".."}:
+            continue
+        if name.endswith((".", " ")):
+            return True
+        if name.split(".", 1)[0].rstrip(" ").lower() in _RESERVED_WIN32_NAMES:
+            return True
+    return False
+
+
+def _decode_gitdir(raw: bytes) -> str | None:
+    """Return the path a ``gitdir:`` line names, as git reads its bytes.
+
+    Git for Windows reads the line as UTF-8 and reads a byte that is not
+    UTF-8 from 0xA0 to 0xFF as the character of that number (Latin-1); any
+    other byte that is not UTF-8 makes it refuse the line, and then None is
+    returned. On POSIX git hands the bytes to the system as they are, so
+    they are kept (``os.fsdecode``) and a name in another encoding still
+    finds its folder.
+    """
+    if os.name != "nt":
+        return os.fsdecode(raw)
+    text: list[str] = []
+    rest = raw
+    while rest:
+        try:
+            text.append(rest.decode("utf-8"))
+            break
+        except UnicodeDecodeError as error:
+            text.append(rest[: error.start].decode("utf-8"))
+            byte = rest[error.start]
+            if byte < 0xA0:
+                return None
+            text.append(chr(byte))
+            rest = rest[error.start + 1 :]
+    return "".join(text)
+
+
 def _holds_repository(git_dir: Path) -> bool:
     """Return True when *git_dir* looks like a repository to git.
 
@@ -412,7 +484,9 @@ def git_entry_state(directory: Path) -> str:
       one space, that is larger than git reads (1 MiB), or, on Windows,
       whose path, alone or joined to a folder with no drive, is a network,
       device or NT path. That last path is never looked up, so Windows does
-      not connect to a host the file names.
+      not connect to a host the file names. On Windows a path Git for
+      Windows refuses (a name that ends in a dot or a space, a colon after
+      the drive) is broken too, and is not looked up either.
     - :data:`GIT_ENTRY_NONE`: git looks further up. No entry, a ``.git``
       folder that holds no repository (an empty one, say), or a ``.git`` link
       that leads nowhere.
@@ -440,8 +514,10 @@ def git_entry_state(directory: Path) -> str:
     raw = content[len(_GITFILE_PREFIX) :].rstrip(b"\r\n")
     if not raw:
         return GIT_ENTRY_BROKEN  # git: "no path in gitfile"
-    named = raw.split(b"\0", 1)[0].decode("utf-8", errors="replace")
-    if _names_non_local_path(named):
+    named = _decode_gitdir(raw.split(b"\0", 1)[0])
+    if named is None:
+        return GIT_ENTRY_BROKEN
+    if _names_non_local_path(named) or _refused_by_git_for_windows(named):
         return GIT_ENTRY_BROKEN
     target = directory / named
     # A folder with a root but no drive (``\\``) turns a relative line such as

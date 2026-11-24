@@ -747,7 +747,16 @@ _PROCESS_MODULES = _PROGRAM_MODULES | {"asyncio", "os", "posix", "nt", "subproce
 _PROGRAM_NAMES = frozenset(
     {
         "CreateProcess",
+        "CreateProcessA",
+        "CreateProcessAsUserW",
+        "CreateProcessW",
+        "CreateProcessWithLogonW",
+        "CreateProcessWithTokenW",
         "ProcessPoolExecutor",
+        "ShellExecuteA",
+        "ShellExecuteExW",
+        "ShellExecuteW",
+        "WinExec",
         "create_subprocess_exec",
         "create_subprocess_shell",
         "find_git",
@@ -1264,29 +1273,86 @@ def test_the_program_guard_passes_run_git_and_exception_types() -> None:
 _RUN_BOUNDED_CALLERS = {"gate.py": frozenset({"_run_standalone"})}
 
 
-_PROGRAM_FINDERS: Final[frozenset[str]] = frozenset({"which", "find_git", "git_argv"})
+# What ``_bounded_run.py`` may use: every name that starts or finds a program
+# but ``run_bounded``, which it defines; and from ``subprocess`` the one
+# starter it owns (``Popen``), the exception and result types, and the
+# constants (``PIPE``, ``DEVNULL``, the creation flags), all in upper case.
+_RUNNER_FLAGGED_NAMES: Final[frozenset[str]] = _PROGRAM_NAMES - {"run_bounded"}
+_RUNNER_SUBPROCESS_NAMES: Final[frozenset[str]] = _SUBPROCESS_ALLOWED | {"Popen"}
+_RUNNER_PROGRAM_MODULES: Final[frozenset[str]] = _PROGRAM_MODULES - {"ctypes"}
+
+
+def _runner_may_not_use(dotted: str) -> bool:
+    """Return True when ``_bounded_run.py`` may not use the dotted name."""
+    module, _, rest = dotted.partition(".")
+    first = rest.partition(".")[0]
+    if module == "subprocess" and (
+        first in _RUNNER_SUBPROCESS_NAMES or first.isupper()
+    ):
+        return False
+    return _flagged_name(dotted, _RUNNER_FLAGGED_NAMES)
 
 
 def _names_git_or_finds_programs(source: str) -> list[int]:
-    """Return the lines where *source* names the git program or finds one.
+    """Return the lines where *source* names git, finds a program, or starts
+    one other than through ``subprocess.Popen``.
 
     The check ``_bounded_run.py`` is held to: it starts whatever program it is
-    given, so its ``subprocess`` and ``ctypes`` use is its job, but it must
-    never pick git, or look a program up, itself.
+    given through ``subprocess.Popen``, and its ``ctypes`` use is its job. It
+    must never pick git or look a program up itself, and never start one
+    another way (``os.system``, ``subprocess.run``, an asyncio starter, ...),
+    which would skip its time limit and its job object.
     """
+    tree = ast.parse(source)
+    bound, _ = _import_bindings(tree)
+
+    def resolve(node: ast.expr) -> str:
+        if isinstance(node, ast.Name):
+            return bound.get(node.id, node.id)
+        if isinstance(node, ast.Attribute):
+            inner = resolve(node.value)
+            return f"{inner}.{node.attr}" if inner else ""
+        return ""
+
+    def imported(node: ast.expr) -> bool:
+        while isinstance(node, ast.Attribute):
+            node = node.value
+        return isinstance(node, ast.Name) and node.id in bound
+
+    attribute_bases = {
+        id(node.value) for node in ast.walk(tree) if isinstance(node, ast.Attribute)
+    }
     lines: set[int] = set()
-    for node in ast.walk(ast.parse(source)):
+    for node in ast.walk(tree):
         text = _fixed_string(node)
-        if (
-            (text is not None and _GIT_PROGRAM.search(text.strip()))
-            or (isinstance(node, ast.Name) and node.id in _PROGRAM_FINDERS)
-            or (isinstance(node, ast.Attribute) and node.attr in _PROGRAM_FINDERS)
-            or (
-                isinstance(node, ast.ImportFrom)
-                and any(alias.name in _PROGRAM_FINDERS for alias in node.names)
+        if isinstance(node, ast.Attribute):
+            dotted = resolve(node)
+            flagged = node.attr in _RUNNER_FLAGGED_NAMES or _runner_may_not_use(
+                _canonical(dotted) if imported(node) else dotted
             )
-        ):
-            lines.add(node.lineno)
+        elif isinstance(node, ast.Name):
+            dotted = _canonical(resolve(node))
+            flagged = (
+                node.id in _RUNNER_FLAGGED_NAMES
+                or (dotted == "subprocess" and id(node) not in attribute_bases)
+                or ("." in dotted and _runner_may_not_use(dotted))
+            )
+        elif isinstance(node, ast.ImportFrom) and node.module is not None:
+            flagged = _root(node.module) in _RUNNER_PROGRAM_MODULES or any(
+                alias.name != "*"
+                and _runner_may_not_use(_canonical(f"{node.module}.{alias.name}"))
+                for alias in node.names
+            )
+        elif isinstance(node, ast.Import):
+            # Modules that exist to start programs (pty, multiprocessing, ...);
+            # ctypes is the runner's own tool for the job object.
+            flagged = any(
+                _root(alias.name) in _RUNNER_PROGRAM_MODULES for alias in node.names
+            )
+        else:
+            flagged = text is not None and bool(_GIT_PROGRAM.search(text.strip()))
+        if flagged:
+            lines.add(node.lineno)  # type: ignore[attr-defined]
     return sorted(lines)
 
 
@@ -1436,11 +1502,68 @@ def test_the_module_walk_leaves_out_the_two_starters_by_path_only(
 
 
 def test_the_runner_may_start_programs_but_never_names_git() -> None:
-    """In ``_bounded_run.py`` a string naming git, or a program lookup, counts."""
+    """In ``_bounded_run.py`` a string naming git, a program lookup, or a
+    program start other than ``subprocess.Popen`` counts.
+    """
     assert (
         _names_git_or_finds_programs("import subprocess\nsubprocess.Popen(argv)\n")
         == []
     )
+    # Any other start skips the time limit and the job object, whatever it
+    # runs.
+    assert _names_git_or_finds_programs('import os\nos.system("git log")\n') == [2]
+    assert _names_git_or_finds_programs(
+        'import subprocess\nsubprocess.check_output("git status")\n'
+    ) == [2]
+    assert _names_git_or_finds_programs('import os\nos.system("ls")\n') == [2]
+    others = {
+        "os.popen": 'import os\nos.popen("ls")\n',
+        "os.execvp": 'import os\nos.execvp("ls", ["ls"])\n',
+        "os.spawnl": 'import os\nos.spawnl(0, "ls", "ls")\n',
+        "os.posix_spawn": 'import os\nos.posix_spawn("ls", ["ls"], {})\n',
+        "os.startfile": 'import os\nos.startfile("x")\n',
+        "subprocess.run": 'import subprocess\nsubprocess.run(["ls"])\n',
+        "subprocess.call": 'import subprocess\nsubprocess.call(["ls"])\n',
+        "subprocess.check_call": 'import subprocess\nsubprocess.check_call(["ls"])\n',
+        "subprocess.getoutput": 'import subprocess\nsubprocess.getoutput("ls")\n',
+        "aliased module": 'import subprocess as sp\nsp.run(["ls"])\n',
+        "module as a value": "import subprocess\nrunner = subprocess\n",
+        "imported starter": 'from subprocess import run\nrun(["ls"])\n',
+        "imported os starter": 'from os import system as go\ngo("ls")\n',
+        "asyncio": 'import asyncio\nasyncio.create_subprocess_exec("ls")\n',
+        "event loop": 'loop.subprocess_shell(protocol, "ls")\n',
+        "kernel32 CreateProcessW": "_KERNEL32.CreateProcessW(None, line)\n",
+        "WinExec": '_KERNEL32.WinExec(b"ls", 0)\n',
+        "ShellExecuteW": "shell32.ShellExecuteW(None, None, path)\n",
+        "pty": 'import pty\npty.spawn("ls")\n',
+        "multiprocessing": "from multiprocessing import Process\nProcess().start()\n",
+        "_winapi": "import _winapi\n_winapi.CreateProcess(None, line)\n",
+    }
+    for name, source in others.items():
+        assert _names_git_or_finds_programs(source) != [], name
+    # What it needs to start a program, stop one and wait for one stays allowed.
+    allowed = (
+        "import ctypes\n"
+        "import os\n"
+        "import signal\n"
+        "import subprocess\n"
+        "from ctypes import wintypes\n"
+        "KERNEL32 = ctypes.WinDLL('kernel32', use_last_error=True)\n"
+        "def start(argv) -> subprocess.CompletedProcess[str]:\n"
+        "    process: subprocess.Popen[bytes] = subprocess.Popen(\n"
+        "        argv, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,\n"
+        "        stderr=subprocess.STDOUT,\n"
+        "        creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,\n"
+        "    )\n"
+        "    try:\n"
+        "        process.communicate(timeout=5)\n"
+        "    except subprocess.TimeoutExpired:\n"
+        "        os.killpg(process.pid, signal.SIGKILL)\n"
+        "        process.kill()\n"
+        "        raise subprocess.CalledProcessError(1, argv)\n"
+        "    return subprocess.CompletedProcess(argv, 0, '', '')\n"
+    )
+    assert _names_git_or_finds_programs(allowed) == []
     assert _names_git_or_finds_programs(
         'import subprocess\nsubprocess.Popen(["git", "log"])\n'
     ) == [2]
@@ -2436,6 +2559,19 @@ _GITFILE_FORMS = [
     pytest.param("gitdir: {path}\n\r\n\n", True, id="several line endings"),
     pytest.param("gitdir: {path}\0rest\n", True, id="NUL ends the path"),
     pytest.param("gitdir: \r\n", False, id="no path"),
+    # Windows drops a dot at the end of a name and reads a colon as a stream,
+    # so a lookup finds these repositories; Git for Windows refuses each one.
+    # On POSIX no such folder exists, so git refuses them there too.
+    pytest.param("gitdir: {path}.\n", False, id="trailing dot"),
+    pytest.param("gitdir: {folder}./.git\n", False, id="dot ending a folder"),
+    pytest.param("gitdir: ../elsewhere./.git\n", False, id="relative, dot"),
+    pytest.param("gitdir: {path} \n", False, id="trailing space"),
+    pytest.param("gitdir: {path}::$INDEX_ALLOCATION\n", False, id="stream"),
+    pytest.param(
+        "gitdir: ../elsewhere/.git::$INDEX_ALLOCATION\n", False, id="relative, stream"
+    ),
+    # A "." or ".." name, and the drive's colon, are not refused.
+    pytest.param("gitdir: ../elsewhere/./.git\n", True, id="dot name"),
 ]
 
 
@@ -2449,12 +2585,15 @@ def test_a_git_file_is_read_as_git_reads_it(
     the end, and takes the rest as the path. A second line, a missing or a
     second space, or a tab makes git stop with an error, so the entry is
     broken; a check that kept the first line and stripped it called each of
-    them a repository.
+    them a repository. On Windows a name that ends in a dot or a space, or a
+    colon after the drive, makes Git for Windows refuse the path, though a
+    Windows lookup would find the folder.
     """
     repo = _local_repository(tmp_path)
     folder = tmp_path / "folder"
     folder.mkdir()
-    (folder / ".git").write_bytes(content.format(path=repo.as_posix()).encode())
+    text = content.format(path=repo.as_posix(), folder=repo.parent.as_posix())
+    (folder / ".git").write_bytes(text.encode())
     found = _rev_parse_git_dir(folder)
     assert (found.returncode == 0) is git_accepts, found.stderr
 
@@ -2462,6 +2601,56 @@ def test_a_git_file_is_read_as_git_reads_it(
         _grep_base.GIT_ENTRY_REPOSITORY if git_accepts else _grep_base.GIT_ENTRY_BROKEN
     )
     assert _grep_base.git_entry_state(folder) == expected
+
+
+_WINDOWS_NAME_FORMS = [
+    # Git for Windows reads a byte from 0xA0 to 0xFF that is not UTF-8 as
+    # Latin-1, and refuses a lower one; a strict UTF-8 reading called the
+    # first broken.
+    pytest.param("café", b"caf\xe9", True, id="Latin-1 byte"),
+    pytest.param("café", "café".encode(), True, id="UTF-8"),
+    pytest.param("café", b"caf\x9f", False, id="byte below 0xA0"),
+    # Newer Windows opens these as ordinary folders; Git for Windows refuses
+    # a device name alone or before a dot.
+    pytest.param("aux.d", b"aux.d", False, id="device name before a dot"),
+    pytest.param("con.x", b"con.x", False, id="another device name"),
+]
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Git for Windows' own path rules")
+@pytest.mark.parametrize(
+    ("folder_name", "line_name", "git_accepts"), _WINDOWS_NAME_FORMS
+)
+def test_a_git_file_names_a_folder_as_git_for_windows_reads_it(
+    folder_name: str, line_name: bytes, git_accepts: bool, tmp_path: Path
+) -> None:
+    """A ``gitdir:`` folder name means to the check what it means to git."""
+    target = tmp_path / folder_name
+    # git refuses to make a repository in a folder with a device name, so it
+    # is made elsewhere and moved there.
+    made = tmp_path / "made"
+    made.mkdir()
+    _git(made, "-c", "init.defaultBranch=main", "init", "-q")
+    try:
+        made.rename(target)
+    except OSError as exc:
+        pytest.skip(f"this Windows cannot hold a folder named {folder_name}: {exc}")
+    try:
+        folder = tmp_path / "folder"
+        folder.mkdir()
+        (folder / ".git").write_bytes(b"gitdir: ../" + line_name + b"/.git\n")
+        found = _rev_parse_git_dir(folder)
+        assert (found.returncode == 0) is git_accepts, found.stderr
+
+        expected = (
+            _grep_base.GIT_ENTRY_REPOSITORY
+            if git_accepts
+            else _grep_base.GIT_ENTRY_BROKEN
+        )
+        assert _grep_base.git_entry_state(folder) == expected
+    finally:
+        # A device name needs the long-path form to be removed again.
+        shutil.rmtree("\\\\?\\" + str(target), ignore_errors=True)
 
 
 @pytest.mark.skipif(os.name == "nt", reason="two slashes start a network path")
@@ -2473,6 +2662,30 @@ def test_a_git_file_may_name_a_path_that_starts_with_two_slashes_on_posix(
     folder = tmp_path / "folder"
     folder.mkdir()
     (folder / ".git").write_bytes(f"gitdir: /{repo.as_posix()}\n".encode())
+    _git(folder, "rev-parse", "--git-dir")  # git uses the repository
+
+    assert _grep_base.git_entry_state(folder) == _grep_base.GIT_ENTRY_REPOSITORY
+
+
+@pytest.mark.skipif(os.name == "nt", reason="the Windows case has a test of its own")
+def test_a_git_file_may_name_a_folder_whose_name_is_not_utf_8(tmp_path: Path) -> None:
+    """On POSIX git takes the bytes of a ``gitdir:`` line as they are.
+
+    A folder name with a Latin-1 byte is not UTF-8. A check that read the
+    line as UTF-8 put U+FFFD in its place, found no folder, and called the
+    entry broken.
+    """
+    elsewhere = tmp_path / os.fsdecode(b"caf\xe9")
+    try:
+        elsewhere.mkdir()
+    except OSError:
+        pytest.skip("this file system refuses a name that is not UTF-8")
+    _git(elsewhere, "-c", "init.defaultBranch=main", "init", "-q")
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    named = os.fsencode(elsewhere / ".git")
+    assert b"\xe9" in named
+    (folder / ".git").write_bytes(b"gitdir: " + named + b"\n")
     _git(folder, "rev-parse", "--git-dir")  # git uses the repository
 
     assert _grep_base.git_entry_state(folder) == _grep_base.GIT_ENTRY_REPOSITORY
