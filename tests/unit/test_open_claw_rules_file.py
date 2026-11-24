@@ -2199,9 +2199,9 @@ def test_a_lost_end_over_the_limit_names_the_file_and_the_old_text(
     assert (
         f"{target} holds an Apothem BEGIN marker that starts no whole block (its "
         "END marker is gone, or the marker is yours), and the old Apothem text "
-        "below it counts against the limit: delete that marker line and that old "
-        "text by hand, keeping your own text, shorten the profile's custom rules, "
-        "or raise the limit."
+        "below it counts against the limit: change that marker line by adding a "
+        "word inside its comment and delete that old text by hand, keeping your "
+        "own text, or shorten the profile's custom rules, or raise the limit."
     ) in size
     assert "text you keep beside the Apothem block" not in size
     assert code == 1, payload

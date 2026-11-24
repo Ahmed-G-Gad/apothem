@@ -692,9 +692,10 @@ def refusal(text: str, config: object, workspace: Workspace) -> str | None:
             "which would cut the middle out of it, so it is not written there. "
             f"{workspace.rules_file} holds an Apothem BEGIN marker that starts no "
             "whole block (its END marker is gone, or the marker is yours), and "
-            "the old Apothem text below it counts against the limit: delete that "
-            "marker line and that old text by hand, keeping your own text, "
-            "shorten the profile's custom rules, or raise the limit."
+            "the old Apothem text below it counts against the limit: change that "
+            "marker line by adding a word inside its comment and delete that old "
+            "text by hand, keeping your own text, or shorten the profile's custom "
+            "rules, or raise the limit."
         )
     if size > limits.file_max:
         block = extract_managed_block(text)
