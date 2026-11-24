@@ -28,15 +28,16 @@ call hook compares with the home its session started with.
 copy of this file, and that session collects only the ``case_*`` functions, so
 the ``pytester`` plugin stays out of the suite's own session. Each case points
 ``HOME``, ``USERPROFILE`` and ``LOCALAPPDATA`` at fresh folders, the fake real
-ones, writes a probe folder with pytester and runs it in-process. The probe
-session imports ``tests/conftest.py`` anew (one case imports it just before, in
-a thread, with the fake real home already set), so the fake real home is its
-real home, and the developer's own home is never named. The probe tests only
-read the home; the first line of each writes a sentinel file into the probe
-folder, never into a home, so a missing sentinel proves the body never started.
-The probe fixtures that stand for a fixture writing during setup write their
-sentinels there too. One probe test uses no fixture and the other uses
-``tmp_path``.
+ones, writes a probe folder with pytester and runs it in-process, or, where
+the probe session ends with a ``SystemExit``, in a child process that inherits
+them. The probe session imports ``tests/conftest.py`` anew (one case imports
+it just before, in a thread, with the fake real home already set), so the fake
+real home is its real home, and the developer's own home is never named. The
+probe tests only read the home; the first line of each writes a sentinel file
+into the probe folder, never into a home, so a missing sentinel proves the body
+never started. The probe fixtures that stand for a fixture writing during setup
+write their sentinels there too. One probe test uses no fixture and the other
+uses ``tmp_path``.
 
 The other cases protect the fake real home with
 ``apothem.lib.home_write_guard.also_protect_home`` and absorb a refusal of a
@@ -56,7 +57,9 @@ the ``pytest_collectreport`` hook of the session's own report), in a
 when no test runs), between two tests (a ``pytest_runtest_logreport`` hook for
 a teardown report), in a ``pytest_sessionfinish`` hook (also one that then
 calls ``pytest.exit(returncode=0)``, as a ``pytest_configure`` hook does before
-any session starts) or after a session-finish wrapper yields, in
+any session starts, and one that calls ``sys.exit(0)``, with and without xdist,
+as a ``pytest_unconfigure`` hook does too, whose probe sessions run in a child
+process) or after a session-finish wrapper yields, in
 ``pytest_terminal_summary``, in ``pytest_unconfigure`` (with ``-p no:xdist``),
 and under xdist (``-n 2``) at the session start and in a worker's session
 finish (reported once, and also when a controller hook ended its test loop with
@@ -1793,6 +1796,62 @@ def case_pytest_exit_with_code_0_while_pytest_configures_still_fails_the_run(
     named = "outside any test, while pytest ran no test session, and the refusal"
     assert named in output, output
     assert "after the session finished" not in output
+    assert not (fake_real_home / ".apothem").exists()
+
+
+#: A session-finish hook, and an unconfigure hook, that absorbs the refusal
+#: and then ends the run with ``sys.exit`` and the exit code ``{code}``.
+_ABSORBED_BEFORE_SYS_EXIT = """
+
+def pytest_sessionfinish(session):
+    _absorb()
+    sys.exit({code})
+"""
+_ABSORBED_BEFORE_SYS_EXIT_AT_UNCONFIGURE = """
+
+def pytest_unconfigure(config):
+    _absorb()
+    sys.exit({code})
+"""
+
+
+def _run_absorbing_in_a_child(
+    pytester: pytest.Pytester, home: Path, hook: str, *args: str
+) -> pytest.RunResult:
+    """Run what :func:`_run_absorbing` runs, in a child process.
+
+    pytester's in-process run cannot report a ``SystemExit`` that leaves
+    ``pytest.main``: pytest 9.1 fails there with a ``NameError`` of its own.
+    The child inherits the fake real home from the environment.
+    """
+    pytester.makeconftest(_STAR_IMPORT + _ABSORB_ONE.format(home=str(home)) + hook)
+    return pytester.runpytest_subprocess("-p", "no:cacheprovider", *args, timeout=300)
+
+
+def case_sys_exit_with_code_0_after_a_refusal_still_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """pytest catches no ``SystemExit`` around either hook.
+
+    ``sys.exit(0)`` would end the run with 0 after the guard reported the
+    refusal, so the guard raises ``SystemExit`` with the code 1 in its
+    place, also in an xdist controller, whose workers run the hook too. Any
+    other code is the hook's own, and stays.
+    """
+    for hook, where, args in (
+        (_ABSORBED_BEFORE_SYS_EXIT, "after the last test", ()),
+        (_ABSORBED_BEFORE_SYS_EXIT, "after the last test", ("-n", "2")),
+        (_ABSORBED_BEFORE_SYS_EXIT_AT_UNCONFIGURE, "after the session finished", ()),
+    ):
+        result = _run_absorbing_in_a_child(
+            pytester, fake_real_home, hook.format(code=0), *args
+        )
+
+        assert result.ret == pytest.ExitCode.TESTS_FAILED, result.stdout.str()
+        result.stdout.fnmatch_lines([f"*outside any test, {where}, and the refusal*"])
+    for hook in (_ABSORBED_BEFORE_SYS_EXIT, _ABSORBED_BEFORE_SYS_EXIT_AT_UNCONFIGURE):
+        kept = _run_absorbing_in_a_child(pytester, fake_real_home, hook.format(code=3))
+        assert kept.ret == 3, kept.stdout.str()
     assert not (fake_real_home / ".apothem").exists()
 
 
