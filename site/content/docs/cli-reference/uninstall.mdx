@@ -318,7 +318,9 @@ prints `did not finish:`, records itself unfinished with that step's backups,
 and exits `2` when that step had changed a file, otherwise `1`. `Ctrl+C`
 prints `Aborted!` and exits `1`, whatever the uninstall had removed by then. A
 refused uninstall (a link that leads the folder out of your home directory,
-say) removes nothing and exits `1`.
+say) removes nothing and exits `1`; its row names that link in
+`detail.symlink` and the folder it leads to in `detail.leads_to`, and a row
+for the refused step follows it.
 
 ### An uninstall that did not finish
 

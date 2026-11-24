@@ -813,25 +813,26 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   with the check of the `--project` folder before `apothem update`, and the
   row's `kept_reason`; when the reasons, the steps that failed before the stop
   included, name one link, that row carries it in `detail.symlink` and
-  `detail.leads_to`. Such a link, or such files of an earlier release's
-  install or of an install with no record, make it exit `2`, also when it
-  removed nothing; otherwise one that changed nothing exits `1`. Its warnings
-  also name a link its steps left in place and a file left with a BEGIN marker
-  of yours and no END after it, whose fix the update step then puts first, as
-  for one that ran all its steps. An error that stops the settings-file step
-  of Hermes, Open-Claw, OpenCode or Qwen Code now reads `uninstall stopped:
-  <error>`, as one in a later step does, whether or not an earlier step found
-  something to report. So does an error in the step OpenCode's uninstall takes
-  after the one that removes what the install record lists, which closes an
-  install recorded under another spelling of its folder: the uninstall exits
-  `2`, as it had removed files, and that install stays recorded for the next
-  run. `apothem rollback` now undoes the newest install still in place, so a
-  second rollback undoes the one before, refuses an `--install-id` that was
-  already rolled back or uninstalled, and removes a file an install created
-  only while it still has the content that install wrote. Uninstalling a tool
-  from one project no longer removes the shared memory, contexts and learning
-  stores in your home folder while the same tool installed in another project
-  still uses them.
+  `detail.leads_to`, as does the row of an uninstall refused because a link
+  leads its folder out of your home directory. Such a link, or such files of
+  an earlier release's install or of an install with no record, make it exit
+  `2`, also when it removed nothing; otherwise one that changed nothing exits
+  `1`. Its warnings also name a link its steps left in place and a file left
+  with a BEGIN marker of yours and no END after it, whose fix the update step
+  then puts first, as for one that ran all its steps. An error that stops the
+  settings-file step of Hermes, Open-Claw, OpenCode or Qwen Code now reads
+  `uninstall stopped: <error>`, as one in a later step does, whether or not an
+  earlier step found something to report. So does an error in the step
+  OpenCode's uninstall takes after the one that removes what the install
+  record lists, which closes an install recorded under another spelling of its
+  folder: the uninstall exits `2`, as it had removed files, and that install
+  stays recorded for the next run. `apothem rollback` now undoes the newest
+  install still in place, so a second rollback undoes the one before, refuses
+  an `--install-id` that was already rolled back or uninstalled, and removes a
+  file an install created only while it still has the content that install
+  wrote. Uninstalling a tool from one project no longer removes the shared
+  memory, contexts and learning stores in your home folder while the same tool
+  installed in another project still uses them.
 - **Uninstall checks more strictly which files are Apothem's.** An install
   recorded by an earlier release does not say which files Apothem wrote, so
   the uninstall compares them with what this release writes. In the two places
