@@ -137,11 +137,12 @@ everything else, prints a warning that names the file and says how to fix it,
 and ends as partial with exit code `2`. The engine also ends as partial when
 it stops after it has written something: for example, when one tool fails
 after an earlier one in an `APOTHEM_HARNESS=all` run wrote its files. Its
-error then names the tool that stopped. The installer and the update script
-then print one more line:
+error says what failed and lists the files written so far, and each tool that
+finished before it has its own line above the error. The installer and the
+update script then print one more line:
 
 ```text
-! The engine ended as partial (exit code 2): its messages above say which files it left as they are, or which harness stopped. Fix what they name, then run 'apothem update --harness claude-code' again.
+! The engine ended as partial (exit code 2): its messages above name the files it left as they are, or the error that stopped it. Fix what they name, then run 'apothem update --harness claude-code' again.
 ```
 
 They finish the run as after a full success: the installer still runs verify,
@@ -161,7 +162,7 @@ messages name. For a file, keep your own text (see
 and
 [Apothem cannot tell its block from your text](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)),
 then run `apothem update --harness <name>`, or the update script, again, for
-each tool it names. Any other non-zero exit code from the engine stops the
+each tool the run left unfinished. Any other non-zero exit code from the engine stops the
 script there.
 
 ## Re-materialize harness output

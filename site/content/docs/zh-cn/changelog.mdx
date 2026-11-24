@@ -964,8 +964,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   left a file as it is because of its marker lines or because it stopped
   after it had written something, `install.sh`, `install.ps1`, `update.sh`
   and `update.ps1` print one line. The line says that the engine ended as
-  partial, that its messages above say which files it left as they are or
-  which harness stopped, and to fix what they name, then run
+  partial, that its messages above name the files it left as they are or the
+  error that stopped it, and to fix what they name, then run
   `apothem update --harness <name>` again. The installers then run verify,
   place the `apothem` command and print their closing banner, and the update
   scripts print "Update complete.", as after a full success. Each script then

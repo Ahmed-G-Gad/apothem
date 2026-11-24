@@ -5278,9 +5278,9 @@ def test_the_ps1_scripts_write_the_windows_home_access_warnings(name: str) -> No
 #: The line each installer and updater prints when the engine ends as partial
 #: (exit code 2), up to the harness name the script fills in.
 PARTIAL_RUN_LINE = (
-    "The engine ended as partial (exit code 2): its messages above say which "
-    "files it left as they are, or which harness stopped. Fix what they name, "
-    "then run 'apothem update --harness "
+    "The engine ended as partial (exit code 2): its messages above name the "
+    "files it left as they are, or the error that stopped it. Fix what they "
+    "name, then run 'apothem update --harness "
 )
 
 

@@ -3192,7 +3192,7 @@ try {
     # end of this script). Any other non-zero code stops the run here.
     $EngineCode = $LASTEXITCODE
     if ($EngineCode -eq 2) {
-        Write-Warn "The engine ended as partial (exit code 2): its messages above say which files it left as they are, or which harness stopped. Fix what they name, then run 'apothem update --harness $Harness' again."
+        Write-Warn "The engine ended as partial (exit code 2): its messages above name the files it left as they are, or the error that stopped it. Fix what they name, then run 'apothem update --harness $Harness' again."
     } elseif ($EngineCode -ne 0) {
         Write-Fail "Harness materialization failed for $Harness"
     }

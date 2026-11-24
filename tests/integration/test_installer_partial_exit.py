@@ -46,9 +46,9 @@ TIMEOUT_SECONDS = 300
 
 #: The one line each script prints when the engine ends as partial.
 PARTIAL_WARNING = (
-    "The engine ended as partial (exit code 2): its messages above say which "
-    "files it left as they are, or which harness stopped. Fix what they name, "
-    f"then run 'apothem update --harness {HARNESS}' again."
+    "The engine ended as partial (exit code 2): its messages above name the "
+    "files it left as they are, or the error that stopped it. Fix what they "
+    f"name, then run 'apothem update --harness {HARNESS}' again."
 )
 
 #: The stand-in engine. ``print`` ends each record with a newline.

@@ -1224,7 +1224,7 @@ PYTHONSAFEPATH=1 PYTHONPATH="$(engine_pythonpath)" \
     "$PY" -c "$ENGINE_PROGRAM" update --harness "$HARNESS" --profile "$PROFILE" \
     || ENGINE_CODE=$?
 if [ "$ENGINE_CODE" = "2" ]; then
-    warn "The engine ended as partial (exit code 2): its messages above say which files it left as they are, or which harness stopped. Fix what they name, then run 'apothem update --harness ${HARNESS}' again."
+    warn "The engine ended as partial (exit code 2): its messages above name the files it left as they are, or the error that stopped it. Fix what they name, then run 'apothem update --harness ${HARNESS}' again."
 elif [ "$ENGINE_CODE" != "0" ]; then
     exit "$ENGINE_CODE"
 else
