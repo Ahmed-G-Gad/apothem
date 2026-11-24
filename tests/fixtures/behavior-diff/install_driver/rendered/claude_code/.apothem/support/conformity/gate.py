@@ -91,6 +91,8 @@ if __package__ in (None, ""):
         sys.modules["apothem"] = _support_package
 
 from apothem.conformity._corpus import (
+    FAILING_SKIPS,
+    SKIP_EXEMPT,
     SKIP_OUTSIDE,
     SKIP_REASONS,
     CorpusListError,
@@ -1278,10 +1280,10 @@ def _is_corpus_fixture_path(path: Path) -> bool:
     content held to the quality bar.
     """
     parts = path.parts
-    if "tests" not in parts:
-        return False
-    tail = parts[parts.index("tests") + 1 :]
-    return bool(tail) and tail[0] in {"conformity", "fixtures"}
+    return any(
+        parts[i] == "tests" and parts[i + 1] in {"conformity", "fixtures"}
+        for i in range(len(parts) - 1)
+    )
 
 
 def _matcher_applies_to(module_name: str, path: Path) -> bool:
@@ -1327,9 +1329,10 @@ def _run_all_perwrite(root: Path) -> tuple[bool, str]:
     ``check_error`` when the tracked-file list cannot be read. Only regular
     files inside *root* are read (see :func:`_corpus.read_entry`), and
     ``files_skipped`` counts every other listed path by reason. An index
-    entry with an empty, ``.`` or ``..`` part (a leading ``/`` among them)
-    also fails the run: git never writes one, so the index was written by
-    hand. The caller
+    entry with an empty, ``.``, ``..`` or ``.git`` part (a leading ``/``
+    among them) also fails the run: git never writes one, so the index was
+    written by hand. So does a file over the size limit or one that cannot
+    be read, since a finding it holds would go unseen. The caller
     maps ``passed`` to an exit code under the advisory-by-default posture
     (``--strict`` makes a run that did not pass exit non-zero).
     """
@@ -1351,14 +1354,21 @@ def _run_all_perwrite(root: Path) -> tuple[bool, str]:
             # hold.
             skipped[tracked.skip or SKIP_OUTSIDE] += 1
             continue
-        if abs_path.suffix.lower() in _CORPUS_BINARY_SUFFIXES:
-            continue
-        if _is_plan_suite_path(abs_path) or _is_corpus_fixture_path(abs_path):
-            continue
-        if "_vendor" in abs_path.parts or "node_modules" in abs_path.parts:
-            # Vendored / third-party trees carry upstream conventions, not the
-            # apothem quality bar — exempt per schemas/header-exceptions.txt
-            # (`**/_vendor/**`, `**/node_modules/**`).
+        # The exemptions are judged on the path inside the project, so a
+        # project that itself sits under tests/fixtures or node_modules is
+        # read as usual. Vendored / third-party trees carry upstream
+        # conventions, not the apothem quality bar — exempt per
+        # schemas/header-exceptions.txt (`**/_vendor/**`,
+        # `**/node_modules/**`).
+        inside = abs_path.relative_to(root)
+        if (
+            abs_path.suffix.lower() in _CORPUS_BINARY_SUFFIXES
+            or _is_plan_suite_path(inside)
+            or _is_corpus_fixture_path(inside)
+            or "_vendor" in inside.parts
+            or "node_modules" in inside.parts
+        ):
+            skipped[SKIP_EXEMPT] += 1
             continue
         content, reason = read_entry(root, tracked)
         if content is None:
@@ -1421,7 +1431,11 @@ def _run_all_perwrite(root: Path) -> tuple[bool, str]:
         for name in sorted(_ADVISORY_PER_WRITE_GREPS)
         if name in advisory
     ]
-    passed = blocking_clean and files_scanned > 0 and not skipped[SKIP_OUTSIDE]
+    passed = (
+        blocking_clean
+        and files_scanned > 0
+        and not any(skipped[reason] for reason in FAILING_SKIPS)
+    )
     payload: dict[str, object] = {
         "orchestrator": "conformity-gate",
         "mode": "all-perwrite",

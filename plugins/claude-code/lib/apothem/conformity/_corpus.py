@@ -56,6 +56,8 @@ SKIP_NOT_REGULAR: Final[str] = "not_regular_file"
 SKIP_MISSING: Final[str] = "missing"
 SKIP_TOO_LARGE: Final[str] = "too_large"
 SKIP_NOT_TEXT: Final[str] = "not_utf8_text"
+SKIP_UNREADABLE: Final[str] = "unreadable"
+SKIP_EXEMPT: Final[str] = "exempt"
 SKIP_REASONS: Final[tuple[str, ...]] = (
     SKIP_OUTSIDE,
     SKIP_UNSUPPORTED,
@@ -65,7 +67,28 @@ SKIP_REASONS: Final[tuple[str, ...]] = (
     SKIP_MISSING,
     SKIP_TOO_LARGE,
     SKIP_NOT_TEXT,
+    SKIP_UNREADABLE,
+    SKIP_EXEMPT,
 )
+# Reasons that fail the run: a path that leaves the project means the index
+# was written by hand, and a file too large or impossible to read may hold a
+# finding the run cannot see.
+FAILING_SKIPS: Final[tuple[str, ...]] = (
+    SKIP_OUTSIDE,
+    SKIP_TOO_LARGE,
+    SKIP_UNREADABLE,
+)
+
+# Windows device names. Current Windows reads them as a device only when
+# they stand alone (``CON``, ``nul``); older versions also read them with an
+# extension (``nul.yml``), and the regular-file check refuses those there.
+_WINDOWS_DEVICE_NAMES: Final[frozenset[str]] = frozenset(
+    {"con", "prn", "aux", "nul", "conin$", "conout$"}
+    | {f"com{digit}" for digit in "123456789\u00b9\u00b2\u00b3"}
+    | {f"lpt{digit}" for digit in "123456789\u00b9\u00b2\u00b3"}
+)
+# How many leading bytes decide whether an oversized file is text.
+_TEXT_SNIFF_BYTES: Final[int] = 8192
 
 # Characters no Windows file name can hold as written: a colon (a drive, as in
 # ``a:b.md``, or a file stream), the folder separator, the characters Windows
@@ -160,22 +183,34 @@ def name_skip(name: str) -> str | None:
     git writes a name as parts joined by ``/``, and never an empty, ``.`` or
     ``..`` part, so a name with one (a leading ``/`` is an empty first part)
     was written by hand to reach outside the project: :data:`SKIP_OUTSIDE`.
+    So is a ``.git`` part, in any case, which git never writes either.
     On Windows, a part with a colon (``a:b.md`` reads as drive ``a:``, and a
     colon later in a part names a file stream), a backslash (a folder separator
     there), one of ``<>"|?*``, a control character, or a trailing dot or space
-    (which Windows drops) cannot be held as written. git on another system can
+    (which Windows drops) cannot be held as written, and a device name such
+    as ``CON`` or ``NUL``, or ``GIT~1``, names something other than a
+    project file. git on another system can
     write such a name, so it is skipped as :data:`SKIP_UNSUPPORTED`, which does
     not fail the run.
     """
     parts = name.split("/")
-    if any(part in ("", ".", "..") for part in parts):
+    if any(part in ("", ".", "..") or part.casefold() == ".git" for part in parts):
         return SKIP_OUTSIDE
-    if os.name == "nt" and any(
-        not _WINDOWS_UNHELD.isdisjoint(part) or part.endswith((".", " "))
-        for part in parts
-    ):
+    if os.name == "nt" and any(_windows_cannot_hold(part) for part in parts):
         return SKIP_UNSUPPORTED
     return None
+
+
+def _windows_cannot_hold(part: str) -> bool:
+    """Return True when Windows cannot hold *part* as written, or reads it as
+    something else: a device such as ``CON`` or ``NUL``, or ``GIT~1``,
+    the short alias of ``.git``."""
+    if not _WINDOWS_UNHELD.isdisjoint(part) or part.endswith((".", " ")):
+        return True
+    bare = part.rstrip(" ").casefold()
+    if bare in _WINDOWS_DEVICE_NAMES:
+        return True
+    return bare.startswith("git~") and bare[4:].isdigit()
 
 
 def is_link(info: os.stat_result) -> bool:
@@ -206,9 +241,10 @@ def lstat_inside(root: Path, path: Path) -> os.stat_result | str:
     *root*, *path* itself included, is reached without a symbolic link or a
     Windows junction. Each level is checked with ``os.lstat``, which never
     follows a link, so nothing outside *root* is looked up: the walk stops at
-    the first link. The reasons are :data:`SKIP_OUTSIDE`, :data:`SKIP_LINK` and
+    the first link. The reasons are :data:`SKIP_OUTSIDE`, :data:`SKIP_LINK`,
     :data:`SKIP_MISSING` (a level does not exist, or one on the way is not a
-    folder). What the returned result describes (a regular file, a folder, a
+    folder) and :data:`SKIP_UNREADABLE` (a level exists but cannot be
+    looked at, for example for lack of permission). What the returned result describes (a regular file, a folder, a
     named pipe) is for the caller to judge.
     """
     if leaves_root(root, path):
@@ -222,14 +258,57 @@ def lstat_inside(root: Path, path: Path) -> os.stat_result | str:
         current = current / part
         try:
             info = os.lstat(current)
-        except (OSError, ValueError):
+        except (OSError, ValueError) as exc:
             # ValueError: a NUL in the name, which no file can have.
-            return SKIP_MISSING
+            return _missing_or_unreadable(exc)
         if is_link(info):
             return SKIP_LINK
         if depth == len(parts):
             return info
     return SKIP_MISSING
+
+
+# Windows' error for a file another program holds open without sharing.
+_SHARING_VIOLATION: Final[int] = 32
+
+
+def _missing_or_unreadable(exc: BaseException) -> str:
+    """Return the skip reason for an error looking at or opening a path.
+
+    Only a refusal (no permission, or a file another program holds) means the
+    file is there but cannot be read: :data:`SKIP_UNREADABLE`, which fails
+    the run. Any other error, a name the system rejects or one too long for
+    it included, means there is no such file here: :data:`SKIP_MISSING`.
+    """
+    if isinstance(exc, PermissionError):
+        return SKIP_UNREADABLE
+    if getattr(exc, "winerror", None) == _SHARING_VIOLATION:
+        return SKIP_UNREADABLE
+    return SKIP_MISSING
+
+
+def _oversized_reason(path: Path) -> str:
+    """Return the skip reason for a file over :data:`MAX_FILE_BYTES`.
+
+    A file whose first bytes are not UTF-8 text (a NUL among them, or bytes
+    that do not decode) is a binary the matchers would skip anyway:
+    :data:`SKIP_NOT_TEXT`. Only text over the limit is :data:`SKIP_TOO_LARGE`,
+    which fails the run, since a finding in it would go unseen.
+    """
+    try:
+        with path.open("rb") as handle:
+            head = handle.read(_TEXT_SNIFF_BYTES)
+    except OSError as exc:
+        return _missing_or_unreadable(exc)
+    if b"\0" in head:
+        return SKIP_NOT_TEXT
+    try:
+        head.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        # A multibyte character cut at the end of the sample is still text.
+        if exc.start < len(head) - 3:
+            return SKIP_NOT_TEXT
+    return SKIP_TOO_LARGE
 
 
 def read_entry(root: Path, entry: TrackedEntry) -> tuple[str | None, str | None]:
@@ -259,12 +338,12 @@ def read_entry(root: Path, entry: TrackedEntry) -> tuple[str | None, str | None]
     if not stat.S_ISREG(info.st_mode):
         return None, SKIP_NOT_REGULAR
     if info.st_size > MAX_FILE_BYTES:
-        return None, SKIP_TOO_LARGE
+        return None, _oversized_reason(entry.path)
     try:
         with entry.path.open("rb") as handle:
             data = handle.read(MAX_FILE_BYTES + 1)
-    except OSError:
-        return None, SKIP_MISSING
+    except OSError as exc:
+        return None, _missing_or_unreadable(exc)
     if len(data) > MAX_FILE_BYTES:
         # The file grew past the limit after it was checked.
         return None, SKIP_TOO_LARGE

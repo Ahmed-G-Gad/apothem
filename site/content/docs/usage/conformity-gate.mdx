@@ -119,13 +119,15 @@ can come with an index and files someone else made, so the gate reads a listed
 path only when it is a regular file inside the root, of at most 8 MiB, holding
 UTF-8 text. It counts every other listed path under `files_skipped`, by reason:
 
-- `outside_project`: an entry with an empty, `.` or `..` part, such as
+- `outside_project`: an entry with an empty, `.`, `..` or `.git` part, such as
   `../notes.md`, `a//b.md` or a name starting with `/`. git never writes one,
   so the run does not pass;
 - `unsupported_name`: on Windows, a name the system cannot hold as written:
   one with a colon (as in `a:b.md`, whose `a:` reads as a drive), a backslash,
   one of `<>"|?*` or a control character, or a part that ends in a dot or a
-  space. git on Linux or macOS can track such a name, so it is counted without
+  space; and a name Windows reads as something else: a device name standing
+  alone, such as `CON`, `NUL` or `COM1`, or `GIT~1`, the short name of `.git`.
+  git on Linux or macOS can track such a name, so it is counted without
   failing the run. A hand-written entry such as `C:/x` or `..\..\x` lands
   here on Windows too;
 - `link`: a symbolic link, or on Windows a junction, at any level below the
@@ -136,15 +138,27 @@ UTF-8 text. It counts every other listed path under `files_skipped`, by reason:
   points to is checked under its own path;
 - `submodule`: the entry of a submodule;
 - `not_regular_file`: anything else that is not a regular file, such as a
-  named pipe or a device, where a read would wait or never end;
-- `missing`: a tracked file that is not in the working tree;
-- `too_large` and `not_utf8_text`: a file over 8 MiB, or one whose bytes are
-  not UTF-8 text.
+  folder, a named pipe or a device, where a read would wait or never end;
+- `missing`: a tracked file that is not in the working tree, including a name
+  git listed in bytes that are not UTF-8;
+- `unreadable`: a file, or a folder on the way to it, that the system will not
+  let the gate look at or open, for lack of permission or because another
+  program holds it. The run does not pass, since a finding in it would go
+  unseen;
+- `too_large`: a text file over 8 MiB. The run does not pass, for the same
+  reason;
+- `not_utf8_text`: a file whose bytes are not UTF-8 text, at any size;
+- `exempt`: a file the checks leave out by design: one whose suffix marks it
+  as binary, such as an image or an archive, and anything under a
+  `.apothem/plans`, `tests/conformity`, `tests/fixtures`, `_vendor` or
+  `node_modules` folder at any depth inside the root. The checks for
+  `outside_project` and `unsupported_name` come first, so no exemption hides
+  them.
 
 Two things these checks do not see. A hard link reads as an ordinary file, so
-a hard link to a file elsewhere is read; git and archive tools do not create
-one. And each file's levels are checked right before it is read, so a folder
-another program swaps for a link in between is followed.
+a hard link to a file elsewhere is read; git does not create one. And each
+file's levels are checked right before it is read, so a folder another program
+swaps for a link in between is followed.
 
 In this run the `link-check` matcher looks up a link target only inside the
 root: a relative link that leaves the root counts as external, and the search
@@ -160,9 +174,11 @@ proves nothing. Such a link that finds nothing is reported dead as usual.
 Each `git ls-files` call gets 60 seconds: the one this run makes, and the one
 in `no-global-plans-grep`, whose report then carries the same `check_error`
 and fails; when git itself fails there, its message gives git's exit code,
-not git's own text. A repository
-whose own settings make git wait, such as an `include.path` that points at a
-named pipe, holds up each of these calls for that long at most. A
+not git's own text. A repository whose own settings make git wait, such as
+an `include.path` that points at a named pipe, holds up each of these calls
+for that long at most. On Windows, when the `git` found first is the launcher
+in Git's `cmd` folder, the limit stops the launcher but not the git it
+started, so such a wait can last longer. A
 `--all-perwrite` run that read no file does not pass: it reports
 `files_scanned: 0` with `empty_scope_expected: false`. When the list of tracked
 files cannot be read, `check_error` gives a fixed reason: git did not start,

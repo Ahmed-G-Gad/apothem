@@ -634,6 +634,7 @@ def test_run_that_reads_no_file_does_not_pass(tmp_path: Path) -> None:
     assert payload["files_scanned"] == 0
     assert payload["empty_scope_expected"] is False
     assert "check_error" not in payload
+    assert _skipped(payload) == {"exempt": 1}
     _assert_exit_codes_for_a_run_that_did_not_pass(repo)
 
 
@@ -654,26 +655,16 @@ def test_paths_the_run_did_not_read_are_counted_by_reason(tmp_path: Path) -> Non
             "gone.md": "gone\n",
             "linked/ci.yml": "placeholder: true\n",
             "blob.txt": "text for now\n",
-            "big.yml": "small for now\n",
         },
     )
     (repo / "gone.md").unlink()
     shutil.rmtree(repo / "linked")
     _link_folder(repo / "linked", outside)
     (repo / "blob.txt").write_bytes(b"\xff\xfe\x00 not text")
-    with (repo / "big.yml").open("wb") as big:  # one byte over the limit
-        big.write(_UNPINNED_WORKFLOW.encode("utf-8"))
-        big.seek(_MAX_FILE_BYTES)
-        big.write(b"\n")
 
     payload = _run(repo)
     _assert_only_clean_file_read(payload)
-    assert _skipped(payload) == {
-        "link": 1,
-        "missing": 1,
-        "too_large": 1,
-        "not_utf8_text": 1,
-    }
+    assert _skipped(payload) == {"link": 1, "missing": 1, "not_utf8_text": 1}
 
 
 def test_index_modes_for_links_and_submodules_are_skipped(tmp_path: Path) -> None:
@@ -993,3 +984,248 @@ def test_tracked_file_next_to_its_trailing_dot_names_is_still_read(
     assert [entry["files"] for entry in blocking] == [["ci.yml"]]
     expected = {"unsupported_name": 2} if os.name == "nt" else {"missing": 2}
     assert _skipped(payload) == expected
+
+
+# --- Review of 2026-11-24 ----------------------------------------------------
+
+
+def test_link_through_a_folder_link_is_not_looked_up_in_a_corpus_run(
+    tmp_path: Path,
+) -> None:
+    """A link whose path crosses a folder link (a junction on Windows) is not
+    followed: whether the file behind it exists stays out of the report."""
+    outside = _write(tmp_path / "elsewhere", {"present.md": "here\n"})
+    repo = _project(
+        tmp_path,
+        {"doc.md": "[a](linked/present.md) [b](linked/absent.md) [c](nothere.md)\n"},
+    )
+    _link_folder(repo / "linked", outside)
+
+    # Only the plain dead link is reported, whether or not the file behind
+    # the folder link exists.
+    for _ in range(2):
+        payload = _run(repo)
+        assert _link_check_files(payload) == ["doc.md"]
+        advisory = payload["advisory"]
+        assert isinstance(advisory, list)
+        entry = next(item for item in advisory if item["matcher"] == "link_check")
+        assert entry["finding_count"] == 1
+        (outside / "present.md").unlink(missing_ok=True)
+
+
+def test_exempt_suffix_cannot_hide_an_entry_that_leaves_the_project(
+    tmp_path: Path,
+) -> None:
+    """``../x.png`` is counted as leaving the project, not as an exempt image."""
+    repo = _project(tmp_path)
+    _write_index(repo, ["clean.py", "../x.png"])
+
+    payload = _run(repo)
+    _assert_only_clean_file_read(payload, passed=False)
+    assert _skipped(payload) == {"outside_project": 1}
+
+
+def test_tracked_path_that_is_a_folder_on_disk_is_not_regular(tmp_path: Path) -> None:
+    """A tracked file replaced by a folder is counted as not a regular file."""
+    repo = _project(tmp_path, {"notes.md": "notes\n"})
+    (repo / "notes.md").unlink()
+    (repo / "notes.md").mkdir()
+
+    payload = _run(repo)
+    _assert_only_clean_file_read(payload)
+    assert _skipped(payload) == {"not_regular_file": 1}
+
+
+def test_file_that_cannot_be_opened_is_unreadable_and_fails_the_run(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A tracked file that exists but cannot be opened is counted as
+    unreadable, not missing, and the run does not pass: its findings are
+    unknown."""
+    repo = _project(tmp_path, {"bad.yml": _UNPINNED_WORKFLOW})
+    real_open = Path.open
+
+    def refusing_open(self: Path, *args: object, **kwargs: object) -> object:
+        if self.name == "bad.yml":
+            raise PermissionError(13, "Permission denied", str(self))
+        return real_open(self, *args, **kwargs)  # type: ignore[call-overload]
+
+    monkeypatch.setattr(Path, "open", refusing_open)
+    payload = _run(repo)
+    _assert_only_clean_file_read(payload, passed=False)
+    assert _skipped(payload) == {"unreadable": 1}
+
+
+def test_project_under_a_tests_fixtures_folder_is_still_read(tmp_path: Path) -> None:
+    """The exemptions are judged on the path inside the project, so a project
+    that itself sits under ``tests/fixtures`` is read as usual."""
+    repo = _commit_tree(
+        _write(tmp_path / "tests" / "fixtures" / "proj", {"clean.py": _CLEAN_PY})
+    )
+
+    payload = _run(repo)
+    _assert_only_clean_file_read(payload)
+    assert _skipped(payload) == {}
+
+
+def test_names_git_never_writes_or_windows_cannot_hold(tmp_path: Path) -> None:
+    """A ``.git`` part, in any case, is never written by git, so it leaves the
+    project. On Windows, device names and the ``GIT~1`` short alias name
+    something other than a project file, so they are unsupported there."""
+    repo = _project(tmp_path)
+    _write_index(
+        repo,
+        [
+            "clean.py",
+            ".git/config",
+            ".GIT/config",
+            "CON",
+            "nul",
+            "COM1",
+            "GIT~1/config",
+            "git~notes.md",
+        ],
+    )
+
+    payload = _run(repo)
+    _assert_only_clean_file_read(payload, passed=False)
+    if os.name == "nt":
+        assert _skipped(payload) == {
+            "outside_project": 2,
+            "unsupported_name": 4,
+            "missing": 1,
+        }
+    else:
+        assert _skipped(payload) == {"outside_project": 2, "missing": 5}
+
+
+def test_read_entry_reads_text_as_read_text_does(tmp_path: Path) -> None:
+    """Line endings come out as ``read_text`` gives them, so matcher line
+    numbers do not change."""
+    from apothem.conformity import _corpus
+
+    target = tmp_path / "mixed.md"
+    target.write_bytes(b"one\r\ntwo\rthree\nfour\n")
+    text, reason = _corpus.read_entry(tmp_path, _corpus.TrackedEntry(target, "100644"))
+    assert reason is None
+    assert text == target.read_text(encoding="utf-8")
+
+
+def test_docs_route_with_a_query_is_checked_by_its_path(tmp_path: Path) -> None:
+    """``/docs/guide?x=1.`` is the live ``/docs/guide`` page: the query is no
+    part of the name."""
+    _write(tmp_path, {"site/content/docs/guide.mdx": "page\n"})
+    result = link_check.check("[x](/docs/guide?x=1.)\n", tmp_path / "doc.md")
+    assert result.findings == []
+    assert result.internal_count == 1
+
+
+def test_docs_route_that_climbs_out_is_external(tmp_path: Path) -> None:
+    """``/docs/../x`` is no page route, so it is never looked up."""
+    _write(tmp_path, {"site/content/docs/index.mdx": "page\n"})
+    result = link_check.check("[x](/docs/../x)\n", tmp_path / "doc.md")
+    assert result.findings == []
+    assert result.external_count == 1
+
+
+def test_text_over_the_size_limit_fails_but_a_large_binary_does_not(
+    tmp_path: Path,
+) -> None:
+    """A text file over 8 MiB is not read, so a finding in it would go unseen
+    and the run does not pass. A binary over the limit is counted as not
+    text, as it would be at any size."""
+    repo = _project(tmp_path, {"big.yml": "small for now\n", "big.wasm": "x\n"})
+    with (repo / "big.yml").open("wb") as big:
+        big.write(_UNPINNED_WORKFLOW.encode("utf-8"))
+        big.write(b"# padding\n" * (_MAX_FILE_BYTES // 10 + 1))
+    with (repo / "big.wasm").open("wb") as binary:
+        binary.write(b"\0asm" + b"\0" * _MAX_FILE_BYTES)
+
+    payload = _run(repo)
+    _assert_only_clean_file_read(payload, passed=False)
+    assert _skipped(payload) == {"too_large": 1, "not_utf8_text": 1}
+
+
+def test_folder_that_cannot_be_looked_at_is_unreadable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A refused look at a folder on the way to a tracked file counts as
+    unreadable and fails the run; a name too long for the system is missing."""
+    repo = _project(tmp_path, {"locked/bad.yml": _UNPINNED_WORKFLOW})
+    real_lstat = os.lstat
+
+    def refusing_lstat(path: object, *args: object, **kwargs: object) -> object:
+        if Path(str(path)).name == "locked":
+            raise PermissionError(13, "Permission denied", str(path))
+        return real_lstat(path, *args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(os, "lstat", refusing_lstat)
+    payload = _run(repo)
+    _assert_only_clean_file_read(payload, passed=False)
+    assert _skipped(payload) == {"unreadable": 1}
+
+
+def test_overlong_name_counts_as_missing(tmp_path: Path) -> None:
+    """A name too long for this system names no file here: missing, which
+    does not fail the run."""
+    repo = _project(tmp_path)
+    _write_index(repo, ["clean.py", "a" * 300 + ".md"])
+
+    payload = _run(repo)
+    _assert_only_clean_file_read(payload)
+    assert _skipped(payload) == {"missing": 1}
+
+
+@pytest.mark.parametrize(
+    "parent",
+    ["tests/fixtures", "tests/conformity", "node_modules", "_vendor", ".apothem/plans"],
+)
+def test_exemptions_are_judged_inside_the_root(tmp_path: Path, parent: str) -> None:
+    """A project that sits under an exempt folder name is read as usual."""
+    repo = _commit_tree(_write(tmp_path / parent / "proj", {"clean.py": _CLEAN_PY}))
+
+    payload = _run(repo)
+    _assert_only_clean_file_read(payload)
+
+
+def test_exempt_folders_inside_the_project_are_counted(tmp_path: Path) -> None:
+    """Files the checks leave out by design are counted as exempt."""
+    repo = _project(
+        tmp_path,
+        {
+            "node_modules/x.py": "x = 1\n",
+            "src/tests/fixtures/y.py": "y = 1\n",
+            ".apothem/plans/z.md": "plan\n",
+            "logo.png": "image\n",
+        },
+    )
+
+    payload = _run(repo)
+    _assert_only_clean_file_read(payload)
+    assert _skipped(payload) == {"exempt": 4}
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "CON",
+        "prn",
+        "Aux",
+        "NUL ",
+        "COM5",
+        "lpt9",
+        "CONIN$",
+        "conout$",
+        "GIT~1",
+        "git~12",
+    ],
+)
+def test_windows_device_names_and_git_alias(name: str) -> None:
+    """Bare device names and ``.git``'s short alias are unsupported on Windows;
+    the same names with an extension, and ``git~notes``, are ordinary."""
+    from apothem.conformity import _corpus
+
+    expected = "unsupported_name" if os.name == "nt" else None
+    assert _corpus.name_skip(name) == expected
+    for ordinary in (f"{name.strip()}.md", "git~notes", "console.md"):
+        assert _corpus.name_skip(ordinary) is None
