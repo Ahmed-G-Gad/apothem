@@ -1062,13 +1062,11 @@ class _NoWrites(_HalfWrites):
 
 
 @pytest.mark.parametrize("taken", [True, False], ids=["taken", "not-taken"])
-@pytest.mark.parametrize("ahead", [False, True], ids=["copy", "ahead-and-copy"])
 def test_a_copy_write_that_fails_on_a_new_file_marks_the_output(
     request: pytest.FixtureRequest,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
-    ahead: bool,
     taken: bool,
 ) -> None:
     """A copy write that leaves a new file empty says so in the output.
@@ -1080,9 +1078,8 @@ def test_a_copy_write_that_fails_on_a_new_file_marks_the_output(
     file, which it would otherwise hold as a second refusal, said to be from
     a worker stopped while it wrote. One that does not take it (its test
     loop ended first, say) holds the empty file, so the run still fails.
-    The worker says both on ``stderr``.
-    With *ahead* the write the worker made as it held the refusal failed
-    the same way first and created the file.
+    The worker says both on ``stderr``. A write ahead that failed first is
+    covered by :func:`test_a_write_ahead_that_fails_on_a_new_file_keeps_it`.
     """
     conftest = _suite_conftest(request.config)
     late = tmp_path / "gw0.jsonl"
@@ -1102,9 +1099,6 @@ def test_a_copy_write_that_fails_on_a_new_file_marks_the_output(
 
     with monkeypatch.context() as patch:
         patch.setattr(Path, "open", no_open)
-        if ahead:
-            conftest._write_ahead(worker, worker.stash[conftest._HELD])
-            assert late.read_bytes() == b""
         conftest._report_held(worker, None, to_the_controller=True)
 
     assert late.read_bytes() == b""
@@ -1139,21 +1133,35 @@ def test_a_copy_write_that_fails_on_a_new_file_marks_the_output(
         assert "is empty" in held[0][1][0]
 
 
+@pytest.mark.parametrize("then", ["crash", "copy-taken", "copy-not-taken"])
 def test_a_write_ahead_that_fails_on_a_new_file_keeps_it(
-    request: pytest.FixtureRequest, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    request: pytest.FixtureRequest,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    then: str,
 ) -> None:
-    """An empty file a failed write ahead created stays, and fails the run.
+    """An empty file a failed write ahead created stays, and the run fails.
 
-    The worker may crash before it hands its refusals to the controller, and
-    the empty file is then the only sign of the refusal it held.
+    The write ahead says nothing in the worker's output. When the worker
+    crashes before it hands its refusals to the controller (*crash*), the
+    empty file is the only sign of the refusal it held, and the controller
+    holds it. When the worker hands them over and the copy beside the
+    hand-off fails the same way, the file still stays, and the copy marks
+    the output. A controller that takes that output reports the refusal
+    once (*copy-taken*); one that does not holds the empty file
+    (*copy-not-taken*).
     """
     conftest = _suite_conftest(request.config)
     late = tmp_path / "gw0.jsonl"
+    output: dict[str, object] = {}
     worker = SimpleNamespace(
         stash=pytest.Stash(),
-        workeroutput={},
+        workeroutput=output,
         workerinput={"workerid": "gw0", conftest._LATE_TO_THE_CONTROLLER: str(late)},
+        pluginmanager=SimpleNamespace(get_plugin=lambda name: None),
     )
+    refusal = ("after the last test", ("a refusal",))
+    worker.stash[conftest._HELD] = [refusal]
     opened = Path.open
 
     def no_open(path: Path, *args: str, **kwargs: str) -> _NoWrites:
@@ -1161,20 +1169,36 @@ def test_a_write_ahead_that_fails_on_a_new_file_keeps_it(
 
     with monkeypatch.context() as patch:
         patch.setattr(Path, "open", no_open)
-        conftest._write_ahead(worker, [("after the last test", ("a refusal",))])
+        conftest._write_ahead(worker, worker.stash[conftest._HELD])
+        assert late.is_file()
+        assert late.stat().st_size == 0
+        assert output == {}
+        if then != "crash":
+            conftest._report_held(worker, None, to_the_controller=True)
 
-    assert late.read_bytes() == b""
-    controller = SimpleNamespace(
-        stash=pytest.Stash(),
-        pluginmanager=SimpleNamespace(get_plugin=lambda name: None),
-    )
+    assert late.is_file()
+    assert late.stat().st_size == 0
+    # A Config of no session, for the isinstance check of the hook; the hook
+    # and _take_late read only its stash and plugin manager.
+    controller = pytest.Config.__new__(pytest.Config)
+    controller.stash = pytest.Stash()
+    plugins = SimpleNamespace(get_plugin=lambda name: None)
+    controller.pluginmanager = plugins  # type: ignore[assignment]
     controller.stash[conftest._LATE_FILES] = {str(late): "gw0"}
+    if then == "copy-taken":
+        node = SimpleNamespace(
+            workeroutput=output, config=controller, gateway=SimpleNamespace(id="gw0")
+        )
+        conftest.real_home_guard.pytest_testnodedown(node)
 
     conftest._take_late(controller)
 
     held = controller.stash.get(conftest._HELD, [])
-    assert [where for where, _ in held] == ["in xdist worker gw0"]
-    assert "is empty" in held[0][1][0]
+    if then == "copy-taken":
+        assert held == [("in xdist worker gw0, after the last test", ("a refusal",))]
+    else:
+        assert [where for where, _ in held] == ["in xdist worker gw0"]
+        assert "is empty" in held[0][1][0]
 
 
 def test_a_last_write_that_fails_on_a_new_file_says_the_run_fails(
@@ -1230,11 +1254,15 @@ def test_a_last_write_after_a_copy_left_the_file_empty_says_so(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """After a copy left the file empty, an empty file does not fail the run.
+    """After a copy left the file empty, a failed last write's note says so.
 
     The output the worker handed over says the copy left the file empty, so
-    a controller that takes it skips the file while it stays empty. The
-    worker's note on a later last write that fails says so.
+    a controller that takes it skips the file while it stays empty; the
+    run still fails on the refusals that output handed over. The worker's
+    note on a later last write that fails says the controller skips the
+    file. This checks that note, and that the file stays empty; the
+    controller's side is checked by
+    :func:`test_a_copy_write_that_fails_on_a_new_file_marks_the_output`.
     """
     conftest = _suite_conftest(request.config)
     late = tmp_path / "gw0.jsonl"
