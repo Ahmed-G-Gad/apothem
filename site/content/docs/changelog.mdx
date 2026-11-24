@@ -1257,37 +1257,40 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   folder, was able to list a `../` or absolute path, or track a link to a file
   elsewhere, and the gate read that file and printed its path. A link to
   `/dev/zero` made the gate read until it ran out of memory, a named pipe made
-  it wait forever, and a huge sparse file used up memory. The gate now reads a
-  listed path only when it is a regular file of at most 64 MiB holding UTF-8
-  text, reached through real folders inside the project. It counts every path it
-  skips, by reason, under `files_skipped`: entries that leave the project,
-  symbolic links and Windows junctions at any level (even ones that point inside
-  it, and entries the index marks as links), submodules, named pipes and
-  devices, missing and unreadable files, larger files, files that are not UTF-8
-  text, and the files it leaves out by design (binary suffixes, plan suites,
-  test fixtures and vendored trees, judged on the path inside the project). An
-  entry with an empty, `.` or `..` part (a leading `/` among them), or a part
-  that names `.git` on some system (`.git` in any case, `.git.`, `GIT~1`), also
-  fails the run, because git never writes one, and so does a text file over the
-  size limit or one that cannot be read, since a finding it holds would go
-  unseen, and the report names those entries under `files_not_passed`; a file
-  another program holds is tried again once; on Windows, a name the system
-  cannot hold as written, such as `a:b.md`, or one Windows reads as a device or
-  a short name (`CON`, `NUL`, `GIT~2`), is counted as an unsupported name
-  instead. A tracked file a link points to is still checked under its own path.
-  Each `git ls-files` call, in `--all-perwrite` and in `no-global-plans-grep`,
-  now stops after 60 seconds, so a repository setting that makes git wait, such
-  as an `include.path` that points at a named pipe, holds up each call for that
-  long at most; on Windows, when `git` is the launcher in Git's `cmd` folder,
-  the git it starts can keep running past the limit, and the wait for it may
-  never end; `no-global-plans-grep` reports its timeout as `check_error` and,
-  when git fails, gives git's exit code instead of git's own text. A
-  `--all-perwrite` run that read no file reports `passed: false` with
-  `empty_scope_expected: false`, plus a `check_error` with a fixed reason when
-  the file list cannot be read: git missing, git failing with a given exit code,
-  or the time limit. git's own message is left out, because it can name files
-  outside the project. Such a run exits `2` under `--strict`; it used to pass
-  with nothing checked.
+  it wait forever, and a huge file with no data written in it used up memory.
+  The gate now reads a listed path only when it is a regular file of at most 64
+  MiB holding UTF-8 text, reached through real folders inside the project. It
+  counts every path it skips, by reason, under `files_skipped`: entries that
+  leave the project, symbolic links and Windows junctions at any level (even
+  ones that point inside it, and entries the index marks as links), submodules,
+  named pipes and devices, missing and unreadable files, larger files, files
+  that are not UTF-8 text, and the files it leaves out by design (binary
+  suffixes, plan suites, test fixtures and vendored trees, judged on the path
+  inside the project). An entry with an empty, `.` or `..` part (a leading `/`
+  among them), or a part that names `.git` on Windows (`.git` in any case,
+  `.git.`, `GIT~1`), also fails the run, because git refuses each of these by
+  default, and so does a text file over the size limit or one that cannot be
+  read, since a finding it holds would go unseen, and the report names those
+  entries under `files_not_passed` and their reasons on stderr; a file another
+  program holds is tried again once, after 0.2 seconds. Over the size limit, a
+  file with a NUL byte in its first 8000 bytes counts as binary, as git counts
+  it, so a large zero-filled image does not fail the run; on Windows, a name the
+  system cannot hold as written, such as `a:b.md`, or one Windows reads as a
+  device or a short name (`CON`, `NUL`, `GIT~2`), is counted as an unsupported
+  name instead. A tracked file a link points to is still checked under its own
+  path. Each `git ls-files` call, in `--all-perwrite` and in
+  `no-global-plans-grep`, now stops after 60 seconds, so a repository setting
+  that makes git wait, such as an `include.path` that points at a named pipe,
+  holds up each call for that long at most; on Windows, when `git` is the
+  launcher in Git's `cmd` folder, the git it starts can keep running past the
+  limit, and the wait for it may never end; `no-global-plans-grep` reports its
+  timeout as `check_error` and, when git fails, gives git's exit code instead of
+  git's own text. A `--all-perwrite` run that read no file reports `passed:
+  false` with `empty_scope_expected: false`, plus a `check_error` with a fixed
+  reason when the file list cannot be read: git missing, git failing with a
+  given exit code, or the time limit. git's own message is left out, because it
+  can name files outside the project. Such a run exits `2` under `--strict`; it
+  used to pass with nothing checked.
 - **`link-check` no longer looks up a link to a network share.** It resolved
   every link in a checked file against the disk, so a Markdown link to
   `\\host\share\page.md` in any file of a checked project made Windows open a

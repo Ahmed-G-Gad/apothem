@@ -39,7 +39,7 @@ import threading
 import time
 from collections.abc import Callable
 from pathlib import Path
-from typing import TypeVar
+from typing import IO, TypeVar
 
 import pytest
 
@@ -1153,18 +1153,22 @@ def _shrink_limit(monkeypatch: pytest.MonkeyPatch, size: int) -> None:
     ("body", "reason"),
     [
         (_UNPINNED_WORKFLOW.encode("utf-8") + b"# pad\n" * 2000, "too_large"),
-        (b"\0" + _UNPINNED_WORKFLOW.encode("utf-8") + b"# pad\n" * 2000, "too_large"),
+        (
+            b"\0" + _UNPINNED_WORKFLOW.encode("utf-8") + b"# pad\n" * 2000,
+            "not_utf8_text",
+        ),
+        (b"\0" * 10000, "not_utf8_text"),
         (b"ok\n" + b"\xff" + b"x" * 10000, "not_utf8_text"),
         (b"a" * 4095 + "\u00e9".encode("utf-8") + b"a" * 6000, "too_large"),
     ],
-    ids=["text", "text-with-nul", "invalid-byte", "char-across-limit"],
+    ids=["text", "text-with-nul", "zero-filled", "invalid-byte", "char-across-limit"],
 )
 def test_file_over_the_limit_is_judged_by_all_its_first_bytes(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, body: bytes, reason: str
 ) -> None:
     """Over the limit, a file is text when its first bytes up to the limit
-    decode as UTF-8, the rule a smaller file is read by (a NUL is text). Text
-    over the limit fails the run and is named; anything else does not fail."""
+    decode as UTF-8 and hold no NUL. Text over the limit fails the run and is
+    named; a binary, a zero-filled image included, does not fail it."""
     repo = _project(tmp_path, {"big.yml": "small\n"})
     (repo / "big.yml").write_bytes(body)
     _shrink_limit(monkeypatch, 4096)
@@ -1258,7 +1262,7 @@ def test_windows_device_names_and_git_alias(name: str) -> None:
 
     expected = "unsupported_name" if os.name == "nt" else None
     assert _corpus.name_skip(name) == expected
-    for ordinary in (f"{name.strip()}.md", "git~notes", "console.md"):
+    for ordinary in (f"{name.strip()}.md", "git~notes", "git~\u0661", "console.md"):
         assert _corpus.name_skip(ordinary) is None
 
 
@@ -1294,26 +1298,82 @@ def test_outside_entry_with_an_exempt_suffix_is_still_counted(
     assert _skipped(payload) == {"outside_project": 1}
 
 
-def test_file_locked_briefly_is_read_after_one_retry(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """A refusal that clears on the retry (a file another program held for a
-    moment) does not fail the run."""
-    repo = _project(tmp_path, {"busy.md": "busy\n"})
-    real_open = Path.open
-    refused: list[str] = []
+def _refusal(winerror: int | None) -> PermissionError:
+    """A refused open, as Windows reports a file another program holds (32)
+    or a plain lack of permission (no winerror)."""
+    exc = PermissionError(13, "Permission denied")
+    if winerror is not None:
+        # ``winerror`` exists only on Windows; the corpus code reads it with
+        # getattr, so the test sets it on every system.
+        exc.winerror = winerror  # type: ignore[misc,attr-defined,unused-ignore]
+    return exc
 
-    def once_refusing_open(self: Path, *args: object, **kwargs: object) -> object:
-        if self.name == "busy.md" and not refused:
-            refused.append(self.name)
-            raise PermissionError(13, "Permission denied", str(self))
+
+def _refuse_opens(
+    monkeypatch: pytest.MonkeyPatch, name: str, times: int, winerror: int | None
+) -> list[float]:
+    """Refuse the first *times* opens of *name*; return the recorded sleeps."""
+    corpus = importlib.import_module("apothem.conformity._corpus")
+    real_open = Path.open
+    left = [times]
+    sleeps: list[float] = []
+
+    def refusing_open(self: Path, *args: object, **kwargs: object) -> object:
+        if self.name == name and left[0] > 0:
+            left[0] -= 1
+            raise _refusal(winerror)
         return real_open(self, *args, **kwargs)  # type: ignore[call-overload]
 
-    monkeypatch.setattr(Path, "open", once_refusing_open)
+    monkeypatch.setattr(Path, "open", refusing_open)
+    monkeypatch.setattr(corpus.time, "sleep", sleeps.append)
+    return sleeps
+
+
+@pytest.mark.parametrize("big", [False, True], ids=["small", "over-the-limit"])
+def test_file_held_briefly_is_read_after_one_wait(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, big: bool
+) -> None:
+    """An open refused because another program holds the file is tried once
+    more after a short wait, starting afresh, so a hold that clears in time
+    does not change the result."""
+    repo = _project(tmp_path, {"busy.yml": _UNPINNED_WORKFLOW})
+    if big:
+        (repo / "busy.yml").write_bytes(
+            _UNPINNED_WORKFLOW.encode("utf-8") + b"# pad\n" * 1000
+        )
+        _shrink_limit(monkeypatch, 4096)
+    sleeps = _refuse_opens(monkeypatch, "busy.yml", 1, winerror=32)
+
     payload = _run(repo)
-    assert refused == ["busy.md"]
-    assert payload["passed"] is True
-    assert payload["files_scanned"] == 2
+    assert sleeps == [0.2]
+    assert payload["passed"] is False
+    if big:
+        assert _skipped(payload) == {"too_large": 1}
+    else:
+        assert payload["files_scanned"] == 2
+        assert _skipped(payload) == {}
+
+
+@pytest.mark.parametrize("winerror", [None, 32], ids=["no-permission", "still-held"])
+def test_refused_open_is_waited_for_at_most_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, winerror: int | None
+) -> None:
+    """A lack of permission is not waited for at all, and a file still held
+    after one wait is unreadable."""
+    repo = _project(tmp_path, {"busy.yml": _UNPINNED_WORKFLOW})
+    sleeps = _refuse_opens(monkeypatch, "busy.yml", 2, winerror=winerror)
+    if sys.platform == "win32":
+        import _winapi
+
+        def denied(*_args: object) -> int:
+            raise _refusal(5)
+
+        monkeypatch.setattr(_winapi, "CreateFile", denied)
+
+    payload = _run(repo)
+    assert sleeps == ([] if winerror is None else [0.2])
+    _assert_only_clean_file_read(payload, passed=False)
+    assert _skipped(payload) == {"unreadable": 1}
 
 
 @pytest.mark.parametrize(
@@ -1329,9 +1389,292 @@ def test_file_locked_briefly_is_read_after_one_retry(
         ".git::$INDEX_ALLOCATION/x",
     ],
 )
-def test_every_spelling_of_git_leaves_the_project(name: str) -> None:
-    """git refuses every alias of ``.git`` on every system, so each one means a
-    hand-written index, like ``.git`` itself."""
+def test_ntfs_spellings_of_git_leave_the_project(name: str) -> None:
+    """git refuses the NTFS spellings of ``.git`` on every system by default,
+    so each one means a hand-written index, like ``.git`` itself."""
     from apothem.conformity import _corpus
 
     assert _corpus.name_skip(name) == "outside_project"
+
+
+class _RecordingHandle:
+    """A binary file handle that records each read size, and can fail a read."""
+
+    def __init__(self, handle: IO[bytes], fail_read: int | None = None) -> None:
+        self._handle = handle
+        self._fail_read = fail_read
+        self.requests: list[int] = []
+
+    def __enter__(self) -> _RecordingHandle:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self._handle.close()
+
+    def fileno(self) -> int:
+        return int(self._handle.fileno())
+
+    def read(self, size: int = -1) -> bytes:
+        self.requests.append(size)
+        if self._fail_read is not None and len(self.requests) == self._fail_read:
+            raise _refusal(33)
+        return bytes(self._handle.read(size))
+
+
+def _record_opens(
+    monkeypatch: pytest.MonkeyPatch, name: str, fail_read: int | None = None
+) -> list[_RecordingHandle]:
+    real_open = Path.open
+    handles: list[_RecordingHandle] = []
+
+    def recording_open(self: Path, *args: object, **kwargs: object) -> object:
+        handle = real_open(self, *args, **kwargs)  # type: ignore[call-overload]
+        if self.name != name:
+            return handle
+        handles.append(_RecordingHandle(handle, fail_read))
+        return handles[-1]
+
+    monkeypatch.setattr(Path, "open", recording_open)
+    return handles
+
+
+def test_small_file_costs_a_small_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A file is read with one request sized to it, not to the limit."""
+    repo = _project(tmp_path, {"doc.md": "x" * 3000})
+    handles = _record_opens(monkeypatch, "doc.md")
+
+    payload = _run(repo)
+    assert payload["files_scanned"] == 2
+    assert [handle.requests for handle in handles] == [[3001]]
+
+
+def test_file_that_grows_while_read_is_read_on_or_counted(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A file that grew after its size was looked up is read on in blocks,
+    and one that grew past the limit counts as too_large."""
+    corpus = importlib.import_module("apothem.conformity._corpus")
+    target = tmp_path / "grows.md"
+    target.write_bytes(b"a" * 10)
+    real_fstat = os.fstat
+    monkeypatch.setattr(
+        corpus.os,
+        "fstat",
+        lambda fd: os.stat_result((*real_fstat(fd)[:6], 4, *real_fstat(fd)[7:])),
+    )
+    entry = corpus.TrackedEntry(target, "100644")
+    assert corpus.read_entry(tmp_path, entry) == ("a" * 10, None)
+    _shrink_limit(monkeypatch, 6)
+    assert corpus.read_entry(tmp_path, entry) == (None, "too_large")
+
+
+@pytest.mark.parametrize(
+    ("body", "reason"),
+    [
+        (b"a" * 2100 + b"\xff" + b"a" * 5000, "not_utf8_text"),
+        (b"a" * 2100 + b"\0" + b"a" * 5000, "not_utf8_text"),
+        (b"a" * 1023 + "\u00e9".encode("utf-8") + b"a" * 5000, "too_large"),
+        (b"a" * 3000 + "\u20ac".encode("utf-8") + b"a" * 5000, "too_large"),
+    ],
+    ids=["bad-byte-third-block", "nul-third-block", "char-across-block", "char-late"],
+)
+def test_file_over_the_limit_is_decoded_across_blocks(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, body: bytes, reason: str
+) -> None:
+    """Every block up to the limit is judged, and a character split between
+    two blocks is still text."""
+    corpus = importlib.import_module("apothem.conformity._corpus")
+    repo = _project(tmp_path, {"big.md": "small\n"})
+    (repo / "big.md").write_bytes(body)
+    _shrink_limit(monkeypatch, 4096)
+    monkeypatch.setattr(corpus, "_SNIFF_BLOCK_BYTES", 1024)
+
+    assert _skipped(_run(repo)) == {reason: 1}
+
+
+def test_file_that_ends_before_the_limit_is_judged_whole() -> None:
+    """A file shorter than the limit (one that shrank after its size was
+    looked up) that ends in a cut character is not text."""
+    import io
+
+    corpus = importlib.import_module("apothem.conformity._corpus")
+    assert corpus._oversized_reason(io.BytesIO(b"abc\xe2\x82")) == "not_utf8_text"
+    assert corpus._oversized_reason(io.BytesIO(b"abc\xe2\x82\xac")) == "too_large"
+
+
+def test_read_error_after_the_open_is_unreadable_and_not_retried(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An error while reading, such as a range of the file another program
+    has locked, counts as unreadable at once."""
+    corpus = importlib.import_module("apothem.conformity._corpus")
+    repo = _project(tmp_path, {"locked.md": "x" * 100})
+    sleeps: list[float] = []
+    monkeypatch.setattr(corpus.time, "sleep", sleeps.append)
+    handles = _record_opens(monkeypatch, "locked.md", fail_read=1)
+
+    payload = _run(repo)
+    assert len(handles) == 1
+    assert sleeps == []
+    _assert_only_clean_file_read(payload, passed=False)
+    assert _skipped(payload) == {"unreadable": 1}
+
+
+@pytest.mark.parametrize(
+    ("error", "reason"),
+    [
+        (OSError(22, "Invalid argument"), "unreadable"),
+        (FileNotFoundError(2, "No such file"), "missing"),
+        (NotADirectoryError(20, "Not a directory"), "missing"),
+    ],
+    ids=["cannot-open", "deleted", "folder-replaced"],
+)
+def test_open_error_after_the_file_was_found(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, error: OSError, reason: str
+) -> None:
+    """Once the file was found, only an error saying it is gone is missing;
+    any other, such as an online-only file whose sync program is stopped, is
+    unreadable and fails the run."""
+    repo = _project(tmp_path, {"cloud.yml": _UNPINNED_WORKFLOW})
+    real_open = Path.open
+
+    def failing_open(self: Path, *args: object, **kwargs: object) -> object:
+        if self.name == "cloud.yml":
+            raise error
+        return real_open(self, *args, **kwargs)  # type: ignore[call-overload]
+
+    monkeypatch.setattr(Path, "open", failing_open)
+    payload = _run(repo)
+    _assert_only_clean_file_read(payload, passed=reason == "missing")
+    assert _skipped(payload) == {reason: 1}
+
+
+def test_named_files_are_capped_and_sorted(tmp_path: Path) -> None:
+    """files_not_passed holds at most ten names per reason, sorted;
+    files_skipped holds the count."""
+    repo = _project(tmp_path)
+    names: list[str | bytes | tuple[str, int, int]] = ["clean.py"]
+    names += [f"../f{n:02}.md" for n in range(12, -1, -1)]
+    _write_index(repo, names)
+
+    payload = _run(repo)
+    assert payload["files_not_passed"] == {
+        "outside_project": [f"../f{n:02}.md" for n in range(10)]
+    }
+    assert _skipped(payload) == {"outside_project": 13}
+
+
+def test_strict_run_says_on_stderr_why_it_did_not_pass(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The failing reasons and their counts reach stderr, for a CI log."""
+    repo = _project(tmp_path)
+    _write_index(repo, ["clean.py", "../above.md"])
+
+    assert gate.main(["gate", "--all-perwrite", str(repo), "--strict"]) == 2
+    assert (
+        "the run did not pass: tracked files it could not check: "
+        "outside_project (1)" in capsys.readouterr().err
+    )
+
+
+@pytest.mark.parametrize(
+    ("offset", "reason"), [(100, "not_utf8_text"), (9000, "too_large")]
+)
+def test_nul_marks_a_large_file_binary_only_near_its_start(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, offset: int, reason: str
+) -> None:
+    """Over the limit, a NUL in the first 8000 bytes marks a binary, as git
+    judges it; a stray NUL further into a text dump does not hide it."""
+    body = bytearray(b"a" * 20000)
+    body[offset] = 0
+    repo = _project(tmp_path, {"dump.sql": "small\n"})
+    (repo / "dump.sql").write_bytes(bytes(body))
+    _shrink_limit(monkeypatch, 16384)
+
+    assert _skipped(_run(repo)) == {reason: 1}
+
+
+def test_file_of_exactly_the_limit_is_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The limit is the largest size read, not the first size refused."""
+    repo = _project(tmp_path, {"edge.yml": "x\n"})
+    body = _UNPINNED_WORKFLOW.encode("utf-8")
+    (repo / "edge.yml").write_bytes(body)
+    _shrink_limit(monkeypatch, len(body))
+
+    payload = _run(repo)
+    assert payload["files_scanned"] == 2
+    assert _skipped(payload) == {}
+
+
+def test_named_files_are_sorted_whatever_the_listing_order(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """files_not_passed is sorted even when the entries arrive out of order."""
+    from apothem.conformity._corpus import TrackedEntry
+
+    repo = _project(tmp_path)
+    entries = [
+        TrackedEntry(repo / "clean.py", "100644", name="clean.py"),
+        TrackedEntry(repo, "100644", "outside_project", "../b.md"),
+        TrackedEntry(repo, "100644", "outside_project", "../a.md"),
+    ]
+    monkeypatch.setattr(gate, "_corpus_tracked_files", lambda _root: entries)
+
+    assert _run(repo)["files_not_passed"] == {"outside_project": ["../a.md", "../b.md"]}
+
+
+def test_stderr_gives_the_full_count_not_the_sample_size(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """With more failing entries than the report names, stderr says how many."""
+    repo = _project(tmp_path)
+    names: list[str | bytes | tuple[str, int, int]] = ["clean.py"]
+    names += [f"../f{n:02}.md" for n in range(13)]
+    _write_index(repo, names)
+
+    assert gate.main(["gate", "--all-perwrite", str(repo), "--strict"]) == 2
+    assert "outside_project (13)" in capsys.readouterr().err
+
+
+def _hold_without_sharing(path: Path) -> int:
+    """Open *path* the way a program that shares nothing does; return the handle."""
+    import _winapi
+
+    return int(
+        _winapi.CreateFile(
+            str(path), _winapi.GENERIC_READ, 0, 0, _winapi.OPEN_EXISTING, 0, 0
+        )
+    )
+
+
+@pytest.mark.skipif(
+    sys.platform != "win32", reason="only Windows holds a file this way"
+)
+@pytest.mark.parametrize("released", [True, False], ids=["let-go", "still-held"])
+def test_file_a_program_holds_on_windows(tmp_path: Path, released: bool) -> None:
+    """A real hold by another program: the gate waits once, then reads the
+    file if the hold is over, and counts it unreadable if not."""
+    import _winapi
+    import threading
+
+    from apothem.conformity import _corpus
+
+    target = tmp_path / "held.md"
+    target.write_bytes(b"held\n")
+    handle = _hold_without_sharing(target)
+    timer = threading.Timer(0.05, _winapi.CloseHandle, (handle,))
+    if released:
+        timer.start()
+    try:
+        result = _corpus.read_entry(tmp_path, _corpus.TrackedEntry(target, "100644"))
+    finally:
+        if released:
+            timer.join()
+        else:
+            _winapi.CloseHandle(handle)
+    assert result == (("held\n", None) if released else (None, "unreadable"))

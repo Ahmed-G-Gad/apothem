@@ -122,9 +122,9 @@ by reason:
 
 - `outside_project`: an entry with an empty, `.` or `..` part, such as
   `../notes.md`, `a//b.md` or a name starting with `/`, or a part that names
-  `.git` on some system: `.git` in any case, also with dots, spaces or a
-  colon after it, and `GIT~1`. git never writes one, so the run does not
-  pass;
+  `.git` on Windows: `.git` in any case, also with dots, spaces or a colon
+  after it, and `GIT~1`. git refuses each of these by default on every
+  system, so the run does not pass;
 - `unsupported_name`: on Windows, a name the system cannot hold as written:
   one with a colon (as in `a:b.md`, whose `a:` reads as a drive), a backslash,
   one of `<>"|?*` or a control character, or a part that ends in a dot or a
@@ -145,13 +145,17 @@ by reason:
 - `missing`: a tracked file that is not in the working tree, including a name
   git listed in bytes that are not UTF-8;
 - `unreadable`: a file, or a folder on the way to it, that the system will not
-  let the gate look at or open, for lack of permission or because another
-  program still holds it when the gate tries again a moment later. The run
-  does not pass, since a finding in it would go unseen;
+  let the gate look at, open or read: for lack of permission, because
+  another program holds the file or part of it, or because the system cannot
+  open it, such as an online-only file whose sync program is stopped. When
+  another program holds the whole file, the gate waits 0.2 seconds and tries
+  once more. The run does not pass, since a finding in it would go unseen;
 - `too_large`: a file over 64 MiB whose first 64 MiB are UTF-8 text. The run
   does not pass, for the same reason;
-- `not_utf8_text`: a file whose bytes are not UTF-8 text; over 64 MiB, the
-  first 64 MiB decide;
+- `not_utf8_text`: a file whose bytes are not UTF-8 text, such as a UTF-16
+  file with a byte-order mark. Over 64 MiB, the first 64 MiB decide, and a
+  NUL byte in the first 8000 bytes marks the file as binary, as git does, so
+  a large zero-filled image does not fail the run;
 - `exempt`: a file the checks leave out by design: one whose suffix marks it
   as binary, such as an image or an archive, and anything under a
   `.apothem/plans`, `tests/conformity`, `tests/fixtures`, `_vendor` or
@@ -161,7 +165,9 @@ by reason:
 
 When a run does not pass for `outside_project`, `unreadable` or `too_large`,
 `files_not_passed` names the entries behind each of those reasons, as git
-lists them, up to 10 per reason.
+lists them, sorted, up to 10 per reason; `files_skipped` has the full count.
+A line on stderr names those reasons and their counts too, so a CI log that
+shows only stderr says why the run failed.
 
 Two things these checks do not see. A hard link reads as an ordinary file, so
 a hard link to a file elsewhere is read; git does not create one. And each
@@ -178,6 +184,8 @@ unchecked a `/docs/` route segment holding a colon, which Windows reads as a
 drive, and a link it finds only through a part that ends in a dot or a
 space: Windows can drop that ending (`ci.yml.` finds `ci.yml`), so the find
 proves nothing. Such a link that finds nothing is reported dead as usual.
+In every system, a `/docs/` route with a `.` or `..` segment, such as
+`/docs/../x`, counts as external and is not looked up.
 
 Each `git ls-files` call gets 60 seconds: the one this run makes, and the one
 in `no-global-plans-grep`, whose report then carries the same `check_error`

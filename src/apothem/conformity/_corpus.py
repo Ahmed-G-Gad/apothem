@@ -8,7 +8,7 @@ folder from someone else, in an archive or a shared folder. git lists an index
 entry exactly as the index holds it, and the working tree is whatever arrived,
 so the list can point anywhere: an entry such as ``../x`` or an absolute path,
 a symbolic link or Windows junction to a file or folder elsewhere, a named pipe
-whose read waits for ever, a device, or a huge sparse file. This module lists
+whose read waits for ever, a device, or a huge file. This module lists
 the entries and reads only the regular files inside the project, and for every
 other entry it says why it was not read, so the report can count them.
 :func:`lstat_inside` also keeps ``link_check`` from looking up a link target
@@ -32,25 +32,32 @@ import codecs
 import os
 import stat
 import subprocess
+import sys
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Final
+from typing import BinaryIO, Final
 
 from apothem.conformity._git import run_git
 from apothem.conformity._grep_base import GIT_LS_FILES_TIMEOUT_SECONDS
 
 # The largest file the corpus run reads, in bytes. It is well above any text a
 # project tracks, lockfiles and notebooks included; a larger tracked file is
-# skipped and counted, so a huge or sparse file cannot use up the machine's
-# memory.
+# skipped and counted, so a huge file cannot use up the machine's memory.
 MAX_FILE_BYTES: Final[int] = 64 * 1024 * 1024
 # The block size for judging whether a file over the limit is text.
 _SNIFF_BLOCK_BYTES: Final[int] = 1024 * 1024
-# How long to wait before the one retry of an open the system refused: a
-# file another program holds for a moment (Windows reports that as a
-# refusal) is usually free again by then.
+# How long to wait before the one retry of an open refused because another
+# program holds the file: such a hold is usually over by then.
 _RETRY_DELAY_SECONDS: Final[float] = 0.2
+# Windows' error for a file another program has open without sharing it.
+_SHARING_VIOLATION: Final[int] = 32
+# The share modes read, write and delete, so a probe open of a file conflicts
+# only with a program that shares nothing.
+_SHARE_ALL: Final[int] = 0x7
+# How many leading bytes of a file over the limit may hold a NUL before it
+# counts as binary: the span git looks at for the same question.
+_BINARY_SNIFF_BYTES: Final[int] = 8000
 
 # The index modes git gives a symbolic link and a submodule.
 _LINK_MODE: Final[str] = "120000"
@@ -193,7 +200,7 @@ def name_skip(name: str) -> str | None:
     git writes a name as parts joined by ``/``, and never an empty, ``.`` or
     ``..`` part, so a name with one (a leading ``/`` is an empty first part)
     was written by hand to reach outside the project: :data:`SKIP_OUTSIDE`.
-    So is a part that names ``.git`` on any system (see :func:`_names_git`),
+    So is a part that names ``.git`` on Windows (see :func:`_names_git`),
     which git never writes either.
     On Windows, a part with a colon (``a:b.md`` reads as drive ``a:``, and a
     colon later in a part names a file stream), a backslash (a folder
@@ -213,7 +220,7 @@ def name_skip(name: str) -> str | None:
 
 
 def _names_git(part: str) -> bool:
-    """Return True when *part* names the ``.git`` folder on some system.
+    """Return True when *part* names the ``.git`` folder on Windows (NTFS).
 
     That is ``.git`` in any case, followed by nothing but dots and spaces
     (which Windows drops) or by a colon (a file stream), and ``GIT~1``, its
@@ -295,71 +302,138 @@ def lstat_inside(root: Path, path: Path) -> os.stat_result | str:
 
 
 def _missing_or_unreadable(exc: BaseException) -> str:
-    """Return the skip reason for an error looking at or opening a path.
+    """Return the skip reason for an error looking at a path with ``os.lstat``.
 
-    Only a refusal (``PermissionError``: no permission, or on Windows a file
-    another program holds, which Python reports the same way) means the file
-    is there but cannot be read: :data:`SKIP_UNREADABLE`, which fails the
-    run. Any other error, a name the system rejects or one too long for it
-    included, means there is no such file here: :data:`SKIP_MISSING`.
+    Only a refusal (``PermissionError``: no permission) means the path is there
+    but cannot be looked at: :data:`SKIP_UNREADABLE`, which fails the run. Any
+    other error, a name the system rejects or one too long for it included,
+    means there is no such file here: :data:`SKIP_MISSING`.
     """
     if isinstance(exc, PermissionError):
         return SKIP_UNREADABLE
     return SKIP_MISSING
 
 
-def _read_bytes(path: Path, limit: int) -> bytes | str:
-    """Return up to *limit* + 1 bytes of *path*, or the reason it cannot be read.
+def _read_failure(exc: OSError) -> str:
+    """Return the skip reason for an error opening or reading a regular file.
 
-    An open the system refuses is tried once more after a short wait, so a
-    file another program holds for a moment does not fail the run.
+    ``os.lstat`` has just found the file, so only an error saying it is gone
+    now (deleted, or a folder on the way replaced) means :data:`SKIP_MISSING`.
+    Any other error, a refusal or a file the system cannot open (such as an
+    online-only placeholder whose sync program is stopped), means the file is
+    there but cannot be read: :data:`SKIP_UNREADABLE`, which fails the run.
+    """
+    if isinstance(exc, (FileNotFoundError, NotADirectoryError)):
+        return SKIP_MISSING
+    return SKIP_UNREADABLE
+
+
+def _held_by_another_program(path: Path, exc: OSError) -> bool:
+    """Return True when the refused open of *path* (*exc*) is worth one retry:
+    another program has the file open without sharing it.
+
+    Windows reports that as a refusal (``PermissionError``), but Python's
+    ``open`` keeps only the C library's error number, not the Windows error,
+    so the file is opened once more through the Windows API, which reports
+    it. A refusal for lack of permission, or a file being deleted, is not
+    worth a retry. Elsewhere, no program can hold a file this way.
+    """
+    if getattr(exc, "winerror", None) == _SHARING_VIOLATION:
+        return True
+    if sys.platform != "win32" or not isinstance(exc, PermissionError):
+        return False
+    import _winapi  # Windows only, so imported here.
+
+    try:
+        handle = _winapi.CreateFile(
+            str(path), _winapi.GENERIC_READ, _SHARE_ALL, 0, _winapi.OPEN_EXISTING, 0, 0
+        )
+    except OSError as probe:
+        return getattr(probe, "winerror", None) == _SHARING_VIOLATION
+    # The file opens now: whatever held it has let go.
+    _winapi.CloseHandle(handle)
+    return True
+
+
+def _read_file(path: Path) -> bytes | str:
+    """Return the bytes of the regular file *path*, or why it was not read.
+
+    The file is opened once per attempt, and each attempt starts afresh. An
+    open refused because another program holds the file is tried once more
+    after :data:`_RETRY_DELAY_SECONDS`, since such a hold is often brief. A
+    refusal for lack of permission is not retried, and neither is an error
+    while reading, such as a range of the file another program has locked.
     """
     for attempt in range(2):
         try:
-            with path.open("rb") as handle:
-                return handle.read(limit + 1)
-        except PermissionError:
-            if attempt == 0:
+            handle = path.open("rb")
+        except OSError as exc:
+            if attempt == 0 and _held_by_another_program(path, exc):
                 time.sleep(_RETRY_DELAY_SECONDS)
                 continue
-            return SKIP_UNREADABLE
+            return _read_failure(exc)
+        try:
+            with handle:
+                return _read_open_file(handle)
         except OSError as exc:
-            return _missing_or_unreadable(exc)
+            return _read_failure(exc)
     return SKIP_UNREADABLE  # pragma: no cover - the loop always returns
 
 
-def _oversized_reason(path: Path) -> str:
-    """Return the skip reason for a file over :data:`MAX_FILE_BYTES`.
+def _read_open_file(handle: BinaryIO) -> bytes | str:
+    """Return the bytes of the open file *handle*, or why they are not read.
 
-    The file is judged by the rule a smaller file is read by, over all of its
-    first :data:`MAX_FILE_BYTES` bytes, read in blocks: when they decode as
-    UTF-8 (a character cut at the limit included), the file is text the run
-    cannot read, :data:`SKIP_TOO_LARGE`, which fails the run since a finding
-    in it would go unseen. Otherwise it is :data:`SKIP_NOT_TEXT`, as it would
-    be at any size.
+    A file over :data:`MAX_FILE_BYTES` is judged by :func:`_oversized_reason`.
+    Otherwise the first read asks for the file's size plus one byte, so a small
+    file costs a small read, and a file that grew since is read on in blocks;
+    one that grew past the limit is :data:`SKIP_TOO_LARGE`.
+    """
+    size = os.fstat(handle.fileno()).st_size
+    if size > MAX_FILE_BYTES:
+        return _oversized_reason(handle)
+    blocks: list[bytes] = []
+    total = 0
+    wanted = size + 1
+    while True:
+        block = handle.read(wanted)
+        blocks.append(block)
+        total += len(block)
+        if total > MAX_FILE_BYTES:
+            return SKIP_TOO_LARGE
+        if len(block) < wanted:
+            return b"".join(blocks)
+        wanted = min(_SNIFF_BLOCK_BYTES, MAX_FILE_BYTES + 1 - total)
+
+
+def _oversized_reason(handle: BinaryIO) -> str:
+    """Return the skip reason for an open file over :data:`MAX_FILE_BYTES`.
+
+    The file is judged on all of its first :data:`MAX_FILE_BYTES` bytes, read
+    in blocks. When they decode as UTF-8, the file is text the run cannot read,
+    :data:`SKIP_TOO_LARGE`, which fails the run since a finding in it would go
+    unseen; a character cut at the limit still counts as text. A NUL in the
+    first :data:`_BINARY_SNIFF_BYTES` marks a binary file, as it does for git,
+    so a large zero-filled image or UTF-16 file does not fail the run: like
+    bytes that do not decode, it is :data:`SKIP_NOT_TEXT`. A NUL further on
+    is text, as in a smaller file.
     """
     decoder = codecs.getincrementaldecoder("utf-8")()
     left = MAX_FILE_BYTES
-    for attempt in range(2):
-        try:
-            with path.open("rb") as handle:
-                while left > 0:
-                    block = handle.read(min(_SNIFF_BLOCK_BYTES, left))
-                    if not block:
-                        break
-                    left -= len(block)
-                    decoder.decode(block)
-            return SKIP_TOO_LARGE
-        except UnicodeDecodeError:
-            return SKIP_NOT_TEXT
-        except PermissionError:
-            if attempt == 0:
-                time.sleep(_RETRY_DELAY_SECONDS)
-                continue
-            return SKIP_UNREADABLE
-        except OSError as exc:
-            return _missing_or_unreadable(exc)
-    return SKIP_UNREADABLE  # pragma: no cover - the loop always returns
+    try:
+        while left > 0:
+            block = handle.read(min(_SNIFF_BLOCK_BYTES, left))
+            if not block:
+                # The file ended before the limit: a cut character is not text.
+                decoder.decode(b"", final=True)
+                break
+            sniffed = MAX_FILE_BYTES - left
+            if b"\0" in block[: max(0, _BINARY_SNIFF_BYTES - sniffed)]:
+                return SKIP_NOT_TEXT
+            left -= len(block)
+            decoder.decode(block)
+    except UnicodeDecodeError:
+        return SKIP_NOT_TEXT
+    return SKIP_TOO_LARGE
 
 
 def read_entry(root: Path, entry: TrackedEntry) -> tuple[str | None, str | None]:
@@ -388,14 +462,9 @@ def read_entry(root: Path, entry: TrackedEntry) -> tuple[str | None, str | None]
         return None, info
     if not stat.S_ISREG(info.st_mode):
         return None, SKIP_NOT_REGULAR
-    if info.st_size > MAX_FILE_BYTES:
-        return None, _oversized_reason(entry.path)
-    data = _read_bytes(entry.path, MAX_FILE_BYTES)
+    data = _read_file(entry.path)
     if isinstance(data, str):
         return None, data
-    if len(data) > MAX_FILE_BYTES:
-        # The file grew past the limit after it was checked.
-        return None, SKIP_TOO_LARGE
     try:
         text = data.decode("utf-8")
     except UnicodeDecodeError:

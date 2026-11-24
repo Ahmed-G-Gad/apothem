@@ -1045,6 +1045,27 @@ def _strict_exit_with_advisory(
     return _gate_exit(blocking_passed, strict=strict)
 
 
+def _report_files_not_passed(payload: dict[str, object]) -> None:
+    """Say on stderr which skip reasons kept a corpus run from passing.
+
+    The JSON report on stdout names the files; this line makes the cause
+    visible in a CI log that shows only stderr.
+    """
+    not_passed = payload.get("files_not_passed")
+    skipped = payload.get("files_skipped")
+    if not isinstance(not_passed, dict) or not not_passed:
+        return
+    counts = skipped if isinstance(skipped, dict) else {}
+    reasons = ", ".join(
+        f"{reason} ({counts.get(reason, len(names))})"
+        for reason, names in not_passed.items()
+    )
+    sys.stderr.write(
+        f"conformity-gate: the run did not pass: tracked files it could not "
+        f"check: {reasons}; files_not_passed in the report names them\n"
+    )
+
+
 def _resolve_validator(name: str) -> tuple[str, bool]:
     """Resolve a short or full validator name to its canonical form.
 
@@ -1310,6 +1331,60 @@ def _run_matcher(module_name: str, content: str, path: Path, root: Path) -> Any:
     return check(content, path)
 
 
+def _is_corpus_exempt(inside: Path) -> bool:
+    """Return True for a path inside the root that the corpus run leaves out.
+
+    That is a binary suffix, a plan suite, a conformity or test fixture, and
+    vendored or third-party trees, which carry upstream conventions, not the
+    apothem quality bar (``schemas/header-exceptions.txt``: ``**/_vendor/**``,
+    ``**/node_modules/**``).
+    """
+    return (
+        inside.suffix.lower() in _CORPUS_BINARY_SUFFIXES
+        or _is_plan_suite_path(inside)
+        or _is_corpus_fixture_path(inside)
+        or "_vendor" in inside.parts
+        or "node_modules" in inside.parts
+    )
+
+
+def _record_file_findings(
+    content: str,
+    abs_path: Path,
+    root: Path,
+    *,
+    blocking: dict[str, dict[str, object]],
+    advisory: dict[str, dict[str, object]],
+) -> None:
+    """Run every applicable per-write matcher on one file the corpus run read,
+    adding its findings to the *blocking* or *advisory* tally of that matcher.
+    """
+    rel = str(abs_path.relative_to(root))
+    for module_name in GREP_MODULES:
+        if not _matcher_applies_to(module_name, abs_path):
+            continue
+        try:
+            result = _run_matcher(module_name, content, abs_path, root)
+        except Exception:  # noqa: S112, BLE001, RUF100 — fail-open isolation: one matcher's internal error (load failure or check() raise) must never fail-close the corpus run; the matcher contributes no finding for this file and the run proceeds, mirroring run_orchestrator's per-matcher isolation boundary (BLE001 is the intent marker; RUF100 self-suppresses because ruff's BLE family is not active)
+            continue
+        if getattr(result, "note", None) is not None:
+            # A matcher's scope-not-resolvable skip — not a finding.
+            continue
+        findings = getattr(result, "findings", None) or []
+        if not findings:
+            continue
+        bucket = blocking if module_name in _BLOCKING_PER_WRITE_GREPS else advisory
+        entry = bucket.setdefault(
+            module_name,
+            {"finding_count": 0, "file_count": 0, "files": []},
+        )
+        entry["finding_count"] = cast(int, entry["finding_count"]) + len(findings)
+        entry["file_count"] = cast(int, entry["file_count"]) + 1
+        sample = entry["files"]
+        if isinstance(sample, list) and len(sample) < _PERWRITE_FILE_SAMPLE_CAP:
+            sample.append(rel)
+
+
 def _run_all_perwrite(root: Path) -> tuple[bool, str]:
     """Run every per-Write matcher over the git-tracked corpus under *root*.
 
@@ -1334,7 +1409,9 @@ def _run_all_perwrite(root: Path) -> tuple[bool, str]:
     among them) also fails the run: git never writes one, so the index was
     written by hand. So does a text file over the size limit or one that
     cannot be read, since a finding it holds would go unseen; the payload's
-    ``files_not_passed`` names the entries behind each such reason. The caller
+    ``files_not_passed`` names the entries behind each such reason, at most
+    ``_PERWRITE_FILE_SAMPLE_CAP`` of them (``files_skipped`` has the count).
+    The caller
     maps ``passed`` to an exit code under the advisory-by-default posture
     (``--strict`` makes a run that did not pass exit non-zero).
     """
@@ -1368,18 +1445,8 @@ def _run_all_perwrite(root: Path) -> tuple[bool, str]:
             continue
         # The exemptions are judged on the path inside the project, so a
         # project that itself sits under tests/fixtures or node_modules is
-        # read as usual. Vendored / third-party trees carry upstream
-        # conventions, not the apothem quality bar — exempt per
-        # schemas/header-exceptions.txt (`**/_vendor/**`,
-        # `**/node_modules/**`).
-        inside = abs_path.relative_to(root)
-        if (
-            abs_path.suffix.lower() in _CORPUS_BINARY_SUFFIXES
-            or _is_plan_suite_path(inside)
-            or _is_corpus_fixture_path(inside)
-            or "_vendor" in inside.parts
-            or "node_modules" in inside.parts
-        ):
+        # read as usual.
+        if _is_corpus_exempt(abs_path.relative_to(root)):
             skipped[SKIP_EXEMPT] += 1
             continue
         content, reason = read_entry(root, tracked)
@@ -1387,30 +1454,9 @@ def _run_all_perwrite(root: Path) -> tuple[bool, str]:
             count_skip(cast(str, reason), tracked)
             continue
         files_scanned += 1
-        rel = str(abs_path.relative_to(root))
-        for module_name in GREP_MODULES:
-            if not _matcher_applies_to(module_name, abs_path):
-                continue
-            try:
-                result = _run_matcher(module_name, content, abs_path, root)
-            except Exception:  # noqa: S112, BLE001, RUF100 — fail-open isolation: one matcher's internal error (load failure or check() raise) must never fail-close the corpus run; the matcher contributes no finding for this file and the run proceeds, mirroring run_orchestrator's per-matcher isolation boundary (BLE001 is the intent marker; RUF100 self-suppresses because ruff's BLE family is not active)
-                continue
-            if getattr(result, "note", None) is not None:
-                # A matcher's scope-not-resolvable skip — not a finding.
-                continue
-            findings = getattr(result, "findings", None) or []
-            if not findings:
-                continue
-            bucket = blocking if module_name in _BLOCKING_PER_WRITE_GREPS else advisory
-            entry = bucket.setdefault(
-                module_name,
-                {"finding_count": 0, "file_count": 0, "files": []},
-            )
-            entry["finding_count"] = cast(int, entry["finding_count"]) + len(findings)
-            entry["file_count"] = cast(int, entry["file_count"]) + 1
-            sample = entry["files"]
-            if isinstance(sample, list) and len(sample) < _PERWRITE_FILE_SAMPLE_CAP:
-                sample.append(rel)
+        _record_file_findings(
+            content, abs_path, root, blocking=blocking, advisory=advisory
+        )
     blocking_clean = not blocking
     blocking_results = [
         {
@@ -1631,8 +1677,9 @@ def main(argv: list[str] | None = None) -> int:
     raised, or when findings exist but strict mode is off — the advisory
     default reports without failing a build. Returns the findings-block code
     under ``--strict`` for a blocking finding, and for an ``--all-perwrite`` run
-    that did not pass because it read no file or met an index entry that
-    leaves the root; and the usage-error code :data:`EXIT_USAGE` for an
+    that did not pass because it read no file, met an index entry that
+    leaves the root, or met a file it could not read or a text file over
+    the size limit; and the usage-error code :data:`EXIT_USAGE` for an
     unknown flag or validator name, a conflicting flag pair, a file that does
     not exist, or a root that is not an existing directory — kept distinct so
     a caller can tell a misspelled selector or path from a real finding.
@@ -1675,6 +1722,7 @@ def _dispatch(
     if args.all_perwrite:
         passed, payload = _run_all_perwrite(_resolve_root(parser, args.target))
         print(payload)
+        _report_files_not_passed(json.loads(payload))
         return _strict_exit_with_advisory(
             blocking_passed=passed,
             advisory_present=advisory_findings_present(json.loads(payload)),
