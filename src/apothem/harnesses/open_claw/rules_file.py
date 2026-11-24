@@ -57,7 +57,11 @@ from apothem.harnesses._shared.install_driver_blocktext import (
 from apothem.harnesses._shared.install_driver_evidence import block_prior
 from apothem.harnesses._shared.install_driver_ownership import fold_block
 from apothem.harnesses._shared.install_driver_pathsafety import _unsafe_symlink
-from apothem.harnesses._shared.install_driver_steps import closing_clause, stray_fix
+from apothem.harnesses._shared.install_driver_steps import (
+    closing_clause,
+    no_steps_text,
+    stray_fix,
+)
 from apothem.harnesses._shared.install_driver_types import KEPT_REASON, _path_text
 from apothem.harnesses.open_claw.materializer import (
     ENTRY_PATH,
@@ -749,12 +753,17 @@ def _stray_reason(path: Path, text: str) -> str:
     marker line it changes, a BEGIN marker quoted in code included, and the
     closing line it adds for a code block the file ends in, so no BEGIN
     marker that starts no whole block is left once they are done. The old
-    Apothem text below such a marker is the operator's to delete.
+    Apothem text below such a marker is the operator's to delete. For a fix
+    with no steps (see
+    :attr:`~apothem.harnesses._shared.install_driver_steps.Fix.opener`), the
+    text says why instead.
     """
     existing = _raw_text(path) if path.is_file() else None
     current = existing or text
     strays = stray_begins(current)
     fix = stray_fix(current, strays, whole_blocks(current))
+    if fix.opener is not None:
+        return _no_steps_reason(path, current, strays, fix.opener)
     numbers = sorted(step.line for step in fix.steps if not step.fence)
     lines = [str(line) for line in numbers]
     if len(lines) > 1:
@@ -775,6 +784,25 @@ def _stray_reason(path: Path, text: str) -> str:
     return (
         f"{path} holds {subject} that {verb} no whole block ({gone}), and the old "
         f"Apothem text below {them} counts against the limit: {steps} delete "
+        "that old text by hand, keeping your own text, or shorten the profile's "
+        "custom rules, or raise the limit."
+    )
+
+
+def _no_steps_reason(path: Path, text: str, strays: list[int], opener: int) -> str:
+    """Return :func:`_stray_reason`'s text for a fix with no steps.
+
+    The code block the file ends in opens at line *opener*, and a Markdown
+    viewer may read it otherwise than Apothem (see
+    :func:`~apothem.harnesses._shared.install_driver_steps.no_steps_text`).
+    """
+    many = len(strays) > 1
+    them, verb = ("them", "start") if many else ("it", "starts")
+    lines = "those marker lines" if many else "that marker line"
+    return (
+        f"{path} holds {stray_subject(text, strays=strays)} that {verb} no whole "
+        f"block, and the old Apothem text below {them} counts against the limit. "
+        f"{no_steps_text(opener, f'the steps that fix {lines}')} Delete "
         "that old text by hand, keeping your own text, or shorten the profile's "
         "custom rules, or raise the limit."
     )

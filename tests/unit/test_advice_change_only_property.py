@@ -28,7 +28,11 @@ the added closing line can stay inside a code or HTML block as a viewer reads
 it, or Apothem's block can read as code there; no line of the operator's
 reads differently then, so those cases are counted, not failed. So is a block
 replaced in place that re-pairs a fence its old text opened or closed, the
-merge's own behaviour.
+merge's own behaviour. A fix that says Apothem cannot give its steps is
+counted too, once the test checks what it says: Apothem reads the file, every
+BEGIN marker line changed, as ending in a code block that opens at the line
+it names, and a line above that one may start an HTML block or is a list
+item's.
 
 The messages come from every caller, through the public function each caller
 uses: install and update warnings (with and without an install record, and
@@ -176,6 +180,14 @@ _CLOSE = re.compile(
     r"(?P<kind>backticks|tildes)(?:, indented (?P<indent>\d+) spaces?)?\."
 )
 _CASE_BLOCK = re.compile(r"if lines (\d+) to (\d+) are Apothem's block")
+#: A fix that gives no steps, and the line it names.
+_NO_STEPS = re.compile(
+    r"Apothem cannot give (?:numbered steps for this fix|the steps that fix "
+    r"(?:that marker line|those marker lines))\. It reads the file as ending inside a code block that opens "
+    r"at line (?P<line>\d+),"
+)
+#: A line that may start an HTML block, or a list item, after the indent.
+_HTML_OR_ITEM = re.compile(r"[ \t]*(?:<|(?:[-+*]|[0-9]{1,9}[.)])(?:[ \t]|$))")
 _CASE_YOURS = re.compile(r"if lines (\d+) to (\d+) are text of yours")
 _SENTENCE = re.compile(r"\s*(?P<s>.+?\.)(?=\s|$)", re.DOTALL)
 
@@ -264,6 +276,7 @@ class Fix:
     case: str
     steps: list[Step] = field(default_factory=list)
     promise: str = ""
+    no_steps: int | None = None
 
 
 class BrokenFixError(AssertionError):
@@ -286,6 +299,11 @@ def parse_fixes(message: str) -> list[Fix]:
     for index, header in enumerate(headers):
         stop = headers[index + 1].start() if index + 1 < len(headers) else len(message)
         fix = Fix(label=header["id"], case=header["case"] or "")
+        plain = _NO_STEPS.match(message, header.end())
+        if plain is not None and plain.start() < stop:
+            fix.no_steps = int(plain["line"])
+            fixes.append(fix)
+            continue
         at = header.end() - 1
         expected = 1
         while True:
@@ -771,8 +789,35 @@ def _openclaw(root: Path, target: Path, text: str) -> Iterator[Message]:
     config = {"agents": {"defaults": {"bootstrapMaxChars": 1}}}
     would = merge_managed_block(text, INSTALL_BODY)
     reason = rules_file.refusal(would, config, workspace)
-    if reason is not None and "by adding a word" in reason:
+    if reason is not None and (
+        "by adding a word" in reason or _NO_STEPS.search(reason) is not None
+    ):
         yield Message("openclaw-size-refusal", text, reason)
+
+
+def check_no_steps(basis: str, line: int, info: dict[str, int]) -> None:
+    """Check what a fix that gives no steps says of *basis*; raise when it does not hold.
+
+    With every BEGIN marker line changed, Apothem reads the file as ending in
+    a code block that opens at *line*, and a line above it may start an HTML
+    block or is a list item's: a reading limit the docs name.
+    """
+    lines, newline = split(basis)
+    changed = [reword(text) if text.strip() == B else text for text in lines]
+    found = materializer.trailing_fence(join(changed, newline))
+    if found is None or found[0] != line:
+        raise BrokenFixError(
+            "no-steps-line",
+            f"a fix gives no steps for a code block at line {line}; Apothem reads "
+            f"the changed file as ending in {found}",
+        )
+    if not any(_HTML_OR_ITEM.match(text) for text in lines[: line - 1]):
+        raise BrokenFixError(
+            "no-steps-reason",
+            f"a fix gives no steps for line {line}, but no line above it may start "
+            "an HTML block or a list item",
+        )
+    info["no-steps"] = info.get("no-steps", 0) + 1
 
 
 def check_message(
@@ -780,6 +825,10 @@ def check_message(
 ) -> int:
     """Follow every fix *message* prints; return how many fixes were followed."""
     if message.caller == "openclaw-size-refusal":
+        plain = _NO_STEPS.search(message.text)
+        if plain is not None:
+            check_no_steps(message.basis, int(plain["line"]), info)
+            return 1
         if _FORBIDDEN.search(message.text):
             raise BrokenFixError("forbidden-step", message.text)
         steps = prose_steps(message.text)
@@ -802,6 +851,9 @@ def check_message(
         return 1
     fixes = parse_fixes(message.text)
     for fix in fixes:
+        if fix.no_steps is not None:
+            check_no_steps(message.basis, fix.no_steps, info)
+            continue
         steps = tuple((step.kind, step.line, step.fence) for step in fix.steps)
         key = (message.basis, repr((steps, fix.case, fix.promise)))
         if key in seen:

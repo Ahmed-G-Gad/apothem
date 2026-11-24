@@ -113,6 +113,8 @@ _STEP = re.compile(
     r"(?P<kind>backticks|tildes)(?:, indented (?P<indent>\d+) spaces?)?"
     r")\."
 )
+#: How a fix that gives no numbered steps starts.
+_NO_STEPS = "Apothem cannot give numbered steps for this fix."
 #: Step wordings the change-only fixes no longer print.
 _GONE_STEPS = re.compile(r"Move line|Delete lines|add a copy of line|Above line")
 
@@ -174,6 +176,11 @@ def _check(lines: list[str], message: str, *, removes: bool) -> int:
     before = _roles(_text(lines))
     count = 0
     for label, fix in _fixes(message):
+        if fix.split(":", 1)[1].lstrip().startswith(_NO_STEPS):
+            # A Markdown viewer may read the code block the file ends in
+            # otherwise than Apothem: the fix gives no steps to follow.
+            assert not _STEP.search(fix), fix
+            continue
         fixed = _text(_follow(lines, fix))
         assert _roles(fixed)[: len(before)] == before, (label, fix)
         claim = _LABEL.search(label)

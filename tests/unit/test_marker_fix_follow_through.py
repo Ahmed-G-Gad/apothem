@@ -241,38 +241,59 @@ def test_the_size_refusal_for_one_stray_marker_still_names_its_line(
 # -- close-reads-opener ------------------------------------------------------
 
 
-def test_no_closing_line_for_a_fence_opener_inside_an_html_comment() -> None:
+_NO_STEPS = "Apothem cannot give numbered steps for this fix."
+
+
+def test_no_numbered_steps_where_an_html_comment_holds_the_fence_opener() -> None:
     """An END marker that lost its ``-->`` opens an HTML comment block.
 
     In CommonMark the comment runs to the next line that holds ``-->`` (the
-    BEGIN marker line), so ``~~~md`` is no fence opener. The fix added a
-    ``~~~`` line below the last line, which then opened a code block, and the
-    block the next update appends read as code in a viewer. Apothem now reads
-    lines in an HTML block as that block's text, so the fix adds no closing
-    line, and the update's block, a tilde code block in it included, is whole.
+    BEGIN marker line), so ``~~~md`` is no fence opener; Apothem reads it as
+    one. A closing line added below the last line would then open a code
+    block in a viewer, over the block the next update appends, so the fix
+    gives no numbered steps and says why.
     """
     text = _lines("<!-- END APOTHEM MANAGED BLOCK", "~~~md", B)
+    assert trailing_fence(text) == (2, "~~~")
     message = stray_fix_text(text, REPLACES)
     assert "Below line" not in message
-    assert _changes(message) == [3]
-    fixed = _follow(text, [3])
-    merged = merge_managed_block(fixed, "Run:\n~~~sh\nnpm test\n~~~")
-    assert merged.startswith(fixed)
-    assert whole_blocks(merged) == [(5, 10)]
+    assert _changes(message) == []
+    assert _NO_STEPS in message
+    assert "a code block that opens at line 2," in message
 
 
-def test_a_fence_opener_in_an_html_block_opens_no_code_block() -> None:
-    """Lines in an HTML block are its text, up to its end, as CommonMark reads them."""
-    assert trailing_fence(_lines("<!-- draft", "```", "-->")) is None
-    assert trailing_fence(_lines("<!-- draft", "```")) is None
-    assert trailing_fence(_lines("<div>", "```", "")) is None
-    assert trailing_fence(_lines("<div>", "", "```")) == (3, "```")
+def test_the_size_refusal_gives_no_steps_where_the_other_warnings_give_none(
+    tmp_path: Path,
+) -> None:
+    """OpenClaw's size refusal says the same as the other warnings for the file."""
+    text = _lines("<!-- END APOTHEM MANAGED BLOCK", "~~~md", B, "old")
+    reason = _size_refusal(tmp_path, text)
+    assert "by adding a word" not in reason
+    assert "add a line of" not in reason
+    assert (
+        "Apothem cannot give the steps that fix that marker line. It reads the "
+        "file as ending inside a code block that opens at line 2,"
+    ) in reason
+    assert reason.endswith(
+        "Delete that old text by hand, keeping your own text, or shorten the "
+        "profile's custom rules, or raise the limit."
+    )
+
+
+def test_the_scanner_reads_a_fence_in_an_html_block_as_a_fence() -> None:
+    """Apothem reads a code fence in an HTML block as it reads any other one.
+
+    A Markdown viewer reads the lines of an HTML block as its text; the
+    warnings name that limit, and a fix whose closing line it would change
+    gives no numbered steps (see the test above).
+    """
+    assert trailing_fence(_lines("<!-- draft", "```", "-->")) == (2, "```")
+    assert trailing_fence(_lines("<div>", "```", "")) == (2, "```")
     assert trailing_fence(_lines("<!-- note -->", "```")) == (2, "```")
-    assert trailing_fence(_lines("<!-- draft", "-->", "```")) == (3, "```")
 
 
 def test_a_marker_line_in_an_html_block_still_reads_as_a_marker() -> None:
-    """A marker line ends an HTML comment, and in any HTML block it is still a marker."""
+    """A marker line after an HTML block's first line is still a marker."""
     assert whole_blocks(_lines("<!-- draft", B, "rule", E)) == [(2, 4)]
     assert whole_blocks(_lines("<div>", B, "rule", E, "</div>")) == [(2, 4)]
     assert whole_blocks(_lines("<pre>", "```", B, "rule", E, "</pre>")) == [(3, 5)]
@@ -334,17 +355,29 @@ def _result(path: Path, outcome: str) -> MaterializationResult:
     )
 
 
-def test_a_lazy_line_keeps_its_list_item_open() -> None:
+def test_no_numbered_steps_after_a_lazy_list_item_line() -> None:
     """A list item's text goes on at the left margin, then a fence in the item.
 
     CommonMark keeps the item open across that line, so the fence indented
     three columns sits in it and ends with it at the next line at the margin.
-    Apothem ended the item at that line instead, read the fence as open to
-    the end of the file, and a fix added a closing line there that opened a
-    code block in a viewer.
+    Apothem ends the item at that line and reads the fence as open to the
+    end of the file. A closing line added there would open a code block in a
+    viewer, so the fix gives no numbered steps and says why.
     """
     text = _lines("- item", "lazy", "   ~~~md", "code", "# Head", B, "old")
-    assert trailing_fence(text) is None
+    assert trailing_fence(text) == (3, "~~~")
     message = stray_fix_text(text, TAKES_OUT)
     assert "Below line" not in message
-    assert _changes(message) == [6]
+    assert _changes(message) == []
+    assert _NO_STEPS in message
+    assert "a code block that opens at line 3," in message
+
+
+def test_a_closing_line_is_still_given_where_a_viewer_reads_alike() -> None:
+    """With no HTML block and no lazy list line above it, the fix closes the code block."""
+    text = _lines(B, "old", "", "- item", "  more", "  ~~~md", "  code")
+    message = stray_fix_text(text, TAKES_OUT)
+    assert "A1. Below line 7, add a line of 3 tildes, indented 2 spaces." in message
+    assert _NO_STEPS not in message
+    lazy = _lines(B, "old", "", "- item", "more", "  ~~~md", "  code")
+    assert _NO_STEPS in stray_fix_text(lazy, TAKES_OUT)
