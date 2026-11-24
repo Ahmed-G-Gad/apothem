@@ -231,7 +231,7 @@ def _print_warnings(
     Under ``--quiet`` a warning prints there only when *loud* (an uninstall
     that did not finish, so the paths its advice is about stay in view) or
     when it names an Apothem marker left in a file: a later install keeps
-    such a marker, and verify fails until the operator deletes it, so it is
+    such a marker, and verify fails until the operator changes it, so it is
     not informational.
     """
     err = get_error_console(no_color=no_color)

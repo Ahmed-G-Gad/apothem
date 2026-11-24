@@ -503,11 +503,12 @@ def unclear_block_warning(
     Marker pairs no rule can place (:func:`unclear_pairs_at`): one may be
     Apothem's block, or text the operator quotes, so nothing is changed, and
     an uninstall stays unfinished until the operator fixes the marker lines
-    (see :data:`UNCLEAR_BLOCK`). Each pair is named (see
-    :func:`unclear_block_report`). *outcome* is what the next
-    run does once the operator makes a pair read outside code, such as
-    :data:`TAKES_OUT`; without it, as for an uninstall, the warning says to
-    delete Apothem's block by hand. With *dry_run* (a preview), it says
+    (see :data:`UNCLEAR_BLOCK`). Each pair is named, with numbered fixes that
+    change BEGIN marker lines in place (see :func:`unclear_block_report`).
+    *outcome* is what the next run does once a fix is made, such as
+    :data:`TAKES_OUT`; without it, as for an uninstall, the warning says the
+    uninstall run again then takes Apothem's block out, or finds no block of
+    its own, and to run it again. With *dry_run* (a preview), it says
     Apothem would leave the file as it is. ``None`` when the file holds a
     whole block or no such pair. The caller checks that an install record
     lists the file: a file Apothem never wrote may quote a pair, and that is
@@ -546,11 +547,12 @@ def another_block_warning(
     pair they quote), an older Apothem block, or one pasted in a second time:
     nothing changes, and the uninstall stays unfinished. The text is the one
     install and update give (see :func:`two_blocks_report`): it names each
-    whole block by its lines, and the operator changes the marker lines of
-    each pair of theirs (never deleting Apothem's block to keep one: the
-    strip would then take that pair out) and deletes each other Apothem
-    block whole; then the strip takes out the one block left. A second block
-    that shows only once Apothem's is out is named by its marker lines (see
+    whole block by its lines, and its numbered fixes change BEGIN marker
+    lines in place: that of every block but Apothem's (never deleting
+    Apothem's block to keep a pair of the operator's: the strip would then
+    take that pair out), so the strip then takes out the one block left, or
+    every one, so no block is left. A second block that shows only once
+    Apothem's is out is named by its marker lines (see
     :func:`another_block_report`). *then* is the step after the fix (an
     install or update that retires the file gives its own). With *dry_run* (a
     preview), it says Apothem would leave the file as it is.
