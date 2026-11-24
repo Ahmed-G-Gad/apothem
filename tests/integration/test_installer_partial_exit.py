@@ -144,6 +144,19 @@ def _output(result: subprocess.CompletedProcess[str]) -> str:
     return result.stdout + result.stderr
 
 
+def _assert_lock_released(tmp_path: Path, out: str) -> None:
+    """The install lock (``<APOTHEM_HOME>.lock``, a file for the PowerShell
+    scripts and a folder for the sh scripts) is gone after the run."""
+    assert not (tmp_path / "apothem-home.lock").exists(), out
+
+
+#: What a PowerShell session prints after a run, to show that the run let the
+#: install lock go before the session ends: Windows deletes the lock file
+#: when the PowerShell process that holds it exits, so only the session can
+#: see a lock the run kept.
+LOCK_IN_SESSION = "LOCK=[$(Test-Path -LiteralPath ($env:APOTHEM_HOME + '.lock'))]"
+
+
 # --- install.sh and update.sh ----------------------------------------------
 
 
@@ -215,6 +228,7 @@ def test_install_sh_finishes_a_partial_install_and_exits_2(tmp_path: Path) -> No
     assert "verify passed" in out, out
     assert (tmp_path / "bin" / "apothem").is_file(), out
     assert "Installation complete." in out, out
+    _assert_lock_released(tmp_path, out)
 
 
 @requires_sh
@@ -231,6 +245,7 @@ def test_install_sh_dry_run_warns_and_exits_2(tmp_path: Path) -> None:
     assert [run[0] for run in runs] == ["install"], out
     assert "--dry-run" in runs[0], runs
     assert not (tmp_path / "bin" / "apothem").exists(), out
+    _assert_lock_released(tmp_path, out)
 
 
 @requires_sh
@@ -263,6 +278,7 @@ def test_update_sh_finishes_a_partial_update_and_exits_2(tmp_path: Path) -> None
     assert f"Harness {HARNESS} updated" not in out, out
     assert [run[0] for run in _engine_runs(tmp_path)] == ["update"], out
     assert "Update complete." in out, out
+    _assert_lock_released(tmp_path, out)
 
 
 @requires_sh
@@ -335,8 +351,9 @@ def _run_ps1_piped(
 ) -> subprocess.CompletedProcess[str]:
     """Run SCRIPT's text the way the one-liner does, with no script file:
     piped into Invoke-Expression, or, to pass FLAGS, as a script block made
-    from the text. Then print $LASTEXITCODE, which shows that the run left
-    the session open and what code it left."""
+    from the text. The session sets GIT_DIR and clears GIT_ALLOW_PROTOCOL
+    first. Then print $LASTEXITCODE, which shows that the run left the
+    session open and what code it left, and those two git variables."""
     env = {
         **_ps_env(tmp_path, engine_exit),
         "APOTHEM_TEST_SCRIPT": str(INSTALLER / script),
@@ -346,7 +363,14 @@ def _run_ps1_piped(
         command = f"& ([scriptblock]::Create(({text}))) {' '.join(flags)}"
     else:
         command = f"{text} | Invoke-Expression"
-    command += '; "SESSION-OPEN LASTEXITCODE=[$LASTEXITCODE]"'
+    command = (
+        "$env:GIT_DIR = 'caller-git-dir'; "
+        "Remove-Item Env:GIT_ALLOW_PROTOCOL -ErrorAction SilentlyContinue; "
+        f"{command}; "
+        '"SESSION-OPEN LASTEXITCODE=[$LASTEXITCODE] '
+        "GIT_DIR=[$env:GIT_DIR] GIT_ALLOW_PROTOCOL=[$env:GIT_ALLOW_PROTOCOL] "
+        f'{LOCK_IN_SESSION}"'
+    )
     return _pwsh(["-Command", command], tmp_path, env)
 
 
@@ -371,7 +395,7 @@ def _run_ps1_in_strict_caller(
         "$PSNativeCommandUseErrorActionPreference = $true; "
         f"{run}; "
         '"CALLER LASTEXITCODE=[$LASTEXITCODE] '
-        'NATIVE=[$PSNativeCommandUseErrorActionPreference]"'
+        f'NATIVE=[$PSNativeCommandUseErrorActionPreference] {LOCK_IN_SESSION}"'
     )
     return _pwsh(["-Command", command], tmp_path, env)
 
@@ -399,9 +423,10 @@ def test_ps1_finishes_a_partial_run_when_the_caller_stops_on_native_errors(
     result = _run_ps1_in_strict_caller(tmp_path, script, how, engine_exit=2)
 
     out = _output(result)
-    assert "CALLER LASTEXITCODE=[2] NATIVE=[True]" in out, out
+    assert "CALLER LASTEXITCODE=[2] NATIVE=[True] LOCK=[False]" in out, out
     assert _squashed(PARTIAL_WARNING) in _squashed(out), out
     assert closing in out, out
+    _assert_lock_released(tmp_path, out)
 
 
 @requires_pwsh
@@ -422,6 +447,7 @@ def test_install_ps1_by_path_finishes_a_partial_install_and_exits_2(
     assert "verify passed" in out, out
     assert (tmp_path / "bin" / "apothem.cmd").is_file(), out
     assert "Installation complete." in out, out
+    _assert_lock_released(tmp_path, out)
 
 
 @requires_pwsh
@@ -439,6 +465,8 @@ def test_install_ps1_piped_leaves_the_session_open_with_lastexitcode_2(
     assert [run[0] for run in _engine_runs(tmp_path)] == ["install", "verify"], out
     assert (tmp_path / "bin" / "apothem.cmd").is_file(), out
     assert "Installation complete." in out, out
+    assert "GIT_DIR=[caller-git-dir] GIT_ALLOW_PROTOCOL=[] LOCK=[False]" in out, out
+    _assert_lock_released(tmp_path, out)
 
 
 @requires_pwsh
@@ -452,6 +480,7 @@ def test_install_ps1_dry_run_warns_and_exits_2(tmp_path: Path) -> None:
     assert _squashed(PARTIAL_WARNING) in _squashed(out), out
     assert "Dry-run complete" in out, out
     assert [run[0] for run in _engine_runs(tmp_path)] == ["install"], out
+    _assert_lock_released(tmp_path, out)
 
 
 @requires_pwsh
@@ -462,6 +491,8 @@ def test_install_ps1_piped_dry_run_leaves_lastexitcode_2(tmp_path: Path) -> None
     assert "SESSION-OPEN LASTEXITCODE=[2]" in out, out
     assert _squashed(PARTIAL_WARNING) in _squashed(out), out
     assert "Dry-run complete" in out, out
+    assert "GIT_DIR=[caller-git-dir] GIT_ALLOW_PROTOCOL=[] LOCK=[False]" in out, out
+    _assert_lock_released(tmp_path, out)
 
 
 @requires_pwsh
@@ -495,6 +526,7 @@ def test_update_ps1_by_path_finishes_a_partial_update_and_exits_2(
     assert f"Harness {HARNESS} updated" not in out, out
     assert [run[0] for run in _engine_runs(tmp_path)] == ["update"], out
     assert "Update complete." in out, out
+    _assert_lock_released(tmp_path, out)
 
 
 @requires_pwsh
@@ -507,6 +539,8 @@ def test_update_ps1_piped_leaves_the_session_open_with_lastexitcode_2(
     assert "SESSION-OPEN LASTEXITCODE=[2]" in out, out
     assert _squashed(PARTIAL_WARNING) in _squashed(out), out
     assert "Update complete." in out, out
+    assert "GIT_DIR=[caller-git-dir] GIT_ALLOW_PROTOCOL=[] LOCK=[False]" in out, out
+    _assert_lock_released(tmp_path, out)
 
 
 @requires_pwsh
