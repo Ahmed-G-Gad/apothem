@@ -330,13 +330,6 @@ _FIX_MARKED = (
     + _MARKER_RISK
 )
 
-#: The same for an uninstall that stopped, whose warnings may say to run
-#: apothem update (see :func:`_stopped_caveat`).
-_FIX_MARKED_FIRST = (
-    ". Before you run apothem update, fix the {count} file(s) whose warnings "
-    "name an Apothem marker: " + _MARKER_RISK
-)
-
 #: The failure line for files that hold another block between Apothem's
 #: markers (``kept_reason`` ``another-block``).
 _ANOTHER_BLOCK_LINE = (
@@ -376,6 +369,28 @@ def _link_problems(
     }
 
 
+def _kept_lines(run: MaterializationRun, earlier: int) -> list[str]:
+    """Return the lines for kept paths that leave the uninstall unfinished.
+
+    First the *earlier* paths no record shows are Apothem's (see
+    :func:`_earlier_release_paths`), whose next step is to run apothem
+    update; when a warning names a file with an Apothem marker the uninstall
+    left, that step says to fix the file first (:data:`_FIX_MARKED`). Then
+    the files that hold another block between Apothem's markers.
+    """
+    lines: list[str] = []
+    if earlier:
+        marked = len(_marked_files(run))
+        fix = _FIX_MARKED.format(count=marked) if marked else ""
+        lines.append(_UNPROVEN_PATHS.format(count=earlier, fix=fix))
+    another = sum(
+        1 for w in run.warnings if w.detail.get("kept_reason") == ANOTHER_BLOCK
+    )
+    if another:
+        lines.append(_ANOTHER_BLOCK_LINE.format(count=another))
+    return lines
+
+
 def _problems(
     harness_id: str, run: MaterializationRun, blocked: Counter[str], earlier: int
 ) -> dict[str, list[str]]:
@@ -384,39 +399,17 @@ def _problems(
     Failed steps are grouped by message and by the link they name (see
     :func:`_error_groups`). A failed step that could not remove files Apothem
     wrote names them, so the advice to close what holds them points at files
-    the reader can see. When the next step is to run apothem update and a
-    warning names a file with an Apothem marker the uninstall left, the step
-    says to fix that file first (:data:`_FIX_MARKED`).
+    the reader can see. The kept paths that leave the uninstall unfinished
+    come last (see :func:`_kept_lines`).
     """
     problems = _link_problems(harness_id, run, blocked)
     for first, members in _error_groups(run):
         problems[_error_line(first, len(members))] = [
             path for member in members for path in detail_paths(member, "stuck_files")
         ]
-    if earlier:
-        marked = len(_marked_files(run))
-        fix = _FIX_MARKED.format(count=marked) if marked else ""
-        problems[_UNPROVEN_PATHS.format(count=earlier, fix=fix)] = []
-    another = sum(
-        1 for w in run.warnings if w.detail.get("kept_reason") == ANOTHER_BLOCK
-    )
-    if another:
-        problems[_ANOTHER_BLOCK_LINE.format(count=another)] = []
+    for line in _kept_lines(run, earlier):
+        problems[line] = []
     return problems
-
-
-def _stopped_caveat(run: MaterializationRun | None) -> str:
-    """Return what the failure line of an uninstall that stopped adds, or ``""``.
-
-    Its warnings may say to run apothem update (paths no record shows are
-    Apothem's, see :func:`_earlier_release_paths`); when another warning names
-    a file with an Apothem marker the uninstall left, that file comes first
-    (:data:`_FIX_MARKED_FIRST`).
-    """
-    if run is None or not _earlier_release_paths(run):
-        return ""
-    marked = len(_marked_files(run))
-    return _FIX_MARKED_FIRST.format(count=marked) if marked else ""
 
 
 #: The ``detail`` keys that join the files a removal kept.
@@ -541,21 +534,25 @@ def _failed_adapter(
     with ``run``): its warnings and failed steps are reported, and the files
     it removed make the uninstall partial. The warnings print where
     :func:`_report_run` prints them: on *con*, or with the failure on
-    standard error under ``--quiet``. Apothem's files the run left behind a
-    link are reported as :func:`_report_run` reports them: a ``did not
-    finish`` line for each link (see :func:`_link_problems`), the same text
-    added to the row's message, and the link in its ``detail`` when it is
-    the only one the run names. Such a link makes the uninstall partial too,
-    also when it removed nothing, as in :func:`_report_run`.
+    standard error under ``--quiet``. What the run kept that leaves the
+    uninstall unfinished is reported as :func:`_report_run` reports it: a
+    ``did not finish`` line for each link that keeps Apothem's files in
+    place (see :func:`_link_problems`), then for the paths no record shows
+    are Apothem's and for the files that hold another block between
+    Apothem's markers (see :func:`_kept_lines`), each added to the end of
+    the row's message too, and the link in the row's ``detail`` when it is
+    the only one the run names. Such a link, and such paths, make the
+    uninstall partial, also when it removed nothing, as in
+    :func:`_report_run`.
     """
     run = getattr(exc, "run", None)
     run = run if isinstance(run, MaterializationRun) else None
     removed = run is not None and any(
         result.outcome == "updated" for result in run.results
     )
-    links: list[str] = []
+    partial = removed
+    lines: list[str] = []
     named: dict[str, str] = {}
-    blocked: Counter[str] = Counter()
     if run is not None:
         warnings.extend(
             {"harness": harness_id, **group}
@@ -563,9 +560,10 @@ def _failed_adapter(
             if not _is_blocked(group)
         )
         blocked = _blocked_by_link(run)
-        links = list(_link_problems(harness_id, run, blocked))
+        earlier = _earlier_release_paths(run)
+        lines = [*_link_problems(harness_id, run, blocked), *_kept_lines(run, earlier)]
         named = _one_named_link(run, blocked) if blocked else {}
-    caveat = _stopped_caveat(run)
+        partial = partial or bool(blocked) or bool(earlier)
     if fmt != "json":
         err = get_error_console(no_color=no_color)
         listing = err if con.quiet else con
@@ -579,17 +577,17 @@ def _failed_adapter(
             for error in (run.errors if run is not None else ())
             for path in detail_paths(error, "stuck_files")
         ]
-        message = kept_listing(f"{exc}{caveat}", stuck, None)
+        message = kept_listing(str(exc), stuck, None)
         err.print(f"[red]✗[/] {harness_id} uninstall {verb}: {escape(message)}")
-        for line in links:
+        for line in lines:
             err.print(
                 f"[red]✗[/] {harness_id} uninstall did not finish: {escape(line)}"
             )
     row = _adapter_failure_result(harness_id, "uninstall", output_path, exc)
-    row["message"] = "; ".join([f"{row['message']}{caveat}", *links])
+    row["message"] = "; ".join([str(row["message"]), *lines])
     if named:
         row["detail"] = named
-    return [row, *_step_rows(harness_id, run)], removed or bool(blocked)
+    return [row, *_step_rows(harness_id, run)], partial
 
 
 def _finished_row(

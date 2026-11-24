@@ -2415,6 +2415,12 @@ _FIX_FIRST = (
     "apothem uninstall again"
 )
 
+#: The same step when no warning names an Apothem marker.
+_UPDATE_STEP = (
+    "first copy any listed file you edited or added; then run apothem update, "
+    "then apothem uninstall again"
+)
+
 
 @pytest.mark.parametrize("output", ["plain", "json"])
 def test_the_update_step_says_to_fix_a_file_with_a_lone_begin_marker_first(
@@ -2470,6 +2476,8 @@ def test_a_claude_md_without_its_end_and_no_record_comes_before_the_update(
 def test_a_stopped_uninstall_says_to_fix_a_file_with_a_lone_begin_marker_first(
     claude: Path, monkeypatch: pytest.MonkeyPatch, marker: bool
 ) -> None:
+    # The step is on the line for the paths kept, after the error, as in an
+    # uninstall that ran all its steps.
     _earlier_release_with_an_edited_agent(claude)
     if marker:
         _cut_the_end_marker(claude / "CLAUDE.md")
@@ -2482,9 +2490,110 @@ def test_a_stopped_uninstall_says_to_fix_a_file_with_a_lone_begin_marker_first(
 
     assert code == cli._EXIT_PARTIAL, envelope
     message = str(envelope["results"][0]["message"])
-    assert "listing failed" in message
-    caveat = "Before you run apothem update, fix the 1 file(s) whose warnings"
-    assert (caveat in message) is marker
+    assert message.startswith(
+        "MaterializationError: uninstall stopped: listing failed; "
+    )
+    assert "path(s) stay because no record shows whether Apothem" in message
+    assert (_FIX_FIRST in message) is marker
+    assert (_UPDATE_STEP in message) is not marker
+
+
+def _keep_every_agent_then_stop(
+    claude: Path, monkeypatch: pytest.MonkeyPatch
+) -> list[Path]:
+    """Make a pass keep an earlier release's agents, then stop; return them.
+
+    The install record has no digests, and every agent differs from what this
+    release writes, as after an upgrade, so the pass keeps each one. With
+    ``settings.json`` gone, it has changed nothing when the backup of the
+    first file it would remove fails and stops it.
+    """
+    ClaudeCodeAdapter().install({})
+    _strip_digests(claude)
+    (claude / "settings.json").unlink()
+    agents = sorted((claude / "agents").glob("*.md"))
+    for agent in agents:
+        agent.write_text("an earlier release wrote this\n", encoding="utf-8")
+
+    def full(*args: object, **kwargs: object) -> object:
+        raise OSError("backup disk full")
+
+    monkeypatch.setattr(written, "backup_existing", full)
+    return agents
+
+
+def test_a_pass_stopped_after_keeping_an_earlier_releases_files_is_partial(
+    claude: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A pass that kept an earlier release's files, then stopped, exits 2.
+
+    It removed nothing, but the files it kept leave the uninstall unfinished,
+    as in a pass that ran all its steps: the line that counts them and gives
+    the next step follows the failure line, and ends the row's message. The
+    second run, in plain output, stops the same way.
+    """
+    agents = _keep_every_agent_then_stop(claude, monkeypatch)
+    kept = (
+        f"{len(agents)} path(s) stay because no record shows whether Apothem "
+        "wrote them (the install was recorded by an earlier release, or not "
+        "at all)"
+    )
+
+    code, envelope = _uninstall()
+    plain = CliRunner().invoke(
+        cli.main, ["uninstall", "--harness", "claude-code", "--yes", "--no-color"]
+    )
+
+    message = " ".join(str(envelope["results"][0]["message"]).split())
+    stderr = " ".join(plain.stderr.split())
+    assert code == cli._EXIT_PARTIAL, envelope
+    assert envelope["status"] == "partial"
+    stopped = "uninstall stopped: backup disk full"
+    assert message.startswith(f"MaterializationError: {stopped}; {kept}")
+    assert message.endswith(_UPDATE_STEP)
+    assert plain.exit_code == cli._EXIT_PARTIAL, plain.output
+    assert stderr.startswith(
+        f"✗ claude-code uninstall failed: {stopped} "
+        f"✗ claude-code uninstall did not finish: {kept}"
+    )
+    assert stderr.endswith(_UPDATE_STEP)
+    assert all(
+        agent.read_text(encoding="utf-8") == "an earlier release wrote this\n"
+        for agent in agents
+    )
+    assert _unfinished(claude) is not None
+
+
+@pytest.mark.parametrize("output", ["plain", "json"])
+def test_a_stopped_uninstall_names_a_file_with_another_marked_block(
+    claude: Path, monkeypatch: pytest.MonkeyPatch, output: str
+) -> None:
+    # The pass left CLAUDE.md as it is and then stopped: the line that names
+    # it follows the failure line, as in a pass that ran all its steps.
+    ClaudeCodeAdapter().install({})
+    anchor = claude / "CLAUDE.md"
+    quoted = f"```\n{APOTHEM_BLOCK_BEGIN}\nmy example\n{APOTHEM_BLOCK_END}\n```\n"
+    anchor.write_bytes(anchor.read_bytes() + b"\n" + quoted.encode())
+    before = anchor.read_bytes()
+
+    def broken(*args: object, **kwargs: object) -> list[object]:
+        raise OSError("listing failed")
+
+    monkeypatch.setattr(install_driver_lifecycle, "left_behind", broken)
+    code, failure = _failure_text(output)
+
+    flat = " ".join(failure.split())
+    line = (
+        "1 file(s) hold another block between Apothem's markers that is not a "
+        "copy of Apothem's own, so Apothem left them as they are"
+    )
+    assert code == cli._EXIT_PARTIAL, failure
+    assert anchor.read_bytes() == before
+    if output == "json":
+        lead = "MaterializationError: uninstall stopped: listing failed;"
+        assert flat.startswith(f"{lead} {line}")
+    else:
+        assert f"✗ claude-code uninstall did not finish: {line}" in flat
 
 
 def test_each_warning_for_a_marker_left_in_a_file_carries_marker_left(
