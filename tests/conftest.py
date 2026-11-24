@@ -1813,6 +1813,16 @@ def _late_folder(config: pytest.Config) -> str | None:
     never writes into a protected folder of a real home. The workers then
     write what they find after the hand-off to ``stderr`` (see
     :func:`_report_held`).
+
+    It is not made in pytest's own folder for the session (its basetemp),
+    whose retention would remove a folder that a killed controller left.
+    Without ``--basetemp``, pytest's own ``pytest_sessionfinish`` removes
+    the basetemp when ``tmp_path_retention_policy`` is ``none``, or
+    ``failed`` and the run passed, and under ``all`` removes its lock, after
+    which another pytest run's cleanup may remove it. The controller reads
+    the files later, in ``pytest_unconfigure``, so the refusals in them
+    would be lost. Only a basetemp given with ``--basetemp`` stays until the
+    next run that names it, and the suite's own runs name none.
     """
     if _LATE_FOLDER not in config.stash:
         folder = None
