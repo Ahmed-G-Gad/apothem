@@ -135,8 +135,9 @@ does. The message depends on the reason:
 
 It exits `2` when it removed or changed files, left Apothem's own files behind
 a link, or kept the files of an earlier release's install or of an install
-with no record, and `1` when it stopped before changing anything for any other
-reason. An unexpected error in that first step exits `1`, whatever the step
+with no record, or when another harness was removed, and `1` when it stopped
+before changing anything for any other reason. An unexpected error in that
+first step exits `1` (`2` when another harness was removed), whatever the step
 had changed. Fix what the message names, then run the same `apothem uninstall`
 command again: it removes what the first run left. For an earlier release's
 install or an install with no record, first copy any listed file you edited or

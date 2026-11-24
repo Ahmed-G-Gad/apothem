@@ -305,19 +305,20 @@ and the steps that failed before it name one link, the row carries it in
 `detail.symlink` and the folder it leads to in `detail.leads_to`. It exits `2`
 with `status` `"partial"` when it had removed or changed files first, found
 Apothem's own files behind a link, or kept files of an earlier release's
-install or of an install with no record, otherwise `1`. An unexpected error
-(an exception, such as a backup that cannot be written) inside the first step
-of an Open-Claw, Antigravity or Kimi Code uninstall (see
-[An uninstall that did not finish](#an-uninstall-that-did-not-finish)) reports
-nothing that step did: the uninstall prints `failed:` and exits `1`, whatever
-the step had changed. When Open-Claw's rules-file step reports an error
-instead (a rules file it cannot rewrite, or an `openclaw.json` with comments),
-that is a failed step, as above: the uninstall prints `did not finish:`,
-records itself unfinished with that step's backups, and exits `2` when that
-step had changed a file, otherwise `1`. `Ctrl+C` prints `Aborted!` and exits
-`1`, whatever the uninstall had removed by then. A refused uninstall (a link
-that leads the folder out of your home directory, say) removes nothing and
-exits `1`.
+install or of an install with no record, or when another harness was removed,
+otherwise `1`. An unexpected error (an exception, such as a backup that cannot
+be written) inside the first step of an Open-Claw, Antigravity or Kimi Code
+uninstall reports nothing that step did (see
+[An uninstall that did not finish](#an-uninstall-that-did-not-finish)): the
+uninstall prints `failed:` and exits `1` (`2` when another harness was
+removed), whatever the step had changed. When Open-Claw's rules-file step
+reports an error instead (a rules file it cannot rewrite, or an
+`openclaw.json` with comments), that is a failed step, as above: the uninstall
+prints `did not finish:`, records itself unfinished with that step's backups,
+and exits `2` when that step had changed a file, otherwise `1`. `Ctrl+C`
+prints `Aborted!` and exits `1`, whatever the uninstall had removed by then. A
+refused uninstall (a link that leads the folder out of your home directory,
+say) removes nothing and exits `1`.
 
 ### An uninstall that did not finish
 
