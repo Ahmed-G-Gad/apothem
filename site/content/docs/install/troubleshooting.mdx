@@ -750,9 +750,12 @@ marker before the next BEGIN marker, or none at all. Add a word just before
 its closing `-->`, as in `<!-- BEGIN APOTHEM MANAGED BLOCK (example) -->`, and
 the line no longer reads as a marker. That adds and removes no line, so
 nothing else in the file reads differently, and the BEGIN line that opens
-Apothem's current block stays as it is. A file with two such markers gets one
-step for each, from the bottom of the file up (see
-[Follow a numbered fix](#follow-a-numbered-fix)). When the layout of the file
+Apothem's current block stays as it is. The fix also changes every other BEGIN
+marker line in the file, one you quote in a code block included, one step for
+each, from the bottom of the file up (see
+[Follow a numbered fix](#follow-a-numbered-fix)): a quoted BEGIN marker left as
+it is could pair with an END marker below it once the uninstall takes
+Apothem's block out. When the layout of the file
 does not show that Apothem's block stays whole once those lines change (a
 code block of yours that no line closes holds it, say), the fix changes every
 BEGIN marker line in the file, the block's too, for example "Fix A: A1. Below

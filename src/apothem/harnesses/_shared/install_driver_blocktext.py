@@ -446,7 +446,8 @@ def stray_fix_text(
 ) -> str:
     """Return the numbered fix for the BEGIN markers in *text* that start no whole block.
 
-    A step that changes each (see :func:`install_driver_steps.stray_fixes`),
+    Steps that change every BEGIN marker line but that of the file's one
+    whole block, or every one (see :func:`install_driver_steps.stray_fixes`),
     ended by what the next run then does (*outcome*, as for
     :func:`unclear_block_report`) and by what the old Apothem text below such
     a marker then is: the operator's to delete, so no step names it.
@@ -455,7 +456,7 @@ def stray_fix_text(
     """
     found = stray_begins(text) if strays is None else strays
     whole = whole_blocks(text) if blocks is None else blocks
-    fixes = stray_fixes(text, found, whole, appends=outcome in _WRITES)
+    fixes = stray_fixes(text, found, whole)
     return _fixes_text(fixes, outcome) if fixes else ""
 
 

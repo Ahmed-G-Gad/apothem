@@ -22,9 +22,8 @@ file up. Every block, marker pair and stray marker starts at a BEGIN marker,
 and an END marker pairs only with the BEGIN marker right above it, so a fix
 changes BEGIN marker lines alone: an END marker with no BEGIN marker above
 it marks nothing, and a quoted one stays the operator's text as it is. A fix
-that keeps a block changes every other BEGIN marker line in the file (for
-BEGIN markers that start no whole block, those lines alone, where that keeps
-every other line reading as before). It is given only where the layout of
+that keeps a block changes every other BEGIN marker line in the file, a
+quoted one included. It is given only where the layout of
 the file shows that the block then reads whole (see :func:`_keeps`), so no
 fix needs a reading of the file. A fix that keeps no block changes every
 BEGIN marker line in the file: Apothem then reads no block, the next update
@@ -434,63 +433,28 @@ def block_fixes(
     return fixes
 
 
-def _alone(layout: _Layout, strays: Sequence[int]) -> bool:
-    """Return True when changing the lines *strays* alone leaves every other line as it reads.
-
-    *strays* are BEGIN markers outside code that start no whole block. Each
-    is followed by a BEGIN marker or by none, so none pairs with an END
-    marker, and changing it pairs no other two (rule 3, which reads the
-    lines after such a pair differently, fired on none of them); and no line
-    above the last of them may start an HTML block (see :func:`_keeps`).
-    """
-    for stray in strays:
-        after = bisect.bisect_right(layout.markers, stray)
-        if after == len(layout.markers):
-            continue
-        if layout.lines[layout.markers[after] - 1].strip() == APOTHEM_BLOCK_END:
-            return False
-    return layout.first_tag is None or layout.first_tag >= max(strays)
-
-
 def stray_fixes(
-    text: str,
-    strays: Sequence[int],
-    blocks: Sequence[tuple[int, int]],
-    *,
-    appends: bool,
+    text: str, strays: Sequence[int], blocks: Sequence[tuple[int, int]]
 ) -> list[Fix]:
     """Return the fix for the BEGIN markers on lines *strays*, which start no whole block.
 
-    *blocks* are the whole blocks of *text*. The fix changes those marker
-    lines alone (see :func:`_alone`), so the file's one whole block, if it
-    holds one, stays whole and the next update replaces it; for an uninstall
-    or a rules file whose block is taken out (no *appends*), only when the
-    file holds no whole block, and never for a block in a code block no line
-    closes (see :func:`_open_above`). Otherwise it keeps that block and changes
-    every other BEGIN marker line (see :func:`_keeps`), or else changes every
-    BEGIN marker line (see :func:`_none`). The old text below
-    such a marker stays: no step names it. Empty when *text* holds no such
-    marker, or two or more whole blocks (see :func:`block_fixes`).
+    *blocks* are the whole blocks of *text*. With one whole block, the fix
+    keeps it and changes every other BEGIN marker line, where the layout
+    shows the block then reads whole (see :func:`_keeps`); otherwise it
+    changes every BEGIN marker line (see :func:`_none`). Either way no BEGIN
+    marker line is left but the kept block's: changing the stray lines alone
+    would leave a BEGIN marker quoted in code, which can pair with an END
+    marker once the uninstall takes the block out and the lines around it
+    join, or which an install record keeps as a pair no rule can place. The
+    old text below such a marker stays: no step names it. Empty when *text*
+    holds no such marker, or two or more whole blocks (see
+    :func:`block_fixes`).
     """
     if not strays or len(blocks) > 1:
         return []
     layout = _layout(text)
-    block = blocks[0] if blocks else None
-    steps = _change(strays)
-    alone = block is None or (appends and not _open_above(layout, block, steps))
-    if alone and _alone(layout, strays):
-        tail = _closing(layout, steps) if block is None else None
-        label = None if block is None else _label(block)
-        return [
-            Fix(
-                label,
-                steps if tail is None else (tail, *steps),
-                keeps=block is not None,
-                block=block,
-            )
-        ]
-    if block is not None and _keeps(layout, block, first=True):
-        return [_kept(layout, block)]
+    if blocks and _keeps(layout, blocks[0], first=True):
+        return [_kept(layout, blocks[0])]
     return [_none(layout, None)]
 
 

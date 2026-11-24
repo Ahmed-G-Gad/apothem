@@ -9,13 +9,22 @@ run through the library function the caller uses.
 
 from __future__ import annotations
 
+import re
 import threading
 
+from apothem.harnesses._shared.install_driver_blocktext import (
+    REPLACES,
+    TAKES_OUT,
+    stray_fix_text,
+)
 from apothem.lib.harness_materializer import (
     APOTHEM_BLOCK_BEGIN,
     APOTHEM_BLOCK_END,
+    has_stray_begin,
     merge_managed_block,
     remove_managed_block,
+    uncertain_pairs,
+    whole_blocks,
 )
 
 B = APOTHEM_BLOCK_BEGIN
@@ -83,3 +92,82 @@ def test_the_strip_still_takes_out_apothem_s_own_frontmatter() -> None:
     merged = merge_managed_block(_lines("My notes."), body)
     assert merged.startswith(_lines("---", "alwaysApply: true", "---", B))
     assert remove_managed_block(merged) == _lines("My notes.")
+
+
+# -- following a printed fix -------------------------------------------------
+
+_CHANGE = re.compile(r"Change line (\d+): add a word inside its comment\.")
+
+
+def _changes(message: str) -> list[int]:
+    """Return the lines the first fix of *message* says to change, in its order."""
+    first = message.split("Fix B")[0]
+    return [int(found) for found in _CHANGE.findall(first)]
+
+
+def _follow(text: str, lines: list[int]) -> str:
+    """Return *text* with a word added inside the comment of each of *lines*."""
+    split = text.split("\n")
+    for line in lines:
+        marker = split[line - 1]
+        assert marker.strip() in (B, E), f"line {line} is {marker!r}"
+        cut = marker.rfind("-->")
+        split[line - 1] = f"{marker[:cut]}(changed) {marker[cut:]}"
+    return "\n".join(split)
+
+
+# -- pair-in-code-left -------------------------------------------------------
+
+
+def test_a_fix_that_keeps_no_block_changes_the_begin_line_of_a_pair_in_code() -> None:
+    """A marker pair quoted in a code block, and a BEGIN marker that lost its END.
+
+    The fix changed the stray BEGIN marker line alone. The quoted pair is then
+    a pair no rule can place, so with an install record the next update left
+    the file as it is and the uninstall stopped at it. A fix that keeps no
+    block changes every BEGIN marker line in the file, the quoted one too.
+    """
+    text = _lines("mine", "````md", B, "ex", E, "````", "", B, "old")
+    message = stray_fix_text(text, TAKES_OUT)
+    assert _changes(message) == [8, 3]
+    fixed = _follow(text, _changes(message))
+    assert not uncertain_pairs(fixed)
+    assert not has_stray_begin(fixed)
+    assert merge_managed_block(fixed, "Rule.", recorded=True) != fixed
+
+
+# -- promise-remove ----------------------------------------------------------
+
+
+def test_a_fix_that_keeps_a_block_leaves_no_marker_for_the_uninstall_to_show() -> None:
+    """A stray BEGIN marker above a whole block, and BEGIN markers in code below it.
+
+    The fix changed the stray marker line alone. Once the update replaced
+    the block, the uninstall's strip joined the list item above it with the
+    indented code block below, and the BEGIN markers that were in code read
+    as a whole block and a stray BEGIN. The fix now changes every BEGIN
+    marker line but the block's own.
+    """
+    text = _lines(
+        "- item",
+        B,
+        "- rule item",
+        B,
+        "rule one",
+        E,
+        "  ```sh",
+        "code",
+        B,
+        B,
+        "```",
+        E,
+    )
+    message = stray_fix_text(text, REPLACES)
+    assert "if lines 4 to 6 are Apothem's block" in message
+    assert _changes(message) == [10, 9, 2]
+    fixed = _follow(text, _changes(message))
+    merged = merge_managed_block(fixed, "New rule.")
+    assert whole_blocks(merged) == [(4, 6)]
+    removed = remove_managed_block(merged)
+    assert not whole_blocks(removed)
+    assert not has_stray_begin(removed)

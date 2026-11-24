@@ -346,7 +346,7 @@ def _shape(rng: random.Random) -> list[str]:
     return [line for part in parts for line in part]
 
 
-def _all_fixes(text: str, *, appends: bool) -> list[steps.Fix]:
+def _all_fixes(text: str) -> list[steps.Fix]:
     """Return the fixes a warning gives for *text*, whatever its markers hold."""
     blocks = whole_blocks(text)
     if len(blocks) > 1:
@@ -354,7 +354,7 @@ def _all_fixes(text: str, *, appends: bool) -> list[steps.Fix]:
     pairs = uncertain_pairs(text)
     if pairs:
         return steps.unclear_fixes(text, pairs)
-    return steps.stray_fixes(text, stray_begins(text), blocks, appends=appends)
+    return steps.stray_fixes(text, stray_begins(text), blocks)
 
 
 @pytest.mark.parametrize("removes", [False, True], ids=["update", "uninstall"])
@@ -364,7 +364,7 @@ def test_every_fix_for_generated_files_holds_when_followed(removes: bool):
     followed = 0
     for _ in range(600):
         lines = _shape(rng)
-        fixes = _all_fixes(_text(lines), appends=not removes)
+        fixes = _all_fixes(_text(lines))
         if not fixes:
             continue
         message = steps.render_fixes(fixes, ["Then done"] * len(fixes))
@@ -600,7 +600,7 @@ def test_the_advice_for_a_large_file_takes_well_under_a_second(shape: str) -> No
         if pairs:
             return unclear_block_report("AGENTS.md", text, pairs, lone=lone, held=True)
         return steps.render_fixes(
-            fixes := steps.stray_fixes(text, strays, blocks, appends=True),
+            fixes := steps.stray_fixes(text, strays, blocks),
             ["Then done"] * len(fixes),
         )
 
@@ -664,9 +664,7 @@ def test_the_troubleshooting_stray_marker_example_is_the_fix_printed():
     a file, word for word.
     """
     text = _text(["```", B, B, "~~~", E, "~~~"])
-    fixes = steps.stray_fixes(
-        text, stray_begins(text), whole_blocks(text), appends=True
-    )
+    fixes = steps.stray_fixes(text, stray_begins(text), whole_blocks(text))
     promise = (
         "Apothem then reads none of these lines as its markers, and the next "
         "update writes its block at the end of the file"
