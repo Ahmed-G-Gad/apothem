@@ -803,30 +803,30 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   Kimi Code exits `1`, whatever that step had changed, as it reports nothing
   the step did, and one stopped by `Ctrl+C` exits `1` with `Aborted!`. A
   stopped uninstall now also reports what it found that leaves it unfinished,
-  as one that ran all its steps does: each link keeping Apothem's own files in
-  place, the files of an earlier release's install that differ from what this
-  release writes, the files of an install with no record, and a file that
-  holds another block between Apothem's markers. Each gets a `✗ <harness>
-  uninstall did not finish:` line and is added to the end of its `results`
-  row's message, and an install with no record also gets its `Note:` line,
-  with the check of the `--project` folder before `apothem update`, and the
-  row's `kept_reason`; when the reasons, the steps that failed before the stop
-  included, name one link, that row carries it in `detail.symlink` and
-  `detail.leads_to`. Such a link, or such files of an earlier release's
-  install or of an install with no record, make it exit `2`, also when it
-  removed nothing; otherwise one that changed nothing exits `1`. Its warnings
-  also name a link its steps left in place and a file left with a BEGIN marker
-  of yours and no END after it, whose fix the update step then puts first, as
-  for one that ran all its steps. An error that stops the settings-file step
-  of Hermes, Open-Claw, OpenCode or Qwen Code now reads `uninstall stopped:
-  <error>`, as one in a later step does, whether or not an earlier step found
-  something to report. `apothem rollback` now undoes the newest install still
-  in place, so a second rollback undoes the one before, refuses an
-  `--install-id` that was already rolled back or uninstalled, and removes a
-  file an install created only while it still has the content that install
-  wrote. Uninstalling a tool from one project no longer removes the shared
-  memory, contexts and learning stores in your home folder while the same tool
-  installed in another project still uses them.
+  as one that ran all its steps does: each step that failed before it stopped,
+  each link keeping Apothem's own files in place, the files of an earlier
+  release's install that differ from what this release writes, the files of an
+  install with no record, and a file that holds another block between
+  Apothem's markers. Each gets a `✗ <harness> uninstall did not finish:` line
+  and is added to the end of its `results` row's message, and an install with
+  no record also gets its `Note:` line, with the check of the `--project`
+  folder before `apothem update`, and the row's `kept_reason`; when the
+  reasons, the steps that failed before the stop included, name one link, that
+  row carries it in `detail.symlink` and `detail.leads_to`. Such a link, or
+  such files of an earlier release's install or of an install with no record,
+  make it exit `2`, also when it removed nothing; otherwise one that changed
+  nothing exits `1`. Its warnings also name a link its steps left in place and
+  a file left with a BEGIN marker of yours and no END after it, whose fix the
+  update step then puts first, as for one that ran all its steps. An error
+  that stops the settings-file step of Hermes, Open-Claw, OpenCode or Qwen
+  Code now reads `uninstall stopped: <error>`, as one in a later step does,
+  whether or not an earlier step found something to report. `apothem rollback`
+  now undoes the newest install still in place, so a second rollback undoes
+  the one before, refuses an `--install-id` that was already rolled back or
+  uninstalled, and removes a file an install created only while it still has
+  the content that install wrote. Uninstalling a tool from one project no
+  longer removes the shared memory, contexts and learning stores in your home
+  folder while the same tool installed in another project still uses them.
 - **Uninstall checks more strictly which files are Apothem's.** An install
   recorded by an earlier release does not say which files Apothem wrote, so
   the uninstall compares them with what this release writes. In the two places

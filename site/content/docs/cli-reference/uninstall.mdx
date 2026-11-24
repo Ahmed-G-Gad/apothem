@@ -291,15 +291,15 @@ stopped after removing files:` when it had removed files, or taken Apothem's
 entries or block out of a file such as `openclaw.json`, before it stopped (or
 `failed:` when it had changed nothing), with the message, and gets a `results`
 row with its message, followed by one row for each step that failed before it.
-When it had found what leaves an uninstall unfinished before it stopped
-(Apothem's own files behind a link, files of an install an earlier release
-recorded that differ from what this release writes, the files of an install
-with no record, or a file that holds another block between Apothem's markers),
-a `✗ <harness> uninstall did not finish:` line follows for each reason, as
-above, and the same text is added to the end of the row's message. For an
-install with no record, the `Note:` line follows them, with its check of the
-`--project` folder for a project-scope harness, and the row's `detail` has
-`"kept_reason": "no-record"`, as described in
+When a step had failed before it stopped, or it had found what leaves an
+uninstall unfinished (Apothem's own files behind a link, files of an install
+an earlier release recorded that differ from what this release writes, the
+files of an install with no record, or a file that holds another block between
+Apothem's markers), a `✗ <harness> uninstall did not finish:` line follows for
+each reason, as above, and the same text is added to the end of the row's
+message. For an install with no record, the `Note:` line follows them, with
+its check of the `--project` folder for a project-scope harness, and the row's
+`detail` has `"kept_reason": "no-record"`, as described in
 [What an uninstall removes](#what-an-uninstall-removes). When those reasons
 and the steps that failed before it name one link, the row carries it in
 `detail.symlink` and the folder it leads to in `detail.leads_to`. It exits `2`

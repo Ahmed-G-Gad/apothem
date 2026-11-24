@@ -161,3 +161,25 @@ def test_the_row_names_the_link_a_failed_step_names(
     assert as_json.exit_code == cli._EXIT_EXPECTED  # type: ignore[attr-defined]
     assert row["detail"] == {"symlink": "/old", "leads_to": "/elsewhere"}
     assert step["detail"]["symlink"] == "/old"
+
+
+@pytest.mark.parametrize("outcome", ["finished", "stopped"])
+def test_a_failed_step_gets_its_line_with_the_link_and_the_fix(
+    monkeypatch: pytest.MonkeyPatch, outcome: str
+) -> None:
+    # A step refused at a link gets a "did not finish" line that names the
+    # link, where it leads and the fix, whether the uninstall ran all its
+    # steps or stopped after that one; the row's message ends with it too.
+    _select(monkeypatch, _RefusedAtALink(outcome))
+
+    plain = _run("--no-color")
+    as_json = _run("--format", "json")
+
+    stderr = " ".join(plain.stderr.split())  # type: ignore[attr-defined]
+    named = "target escapes the allowed materialization root: /old is a link to"
+    assert plain.exit_code == cli._EXIT_EXPECTED  # type: ignore[attr-defined]
+    assert f"✗ alpha uninstall did not finish: {named}" in stderr, stderr
+    if outcome == "stopped":
+        assert "✗ alpha uninstall failed: uninstall stopped: disk full" in stderr
+    row = json.loads(as_json.output)["results"][0]  # type: ignore[attr-defined]
+    assert named in row["message"], row
