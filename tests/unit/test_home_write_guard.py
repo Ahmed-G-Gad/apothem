@@ -1207,6 +1207,67 @@ def test_a_refusal_is_written_once_per_folder_in_each_test(
     assert len(home_write_guard.drain_refusals()) == len(phases)
 
 
+def test_a_refusal_outside_any_test_is_written_again_only_after_a_test_refused(
+    fake_home: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Outside any test a folder's line comes back only after a test refused.
+
+    The guard runs only when it is called, and pytest takes the test id out of
+    the environment at the end of each test's teardown, so a test that refuses
+    nothing leaves nothing behind: the stretch after it is counted with the
+    one before it.
+    """
+    claude = fake_home / ".claude" / "x"
+    apothem = fake_home / ".apothem" / "x"
+    version = sys.modules["_pytest"].__version__
+    monkeypatch.setenv(home_write_guard.PYTEST_SESSION_VARIABLE, version)
+    steps: list[tuple[str | None, Path | None]] = [
+        # During collection, say.
+        (None, claude),
+        # A test that checks a path and refuses nothing.
+        ("probe.py::test_one (call)", None),
+        # Between test_one and test_two: no new line.
+        (None, claude),
+        ("probe.py::test_two (call)", apothem),
+        # Between test_two and the next test: a new line.
+        (None, claude),
+        # Later in that stretch: no new line.
+        (None, claude),
+    ]
+    for current, target in steps:
+        if current is None:
+            monkeypatch.delenv(home_write_guard.PYTEST_VARIABLE, raising=False)
+        else:
+            monkeypatch.setenv(home_write_guard.PYTEST_VARIABLE, current)
+        if target is None:
+            home_write_guard.refuse_real_home_write(
+                fake_home / "notes.txt", operation="write"
+            )
+            continue
+        with pytest.raises(home_write_guard.RealHomeWriteError):
+            home_write_guard.refuse_real_home_write(target, operation="write")
+    notices = [
+        line
+        for line in capsys.readouterr().err.splitlines()
+        if line.startswith("RealHomeWriteError: ")
+    ]
+    assert [
+        (
+            "PYTEST_CURRENT_TEST is set: probe.py::test_two" in line,
+            str(fake_home / ".claude") in line,
+        )
+        for line in notices
+    ] == [(False, True), (True, False), (False, True)]
+    assert all(
+        _IMPORTED.format(version=version) in line
+        for line in notices
+        if "PYTEST_CURRENT_TEST is set" not in line
+    )
+    assert len(home_write_guard.drain_refusals()) == 5
+
+
 def _fake_open_key(*_args: object) -> contextlib.AbstractContextManager[object]:
     return contextlib.nullcontext(object())
 

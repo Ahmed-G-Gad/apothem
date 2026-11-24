@@ -98,15 +98,23 @@ off; a test that runs a real install on purpose starts Apothem without
 ``PYTEST_CURRENT_TEST`` and ``PYTEST_VERSION`` in the child's environment.
 
 Every refusal is logged in this process (:func:`refusals`,
-:func:`drain_refusals`) and written to ``stderr`` once per protected folder in
-each test, and, outside any test, once per protected folder in each stretch
-between two tests (in a process that runs no test, once), so a caller that
-absorbs the error still leaves a trace that ``tests/conftest.py`` reports. The
-log is per process: a refusal a child process absorbs shows only as the child's
-``stderr`` line. A child process that inherits only ``PYTEST_VERSION`` (one
-started outside any test) is guarded only when its Python has the same pytest
-installed. The check runs before the write and by path, so a folder swapped for
-a link between the two is not seen.
+:func:`drain_refusals`), so a caller that absorbs the error still leaves a
+trace that ``tests/conftest.py`` reports. It is also written to ``stderr``,
+once per protected folder for as long as the refusals are made in the same
+place: in one test (told apart by its id) or outside any test. A refusal made
+in a different place from the refusal before it starts the count again. So
+each folder is written once in each test and, outside any test, once until a
+test logs a refusal and once more after each test that does (in a process
+where no test logs a refusal, once). A test that refuses nothing starts no new
+count: the guard runs only when it is called, and pytest takes
+``PYTEST_CURRENT_TEST`` out of the environment at the end of each test's
+teardown, so the guard cannot tell that such a test ran between two refusals
+made outside any test. The log is per process: a refusal a child process
+absorbs shows only as the child's ``stderr`` line. A child process that
+inherits only ``PYTEST_VERSION`` (one started outside any test) is guarded
+only when its Python has the same pytest installed. The check runs before the
+write and by path, so a folder swapped for a link between the two is not
+seen.
 
 Nothing here holds a path at module level, and nothing is looked up at import:
 the suite's scan for module-level paths naming the real home stays clean.
@@ -245,8 +253,8 @@ _UNREACHABLE_ERRORS = frozenset({51, 53, 59, 64, 67, 121, 1222, 1231, 1232, 2250
 _extra_homes: list[str] = []
 #: The refusal log, a list of exceptions.
 _refusals: list[RealHomeWriteError] = []
-#: The test whose refusals were last written to ``stderr``, and the protected
-#: folders already written for it.
+#: Where the last refusal was made, its test's id or :data:`_SESSION`, and the
+#: protected folders written to ``stderr`` since the refusals moved there.
 _announced: dict[str, set[str]] = {}
 
 
@@ -616,7 +624,13 @@ def _running() -> str:
 
 
 def _refuse(message: str, *, path: str, root: str, operation: str) -> None:
-    """Log, report once per protected folder and test, and raise the refusal."""
+    """Log the refusal, write it to ``stderr`` when it is new, and raise it.
+
+    It is new when no refusal of its protected folder was written since the
+    refusals moved to where this one is made: a test, by its id, or outside
+    any test. A test that refuses nothing is never seen here, so it does not
+    count as a move (see the module docstring).
+    """
     error = RealHomeWriteError(
         message, path=path, protected_root=root, operation=operation
     )
