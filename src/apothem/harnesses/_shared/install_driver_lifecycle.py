@@ -40,6 +40,7 @@ from .install_driver_layout import _load_rules
 from .install_driver_merge import render_content_tokens
 from .install_driver_outcome import (
     last_uninstall_finished,
+    left_before_a_stop,
     left_behind,
     left_unfinished,
     record_uninstall,
@@ -70,7 +71,7 @@ from .install_driver_types import (
     resolve_source,
     skills_sharing_command_target,
 )
-from .install_driver_written import kept_file_warnings, remove_written
+from .install_driver_written import remove_written
 
 
 def _native_config_parses(target: Path) -> bool:
@@ -390,10 +391,10 @@ def run_uninstall(
     Apothem's keys. An error in *prior_results* also makes the uninstall
     unfinished. An ordinary error that stops the pass is raised as a
     :class:`MaterializationError`, with the error as its cause, whose ``run``
-    holds *prior_results*, this pass's results and the files its removals
-    kept: the CLI then reports what the caller's steps and this pass did
-    before it stopped, a file behind a link that a step before it found
-    included.
+    holds *prior_results*, this pass's results and what its removals kept
+    (see :func:`~.install_driver_outcome.left_before_a_stop`): the CLI then
+    reports what the caller's steps and this pass did before it stopped, a
+    file behind a link that a step before it found included.
 
     A refusal of the real-home guard (see :mod:`apothem.lib.home_write_guard`)
     is raised as it is: it changed nothing in the protected folder. When the
@@ -452,7 +453,7 @@ def run_uninstall(
         # Hand the caller what this pass, and the caller's steps before it,
         # removed or found before it stopped, so the CLI can report the
         # uninstall as partial instead of a bare failure.
-        kept_now = kept_file_warnings(results)
+        kept_now = left_before_a_stop(results, prior=prior_results)
         done = (*prior_results, *results, *kept_now)
         run = MaterializationRun(harness_name, False, done)
         raise MaterializationError(f"uninstall stopped: {exc}", run) from exc

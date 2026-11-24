@@ -2596,6 +2596,66 @@ def test_a_stopped_uninstall_names_a_file_with_another_marked_block(
         assert f"✗ claude-code uninstall did not finish: {line}" in flat
 
 
+@pytest.mark.parametrize("output", ["plain", "json"])
+def test_a_stopped_uninstall_names_a_lone_begin_marker_and_says_to_fix_it_first(
+    claude: Path, monkeypatch: pytest.MonkeyPatch, output: str
+) -> None:
+    # The pass takes Apothem's block out of CLAUDE.md, which leaves a BEGIN
+    # line of yours with no END after it, and then stops. The warning names
+    # the file, and the update step says to fix it first, as in a pass that
+    # ran all its steps.
+    _earlier_release_with_an_edited_agent(claude)
+    anchor = claude / "CLAUDE.md"
+    stray = f"{APOTHEM_BLOCK_BEGIN}\nmy notes\n\n"
+    anchor.write_bytes((stray + anchor.read_text(encoding="utf-8")).encode())
+
+    def broken(*args: object, **kwargs: object) -> list[object]:
+        raise OSError("listing failed")
+
+    monkeypatch.setattr(install_driver_lifecycle, "left_behind", broken)
+    if output == "json":
+        code, envelope = _uninstall()
+        failure = str(envelope["results"][0]["message"])
+        named = [w for w in envelope["warnings"] if w["path"] == str(anchor)]
+        assert [w["detail"] for w in named] == [{blocks.MARKER_LEFT: "1"}], named
+    else:
+        plain = CliRunner().invoke(
+            cli.main, ["uninstall", "--harness", "claude-code", "--yes", "--no-color"]
+        )
+        code, failure = plain.exit_code, plain.stderr
+        warning = " ".join(plain.stdout.split())
+        assert "still holds a line that reads as the Apothem BEGIN" in warning
+
+    assert code == cli._EXIT_PARTIAL, failure
+    assert anchor.read_bytes() == f"{APOTHEM_BLOCK_BEGIN}\nmy notes\n".encode()
+    assert _FIX_FIRST in " ".join(failure.split())
+
+
+def test_a_stopped_uninstall_names_a_link_it_left_in_an_apothem_folder(
+    claude: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A link to your own files in a skill folder stays, and the warning
+    # that says so comes also when the pass stops after it.
+    ClaudeCodeAdapter().install({})
+    mine = tmp_path / "mine"
+    mine.mkdir()
+    (mine / "notes.md").write_text("mine\n", encoding="utf-8")
+    link = claude / "skills" / _skill_name() / "linked"
+    _link_folder(link, mine)
+
+    def broken(*args: object, **kwargs: object) -> list[object]:
+        raise OSError("listing failed")
+
+    monkeypatch.setattr(install_driver_lifecycle, "left_behind", broken)
+    code, envelope = _uninstall()
+
+    assert code == cli._EXIT_PARTIAL, envelope
+    assert (mine / "notes.md").read_text(encoding="utf-8") == "mine\n"
+    named = [str(w["message"]) for w in envelope["warnings"] if w["path"] == str(link)]
+    assert len(named) == 1, envelope["warnings"]
+    assert "so it was left in place" in named[0]
+
+
 def test_each_warning_for_a_marker_left_in_a_file_carries_marker_left(
     tmp_path: Path,
 ) -> None:

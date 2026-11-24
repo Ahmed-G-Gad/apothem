@@ -3,14 +3,16 @@
 """What an uninstall pass left behind, whether it finished, and its ledger record.
 
 After the removals, :func:`left_behind` names each path the pass kept (files
-of the operator's, links, a BEGIN marker left alone), :func:`left_unfinished`
-tells whether what stays leaves the uninstall unfinished, and
-:func:`record_uninstall` appends the record that says which: ``uninstall`` or
-``uninstall-incomplete``.
+of the operator's, links, a BEGIN marker left alone), or
+:func:`left_before_a_stop` what a pass that stopped kept,
+:func:`left_unfinished` tells whether what stays leaves the uninstall
+unfinished, and :func:`record_uninstall` appends the record that says which:
+``uninstall`` or ``uninstall-incomplete``.
 """
 
 from __future__ import annotations
 
+import contextlib
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -75,6 +77,28 @@ def left_behind(
         *links_on_the_way(recorded, floor, known=[*prior, *results, *kept]),
         *stray_begin_warnings([*prior, *results]),
     ]
+
+
+def left_before_a_stop(
+    results: list[MaterializationResult],
+    *,
+    prior: tuple[MaterializationResult, ...] = (),
+) -> list[MaterializationResult]:
+    """Return what a pass that stopped kept, as :func:`left_behind` names it.
+
+    The files its removals kept, the links they left in place and each file
+    *results* or the caller's *prior* results rewrote that still holds a
+    BEGIN marker with no END after it (see :func:`stray_begin_warnings`).
+    The links an install record or the folders it created lead to are not
+    looked for. A check that cannot read a path adds nothing, so the error
+    that stopped the pass is still the one raised.
+    """
+    kept = kept_file_warnings(results)
+    with contextlib.suppress(OSError):
+        kept += kept_link_warnings(results)
+    with contextlib.suppress(OSError):
+        kept += stray_begin_warnings([*prior, *results])
+    return kept
 
 
 def links_on_the_way(
