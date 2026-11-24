@@ -1938,7 +1938,9 @@ def _late_folder(config: pytest.Config) -> str | None:
     which another pytest run's cleanup may remove it. The controller reads
     the files later, in ``pytest_unconfigure``, so the refusals in them
     would be lost. Only a basetemp given with ``--basetemp`` stays until the
-    next run that names it, and the suite's own runs name none.
+    next run that names it, and a run need not name one: the suite's
+    top-level runs (the ``addopts`` in ``pyproject.toml``) name none, though
+    the pytester sessions of its own tests do.
     """
     if _LATE_FOLDER not in config.stash:
         folder = None
