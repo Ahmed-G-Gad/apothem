@@ -245,13 +245,18 @@ def _probe_registered_hooks(
                 f"{name}: {reason}.",
                 harness=name,
                 # Run under the same Python, an update would record that Python
-                # inside the project again, and doctor starts no such one.
+                # inside the project again, and doctor starts no such one unless
+                # it runs under it. The update runs from a folder outside the
+                # project, which the command names by its absolute root: a
+                # `python -m apothem` run in the project folder would import an
+                # `apothem` package committed there, whatever prefix started it.
                 fix=(
                     _update_fix(
                         name,
                         project,
-                        lead="Run <a Python outside the project> -m apothem "
-                        "followed by",
+                        lead="From a folder outside the project, with an Apothem "
+                        "that runs under a Python outside the project (not one "
+                        "installed into the project's own environment), run",
                         same_prefix=False,
                     )
                     if reason in hooks.run_with

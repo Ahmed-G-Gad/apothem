@@ -58,8 +58,7 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   everything it runs is known. It reads the install record of the project that
   `--project` names, takes hook commands only from the places the tool reads
   them (at most 100 from one file; past that, one `hook.unchecked` line names
-  the file and the rest are not started; a file larger than 4 MB is not read,
-  and one `hook.unchecked` line names it), and starts a command only when its
+  the file and the rest are not started), and starts a command only when its
   interpreter is the one that install recorded (unless it is inside the
   project, where others can change it) or the Python that Apothem itself runs
   under, the options before the script run no code (such as `-E` and `-s`),
@@ -75,11 +74,26 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   in the plain output). The same goes for a command whose known paths doctor
   cannot look up, such as one in a folder you cannot open. A recorded
   interpreter inside the project is not started, since others can change it,
-  unless doctor itself runs under it: the fix runs `update` with Apothem
-  running under a Python outside the project, which records that Python
-  instead. Hooks installed by an earlier release, which recorded no
+  unless doctor itself runs under it: the fix runs `update` from a folder
+  outside the project, with an Apothem that runs under a Python outside the
+  project, which records that Python instead. An Apothem installed into the
+  project's own environment cannot do this; use one installed outside it. The
+  update runs from outside the project because `python -m apothem`, run in the
+  project folder, would start a folder named `apothem` committed there instead
+  of Apothem. Hooks installed by an earlier release, which recorded no
   interpreter or no checksums, stay unchecked until you run `update` with the
   same options you installed with.
+- **Hook files the check does not read.** The hook check reads no hook file
+  larger than 4 MB and nothing but a regular file (a pipe or a device, say).
+  Each such file gets one `hook.unchecked` line that names it, whether it
+  holds only hooks or is a settings file the hooks are merged into, and
+  whether it is in a project or under your home folder. A file under your
+  home folder is read through a link, since it is yours. In a project, the
+  check reads no hook file it reaches through a link, and a file that holds
+  only hooks gets a `hook.unchecked` line for it; on Windows, which has no way
+  to open a file while refusing a link, that is checked just before the file
+  is opened. A hook script larger than 4 MB counts as changed since the
+  install, since none that Apothem writes is that large.
 
 Every failed check names a fix. A fix that runs `update` ends with the
 command, after a colon. For a project-scope harness the command names

@@ -13,9 +13,10 @@ tool reads its own keys (:data:`_COMMAND_KEYS`, and ``args`` only for a tool
 in :data:`_ARGS_KEYS`), so a line kept under a key the tool does not read is
 neither judged nor started. Both registration shapes in use resolve to an
 argv: exec form (the command is the interpreter, ``args`` the script and its
-arguments) and shell form (one command string, split with :mod:`shlex`). On Windows, a shell-form line written for PowerShell (Cursor's,
-and Copilot's ``powershell``) starts with the call operator ``&``, which is
-PowerShell syntax rather than part of the argv, so it is dropped first.
+arguments) and shell form (one command string, split with :mod:`shlex`). On
+Windows, a shell-form line written for PowerShell (Cursor's, and Copilot's
+``powershell``) starts with the call operator ``&``, which is PowerShell
+syntax rather than part of the argv, so it is dropped first.
 
 A project's files are shared: anyone who can commit to the project can change
 them, so a project hook line that looks like Apothem's is no proof that
@@ -59,13 +60,12 @@ import shlex
 import subprocess
 import sys
 import tempfile
-from dataclasses import dataclass, field
 from pathlib import Path, PurePath
 from typing import Final
 
 from apothem.cli._doctor_hook_text import (
-    MAX_HOOK_FILE_BYTES,
-    HookFileTooLargeError,
+    HookProbe,
+    RegisteredHooks,
     owned_by_apothem,
     platform_command,
     printable,
@@ -75,6 +75,7 @@ from apothem.cli._doctor_hook_text import (
     sha256_of,
     spelling,
     unquoted,
+    unread_reason,
     user_handlers,
     walk,
 )
@@ -143,69 +144,7 @@ _IMPORTABLE_SUFFIXES = frozenset({".py", ".pyc", ".pyo", ".pyw", ".pyd", ".so"})
 #: Ends the sentence for a project hook line doctor did not start.
 _NOT_STARTED = "so it was not started"
 
-
-@dataclass(frozen=True)
-class HookProbe:
-    """The outcome of starting one registered hook command."""
-
-    command: str
-    ok: bool
-    detail: str
-
-
-@dataclass
-class RegisteredHooks:
-    """The hook commands an install registered, as doctor reads them.
-
-    *argvs* are the commands doctor may start, without repeats. *unstartable*
-    holds the commands that cannot start because their interpreter or script
-    does not exist; doctor reports them without starting anything.
-    *unchecked* holds one sentence for each command or hook file doctor does
-    not start, naming it and the reason. *run_with* maps each sentence whose
-    fix needs a Python outside the project to the one the install recorded
-    inside it, as data only: the fix never names it. Every sentence and
-    command text has its control characters spelled out (:func:`printable`).
-    """
-
-    argvs: list[list[str]] = field(default_factory=list)
-    unstartable: list[HookProbe] = field(default_factory=list)
-    unchecked: list[str] = field(default_factory=list)
-    run_with: dict[str, str] = field(default_factory=dict)
-    # What each list already holds, so nothing is kept twice. One set per list:
-    # an argv never stands in for a sentence, nor a sentence for an argv.
-    _argvs_seen: set[tuple[str, ...]] = field(
-        default_factory=set, init=False, repr=False, compare=False
-    )
-    _probes_seen: set[HookProbe] = field(
-        default_factory=set, init=False, repr=False, compare=False
-    )
-    _notes_seen: set[str] = field(
-        default_factory=set, init=False, repr=False, compare=False
-    )
-
-    def add(self, argv: list[str]) -> None:
-        """Keep *argv* to start, unless an earlier handler registered it."""
-        key = tuple(argv)
-        if key not in self._argvs_seen:
-            self._argvs_seen.add(key)
-            self.argvs.append(argv)
-
-    def cannot_start(self, probe: HookProbe) -> None:
-        """Keep *probe* as a command that cannot start, once."""
-        shown = HookProbe(printable(probe.command), probe.ok, printable(probe.detail))
-        if shown not in self._probes_seen:
-            self._probes_seen.add(shown)
-            self.unstartable.append(shown)
-
-    def note(self, reason: str, *, run_with: str | None = None) -> None:
-        """Keep *reason* for a command or file doctor does not start, once."""
-        shown = printable(reason)
-        if shown in self._notes_seen:
-            return
-        self._notes_seen.add(shown)
-        self.unchecked.append(shown)
-        if run_with is not None:
-            self.run_with[shown] = run_with
+_UNREAD: Final = object()  # what _ProjectInstall._load returns for an unread file
 
 
 def registered_hooks(
@@ -324,13 +263,19 @@ def _read_user_file(
 ) -> None:
     """Collect the hook commands in a file under the operator's own home.
 
-    A file that cannot be read, is not JSON, is nested too deep to parse, or
-    is larger than doctor reads adds nothing; the harness's own verify step
-    reports such a file.
+    The file is the operator's, so it is read through a link, as a dotfile
+    manager may keep it. A file larger than doctor reads, or one that is not a
+    regular file, is noted as unchecked (:func:`unread_reason`). One that
+    cannot be read, is not JSON, or is nested too deep to parse adds nothing
+    and no note: a settings file the tool reads more leniently may hold no hook
+    at all.
     """
     try:
-        document = json.loads(read_hook_file(path))
-    except (OSError, ValueError, RecursionError):
+        document = json.loads(read_hook_file(path, follow_link=True))
+    except (OSError, ValueError, RecursionError) as exc:
+        reason = unread_reason(path, exc)
+        if reason is not None:
+            hooks.note(reason)
         return
     for handler in user_handlers(document, keys, args_key):
         argv = _handler_argv(handler, keys, args_key=args_key)
@@ -453,36 +398,8 @@ class _ProjectInstall:
         if not target.path.endswith(".json") or not self._inside(target.path):
             return
         hook_file = target.mode == _HOOK_FILE_MODE
-        try:
-            link_free = self._cached("link-free", path)
-        except OSError as exc:
-            # Python 3.10 to 3.13 raise from a lookup in a folder the operator
-            # cannot search, where later releases answer False.
-            if hook_file:
-                hooks.note(
-                    f"{path} cannot be looked up ({exc}), so no hook in it was read"
-                )
-            return
-        if not link_free:
-            if hook_file:
-                hooks.note(
-                    f"{path} is reached through a link, so no hook in it was read"
-                )
-            return
-        try:
-            document: object = json.loads(read_hook_file(path))
-        except HookFileTooLargeError:
-            if hook_file:
-                hooks.note(
-                    f"{path} is larger than {MAX_HOOK_FILE_BYTES // 2**20} MB, "
-                    "so no hook in it was read"
-                )
-            return
-        except (OSError, ValueError, RecursionError):
-            if hook_file:
-                hooks.note(
-                    f"{path} cannot be read as JSON, so no hook in it was started"
-                )
+        document = self._load(path, hook_file, hooks)
+        if document is _UNREAD:
             return
         found = 0
         for handler in project_handlers(document):
@@ -509,6 +426,36 @@ class _ProjectInstall:
                 )
         if hook_file and not found:
             hooks.note(f"{path} holds no hook command doctor can start")
+
+    def _load(self, path: Path, hook_file: bool, hooks: RegisteredHooks) -> object:
+        """Return *path*'s JSON, or :data:`_UNREAD` once the reason is noted.
+
+        A lookup error, a file too large or not regular is noted for any file,
+        since a tool reads hooks merged into its settings; a link or text that
+        is not JSON only for a file of nothing but hooks (*hook_file*)."""
+        try:
+            link_free = self._cached("link-free", path)
+        except OSError as exc:
+            # Python 3.10 to 3.13 raise from a lookup in a folder the operator
+            # cannot search, where later releases answer False.
+            hooks.note(f"{path} cannot be looked up ({exc}), so no hook in it was read")
+            return _UNREAD
+        if not link_free:
+            if hook_file:
+                hooks.note(
+                    f"{path} is reached through a link, so no hook in it was read"
+                )
+            return _UNREAD
+        try:
+            document: object = json.loads(read_hook_file(path))
+        except (OSError, ValueError, RecursionError) as exc:
+            reason = unread_reason(path, exc)
+            if reason is None and hook_file:
+                reason = f"{path} cannot be read as JSON, so no hook in it was started"
+            if reason is not None:
+                hooks.note(reason)
+            return _UNREAD
+        return document
 
     def _judge(self, argv: list[str], source: Path, hooks: RegisteredHooks) -> None:
         """Keep the trusted form of *argv* to start, or say why it is not started."""
@@ -578,12 +525,16 @@ class _ProjectInstall:
         if recorded is not None and self._recorded_inside:
             # Either way the fix is an update under a Python outside the
             # project: under the same Python it would record that one again.
-            same = spelling(interpreter) == spelling(recorded)
+            where = "inside the project, where others can change it"
+            if spelling(interpreter) == spelling(recorded):
+                what = f"the Python the install recorded, which is {where}"
+            else:
+                what = (
+                    f"not the Python the install recorded ({recorded}, "
+                    f"which is {where})"
+                )
             hooks.note(
-                f"{line} runs {interpreter}, {'' if same else 'not '}the Python the "
-                "install recorded, which is inside the project, where others can "
-                f"change it, {_NOT_STARTED}",
-                run_with=recorded,
+                f"{line} runs {interpreter}, {what}, {_NOT_STARTED}", run_with=recorded
             )
         elif recorded is None:
             hooks.note(

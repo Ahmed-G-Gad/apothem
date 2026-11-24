@@ -12,13 +12,16 @@ with a no-op payload.
 
 from __future__ import annotations
 
+import errno
 import hashlib
 import json
 import os
 import shlex
 import shutil
+import stat
 import subprocess
 import sys
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -735,11 +738,13 @@ def _fake_install(
     entry: dict[str, object],
     *,
     python_bin: str | None = None,
+    mode: str = "native_hooks",
 ) -> tuple[Path, Path]:
     """Fake a GitHub Copilot project install whose hook file holds *entry*.
 
     *python_bin* is the interpreter the install record keeps; ``None`` is a
-    record from a release that kept none.
+    record from a release that kept none. *mode* is the hook file's install
+    mode: ``write_text`` for a settings file the hooks are merged into.
     """
     dispatcher = _dispatcher(tmp_path, "github-copilot")
     dispatcher.parent.mkdir(parents=True)
@@ -754,7 +759,7 @@ def _fake_install(
             files=None,
         )
         for path, mode in (
-            (hook_file, "native_hooks"),
+            (hook_file, mode),
             (dispatcher, "merge_tree_entries"),
         )
     ]
@@ -1206,7 +1211,8 @@ def _with_entries(
             entries += list(extra)
         return _Listing(entries)
 
-    monkeypatch.setattr(_doctor_hooks.os, "scandir", scandir)
+    # The listing walk() makes, in the module that holds it.
+    monkeypatch.setattr(_doctor_hook_text.os, "scandir", scandir)
 
 
 def test_doctor_does_not_follow_a_link_in_the_hook_folder(
@@ -1387,7 +1393,9 @@ def test_doctor_fix_for_a_recorded_python_inside_the_project(
 ) -> None:
     # Doctor starts no interpreter inside the project, so the fix never says
     # to run that one: an update under a Python outside the project records
-    # that Python instead, which doctor accepts.
+    # that Python instead, which doctor accepts. The update runs from a folder
+    # outside the project: "python -m apothem" run in the project folder would
+    # import an apothem package committed there, whatever launcher started it.
     from apothem.cli import _cmd_doctor
 
     project = _project(tmp_path)
@@ -1403,10 +1411,14 @@ def test_doctor_fix_for_a_recorded_python_inside_the_project(
     assert code == 0, payload
     [check] = [c for c in payload["checks"] if c["code"] == "hook.unchecked"]
     assert recorded not in check["fix"]
+    assert "-m apothem" not in check["fix"]
     assert check["fix"].startswith(
-        "Run <a Python outside the project> -m apothem followed by this "
-        "command, then run doctor again: update --harness cursor --project "
+        "From a folder outside the project, with an Apothem that runs under a "
+        "Python outside the project (not one installed into the project's own "
+        "environment), run this command, then run doctor again: update "
+        "--harness cursor --project "
     )
+    assert check["fix"].count("then run") == 1
 
 
 def test_a_claude_code_install_records_the_interpreter_of_its_hooks(
@@ -1534,7 +1546,10 @@ def test_doctor_reads_a_user_hook_file_nested_deeper_than_the_call_depth(
     hook_file = tmp_path / "hooks.json"
     hook_file.write_text("{}", encoding="utf-8")
     _user_install(monkeypatch, hook_file)
-    monkeypatch.setattr(_doctor_hooks.json, "loads", lambda text: document)
+    # Only the hook module's json is stubbed, not json.loads for every caller.
+    monkeypatch.setattr(
+        _doctor_hooks, "json", SimpleNamespace(loads=lambda text: document)
+    )
     monkeypatch.setattr(_doctor_hooks, "_on_windows", lambda: False)
 
     hooks = _doctor_hooks.registered_hooks("codex", root=tmp_path)
@@ -1550,14 +1565,14 @@ def test_doctor_reports_a_hook_folder_it_cannot_list(
     dispatcher = _dispatcher(tmp_path, "github-copilot")
     line = _DOUBLE.format(py=python, script=dispatcher.as_posix())
     _fake_install(tmp_path, monkeypatch, {"type": "command", "bash": line})
-    real = os.scandir
+    real = _doctor_hooks.walk
 
-    def scandir(path: object) -> object:
-        if os.path.normcase(str(path)) == os.path.normcase(str(dispatcher.parent)):
-            raise PermissionError(13, "Permission denied", str(path))
-        return real(path)
+    def walk(folder: Path) -> Iterator[tuple[Path, str]]:
+        if os.path.normcase(str(folder)) == os.path.normcase(str(dispatcher.parent)):
+            raise PermissionError(13, "Permission denied", str(folder))
+        return real(folder)
 
-    monkeypatch.setattr(_doctor_hooks.os, "scandir", scandir)
+    monkeypatch.setattr(_doctor_hooks, "walk", walk)
 
     hooks = _read_hooks(tmp_path, monkeypatch)
 
@@ -1799,9 +1814,10 @@ def test_a_line_beside_a_recorded_python_inside_the_project_names_it_to_run_with
 
     assert hooks.argvs == []
     [unchecked] = hooks.unchecked
-    assert "not the Python the install recorded, which is inside the project" in (
-        unchecked
-    )
+    assert (
+        f"runs {other}, not the Python the install recorded ({recorded}, which "
+        "is inside the project, where others can change it)"
+    ) in unchecked
     assert hooks.run_with == {unchecked: recorded}
 
 
@@ -1828,7 +1844,7 @@ def test_doctor_reads_no_project_hook_file_larger_than_its_cap(
 
 def test_the_checksum_of_a_file_read_in_blocks_is_its_sha256(tmp_path: Path) -> None:
     path = tmp_path / "big.py"
-    data = bytes(range(256)) * (5 * 1024 * 1024 // 256 // 2)
+    data = bytes(range(256)) * (3 * 1024 * 1024 // 256)
     path.write_bytes(data)
 
     assert _doctor_hook_text.sha256_of(path) == hashlib.sha256(data).hexdigest()
@@ -1852,3 +1868,364 @@ def test_doctor_starts_the_hooks_of_a_claude_code_install(
     assert hooks is not None
     assert hooks.argvs
     assert any(Path(argv[1]).name == "dispatch.py" for argv in hooks.argvs)
+
+
+def _pad_past_the_cap(path: Path) -> None:
+    """Pad the JSON in *path* with spaces until it is one byte over the cap."""
+    text = path.read_text(encoding="utf-8")
+    padding = _doctor_hook_text.MAX_HOOK_FILE_BYTES - len(text.encode("utf-8")) + 1
+    path.write_text(text + " " * padding, encoding="utf-8")
+
+
+def _copilot_line(tmp_path: Path) -> dict[str, object]:
+    python = Path(sys.executable).as_posix()
+    dispatcher = _dispatcher(tmp_path, "github-copilot")
+    line = _DOUBLE.format(py=python, script=dispatcher.as_posix())
+    return {"type": "command", "bash": line}
+
+
+def test_doctor_names_a_merged_settings_file_larger_than_its_cap(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A settings file the hooks are merged into (CodeBuddy's, say) is still
+    # read by its tool, so skipping it must not pass as a clean check.
+    hook_file, _ = _fake_install(
+        tmp_path, monkeypatch, _copilot_line(tmp_path), mode="write_text"
+    )
+    _pad_past_the_cap(hook_file)
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    assert hooks.argvs == []
+    assert hooks.unchecked == [
+        f"{hook_file} is larger than 4 MB, so no hook in it was read"
+    ]
+
+
+def test_doctor_names_a_merged_settings_file_it_cannot_look_up(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    hook_file, _ = _fake_install(
+        tmp_path, monkeypatch, _copilot_line(tmp_path), mode="write_text"
+    )
+    _deny_lookups_under(monkeypatch, tmp_path / ".github")
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    assert hooks.argvs == []
+    [unchecked] = hooks.unchecked
+    assert unchecked.startswith(f"{hook_file} cannot be looked up (")
+
+
+def test_doctor_stays_quiet_about_a_merged_settings_file_that_is_not_json(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A settings file may hold comments its tool reads; with no hook in it,
+    # a note would only be noise.
+    hook_file, _ = _fake_install(
+        tmp_path, monkeypatch, _copilot_line(tmp_path), mode="write_text"
+    )
+    hook_file.write_text("{ // a comment\n}", encoding="utf-8")
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    assert hooks.argvs == []
+    assert hooks.unchecked == []
+
+
+def test_doctor_names_a_user_hook_file_larger_than_its_cap(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    hook_file = tmp_path / "hooks.json"
+    line = f"python3 {tmp_path.as_posix()}/hooks/dispatch.py --contract codex x"
+    hook_file.write_text(json.dumps({"hooks": [{"command": line}]}), encoding="utf-8")
+    _pad_past_the_cap(hook_file)
+    _user_install(monkeypatch, hook_file)
+
+    hooks = _doctor_hooks.registered_hooks("codex", root=tmp_path)
+
+    assert hooks is not None
+    assert hooks.argvs == []
+    assert hooks.unchecked == [
+        f"{hook_file} is larger than 4 MB, so no hook in it was read"
+    ]
+
+
+def test_doctor_reports_an_oversize_claude_code_settings_file_as_unchecked(
+    runner: CliRunner, home: Path
+) -> None:
+    # The harness's own verify step passes such a file; doctor must say it
+    # started none of the hooks in it rather than report a clean pass.
+    _install(runner, "claude-code")
+    settings = home / ".claude" / "settings.json"
+    _pad_past_the_cap(settings)
+
+    code, payload = _doctor(runner)
+
+    assert code == 0, payload
+    assert _row(payload, "claude-code")["hooks"] == {"probed": 0, "failed": []}
+    assert _unchecked(payload, "claude-code") == [
+        f"claude-code: {settings} is larger than 4 MB, so no hook in it was read."
+    ]
+
+
+class _StatAs:
+    """A stat result with some fields replaced; every other one is the real one.
+
+    ``os.stat_result`` rebuilt from a list drops the extra fields, such as
+    Windows' ``st_reparse_tag``, which other lookups in the same call read.
+    """
+
+    def __init__(self, real: os.stat_result, **fields: int) -> None:
+        self._real = real
+        self.__dict__.update(fields)
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self._real, name)
+
+
+def _look_as(
+    monkeypatch: pytest.MonkeyPatch, path: Path, kind: int, *, followed: bool
+) -> None:
+    """Make a look at *path* report file type *kind*, which this host cannot make.
+
+    The ``lstat`` answer changes, and the ``stat`` one too when *followed*
+    (a pipe is one either way; a link only to a look that does not follow it).
+    """
+    target = os.path.normcase(str(path))
+
+    def looked(real: Callable[..., os.stat_result]) -> Callable[..., object]:
+        def look(name: object, *args: object, **kwargs: object) -> object:
+            result = real(name, *args, **kwargs)
+            if os.path.normcase(str(name)) != target:
+                return result
+            return _StatAs(result, st_mode=kind | 0o644)
+
+        return look
+
+    monkeypatch.setattr(_doctor_hook_text.os, "lstat", looked(os.lstat))
+    if followed:
+        monkeypatch.setattr(_doctor_hook_text.os, "stat", looked(os.stat))
+
+
+def _as_pipe(monkeypatch: pytest.MonkeyPatch, path: Path) -> None:
+    """Make *path* look like a named pipe, which ``os.mkfifo`` cannot make here.
+
+    Only its ``lstat`` and ``stat`` answers change; any open of it fails the
+    test, since a pipe with no writer would make the open wait for good.
+    """
+    real_open = os.open
+    target = os.path.normcase(str(path))
+    _look_as(monkeypatch, path, stat.S_IFIFO, followed=True)
+
+    def no_open(name: object, *args: object, **kwargs: object) -> int:
+        assert os.path.normcase(str(name)) != target, "the pipe was opened"
+        return real_open(name, *args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(_doctor_hook_text.os, "open", no_open)
+
+
+def test_a_pipe_is_neither_read_nor_hashed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "dispatch.py"
+    path.write_text("# a pipe on POSIX\n", encoding="utf-8")
+    _as_pipe(monkeypatch, path)
+
+    with pytest.raises(_doctor_hook_text.NotARegularFileError):
+        _doctor_hook_text.read_hook_file(path)
+    assert _doctor_hook_text.sha256_of(path) is None
+
+
+def test_doctor_names_a_project_hook_file_that_is_a_pipe(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    hook_file, _ = _fake_install(tmp_path, monkeypatch, _copilot_line(tmp_path))
+    _as_pipe(monkeypatch, hook_file)
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    assert hooks.argvs == []
+    assert hooks.unchecked == [
+        f"{hook_file} is not a regular file, so no hook in it was read"
+    ]
+
+
+def test_doctor_names_a_user_hook_file_that_is_a_pipe(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    hook_file = tmp_path / "hooks.json"
+    hook_file.write_text("{}", encoding="utf-8")
+    _user_install(monkeypatch, hook_file)
+    _as_pipe(monkeypatch, hook_file)
+
+    hooks = _doctor_hooks.registered_hooks("codex", root=tmp_path)
+
+    assert hooks is not None
+    assert hooks.unchecked == [
+        f"{hook_file} is not a regular file, so no hook in it was read"
+    ]
+
+
+def test_doctor_does_not_start_a_hook_whose_recorded_file_is_a_pipe(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A recorded file swapped for a pipe cannot be hashed, so it no longer
+    # matches its checksum, and the open never waits on it.
+    _, dispatcher = _fake_install(tmp_path, monkeypatch, _copilot_line(tmp_path))
+    _as_pipe(monkeypatch, dispatcher)
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    assert hooks.argvs == []
+    [unchecked] = hooks.unchecked
+    assert "changed after the install (dispatch.py)" in unchecked
+
+
+@pytest.mark.parametrize(
+    ("swap", "same_file_check"),
+    [
+        pytest.param("pipe", False, id="a-pipe-once-open"),
+        pytest.param("another-file", True, id="another-file-once-open"),
+    ],
+)
+def test_a_file_swapped_after_the_look_is_not_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, swap: str, same_file_check: bool
+) -> None:
+    # Between the look and the open the path can be swapped; the open file
+    # must still be a regular file, and on POSIX the one looked at.
+    path = tmp_path / "hooks.json"
+    path.write_text("{}", encoding="utf-8")
+    real_fstat, real_close = os.fstat, os.close
+    closed: list[int] = []
+
+    def fstat(descriptor: int) -> object:
+        real = real_fstat(descriptor)
+        if swap == "pipe":
+            return _StatAs(real, st_mode=stat.S_IFIFO | 0o644)
+        return _StatAs(real, st_ino=real.st_ino + 1)  # another file
+
+    def close(descriptor: int) -> None:
+        closed.append(descriptor)
+        real_close(descriptor)
+
+    monkeypatch.setattr(_doctor_hook_text.os, "fstat", fstat)
+    monkeypatch.setattr(_doctor_hook_text.os, "close", close)
+    monkeypatch.setattr(_doctor_hook_text, "_SAME_FILE_CHECK", same_file_check)
+
+    with pytest.raises(_doctor_hook_text.NotARegularFileError):
+        _doctor_hook_text.read_hook_file(path)
+    assert len(closed) == 1
+
+
+@pytest.mark.skipif(
+    not hasattr(os, "O_NOFOLLOW"),
+    reason="Windows has no open flag that refuses a link; the look before the "
+    "open is its only guard",
+)
+def test_a_hook_file_is_opened_without_following_a_link_where_the_os_can() -> None:
+    assert _doctor_hook_text._NO_FOLLOW == os.O_NOFOLLOW
+    assert _doctor_hook_text._OPEN_FLAGS & os.O_NONBLOCK == os.O_NONBLOCK
+
+
+def test_a_project_hook_file_that_is_a_link_is_not_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "hooks.json"
+    path.write_text("{}", encoding="utf-8")
+    _look_as(monkeypatch, path, stat.S_IFLNK, followed=False)
+
+    with pytest.raises(_doctor_hook_text.NotARegularFileError):
+        _doctor_hook_text.read_hook_file(path)
+    assert _doctor_hook_text.read_hook_file(path, follow_link=True) == "{}"
+
+
+def test_doctor_reads_a_user_hook_file_reached_through_a_link(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A dotfile manager keeps the operator's settings file as a link to a
+    # regular file; its hooks are read like any other file under the home.
+    hook_file = tmp_path / "hooks.json"
+    line = f"python3 {tmp_path.as_posix()}/hooks/dispatch.py --contract codex x"
+    hook_file.write_text(json.dumps({"hooks": [{"command": line}]}), encoding="utf-8")
+    _user_install(monkeypatch, hook_file)
+    _look_as(monkeypatch, hook_file, stat.S_IFLNK, followed=False)
+    monkeypatch.setattr(_doctor_hooks, "_on_windows", lambda: False)
+
+    hooks = _doctor_hooks.registered_hooks("codex", root=tmp_path)
+
+    assert hooks is not None
+    assert hooks.unchecked == []
+    assert hooks.argvs == [shlex.split(line)]
+
+
+@pytest.mark.parametrize("code", [errno.ELOOP, errno.EMLINK])
+def test_a_link_swapped_in_before_the_open_is_named_not_a_regular_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, code: int
+) -> None:
+    # An open that refuses a link fails with ELOOP (EMLINK on FreeBSD); the
+    # file then gets the same note as any other that is not a regular file.
+    path = tmp_path / "hooks.json"
+    path.write_text("{}", encoding="utf-8")
+
+    def refused(name: object, *args: object, **kwargs: object) -> int:
+        raise OSError(code, os.strerror(code), str(name))
+
+    monkeypatch.setattr(_doctor_hook_text.os, "open", refused)
+
+    with pytest.raises(_doctor_hook_text.NotARegularFileError) as caught:
+        _doctor_hook_text.read_hook_file(path)
+    assert _doctor_hook_text.unread_reason(path, caught.value) == (
+        f"{path} is not a regular file, so no hook in it was read"
+    )
+
+
+def test_a_hook_script_larger_than_the_cap_is_not_hashed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # No hook script Apothem writes is that large, so it has changed; hashing
+    # a large or sparse file committed in its place would take minutes.
+    path = tmp_path / "dispatch.py"
+    path.write_bytes(b"x" * 65)
+    monkeypatch.setattr(_doctor_hook_text, "MAX_HOOK_FILE_BYTES", 64)
+    assert _doctor_hook_text.sha256_of(path) is None
+
+    # A file that grows once open is cut off the same way.
+    real_fstat = os.fstat
+    monkeypatch.setattr(
+        _doctor_hook_text.os,
+        "fstat",
+        lambda descriptor: _StatAs(real_fstat(descriptor), st_size=0),
+    )
+    assert _doctor_hook_text.sha256_of(path) is None
+
+    path.write_bytes(b"x" * 64)
+    assert _doctor_hook_text.sha256_of(path) == hashlib.sha256(b"x" * 64).hexdigest()
+
+
+def test_the_hook_probe_modules_hold_the_ci_complexity_and_size_bounds() -> None:
+    # CI runs ruff's C901 check over the CLI at a bound of 15, tighter than
+    # the repo-wide one, and the hook module stays within 700 lines.
+    cli = Path(_doctor_hooks.__file__).parent
+    hook_module = cli / "_doctor_hooks.py"
+    assert len(hook_module.read_text(encoding="utf-8").splitlines()) <= 700
+    pytest.importorskip("ruff")
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "ruff",
+            "check",
+            "--no-cache",
+            "--select",
+            "C901",
+            "--config",
+            "lint.mccabe.max-complexity=15",
+            str(hook_module),
+            str(cli / "_doctor_hook_text.py"),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

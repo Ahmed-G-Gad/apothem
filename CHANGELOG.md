@@ -1287,8 +1287,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   never opened the project in the tool. Doctor now reads each hook command
   where the tool reads it, from the keys the tool reads (an `args` list only
   for Claude Code, the one tool that runs one; at most 100 commands from one
-  file, and no file larger than 4 MB), and starts one only when its
-  interpreter is the one the install recorded (outside the project) or the
+  file, and no file larger than 4 MB or that is not a regular file, each of
+  which a `hook.unchecked` line names, in a project or under your home
+  folder), and starts one only when its interpreter is the one the install
+  recorded (outside the project) or the
   Python Apothem runs under, its options run no code, its script is the hook
   script the install wrote, in a folder whose files still match the SHA-256
   checksums the install recorded and that holds no other Python file and no
@@ -1304,10 +1306,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   harness that also started others that passed. Install records now keep the
   interpreter written into hook commands, so hooks installed by an earlier
   release stay unchecked until you run `apothem update`; for a recorded
-  interpreter inside the project, the fix runs `apothem update` under a Python
-  outside the project, which records that Python instead. An install now keeps
-  only a true or false `enabled` flag on Kiro's hooks, so no other value can
-  ride along in the file.
+  interpreter inside the project, the fix runs `apothem update` from a folder
+  outside the project, with an Apothem that runs under a Python outside the
+  project, which records that Python instead; run in the project folder,
+  `python -m apothem` would start a folder named `apothem` committed there.
+  An install now keeps only a true or false `enabled` flag on Kiro's hooks, so
+  no other value can ride along in the file.
 - **A checked project's git settings no longer make the conformity gate start
   a program.** `--all`, `--all-perwrite`, three standalone validators
   (`no-global-plans-grep`, `conventional-commit-grep` and
