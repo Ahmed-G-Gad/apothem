@@ -274,7 +274,12 @@ The verify command confirms that:
    marker that starts no whole block, two or more whole blocks between
    Apothem's markers, or marker pairs Apothem cannot tell from your text. An
    update keeps such a marker, or leaves such a file as it is, so the check
-   fails until you fix the file by hand as the `Note:` line says (see
+   fails until you fix the file by hand as the `Note:` line says. A rules file
+   is written only while it fits the per-file limit, and old Apothem text you
+   keep below a marker line you change counts against it, so the note says the
+   next update writes Apothem's block "if the file then fits OpenClaw's
+   per-file limit (bootstrapMaxChars)"; when it does not, the update names the
+   file in its size warning (see
    [A file has an Apothem BEGIN marker with no END marker](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker),
    [A file holds two blocks between Apothem's markers](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)
    and

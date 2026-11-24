@@ -44,6 +44,7 @@ from apothem.lib import install_ledger
 from apothem.lib.harness_materializer import (
     APOTHEM_BLOCK_BEGIN,
     APOTHEM_BLOCK_END,
+    complete_managed_block,
     extract_managed_block,
     whole_blocks,
 )
@@ -2244,6 +2245,57 @@ def test_the_size_refusal_names_each_begin_marker_that_starts_no_block(
         f"lines 2 and {later} by adding a word inside each comment and delete "
         "that old text by hand"
     ) in size
+
+
+def test_verify_says_the_update_writes_a_rules_file_only_once_it_fits(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    """fixes-r6-1: verify promised an update that the size limit then refused.
+
+    For a rules file over OpenClaw's per-file limit whose block lost its END
+    marker, the verify and doctor note said the next update adds Apothem's
+    block once the marker line changes. The old Apothem text left below that
+    line still counts against the limit, so the update refused the file
+    again. The note now says the update writes the block only if the file
+    then fits, and that the old text counts against the limit; done as the
+    note and the update's refusal say, the update writes the block.
+    """
+    workspace = _workspace(home / ".openclaw" / "workspace")
+    adapter.install({})
+    target = workspace / RULES_FILE_RELATIVE
+    text = target.read_text(encoding="utf-8")
+    lost = text.replace(APOTHEM_BLOCK_END + "\n", "")
+    target.write_text(lost, encoding="utf-8")
+    line = lost.split("\n").index(APOTHEM_BLOCK_BEGIN) + 1
+    config = _config(home)
+    config["agents"] = {"defaults": {"bootstrapMaxChars": chars(text) + 200}}
+    _write_config(home, config)
+
+    adapter.update({})
+    code, payload = _verify_json()
+    results = payload["results"]
+    assert isinstance(results, list)
+    note = " ".join(str(results[0]["stray_begin"]["message"]).split())
+    changed = lost.split("\n")[: line - 1]
+    target.write_text(
+        "".join(f"{kept}\n" for kept in changed)
+        + APOTHEM_BLOCK_BEGIN.replace(" -->", " (example) -->")
+        + "\n",
+        encoding="utf-8",
+    )
+    adapter.update({})
+    again, again_payload = _verify_json()
+
+    assert code == 1, payload
+    assert f"A1. Change line {line}: add a word inside its comment." in note
+    assert (
+        "Apothem then reads none of these lines as its markers, and the next "
+        "update writes its block at the end of the file if the file then fits "
+        "OpenClaw's per-file limit (bootstrapMaxChars), which old Apothem text "
+        "you keep counts against."
+    ) in note
+    assert again == 0, again_payload
+    assert complete_managed_block(target.read_text(encoding="utf-8")) is not None
 
 
 def test_verify_names_an_earlier_rules_file_an_update_cannot_retire(

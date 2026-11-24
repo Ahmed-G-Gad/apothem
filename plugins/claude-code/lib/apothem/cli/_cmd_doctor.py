@@ -47,6 +47,7 @@ from apothem.cli._json_formatter import emit_json
 from apothem.cli._stray_begin_report import (
     markers_to_fix_by_hand,
     record_lists,
+    size_limited,
     stray_begin_note,
     stray_begin_paths,
 )
@@ -226,6 +227,7 @@ def _report_verify_failure(
                 stray,
                 then=_update_fix(name, project, lead="run"),
                 listed=record_lists(entry, adapter, project_root),
+                limited=size_limited(entry),
             ),
         )
     )

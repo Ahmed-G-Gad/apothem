@@ -12,7 +12,9 @@ rule 3 fired in it), so re-running them does not clear it. A failed
 ``verify`` row and ``doctor``'s failed check name each such file and give
 the numbered steps that fix it, so the fix is not a guess, and say that
 install and update leave the file as it is only where they do (see
-:func:`record_lists`).
+:func:`record_lists`). For an OpenClaw rules file, which the update writes
+only while it fits OpenClaw's per-file limit, the steps say so (see
+:func:`size_limited`).
 Everything here reads files and the install ledger and writes nothing.
 """
 
@@ -30,6 +32,8 @@ from apothem.harnesses._shared.install_driver_blocks import (
     whole_blocks_at,
 )
 from apothem.harnesses._shared.install_driver_blocktext import (
+    FITS,
+    REPLACES,
     not_back_text,
     stray_fix_text,
     stray_subject,
@@ -102,24 +106,43 @@ def record_lists(
     return partial(listed_in_record, entry.package_key, root)
 
 
-def _named(path: Path, text: str, listed: bool) -> str | None:
+def size_limited(entry: HarnessRegistryEntry) -> Callable[[Path], bool]:
+    """Return whether the update writes a file of *entry*'s only while it fits a limit.
+
+    True for every file of OpenClaw's (an install writes no other
+    managed-block file for it than the rules file of each workspace, see
+    :mod:`apothem.harnesses.open_claw.rules_file`), which the update leaves
+    out of a workspace while it is over OpenClaw's per-file limit; False for
+    any other tool's.
+    """
+    return _limited if entry.package_key == "open_claw" else _unlisted
+
+
+def _limited(path: Path) -> bool:
+    """Return True: the update writes *path* only while it fits a size limit."""
+    return True
+
+
+def _named(path: Path, text: str, listed: bool, outcome: str) -> str | None:
     """Return the text for *path* when its *text* holds more than a lone BEGIN marker.
 
     *listed* says whether an install record lists *path* (see
     :func:`record_lists`): only then, or for a pair that holds exactly the
     block they write (not checked here), do install and update leave a file
     with marker pairs in code as it is, so only then does its text say they
-    do.
+    do. *outcome* is what the next update does once a fix is made (see
+    :func:`stray_begin_note`).
     """
     blocks = whole_blocks(text)
     if len(blocks) > 1:
-        return two_blocks_report(path, text, blocks, left=False)
+        return two_blocks_report(path, text, blocks, left=False, outcome=outcome)
     pairs = uncertain_pairs(text)
     if pairs:
         return unclear_block_report(
             path,
             text,
             pairs,
+            outcome=outcome,
             left=False,
             lone=lone_begins(text),
             held=listed,
@@ -132,6 +155,7 @@ def stray_begin_note(
     *,
     then: str,
     listed: Callable[[Path], bool] = _unlisted,
+    limited: Callable[[Path], bool] = _unlisted,
 ) -> str:
     """Return one line that names each of *files* and says how to clear its marker.
 
@@ -152,12 +176,16 @@ def stray_begin_note(
     holds none. *listed* says whether an install record lists a file (see
     :func:`record_lists`); without it, the text for marker pairs says that
     install and update leave a file as it is only for the pair rule 3 fired
-    on, which holds the file back with or without one.
+    on, which holds the file back with or without one. *limited* says
+    whether the update writes a file only while it fits a size limit (see
+    :func:`size_limited`); the steps for such a file say the update writes
+    Apothem's block only if the file then fits.
     """
     parts: list[str] = []
     for path in files:
         text = text_at(path)
-        named = _named(path, text, listed(path))
+        outcome = FITS if limited(path) else REPLACES
+        named = _named(path, text, listed(path), outcome)
         if named is not None:
             parts.append(named)
             continue
@@ -165,7 +193,7 @@ def stray_begin_note(
         parts.extend(
             [
                 f"{path} has {stray_subject(text, strays=strays)} with no END marker.",
-                stray_fix_text(text, strays=strays, blocks=blocks),
+                stray_fix_text(text, outcome, strays=strays, blocks=blocks),
                 not_back_text(text, blocks=blocks),
             ]
         )

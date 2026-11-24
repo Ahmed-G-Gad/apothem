@@ -49,6 +49,11 @@ lines; or,
 for marker pairs
 Apothem cannot tell from your text, the lines of each pair, where they read
 and how to fix them, along with each BEGIN marker that starts no marker pair.
+For an OpenClaw rules file, which an update writes only while it fits
+OpenClaw's per-file limit, the note says the next update writes Apothem's
+block if the file then fits that limit, which old Apothem text you keep
+counts against (see
+[Open-Claw](/docs/harnesses/open-claw#rules-in-each-workspace)).
 In plain mode a `Note:` line follows the row,
 which then leaves out the expected path, and the JSON row gains a `stray_begin`
 object with the `files` and a `message`.

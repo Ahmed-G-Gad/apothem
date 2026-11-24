@@ -48,8 +48,19 @@ from .install_driver_steps import (
 #: block, or writes it at the end of a file that then holds none.
 REPLACES = "the next update then replaces {lines}"
 
+#: The same for an OpenClaw rules file: the update writes it only while it
+#: fits OpenClaw's per-file limit, which old Apothem text left in it counts
+#: against (see :mod:`apothem.harnesses.open_claw.rules_file`).
+FITS = "the next update then writes {lines} if the file fits"
+
 #: The same for a rules file an install or update takes Apothem's block out of.
 TAKES_OUT = "the next install, update or uninstall then takes {lines} out"
+
+#: OpenClaw's per-file limit, as a :data:`FITS` promise names it.
+_LIMIT = (
+    "if the file then fits OpenClaw's per-file limit (bootstrapMaxChars), which "
+    "old Apothem text you keep counts against"
+)
 
 #: What a fix that leaves no block says the next run then does: Apothem reads
 #: none of the lines it changed as its markers.
@@ -63,6 +74,10 @@ _AT_END = (
 #: when the file then holds Apothem's block and when it holds none.
 _PROMISES: dict[str | None, tuple[str, str]] = {
     REPLACES: ("The next update then replaces Apothem's block", _AT_END),
+    FITS: (
+        f"The next update then replaces Apothem's block {_LIMIT}",
+        f"{_AT_END} {_LIMIT}",
+    ),
     TAKES_OUT: (
         "The next install, update or uninstall then takes Apothem's block out",
         _NONE_LEFT,
@@ -72,7 +87,7 @@ _PROMISES: dict[str | None, tuple[str, str]] = {
 
 #: The outcomes whose next run writes Apothem's block, at the end of a file
 #: that holds none.
-_WRITES = frozenset({REPLACES})
+_WRITES = frozenset({REPLACES, FITS})
 
 #: What every list of fixes says about the text below the marker lines it
 #: changes.
@@ -261,11 +276,12 @@ def unclear_block_report(
     marker line changes, and one that changes every BEGIN marker line.
     *outcome* is what
     the next run does once a fix is made: :data:`REPLACES` for an install or
-    update, :data:`TAKES_OUT` for a rules file an install or update takes Apothem's
+    update, :data:`FITS` for an OpenClaw rules file they write,
+    :data:`TAKES_OUT` for a rules file an install or update takes Apothem's
     block out of, and ``None`` for an uninstall, which stays unfinished while
     such a file holds a pair, so its text ends by saying to run it again.
     With *left*, the text says Apothem left the file as it is, or, with
-    *dry_run*, that it would. With :data:`REPLACES`, the text
+    *dry_run*, that it would. With :data:`REPLACES` or :data:`FITS`, the text
     ends by saying that install and update leave the file as it is, and end
     as partial, until its marker lines are fixed, where the merge holds the
     file back: while *held*, or for the pair rule 3 fired on (see
@@ -358,8 +374,10 @@ def two_blocks_report(
         f"its own{_left(left, dry_run)}",
     )
     fixes = block_fixes(text, blocks, revealed=revealed is not None)
+    limit = f", and the next update replaces it {_LIMIT}" if outcome == FITS else ""
     promises = [
-        f"Lines {fix.block[0]} to {fix.block[1]} are then the one block in the file"
+        f"Lines {fix.block[0]} to {fix.block[1]} are then the one block in the "
+        f"file{limit}"
         if fix.block is not None
         else _PROMISES[outcome][1]
         for fix in fixes

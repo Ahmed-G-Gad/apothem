@@ -43,6 +43,7 @@ from apothem.cli._helpers import (
 from apothem.cli._json_formatter import emit_json
 from apothem.cli._stray_begin_report import (
     record_lists,
+    size_limited,
     stray_begin_note,
     stray_begin_paths,
 )
@@ -387,6 +388,7 @@ def _stray_begin_note(
         stray,
         then="run apothem update and apothem verify again",
         listed=record_lists(entry, adapter, project_root),
+        limited=size_limited(entry),
     )
     return stray, note
 

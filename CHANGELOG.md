@@ -128,7 +128,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
     marker by its line, says that the old Apothem text below it counts against
     the limit, and says to change that line by adding a word inside its
     comment and delete that text by hand, to shorten the profile's custom
-    rules, or to raise the limit.
+    rules, or to raise the limit. The `verify` note and the `doctor`
+    fix for such a file say that the next update writes Apothem's block if
+    the file then fits the limit, which old Apothem text you keep counts
+    against.
   - **Upgrading with a commented `openclaw.json`:** Apothem cannot add the hook
     entry to a file with comments or other JSON5 syntax without dropping them.
     If you added the `skills.load.extraDirs` entry by hand, as these docs said
