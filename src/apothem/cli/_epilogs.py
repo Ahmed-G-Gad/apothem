@@ -177,8 +177,8 @@ Related commands:
 Exit codes:
   0  All checks passed (also when no harness is installed yet)
   1  An installed harness does not verify, a registered hook command cannot
-     start, an adapter could not be loaded or probed, or the shared profile
-     is present but failed schema validation
+     start, an install ledger cannot be read, an adapter could not be loaded
+     or probed, or the shared profile is present but failed schema validation
   64 Usage error: unknown option or command, or a missing or invalid value
 """
 
