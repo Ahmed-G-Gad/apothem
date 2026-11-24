@@ -974,8 +974,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `$LASTEXITCODE` at `2` instead and keeps your PowerShell session open. The
   PowerShell scripts do the same when your session sets
   `$PSNativeCommandUseErrorActionPreference` to `$true`, and a piped run puts
-  that setting back as it was. Any other non-zero exit code from the engine
-  stops the script there.
+  that setting back as it was. A one-shot `pwsh -Command "irm ... | iex"`
+  reports a partial run only through `$LASTEXITCODE`: end it with
+  `; exit $LASTEXITCODE`, or run the script by path with `-File`, to get exit
+  code `2` from the process. A partial dry run prints the warning line,
+  writes nothing and ends with exit code `2`. Any other non-zero exit code
+  from the engine stops the script there.
 - **`verify --profile` and `status --profile` no longer report drift for a
   project's own `CLAUDE.md`.** A project-scope tool with no install record on
   this machine read the project's `CLAUDE.md` as its own profile file and

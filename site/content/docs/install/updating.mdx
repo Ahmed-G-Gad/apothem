@@ -148,8 +148,15 @@ They finish the run as after a full success: the installer still runs verify,
 places the `apothem` command and prints its closing banner, and the update
 script still prints "Update complete." as its last line. Each script then ends
 with exit code `2`. A piped PowerShell run (`irm ... | iex`) leaves
-`$LASTEXITCODE` at `2` instead, so your PowerShell session stays open. Fix
-what the engine's messages name. For a file, keep your own text (see
+`$LASTEXITCODE` at `2` instead, so your PowerShell session stays open. A
+one-shot `pwsh -Command "irm ... | iex"` (or `powershell -c`) reports a
+partial run only through `$LASTEXITCODE`, so the process itself exits `0`.
+When a CI job or script needs the code, end the command with
+`; exit $LASTEXITCODE`, or run the script by path with `-File`. An installer
+dry run (`--dry-run`, or `-DryRun` on Windows) whose engine ends as partial
+prints the warning line, writes nothing, runs no verify, places no
+`apothem` command and ends with exit code `2`. Fix what the engine's
+messages name. For a file, keep your own text (see
 [A file holds two blocks between Apothem's markers](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)
 and
 [Apothem cannot tell its block from your text](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)),
