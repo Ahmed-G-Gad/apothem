@@ -304,9 +304,12 @@ apothem verify --harness cursor --project /path/to/project
 
 When the profile did not yet exist, the installer creates one from the example
 and carries on to install and verify in the same run. The example's identity
-fields are placeholders, so the install prints a note; edit `$APOTHEM_PROFILE`,
-then run `apothem update --harness <name>` to apply your identity. A `--dry-run`
-with no profile previews with the example in place and writes nothing.
+fields are placeholders, so the install prints a note. The example also holds
+sample rules, two sample MCP servers and per-harness overrides, and a harness
+that takes MCP servers from the profile, such as OpenCode, gets both servers.
+Edit `$APOTHEM_PROFILE`, removing what you do not want, then run
+`apothem update --harness <name>` to apply it. A `--dry-run` with no profile
+previews with the example in place and writes nothing.
 
 ## Related
 
