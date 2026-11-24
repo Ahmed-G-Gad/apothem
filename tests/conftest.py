@@ -1820,9 +1820,9 @@ def _report_held(
     cannot write to it, writes the refusals it held for that file alone to
     ``stderr``, with why it could not send them. No try follows that write,
     so what part of it reached the file stays there, and the controller
-    fails the run on it. The exit status of *session* becomes "tests failed"
-    when it was "OK" or "no tests collected", which some jobs accept as a
-    pass.
+    fails the run on it; a later write starts on a line of its own after
+    it. The exit status of *session* becomes "tests failed" when it was
+    "OK" or "no tests collected", which some jobs accept as a pass.
     """
     held = config.stash.get(_HELD, [])
     if not held:
@@ -1978,9 +1978,9 @@ def _sent_late(
     is cut off again, so the next try writes each report once; when that
     cut fails too, the controller may read a report twice. With *last_try*
     no try follows, so that part stays: the controller holds a line cut
-    off part way as a refusal of its own, and fails the run on it. With no
-    report it opens no file: the worker creates its file only to write a
-    refusal.
+    off part way as a refusal of its own, and fails the run on it. A later
+    write starts on a new line after such a line. With no report it opens
+    no file: the worker creates its file only to write a refusal.
     """
     if not reports:
         return None
@@ -2001,11 +2001,18 @@ def _sent_late(
         + "\n"
         for where, messages in reports
     )
+    data = lines.encode("utf-8")
     start: int | None = None
     try:
-        with Path(path).open("ab") as stream:
-            start = stream.tell()
-            stream.write(lines.encode("utf-8"))
+        with Path(path).open("a+b") as stream:
+            start = stream.seek(0, os.SEEK_END)
+            # A line an earlier last try cut off part way ends with no
+            # newline; the new lines start on a line of their own.
+            if start:
+                stream.seek(start - 1)
+                if stream.read(1) != b"\n":
+                    data = b"\n" + data
+            stream.write(data)
     except OSError as error:
         # Part of the text may have reached the file (a full disk, say). When
         # the caller writes the same reports again later, cut the file back
