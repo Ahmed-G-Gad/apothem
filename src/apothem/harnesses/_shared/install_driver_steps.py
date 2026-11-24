@@ -505,10 +505,15 @@ def stray_fixes(text: str, *, removes: bool) -> list[Fix]:
     The old text below such a marker stays: it is the operator's to keep or
     delete, so no step names it. The fix calls the file's one whole block
     Apothem's, and that block stays whole; with none, the fix leaves no
-    block. It must pass :func:`passes` for the next update and, with
-    *removes*, for the next uninstall too. Empty when no variant passes, when
-    *text* holds no such marker, or when it holds two or more whole blocks
-    (see :func:`block_fixes`).
+    block. When no fix that keeps the block passes, the fix calls that block
+    the operator's text and changes every marker line, the block's too, with
+    the step that closes the code block the file then ends in, if it ends in
+    one (see :func:`_first_passing`): the next update then adds Apothem's
+    block after a closed code block, so a code block in its rules cannot
+    take the block's BEGIN marker. It must pass :func:`passes` for the next
+    update and, with *removes*, for the next uninstall too. Empty when no
+    variant passes, when *text* holds no such marker, or when it holds two or
+    more whole blocks (see :func:`block_fixes`).
     """
     lines = split_lines(text)
     strays = stray_begins(text)
@@ -530,6 +535,15 @@ def stray_fixes(text: str, *, removes: bool) -> list[Fix]:
         removes=removes,
         update=True,
     )
+    if found is None and block is not None:
+        found = _first_passing(
+            lines,
+            [(_every_marker(lines, None), False)],
+            label=f"if lines {block[0]} to {block[1]} are text of yours",
+            block=None,
+            removes=removes,
+            update=True,
+        )
     return [] if found is None else [found]
 
 

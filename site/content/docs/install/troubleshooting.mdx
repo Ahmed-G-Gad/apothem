@@ -400,10 +400,16 @@ nothing else in the file reads differently, and the BEGIN line that opens
 Apothem's current block stays as it is. A file with two such markers gets one
 step for each, from the bottom of the file up. Apothem checks the step on a
 copy of the file before it prints it (see
-[Follow a numbered fix](#follow-a-numbered-fix)); when the check fails, the
-warning numbers no edit and says to change every Apothem marker line in the
-file instead. The old Apothem text below the marker, which repeats Apothem's
-rules, is then yours to keep or delete. Do not add the END marker back
+[Follow a numbered fix](#follow-a-numbered-fix)). When no step that keeps
+Apothem's block passes, the fix calls that block your text and changes every
+marker line, the block's too. If the file then ends inside a code block of
+yours that no line closes, the fix also adds that code block's closing line
+below the last line, for example "Fix A, if lines 3 to 5 are text of yours:
+A1. Below line 6, add a line of 3 backticks. A2. Change line 5: add a word
+inside its comment." The next update then adds Apothem's block after it.
+When that check fails too, the warning numbers no edit and says to change
+every Apothem marker line in the file instead. The old Apothem text below the
+marker, which repeats Apothem's rules, is then yours to keep or delete. Do not add the END marker back
 instead of changing the marker line: once an install or update has written
 Apothem's block apart from it, the file would then hold two Apothem blocks
 (see

@@ -936,7 +936,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   names the marker's line, and the fix changes that line, with one step for
   each such marker, from the bottom of the file up, and steps of its own for
   each file a `verify` note names. Changing the line in place adds and
-  removes no line, so each line of yours reads as before. The old
+  removes no line, so each line of yours reads as before. When no fix that
+  keeps Apothem's block passes, the fix calls that block your text and
+  changes every marker line, and, when the file then ends inside a code
+  block no line closes, adds that code block's closing line at the end, so
+  the next update adds Apothem's block after it. The old
   Apothem text below the marker is then yours to keep or delete, and no step
   names it. The troubleshooting page lists the step formats under "Follow a
   numbered fix".

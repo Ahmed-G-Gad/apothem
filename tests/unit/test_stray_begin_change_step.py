@@ -32,6 +32,8 @@ from apothem.lib.harness_materializer import (
     APOTHEM_BLOCK_BEGIN,
     APOTHEM_BLOCK_END,
     has_stray_begin,
+    merge_managed_block,
+    uncertain_pairs,
     whole_blocks,
 )
 from apothem.schemas import profile_minimal_path
@@ -199,6 +201,44 @@ def test_a_fix_the_check_refuses_gives_the_fallback(
         assert "Change line" not in message
         assert FALLBACK.split(".")[0] in message
         assert not _DELETE.search(message), message
+
+
+#: A backtick code block no line closes, then a stray BEGIN marker at line 2
+#: and a whole block at lines 3 to 5 whose END marker sits in a tilde code
+#: block. Changing every marker line leaves line 1's code block open, so a
+#: rule with a backtick code block would close it in the next update.
+_OPEN_FENCE = f"```\n{B}\n{B}\n~~~\n{E}\n~~~\n"
+
+#: Rules the next update may write: plain, and one with a closed code block.
+_RULES = ("Apothem probe rule.", "Run:\n```sh\nnpm test\n```")
+
+
+def test_a_file_that_ends_in_an_open_code_block_gets_a_checked_fix(
+    tmp_path: Path,
+) -> None:
+    target = tmp_path / "AGENTS.md"
+    target.write_text(_OPEN_FENCE, encoding="utf-8")
+
+    [warning] = blocks.stray_begin_install_warnings([_merged(target, "unchanged")])
+    note = stray_begin_note([target], then="run apothem update")
+
+    for message in (warning.message, note):
+        assert FALLBACK.split(".")[0] not in message, message
+        [(label, fix)] = _fixes(message)
+        assert label == "lines 3 to 5 are text of yours", message
+        assert "Below line 6, add a line of 3 backticks." in fix
+        assert "The next update then adds Apothem's block to the file." in fix
+        texts, _tags, _named = _follow(_lines(_OPEN_FENCE), fix)
+        fixed = "".join(f"{line}\n" for line in texts)
+        assert not whole_blocks(fixed)
+        assert not has_stray_begin(fixed)
+        for rules in _RULES:
+            for recorded in (True, False):
+                merged = merge_managed_block(fixed, rules, recorded=recorded)
+                assert len(whole_blocks(merged)) == 1, (rules, recorded, merged)
+                assert not has_stray_begin(merged)
+                assert not uncertain_pairs(merged)
+        assert _holds(_OPEN_FENCE, message) == 1
 
 
 def test_the_end_marker_warning_says_why_not_to_add_it_back_instead(
