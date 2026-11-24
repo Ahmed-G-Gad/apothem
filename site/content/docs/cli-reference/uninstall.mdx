@@ -363,14 +363,16 @@ An `install`, `update`, `rollback` or finished `uninstall` of that harness at
 that location replaces the state, and so does removing the remaining files by
 hand: with none of Apothem's files left as it wrote them and nothing left in
 its `.apothem` folder, the harness reads as not installed, whatever else is in
-the folder. The first command that checks whether the harness is installed
-(`status`, `verify`, `uninstall`) then appends an `uninstall` record that
-closes the install. After an uninstall that finished, though, no record lists
-the files an install wrote, so there only an install, an update or an
-uninstall that finishes replaces the state. `backups prune` keeps the record,
-and the backups it references, while the install it belongs to is kept. After
-an uninstall that finished, it keeps the record together with that uninstall's
-record, so running the uninstall again still works the same way.
+the folder, except OpenCode while an install recorded under another spelling
+of its folder stays open, which only an uninstall closes. The first command
+that checks whether the harness is installed (`status`, `verify`, `uninstall`)
+then appends an `uninstall` record that closes the install. After an uninstall
+that finished, though, no record lists the files an install wrote, so there
+only an install, an update or an uninstall that finishes replaces the state.
+`backups prune` keeps the record, and the backups it references, while the
+install it belongs to is kept. After an uninstall that finished, it keeps the
+record together with that uninstall's record, so running the uninstall again
+still works the same way.
 
 What still counts: a whole file the install wrote, while it is unchanged (for
 an install an earlier release recorded, while it is there); anything in the
