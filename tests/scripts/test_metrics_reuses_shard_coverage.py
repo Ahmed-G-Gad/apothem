@@ -149,15 +149,20 @@ def test_each_shards_upload_is_what_both_downloads_fetch() -> None:
     jobs = _jobs()
     upload = _step_using(jobs["coverage-shard"], "actions/upload-artifact")["with"]
     assert upload["include-hidden-files"] is True
+    # Each cell must name its artifact and file by its own shard, or the cells
+    # would overwrite one another's artifact or upload the same file.
+    assert "${{ matrix.shard }}" in upload["name"]
+    assert "${{ matrix.shard }}" in upload["path"]
     for name in ("coverage", "metrics"):
         download = _step_using(jobs[name], "actions/download-artifact")["with"]
         assert download["merge-multiple"] is True
         assert download["path"] == _DATA_DIR, name
-        for k in _parts(jobs):
+        for k, combined in zip(_parts(jobs), _shard_files(jobs), strict=True):
             artifact = upload["name"].replace("${{ matrix.shard }}", str(k))
             assert fnmatchcase(artifact, download["pattern"]), (name, artifact)
+            # Shard K's file is the one the combine names for shard K.
             uploaded = upload["path"].replace("${{ matrix.shard }}", str(k))
-            assert f"{_DATA_DIR}/{uploaded}" in _shard_files(jobs), (name, uploaded)
+            assert f"{_DATA_DIR}/{uploaded}" == combined, (name, uploaded)
 
 
 def test_the_data_jobs_share_a_runner_image_and_python() -> None:
@@ -171,12 +176,24 @@ def test_the_data_jobs_share_a_runner_image_and_python() -> None:
 
 
 def test_a_failure_in_metrics_cannot_end_green() -> None:
-    # continue-on-error, a set +e or a shell without -e would let a missing
-    # shard file or a missed floor pass. metrics is not a required check, but
-    # its result is still read.
-    job = _jobs()["metrics"]
+    # continue-on-error, a set +e, an "|| true" or a shell without -e would let
+    # a missing shard file or a missed floor pass, and an if: on a step could
+    # skip it. Only the upload runs with if: always(), so metrics.json and
+    # coverage-all.json are kept from a failed run. metrics is not a required
+    # check, but its result is still read.
+    doc = yaml.safe_load(_CI.read_text(encoding="utf-8"))
+    job = doc["jobs"]["metrics"]
     assert "continue-on-error" not in job
+    for defaults in (doc.get("defaults", {}), job.get("defaults", {})):
+        assert defaults.get("run", {}).get("shell", "bash") == "bash", defaults
     for step in job["steps"]:
-        assert "continue-on-error" not in step, step.get("name")
-        assert not _ERREXIT_OFF.search(step.get("run", "")), step.get("name")
-        assert step.get("shell", "bash") == "bash", step.get("name")
+        name = step.get("name")
+        run = step.get("run", "")
+        assert "continue-on-error" not in step, name
+        assert not _ERREXIT_OFF.search(run), name
+        assert "|| true" not in run, name
+        assert step.get("shell", "bash") == "bash", name
+        if step.get("uses", "").startswith("actions/upload-artifact@"):
+            assert step.get("if") == "always()", name
+        else:
+            assert "if" not in step, name
