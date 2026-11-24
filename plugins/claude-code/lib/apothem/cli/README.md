@@ -20,7 +20,7 @@
 | `_json_formatter.py` | JSON-output helper for the CLI (machine-readable command output). |
 | `_cmd_install.py` | The `install` **and `quickstart`** commands. `quickstart` is the guided profile → preview → install path and shares this module's materialization machinery, so it lives beside `install` rather than in a module of its own. |
 | `_cmd_uninstall.py` | The `uninstall` command. |
-| `_cmd_update.py` | The `update` **and `rollback`** commands. `rollback` restores from the backup set an update wrote, so it shares this module's ledger and backup handling. |
+| `_cmd_update.py` | The `update` **and `rollback`** commands. `rollback` restores a harness to the state before an install pass recorded in the install ledger, from that pass's backups, so it shares this module's ledger and backup handling. |
 | `_cmd_verify.py` | The `verify` command. |
 | `_cmd_status.py` | The `status` command. |
 | `_cmd_diff.py` | The `diff` command. |
