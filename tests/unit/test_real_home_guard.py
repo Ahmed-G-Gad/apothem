@@ -1067,6 +1067,7 @@ def test_a_copy_write_that_fails_on_a_new_file_marks_the_output(
     request: pytest.FixtureRequest,
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
     ahead: bool,
     taken: bool,
 ) -> None:
@@ -1079,6 +1080,7 @@ def test_a_copy_write_that_fails_on_a_new_file_marks_the_output(
     file, which it would otherwise hold as a second refusal, said to be from
     a worker stopped while it wrote. One that does not take it (its test
     loop ended first, say) holds the empty file, so the run still fails.
+    The worker says both on ``stderr``.
     With *ahead* the write the worker made as it held the refusal failed
     the same way first and created the file.
     """
@@ -1108,6 +1110,12 @@ def test_a_copy_write_that_fails_on_a_new_file_marks_the_output(
     assert late.read_bytes() == b""
     assert output[conftest._TO_THE_CONTROLLER] == [refusal]
     assert output[conftest._COPY_LEFT_EMPTY] is True
+    note = " ".join(capsys.readouterr().err.split())
+    assert note.endswith(
+        "The write left the worker's file empty: the controller skips that "
+        "file when it takes the worker's output, and fails the run on it "
+        "otherwise."
+    ), note
     # A Config of no session, for the isinstance check of the hook; the hook
     # and _take_late read only its stash and plugin manager.
     controller = pytest.Config.__new__(pytest.Config)

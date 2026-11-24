@@ -1852,18 +1852,24 @@ def _report_held(
         # it takes the output or a worker that ends before xdist sends it;
         # the controller skips the copy otherwise (see _take_late).
         unsent = _sent_late(config, reports[written:])
-        if unsent is not None and _is_empty(config):
+        if unsent is None:
+            return
+        name = getattr(config, "workerinput", {}).get("workerid", "?")
+        then = "The controller gets them only when the worker sends its output."
+        if _is_empty(config):
             # Opening the file to append created it, or an earlier write
             # did, and no byte reached it: the controller skips it only
             # when it takes this output, which brings every refusal.
             output[_COPY_LEFT_EMPTY] = True
-        if unsent is not None:
-            name = getattr(config, "workerinput", {}).get("workerid", "?")
-            sys.stderr.write(
-                f"In xdist worker {name}, the guard handed its refusals to the "
-                f"controller, but could not write their copy: {unsent}. The "
-                "controller gets them only when the worker sends its output.\n"
+            then = (
+                "The write left the worker's file empty: the controller skips "
+                "that file when it takes the worker's output, and fails the "
+                "run on it otherwise."
             )
+        sys.stderr.write(
+            f"In xdist worker {name}, the guard handed its refusals to the "
+            f"controller, but could not write their copy: {unsent}. {then}\n"
+        )
         return
     if worker:
         reports = reports[written:]
