@@ -96,8 +96,8 @@ load them. After the checkout, it removes the Python
 cache folders (`__pycache__`) under `src` before the engine runs from the
 clone. The clone's git hooks never run during the update, and a clone of a
 project other than Apothem is not updated at all. The update sets
-`GIT_NO_LAZY_FETCH=1`, `GIT_ALLOW_PROTOCOL` and `GIT_ATTR_NOSYSTEM=1` for its
-run, and git reads no attributes file outside the clone (see the
+`GIT_NO_REPLACE_OBJECTS=1`, `GIT_NO_LAZY_FETCH=1`, `GIT_ALLOW_PROTOCOL` and
+`GIT_ATTR_NOSYSTEM=1` for its run, and git reads no attributes file outside the clone (see the
 [installer environment variables](/docs/how-to/installer-environment-variables#the-installer-variables)).
 Each run holds a lock, `<APOTHEM_HOME>.lock`, for its whole length, so a
 second install, update or uninstall on the same `APOTHEM_HOME` stops; see
@@ -153,10 +153,11 @@ with exit code `2`. A piped PowerShell run (`irm ... | iex`) leaves
 one-shot `pwsh -Command "irm ... | iex"` (or `powershell -c`) reports a
 partial run only through `$LASTEXITCODE`, so the process itself exits `0`.
 When a CI job or script needs the code, end the command with
-`; exit $LASTEXITCODE`, or run the script by path with `-File`. From bash or
-another POSIX shell, put that command in single quotes. In double quotes the
-shell replaces `$LASTEXITCODE` with an empty string, and the process still
-exits `0`. An installer dry run (`--dry-run`, or `-DryRun` on Windows)
+`; exit $LASTEXITCODE`, or run the script by path with `-File`. From
+PowerShell, bash or another POSIX shell, put that command in single quotes. In
+double quotes the calling shell puts in its own `$LASTEXITCODE` before the new
+process starts (a POSIX shell puts in an empty string), so the process does not
+exit with the run's code. From cmd.exe, double quotes are fine. An installer dry run (`--dry-run`, or `-DryRun` on Windows)
 writes nothing, so the engine does not end it as partial. Fix what the
 engine's messages name. For a file, keep your own text (see
 [A file holds two blocks between Apothem's markers](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)

@@ -252,13 +252,14 @@ set it; it only stops git reading the system config. git still reads your own
 global config and, unless you set `GIT_CONFIG_NOSYSTEM`, the system config
 from the places it always looks, and `git`, `gpg` and `cosign` are the
 programs your `PATH` finds: the installer trusts them as found. For the whole
-run the installer sets `GIT_NO_LAZY_FETCH=1`, so git never fetches a missing
-object from the remote on its own, `GIT_ALLOW_PROTOCOL` to the file, git,
-http, https and ssh transports, so a value in your environment cannot widen
-that list, and `GIT_ATTR_NOSYSTEM=1`; with `core.attributesFile` emptied on
-every git command run on a clone, git then reads no attributes file outside
+run the installer sets `GIT_NO_REPLACE_OBJECTS=1`, so git never swaps an
+object through replace refs, `GIT_NO_LAZY_FETCH=1`, so git never fetches a
+missing object from the remote on its own, `GIT_ALLOW_PROTOCOL` to the file,
+git, http, https and ssh transports, so a value in your environment cannot
+widen that list, and `GIT_ATTR_NOSYSTEM=1`; with `core.attributesFile` emptied
+on every git command run on a clone, git then reads no attributes file outside
 the clone, so a macro defined in yours cannot name a filter there. The
-PowerShell script puts all three back when the run ends. The installer
+PowerShell script puts all four back when the run ends. The installer
 reads the release tag once, records the commit it names, verifies the tag,
 checks that commit out by ID, and requires `HEAD` to be that commit, so a tag
 moved after the check changes nothing. On Windows PowerShell 5.1 and 7, a
