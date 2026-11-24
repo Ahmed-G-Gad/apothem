@@ -25,6 +25,7 @@ from apothem.lib.harness_materializer import (
     has_stray_begin,
     merge_managed_block,
     remove_managed_block,
+    trailing_fence,
     uncertain_pairs,
     whole_blocks,
 )
@@ -222,3 +223,43 @@ def test_the_size_refusal_for_one_stray_marker_still_names_its_line(
         "change line 2 by adding a word inside its comment and delete that old "
         "text by hand"
     ) in reason
+
+
+# -- close-reads-opener ------------------------------------------------------
+
+
+def test_no_closing_line_for_a_fence_opener_inside_an_html_comment() -> None:
+    """An END marker that lost its ``-->`` opens an HTML comment block.
+
+    In CommonMark the comment runs to the next line that holds ``-->`` (the
+    BEGIN marker line), so ``~~~md`` is no fence opener. The fix added a
+    ``~~~`` line below the last line, which then opened a code block, and the
+    block the next update appends read as code in a viewer. Apothem now reads
+    lines in an HTML block as that block's text, so the fix adds no closing
+    line, and the update's block, a tilde code block in it included, is whole.
+    """
+    text = _lines("<!-- END APOTHEM MANAGED BLOCK", "~~~md", B)
+    message = stray_fix_text(text, REPLACES)
+    assert "Below line" not in message
+    assert _changes(message) == [3]
+    fixed = _follow(text, [3])
+    merged = merge_managed_block(fixed, "Run:\n~~~sh\nnpm test\n~~~")
+    assert merged.startswith(fixed)
+    assert whole_blocks(merged) == [(5, 10)]
+
+
+def test_a_fence_opener_in_an_html_block_opens_no_code_block() -> None:
+    """Lines in an HTML block are its text, up to its end, as CommonMark reads them."""
+    assert trailing_fence(_lines("<!-- draft", "```", "-->")) is None
+    assert trailing_fence(_lines("<!-- draft", "```")) is None
+    assert trailing_fence(_lines("<div>", "```", "")) is None
+    assert trailing_fence(_lines("<div>", "", "```")) == (3, "```")
+    assert trailing_fence(_lines("<!-- note -->", "```")) == (2, "```")
+    assert trailing_fence(_lines("<!-- draft", "-->", "```")) == (3, "```")
+
+
+def test_a_marker_line_in_an_html_block_still_reads_as_a_marker() -> None:
+    """A marker line ends an HTML comment, and in any HTML block it is still a marker."""
+    assert whole_blocks(_lines("<!-- draft", B, "rule", E)) == [(2, 4)]
+    assert whole_blocks(_lines("<div>", B, "rule", E, "</div>")) == [(2, 4)]
+    assert whole_blocks(_lines("<pre>", "```", B, "rule", E, "</pre>")) == [(3, 5)]

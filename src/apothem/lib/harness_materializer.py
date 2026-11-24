@@ -110,22 +110,26 @@ _THEMATIC_BREAK: Final = re.compile(r"([-*_])(?:[ \t]*\1){2,}[ \t]*\Z")
 _SETEXT_UNDERLINE: Final = re.compile(r"(?:-+|=+)[ \t]*\Z")
 #: An ATX heading such as ``# Notes``: no paragraph goes on after it.
 _ATX_HEADING: Final = re.compile(r"#{1,6}(?:[ \t]|\Z)")
-#: A line that starts an HTML block and ends it too, such as ``<!-- note -->``
-#: (CommonMark kinds 1 to 5, whose end condition can sit on the same line): no
-#: paragraph goes on after it.
-_HTML_LINE: Final = re.compile(
-    r"<!--.*-->"
-    r"|<\?.*\?>"
-    r"|<![A-Za-z].*>"
-    r"|<!\[CDATA\[.*\]\]>"
-    r"|(?i:<(?:pre|script|style|textarea)(?:[ \t>]|\Z).*"
-    r"</(?:pre|script|style|textarea)>)",
-    re.DOTALL,
+#: The start and end of each HTML block that runs to a line holding its end
+#: (CommonMark kinds 1 to 5): ``<pre``, ``<script``, ``<style`` or
+#: ``<textarea``; a comment; a processing instruction; a declaration; CDATA.
+#: Each can end on the line it starts (``<!-- note -->``), and each ends a
+#: paragraph. Until its end, its lines are its raw text: no fence or list item
+#: opens there.
+_HTML_RUNS: Final[tuple[tuple[re.Pattern[str], re.Pattern[str]], ...]] = (
+    (
+        re.compile(r"(?i:<(?:pre|script|style|textarea)(?:[ \t>]|\Z))"),
+        re.compile(r"(?i:</(?:pre|script|style|textarea)>)"),
+    ),
+    (re.compile(r"<!--"), re.compile(r"-->")),
+    (re.compile(r"<\?"), re.compile(r"\?>")),
+    (re.compile(r"<![A-Za-z]"), re.compile(r">")),
+    (re.compile(r"<!\[CDATA\["), re.compile(r"\]\]>")),
 )
 #: A line that starts an HTML block running to the next blank line (CommonMark
 #: kinds 6 and 7): a block-level tag, or any other whole tag alone on its line
 #: (that kind only where no paragraph is open). Lines in such a block are its
-#: raw text, so a line in it that looks like :data:`_HTML_LINE` starts nothing.
+#: raw text, so nothing opens there.
 _HTML_BLOCK_TAG: Final = re.compile(
     r"(?i:</?(?:address|article|aside|base|basefont|blockquote|body|caption|"
     r"center|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|"
@@ -346,7 +350,14 @@ class _MarkdownState:
     indented that far stays in that item, so only such a line is held to the
     rules for a line under a paragraph; a line left of it goes on the
     paragraph lazily (CommonMark), and the column stays for the lines after
-    it.
+    it. An open HTML block runs to its end: ``html_end`` for one that ends on
+    a line holding that text (see :data:`_HTML_RUNS`), ``raw_html`` for one
+    that ends at a blank line (see :data:`_HTML_BLOCK_TAG`), either ending
+    too when the list item it sits in (``html_items`` deep) ends. Its lines
+    are its raw text, but a marker line in it still reads as a marker, and
+    the block's end is looked for on it as on any line, so a marker line and
+    one changed by a word in its comment leave the block open or closed
+    alike.
     """
 
     lines: list[_Line]
@@ -358,6 +369,8 @@ class _MarkdownState:
     empty_item: bool = False
     para_column: int = 0
     raw_html: bool = False
+    html_end: re.Pattern[str] | None = None
+    html_items: int = 0
 
     def reset(self) -> None:
         """Start afresh after an Apothem block, which ends every open construct."""
@@ -368,6 +381,7 @@ class _MarkdownState:
         self.empty_item = False
         self.para_column = 0
         self.raw_html = False
+        self.html_end = None
 
     def step(self, index: int) -> _Kind:
         """Advance over line *index* and return what it is."""
@@ -385,6 +399,12 @@ class _MarkdownState:
             self.code_column = None
         while self.items and columns < self.items[-1]:
             self.items.pop()
+        if self.raw_html or self.html_end is not None:
+            if len(self.items) >= self.html_items:
+                base = self.items[-1] if self.items else 0
+                return self._in_html(content, marker=columns - base < _CODE_INDENT)
+            # The list item the HTML block sits in ended, and the block with it.
+            self.raw_html, self.html_end = False, None
         # The rules for a line under a paragraph hold only for a line that
         # stays in the list item holding the paragraph (CommonMark): a line
         # left of that item's text goes on it lazily, outside the item.
@@ -439,7 +459,8 @@ class _MarkdownState:
         at most.
         """
         if self.fence is None:
-            self.can_interrupt = True
+            if self.html_end is None:
+                self.can_interrupt = True
             self.raw_html = False
             if self.empty_item:
                 self.items.pop()
@@ -448,20 +469,39 @@ class _MarkdownState:
     def _html_line(self, rest: str, *, open_paragraph: bool) -> bool:
         """Return True when *rest* is an HTML block that ends on its own line.
 
-        A line in an HTML block that runs to the next blank line (see
-        :data:`_HTML_BLOCK_TAG`) is that block's raw text, so it is none;
-        such a line starts that kind of block, and an HTML line in it then
-        starts nothing.
+        A line that starts an HTML block that runs on (see
+        :data:`_HTML_RUNS` and :data:`_HTML_BLOCK_TAG`) opens it, so the
+        lines after it are its raw text until its end (see :meth:`_in_html`).
         """
-        if self.raw_html:
-            return False
-        if _HTML_LINE.match(rest):
-            return True
+        for start, end in _HTML_RUNS:
+            if start.match(rest):
+                if end.search(rest):
+                    return True
+                self.html_end, self.html_items = end, len(self.items)
+                return False
         self.raw_html = bool(
             _HTML_BLOCK_TAG.match(rest)
             or (not open_paragraph and _HTML_LONE_TAG.match(rest))
         )
+        self.html_items = len(self.items)
         return False
+
+    def _in_html(self, content: str, *, marker: bool) -> _Kind:
+        """Advance over a line of an open HTML block; see :class:`_MarkdownState`.
+
+        The line reads as a marker when it is one indented less than four
+        columns (*marker*), as outside the block. A blank line, which ends a
+        block of :data:`_HTML_BLOCK_TAG`'s kind, never reaches here (see
+        :meth:`_blank`).
+        """
+        sentinel = marker and content.strip() in _SENTINELS
+        kind = _Kind.MARKER if sentinel else _Kind.TEXT
+        if self.html_end is not None and self.html_end.search(content):
+            self.html_end = None
+            self.can_interrupt = True
+        elif kind is _Kind.MARKER:
+            self.can_interrupt = True
+        return kind
 
     def _in_fence(self, fence: _Fence, columns: int, content: str) -> bool:
         """Return True when the open *fence* holds this line (its closer included)."""
@@ -672,6 +712,11 @@ def _marker_lines(text: str) -> list[_Marker]:
       item it sits in (or past the margin outside a list), after a blank line,
       a heading or break, or at the start, is indented code, as are the lines
       after it that stay indented so.
+    - An HTML block (CommonMark kinds 1 to 7, such as a comment that opens with
+      ``<!--`` and ends on a later line with ``-->``, or a ``<div>`` that runs
+      to the next blank line) holds its lines as its raw text: no fence or
+      list item opens there. A marker line in it still counts, and the
+      block's end is looked for on it as on any other line.
     - A BEGIN marker line outside code whose next marker line is an END marker
       opens Apothem's block: nothing between them is read as code. But when
       the lines between, read as Markdown, leave that END marker in code and

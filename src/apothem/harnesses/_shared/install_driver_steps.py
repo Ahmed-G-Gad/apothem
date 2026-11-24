@@ -76,6 +76,13 @@ _CLOSE = re.compile(r"(`{3,}|~{3,})[ \t]*\Z")
 #: marker line ends a paragraph, so the lines below it can read differently.
 _TAG = re.compile(r"[ \t]*(?:(?:[-+*]|[0-9]{1,9}[.)])[ \t]+)*</?[A-Za-z]")
 
+#: A line that may start an HTML block of any kind but a comment that ends on
+#: its own line, such as ``<!-- note -->``: the lines after it can be that
+#: block's raw text, where a run of backticks or tildes opens no code block.
+_RAW = re.compile(
+    r"[ \t]*(?:(?:[-+*]|[0-9]{1,9}[.)])[ \t]+)*<(?:[A-Za-z/?]|!(?!--.*-->))"
+)
+
 #: Columns of indentation that make a line indented code.
 _CODE_INDENT = 4
 
@@ -170,7 +177,9 @@ class _Layout:
     them), in code or not, and ``begins`` those of them that hold the BEGIN
     marker; ``runs`` the 0-based lines that hold a run of
     three backticks or tildes; ``first_tag`` the 0-based first line that may
-    start an HTML block (see :data:`_TAG`), or ``None``.
+    start an HTML block (see :data:`_TAG`), or ``None``; ``raw`` whether a
+    line may start an HTML block whose lines are its raw text (see
+    :data:`_RAW`).
     """
 
     def __init__(self, text: str) -> None:
@@ -198,6 +207,7 @@ class _Layout:
             ),
             None,
         )
+        self.raw = any("<" in line and _RAW.match(line) for line in self.lines)
         self._as_is: tuple[int, str] | None | bool = False
 
     def trailing(self, changes: Iterable[int]) -> tuple[int, str] | None:
@@ -324,13 +334,14 @@ def _trailing(layout: _Layout, changes: Collection[int]) -> tuple[int, str] | No
     """Return where the code block the file ends in opens once *changes* change.
 
     See :meth:`_Layout.trailing`. The fences alone tell where the file's code
-    blocks end when each starts at the left margin (see :func:`_plain_end`);
-    otherwise the file, its BEGIN marker lines *changes* changed, is read as
-    Markdown once.
+    blocks end when each starts at the left margin (see :func:`_plain_end`)
+    and no line may start an HTML block whose lines are its raw text (see
+    :data:`_RAW`); otherwise the file, its BEGIN marker lines *changes*
+    changed, is read as Markdown once.
     """
     if not layout.runs:
         return None
-    found = _plain_end(layout)
+    found = False if layout.raw else _plain_end(layout)
     if found is False:
         fixed = (
             changed(line) if number in changes else line
