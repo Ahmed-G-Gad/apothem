@@ -237,13 +237,13 @@ The guard fails a test with ``RealHomeGuardFailure``, ``pytest.fail``'s exceptio
 under a type of its own, so the report hook can tell it apart. The hook looks
 for a mark on the class rather than for the class itself: pytest can import
 this file as two modules (``conftest`` and ``tests.conftest``, when
-``python -m pytest`` runs from ``tests/`` with ``-p tests.conftest`` or with a
-conftest there that imports from ``tests.conftest``), and the
-``_report_real_home_refusals`` of one copy then raises its own class while the
-guard registered from the other checks. ``-p no:apothem-real-home-guard`` turns
-the guard off. They are hooks, not autouse fixtures: a fixture runs at a point
-in the setup that depends on its scope, its name and the order the conftests
-were registered.
+``python -m pytest`` runs from ``tests/`` with a conftest there that imports
+from ``tests.conftest``, or with ``-p tests.conftest`` and the repository root
+on ``PYTHONPATH``), and the ``_report_real_home_refusals`` of one copy then
+raises its own class while the guard registered from the other checks.
+``-p no:apothem-real-home-guard`` turns the guard off. They are hooks, not
+autouse fixtures: a fixture runs at a point in the setup that depends on its
+scope, its name and the order the conftests were registered.
 
 The guard captures the real home once, when this file is imported and
 before any fixture runs: ``HOME``, ``USERPROFILE``, ``HOMEDRIVE`` with
@@ -1475,13 +1475,16 @@ def _is_guard_failure(error: BaseException) -> bool:
 
     The guard's failure is an exception whose class carries the mark of
     ``RealHomeGuardFailure``, whichever copy of this module made the class.
-    pytest can import this file as two modules: ``python -m pytest`` run from
-    ``tests/`` imports it as ``conftest``, and ``-p tests.conftest``, or a
-    conftest under ``tests/`` that imports from ``tests.conftest``, imports
-    it again. The guard is registered once, by name, from the copy imported
-    first, so ``_report_real_home_refusals`` can come from the other copy and
-    raise that copy's class, which an ``isinstance`` check against this
-    copy's class would miss: the test would pass as XFAIL.
+    pytest can import this file as two modules when ``python -m pytest`` runs
+    from ``tests/``, where pytest loads it as the conftest ``conftest``. A
+    conftest under ``tests/`` that imports from ``tests.conftest`` then
+    imports it again under that name; ``-p tests.conftest``, with the
+    repository root on ``PYTHONPATH``, imports it as ``tests.conftest``
+    before pytest loads it as the conftest. The guard is registered once, by
+    name, from the copy imported first, so ``_report_real_home_refusals`` can
+    come from the other copy and raise that copy's class, which an
+    ``isinstance`` check against this copy's class would miss: the test would
+    pass as XFAIL.
 
     pytest raises the errors of several finalizers that failed in one teardown
     together, as an exception group.

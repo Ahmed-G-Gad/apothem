@@ -419,11 +419,14 @@ _ABSORBING_TESTS = (
 
 #: After the star import, takes ``_report_real_home_refusals`` from a second
 #: copy of tests/conftest.py, loaded under another module name. A run of
-#: ``python -m pytest`` from ``tests/`` makes such a copy: it imports the file
-#: as ``conftest``, and ``-p tests.conftest`` or a conftest there imports it as
-#: ``tests.conftest``. The copy registers no second guard, and its fixture
-#: raises its own ``RealHomeGuardFailure``; the probe stops if that class is
-#: the first copy's.
+#: ``python -m pytest`` from ``tests/`` loads the file as the conftest
+#: ``conftest``, and makes such a copy when a conftest there imports from
+#: ``tests.conftest``, which imports the file again under that name, or with
+#: ``-p tests.conftest`` and the repository root on ``PYTHONPATH``, which
+#: imports it as ``tests.conftest`` before pytest loads the conftest. The
+#: copy registers no second guard, and its fixture raises its own
+#: ``RealHomeGuardFailure``; the probe stops if that class is the first
+#: copy's.
 _SECOND_COPYS_REFUSAL_FIXTURE = f"""
 
 import importlib.util
