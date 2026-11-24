@@ -21,7 +21,7 @@ import shutil
 import stat
 import subprocess
 import sys
-from collections.abc import Callable, Iterator
+from collections.abc import Iterator
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -1729,6 +1729,34 @@ def test_doctor_reports_a_hook_file_it_cannot_look_up(
     [unchecked] = hooks.unchecked
     assert unchecked.startswith(f"{hook_file} cannot be looked up (")
     assert unchecked.endswith("so no hook in it was read")
+    # An update cannot change the folder's permissions: the fix says so.
+    assert hooks.fixes == {unchecked: _doctor_hook_text.LOOKUP_FIX}
+
+
+def test_doctor_reports_a_hook_script_reached_through_a_link(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    python = Path(sys.executable).as_posix()
+    dispatcher = _dispatcher(tmp_path, "github-copilot")
+    line = _DOUBLE.format(py=python, script=dispatcher.as_posix())
+    hook_file, _ = _fake_install(
+        tmp_path, monkeypatch, {"type": "command", "bash": line}
+    )
+    real = _doctor_hooks.is_link
+    support = os.path.normcase(str(tmp_path / ".apothem"))
+    monkeypatch.setattr(
+        _doctor_hooks,
+        "is_link",
+        lambda path: os.path.normcase(str(path)) == support or real(path),
+    )
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    assert hooks.argvs == []
+    [unchecked] = hooks.unchecked
+    assert unchecked.startswith(f"a hook command in {hook_file} runs {dispatcher}")
+    assert "reached through a link" in unchecked
+    assert hooks.fixes == {unchecked: _doctor_hook_text.SCRIPT_LINK_FIX}
 
 
 def test_doctor_reports_an_interpreter_it_cannot_look_up(
@@ -2072,13 +2100,17 @@ def _manifest_json_targets() -> Iterator[tuple[str, str, bool]]:
             if not str(rule.target).endswith(".json"):
                 continue
             text = (templates / str(rule.source)).read_text(encoding="utf-8")
-            holds = any(key in text for key in ('"command"', '"bash"'))
+            holds = any(key in text for key in ('"command"', '"bash"', "dispatch.py"))
             yield package_key, str(rule.mode), holds
 
 
 def test_every_file_a_tool_runs_hooks_from_is_named_when_unread() -> None:
     # _may_hold_hooks keys on the registry's hook status and the install
     # mode; a file with hook commands outside both would go unread silently.
+    # A heuristic: templates are matched by their text (a "command" or "bash"
+    # key, or the hook script's name), and files a materializer writes appear
+    # only as the rows added by hand below, so a materializer that starts
+    # writing hooks needs its own row here.
     targets = list(_manifest_json_targets())
     # Qwen Code's settings file is merged outside the manifest, as write_text.
     targets.append(("qwen_code", "write_text", True))
@@ -2113,23 +2145,20 @@ def _look_as(
 ) -> None:
     """Make a look at *path* report file type *kind*, which this host cannot make.
 
-    The ``lstat`` answer changes, and the ``stat`` one too when *followed*
-    (a pipe is one either way; a link only to a look that does not follow it).
+    The look that does not follow a link changes, and the one that does too
+    when *followed* (a pipe is one either way; a link only to a look that
+    does not follow it). Only the module's look seam is replaced.
     """
     target = os.path.normcase(str(path))
+    real = _doctor_hook_text._look
 
-    def looked(real: Callable[..., os.stat_result]) -> Callable[..., object]:
-        def look(name: object, *args: object, **kwargs: object) -> object:
-            result = real(name, *args, **kwargs)
-            if os.path.normcase(str(name)) != target:
-                return result
-            return _StatAs(result, st_mode=kind | 0o644)
+    def look(name: Path, *, follow_link: bool) -> object:
+        result = real(name, follow_link=follow_link)
+        if os.path.normcase(str(name)) != target or (follow_link and not followed):
+            return result
+        return _StatAs(result, st_mode=kind | 0o644)
 
-        return look
-
-    monkeypatch.setattr(_doctor_hook_text.os, "lstat", looked(os.lstat))
-    if followed:
-        monkeypatch.setattr(_doctor_hook_text.os, "stat", looked(os.stat))
+    monkeypatch.setattr(_doctor_hook_text, "_look", look)
 
 
 def _as_pipe(monkeypatch: pytest.MonkeyPatch, path: Path) -> None:
@@ -2138,15 +2167,15 @@ def _as_pipe(monkeypatch: pytest.MonkeyPatch, path: Path) -> None:
     Only its ``lstat`` and ``stat`` answers change; any open of it fails the
     test, since a pipe with no writer would make the open wait for good.
     """
-    real_open = os.open
+    real_open = _doctor_hook_text._open_descriptor
     target = os.path.normcase(str(path))
     _look_as(monkeypatch, path, stat.S_IFIFO, followed=True)
 
-    def no_open(name: object, *args: object, **kwargs: object) -> int:
+    def no_open(name: Path, flags: int) -> int:
         assert os.path.normcase(str(name)) != target, "the pipe was opened"
-        return real_open(name, *args, **kwargs)  # type: ignore[arg-type]
+        return real_open(name, flags)
 
-    monkeypatch.setattr(_doctor_hook_text.os, "open", no_open)
+    monkeypatch.setattr(_doctor_hook_text, "_open_descriptor", no_open)
 
 
 def test_a_pipe_is_neither_read_nor_hashed(
@@ -2250,29 +2279,25 @@ def test_a_file_swapped_for_a_folder_before_the_open_is_not_a_regular_file(
     # second look tells that swap from a file the operator cannot read.
     path = tmp_path / "settings.json"
     path.write_text("{}", encoding="utf-8")
-    real = os.lstat, os.stat
-    looks: list[str] = []
+    real = _doctor_hook_text._look
+    looks: list[bool] = []
 
-    def looked(look: Callable[..., os.stat_result]) -> Callable[..., object]:
-        def swapped(name: object, *args: object, **kwargs: object) -> object:
-            result = look(name, *args, **kwargs)
-            looks.append(str(name))
-            if len(looks) == 1:
-                return result
-            return _StatAs(result, st_mode=stat.S_IFDIR | 0o755)
+    def swapped(name: Path, *, follow_link: bool) -> object:
+        result = real(name, follow_link=follow_link)
+        looks.append(follow_link)
+        if len(looks) == 1:
+            return result
+        return _StatAs(result, st_mode=stat.S_IFDIR | 0o755)
 
-        return swapped
-
-    def denied(name: object, *args: object, **kwargs: object) -> int:
+    def denied(name: Path, flags: int) -> int:
         raise PermissionError(errno.EACCES, "Permission denied", str(name))
 
-    monkeypatch.setattr(_doctor_hook_text.os, "lstat", looked(real[0]))
-    monkeypatch.setattr(_doctor_hook_text.os, "stat", looked(real[1]))
-    monkeypatch.setattr(_doctor_hook_text.os, "open", denied)
+    monkeypatch.setattr(_doctor_hook_text, "_look", swapped)
+    monkeypatch.setattr(_doctor_hook_text, "_open_descriptor", denied)
 
     with pytest.raises(_doctor_hook_text.NotARegularFileError):
         _doctor_hook_text.read_hook_file(path, follow_link=follow_link)
-    assert len(looks) == 2
+    assert looks == [follow_link, follow_link]
 
 
 def test_a_regular_file_that_cannot_be_opened_keeps_its_own_error(
@@ -2281,10 +2306,10 @@ def test_a_regular_file_that_cannot_be_opened_keeps_its_own_error(
     path = tmp_path / "settings.json"
     path.write_text("{}", encoding="utf-8")
 
-    def denied(name: object, *args: object, **kwargs: object) -> int:
+    def denied(name: Path, flags: int) -> int:
         raise PermissionError(errno.EACCES, "Permission denied", str(name))
 
-    monkeypatch.setattr(_doctor_hook_text.os, "open", denied)
+    monkeypatch.setattr(_doctor_hook_text, "_open_descriptor", denied)
 
     with pytest.raises(PermissionError) as raised:
         _doctor_hook_text.read_hook_file(path)
@@ -2341,10 +2366,10 @@ def test_a_link_swapped_in_before_the_open_is_named_not_a_regular_file(
     path = tmp_path / "hooks.json"
     path.write_text("{}", encoding="utf-8")
 
-    def refused(name: object, *args: object, **kwargs: object) -> int:
+    def refused(name: Path, flags: int) -> int:
         raise OSError(code, os.strerror(code), str(name))
 
-    monkeypatch.setattr(_doctor_hook_text.os, "open", refused)
+    monkeypatch.setattr(_doctor_hook_text, "_open_descriptor", refused)
 
     with pytest.raises(_doctor_hook_text.NotARegularFileError) as caught:
         _doctor_hook_text.read_hook_file(path)
@@ -2402,3 +2427,236 @@ def test_the_hook_probe_modules_hold_the_ci_complexity_and_size_bounds() -> None
         check=False,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+def _hook_fixes(payload: dict, harness: str) -> list[str]:
+    return [
+        check["fix"]
+        for check in payload["checks"]
+        if check["code"] == "hook.unchecked" and check["harness"] == harness
+    ]
+
+
+def test_an_oversize_settings_file_is_fixed_by_shrinking_it_not_by_update(
+    runner: CliRunner, home: Path
+) -> None:
+    # An update keeps the operator's settings, so it never clears this note.
+    _install(runner, "claude-code")
+    _pad_past_the_cap(home / ".claude" / "settings.json")
+
+    code, payload = _doctor(runner)
+
+    assert code == 0, payload
+    assert _hook_fixes(payload, "claude-code") == [
+        "Shrink the file named here below 4 MB, then run doctor again."
+    ]
+
+
+def test_a_hook_file_that_is_not_a_regular_file_is_fixed_by_replacing_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    hook_file, _ = _fake_install(tmp_path, monkeypatch, _copilot_line(tmp_path))
+    _as_pipe(monkeypatch, hook_file)
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    [unchecked] = hooks.unchecked
+    assert hooks.fixes == {
+        unchecked: "Replace the path named here with a regular file, then run "
+        "doctor again."
+    }
+
+
+def test_a_changed_hook_script_keeps_the_update_fix(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Only a note no update clears gets a fix of its own.
+    _, dispatcher = _fake_install(tmp_path, monkeypatch, _copilot_line(tmp_path))
+    dispatcher.write_text("# changed\n", encoding="utf-8")
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    assert len(hooks.unchecked) == 1
+    assert hooks.fixes == {}
+
+
+@pytest.mark.parametrize("mode", ["native_hooks", "write_text"])
+def test_a_project_hook_file_reached_through_a_link_is_named(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mode: str
+) -> None:
+    # A tool follows the link and runs the hooks behind it, whether the file
+    # holds only hooks or is a settings file the hooks are merged into.
+    hook_file, _ = _fake_install(
+        tmp_path, monkeypatch, _copilot_line(tmp_path), mode=mode
+    )
+    hooks_folder = hook_file.parent
+    outside = tmp_path / "outside-hooks"
+    shutil.copytree(hooks_folder, outside)
+    shutil.rmtree(hooks_folder)
+    _link(hooks_folder, outside, folder=True)
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    assert hooks.argvs == []
+    reason = f"{hook_file} is reached through a link, so no hook in it was read"
+    assert hooks.unchecked == [reason]
+    assert hooks.fixes == {reason: _doctor_hook_text.LINK_FIX}
+
+
+def test_doctor_names_a_merged_settings_file_behind_a_junction(
+    runner: CliRunner, home: Path, tmp_path: Path
+) -> None:
+    # CodeBuddy merges its hooks into .codebuddy/settings.local.json. With the
+    # folder swapped for a link to one outside the project, CodeBuddy still
+    # runs the hooks there, so doctor must not report a clean pass.
+    project = _project(tmp_path)
+    _install(runner, "codebuddy", "--project", str(project))
+    folder = project / ".codebuddy"
+    outside = tmp_path / "outside-codebuddy"
+    shutil.copytree(folder, outside)
+    shutil.rmtree(folder)
+    _link(folder, outside, folder=True)
+
+    code, payload = _doctor(runner, "--project", str(project))
+    plain = runner.invoke(main, ["doctor", "--project", str(project), "--no-color"])
+
+    assert code == 0, payload
+    messages = _unchecked(payload, "codebuddy")
+    assert any(
+        "settings.local.json is reached through a link, so no hook in it was read"
+        in message
+        for message in messages
+    ), messages
+    assert _doctor_hook_text.LINK_FIX in _hook_fixes(payload, "codebuddy")
+    assert "were not checked" in " ".join(plain.output.split())
+
+
+@pytest.mark.parametrize("second", [FileNotFoundError, PermissionError])
+@pytest.mark.parametrize("follow_link", [False, True])
+def test_an_open_that_fails_on_a_file_gone_keeps_its_own_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    follow_link: bool,
+    second: type[OSError],
+) -> None:
+    # The file was removed (or shut off) after the look: the second look fails
+    # too, and the open's own error is the one reported, not "not a regular
+    # file". A followed look is made again without following only for a
+    # junction to a file, never for these errors.
+    path = tmp_path / "settings.json"
+    path.write_text("{}", encoding="utf-8")
+    real_look = _doctor_hook_text._look
+    looks: list[bool] = []
+
+    def look(name: Path, *, follow_link: bool) -> os.stat_result:
+        looks.append(follow_link)
+        if len(looks) == 1:
+            return real_look(name, follow_link=follow_link)
+        raise second(errno.ENOENT, "No such file", str(name))
+
+    def gone(name: Path, flags: int) -> int:
+        raise FileNotFoundError(errno.ENOENT, "No such file", str(name))
+
+    monkeypatch.setattr(_doctor_hook_text, "_look", look)
+    monkeypatch.setattr(_doctor_hook_text, "_open_descriptor", gone)
+
+    with pytest.raises(FileNotFoundError) as raised:
+        _doctor_hook_text.read_hook_file(path, follow_link=follow_link)
+    assert not isinstance(raised.value, _doctor_hook_text.NotARegularFileError)
+    assert looks == [follow_link, follow_link]
+
+
+def test_a_project_second_look_does_not_follow_a_link(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # In a project a path swapped for a link to a regular file is still not a
+    # regular file: the second look must not follow the link.
+    path = tmp_path / "settings.json"
+    path.write_text("{}", encoding="utf-8")
+    real_look = _doctor_hook_text._look
+    looks: list[bool] = []
+
+    def look(name: Path, *, follow_link: bool) -> object:
+        looks.append(follow_link)
+        result = real_look(name, follow_link=follow_link)
+        if len(looks) == 1 or follow_link:
+            return result
+        return _StatAs(result, st_mode=stat.S_IFLNK | 0o777)
+
+    def denied(name: Path, flags: int) -> int:
+        raise PermissionError(errno.EACCES, "Permission denied", str(name))
+
+    monkeypatch.setattr(_doctor_hook_text, "_look", look)
+    monkeypatch.setattr(_doctor_hook_text, "_open_descriptor", denied)
+
+    with pytest.raises(_doctor_hook_text.NotARegularFileError):
+        _doctor_hook_text.read_hook_file(path)
+    assert looks == [False, False]
+
+
+@pytest.mark.parametrize("fallback", ["link", "error"])
+def test_a_followed_second_look_names_only_a_junction(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, fallback: str
+) -> None:
+    # A followed look that fails as on a junction to a file is made again
+    # without following. A link to a file under the home (the dotfile case),
+    # or a look that fails too, keeps the open's own error.
+    path = tmp_path / "settings.json"
+    path.write_text("{}", encoding="utf-8")
+    real_look = _doctor_hook_text._look
+    looks: list[bool] = []
+
+    def look(name: Path, *, follow_link: bool) -> object:
+        looks.append(follow_link)
+        if len(looks) == 1:
+            return real_look(name, follow_link=follow_link)
+        if follow_link:
+            raise NotADirectoryError(errno.ENOTDIR, "Not a folder", str(name))
+        if fallback == "error":
+            raise PermissionError(errno.EACCES, "Permission denied", str(name))
+        return _StatAs(real_look(name, follow_link=False), st_mode=stat.S_IFLNK)
+
+    def denied(name: Path, flags: int) -> int:
+        raise PermissionError(errno.EACCES, "Permission denied", str(name))
+
+    monkeypatch.setattr(_doctor_hook_text, "_look", look)
+    monkeypatch.setattr(_doctor_hook_text, "_open_descriptor", denied)
+
+    with pytest.raises(PermissionError) as raised:
+        _doctor_hook_text.read_hook_file(path, follow_link=True)
+    assert not isinstance(raised.value, _doctor_hook_text.NotARegularFileError)
+    assert looks == [True, True, False]
+
+
+@pytest.mark.skipif(
+    sys.platform != "win32", reason="only Windows has junctions to a file"
+)
+def test_a_file_swapped_for_a_junction_to_a_file_is_named_when_followed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Under the home a link is followed, but Windows cannot follow a junction
+    # to a file: the followed look fails, and the look at the link itself
+    # finds a junction, so the file is named as not a regular file.
+    import _winapi  # Windows only; a junction needs no privilege
+
+    target = tmp_path / "real.json"
+    target.write_text("{}", encoding="utf-8")
+    path = tmp_path / "settings.json"
+    _winapi.CreateJunction(str(target), str(path))
+    real_look = _doctor_hook_text._look
+    looks: list[bool] = []
+
+    def look(name: Path, *, follow_link: bool) -> os.stat_result:
+        looks.append(follow_link)
+        if len(looks) == 1:  # a regular file when first looked at
+            return real_look(target, follow_link=follow_link)
+        return real_look(name, follow_link=follow_link)
+
+    monkeypatch.setattr(_doctor_hook_text, "_look", look)
+
+    with pytest.raises(_doctor_hook_text.NotARegularFileError) as raised:
+        _doctor_hook_text.read_hook_file(path, follow_link=True)
+    assert looks == [True, True, False]
+    assert _doctor_hook_text.unread_reason(path, raised.value) == (
+        f"{path} is not a regular file, so no hook in it was read"
+    )

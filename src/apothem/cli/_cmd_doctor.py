@@ -244,6 +244,8 @@ def _probe_registered_hooks(
                 "info",
                 f"{name}: {reason}.",
                 harness=name,
+                # A file too large, not a regular file, or reached through a
+                # link keeps its own fix: an update keeps such a file as it is.
                 # Run under the same Python, an update would record that Python
                 # inside the project again, and doctor starts no such one unless
                 # it runs under it. The update runs from a folder outside the
@@ -253,7 +255,9 @@ def _probe_registered_hooks(
                 # An active project environment puts its Python first on PATH,
                 # where the npx shim finds it unless APOTHEM_PYTHON names one.
                 fix=(
-                    _update_fix(
+                    hooks.fixes[reason]
+                    if reason in hooks.fixes
+                    else _update_fix(
                         name,
                         project,
                         lead="If the project's virtual environment is active, "

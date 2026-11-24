@@ -1297,15 +1297,18 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   changed script in `.apothem/support/`, ran when you ran doctor, even if you
   never opened the project in the tool. Doctor now reads each hook command
   where the tool reads it, from the keys the tool reads (an `args` list only
-  for Claude Code, the one tool that runs one; at most 100 commands from one
-  file, and no file larger than 4 MB or that is not a regular file, each of
-  which a `hook.unchecked` line names, in a project or under your home
-  folder, when the tool runs hooks from it), and starts one only when its
-  interpreter is the one the install recorded (outside the project) or the
-  Python Apothem runs under, its options run no code, its script is the hook
-  script the install wrote, in a folder whose files still match the SHA-256
-  checksums the install recorded and that holds no other Python file and no
-  link, and its arguments are the ones Apothem writes. It starts those known
+  for Claude Code, the one tool that runs one, and at most 100 commands from
+  one file), and starts one only when its interpreter is the one the install
+  recorded (outside the project) or the Python Apothem runs under, its
+  options run no code, its script is the hook script the install wrote, in a
+  folder whose files still match the SHA-256 checksums the install recorded
+  and that holds no other Python file and no link, and its arguments are the
+  ones Apothem writes. Doctor reads no hook file larger than 4 MB or that is
+  not a regular file, and no project hook file reached through a link. When
+  the tool runs hooks from such a file, a settings file the hooks are merged
+  into included, a `hook.unchecked` line names it. An update keeps the file
+  as it is, so the fix says to shrink or replace the file, or to check where
+  the link leads and remove or replace it. It starts those known
   paths rather than the text it read, looks up no other path a hook command
   names, such as a network share, and follows no link to a project hook file
   or to the files a hook command runs. A recorded interpreter or script that

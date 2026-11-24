@@ -64,6 +64,9 @@ from pathlib import Path, PurePath
 from typing import Final
 
 from apothem.cli._doctor_hook_text import (
+    LINK_FIX,
+    LOOKUP_FIX,
+    SCRIPT_LINK_FIX,
     HookProbe,
     RegisteredHooks,
     owned_by_apothem,
@@ -75,6 +78,7 @@ from apothem.cli._doctor_hook_text import (
     sha256_of,
     spelling,
     unquoted,
+    unread_fix,
     unread_reason,
     user_handlers,
     walk,
@@ -305,7 +309,7 @@ def _read_user_file(
     except (OSError, ValueError, RecursionError) as exc:
         reason = unread_reason(path, exc)
         if reason is not None and may_hold_hooks:
-            hooks.note(reason)
+            hooks.note(reason, fix=unread_fix(exc))
         return
     for handler in user_handlers(document, keys, args_key):
         argv = _handler_argv(handler, keys, args_key=args_key)
@@ -467,10 +471,10 @@ class _ProjectInstall:
     ) -> object:
         """Return *path*'s JSON, or :data:`_UNREAD` once the reason is noted.
 
-        A lookup error, a file too large or not regular is noted for a file
-        its tool may run hooks from (*may_hold*, :func:`_may_hold_hooks`),
-        hooks merged into settings included; a link or text that is not JSON
-        only for a file of nothing but hooks (*hook_file*)."""
+        A lookup error, a link, a file too large or not regular is noted for a
+        file its tool may run hooks from (*may_hold*, :func:`_may_hold_hooks`),
+        hooks merged into settings included; a link also for a file of nothing
+        but hooks (*hook_file*), and text that is not JSON only for that."""
         try:
             link_free = self._cached("link-free", path)
         except OSError as exc:
@@ -478,13 +482,15 @@ class _ProjectInstall:
             # cannot search, where later releases answer False.
             if may_hold:
                 hooks.note(
-                    f"{path} cannot be looked up ({exc}), so no hook in it was read"
+                    f"{path} cannot be looked up ({exc}), so no hook in it was read",
+                    fix=LOOKUP_FIX,
                 )
             return _UNREAD
         if not link_free:
-            if hook_file:
+            if hook_file or may_hold:
                 hooks.note(
-                    f"{path} is reached through a link, so no hook in it was read"
+                    f"{path} is reached through a link, so no hook in it was read",
+                    fix=LINK_FIX,
                 )
             return _UNREAD
         try:
@@ -494,7 +500,7 @@ class _ProjectInstall:
             if reason is None and hook_file:
                 reason = f"{path} cannot be read as JSON, so no hook in it was started"
             if reason is not None and may_hold:
-                hooks.note(reason)
+                hooks.note(reason, fix=unread_fix(exc))
             return _UNREAD
         return document
 
@@ -539,7 +545,8 @@ class _ProjectInstall:
         dispatcher = Path(recorded[0])
         if not self._cached("link-free", dispatcher):
             hooks.note(
-                f"{line} runs a hook script reached through a link, {_NOT_STARTED}"
+                f"{line} runs {dispatcher}, reached through a link, {_NOT_STARTED}",
+                fix=SCRIPT_LINK_FIX,
             )
             return
         if not self._cached("exists", Path(python)):

@@ -93,15 +93,27 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   larger than 4 MB and nothing but a regular file (a pipe or a device, say).
   Each such file gets one `hook.unchecked` line that names it, whether it
   holds only hooks or is a settings file the hooks are merged into, and
-  whether it is in a project or under your home folder. A file the tool runs
-  no hook from gets no line: the settings file of a tool whose hooks Apothem
-  keeps only in its support folder, or a copy kept under `.apothem/support`.
-  A file under your home folder is read through a link, since it is yours. In a project, the
-  check reads no hook file it reaches through a link, and a file that holds
-  only hooks gets a `hook.unchecked` line for it; on Windows, which has no way
-  to open a file while refusing a link, that is checked just before the file
-  is opened. A hook script larger than 4 MB counts as changed since the
-  install, since none that Apothem writes is that large.
+  whether it is in a project or under your home folder. An update keeps a
+  file too large or not regular as it is, so its fix says to shrink the file
+  below 4 MB or replace it with a regular file, then run doctor again. A file
+  the tool runs no hook from gets no line: the settings file of a tool whose
+  hooks Apothem keeps only in its support folder, or a copy kept under
+  `.apothem/support`.
+  A file under your home folder is read through a link, since it is yours.
+  In a project, the check reads no hook file it reaches through a link, such
+  as a settings folder replaced by a link to a folder outside the project.
+  Each such file gets a `hook.unchecked` line, whether it holds only hooks or
+  is a settings file the hooks are merged into. The line names the file, and
+  the link may be the file or one of its folders. The fix says to check where
+  the link leads: remove a link you did not make and run update, or replace
+  the link with the real folder or file and check the hook commands in it. A
+  hook command whose hook script is reached through a link is not started,
+  and its line names the script, with the same fix. A project folder the
+  check cannot open gets a line too, and its fix says to give your account
+  permission to open it. On Windows, which has no way to open a file while
+  refusing a link, the link check is made just before the file is opened. A
+  hook script larger than 4 MB counts as changed since the install, since
+  none that Apothem writes is that large.
 
 Every failed check names a fix. A fix that runs `update` ends with the
 command, after a colon. For a project-scope harness the command names

@@ -74,14 +74,17 @@ class RegisteredHooks:
     *unchecked* holds one sentence for each command or hook file doctor does
     not start, naming it and the reason. *run_with* maps each sentence whose
     fix needs a Python outside the project to the one the install recorded
-    inside it, as data only: the fix never names it. Every sentence and
-    command text has its control characters spelled out (:func:`printable`).
+    inside it, as data only: the fix never names it. *fixes* maps each
+    sentence that no update clears (a file too large, not a regular file, or
+    reached through a link) to its own fix. Every sentence and command text
+    has its control characters spelled out (:func:`printable`).
     """
 
     argvs: list[list[str]] = field(default_factory=list)
     unstartable: list[HookProbe] = field(default_factory=list)
     unchecked: list[str] = field(default_factory=list)
     run_with: dict[str, str] = field(default_factory=dict)
+    fixes: dict[str, str] = field(default_factory=dict)
     # What each list already holds, so nothing is kept twice. One set per list:
     # an argv never stands in for a sentence, nor a sentence for an argv.
     _argvs_seen: set[tuple[str, ...]] = field(
@@ -108,8 +111,13 @@ class RegisteredHooks:
             self._probes_seen.add(shown)
             self.unstartable.append(shown)
 
-    def note(self, reason: str, *, run_with: str | None = None) -> None:
-        """Keep *reason* for a command or file doctor does not start, once."""
+    def note(
+        self, reason: str, *, run_with: str | None = None, fix: str | None = None
+    ) -> None:
+        """Keep *reason* for a command or file doctor does not start, once.
+
+        *fix* is the fix for a reason no update clears (:attr:`fixes`).
+        """
         shown = printable(reason)
         if shown in self._notes_seen:
             return
@@ -117,6 +125,8 @@ class RegisteredHooks:
         self.unchecked.append(shown)
         if run_with is not None:
             self.run_with[shown] = run_with
+        if fix is not None:
+            self.fixes[shown] = fix
 
 
 def spelling(path: str) -> str | None:
@@ -184,20 +194,63 @@ class NotARegularFileError(OSError):
     """A path doctor reads names a pipe, a device, a folder or a link, not a file."""
 
 
+#: The fix for a project hook file doctor does not read because it is reached
+#: through a link, which an update keeps. The note names the file; the link
+#: may be the file or one of its folders, and may lead to hooks someone else
+#: wrote.
+LINK_FIX: Final = (
+    "Find the link on the path named here (the file or one of its folders) and "
+    "check where it leads. If you did not make it, remove it and run update. "
+    "Otherwise replace it with the real folder or file, check the hook "
+    "commands in it, then run doctor again."
+)
+
+#: The fix for a hook command whose hook script is reached through a link.
+SCRIPT_LINK_FIX: Final = (
+    "Find the link on the path to the hook script named here (the script or "
+    "one of its folders) and check where it leads. If you did not make it, "
+    "remove it and run update. Otherwise replace it with the real folder, "
+    "then run doctor again."
+)
+
+#: The fix for a project hook file in a folder the operator cannot search,
+#: which an update cannot change.
+LOOKUP_FIX: Final = (
+    "Give your account permission to open each folder on the path named here, "
+    "then run doctor again."
+)
+
+
 def _look(path: Path, *, follow_link: bool) -> os.stat_result:
     """Return *path*'s stat, following a link only with *follow_link*."""
     # One os module for every look, the seam the tests replace.
     return os.stat(path) if follow_link else os.lstat(path)  # noqa: PTH116
 
 
+def _open_descriptor(path: Path, flags: int) -> int:
+    """Open *path* with *flags*; the seam the tests replace."""
+    return os.open(path, flags)
+
+
 def _still_regular(path: Path, follow_link: bool) -> bool:
     """Return False when a second look finds *path* is no longer a regular file.
 
     A path that cannot be looked at again counts as still regular, so the
-    open's own error is the one reported.
+    open's own error is the one reported. Only a followed look that fails as
+    on a junction to a file, which Windows cannot follow (``NotADirectoryError``),
+    is made again without following it, and the path counts as no regular
+    file only when that look finds a folder (the junction). A link to a file
+    under the home stays one the open's own error explains.
     """
     try:
         return stat.S_ISREG(_look(path, follow_link=follow_link).st_mode)
+    except NotADirectoryError:
+        if not follow_link:
+            return True
+    except OSError:
+        return True
+    try:
+        return not stat.S_ISDIR(_look(path, follow_link=False).st_mode)
     except OSError:
         return True
 
@@ -227,7 +280,9 @@ def _open_regular(path: Path, *, follow_link: bool = False) -> BinaryIO:
     if not stat.S_ISREG(before.st_mode):
         raise NotARegularFileError(errno.EINVAL, "not a regular file", str(path))
     try:
-        descriptor = os.open(path, _OPEN_FLAGS | (0 if follow_link else _NO_FOLLOW))
+        descriptor = _open_descriptor(
+            path, _OPEN_FLAGS | (0 if follow_link else _NO_FOLLOW)
+        )
     except OSError as exc:
         # Swapped for a link since the look, or, on Windows, for a folder or a
         # junction, which the open refuses as access denied.
@@ -267,9 +322,10 @@ def read_hook_file(path: Path, *, follow_link: bool = False) -> str:
 def unread_reason(path: Path, error: Exception) -> str | None:
     """Return the note for a hook file *error* kept doctor from reading, or ``None``.
 
-    A file too large to read, or one that is not a regular file, is always
-    named: whatever else it holds, a tool may run hooks from it. Any other
-    error gets ``None``, for the caller to judge.
+    Returns the note for a file too large to read, or one that is not a
+    regular file; the caller decides whether its tool may run hooks from it
+    (``_may_hold_hooks``). Any other error gets ``None``, for the caller to
+    judge. :func:`unread_fix` gives the note's fix.
     """
     if isinstance(error, HookFileTooLargeError):
         what = f"larger than {MAX_HOOK_FILE_BYTES // 2**20} MB"
@@ -278,6 +334,22 @@ def unread_reason(path: Path, error: Exception) -> str | None:
     else:
         return None
     return f"{path} is {what}, so no hook in it was read"
+
+
+def unread_fix(error: Exception) -> str | None:
+    """Return the fix for :func:`unread_reason`'s note on *error*, or ``None``.
+
+    An update keeps the operator's file as it is, so it cannot clear such a
+    note: the file itself has to change.
+    """
+    if isinstance(error, HookFileTooLargeError):
+        return (
+            f"Shrink the file named here below {MAX_HOOK_FILE_BYTES // 2**20} MB, "
+            "then run doctor again."
+        )
+    if isinstance(error, NotARegularFileError):
+        return "Replace the path named here with a regular file, then run doctor again."
+    return None
 
 
 def unquoted(token: str) -> str:
