@@ -803,7 +803,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   release writes, the files of an install with no record, and a file that
   holds another block between Apothem's markers. Each gets a `✗ <harness>
   uninstall did not finish:` line and is added to the end of its `results`
-  row's message; when the reasons, the steps that failed before the stop
+  row's message, and an install with no record also gets its `Note:` line,
+  with the check of the `--project` folder before `apothem update`, and the
+  row's `kept_reason`; when the reasons, the steps that failed before the stop
   included, name one link, that row carries it in `detail.symlink` and
   `detail.leads_to`. Such a link, or such files of an earlier release's
   install or of an install with no record, make it exit `2`, also when it

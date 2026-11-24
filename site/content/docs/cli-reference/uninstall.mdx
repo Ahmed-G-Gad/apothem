@@ -296,11 +296,15 @@ When it had found what leaves an uninstall unfinished before it stopped
 recorded that differ from what this release writes, the files of an install
 with no record, or a file that holds another block between Apothem's markers),
 a `✗ <harness> uninstall did not finish:` line follows for each reason, as
-above, and the same text is added to the end of the row's message. When those
-reasons and the steps that failed before it name one link, the row carries it
-in `detail.symlink` and the folder it leads to in `detail.leads_to`. It exits
-`2` with `status` `"partial"` when it had removed or changed files first,
-found Apothem's own files behind a link, or kept files of an earlier release's
+above, and the same text is added to the end of the row's message. For an
+install with no record, the `Note:` line follows them, with its check of the
+`--project` folder for a project-scope harness, and the row's `detail` has
+`"kept_reason": "no-record"`, as described in
+[What an uninstall removes](#what-an-uninstall-removes). When those reasons
+and the steps that failed before it name one link, the row carries it in
+`detail.symlink` and the folder it leads to in `detail.leads_to`. It exits `2`
+with `status` `"partial"` when it had removed or changed files first, found
+Apothem's own files behind a link, or kept files of an earlier release's
 install or of an install with no record, otherwise `1`. An error inside the
 first step of an Open-Claw, Antigravity or Kimi Code uninstall (see
 [An uninstall that did not finish](#an-uninstall-that-did-not-finish)) reports
