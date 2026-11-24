@@ -62,15 +62,18 @@ def uninstall(output_path: Path) -> install_driver.MaterializationRun:
 
     Returns the run of every removal. A removal that fails, or another run
     holding the install lock past its timeout, is an ``error`` result in it;
-    the installs at the other spelling then stay recorded and the uninstall
-    can be run again.
+    the installs at the other spelling then stay recorded. A later uninstall
+    does not close them yet: once the uninstall at the folder has removed its
+    files, the adapter reports the harness as not installed, and
+    ``apothem uninstall`` skips it.
 
     Raises:
         MaterializationError: When a link leads the folder out of the home;
             nothing was removed. Or when another error stops the step that
             closes the installs at another spelling: the error is the
             cause, and the error's ``run`` holds what the uninstall had
-            removed. Those installs stay recorded, as above.
+            removed. Those installs stay recorded and a later uninstall
+            does not close them, as above.
     """
     refuse_link_leaving_home(output_path, uninstall=True)
     root = output_path.parent
