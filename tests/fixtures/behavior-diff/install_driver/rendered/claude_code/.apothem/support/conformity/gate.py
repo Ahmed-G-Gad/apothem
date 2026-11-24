@@ -33,6 +33,7 @@ staged-diff check.
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import contextlib
 import functools
 import importlib.util
@@ -1215,6 +1216,19 @@ def _inspection_fields(output: str) -> dict[str, object]:
     }
 
 
+def _run_standalones(names: tuple[str, ...], root: Path) -> list[tuple[bool, str]]:
+    """Run each named standalone validator against *root*; keep *names*' order.
+
+    Each validator is its own child process that only reads the tree, so they
+    run side by side, one per CPU at most; the slowest one then sets the run's
+    length rather than the sum of all of them. The results come back in the
+    order of *names*, so the report reads the same as a one-by-one run.
+    """
+    workers = max(1, min(len(names), os.cpu_count() or 1))
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
+        return list(pool.map(lambda name: _run_standalone(name, root), names))
+
+
 def _run_all(root: Path) -> tuple[bool, str]:
     """Run every standalone validator; aggregate exit verdicts.
 
@@ -1232,8 +1246,9 @@ def _run_all(root: Path) -> tuple[bool, str]:
     results: list[dict[str, object]] = []
     overall_passed = True
     advisory_findings_present = False
-    for name in STANDALONE_MODULES:
-        passed, output = _run_standalone(name, root)
+    for name, (passed, output) in zip(
+        STANDALONE_MODULES, _run_standalones(STANDALONE_MODULES, root), strict=True
+    ):
         if not passed:
             overall_passed = False
         entry: dict[str, object] = {
