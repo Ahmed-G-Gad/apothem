@@ -66,7 +66,7 @@ import threading
 from collections.abc import Iterator, Mapping, Sequence
 from pathlib import Path
 from types import FrameType
-from typing import Any, Final
+from typing import Any, Final, NoReturn
 
 # Seconds to wait, after a stop, for the stopped program's output to close.
 STOP_GRACE_SECONDS: Final[float] = 5.0
@@ -167,6 +167,11 @@ if sys.platform == "win32":
     _CloseHandle = _KERNEL32.CloseHandle
     _CloseHandle.argtypes = (wintypes.HANDLE,)
     _CloseHandle.restype = wintypes.BOOL
+    _GetExitCodeProcess = _KERNEL32.GetExitCodeProcess
+    _GetExitCodeProcess.argtypes = (wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD))
+    _GetExitCodeProcess.restype = wintypes.BOOL
+    # The exit code GetExitCodeProcess gives for a process not told to end.
+    _STILL_ACTIVE: Final[int] = 259
 
     _TH32CS_SNAPTHREAD: Final[int] = 0x00000004
     _THREAD_SUSPEND_RESUME: Final[int] = 0x0002
@@ -270,21 +275,43 @@ if sys.platform == "win32":
             _CloseHandle(snapshot)
         return found
 
+    def _told_to_end(handle: int) -> bool:
+        """Return True when the process behind *handle* was told to end.
+
+        Windows sets the exit code as soon as a process is told to end, while
+        its threads still wind down. A suspended process cannot end by
+        itself, so before the resume this means something else ended it.
+        When the exit code cannot be read, the answer is False.
+        """
+        code = wintypes.DWORD()
+        if not _GetExitCodeProcess(handle, ctypes.byref(code)):
+            return False
+        return int(code.value) != _STILL_ACTIVE
+
     def _resume_process(handle: int | None, pid: int) -> bool:
         """Let process *pid*, started suspended, run; return False on a failure.
 
         *handle* is the process handle that started it, or None when it is not
-        known. NtResumeProcess on that handle comes first; the thread snapshot
-        is the fallback. A process that NtResumeProcess reports as ending
-        gets no snapshot: it has no thread left to resume, and the snapshot
-        would hold every thread on the machine for nothing.
+        known. A process already told to end is not resumed: NtResumeProcess
+        would report success while the process ends, and it never runs.
+        NtResumeProcess on that handle comes first; the thread snapshot is the
+        fallback. A process that NtResumeProcess reports as ending gets no
+        snapshot: it has no thread left to resume, and the snapshot would hold
+        every thread on the machine for nothing.
         """
-        if handle is not None and _NT_RESUME_PROCESS is not None:
-            status = int(_NT_RESUME_PROCESS(handle))
-            if status >= 0:
-                return True
-            if status & 0xFFFFFFFF == _STATUS_PROCESS_IS_TERMINATING:
+        if handle is not None:
+            if _told_to_end(handle):
                 return False
+            if _NT_RESUME_PROCESS is not None:
+                status = int(_NT_RESUME_PROCESS(handle))
+                if status >= 0:
+                    # A kill between the read above and the resume leaves an
+                    # exit code already; a program that ran cannot have one
+                    # yet, as starting takes milliseconds and this read
+                    # follows within microseconds.
+                    return not _told_to_end(handle)
+                if status & 0xFFFFFFFF == _STATUS_PROCESS_IS_TERMINATING:
+                    return False
         return _resume_threads(pid)
 
     def _resume_threads(pid: int) -> bool:
@@ -420,18 +447,19 @@ def _stop(process: subprocess.Popen[bytes], job: _Job, *, group: bool) -> None:
         process.kill()
 
 
-def _let_run(process: subprocess.Popen[bytes], job: _Job, program: str) -> None:
-    """Let *process*, started suspended, run, or stop it and raise.
+def _fail_unresumed(
+    process: subprocess.Popen[bytes], job: _Job, program: str
+) -> NoReturn:
+    """Stop *process*, which started suspended and was not resumed, and raise.
 
     A program that cannot be resumed would wait out the whole time limit, so
     it is stopped at once, its output is awaited for at most
     :data:`STOP_GRACE_SECONDS`, and :class:`ProgramResumeError` is raised.
-    A program that ended before it could be resumed never ran: its exit code
-    is whatever ended it chose (``taskkill /F`` gives 1), so it raises
-    :class:`ProgramResumeError` too, and no caller reads that code as git's.
+    A program that something else told to end before the resume never ran:
+    its exit code is whatever ended it chose (``taskkill /F`` gives 1), so it
+    raises :class:`ProgramResumeError` too, and no caller reads that code as
+    git's.
     """
-    if job.resume(process):
-        return
     with contextlib.suppress(subprocess.TimeoutExpired):
         process.wait(timeout=_ENDING_WAIT_SECONDS)
     if process.returncode is not None:
@@ -452,7 +480,7 @@ def _let_run(process: subprocess.Popen[bytes], job: _Job, program: str) -> None:
 
 
 @contextlib.contextmanager
-def _held_interrupt(enabled: bool) -> Iterator[None]:
+def _held_interrupt() -> Iterator[None]:
     """While the block runs, hold back Ctrl+C, then raise it once it ends.
 
     Only on the main thread (the only one that may set a signal handler), and
@@ -461,10 +489,12 @@ def _held_interrupt(enabled: bool) -> Iterator[None]:
     is. The previous handler comes back when the block ends. An interrupt
     that arrived meanwhile is then raised as :class:`KeyboardInterrupt`, in
     place of any error the block raised.
+
+    The hold is a Python handler, not a blocked signal: a program started
+    meanwhile inherits a blocked signal mask, but not a Python handler.
     """
     if not (
-        enabled
-        and threading.current_thread() is threading.main_thread()
+        threading.current_thread() is threading.main_thread()
         and signal.getsignal(signal.SIGINT) is signal.default_int_handler
     ):
         yield
@@ -474,7 +504,12 @@ def _held_interrupt(enabled: bool) -> Iterator[None]:
     def record(signum: int, _frame: FrameType | None) -> None:
         received.append(signum)
 
-    previous = signal.signal(signal.SIGINT, record)
+    try:
+        previous = signal.signal(signal.SIGINT, record)
+    except ValueError:
+        # A subinterpreter's own main thread may not set a handler.
+        yield
+        return
     try:
         yield
     finally:
@@ -490,9 +525,11 @@ def _stop_unreturned(error: BaseException, job: _Job, *, group: bool) -> None:
     traceback still hold the object as ``self``. Once Popen recorded the
     program's process ID, the program is stopped and awaited for at most
     :data:`STOP_GRACE_SECONDS`. Without an ID nothing is found: an error in
-    the moment between Windows making the program and Popen recording its ID
-    still leaves it. A program Popen already waited for is left alone, as its
-    process ID may be in use again.
+    the moment between the system making the program and Popen recording its
+    ID still leaves it. Outside Windows that moment is the end of the fork
+    and exec call, where Python handles a signal that arrived during it, so
+    :func:`run_bounded` holds Ctrl+C back while Popen runs. A program Popen
+    already waited for is left alone, as its process ID may be in use again.
     """
     traceback = error.__traceback__
     while traceback is not None:
@@ -535,18 +572,21 @@ def run_bounded(
     stopped (see the module docstring), the output is awaited for at most
     :data:`STOP_GRACE_SECONDS`, and :class:`subprocess.TimeoutExpired` is
     raised. An interrupt, such as Ctrl+C, that arrives once Popen has
-    returned stops them the same way before it goes on. On Windows, on the
-    main thread, Ctrl+C is held back from just before Popen until the
-    program that starts suspended runs, and then raised, so an interrupt
-    inside Popen cannot leave the program suspended. A ``SIGINT`` handler the
+    returned stops them the same way before it goes on. On the main thread,
+    Ctrl+C is held back from just before Popen until the program runs (on
+    Windows, until the resume of a program that starts suspended is tried),
+    and then raised, so an interrupt inside Popen cannot leave the program
+    running outside the time limit, or suspended. A ``SIGINT`` handler the
     caller installed is left in place, and with it a window of microseconds
-    in which such an interrupt can still leave the program suspended. Any
-    other error that escapes Popen after the program started stops the
-    program. A program that cannot be started raises :class:`OSError`. On
-    Windows a program that started suspended and cannot be resumed is
-    stopped and raises :class:`ProgramResumeError`, an :class:`OSError`; one
-    that had already ended by then is not an error, and its exit code comes
-    back.
+    in which such an interrupt can still leave the program behind. Any other
+    error that escapes Popen after the program started stops the program. A
+    program that cannot be started raises :class:`OSError`. On Windows a
+    program that started suspended and cannot be resumed is stopped and
+    raises :class:`ProgramResumeError`, an :class:`OSError`. One that
+    something else had told to end before the resume never ran, and raises
+    :class:`ProgramResumeError` too: its exit code is not the program's own
+    answer. One ended just after the resume cannot be told apart from one
+    that ran, and its exit code comes back.
     """
     command = list(argv)
     job = _Job()
@@ -556,7 +596,7 @@ def run_bounded(
     # at any point after the start (even before the program is added or
     # resumed) stops the program instead of leaving it suspended.
     try:
-        with _held_interrupt(suspended):
+        with _held_interrupt():
             try:
                 process = subprocess.Popen(  # noqa: S603 — argv list from the caller, never a shell
                     command,
@@ -572,8 +612,11 @@ def run_bounded(
                 _stop_unreturned(error, job, group=new_session)
                 raise
             job.add(process.pid)
-            if suspended:
-                _let_run(process, job, command[0])
+            resumed = not suspended or job.resume(process)
+        # The hold ends before the waits on a failed resume, so a Ctrl+C then
+        # acts at once; the program is stopped either way.
+        if not resumed:
+            _fail_unresumed(process, job, command[0])
         with _exit_on_termination(new_session):
             stdout, stderr = process.communicate(timeout=timeout)
     except BaseException as error:

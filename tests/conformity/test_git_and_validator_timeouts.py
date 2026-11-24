@@ -1606,47 +1606,131 @@ def test_resume_failure_says_when_the_program_is_not_in_the_job(
             _end_process(started[0])
 
 
-# The NTSTATUS NtResumeProcess returns for a process that is ending, as the
-# signed value ctypes gives back.
-_STATUS_PROCESS_IS_TERMINATING = 0xC000010A - (1 << 32)
+# The access rights the test below opens a program with: PROCESS_TERMINATE
+# and SYNCHRONIZE.
+_END_AND_WAIT_ACCESS = 0x0001 | 0x00100000
 
 
-# The exit code the stand-in below ends the program with.
-def _ending_nt_resume(exit_code: int) -> Callable[[int], int]:
-    """Stand in for NtResumeProcess on a program another program just ended."""
+def _winapi_pid(handle: int) -> int:
+    """Return the process ID of the process *handle* names (Windows only)."""
+    import ctypes
 
-    def resume(handle: int) -> int:
-        import _winapi
-
-        _winapi.TerminateProcess(handle, exit_code)
-        return _STATUS_PROCESS_IS_TERMINATING
-
-    return resume
+    get_process_id = ctypes.WinDLL("kernel32").GetProcessId
+    get_process_id.argtypes = (ctypes.c_void_p,)
+    get_process_id.restype = ctypes.c_ulong
+    return int(get_process_id(handle))
 
 
 @_WINDOWS_ONLY
 @pytest.mark.parametrize("exit_code", [0, 1, 7])
-def test_program_that_ended_before_the_resume_is_no_result(
-    monkeypatch: pytest.MonkeyPatch, exit_code: int
+@pytest.mark.parametrize("when", ["ending", "ended", "ended-unread", "between"])
+def test_program_ended_before_the_resume_is_no_result(
+    monkeypatch: pytest.MonkeyPatch, exit_code: int, when: str
 ) -> None:
     """A program ended before the resume never ran: its exit code is no answer.
 
     Whatever ended it chose that code (``taskkill /F`` gives 1), and a 0 or a
     1 would read as git's own answer, which some checks exempt. So it raises
     :class:`ProgramResumeError`, which ``run_git`` turns into a failed git.
-    NtResumeProcess reports such a program as ending, so no thread snapshot
-    is taken either.
+    No thread snapshot is taken for such a program either.
+
+    The program is really ended, inside the job add, before the real resume.
+    While it still winds down ("ending"), NtResumeProcess reports success, so
+    before the exit code was read first such a program passed. Once it is
+    gone ("ended"), NtResumeProcess reports it as ending. "ended-unread"
+    hides the exit code, as a kill between that read and the resume would,
+    so NtResumeProcess's answer is the one that counts. "between" ends the
+    program right after the first read, still running, so NtResumeProcess
+    reports success and only the read after the resume catches it.
     """
+    import _winapi
+
     _skip_without_a_job()
-    monkeypatch.setattr(
-        _bounded_run, "_NT_RESUME_PROCESS", _ending_nt_resume(exit_code)
-    )
+    real_add = _bounded_run._Job.add
+    real_told = _bounded_run._told_to_end
+
+    def end(pid: int, *, wait: bool) -> None:
+        handle = _winapi.OpenProcess(_END_AND_WAIT_ACCESS, False, pid)
+        try:
+            _winapi.TerminateProcess(handle, exit_code)
+            if wait:
+                _winapi.WaitForSingleObject(handle, int(_EXIT_WAIT_SECONDS * 1000))
+        finally:
+            _winapi.CloseHandle(handle)
+
+    def add_then_end(job: _bounded_run._Job, pid: int) -> None:
+        real_add(job, pid)
+        if when != "between":
+            end(pid, wait=when != "ending")
+
+    reads: list[int] = []
+
+    def told_then_end(handle: int) -> bool:
+        reads.append(handle)
+        answer = real_told(handle)
+        if len(reads) == 1:
+            end(_winapi_pid(handle), wait=False)
+        return answer
+
+    monkeypatch.setattr(_bounded_run._Job, "add", add_then_end)
+    if when == "ended-unread":
+        monkeypatch.setattr(_bounded_run, "_told_to_end", lambda _handle: False)
+    if when == "between":
+        monkeypatch.setattr(_bounded_run, "_told_to_end", told_then_end)
     taken = _record_snapshots(monkeypatch)
-    with pytest.raises(_bounded_run.ProgramResumeError, match="ended before it"):
+    with pytest.raises(
+        _bounded_run.ProgramResumeError,
+        match=rf"ended before it could run \(exit code {exit_code}\)",
+    ):
         _bounded_run.run_bounded(
             [sys.executable, "-c", _PRINT_PROGRAM], timeout=_DEADLINE_SECONDS
         )
     assert taken == [], "a thread snapshot was taken for an ending program"
+
+
+@_WINDOWS_ONLY
+def test_interrupt_before_a_failed_resume_acts_at_once(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A Ctrl+C held during the start is raised before the failed-resume waits.
+
+    The resume fails and the program does not end by itself, so the failure
+    path waits for it to end and then for its output. The held Ctrl+C used to
+    wait behind those waits, for half a second or more.
+    """
+    _skip_without_a_job()
+    started: list[int] = []
+    interrupted_at: list[float] = []
+
+    def interrupted_resume(_job: _bounded_run._Job, process: object) -> bool:
+        started.append(int(getattr(process, "pid", 0)))
+        interrupted_at.append(time.monotonic())
+        signal.raise_signal(signal.SIGINT)
+        return False
+
+    monkeypatch.setattr(_bounded_run._Job, "resume", interrupted_resume)
+    program_gone = False
+    try:
+        with _python_interrupt_handler():
+            with pytest.raises(KeyboardInterrupt):
+                _bounded_run.run_bounded(
+                    [
+                        sys.executable,
+                        "-c",
+                        f"import time; time.sleep({_SLEEP_SECONDS})",
+                    ],
+                    timeout=_SLEEP_SECONDS,
+                )
+            took = time.monotonic() - interrupted_at[0]
+        assert took < _bounded_run._ENDING_WAIT_SECONDS, (
+            f"the interrupt waited {took:.2f}s"
+        )
+        assert len(started) == 1, started
+        program_gone = _wait_gone(started[0])
+        assert program_gone, "the interrupted program still exists"
+    finally:
+        if started and not program_gone:
+            _end_process(started[0])
 
 
 @_WINDOWS_ONLY
@@ -1692,18 +1776,44 @@ def _python_interrupt_handler() -> Iterator[None]:
         signal.signal(signal.SIGINT, previous)
 
 
-@_WINDOWS_ONLY
-def test_interrupt_inside_the_start_does_not_leave_the_program_suspended(
-    monkeypatch: pytest.MonkeyPatch,
+def _ends(process: subprocess.Popen[bytes]) -> bool:
+    """Return True once *process* has ended, waiting at most the exit wait.
+
+    It reaps the process too, so outside Windows no zombie is left that a
+    process ID check would still see.
+    """
+    try:
+        process.wait(timeout=_EXIT_WAIT_SECONDS)
+    except subprocess.TimeoutExpired:
+        return False
+    return True
+
+
+@pytest.mark.parametrize(
+    "new_session",
+    [
+        False,
+        True,
+        pytest.param(None, marks=_WINDOWS_ONLY, id="windows-without-a-job"),
+    ],
+)
+def test_interrupt_inside_the_start_does_not_leave_the_program_behind(
+    monkeypatch: pytest.MonkeyPatch, new_session: bool | None
 ) -> None:
     """A Ctrl+C that lands inside Popen, after the program exists, stops it.
 
     The stand-in Popen raises SIGINT right after the real one created the
     program, before it returns. Without the held-back interrupt the
-    KeyboardInterrupt left Popen with no object, and the program, never in
-    the job and never resumed, stayed suspended for good.
+    KeyboardInterrupt left Popen with no object. On Windows the program,
+    never in the job and never resumed, stayed suspended for good. Outside
+    Windows, where Python handles a signal as the fork and exec call
+    returns, the program ran on outside the time limit, in a session of its
+    own with *new_session*. On Windows without a job (None here: Windows
+    refuses one, as in a sandbox) the program does not start suspended, and
+    it ran on outside the time limit too.
     """
-    _skip_without_a_job()
+    if new_session is None:
+        monkeypatch.setattr(_bounded_run, "_new_job", lambda: None)
     started: list[subprocess.Popen[bytes]] = []
     real_popen = subprocess.Popen
 
@@ -1725,10 +1835,11 @@ def test_interrupt_inside_the_start_does_not_leave_the_program_suspended(
                         f"import time; time.sleep({_SLEEP_SECONDS})",
                     ],
                     timeout=_SLEEP_SECONDS,
+                    new_session=bool(new_session),
                 )
             assert signal.getsignal(signal.SIGINT) is signal.default_int_handler
         assert len(started) == 1, started
-        program_gone = _wait_gone(started[0].pid)
+        program_gone = _ends(started[0])
         assert program_gone, "the interrupted program still exists"
     finally:
         for process in started:
@@ -1768,16 +1879,16 @@ def test_a_handler_the_caller_installed_stays_during_the_start(
         assert signal.getsignal(signal.SIGINT) is own_handler
 
 
-@_WINDOWS_ONLY
+@pytest.mark.parametrize("new_session", [False, True])
 def test_error_that_escapes_popen_after_the_start_stops_the_program(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch, new_session: bool
 ) -> None:
     """An error inside Popen, once the program exists, does not leave it behind.
 
     Popen returns no object when it raises, so run_bounded finds the program
-    through Popen's own frames.
+    through Popen's own frames. Outside Windows, with *new_session*, the stop
+    ends the program's whole process group.
     """
-    _skip_without_a_job()
     started: list[int] = []
     real_popen = subprocess.Popen
 
@@ -1794,6 +1905,7 @@ def test_error_that_escapes_popen_after_the_start_stops_the_program(
             _bounded_run.run_bounded(
                 [sys.executable, "-c", f"import time; time.sleep({_SLEEP_SECONDS})"],
                 timeout=_SLEEP_SECONDS,
+                new_session=new_session,
             )
         assert len(started) == 1, started
         program_gone = _wait_gone(started[0])
