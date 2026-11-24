@@ -163,6 +163,11 @@ GIT_ENVIRONMENT: Final[Mapping[str, str]] = {
     "GIT_TERMINAL_PROMPT": "0",
 }
 
+# The exit code run_git reports for a git that started but could not be let
+# run. It is the code git itself exits with on a fatal error. It must not be
+# 1, which ``rev-parse --verify`` uses for "no commit yet", an exempt case.
+NOT_RESUMED_EXIT_CODE: Final[int] = 128
+
 
 def is_full_path_entry(entry: str, *, windows: bool = os.name == "nt") -> bool:
     r"""Return True when a ``PATH`` entry is a full path on its own.
@@ -275,19 +280,36 @@ def run_git(
     started are stopped, and :class:`subprocess.CalledProcessError` when
     *check* is set), so a caller handles a missing git as it would any failed
     start.
+
+    On Windows a git that started but could not be resumed
+    (:class:`~apothem.conformity._bounded_run.ProgramResumeError`) is a
+    failed git, not a missing one: the result has the exit code
+    :data:`NOT_RESUMED_EXIT_CODE` and the reason on standard error, and with
+    *check* it raises :class:`subprocess.CalledProcessError`. A caller that
+    reads an :class:`OSError` as "no git" would otherwise pass a check that
+    never ran.
     """
     git = find_git()
     if git is None:
         raise FileNotFoundError(
             errno.ENOENT, "git not found in a full-path PATH entry", "git"
         )
-    return _bounded_run.run_bounded(
-        git_argv(git, args, cwd=cwd),
-        env=git_environment(),
-        timeout=timeout,
-        check=check,
-        file_names=file_names,
-    )
+    argv = git_argv(git, args, cwd=cwd)
+    try:
+        return _bounded_run.run_bounded(
+            argv,
+            env=git_environment(),
+            timeout=timeout,
+            check=check,
+            file_names=file_names,
+        )
+    except _bounded_run.ProgramResumeError as exc:
+        completed = subprocess.CompletedProcess(
+            argv, NOT_RESUMED_EXIT_CODE, "", f"{exc}\n"
+        )
+    if check:
+        completed.check_returncode()
+    return completed
 
 
 def split_names(output: str) -> list[str]:

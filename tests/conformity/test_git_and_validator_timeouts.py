@@ -49,7 +49,7 @@ import sys
 import threading
 import time
 import uuid
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from pathlib import Path
 from types import FrameType
 from typing import TypeVar
@@ -66,6 +66,7 @@ from apothem.conformity import (
     production_ready_pr_grep,
     semver_stability_grep,
 )
+from apothem.conformity._git import NOT_RESUMED_EXIT_CODE, run_git
 from apothem.conformity._grep_base import CHECK_ERROR_KEY
 from tests._shared.git_env import hermetic_git_env
 
@@ -1539,7 +1540,11 @@ def test_child_started_before_the_job_add_is_stopped_with_the_program(
 def test_program_that_cannot_be_resumed_is_stopped_at_once(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A suspended program that cannot run raises OSError and is not left behind."""
+    """A suspended program that cannot run raises and is not left behind.
+
+    The error is a ProgramResumeError, which a caller can tell from a
+    program that is missing, and its message says the program is in the job.
+    """
     _skip_without_a_job()
     started: list[int] = []
     real_add = _bounded_run._Job.add
@@ -1553,7 +1558,10 @@ def test_program_that_cannot_be_resumed_is_stopped_at_once(
     program_gone = False
     begun = time.monotonic()
     try:
-        with pytest.raises(OSError, match="could not resume"):
+        with pytest.raises(
+            _bounded_run.ProgramResumeError,
+            match=r"could not resume .* \(it is in the job object\)",
+        ):
             _bounded_run.run_bounded(
                 [sys.executable, "-c", f"import time; time.sleep({_SLEEP_SECONDS})"],
                 timeout=_SLEEP_SECONDS,
@@ -1563,6 +1571,233 @@ def test_program_that_cannot_be_resumed_is_stopped_at_once(
         assert len(started) == 1, started
         program_gone = _wait_gone(started[0])
         assert program_gone, "the program that could not run still exists"
+    finally:
+        if started and not program_gone:
+            _end_process(started[0])
+
+
+@_WINDOWS_ONLY
+def test_resume_failure_says_when_the_program_is_not_in_the_job(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """When the job add failed, the message does not claim the program joined."""
+    _skip_without_a_job()
+    started: list[int] = []
+
+    def refused_add(_job: _bounded_run._Job, pid: int) -> None:
+        started.append(pid)
+
+    monkeypatch.setattr(_bounded_run._Job, "add", refused_add)
+    monkeypatch.setattr(_bounded_run._Job, "resume", lambda _job, _process: False)
+    program_gone = False
+    try:
+        with pytest.raises(
+            _bounded_run.ProgramResumeError, match="it is not in the job object"
+        ):
+            _bounded_run.run_bounded(
+                [sys.executable, "-c", f"import time; time.sleep({_SLEEP_SECONDS})"],
+                timeout=_SLEEP_SECONDS,
+            )
+        assert len(started) == 1, started
+        program_gone = _wait_gone(started[0])
+        assert program_gone, "the program that could not run still exists"
+    finally:
+        if started and not program_gone:
+            _end_process(started[0])
+
+
+# The NTSTATUS NtResumeProcess returns for a process that is ending, as the
+# signed value ctypes gives back.
+_STATUS_PROCESS_IS_TERMINATING = 0xC000010A - (1 << 32)
+
+
+# The exit code the stand-in below ends the program with.
+def _ending_nt_resume(exit_code: int) -> Callable[[int], int]:
+    """Stand in for NtResumeProcess on a program another program just ended."""
+
+    def resume(handle: int) -> int:
+        import _winapi
+
+        _winapi.TerminateProcess(handle, exit_code)
+        return _STATUS_PROCESS_IS_TERMINATING
+
+    return resume
+
+
+@_WINDOWS_ONLY
+@pytest.mark.parametrize("exit_code", [0, 1, 7])
+def test_program_that_ended_before_the_resume_is_no_result(
+    monkeypatch: pytest.MonkeyPatch, exit_code: int
+) -> None:
+    """A program ended before the resume never ran: its exit code is no answer.
+
+    Whatever ended it chose that code (``taskkill /F`` gives 1), and a 0 or a
+    1 would read as git's own answer, which some checks exempt. So it raises
+    :class:`ProgramResumeError`, which ``run_git`` turns into a failed git.
+    NtResumeProcess reports such a program as ending, so no thread snapshot
+    is taken either.
+    """
+    _skip_without_a_job()
+    monkeypatch.setattr(
+        _bounded_run, "_NT_RESUME_PROCESS", _ending_nt_resume(exit_code)
+    )
+    taken = _record_snapshots(monkeypatch)
+    with pytest.raises(_bounded_run.ProgramResumeError, match="ended before it"):
+        _bounded_run.run_bounded(
+            [sys.executable, "-c", _PRINT_PROGRAM], timeout=_DEADLINE_SECONDS
+        )
+    assert taken == [], "a thread snapshot was taken for an ending program"
+
+
+@_WINDOWS_ONLY
+def test_git_that_cannot_be_resumed_fails_the_checks_in_a_checkout(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A git that started but could not run is a failed git, not a missing one.
+
+    Before, the resume failure was a plain OSError: conventional-commit then
+    reported ``git-unavailable`` and passed, and agents-md skipped its
+    freshness check and passed, inside a real checkout.
+    """
+    _skip_without_a_job()
+    repo = _project(tmp_path)
+    monkeypatch.setattr(_bounded_run._Job, "resume", lambda _job, _process: False)
+
+    completed = run_git(["log", "-1"], cwd=repo, timeout=_DEADLINE_SECONDS)
+    assert completed.returncode == NOT_RESUMED_EXIT_CODE
+    assert "could not resume" in completed.stderr
+    with pytest.raises(subprocess.CalledProcessError) as raised:
+        run_git(["log", "-1"], cwd=repo, timeout=_DEADLINE_SECONDS, check=True)
+    assert raised.value.returncode == NOT_RESUMED_EXIT_CODE
+
+    subject = conventional_commit_grep.check_repo(repo)
+    assert subject.passed is False
+    assert subject.status == "git-failed"
+    assert subject.check_error == "git log failed with exit code 128"
+
+    companions = agents_md_coverage_grep.check(repo)
+    assert companions.passed is False
+    assert companions.check_error == "git rev-parse failed with exit code 128"
+
+
+@contextlib.contextmanager
+def _python_interrupt_handler() -> Iterator[None]:
+    """Give ``SIGINT`` Python's own handler for the block, then restore it."""
+    if threading.current_thread() is not threading.main_thread():
+        pytest.skip("only the main thread can set a signal handler")
+    previous = signal.signal(signal.SIGINT, signal.default_int_handler)
+    try:
+        yield
+    finally:
+        signal.signal(signal.SIGINT, previous)
+
+
+@_WINDOWS_ONLY
+def test_interrupt_inside_the_start_does_not_leave_the_program_suspended(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A Ctrl+C that lands inside Popen, after the program exists, stops it.
+
+    The stand-in Popen raises SIGINT right after the real one created the
+    program, before it returns. Without the held-back interrupt the
+    KeyboardInterrupt left Popen with no object, and the program, never in
+    the job and never resumed, stayed suspended for good.
+    """
+    _skip_without_a_job()
+    started: list[subprocess.Popen[bytes]] = []
+    real_popen = subprocess.Popen
+
+    def interrupted_popen(*args: object, **kwargs: object) -> subprocess.Popen[bytes]:
+        process: subprocess.Popen[bytes] = real_popen(*args, **kwargs)  # type: ignore[call-overload]
+        started.append(process)
+        signal.raise_signal(signal.SIGINT)
+        return process
+
+    monkeypatch.setattr(_bounded_run.subprocess, "Popen", interrupted_popen)
+    program_gone = False
+    try:
+        with _python_interrupt_handler():
+            with pytest.raises(KeyboardInterrupt):
+                _bounded_run.run_bounded(
+                    [
+                        sys.executable,
+                        "-c",
+                        f"import time; time.sleep({_SLEEP_SECONDS})",
+                    ],
+                    timeout=_SLEEP_SECONDS,
+                )
+            assert signal.getsignal(signal.SIGINT) is signal.default_int_handler
+        assert len(started) == 1, started
+        program_gone = _wait_gone(started[0].pid)
+        assert program_gone, "the interrupted program still exists"
+    finally:
+        for process in started:
+            with contextlib.suppress(OSError, subprocess.TimeoutExpired):
+                process.kill()
+                process.communicate(timeout=_EXIT_WAIT_SECONDS)
+
+
+@_WINDOWS_ONLY
+def test_a_handler_the_caller_installed_stays_during_the_start(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Only Python's own interrupt handler is replaced while a program starts."""
+    _skip_without_a_job()
+    seen: list[object] = []
+    real_popen = subprocess.Popen
+
+    def watching_popen(*args: object, **kwargs: object) -> subprocess.Popen[bytes]:
+        seen.append(signal.getsignal(signal.SIGINT))
+        process: subprocess.Popen[bytes] = real_popen(*args, **kwargs)  # type: ignore[call-overload]
+        return process
+
+    def own_handler(_signum: int, _frame: FrameType | None) -> None:
+        """Stand in for a handler the caller installed."""
+
+    monkeypatch.setattr(_bounded_run.subprocess, "Popen", watching_popen)
+    with _python_interrupt_handler():
+        _bounded_run.run_bounded(
+            [sys.executable, "-c", _PRINT_PROGRAM], timeout=_DEADLINE_SECONDS
+        )
+        assert seen[-1] is not signal.default_int_handler
+        signal.signal(signal.SIGINT, own_handler)
+        _bounded_run.run_bounded(
+            [sys.executable, "-c", _PRINT_PROGRAM], timeout=_DEADLINE_SECONDS
+        )
+        assert seen[-1] is own_handler
+        assert signal.getsignal(signal.SIGINT) is own_handler
+
+
+@_WINDOWS_ONLY
+def test_error_that_escapes_popen_after_the_start_stops_the_program(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An error inside Popen, once the program exists, does not leave it behind.
+
+    Popen returns no object when it raises, so run_bounded finds the program
+    through Popen's own frames.
+    """
+    _skip_without_a_job()
+    started: list[int] = []
+    real_popen = subprocess.Popen
+
+    class FailingPopen(real_popen):  # type: ignore[misc,valid-type]
+        def _execute_child(self, *args: object, **kwargs: object) -> None:
+            super()._execute_child(*args, **kwargs)
+            started.append(self.pid)
+            raise RuntimeError("a failure after the program was created")
+
+    monkeypatch.setattr(_bounded_run.subprocess, "Popen", FailingPopen)
+    program_gone = False
+    try:
+        with pytest.raises(RuntimeError, match="after the program was created"):
+            _bounded_run.run_bounded(
+                [sys.executable, "-c", f"import time; time.sleep({_SLEEP_SECONDS})"],
+                timeout=_SLEEP_SECONDS,
+            )
+        assert len(started) == 1, started
+        program_gone = _wait_gone(started[0])
+        assert program_gone, "the program Popen started still exists"
     finally:
         if started and not program_gone:
             _end_process(started[0])

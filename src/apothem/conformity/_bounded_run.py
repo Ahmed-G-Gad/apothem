@@ -75,6 +75,23 @@ STOP_GRACE_SECONDS: Final[float] = 5.0
 # suspended.
 _CREATE_SUSPENDED: Final[int] = 0x00000004
 
+# The Popen class, kept at import: a test may put a function in its place.
+_POPEN: Final[type[subprocess.Popen[Any]]] = subprocess.Popen
+
+# Seconds to wait, after a failed resume, for a program that is already ending
+# to finish. Windows ends a process a moment after it is told to.
+_ENDING_WAIT_SECONDS: Final[float] = 0.5
+
+
+class ProgramResumeError(OSError):
+    """A program that started suspended could not be let run, and was stopped.
+
+    It is an :class:`OSError`, as a failed start is, but a caller that reads
+    an OSError as "the program is missing" can tell this case apart: the
+    program was there and started.
+    """
+
+
 if sys.platform == "win32":
     import ctypes
     from ctypes import wintypes
@@ -204,6 +221,8 @@ if sys.platform == "win32":
         _NT_RESUME_PROCESS.argtypes = (wintypes.HANDLE,)
         # An NTSTATUS: zero or more is a success.
         _NT_RESUME_PROCESS.restype = wintypes.LONG
+    # The NTSTATUS NtResumeProcess returns for a process that is ending.
+    _STATUS_PROCESS_IS_TERMINATING: Final[int] = 0xC000010A
 
     def _new_job() -> int | None:
         """Return a job object that ends its programs when closed, or None."""
@@ -256,14 +275,16 @@ if sys.platform == "win32":
 
         *handle* is the process handle that started it, or None when it is not
         known. NtResumeProcess on that handle comes first; the thread snapshot
-        is the fallback.
+        is the fallback. A process that NtResumeProcess reports as ending
+        gets no snapshot: it has no thread left to resume, and the snapshot
+        would hold every thread on the machine for nothing.
         """
-        if (
-            handle is not None
-            and _NT_RESUME_PROCESS is not None
-            and int(_NT_RESUME_PROCESS(handle)) >= 0
-        ):
-            return True
+        if handle is not None and _NT_RESUME_PROCESS is not None:
+            status = int(_NT_RESUME_PROCESS(handle))
+            if status >= 0:
+                return True
+            if status & 0xFFFFFFFF == _STATUS_PROCESS_IS_TERMINATING:
+                return False
         return _resume_threads(pid)
 
     def _resume_threads(pid: int) -> bool:
@@ -303,6 +324,11 @@ class _Job:
     def suspends(self) -> bool:
         """True when the program should start suspended and wait for the job."""
         return sys.platform == "win32" and self._handle is not None
+
+    @property
+    def holds_program(self) -> bool:
+        """True once the program is in the job."""
+        return self._holds_program
 
     def add(self, pid: int) -> None:
         """Put the program with process ID *pid* in the job."""
@@ -395,20 +421,93 @@ def _stop(process: subprocess.Popen[bytes], job: _Job, *, group: bool) -> None:
 
 
 def _let_run(process: subprocess.Popen[bytes], job: _Job, program: str) -> None:
-    """Let *process*, started suspended, run, or stop it and raise OSError.
+    """Let *process*, started suspended, run, or stop it and raise.
 
     A program that cannot be resumed would wait out the whole time limit, so
     it is stopped at once, its output is awaited for at most
-    :data:`STOP_GRACE_SECONDS`, and the start counts as failed.
+    :data:`STOP_GRACE_SECONDS`, and :class:`ProgramResumeError` is raised.
+    A program that ended before it could be resumed never ran: its exit code
+    is whatever ended it chose (``taskkill /F`` gives 1), so it raises
+    :class:`ProgramResumeError` too, and no caller reads that code as git's.
     """
     if job.resume(process):
         return
+    with contextlib.suppress(subprocess.TimeoutExpired):
+        process.wait(timeout=_ENDING_WAIT_SECONDS)
+    if process.returncode is not None:
+        raise ProgramResumeError(
+            f"{program!r} ended before it could run (exit code {process.returncode})"
+        )
+    in_job = job.holds_program
     job.terminate()
     with contextlib.suppress(OSError):
         process.kill()
     with contextlib.suppress(subprocess.TimeoutExpired):
         process.communicate(timeout=STOP_GRACE_SECONDS)
-    raise OSError(f"could not resume {program!r} after it joined the job object")
+    if in_job:
+        where = "it is in the job object"
+    else:
+        where = "it is not in the job object: Windows refused to add it"
+    raise ProgramResumeError(f"could not resume {program!r} ({where})")
+
+
+@contextlib.contextmanager
+def _held_interrupt(enabled: bool) -> Iterator[None]:
+    """While the block runs, hold back Ctrl+C, then raise it once it ends.
+
+    Only on the main thread (the only one that may set a signal handler), and
+    only while ``SIGINT`` has Python's own handler, which raises
+    :class:`KeyboardInterrupt`: a handler the caller installed stays as it
+    is. The previous handler comes back when the block ends. An interrupt
+    that arrived meanwhile is then raised as :class:`KeyboardInterrupt`, in
+    place of any error the block raised.
+    """
+    if not (
+        enabled
+        and threading.current_thread() is threading.main_thread()
+        and signal.getsignal(signal.SIGINT) is signal.default_int_handler
+    ):
+        yield
+        return
+    received: list[int] = []
+
+    def record(signum: int, _frame: FrameType | None) -> None:
+        received.append(signum)
+
+    previous = signal.signal(signal.SIGINT, record)
+    try:
+        yield
+    finally:
+        signal.signal(signal.SIGINT, previous)
+        if received:
+            raise KeyboardInterrupt
+
+
+def _stop_unreturned(error: BaseException, job: _Job, *, group: bool) -> None:
+    """Stop the program a Popen call started before it raised *error*.
+
+    Popen returns nothing when it raises, but its own frames in the
+    traceback still hold the object as ``self``. Once Popen recorded the
+    program's process ID, the program is stopped and awaited for at most
+    :data:`STOP_GRACE_SECONDS`. Without an ID nothing is found: an error in
+    the moment between Windows making the program and Popen recording its ID
+    still leaves it. A program Popen already waited for is left alone, as its
+    process ID may be in use again.
+    """
+    traceback = error.__traceback__
+    while traceback is not None:
+        candidate = traceback.tb_frame.f_locals.get("self")
+        traceback = traceback.tb_next
+        if (
+            isinstance(candidate, _POPEN)
+            and candidate.pid is not None
+            and candidate.returncode is None
+        ):
+            started: subprocess.Popen[bytes] = candidate
+            _stop(started, job, group=group)
+            with contextlib.suppress(subprocess.TimeoutExpired):
+                started.wait(timeout=STOP_GRACE_SECONDS)
+            return
 
 
 def run_bounded(
@@ -436,13 +535,18 @@ def run_bounded(
     stopped (see the module docstring), the output is awaited for at most
     :data:`STOP_GRACE_SECONDS`, and :class:`subprocess.TimeoutExpired` is
     raised. An interrupt, such as Ctrl+C, that arrives once Popen has
-    returned stops them the same way before it goes on. An interrupt inside
-    Popen itself, after Windows created the program but before Popen returns,
-    can leave the program suspended; that window is microseconds wide. A
-    program that cannot be started raises :class:`OSError`. On
-    Windows a program that started suspended and cannot be resumed is stopped
-    and raises :class:`OSError` too, so a caller sees it as a program that
-    could not be started.
+    returned stops them the same way before it goes on. On Windows, on the
+    main thread, Ctrl+C is held back from just before Popen until the
+    program that starts suspended runs, and then raised, so an interrupt
+    inside Popen cannot leave the program suspended. A ``SIGINT`` handler the
+    caller installed is left in place, and with it a window of microseconds
+    in which such an interrupt can still leave the program suspended. Any
+    other error that escapes Popen after the program started stops the
+    program. A program that cannot be started raises :class:`OSError`. On
+    Windows a program that started suspended and cannot be resumed is
+    stopped and raises :class:`ProgramResumeError`, an :class:`OSError`; one
+    that had already ended by then is not an error, and its exit code comes
+    back.
     """
     command = list(argv)
     job = _Job()
@@ -452,23 +556,29 @@ def run_bounded(
     # at any point after the start (even before the program is added or
     # resumed) stops the program instead of leaving it suspended.
     try:
-        process = subprocess.Popen(  # noqa: S603 — argv list from the caller, never a shell
-            command,
-            cwd=None if cwd is None else str(cwd),
-            env=None if env is None else dict(env),
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            start_new_session=new_session and sys.platform != "win32",
-            creationflags=_CREATE_SUSPENDED if suspended else 0,
-        )
-        job.add(process.pid)
-        if suspended:
-            _let_run(process, job, command[0])
+        with _held_interrupt(suspended):
+            try:
+                process = subprocess.Popen(  # noqa: S603 — argv list from the caller, never a shell
+                    command,
+                    cwd=None if cwd is None else str(cwd),
+                    env=None if env is None else dict(env),
+                    stdin=subprocess.DEVNULL,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    start_new_session=new_session and sys.platform != "win32",
+                    creationflags=_CREATE_SUSPENDED if suspended else 0,
+                )
+            except BaseException as error:
+                _stop_unreturned(error, job, group=new_session)
+                raise
+            job.add(process.pid)
+            if suspended:
+                _let_run(process, job, command[0])
         with _exit_on_termination(new_session):
             stdout, stderr = process.communicate(timeout=timeout)
     except BaseException as error:
-        # process is None only when Popen itself failed: nothing started.
+        # process is None only when Popen itself failed: nothing started, or
+        # what it started was stopped above.
         if process is not None:
             _stop(process, job, group=new_session)
             if isinstance(error, subprocess.TimeoutExpired):
