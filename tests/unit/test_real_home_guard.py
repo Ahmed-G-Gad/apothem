@@ -69,11 +69,14 @@ also once a controller hook ended the run with ``pytest.exit`` before xdist
 ended the workers (a later run with the same ``--basetemp`` and no refusal
 passes and reads none of the files an earlier run left in its folder, and no
 such file is made in a protected folder), a worker whose session ends at its
-start, which handed nothing over, is not named as if it had, and an empty file
-a worker left, a line it cut short and a file the controller cannot read each
-fail the run; a worker that stops on Ctrl-C has its refusal reported once, and
-one the controller absorbs while its workers run the tests is named for the
-run. Each names where the refusal happened. A session that absorbs nothing
+start, which handed nothing over, is not named as if it had, a worker that
+ends with ``os._exit(0)`` in its session finish, before it hands anything over,
+still fails the run with what it absorbed between two tests and after its last
+test (a worker that hands the same over has each reported once), and an empty
+file a worker left, a line it cut short and a file the controller cannot read
+each fail the run; a worker that stops on Ctrl-C has its refusal reported once,
+and one the controller absorbs while its workers run the tests is named for
+the run. Each names where the refusal happened. A session that absorbs nothing
 exits 0, with and without xdist. The guard refuses before any write, so nothing
 lands in a home.
 """
@@ -82,6 +85,7 @@ from __future__ import annotations
 
 import importlib
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -2087,6 +2091,100 @@ def case_a_worker_that_handed_nothing_over_is_not_named_as_if_it_had(
     named = f"in xdist worker gw0, {_AT_SESSION_START}, and the refusal"
     assert output.count(named) == 1, output
     assert _AFTER_THE_HAND_OFF not in output
+    assert not (fake_real_home / ".apothem").exists()
+
+
+#: In an xdist worker only: a report hook that absorbs the refusal at the
+#: first probe test's teardown report, which the second test's setup holds
+#: as made between two tests; a finish hook that absorbs it again when the
+#: last test is done; and a plain session-finish hook that then ends that
+#: worker's process with ``os._exit(0)``, as a crash or a kill while it is
+#: idle would, before it hands anything to the controller. The worker is
+#: told apart by its config, as below.
+_ABSORBED_IN_A_WORKER_THAT_THEN_ENDS = """
+
+CONFIGS = []
+ABSORBED = []
+
+
+def pytest_configure(config):
+    CONFIGS.append(config)
+
+
+def _in_a_worker():
+    return hasattr(CONFIGS[-1], "workerinput")
+
+
+def pytest_runtest_logreport(report):
+    if (
+        _in_a_worker()
+        and report.when == "teardown"
+        and report.nodeid.endswith("test_fixture_free")
+    ):
+        _absorb()
+        ABSORBED.append(report.nodeid)
+
+
+def pytest_runtest_logfinish(nodeid, location):
+    if _in_a_worker() and nodeid.endswith("test_with_tmp_path"):
+        _absorb()
+
+
+def pytest_sessionfinish(session):
+    if _in_a_worker() and ABSORBED:
+        os._exit(0)
+"""
+
+#: The same hooks, in a worker that goes on to hand its refusals over.
+_ABSORBED_IN_A_WORKER_THAT_HANDS_THEM_OVER = (
+    _ABSORBED_IN_A_WORKER_THAT_THEN_ENDS.replace("os._exit(0)", "pass")
+)
+
+#: Where the worker of those hooks found each refusal.
+_HELD_BY_A_WORKER = (
+    "between two tests, before test_probe.py::test_with_tmp_path",
+    "after the last test",
+)
+
+
+def case_a_worker_that_ends_before_it_hands_its_refusals_over_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """The worker writes each refusal to its file as it holds it.
+
+    ``--dist loadfile`` runs both probe tests in one worker. It ends in its
+    session finish, before it hands what it holds to the controller, so
+    xdist reports it down but fails no test, since none was running on it.
+    The controller reads its file and fails the run on both refusals: the
+    one held between the two tests, and the one logged after the last test,
+    which the worker holds when its session finish starts. A worker that
+    hands the same refusals over has each reported once, not again from
+    its file.
+    """
+    args = ("-n", "2", "--dist", "loadfile", "--max-worker-restart", "0")
+    result = _run_absorbing(
+        pytester, fake_real_home, _ABSORBED_IN_A_WORKER_THAT_THEN_ENDS, *args
+    )
+
+    result.assert_outcomes(passed=len(_PROBE_TESTS))
+    assert result.ret == pytest.ExitCode.TESTS_FAILED, result.stdout.str()
+    output = " ".join(result.stdout.str().split())
+    crashed = re.search(r"worker (gw\d) crashed", output)
+    assert crashed is not None, output
+    for where in _HELD_BY_A_WORKER:
+        named = f"outside any test, in xdist worker {crashed[1]}, {where}, and"
+        assert output.count(named) == 1, output
+    assert _AFTER_THE_HAND_OFF not in output
+    handed = _run_absorbing(
+        pytester, fake_real_home, _ABSORBED_IN_A_WORKER_THAT_HANDS_THEM_OVER, *args
+    )
+    handed.assert_outcomes(passed=len(_PROBE_TESTS))
+    assert handed.ret == pytest.ExitCode.TESTS_FAILED, handed.stdout.str()
+    output = " ".join(handed.stdout.str().split())
+    assert "crashed" not in output, output
+    for where in _HELD_BY_A_WORKER:
+        named = rf"in xdist worker gw\d, {re.escape(where)}, and"
+        assert len(re.findall(named, output)) == 1, output
     assert not (fake_real_home / ".apothem").exists()
 
 

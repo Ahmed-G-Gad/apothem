@@ -180,23 +180,27 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   ``pytest_terminal_summary`` hook. In an xdist controller, which runs no test
   itself, that wrapper first holds, before its ``yield``, what the controller's
   own hooks logged while the workers ran the tests, named "in the xdist
-  controller, during the test run". A ``tryfirst`` ``pytest_unconfigure``
-  wrapper does it for a refusal absorbed in ``pytest_unconfigure`` ("after the
-  session finished", or "while pytest ran no test session" when no session
-  started: a ``pytest_configure`` hook ended the run with ``pytest.exit``, or
-  ``--markers`` or ``--help`` ran), and in an xdist controller for what the
-  workers found after they handed their refusals over (see below): pytest
-  returns the session's exit status after that hook. That wrapper also turns
-  "OK" or "no tests collected" into "tests failed" again once the guard has
-  reported a refusal in the session, which ``pytest.exit(returncode=0)`` in a
-  plain ``pytest_sessionfinish`` hook would otherwise undo: pytest sets the
-  status from that call after every session-finish wrapper has finished. One
-  absorbed later still, in a cleanup registered with ``config.add_cleanup``,
-  reaches only ``stderr``. These ``tryfirst`` wrappers finish after every
-  wrapper except a ``tryfirst`` one that pytest registered after the guard (a
-  conftest's): a refusal absorbed after such a ``pytest_sessionfinish``
-  wrapper's ``yield`` is named "after the session finished", and one after
-  such a ``pytest_unconfigure`` wrapper's ``yield`` reaches only ``stderr``.
+  controller, during the test run"; in an xdist worker it holds there what
+  was logged after the last test (in a ``pytest_runtest_logfinish`` hook,
+  say), named "after the last test", so the worker writes it to its file (see
+  below) before any plain session-finish hook runs. A ``tryfirst``
+  ``pytest_unconfigure`` wrapper does it for a refusal absorbed in
+  ``pytest_unconfigure`` ("after the session finished", or "while pytest ran
+  no test session" when no session started: a ``pytest_configure`` hook ended
+  the run with ``pytest.exit``, or ``--markers`` or ``--help`` ran), and in an
+  xdist controller for what the workers wrote to their files (see below):
+  pytest returns the session's exit status after that hook. That wrapper also
+  turns "OK" or "no tests collected" into "tests failed" again once the guard
+  has reported a refusal in the session, which ``pytest.exit(returncode=0)``
+  in a plain ``pytest_sessionfinish`` hook would otherwise undo: pytest sets
+  the status from that call after every session-finish wrapper has finished.
+  One absorbed later still, in a cleanup registered with
+  ``config.add_cleanup``, reaches only ``stderr``. These ``tryfirst``
+  wrappers finish after every wrapper except a ``tryfirst`` one that pytest
+  registered after the guard (a conftest's): a refusal absorbed after such a
+  ``pytest_sessionfinish`` wrapper's ``yield`` is named "after the session
+  finished", and one after such a ``pytest_unconfigure`` wrapper's ``yield``
+  reaches only ``stderr``.
 - ``pytest_testnodedown`` and ``pytest_configure_node``, optional hooks that
   only xdist defines and calls in the controller. A worker's terminal output is
   discarded and the controller does not use its exit code, so a worker sends
@@ -204,34 +208,39 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   it in ``config.workeroutput`` once every plain session-finish hook has run,
   which xdist's own wrapper then sends, and the controller's
   ``pytest_testnodedown`` holds it under the worker's name, once also for a
-  worker that stopped on Ctrl-C, which xdist reports down twice. What a worker
-  finds after that hand-off, after another session-finish wrapper's ``yield``,
-  in its terminal summary or in its ``pytest_unconfigure``, it appends to a
-  file that the controller's ``pytest_configure_node`` named in the worker's
-  ``workerinput``: one per worker, in a folder the controller makes for the
-  session with ``tempfile.mkdtemp``, so a folder an earlier run left is never
-  read, and never in a protected folder of a real home. The worker also writes
-  a copy of what it hands over there, which the controller reports only when
-  ``pytest_testnodedown`` did not take the worker's output: a hook of the
-  controller ended its test loop with ``pytest.exit``, say. A worker whose
+  worker that stopped on Ctrl-C, which xdist reports down twice. The worker
+  also appends each refusal, as it holds it, to a file that the controller's
+  ``pytest_configure_node`` named in the worker's ``workerinput``: one per
+  worker, in a folder the controller makes for the session with
+  ``tempfile.mkdtemp``, so a folder an earlier run left is never read, and
+  never in a protected folder of a real home. Until the hand-off the file
+  holds a copy of what the worker hands over, which the controller reports
+  only when ``pytest_testnodedown`` did not take the worker's output: a hook
+  of the controller ended its test loop with ``pytest.exit``; the worker's
   session stopped before its session finish (``pytest.exit`` in its
-  ``pytest_sessionstart``, say) handed nothing over, and writes what it holds
-  to that file from its ``pytest_unconfigure``. The controller's
-  ``pytest_unconfigure`` wrapper reads the files, holds each refusal named "in
-  xdist worker <name>, after it handed its refusals to the controller, ..."
-  (without "after it handed ..." for a worker that handed nothing over) and
-  removes the folder. Before it reads them, every worker has been told to exit
-  and its process has ended: xdist's own ``pytest_sessionfinish`` in the
-  controller does that, and the wrapper does it again for a worker still
-  running, as when a plain session-finish hook that pluggy calls before xdist's
-  ended the run with ``pytest.exit``. A worker still running Python code 5
-  seconds after it was told gets a ``KeyboardInterrupt``; on Windows one
-  blocked in a sleep or another call does not, since ``_thread.interrupt_main``
-  does not wake it. One still running after 10 seconds is stopped. What a
-  worker had not written to its file when it ended (``os._exit``, a crash) or
-  was stopped reaches only ``stderr``, and so does everything a worker finds
-  after the hand-off when the controller could not make the folder or the
-  worker cannot write to it.
+  ``pytest_sessionstart``, say), so it handed nothing over; or the worker
+  crashed or was stopped before the hand-off (``os._exit`` in a plain
+  session-finish hook, say), which xdist reports as a worker down without
+  failing any test when none was running on it. What a worker finds after the
+  hand-off, after another session-finish wrapper's ``yield``, in its terminal
+  summary or in its ``pytest_unconfigure``, reaches the controller through the
+  file alone. The controller's ``pytest_unconfigure`` wrapper reads the files,
+  holds each refusal named "in xdist worker <name>, after it handed its
+  refusals to the controller, ..." (without "after it handed ..." for one the
+  worker wrote before the hand-off) and removes the folder. Before it reads
+  them, every worker has been told to exit and its process has ended: xdist's
+  own ``pytest_sessionfinish`` in the controller does that, and the wrapper
+  does it again for a worker still running, as when a plain session-finish
+  hook that pluggy calls before xdist's ended the run with ``pytest.exit``. A
+  worker still running Python code 5 seconds after it was told gets a
+  ``KeyboardInterrupt``; on Windows one blocked in a sleep or another call
+  does not, since ``_thread.interrupt_main`` does not wake it. One still
+  running after 10 seconds is stopped. A refusal that a worker neither handed
+  over nor wrote to its file before it ended or was stopped reaches only
+  ``stderr``: one it logged in a plain session-finish hook that then ended the
+  process with ``os._exit``, say, or one it held while it could not write to
+  the file. So does everything a worker finds after the hand-off when the
+  controller could not make the folder or the worker cannot write to it.
 
 The guard fails a test with ``RealHomeGuardFailure``, ``pytest.fail``'s exception
 under a type of its own, so the report hook can tell it apart. The hook looks
@@ -1315,9 +1324,11 @@ class RealHomeGuard:
         failed". An xdist worker hands them to the controller instead, in
         ``config.workeroutput``: the worker's terminal output is discarded and
         the controller does not use its exit code. xdist's own wrapper sends
-        that output after its ``yield``, so after this one. What the worker
-        finds after that reaches the controller in a file (see
-        :meth:`pytest_configure_node`).
+        that output after its ``yield``, so after this one. The worker wrote
+        each of them to a file as it held it (:func:`_write_ahead`), which
+        the controller reads when this hand-off never reached it, and what
+        the worker finds after the hand-off reaches the controller in that
+        file alone (see :meth:`pytest_configure_node`).
         """
         try:
             return (yield)
@@ -1349,11 +1360,19 @@ class RealHomeGuard:
         test loop started. The controller runs no test itself, so that came
         from one of its own hooks while its workers ran the tests (a
         ``pytest_runtest_logreport`` hook of a reporting plugin, say), not
-        after the last test.
+        after the last test. In an xdist worker it holds there what was
+        logged after the last test (in a ``pytest_runtest_logreport`` or
+        ``pytest_runtest_logfinish`` hook, say), named as
+        :meth:`pytest_sessionfinish` names it, so the worker writes it to its
+        file (:func:`_write_ahead`) before any plain session-finish hook runs:
+        one that crashes the worker or ends it with ``os._exit`` leaves it in
+        the file.
         """
         session.config.stash[_HELD_SESSION] = session
         if _is_controller(session.config):
             _hold(session.config, _IN_THE_CONTROLLER_DURING_THE_RUN)
+        elif _is_worker(session.config):
+            _hold(session.config, _AFTER_THE_LAST_TEST)
         try:
             return (yield)
         finally:
@@ -1418,17 +1437,20 @@ class RealHomeGuard:
     def pytest_testnodedown(self, node: object) -> None:
         """Hold the refusals an xdist worker sent, for the controller to report.
 
-        xdist calls this in the controller when a worker has finished, with the
-        ``config.workeroutput`` the worker sent (see :meth:`pytest_sessionfinish`);
-        a worker that crashed sent none. For a worker that stopped on Ctrl-C it
-        calls this twice, so the refusals are taken out of that output the
-        first time. What a worker finds after it sent that output reaches the
-        controller in a file instead (see :meth:`pytest_configure_node`). The
-        worker also writes a copy of what it sent to that file, for a
-        controller whose test loop ended before it took the output (a hook
-        that called ``pytest.exit``, say); the worker is noted here, so
-        :func:`_take_late` skips that copy. Only xdist defines the hook, so
-        it is optional: without xdist pytest neither calls it nor rejects it.
+        xdist calls this in the controller when a worker has finished, with
+        the ``config.workeroutput`` the worker sent (see
+        :meth:`pytest_sessionfinish`), and when one crashed, which sent none.
+        For a worker that stopped on Ctrl-C it calls this twice, so the
+        refusals are taken out of that output the first time. What a worker
+        finds after it sent that output reaches the controller in a file
+        instead (see :meth:`pytest_configure_node`). The worker also writes
+        each refusal it sends to that file as it holds it
+        (:func:`_write_ahead`), for a controller whose test loop ended before
+        it took the output (a hook that called ``pytest.exit``, say) and for
+        a worker that crashed or was stopped before it sent any. A worker
+        whose output this took is noted here, so :func:`_take_late` skips
+        that copy. Only xdist defines the hook, so it is optional: without
+        xdist pytest neither calls it nor rejects it.
         """
         output = getattr(node, "workeroutput", None)
         config = getattr(node, "config", None)
@@ -1442,20 +1464,22 @@ class RealHomeGuard:
 
     @pytest.hookimpl(optionalhook=True)
     def pytest_configure_node(self, node: object) -> None:
-        """Give an xdist worker a file for what it finds after the hand-off.
+        """Name a file that takes an xdist worker's refusals to the controller.
 
         xdist calls this in the controller for each worker it starts, one that
         replaces a crashed worker included, before it sends the worker
         ``node.workerinput``, which the worker reads as
         ``config.workerinput``. The guard names a file there, one per worker
         and written by that worker alone, in a folder the controller makes
-        for the session (:func:`_late_folder`). A worker appends to it what
-        it finds after it handed its refusals to the controller: in its
-        terminal summary, after another session-finish wrapper's ``yield``
-        or in its ``pytest_unconfigure`` (see :func:`_sent_late`). The
-        controller reads the files in :meth:`pytest_unconfigure`. Only xdist
-        defines the hook, so it is optional, as :meth:`pytest_testnodedown`
-        is.
+        for the session (:func:`_late_folder`). A worker appends each refusal
+        to it as it holds it (:func:`_write_ahead`): until it hands its
+        refusals to the controller as a copy of what it hands over, which
+        counts when the worker crashes or is stopped before that, and after
+        it what it finds in its terminal summary, after another
+        session-finish wrapper's ``yield`` or in its ``pytest_unconfigure``
+        (see :func:`_sent_late`). The controller reads the files in
+        :meth:`pytest_unconfigure`. Only xdist defines the hook, so it is
+        optional, as :meth:`pytest_testnodedown` is.
         """
         config = getattr(node, "config", None)
         workerinput = getattr(node, "workerinput", None)
@@ -1554,8 +1578,9 @@ _HELD_SESSION = pytest.StashKey[pytest.Session]()
 _A_TEST_STARTED = pytest.StashKey[bool]()
 #: The ``config.workeroutput`` key an xdist worker sends its held refusals under.
 _TO_THE_CONTROLLER = "apothem-real-home-refusals"
-#: The ``workerinput`` key that names the file an xdist worker appends what it
-#: finds after that hand-off to.
+#: The ``workerinput`` key that names the file an xdist worker appends each
+#: refusal it holds to: a copy of what it hands over, and then what it finds
+#: after that hand-off.
 _LATE_TO_THE_CONTROLLER = "apothem-real-home-late-refusals"
 #: In an xdist controller: the folder of those files, ``None`` once it is
 #: removed or when it could not be made, and each worker's file, mapped to the
@@ -1569,6 +1594,9 @@ _AFTER_THE_HAND_OFF = "after it handed its refusals to the controller"
 #: handed what it held to the controller; a worker whose session stopped
 #: before its session finish never sets it.
 _HANDED_OFF = pytest.StashKey[bool]()
+#: In an xdist worker: how many of the refusals the guard holds (``_HELD``)
+#: the worker has written to its file already (see :func:`_write_ahead`).
+_IN_THE_FILE = pytest.StashKey[int]()
 #: In an xdist controller: the workers whose ``config.workeroutput``
 #: ``pytest_testnodedown`` took.
 _TAKEN = pytest.StashKey[set[str]]()
@@ -1583,13 +1611,48 @@ def _is_controller(config: pytest.Config) -> bool:
     return config.pluginmanager.get_plugin("dsession") is not None
 
 
+def _is_worker(config: pytest.Config) -> bool:
+    """Return whether *config* is an xdist worker's, which sends an output."""
+    return isinstance(getattr(config, "workeroutput", None), dict)
+
+
 def _hold(config: pytest.Config, where: str) -> None:
-    """Move what the refusal log holds into what the guard holds, *where*."""
+    """Move what the refusal log holds into what the guard holds, *where*.
+
+    An xdist worker also writes it to its file at once (see
+    :func:`_write_ahead`).
+    """
     refused = home_write_guard.drain_refusals()
     if refused:
-        config.stash.setdefault(_HELD, []).append(
-            (where, tuple(str(error) for error in refused))
-        )
+        held = config.stash.setdefault(_HELD, [])
+        held.append((where, tuple(str(error) for error in refused)))
+        if _is_worker(config):
+            _write_ahead(config, held)
+
+
+def _write_ahead(
+    config: pytest.Config, held: Sequence[tuple[str, tuple[str, ...]]]
+) -> None:
+    """Append to this xdist worker's file what it holds and has not written.
+
+    The worker hands what it holds to the controller only at its session
+    finish (:meth:`RealHomeGuard.pytest_sessionfinish`). Until then a
+    refusal it held at the session start, during collection, between two
+    tests or after its last test is in this process alone, and a worker that
+    crashed or was stopped before that hand-off would lose it: xdist reports
+    such a worker down, and fails a test for it only when one was running on
+    it. Written to the file as it is held, the refusal reaches the
+    controller, which reads the file once the worker has ended
+    (:func:`_take_late`). A line written before the hand-off is a copy of
+    what the hand-off sends, and the controller skips it when
+    ``pytest_testnodedown`` took the worker's output, so nothing is reported
+    twice. After the hand-off the file is the only way to the controller. A
+    write that fails is tried again with the next refusal and when the
+    worker reports what it holds (:func:`_report_held`).
+    """
+    written = config.stash.get(_IN_THE_FILE, 0)
+    if _sent_late(config, held[written:]) is None:
+        config.stash[_IN_THE_FILE] = len(held)
 
 
 def _hold_before_the_test(item: pytest.Item) -> None:
@@ -1632,7 +1695,9 @@ def _report_held(
     use its exit code, so a worker sends the refusals to the controller
     instead: with *to_the_controller* in ``config.workeroutput``, which xdist
     sends, with a copy in the file the controller gave it, and after that in
-    that file alone (:func:`_sent_late`). A worker that has no such file, or
+    that file alone (:func:`_sent_late`). The worker writes each refusal to
+    the file when it holds it (:func:`_write_ahead`), so here it writes only
+    what did not reach the file then. A worker that has no such file, or
     cannot write to it, writes the refusals it held for that file alone to
     ``stderr``, with why it could not send them. The exit status of
     *session* becomes "tests failed" when it was "OK" or "no tests
@@ -1643,14 +1708,20 @@ def _report_held(
         return
     reports = [*held]
     held.clear()
+    # How many of them the worker wrote to its file as it held them.
+    written = config.stash.get(_IN_THE_FILE, 0)
+    config.stash[_IN_THE_FILE] = 0
     output = getattr(config, "workeroutput", None)
     worker = isinstance(output, dict)  # an xdist worker
     if worker and to_the_controller:
         output.setdefault(_TO_THE_CONTROLLER, []).extend(reports)
-        # A copy, for a controller whose test loop ends before it takes the
-        # output; the controller skips it otherwise (see _take_late).
-        _sent_late(config, reports)
+        # The file holds a copy, for a controller whose test loop ends before
+        # it takes the output or a worker that ends before xdist sends it;
+        # the controller skips the copy otherwise (see _take_late).
+        _sent_late(config, reports[written:])
         return
+    if worker:
+        reports = reports[written:]
     unsent = _sent_late(config, reports) if worker else None
     if worker and unsent is None:
         return
@@ -1727,8 +1798,11 @@ def _sent_late(
     finish never did. Returns ``None`` once they are written, or why they
     were not: the controller named no file (see :func:`_late_folder`), or
     the file could not be written (the controller's folder is gone, say),
-    with the system's reason.
+    with the system's reason. With no report it opens no file: the worker
+    creates its file only to write a refusal.
     """
+    if not reports:
+        return None
     workerinput = getattr(config, "workerinput", None)
     path = (
         workerinput.get(_LATE_TO_THE_CONTROLLER)
@@ -1762,8 +1836,11 @@ def _take_late(config: pytest.Config) -> None:
     for its worker, for whether the worker had handed its refusals to the
     controller by then, and for where the worker found it (``in xdist
     worker gw0, after it handed its refusals to the controller, after the
-    session finished``; see :func:`_late_report`). A worker that found
-    nothing wrote no file. A file that cannot be read, or that holds no
+    session finished``; see :func:`_late_report`). A line the worker wrote
+    before that hand-off is a copy of what it handed over: it is skipped
+    when ``pytest_testnodedown`` took the worker's output, and held when it
+    did not (the worker crashed or was stopped first, say). A worker that
+    found nothing wrote no file. A file that cannot be read, or that holds no
     line, is held as a refusal of its own, so the run fails: the worker
     creates its file only to write a refusal it found, and one stopped
     after it created the file and before the text reached it leaves the
