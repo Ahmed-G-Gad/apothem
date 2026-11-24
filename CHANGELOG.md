@@ -274,13 +274,19 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   or because that file could not be made or written. At the end of the run the
   main process tells each worker to exit; a worker still running Python code 5
   seconds later is interrupted (on Windows, not one blocked in a sleep or
-  another call), and any worker still running after 10 seconds is stopped.
-  With no system record of the account's home (no `passwd` entry), the home is
-  not protected. A test that must run a real install starts Apothem without
-  `PYTEST_CURRENT_TEST` and `PYTEST_VERSION` in the child's environment.
-  `tests/README.md` lists what the refusal does not cover, such as a bind
-  mount of the home, a refusal absorbed in a child process and a folder
-  swapped for a link between the check and the write.
+  another call), and any worker still running after 10 seconds is stopped. The
+  guard cannot change the exit code of a run that ends through `os._exit` in
+  the main process (in a hook, a cleanup or an `atexit` handler), through a
+  `tryfirst` `pytest_cmdline_main` wrapper that pytest registered after the
+  guard, or through a `pytest_cmdline_main` hook that returns before any
+  session runs; with `os._exit` the guard's terminal report can be lost too,
+  and in the first and the last case a refusal the guard has not reported yet
+  shows only as its `stderr` line. With no system record of the account's home
+  (no `passwd` entry), the home is not protected. A test that must run a real
+  install starts Apothem without `PYTEST_CURRENT_TEST` and `PYTEST_VERSION` in
+  the child's environment. `tests/README.md` lists what the refusal does not
+  cover, such as a bind mount of the home, a refusal absorbed in a child
+  process and a folder swapped for a link between the check and the write.
 - **The Windows test cells in CI get 120 minutes.** The Windows cells of the
   `ci.yml` quality job take 64 to 88 minutes, and the 90-minute limit
   cancelled cells whose tests had passed. They now get 120, as the CI Matrix
