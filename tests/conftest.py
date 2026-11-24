@@ -199,15 +199,15 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   catches no ``SystemExit`` around either hook, so ``sys.exit(0)`` would end
   the process with 0 whatever that status says: once the guard has reported a
   refusal, both ``tryfirst`` wrappers raise ``SystemExit(1)`` in place of a
-  ``SystemExit`` with the code 0 or ``None`` from a hook they wrap. Any other
-  code stays, and so does an exit that left the session finish before the guard
-  reported anything. A refusal absorbed later still, in a cleanup registered
-  with ``config.add_cleanup``, reaches only ``stderr``. These ``tryfirst``
-  wrappers finish after every wrapper except a ``tryfirst`` one that pytest
-  registered after the guard (a conftest's): a refusal absorbed after such a
-  ``pytest_sessionfinish`` wrapper's ``yield`` is named "after the session
-  finished", and one after such a ``pytest_unconfigure`` wrapper's ``yield``
-  reaches only ``stderr``.
+  ``SystemExit`` with the code 0, 5 or ``None`` from a hook they wrap. Any
+  other code stays, and so does an exit that left the session finish before the
+  guard reported anything. A refusal absorbed later still, in a cleanup
+  registered with ``config.add_cleanup``, reaches only ``stderr``. These
+  ``tryfirst`` wrappers finish after every wrapper except a ``tryfirst`` one
+  that pytest registered after the guard (a conftest's): a refusal absorbed
+  after such a ``pytest_sessionfinish`` wrapper's ``yield`` is named "after the
+  session finished", and one after such a ``pytest_unconfigure`` wrapper's
+  ``yield`` reaches only ``stderr``.
 - ``pytest_testnodedown`` and ``pytest_configure_node``, optional hooks that
   only xdist defines and calls in the controller. A worker's terminal output is
   discarded and the controller does not use its exit code, so a worker sends
@@ -1807,16 +1807,26 @@ def _a_passing_exit_fails(config: pytest.Config) -> Iterator[None]:
     whatever the session's exit status says. Once the guard has reported a
     refusal in the session, such an exit becomes ``SystemExit(1)``, as the
     status becomes "tests failed" again after ``pytest.exit(returncode=0)``
-    (see :meth:`RealHomeGuard.pytest_unconfigure`). Any other code is the
-    hook's own, and stays.
+    (see :meth:`RealHomeGuard.pytest_unconfigure`); so does
+    ``sys.exit(5)``, as ``pytest.exit(returncode=5)`` does (see
+    :func:`_a_passing_code`). Any other code is the hook's own, and stays.
     """
     try:
         yield
     except SystemExit as error:
-        passing = error.code is None or error.code == 0
-        if passing and config.stash.get(_REPORTED, False):
+        if _a_passing_code(error.code) and config.stash.get(_REPORTED, False):
             raise SystemExit(pytest.ExitCode.TESTS_FAILED) from error
         raise
+
+
+def _a_passing_code(code: object) -> bool:
+    """Return whether a ``SystemExit`` with *code* ends the run as a pass.
+
+    ``None`` exits 0, and so do 0 and ``False``; 5 is "no tests collected",
+    which some jobs accept as a pass (see :func:`_fail_the_run`). Any other
+    code, a message included (which exits 1), is not a pass.
+    """
+    return code is None or code in _PASSED_OR_EMPTY
 
 
 def _late_folder(config: pytest.Config) -> str | None:

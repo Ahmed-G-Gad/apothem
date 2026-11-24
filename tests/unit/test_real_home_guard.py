@@ -44,8 +44,8 @@ The other cases protect the fake real home with
 write into it. Three absorb it in the test body or a fixture's teardown, with
 and without an ``xfail`` mark, and with the mark when the probe conftest takes
 the refusal fixture from a second copy of ``tests/conftest.py``, loaded under
-another module name. Each test errors at teardown. The rest absorb it
-outside any test: while a test module is imported, which fails that module's
+another module name. Each test errors at teardown. The rest absorb it outside
+any test: while a test module is imported, which fails that module's
 collection, and in a probe conftest's hook, which leaves the tests to run and
 pass and fails the run: at the session start (also in a run that collects no
 test), in a ``pytest_collection`` or ``pytest_collection_modifyitems`` hook, in
@@ -58,8 +58,9 @@ when no test runs), between two tests (a ``pytest_runtest_logreport`` hook for
 a teardown report), in a ``pytest_sessionfinish`` hook (also one that then
 calls ``pytest.exit(returncode=0)``, as a ``pytest_configure`` hook does before
 any session starts, and one that calls ``sys.exit(0)``, with and without xdist,
-as a ``pytest_unconfigure`` hook does too, whose probe sessions run in a child
-process) or after a session-finish wrapper yields, in
+or ``sys.exit(5)``, as a ``pytest_terminal_summary`` hook does with a bare
+``sys.exit()``, as a ``pytest_unconfigure`` hook does too, whose probe sessions
+run in a child process) or after a session-finish wrapper yields, in
 ``pytest_terminal_summary``, in ``pytest_unconfigure`` (with ``-p no:xdist``),
 and under xdist (``-n 2``) at the session start and in a worker's session
 finish (reported once, and also when a controller hook ended its test loop with
@@ -72,16 +73,16 @@ also once a controller hook ended the run with ``pytest.exit`` before xdist
 ended the workers (a later run with the same ``--basetemp`` and no refusal
 passes and reads none of the files an earlier run left in its folder, and no
 such file is made in a protected folder), a worker whose session ends at its
-start, which handed nothing over, is not named as if it had, a worker that
-ends with ``os._exit(0)`` in its session finish, before it hands anything over,
+start, which handed nothing over, is not named as if it had, a worker that ends
+with ``os._exit(0)`` in its session finish, before it hands anything over,
 still fails the run with what it absorbed between two tests and after its last
 test (a worker that hands the same over has each reported once), and so does
 one whose session-finish wrapper raises or calls ``pytest.exit`` before its
 ``yield``, which leaves the guard's hand-off out of its output, and an empty
 file a worker left, a line it cut short and a file the controller cannot read
 each fail the run; a worker that stops on Ctrl-C has its refusal reported once,
-and one the controller absorbs while its workers run the tests is named for
-the run. Each names where the refusal happened. A session that absorbs nothing
+and one the controller absorbs while its workers run the tests is named for the
+run. Each names where the refusal happened. A session that absorbs nothing
 exits 0, with and without xdist. The guard refuses before any write, so nothing
 lands in a home.
 """
@@ -1801,11 +1802,18 @@ def case_pytest_exit_with_code_0_while_pytest_configures_still_fails_the_run(
     assert not (fake_real_home / ".apothem").exists()
 
 
-#: A session-finish hook, and an unconfigure hook, that absorbs the refusal
-#: and then ends the run with ``sys.exit`` and the exit code ``{code}``.
+#: A session-finish hook, a terminal-summary hook and an unconfigure hook,
+#: each of which absorbs the refusal and then ends the run with ``sys.exit``
+#: and the exit code ``{code}`` (none for a bare ``sys.exit()``).
 _ABSORBED_BEFORE_SYS_EXIT = """
 
 def pytest_sessionfinish(session):
+    _absorb()
+    sys.exit({code})
+"""
+_ABSORBED_BEFORE_SYS_EXIT_IN_THE_TERMINAL_SUMMARY = """
+
+def pytest_terminal_summary(terminalreporter):
     _absorb()
     sys.exit({code})
 """
@@ -1837,19 +1845,34 @@ def case_sys_exit_with_code_0_after_a_refusal_still_fails_the_run(
 
     ``sys.exit(0)`` would end the run with 0 after the guard reported the
     refusal, so the guard raises ``SystemExit`` with the code 1 in its
-    place, also in an xdist controller, whose workers run the hook too. Any
-    other code is the hook's own, and stays.
+    place, also in an xdist controller, whose workers run the hook too. So
+    does a bare ``sys.exit()``, here in a terminal-summary hook, which runs
+    within the session finish, and ``sys.exit(5)``, as "no tests collected"
+    counts as a pass for some jobs. Any other code is the hook's own, and
+    stays.
     """
-    for hook, where, args in (
-        (_ABSORBED_BEFORE_SYS_EXIT, "after the last test", ()),
-        (_ABSORBED_BEFORE_SYS_EXIT, "after the last test", ("-n", "2")),
-        (_ABSORBED_BEFORE_SYS_EXIT_AT_UNCONFIGURE, "after the session finished", ()),
+    for hook, code, where, args in (
+        (_ABSORBED_BEFORE_SYS_EXIT, "0", "after the last test", ()),
+        (_ABSORBED_BEFORE_SYS_EXIT, "0", "after the last test", ("-n", "2")),
+        (_ABSORBED_BEFORE_SYS_EXIT, "5", "after the last test", ()),
+        (
+            _ABSORBED_BEFORE_SYS_EXIT_IN_THE_TERMINAL_SUMMARY,
+            "",
+            "after the last test",
+            (),
+        ),
+        (
+            _ABSORBED_BEFORE_SYS_EXIT_AT_UNCONFIGURE,
+            "0",
+            "after the session finished",
+            (),
+        ),
     ):
         result = _run_absorbing_in_a_child(
-            pytester, fake_real_home, hook.format(code=0), *args
+            pytester, fake_real_home, hook.format(code=code), *args
         )
 
-        assert result.ret == pytest.ExitCode.TESTS_FAILED, result.stdout.str()
+        assert result.ret == pytest.ExitCode.TESTS_FAILED, (code, result.stdout.str())
         result.stdout.fnmatch_lines([f"*outside any test, {where}, and the refusal*"])
     for hook in (_ABSORBED_BEFORE_SYS_EXIT, _ABSORBED_BEFORE_SYS_EXIT_AT_UNCONFIGURE):
         kept = _run_absorbing_in_a_child(pytester, fake_real_home, hook.format(code=3))
