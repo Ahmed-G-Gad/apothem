@@ -949,10 +949,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   names it. The troubleshooting page lists the step formats under "Follow a
   numbered fix".
 - **The installers and update scripts finish a run that ends as partial.**
-  When `apothem install` or `apothem update` exits with code `2`, because it
-  left a file as it is because of its marker lines or because it stopped
-  after it had written something, `install.sh`, `install.ps1`, `update.sh`
-  and `update.ps1` print one line. The line says that the engine ended as
+  `apothem install` and `apothem update` exit with code `2` when they leave a
+  file as it is because of its marker lines, or when they stop after they
+  have written something. `install.sh`, `install.ps1`, `update.sh` and
+  `update.ps1` then print one line. The line says that the engine ended as
   partial, that its messages above name the files it left as they are or the
   error that stopped it, and to fix what they name, then run
   `apothem update --harness <name>` again. The installers then run verify,
@@ -963,8 +963,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   PowerShell scripts do the same when your session sets
   `$PSNativeCommandUseErrorActionPreference` to `$true`. A piped run puts
   that setting and `$ErrorActionPreference` back as they were, however the
-  run ends, a stop before it starts included. A one-shot `pwsh -Command "irm ... | iex"`
-  reports a partial run only through `$LASTEXITCODE`: end it with
+  run ends, also when it stops early. A one-shot
+  `pwsh -Command "irm ... | iex"` reports a partial run only through `$LASTEXITCODE`: end it with
   `; exit $LASTEXITCODE`, or run the script by path with `-File`, to get exit
   code `2` from the process. A partial dry run prints the warning line,
   writes nothing and ends with exit code `2`. Any other non-zero exit code
