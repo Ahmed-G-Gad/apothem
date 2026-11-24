@@ -940,7 +940,7 @@ def test_a_worker_that_cannot_send_a_refusal_says_why(
         note = " ".join(capsys.readouterr().err.split())
         assert "in xdist worker gw0, after the session finished" in note
         assert f"could not send it to the controller: {reason}" in note, note
-        assert "The run does not fail on it." in note
+        assert "The run fails on it only when part of it reached" in note
         assert not gone.exists()
 
 
@@ -1002,6 +1002,58 @@ def test_a_write_that_fails_part_way_leaves_the_workers_file_as_it_was(
         "before",
         "after the session finished",
     ]
+
+
+def test_a_last_write_that_fails_part_way_still_fails_the_run(
+    request: pytest.FixtureRequest,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """The part of a worker's last write that reached its file stays there.
+
+    The worker found the refusal after it handed its refusals to the
+    controller, and no try follows that write. Its file already holds a
+    copy line written before the hand-off, which the controller skips once
+    it took the hand-off. Cut back to that line, the file would hold no
+    refusal the controller reports; the line cut off part way stays, and
+    the controller holds it as a refusal of its own.
+    """
+    conftest = _suite_conftest(request.config)
+    late = tmp_path / "gw0.jsonl"
+    copy = b'{"where": "before", "messages": ["a copy"], "handed_off": false}\n'
+    late.write_bytes(copy)
+    worker = SimpleNamespace(
+        stash=pytest.Stash(),
+        workeroutput={},
+        workerinput={"workerid": "gw0", conftest._LATE_TO_THE_CONTROLLER: str(late)},
+        pluginmanager=SimpleNamespace(get_plugin=lambda name: None),
+    )
+    worker.stash[conftest._HANDED_OFF] = True
+    worker.stash[conftest._HELD] = [("after the session finished", ("a refusal",))]
+    opened = Path.open
+
+    def half_open(path: Path, *args: str, **kwargs: str) -> _HalfWrites:
+        return _HalfWrites(opened(path, *args, **kwargs))
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "open", half_open)
+        conftest._report_held(worker, None)
+
+    assert "No space left on device" in capsys.readouterr().err
+    assert late.read_bytes().startswith(copy)
+    assert late.read_bytes() != copy
+    controller = SimpleNamespace(
+        stash=pytest.Stash(),
+        pluginmanager=SimpleNamespace(get_plugin=lambda name: None),
+    )
+    controller.stash[conftest._LATE_FILES] = {str(late): "gw0"}
+    controller.stash[conftest._TAKEN] = {"gw0"}
+
+    conftest._take_late(controller)
+
+    held = controller.stash.get(conftest._HELD, [])
+    assert [where for where, _ in held] == ["in xdist worker gw0"]
 
 
 def test_a_passing_exit_fails_once_a_refusal_was_reported(

@@ -1815,9 +1815,11 @@ def _report_held(
     the file when it holds it (:func:`_write_ahead`), so here it writes only
     what did not reach the file then. A worker that has no such file, or
     cannot write to it, writes the refusals it held for that file alone to
-    ``stderr``, with why it could not send them. The exit status of
-    *session* becomes "tests failed" when it was "OK" or "no tests
-    collected", which some jobs accept as a pass.
+    ``stderr``, with why it could not send them. No try follows that write,
+    so what part of it reached the file stays there, and the controller
+    fails the run on it. The exit status of *session* becomes "tests failed"
+    when it was "OK" or "no tests collected", which some jobs accept as a
+    pass.
     """
     held = config.stash.get(_HELD, [])
     if not held:
@@ -1838,7 +1840,7 @@ def _report_held(
         return
     if worker:
         reports = reports[written:]
-    unsent = _sent_late(config, reports) if worker else None
+    unsent = _sent_late(config, reports, last_try=True) if worker else None
     if worker and unsent is None:
         return
     name = getattr(config, "workerinput", {}).get("workerid", "?")
@@ -1857,7 +1859,8 @@ def _report_held(
         )
         sys.stderr.write(
             f"{message}\nThe worker found it {when}, and could not send it to "
-            f"the controller: {unsent}. The run does not fail on it.\n"
+            f"the controller: {unsent}. The run fails on it only when part of "
+            "it reached that file.\n"
         )
     elif reporter is not None:
         reporter.write_line(f"\n{message}", red=True)
@@ -1953,7 +1956,10 @@ def _late_folder(config: pytest.Config) -> str | None:
 
 
 def _sent_late(
-    config: pytest.Config, reports: Sequence[tuple[str, tuple[str, ...]]]
+    config: pytest.Config,
+    reports: Sequence[tuple[str, tuple[str, ...]]],
+    *,
+    last_try: bool = False,
 ) -> str | None:
     """Append *reports* to the file the xdist controller gave this worker.
 
@@ -1967,8 +1973,11 @@ def _sent_late(
     the file could not be written (the controller's folder is gone, say),
     with the system's reason. What part of a failed write reached the file
     is cut off again, so the next try writes each report once; when that
-    cut fails too, the controller may read a report twice. With no report
-    it opens no file: the worker creates its file only to write a refusal.
+    cut fails too, the controller may read a report twice. With *last_try*
+    no try follows, so that part stays: the controller holds a line cut
+    off part way as a refusal of its own, and fails the run on it. With no
+    report it opens no file: the worker creates its file only to write a
+    refusal.
     """
     if not reports:
         return None
@@ -1995,11 +2004,12 @@ def _sent_late(
             start = stream.tell()
             stream.write(lines.encode("utf-8"))
     except OSError as error:
-        # Part of the text may have reached the file (a full disk, say). The
-        # caller writes the same reports again later, so cut the file back
+        # Part of the text may have reached the file (a full disk, say). When
+        # the caller writes the same reports again later, cut the file back
         # to where it ended: a worker that crashes before it hands them over
-        # would otherwise have each one read twice, plus a cut-off line.
-        if start is not None:
+        # would otherwise have each one read twice, plus a cut-off line. On
+        # the last try that part is the only record the controller gets.
+        if start is not None and not last_try:
             with contextlib.suppress(OSError):
                 os.truncate(path, start)
         return f"writing {path} failed: {error.strerror or error}"
