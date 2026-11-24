@@ -93,7 +93,9 @@ any write, so nothing lands in a home.
 
 from __future__ import annotations
 
+import errno
 import importlib
+import json
 import os
 import re
 import shutil
@@ -103,7 +105,7 @@ import tempfile
 import threading
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
-from typing import TYPE_CHECKING
+from typing import IO, TYPE_CHECKING, Any
 
 import pytest
 
@@ -938,6 +940,66 @@ def test_a_worker_that_cannot_send_a_refusal_says_why(
         assert f"could not send it to the controller: {reason}" in note, note
         assert "The run does not fail on it." in note
         assert not gone.exists()
+
+
+class _HalfWrites:
+    """A file stream whose write puts half its data in the file, then fails."""
+
+    def __init__(self, stream: IO[Any]) -> None:
+        self._stream = stream
+
+    def __enter__(self) -> _HalfWrites:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self._stream.close()
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self._stream, name)
+
+    def write(self, data: bytes | str) -> int:
+        self._stream.write(data[: len(data) // 2])
+        self._stream.flush()
+        raise OSError(errno.ENOSPC, "No space left on device")
+
+
+def test_a_write_that_fails_part_way_leaves_the_workers_file_as_it_was(
+    request: pytest.FixtureRequest, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A worker's failed append is cut back, so the next try writes it once.
+
+    The worker writes the same reports again with its next refusal and when
+    it reports what it holds. Half a line left by a failed write, and the
+    whole line written after it, would have the controller read the report
+    twice.
+    """
+    conftest = _suite_conftest(request.config)
+    late = tmp_path / "gw0.jsonl"
+    before = b'{"where": "before", "messages": [], "handed_off": false}\n'
+    late.write_bytes(before)
+    config = SimpleNamespace(
+        stash=pytest.Stash(),
+        workerinput={"workerid": "gw0", conftest._LATE_TO_THE_CONTROLLER: str(late)},
+    )
+    report = ("after the session finished", ("a refusal",))
+    opened = Path.open
+
+    def half_open(path: Path, *args: str, **kwargs: str) -> _HalfWrites:
+        return _HalfWrites(opened(path, *args, **kwargs))
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "open", half_open)
+        reason = conftest._sent_late(config, [report])
+
+    assert reason is not None
+    assert "No space left on device" in reason
+    assert late.read_bytes() == before
+    assert conftest._sent_late(config, [report]) is None
+    lines = late.read_text(encoding="utf-8").splitlines()
+    assert [json.loads(line)["where"] for line in lines] == [
+        "before",
+        "after the session finished",
+    ]
 
 
 def test_a_passing_exit_fails_once_a_refusal_was_reported(

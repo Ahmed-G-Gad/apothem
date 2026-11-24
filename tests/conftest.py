@@ -1963,8 +1963,10 @@ def _sent_late(
     finish never did. Returns ``None`` once they are written, or why they
     were not: the controller named no file (see :func:`_late_folder`), or
     the file could not be written (the controller's folder is gone, say),
-    with the system's reason. With no report it opens no file: the worker
-    creates its file only to write a refusal.
+    with the system's reason. What part of a failed write reached the file
+    is cut off again, so the next try writes each report once; when that
+    cut fails too, the controller may read a report twice. With no report
+    it opens no file: the worker creates its file only to write a refusal.
     """
     if not reports:
         return None
@@ -1985,10 +1987,19 @@ def _sent_late(
         + "\n"
         for where, messages in reports
     )
+    start: int | None = None
     try:
-        with Path(path).open("a", encoding="utf-8") as stream:
-            stream.write(lines)
+        with Path(path).open("ab") as stream:
+            start = stream.tell()
+            stream.write(lines.encode("utf-8"))
     except OSError as error:
+        # Part of the text may have reached the file (a full disk, say). The
+        # caller writes the same reports again later, so cut the file back
+        # to where it ended: a worker that crashes before it hands them over
+        # would otherwise have each one read twice, plus a cut-off line.
+        if start is not None:
+            with contextlib.suppress(OSError):
+                os.truncate(path, start)
         return f"writing {path} failed: {error.strerror or error}"
     return None
 
