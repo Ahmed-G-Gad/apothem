@@ -50,7 +50,10 @@ from apothem.harnesses._shared.install_driver_blocks import (
     stray_begin_warnings,
     unclear_block_warning,
 )
-from apothem.harnesses._shared.install_driver_blocktext import TAKES_OUT
+from apothem.harnesses._shared.install_driver_blocktext import (
+    TAKES_OUT,
+    stray_subject,
+)
 from apothem.harnesses._shared.install_driver_evidence import block_prior
 from apothem.harnesses._shared.install_driver_ownership import fold_block
 from apothem.harnesses._shared.install_driver_pathsafety import _unsafe_symlink
@@ -67,6 +70,7 @@ from apothem.lib.harness_materializer import (
     extract_managed_block,
     has_stray_begin,
     merge_managed_block,
+    stray_begins,
 )
 
 #: OpenClaw's default limits on what it injects (``bootstrapMaxChars`` and
@@ -680,8 +684,10 @@ def refusal(text: str, config: object, workspace: Workspace) -> str | None:
     :func:`~apothem.lib.harness_materializer.merge_managed_block`), so past the
     per-file limit the reason names that file and that text, which is most
     likely an old Apothem block that lost its END marker (the marker may be
-    the operator's too). That text need not be all of the overage, so the
-    reason still offers shorter custom rules and a higher limit.
+    the operator's too). The reason names each such marker by its line in
+    the file as it is (see :func:`_stray_reason`). That text need not be all
+    of the overage, so the reason still offers shorter custom rules and a
+    higher limit.
     """
     size = chars(text)
     limits = limits_for(config, workspace.agent_ids)
@@ -690,12 +696,7 @@ def refusal(text: str, config: object, workspace: Workspace) -> str | None:
             f"the Apothem rules file is {size:,} characters, over OpenClaw's "
             f"{limits.file_max:,}-character limit per file (bootstrapMaxChars), "
             "which would cut the middle out of it, so it is not written there. "
-            f"{workspace.rules_file} holds an Apothem BEGIN marker that starts no "
-            "whole block (its END marker is gone, or the marker is yours), and "
-            "the old Apothem text below it counts against the limit: change that "
-            "marker line by adding a word inside its comment and delete that old "
-            "text by hand, keeping your own text, or shorten the profile's custom "
-            "rules, or raise the limit."
+            f"{_stray_reason(workspace.rules_file, text)}"
         )
     if size > limits.file_max:
         block = extract_managed_block(text)
@@ -730,6 +731,38 @@ def refusal(text: str, config: object, workspace: Workspace) -> str | None:
         f"{limits.total_max:,}-character total (bootstrapTotalMaxChars), so "
         f"{effect}; the Apothem rules file is not written there. Shorten those "
         "files or raise that limit."
+    )
+
+
+def _stray_reason(path: Path, text: str) -> str:
+    """Return what to do with the BEGIN markers of the rules file *path* that start no block.
+
+    *text* is the file as the install would leave it; each marker is named
+    by its line in the file as it is (see
+    :func:`~apothem.lib.harness_materializer.stray_begins`), where the
+    operator changes it: an install replaces a whole block in place, so the
+    lines below it can move. The old Apothem text below such a marker is the
+    operator's to delete.
+    """
+    existing = _raw_text(path) if path.is_file() else None
+    strays = stray_begins(existing or text)
+    lines = [str(line) for line in strays]
+    if len(lines) > 1:
+        where = f"lines {', '.join(lines[:-1])} and {lines[-1]}"
+        change = f"change {where} by adding a word inside each comment"
+        them, gone = "them", "their END markers are gone, or the markers are yours"
+        verb = "start"
+    else:
+        where = f"line {lines[0]}" if lines else "that marker line"
+        change = f"change {where} by adding a word inside its comment"
+        them, gone = "it", "its END marker is gone, or the marker is yours"
+        verb = "starts"
+    subject = stray_subject(existing or text, strays=strays)
+    return (
+        f"{path} holds {subject} that {verb} no whole block ({gone}), and the old "
+        f"Apothem text below {them} counts against the limit: {change} and delete "
+        "that old text by hand, keeping your own text, or shorten the profile's "
+        "custom rules, or raise the limit."
     )
 
 

@@ -2177,15 +2177,18 @@ def test_a_lost_end_over_the_limit_names_the_file_and_the_old_text(
     The text below a BEGIN marker that lost its END marker is old Apothem
     text, which an update keeps beside the fresh block it writes, so the file
     no longer fits the limit: it is not written or registered. The warning
-    now names the file, that marker and that text, and verify names the file.
-    The marker may be yours, and that text need not be all of the overage,
-    so the warning still offers shorter custom rules (docs-5).
+    now names the file, that marker by its line (fixes-r6-7, lifecycle-r6-6:
+    it named no line) and that text, and verify names the file. The marker
+    may be yours, and that text need not be all of the overage, so the
+    warning still offers shorter custom rules (docs-5).
     """
     workspace = _workspace(home / ".openclaw" / "workspace")
     adapter.install({})
     target = workspace / RULES_FILE_RELATIVE
     text = target.read_text(encoding="utf-8")
-    target.write_text(text.replace(APOTHEM_BLOCK_END + "\n", ""), encoding="utf-8")
+    lost = text.replace(APOTHEM_BLOCK_END + "\n", "")
+    target.write_text(lost, encoding="utf-8")
+    line = lost.split("\n").index(APOTHEM_BLOCK_BEGIN) + 1
     config = _config(home)
     config["agents"] = {"defaults": {"bootstrapMaxChars": chars(text) + 200}}
     _write_config(home, config)
@@ -2197,15 +2200,50 @@ def test_a_lost_end_over_the_limit_names_the_file_and_the_old_text(
         m for m in _messages(run) if "bootstrapMaxChars" in m and str(target) in m
     ]
     assert (
-        f"{target} holds an Apothem BEGIN marker that starts no whole block (its "
-        "END marker is gone, or the marker is yours), and the old Apothem text "
-        "below it counts against the limit: change that marker line by adding a "
-        "word inside its comment and delete that old text by hand, keeping your "
-        "own text, or shorten the profile's custom rules, or raise the limit."
+        f"{target} holds an Apothem BEGIN marker at line {line} that starts no "
+        "whole block (its END marker is gone, or the marker is yours), and the "
+        "old Apothem text below it counts against the limit: change line "
+        f"{line} by adding a word inside its comment and delete that old text by "
+        "hand, keeping your own text, or shorten the profile's custom rules, or "
+        "raise the limit."
     ) in size
     assert "text you keep beside the Apothem block" not in size
     assert code == 1, payload
     assert _stray_files(payload) == [target]
+
+
+def test_the_size_refusal_names_each_begin_marker_that_starts_no_block(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    """advice-8: with two such markers it said "that marker line", and no line.
+
+    Changing one left the other, and the next update still refused the file.
+    The refusal now names both lines and says to change each.
+    """
+    workspace = _workspace(home / ".openclaw" / "workspace")
+    adapter.install({})
+    target = workspace / RULES_FILE_RELATIVE
+    text = target.read_text(encoding="utf-8")
+    lost = text.replace(APOTHEM_BLOCK_END + "\n", "")
+    stray = f"# mine\n{APOTHEM_BLOCK_BEGIN}\nolder apothem text\n\n"
+    target.write_text(stray + lost, encoding="utf-8")
+    later = (stray + lost).split("\n").index(APOTHEM_BLOCK_BEGIN, 2) + 1
+    config = _config(home)
+    config["agents"] = {"defaults": {"bootstrapMaxChars": chars(text) + 200}}
+    _write_config(home, config)
+
+    run = adapter.update({})
+
+    [size] = [
+        m for m in _messages(run) if "bootstrapMaxChars" in m and str(target) in m
+    ]
+    assert (
+        f"{target} holds Apothem BEGIN markers at lines 2 and {later} that start "
+        "no whole block (their END markers are gone, or the markers are yours), "
+        "and the old Apothem text below them counts against the limit: change "
+        f"lines 2 and {later} by adding a word inside each comment and delete "
+        "that old text by hand"
+    ) in size
 
 
 def test_verify_names_an_earlier_rules_file_an_update_cannot_retire(
