@@ -432,8 +432,9 @@ def test_an_error_while_closing_the_earlier_spelling_reports_the_removals(
 ) -> None:
     # The shared pass has removed the files when the install recorded under
     # the other spelling is closed. An error there is a stopped uninstall
-    # that removed files (exit 2), and that install stays recorded, so the
-    # next run closes it.
+    # that removed files (exit 2), and that install stays recorded. The
+    # adapter still reports the harness as installed, so the next run of the
+    # command closes it.
     from apothem.harnesses.opencode import uninstall as opencode_uninstall
 
     adapter = OpenCodeAdapter()
@@ -458,8 +459,15 @@ def test_an_error_while_closing_the_earlier_spelling_reports_the_removals(
     message = envelope["results"][0]["message"]
     assert message.startswith("MaterializationError: uninstall stopped: ledger full")
     assert install_ledger.active_install_records("opencode", root=spelling)
-    adapter.uninstall()
+    assert adapter.is_installed()
+    again = CliRunner().invoke(
+        main, ["uninstall", "--harness", "opencode", "--yes", "--format", "json"]
+    )
+    assert again.exit_code == 0, again.output
+    rows = json.loads(again.output)["results"]
+    assert [row["outcome"] for row in rows] != ["skipped"], again.output
     assert install_ledger.active_install_records("opencode", root=spelling) == []
+    assert not adapter.is_installed()
 
 
 # -- the relocated entries of a record that owned nothing ---------------------

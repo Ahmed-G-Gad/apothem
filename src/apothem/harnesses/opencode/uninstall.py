@@ -70,7 +70,9 @@ def uninstall(output_path: Path) -> install_driver.MaterializationRun:
             nothing was removed. Or when another error stops the step that
             closes the installs at another spelling: the error is the
             cause, and the error's ``run`` holds what the uninstall had
-            removed. Those installs stay recorded, as above.
+            removed. Those installs stay recorded, as above, and the
+            adapter still reports the harness as installed (see
+            :func:`recorded_at_another_spelling`).
     """
     refuse_link_leaving_home(output_path, uninstall=True)
     root = output_path.parent
@@ -113,6 +115,21 @@ def uninstall(output_path: Path) -> install_driver.MaterializationRun:
         ) from exc
     return install_driver.MaterializationRun(
         harness=_HARNESS_NAME, dry_run=False, results=tuple(results)
+    )
+
+
+def recorded_at_another_spelling(output_path: Path) -> bool:
+    """Return True when another spelling of the folder holds an active install.
+
+    The other spellings are those :func:`uninstall` closes with the folder of
+    *output_path*. Such an install is left open when the step that closes it
+    stops after the uninstall at the folder had removed its files; the
+    adapter's ``is_installed`` then still reports the harness as installed, so
+    ``apothem uninstall`` runs again and closes it.
+    """
+    return any(
+        _active_installs(spelling)
+        for spelling in _same_folder_spellings(output_path.parent)
     )
 
 

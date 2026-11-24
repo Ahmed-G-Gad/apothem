@@ -23,6 +23,7 @@ from apothem.harnesses.opencode.materializer import config_root
 from apothem.harnesses.opencode.materializer import (
     materialize_native_config as materialize_native_config,
 )
+from apothem.harnesses.opencode.uninstall import recorded_at_another_spelling
 from apothem.harnesses.opencode.uninstall import uninstall as _uninstall
 from apothem.harnesses.opencode.update import update as _update
 from apothem.harnesses.opencode.verify import verify as _verify
@@ -35,4 +36,5 @@ OpenCodeAdapter = make_native_config_adapter(
     update_fn=_update,
     verify_fn=_verify,
     class_name="OpenCodeAdapter",
+    recorded_elsewhere_fn=recorded_at_another_spelling,
 )

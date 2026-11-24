@@ -1088,6 +1088,7 @@ def make_native_config_adapter(
     update_fn: _NativeInstallFn,
     verify_fn: _NativeVerifyFn,
     class_name: str,
+    recorded_elsewhere_fn: _NativeVerifyFn | None = None,
 ) -> type:
     """Return a native-config (materializer) ``<Name>Adapter`` class.
 
@@ -1105,6 +1106,10 @@ def make_native_config_adapter(
       before test HOME-isolation could redirect it).
     - *class_name*: the ``__name__`` / ``__qualname__`` the returned class
       carries so entry-point and discovery resolution find ``<Name>Adapter``.
+    - *recorded_elsewhere_fn*: optional; called with the target path when the
+      folder holds no evidence of an install. When it returns True,
+      ``is_installed`` does too: OpenCode's, for an install still recorded
+      under another spelling of the folder, which only an uninstall closes.
 
     Behavior is identical to the hand-written classes: same ``name``, same
     ``output_path``, same method delegation and argument order.
@@ -1140,10 +1145,12 @@ def make_native_config_adapter(
 
         def is_installed(self) -> bool:
             """Return True if this harness root carries an Apothem install."""
-            return install_driver.detect_install(
-                package_key_for_public_id(_name),
-                harness_root=self.output_path.parent,
-            )
+            target = self.output_path
+            if install_driver.detect_install(
+                package_key_for_public_id(_name), harness_root=target.parent
+            ):
+                return True
+            return recorded_elsewhere_fn is not None and recorded_elsewhere_fn(target)
 
         def verify(self) -> bool:
             """Return True if the installed configuration is valid."""
