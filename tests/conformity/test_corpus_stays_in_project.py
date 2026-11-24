@@ -39,7 +39,7 @@ import threading
 import time
 from collections.abc import Callable
 from pathlib import Path
-from typing import IO, TypeVar
+from typing import IO, Any, TypeVar
 
 import pytest
 
@@ -1043,14 +1043,14 @@ def test_file_that_cannot_be_opened_is_unreadable_and_fails_the_run(
     unreadable, not missing, and the run does not pass: its findings are
     unknown."""
     repo = _project(tmp_path, {"bad.yml": _UNPINNED_WORKFLOW})
-    real_open = Path.open
+    real_open = _corpus_module()._open_binary
 
     def refusing_open(self: Path, *args: object, **kwargs: object) -> object:
         if self.name == "bad.yml":
             raise PermissionError(13, "Permission denied", str(self))
-        return real_open(self, *args, **kwargs)  # type: ignore[call-overload]
+        return real_open(self)
 
-    monkeypatch.setattr(Path, "open", refusing_open)
+    monkeypatch.setattr(_corpus_module(), "_open_binary", refusing_open)
     payload = _run(repo)
     _assert_only_clean_file_read(payload, passed=False)
     assert _skipped(payload) == {"unreadable": 1}
@@ -1143,6 +1143,10 @@ def test_large_lockfile_is_read_and_the_run_passes(tmp_path: Path) -> None:
     assert _skipped(payload) == {}
 
 
+def _corpus_module() -> Any:  # noqa: ANN401 - the module, for monkeypatching
+    return importlib.import_module("apothem.conformity._corpus")
+
+
 def _shrink_limit(monkeypatch: pytest.MonkeyPatch, size: int) -> None:
     """Lower the corpus read limit, so a test needs no huge file."""
     corpus = importlib.import_module("apothem.conformity._corpus")
@@ -1155,7 +1159,7 @@ def _shrink_limit(monkeypatch: pytest.MonkeyPatch, size: int) -> None:
         (_UNPINNED_WORKFLOW.encode("utf-8") + b"# pad\n" * 2000, "too_large"),
         (
             b"\0" + _UNPINNED_WORKFLOW.encode("utf-8") + b"# pad\n" * 2000,
-            "not_utf8_text",
+            "too_large",
         ),
         (b"\0" * 10000, "not_utf8_text"),
         (b"ok\n" + b"\xff" + b"x" * 10000, "not_utf8_text"),
@@ -1167,8 +1171,8 @@ def test_file_over_the_limit_is_judged_by_all_its_first_bytes(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, body: bytes, reason: str
 ) -> None:
     """Over the limit, a file is text when its first bytes up to the limit
-    decode as UTF-8 and hold no NUL. Text over the limit fails the run and is
-    named; a binary, a zero-filled image included, does not fail it."""
+    decode as UTF-8, a stray NUL included. Text over the limit fails the run
+    and is named; a binary, a zero-filled image included, does not fail it."""
     repo = _project(tmp_path, {"big.yml": "small\n"})
     (repo / "big.yml").write_bytes(body)
     _shrink_limit(monkeypatch, 4096)
@@ -1314,7 +1318,7 @@ def _refuse_opens(
 ) -> list[float]:
     """Refuse the first *times* opens of *name*; return the recorded sleeps."""
     corpus = importlib.import_module("apothem.conformity._corpus")
-    real_open = Path.open
+    real_open = _corpus_module()._open_binary
     left = [times]
     sleeps: list[float] = []
 
@@ -1322,10 +1326,16 @@ def _refuse_opens(
         if self.name == name and left[0] > 0:
             left[0] -= 1
             raise _refusal(winerror)
-        return real_open(self, *args, **kwargs)  # type: ignore[call-overload]
+        return real_open(self)
 
-    monkeypatch.setattr(Path, "open", refusing_open)
+    monkeypatch.setattr(_corpus_module(), "_open_binary", refusing_open)
     monkeypatch.setattr(corpus.time, "sleep", sleeps.append)
+    # What the Windows probe would say (a real hold is tested on Windows).
+    monkeypatch.setattr(
+        corpus,
+        "_held_by_another_program",
+        lambda _path, exc: getattr(exc, "winerror", None) == 32,
+    )
     return sleeps
 
 
@@ -1362,13 +1372,6 @@ def test_refused_open_is_waited_for_at_most_once(
     after one wait is unreadable."""
     repo = _project(tmp_path, {"busy.yml": _UNPINNED_WORKFLOW})
     sleeps = _refuse_opens(monkeypatch, "busy.yml", 2, winerror=winerror)
-    if sys.platform == "win32":
-        import _winapi
-
-        def denied(*_args: object) -> int:
-            raise _refusal(5)
-
-        monkeypatch.setattr(_winapi, "CreateFile", denied)
 
     payload = _run(repo)
     assert sleeps == ([] if winerror is None else [0.2])
@@ -1424,17 +1427,17 @@ class _RecordingHandle:
 def _record_opens(
     monkeypatch: pytest.MonkeyPatch, name: str, fail_read: int | None = None
 ) -> list[_RecordingHandle]:
-    real_open = Path.open
+    real_open = _corpus_module()._open_binary
     handles: list[_RecordingHandle] = []
 
     def recording_open(self: Path, *args: object, **kwargs: object) -> object:
-        handle = real_open(self, *args, **kwargs)  # type: ignore[call-overload]
+        handle = real_open(self)
         if self.name != name:
             return handle
         handles.append(_RecordingHandle(handle, fail_read))
         return handles[-1]
 
-    monkeypatch.setattr(Path, "open", recording_open)
+    monkeypatch.setattr(_corpus_module(), "_open_binary", recording_open)
     return handles
 
 
@@ -1474,7 +1477,7 @@ def test_file_that_grows_while_read_is_read_on_or_counted(
     ("body", "reason"),
     [
         (b"a" * 2100 + b"\xff" + b"a" * 5000, "not_utf8_text"),
-        (b"a" * 2100 + b"\0" + b"a" * 5000, "not_utf8_text"),
+        (b"a" * 2100 + b"\0" + b"a" * 5000, "too_large"),
         (b"a" * 1023 + "\u00e9".encode("utf-8") + b"a" * 5000, "too_large"),
         (b"a" * 3000 + "\u20ac".encode("utf-8") + b"a" * 5000, "too_large"),
     ],
@@ -1538,14 +1541,14 @@ def test_open_error_after_the_file_was_found(
     any other, such as an online-only file whose sync program is stopped, is
     unreadable and fails the run."""
     repo = _project(tmp_path, {"cloud.yml": _UNPINNED_WORKFLOW})
-    real_open = Path.open
+    real_open = _corpus_module()._open_binary
 
     def failing_open(self: Path, *args: object, **kwargs: object) -> object:
         if self.name == "cloud.yml":
             raise error
-        return real_open(self, *args, **kwargs)  # type: ignore[call-overload]
+        return real_open(self)
 
-    monkeypatch.setattr(Path, "open", failing_open)
+    monkeypatch.setattr(_corpus_module(), "_open_binary", failing_open)
     payload = _run(repo)
     _assert_only_clean_file_read(payload, passed=reason == "missing")
     assert _skipped(payload) == {reason: 1}
@@ -1581,20 +1584,29 @@ def test_strict_run_says_on_stderr_why_it_did_not_pass(
 
 
 @pytest.mark.parametrize(
-    ("offset", "reason"), [(100, "not_utf8_text"), (9000, "too_large")]
+    ("body", "reason"),
+    [
+        (b"\0\n" + b"a" * 20000, "too_large"),
+        (b"a" * 100 + b"\0" * 1000 + b"a" * 20000, "too_large"),
+        (b"a" * 100 + b"\0" * 3000 + b"a" * 20000, "not_utf8_text"),
+        (b"\0" * 20000, "not_utf8_text"),
+        ("uses: actions/checkout@v4\n".encode("utf-16-le") * 1000, "not_utf8_text"),
+    ],
+    ids=["nul-led-text", "few-nuls", "many-nuls", "zero-filled", "utf-16"],
 )
-def test_nul_marks_a_large_file_binary_only_near_its_start(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, offset: int, reason: str
+def test_nul_share_decides_whether_a_large_file_is_binary(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, body: bytes, reason: str
 ) -> None:
-    """Over the limit, a NUL in the first 8000 bytes marks a binary, as git
-    judges it; a stray NUL further into a text dump does not hide it."""
-    body = bytearray(b"a" * 20000)
-    body[offset] = 0
+    """Over the limit, a file is binary when a quarter or more of its first
+    8000 bytes are NUL (a zero-filled image, UTF-16 text). A text file with a
+    few NULs stays text, so it still fails the run."""
     repo = _project(tmp_path, {"dump.sql": "small\n"})
-    (repo / "dump.sql").write_bytes(bytes(body))
+    (repo / "dump.sql").write_bytes(body)
     _shrink_limit(monkeypatch, 16384)
 
-    assert _skipped(_run(repo)) == {reason: 1}
+    payload = _run(repo)
+    assert _skipped(payload) == {reason: 1}
+    assert payload["passed"] is (reason != "too_large")
 
 
 def test_file_of_exactly_the_limit_is_read(
@@ -1678,3 +1690,130 @@ def test_file_a_program_holds_on_windows(tmp_path: Path, released: bool) -> None
         else:
             _winapi.CloseHandle(handle)
     assert result == (("held\n", None) if released else (None, "unreadable"))
+
+
+def _swap_after_each_look(
+    monkeypatch: pytest.MonkeyPatch,
+    target: Path,
+    swap_in: Any,  # noqa: ANN401
+) -> list[int]:
+    """After every lookup of *target*, call *swap_in* to put something else
+    there; return the list that counts the lookups."""
+    corpus = _corpus_module()
+    real_lstat_inside = corpus.lstat_inside
+    looks: list[int] = []
+
+    def swapping(root: Path, path: Path) -> object:
+        info = real_lstat_inside(root, path)
+        if path == target:
+            looks.append(1)
+            swap_in(target, len(looks))
+        return info
+
+    monkeypatch.setattr(corpus, "lstat_inside", swapping)
+    return looks
+
+
+def test_file_swapped_after_its_lookup_is_not_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A file replaced by another between the lookup and the open is looked
+    up once more; replaced again, it is unreadable and nothing is read."""
+    corpus = _corpus_module()
+    target = tmp_path / "doc.md"
+    target.write_text("first\n")
+
+    def replace(path: Path, look: int) -> None:
+        fresh = path.with_name(f"fresh{look}.md")
+        fresh.write_text(f"swap {look}\n")
+        fresh.replace(path)
+
+    looks = _swap_after_each_look(monkeypatch, target, replace)
+    entry = corpus.TrackedEntry(target, "100644")
+    assert corpus.read_entry(tmp_path, entry) == (None, "unreadable")
+    assert len(looks) == 2
+
+
+def test_file_swapped_once_is_read_as_it_is_now(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A single swap, such as an editor saving through a new file, is looked
+    up again and the new file is read."""
+    corpus = _corpus_module()
+    target = tmp_path / "doc.md"
+    target.write_text("first\n")
+
+    def replace_once(path: Path, look: int) -> None:
+        if look == 1:
+            fresh = path.with_name("fresh.md")
+            fresh.write_text("saved\n")
+            fresh.replace(path)
+
+    _swap_after_each_look(monkeypatch, target, replace_once)
+    entry = corpus.TrackedEntry(target, "100644")
+    assert corpus.read_entry(tmp_path, entry) == ("saved\n", None)
+
+
+@pytest.mark.skipif(not hasattr(os, "mkfifo"), reason="named pipes are POSIX-only")
+@pytest.mark.parametrize("kind", ["fifo", "link-to-fifo", "link-outside"])
+def test_swap_to_a_pipe_or_a_link_neither_waits_nor_reads_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, kind: str
+) -> None:
+    """A file swapped for a named pipe, or a link to one or to a file outside
+    the project, after its lookup: the open neither waits for a writer nor
+    follows the link, and nothing outside is read."""
+    corpus = _corpus_module()
+    project = tmp_path / "proj"
+    project.mkdir()
+    outside = tmp_path / "secret.md"
+    outside.write_text("outside\n")
+    pipe = tmp_path / "pipe"
+    os.mkfifo(pipe)  # type: ignore[attr-defined,unused-ignore]
+    target = project / "doc.md"
+    target.write_text("inside\n")
+
+    def swap_in(path: Path, look: int) -> None:
+        if look > 1:
+            return
+        path.unlink()
+        if kind == "fifo":
+            os.mkfifo(path)  # type: ignore[attr-defined,unused-ignore]
+        else:
+            path.symlink_to(pipe if kind == "link-to-fifo" else outside)
+
+    _swap_after_each_look(monkeypatch, target, swap_in)
+    entry = corpus.TrackedEntry(target, "100644")
+
+    def release() -> None:
+        _release_fifo(target)
+        _release_fifo(pipe)
+
+    result = _run_guarded(lambda: corpus.read_entry(project, entry), release=release)
+    assert result == (None, "not_regular_file" if kind == "fifo" else "link")
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="the probe is Windows-only")
+def test_windows_probe_tells_a_hold_from_a_denial(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The probe says retry for a file that opens now or that a program holds,
+    and not for a denial or for an error that is not a refusal."""
+    import _winapi
+
+    corpus = _corpus_module()
+    target = tmp_path / "f.md"
+    target.write_text("x\n")
+    refused = PermissionError(13, "Permission denied")
+    assert corpus._held_by_another_program(target, refused) is True
+    assert corpus._held_by_another_program(target, OSError(22, "Invalid")) is False
+    handle = _hold_without_sharing(target)
+    try:
+        assert corpus._held_by_another_program(target, refused) is True
+    finally:
+        _winapi.CloseHandle(handle)
+
+    def denied(*_args: object) -> int:
+        raise _refusal(5)
+
+    monkeypatch.setattr(_winapi, "CreateFile", denied)
+    assert corpus._held_by_another_program(target, refused) is False

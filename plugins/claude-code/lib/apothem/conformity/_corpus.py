@@ -14,9 +14,10 @@ other entry it says why it was not read, so the report can count them.
 :func:`lstat_inside` also keeps ``link_check`` from looking up a link target
 outside the project during a corpus run.
 
-What it does not cover. The checks see the tree as it is when they run; a
-program that swaps a folder for a link while the gate runs is out of their
-reach, though each file's levels are checked right before it is read. A hard
+What it does not cover. The checks see the tree as it is when they run. Each
+file's levels are checked right before it is read, and the file opened must
+be the one that check found, so a file swapped in between is not read; but a
+folder above it that a program swaps for a link in between is followed. A hard
 link reads as an ordinary file, because nothing in it tells where the other
 names of its data are; git and archive tools do not create one to a file
 outside the project. And ``git ls-files`` itself reads the repository's own git
@@ -29,6 +30,7 @@ of them causes.
 from __future__ import annotations
 
 import codecs
+import errno
 import os
 import stat
 import subprocess
@@ -55,9 +57,16 @@ _SHARING_VIOLATION: Final[int] = 32
 # The share modes read, write and delete, so a probe open of a file conflicts
 # only with a program that shares nothing.
 _SHARE_ALL: Final[int] = 0x7
-# How many leading bytes of a file over the limit may hold a NUL before it
-# counts as binary: the span git looks at for the same question.
+# How many leading bytes of a file over the limit decide whether it is
+# binary: the span git looks at for the same question.
 _BINARY_SNIFF_BYTES: Final[int] = 8000
+# A file over the limit is binary when at least this share of those bytes
+# are NUL, as in a zero-filled image (nearly all) or UTF-16 text (half). A
+# text file with a stray NUL stays text, so its findings are not hidden.
+_BINARY_NUL_SHARE: Final[float] = 0.25
+# Why an opened file is not the one ``os.lstat`` approved: it was swapped
+# for another file, a link or a named pipe in between.
+_SWAPPED: Final[str] = "swapped"
 
 # The index modes git gives a symbolic link and a submodule.
 _LINK_MODE: Final[str] = "120000"
@@ -338,8 +347,6 @@ def _held_by_another_program(path: Path, exc: OSError) -> bool:
     it. A refusal for lack of permission, or a file being deleted, is not
     worth a retry. Elsewhere, no program can hold a file this way.
     """
-    if getattr(exc, "winerror", None) == _SHARING_VIOLATION:
-        return True
     if sys.platform != "win32" or not isinstance(exc, PermissionError):
         return False
     import _winapi  # Windows only, so imported here.
@@ -350,14 +357,51 @@ def _held_by_another_program(path: Path, exc: OSError) -> bool:
         )
     except OSError as probe:
         return getattr(probe, "winerror", None) == _SHARING_VIOLATION
-    # The file opens now: whatever held it has let go.
+    # The file opens now, so the hold may be over: try the real open again.
     _winapi.CloseHandle(handle)
     return True
 
 
-def _read_file(path: Path) -> bytes | str:
+def _open_binary(path: Path) -> BinaryIO:
+    """Open *path* to read bytes, without following a link at its last level.
+
+    On Windows this is a plain ``open``: a link or junction there opens the
+    file it names, and :func:`_read_file` then finds that file is not the one
+    ``os.lstat`` approved. Elsewhere the open neither follows a link
+    (``O_NOFOLLOW``) nor waits for a named pipe to get a writer
+    (``O_NONBLOCK``, cleared once the file is open).
+    """
+    if sys.platform == "win32":
+        return path.open("rb")
+    flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC
+    fd = os.open(path, flags)
+    try:
+        os.set_blocking(fd, True)
+        return os.fdopen(fd, "rb")
+    except BaseException:
+        os.close(fd)
+        raise
+
+
+def _same_file(seen: os.stat_result, opened: os.stat_result) -> bool:
+    """Return True when the *opened* file is the regular file ``os.lstat`` *seen*.
+
+    The file ID (device and inode) is compared when the system gives one; a
+    file system that gives none (an inode of 0) is judged by its type alone.
+    """
+    if not stat.S_ISREG(opened.st_mode):
+        return False
+    if not seen.st_ino or not opened.st_ino:
+        return True
+    return (seen.st_dev, seen.st_ino) == (opened.st_dev, opened.st_ino)
+
+
+def _read_file(path: Path, seen: os.stat_result) -> bytes | str:
     """Return the bytes of the regular file *path*, or why it was not read.
 
+    *seen* is what ``os.lstat`` found at *path*. The opened file must be that
+    same regular file; when it is not (it was swapped for another file, a link
+    or a named pipe since), the result is :data:`_SWAPPED` and nothing is read.
     The file is opened once per attempt, and each attempt starts afresh. An
     open refused because another program holds the file is tried once more
     after :data:`_RETRY_DELAY_SECONDS`, since such a hold is often brief. A
@@ -366,29 +410,36 @@ def _read_file(path: Path) -> bytes | str:
     """
     for attempt in range(2):
         try:
-            handle = path.open("rb")
+            handle = _open_binary(path)
         except OSError as exc:
+            if exc.errno == errno.ELOOP:
+                # O_NOFOLLOW met a link that took the file's place.
+                return _SWAPPED
             if attempt == 0 and _held_by_another_program(path, exc):
                 time.sleep(_RETRY_DELAY_SECONDS)
                 continue
             return _read_failure(exc)
         try:
             with handle:
-                return _read_open_file(handle)
+                opened = os.fstat(handle.fileno())
+                if not _same_file(seen, opened):
+                    return _SWAPPED
+                return _read_open_file(handle, opened.st_size)
         except OSError as exc:
             return _read_failure(exc)
     return SKIP_UNREADABLE  # pragma: no cover - the loop always returns
 
 
-def _read_open_file(handle: BinaryIO) -> bytes | str:
+def _read_open_file(handle: BinaryIO, size: int) -> bytes | str:
     """Return the bytes of the open file *handle*, or why they are not read.
 
-    A file over :data:`MAX_FILE_BYTES` is judged by :func:`_oversized_reason`.
-    Otherwise the first read asks for the file's size plus one byte, so a small
-    file costs a small read, and a file that grew since is read on in blocks;
-    one that grew past the limit is :data:`SKIP_TOO_LARGE`.
+    *size* is the file's size when it was opened. A file over
+    :data:`MAX_FILE_BYTES` is judged by :func:`_oversized_reason`. Otherwise
+    the first read asks for *size* plus one byte, so a small file costs a
+    small read, and a file that grew since is read on in blocks; one that grew
+    past the limit while it was read is :data:`SKIP_TOO_LARGE`, whatever its
+    bytes.
     """
-    size = os.fstat(handle.fileno()).st_size
     if size > MAX_FILE_BYTES:
         return _oversized_reason(handle)
     blocks: list[bytes] = []
@@ -408,27 +459,27 @@ def _read_open_file(handle: BinaryIO) -> bytes | str:
 def _oversized_reason(handle: BinaryIO) -> str:
     """Return the skip reason for an open file over :data:`MAX_FILE_BYTES`.
 
-    The file is judged on all of its first :data:`MAX_FILE_BYTES` bytes, read
-    in blocks. When they decode as UTF-8, the file is text the run cannot read,
-    :data:`SKIP_TOO_LARGE`, which fails the run since a finding in it would go
-    unseen; a character cut at the limit still counts as text. A NUL in the
-    first :data:`_BINARY_SNIFF_BYTES` marks a binary file, as it does for git,
-    so a large zero-filled image or UTF-16 file does not fail the run: like
-    bytes that do not decode, it is :data:`SKIP_NOT_TEXT`. A NUL further on
-    is text, as in a smaller file.
+    The file is binary, :data:`SKIP_NOT_TEXT`, when at least
+    :data:`_BINARY_NUL_SHARE` of its first :data:`_BINARY_SNIFF_BYTES` are NUL
+    (a zero-filled image, or UTF-16 text), or when its first
+    :data:`MAX_FILE_BYTES` bytes, read in blocks, do not decode as UTF-8. Any
+    other file is text the run cannot read, :data:`SKIP_TOO_LARGE`, which fails
+    the run since a finding in it would go unseen: a stray NUL does not change
+    that, and a character cut at the limit still counts as text.
     """
     decoder = codecs.getincrementaldecoder("utf-8")()
-    left = MAX_FILE_BYTES
+    head = handle.read(min(_BINARY_SNIFF_BYTES, MAX_FILE_BYTES))
+    if head and head.count(0) >= _BINARY_NUL_SHARE * len(head):
+        return SKIP_NOT_TEXT
+    left = MAX_FILE_BYTES - len(head)
     try:
+        decoder.decode(head)
         while left > 0:
             block = handle.read(min(_SNIFF_BLOCK_BYTES, left))
             if not block:
                 # The file ended before the limit: a cut character is not text.
                 decoder.decode(b"", final=True)
                 break
-            sniffed = MAX_FILE_BYTES - left
-            if b"\0" in block[: max(0, _BINARY_SNIFF_BYTES - sniffed)]:
-                return SKIP_NOT_TEXT
             left -= len(block)
             decoder.decode(block)
     except UnicodeDecodeError:
@@ -448,6 +499,8 @@ def read_entry(root: Path, entry: TrackedEntry) -> tuple[str | None, str | None]
     ``core.symlinks=false``, git writes a tracked link as a small regular file
     that holds that path, so the index mode is checked as well. The text is read
     the way ``Path.read_text`` reads it, line endings turned into ``\\n``.
+    A file swapped for another, a link or a named pipe between the look and
+    the open is looked up once more; swapped again, it is unreadable.
     """
     if entry.skip is not None:
         return None, entry.skip
@@ -457,12 +510,18 @@ def read_entry(root: Path, entry: TrackedEntry) -> tuple[str | None, str | None]
         return None, SKIP_LINK
     if entry.mode == _SUBMODULE_MODE:
         return None, SKIP_SUBMODULE
-    info = lstat_inside(root, entry.path)
-    if isinstance(info, str):
-        return None, info
-    if not stat.S_ISREG(info.st_mode):
-        return None, SKIP_NOT_REGULAR
-    data = _read_file(entry.path)
+    data: bytes | str = _SWAPPED
+    for _attempt in range(2):
+        info = lstat_inside(root, entry.path)
+        if isinstance(info, str):
+            return None, info
+        if not stat.S_ISREG(info.st_mode):
+            return None, SKIP_NOT_REGULAR
+        data = _read_file(entry.path, info)
+        if data != _SWAPPED:
+            break
+    if data == _SWAPPED:
+        return None, SKIP_UNREADABLE
     if isinstance(data, str):
         return None, data
     try:

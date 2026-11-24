@@ -150,12 +150,14 @@ by reason:
   open it, such as an online-only file whose sync program is stopped. When
   another program holds the whole file, the gate waits 0.2 seconds and tries
   once more. The run does not pass, since a finding in it would go unseen;
-- `too_large`: a file over 64 MiB whose first 64 MiB are UTF-8 text. The run
-  does not pass, for the same reason;
+- `too_large`: a file over 64 MiB whose first 64 MiB are UTF-8 text, or a
+  file that grows past 64 MiB while the gate reads it. The run does not
+  pass, for the same reason;
 - `not_utf8_text`: a file whose bytes are not UTF-8 text, such as a UTF-16
   file with a byte-order mark. Over 64 MiB, the first 64 MiB decide, and a
-  NUL byte in the first 8000 bytes marks the file as binary, as git does, so
-  a large zero-filled image does not fail the run;
+  file is binary when a quarter or more of its first 8000 bytes are NUL,
+  such as a large zero-filled image or a UTF-16 file without a byte-order
+  mark, so it does not fail the run; a few NUL bytes in text do not count;
 - `exempt`: a file the checks leave out by design: one whose suffix marks it
   as binary, such as an image or an archive, and anything under a
   `.apothem/plans`, `tests/conformity`, `tests/fixtures`, `_vendor` or
@@ -169,10 +171,16 @@ lists them, sorted, up to 10 per reason; `files_skipped` has the full count.
 A line on stderr names those reasons and their counts too, so a CI log that
 shows only stderr says why the run failed.
 
+Each file's levels are checked right before it is read, and the file opened
+must be the one that check found. A file another program swaps in between,
+for another file, a link or a named pipe, is looked up once more, and
+counted as `unreadable` if it is swapped again; the gate never waits on a
+named pipe or reads through a link that took the file's place.
+
 Two things these checks do not see. A hard link reads as an ordinary file, so
-a hard link to a file elsewhere is read; git does not create one. And each
-file's levels are checked right before it is read, so a folder another program
-swaps for a link in between is followed.
+a hard link to a file elsewhere is read; git does not create one. And a
+folder above the file that another program swaps for a link between the
+check and the open is followed.
 
 In this run the `link-check` matcher looks up a link target only inside the
 root: a relative link that leaves the root counts as external, and the search
@@ -184,7 +192,7 @@ unchecked a `/docs/` route segment holding a colon, which Windows reads as a
 drive, and a link it finds only through a part that ends in a dot or a
 space: Windows can drop that ending (`ci.yml.` finds `ci.yml`), so the find
 proves nothing. Such a link that finds nothing is reported dead as usual.
-In every system, a `/docs/` route with a `.` or `..` segment, such as
+On every system, a `/docs/` route with a `.` or `..` segment, such as
 `/docs/../x`, counts as external and is not looked up.
 
 Each `git ls-files` call gets 60 seconds: the one this run makes, and the one
