@@ -350,6 +350,60 @@ def _run_ps1_piped(
     return _pwsh(["-Command", command], tmp_path, env)
 
 
+def _run_ps1_in_strict_caller(
+    tmp_path: Path, script: str, how: str, *, engine_exit: int
+) -> subprocess.CompletedProcess[str]:
+    """Run SCRIPT from a session that sets
+    $PSNativeCommandUseErrorActionPreference to $true (PowerShell 7.4+), piped
+    into Invoke-Expression or by path (HOW), then print $LASTEXITCODE and the
+    session's preference."""
+    env = {
+        **_ps_env(tmp_path, engine_exit),
+        "APOTHEM_TEST_SCRIPT": str(INSTALLER / script),
+    }
+    if how == "piped":
+        run = (
+            "Get-Content -Raw -LiteralPath $env:APOTHEM_TEST_SCRIPT | Invoke-Expression"
+        )
+    else:
+        run = "& $env:APOTHEM_TEST_SCRIPT"
+    command = (
+        "$PSNativeCommandUseErrorActionPreference = $true; "
+        f"{run}; "
+        '"CALLER LASTEXITCODE=[$LASTEXITCODE] '
+        'NATIVE=[$PSNativeCommandUseErrorActionPreference]"'
+    )
+    return _pwsh(["-Command", command], tmp_path, env)
+
+
+@requires_pwsh
+@pytest.mark.parametrize("how", ["piped", "by-path"])
+@pytest.mark.parametrize(
+    ("script", "closing"),
+    [
+        pytest.param(
+            "install.ps1",
+            "Installation complete.",
+            marks=requires_windows,
+            id="install.ps1",
+        ),
+        pytest.param("update.ps1", "Update complete.", id="update.ps1"),
+    ],
+)
+def test_ps1_finishes_a_partial_run_when_the_caller_stops_on_native_errors(
+    tmp_path: Path, script: str, closing: str, how: str
+) -> None:
+    """A caller that sets $PSNativeCommandUseErrorActionPreference = $true
+    still gets the partial run finished with $LASTEXITCODE at 2, and keeps
+    its preference as it was."""
+    result = _run_ps1_in_strict_caller(tmp_path, script, how, engine_exit=2)
+
+    out = _output(result)
+    assert "CALLER LASTEXITCODE=[2] NATIVE=[True]" in out, out
+    assert _squashed(PARTIAL_WARNING) in _squashed(out), out
+    assert closing in out, out
+
+
 @requires_pwsh
 @requires_windows
 def test_install_ps1_by_path_finishes_a_partial_install_and_exits_2(

@@ -970,8 +970,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   place the `apothem` command and print their closing banner, and the update
   scripts print "Update complete.", as after a full success. Each script then
   ends with exit code `2`. A piped PowerShell run (`irm ... | iex`) leaves
-  `$LASTEXITCODE` at `2` instead and keeps your PowerShell session open. Any
-  other non-zero exit code from the engine stops the script there.
+  `$LASTEXITCODE` at `2` instead and keeps your PowerShell session open. The
+  PowerShell scripts do the same when your session sets
+  `$PSNativeCommandUseErrorActionPreference` to `$true`, and a piped run puts
+  that setting back as it was. Any other non-zero exit code from the engine
+  stops the script there.
 - **`verify --profile` and `status --profile` no longer report drift for a
   project's own `CLAUDE.md`.** A project-scope tool with no install record on
   this machine read the project's `CLAUDE.md` as its own profile file and

@@ -178,6 +178,14 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+# A caller's $PSNativeCommandUseErrorActionPreference = $true (PowerShell
+# 7.4+) would make any non-zero exit code of a program stop the run, the
+# engine's partial exit code 2 among them, so the run turns it off. A piped
+# run shares the caller's scope, so the finally block at the end puts the
+# caller's value back.
+$HadNativeErrorPref = Test-Path -LiteralPath 'Variable:PSNativeCommandUseErrorActionPreference'
+$SavedNativeErrorPref = if ($HadNativeErrorPref) { $PSNativeCommandUseErrorActionPreference } else { $null }
+$PSNativeCommandUseErrorActionPreference = $false
 
 $ApothemHome = if ($env:APOTHEM_HOME) { $env:APOTHEM_HOME } else { Join-Path $HOME '.apothem' }
 # A relative APOTHEM_HOME is resolved once, here, against the current
@@ -3320,8 +3328,10 @@ completion (opt-in; appends to your profile):
 "@
 }
 } finally {
-    # The caller's git variables, and the encoding PowerShell read a
-    # program's output in, as they were before the run.
+    # The caller's git variables, the encoding PowerShell read a program's
+    # output in, and the caller's native-command preference, as they were
+    # before the run.
+    if ($HadNativeErrorPref) { $PSNativeCommandUseErrorActionPreference = $SavedNativeErrorPref } else { Remove-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue }
     foreach ($GitVar in @($SavedGitEnv.Keys)) {
         if ($null -eq $SavedGitEnv[$GitVar]) {
             Remove-Item -LiteralPath "Env:$GitVar" -ErrorAction SilentlyContinue
