@@ -1991,7 +1991,9 @@ def _sent_late(
     the file could not be written (the controller's folder is gone, say),
     with the system's reason. What part of a failed write reached the file
     is cut off again, so the next try writes each report once; when that
-    cut fails too, the controller may read a report twice. With *last_try*
+    cut fails too, the controller may read a report twice: the part cut off
+    as a refusal of its own, with no place named, and the next try's line,
+    which starts on a line of its own, as the full report. With *last_try*
     no try follows, so that part stays: the controller holds a line cut
     off part way as a refusal of its own, and fails the run on it, as it
     does on a file the write created and left empty. A later write starts
