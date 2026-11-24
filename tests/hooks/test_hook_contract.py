@@ -331,7 +331,11 @@ def _each_in_parallel(check: Callable[[_Unit], None], units: Sequence[_Unit]) ->
     """
     if not units:
         return
-    with ThreadPoolExecutor(max_workers=len(units)) as pool:
+    # At most four groups at once: other xdist workers run the 5 s latency
+    # test meanwhile, and a burst of interpreter starts slows them on Windows.
+    with ThreadPoolExecutor(
+        max_workers=min(len(units), os.cpu_count() or 1, 4)
+    ) as pool:
         futures = [pool.submit(check, unit) for unit in units]
     for future in futures:
         future.result()
