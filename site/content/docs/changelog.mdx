@@ -119,8 +119,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
     reached through a link, is skipped with a warning. When a workspace leaves
     the config, the next install or update takes the Apothem block out of the
     file it wrote there. A BEGIN marker with no END marker that stays in that
-    file (a line of yours, or what is left of an older block) is named in a
-    warning, so you can delete that line with any old Apothem text below it.
+    file (a line of yours, or what is left of an older block) is named by its
+    line in a warning, with a numbered step that changes that line by adding a
+    word inside its comment; any old Apothem text below it is then yours to
+    delete by hand.
   - **Hook settings:** left alone, with a warning, when internal hooks are off,
     the hook's entry is off, or `hooks.internal.enabled: true` names no hook
     (naming one would switch the others off).
@@ -132,10 +134,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
     characters counted as OpenClaw counts them. When the file fits no
     workspace, no path is registered. When a rules file over the per-file
     limit holds a BEGIN marker that starts no whole block (its END marker is
-    gone, or the marker is yours), the warning names that file, says that the
-    old Apothem text below that marker counts against the limit, and says to
-    delete the marker line and that text by hand, to shorten the profile's
-    custom rules, or to raise the limit.
+    gone, or the marker is yours), the warning names that file and each such
+    marker by its line, says that the old Apothem text below it counts against
+    the limit, and says to change that line by adding a word inside its
+    comment and delete that text by hand, to shorten the profile's custom
+    rules, or to raise the limit.
   - **Upgrading with a commented `openclaw.json`:** Apothem cannot add the hook
     entry to a file with comments or other JSON5 syntax without dropping them.
     If you added the `skills.load.extraDirs` entry by hand, as these docs said
