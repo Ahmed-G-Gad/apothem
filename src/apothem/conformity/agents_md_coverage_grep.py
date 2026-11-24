@@ -75,6 +75,7 @@ from apothem.conformity._grep_base import (
     is_project_file,
     iter_tree_files,
     parse_root_args,
+    project_file_target,
 )
 
 GREP_NAME: Final[str] = "agents-md-coverage-grep"
@@ -226,9 +227,13 @@ def meaningful_folders(root: Path) -> list[str]:
     folders: set[str] = set()
 
     # Rule (A): folders carrying a contributor README, minus fixture/example leaves.
+    # A README that links to a regular file in the project counts; one that
+    # leads out of it, or to anything else, does not.
     for readme in iter_tree_files(
-        root, names=(README_NAME,), extra_prune=_EXCLUDED_SEGMENTS
+        root, names=(README_NAME,), extra_prune=_EXCLUDED_SEGMENTS, include_links=True
     ):
+        if project_file_target(root, readme) is None:
+            continue
         rel = _rel_posix(readme.parent, root_resolved)
         if rel is None or _has_excluded_segment(rel):
             continue
@@ -251,7 +256,8 @@ def meaningful_folders(root: Path) -> list[str]:
             continue
         if _has_excluded_segment(rel) or _is_harness_template_leaf(rel):
             continue
-        if is_project_file(root, py_file.parent / README_NAME):
+        # A README that links to a regular file in the project counts.
+        if project_file_target(root, py_file.parent / README_NAME) is not None:
             continue
         folders.add(rel)
 
@@ -358,7 +364,7 @@ def check(root: Path) -> GrepResult:
                 if (
                     companion_folder != "."
                     and companion_folder in folder_set
-                    and (root / path).is_file()
+                    and is_project_file(root, root / path)
                 ):
                     companion_ct[companion_folder] = ct
                 continue

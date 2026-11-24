@@ -178,9 +178,14 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   links, `glob`, `rglob` and `iterdir` list a linked folder and return links,
   `os.walk` looks up the target of each symbolic link it lists, and on Python
   3.12 a `*/NAME` glob lists every child folder, a linked one too, so keep
-  each glob to one level of a folder you checked. The helpers note every link
-  and special file they leave out, and `finish_root_report` lists them under
-  `skipped_links`, so a link never hides a file without a trace.
+  each glob to one level of a folder you checked. On Windows a name ending in
+  a dot or a space is a special entry: Win32 drops that ending when a path is
+  opened by name, so the reopened path could be a junction beside it. A
+  check that reads no content, such as `naming-grep`, walks with
+  `include_links=True` to see each link by its own name. The helpers note
+  every link and special file they leave out, and `finish_root_report` lists
+  them under `skipped_links`; a run that inspected nothing while it left a
+  link out does not pass, even when an empty scope is expected.
   `tests/conformity/test_validators_stay_in_project.py` runs every `--all`
   validator against a project made of links. Add each file a new validator
   reads to its `_project_files` (or, for a file read only after another one

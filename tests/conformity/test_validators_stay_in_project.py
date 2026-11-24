@@ -28,16 +28,17 @@ The project holds the same files as an outside copy, reached through links:
   cap its memory, so a regression fails fast instead of using up memory).
 
 No validator may open or list a link, a named pipe, or anything that resolves
-into the outside copy or to ``/dev/zero``, and some report must name what was
-skipped under ``skipped_links``. The audit hook does not see a ``stat`` call,
-so each test also deletes the links and pipes and runs the validators again:
-every report and exit code must match, apart from ``skipped_links``, because a
-link counts as missing. ``no-global-plans-grep`` is the exception by design:
-it reports a plans location that is a link, by name. A first run over the outside copy itself shows that every
-validator does reach these files when they are real, so a pass is not a
-validator that looked at nothing, and every run must end in a pass or a
-findings exit, not a crash. Windows junctions need no privilege, so the
-folder-link tests run everywhere.
+into the outside copy or to ``/dev/zero``, and each tree walker, and the plans
+sweep, must name what it skipped under ``skipped_links``. The audit hook does
+not see a ``stat`` call, so each test also deletes the links and pipes and runs
+the validators again: every report and exit code must match, apart from
+``skipped_links``, because a link counts as missing. Two exceptions are by
+design: ``no-global-plans-grep`` reports a plans location that is a link, by
+name, and a run that checked nothing because a link was in the way must not
+pass. A first run over the outside copy itself shows that every validator does
+reach these files when they are real, so a pass is not a validator that looked
+at nothing, and every run must end in a pass or a findings exit, not a crash.
+Windows junctions need no privilege, so the folder-link tests run everywhere.
 """
 
 from __future__ import annotations
@@ -74,7 +75,8 @@ _CALLER_WORKFLOW = (
 )
 
 # Validators that open or list no project file in Python: one asks git for the
-# last commit subject, the other only checks whether ``docs/`` is a folder.
+# last commit subject, the other only looks at the root entry named ``docs``,
+# without following it.
 _READS_NO_PROJECT_FILE = frozenset(
     {"conventional-commit-grep", "no-toplevel-docs-grep"}
 )
@@ -131,12 +133,13 @@ def _project_files() -> dict[str, str]:
 def _second_reads() -> list[str]:
     """Return files a validator reads only after another file passed its checks.
 
-    ``plan-next-step-consistency-grep`` reads a suite's other plan files once
-    its ``PROGRESS.md`` is real, ``gate-evidence-grep`` reads a suite's
-    completion, attestation and hand-off files, and
-    ``registry-capability-consistency-grep`` reads each harness's
-    ``materializer.py`` after the propagation manifest, and
-    ``workflow-concurrency-grep`` reads the reusable workflow a caller names.
+    - ``plan-next-step-consistency-grep``: a suite's other plan files, once its
+      ``PROGRESS.md`` is real;
+    - ``gate-evidence-grep``: a suite's completion, attestation and hand-off
+      files;
+    - ``registry-capability-consistency-grep``: each harness's
+      ``materializer.py``, after the propagation manifest;
+    - ``workflow-concurrency-grep``: the reusable workflow a caller job names.
     """
     suite = ".apothem/plans/sample-suite"
     return [
@@ -448,15 +451,20 @@ _Builder = Callable[[Path, Path], list[Path]]
 # The validator that reports a plans location that is a link, by name.
 _PLANS_SWEEP = "no-global-plans-grep"
 
-# The validators that walk a tree with the shared walk; each must name what
-# it left out under ``skipped_links`` in every case here.
+# The validators that walk a tree with the shared walk and read what they
+# find; each must name what it left out under ``skipped_links`` in every case
+# here.
+# naming-grep reads no content: it checks each link by its own name, so it
+# lists no skipped link and its report counts names the links-deleted twin
+# lacks. Its own test covers it.
+_NAME_CHECKER = "naming-grep"
+
 _TREE_WALKERS = frozenset(
     {
         "agents-md-coverage-grep",
         "agnosticism-grep",
         "dynamism-grep",
         "freshness-token-grep",
-        "naming-grep",
         "plain-language-grep",
         "reference-token-grep",
     }
@@ -473,6 +481,21 @@ def _comparable(result: list[object]) -> list[object]:
     if isinstance(payload, dict):
         payload.pop("skipped_links", None)
     return [code, payload]
+
+
+def _differs(linked: list[object], missing: list[object]) -> bool:
+    """Return True when a linked run does not match its links-deleted twin.
+
+    A run that checked nothing because a link was in the way must not pass;
+    apart from that it reports what the run without the link reports.
+    """
+    report = json.loads(str(linked[1]))
+    if report.get("inspected") == 0 and report.get("skipped_links"):
+        twin = json.loads(str(missing[1]))
+        return report.get("passed") is not False or report.get("findings") != twin.get(
+            "findings"
+        )
+    return _comparable(linked) != _comparable(missing)
 
 
 def _finding_paths(result: list[object]) -> list[str]:
@@ -552,12 +575,12 @@ def test_no_validator_reaches_through_a_link_or_a_pipe(
     _events, missing = _run_validators(project, tmp_path / "missing-run")
     _assert_exits_cleanly(missing)
     compared = [
-        label for label in missing if not (plans_link and label == _PLANS_SWEEP)
+        label
+        for label in missing
+        if label != _NAME_CHECKER and not (plans_link and label == _PLANS_SWEEP)
     ]
     changed = sorted(
-        label
-        for label in compared
-        if _comparable(linked[label]) != _comparable(missing[label])
+        label for label in compared if _differs(linked[label], missing[label])
     )
 
     assert changed == [], {

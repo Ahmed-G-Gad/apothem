@@ -344,7 +344,8 @@ def _iter_corpus_files(root: Path) -> list[str]:
     if not is_project_dir(root, corpus):
         return []
     rels: list[str] = []
-    for path in iter_tree_files(corpus, prune=False):
+    # Names only: a link is checked by its own name and never entered.
+    for path in iter_tree_files(corpus, prune=False, include_links=True):
         try:
             rel = path.relative_to(root).as_posix()
         except ValueError:

@@ -33,7 +33,10 @@ import pytest
 
 from apothem.conformity import (
     _project_paths,
+    agents_md_coverage_grep,
     dynamism_grep,
+    harden_runner_grep,
+    naming_grep,
     no_global_plans_grep,
     no_toplevel_docs_grep,
     plans_discipline_language_grep,
@@ -45,7 +48,11 @@ from apothem.conformity._grep_base import (
     list_real_entries,
     project_file_target,
 )
-from apothem.conformity._project_paths import start_skip_log, take_skipped_paths
+from apothem.conformity._project_paths import (
+    note_root_spelling,
+    start_skip_log,
+    take_skipped_paths,
+)
 
 _POSIX_ONLY = pytest.mark.skipif(
     os.name == "nt", reason="named pipes and /dev/zero exist only on POSIX systems"
@@ -401,7 +408,11 @@ def test_project_file_target_follows_one_link_inside_the_project(
 def test_a_required_surface_that_links_inside_the_project_counts(
     tmp_path: Path,
 ) -> None:
-    """``CLAUDE.md`` pointing at ``AGENTS.md`` is a present surface, read at its target."""
+    """``CLAUDE.md`` pointing at ``AGENTS.md`` is a present surface, read at its target.
+
+    A guard: main followed every link, so this passed there too; it keeps the
+    link-aware reader from treating an in-project link as missing.
+    """
     root = tmp_path / "project"
     _write(root / "AGENTS.md", "# Agents\n")
     _symlink_file_or_skip(root / "CLAUDE.md", "AGENTS.md")
@@ -498,3 +509,168 @@ def test_a_junction_to_a_file_is_not_read_as_that_file(tmp_path: Path) -> None:
         pytest.skip(f"cannot create a junction to a file here: {exc}")
 
     assert project_file_target(root, root / "CLAUDE.md") is None
+
+
+# ---------------------------------------------------------------------------
+# Review round 4: Win32 names, link names, typed roots, linked folders
+# ---------------------------------------------------------------------------
+
+_WINDOWS_ONLY = pytest.mark.skipif(
+    os.name != "nt", reason="Win32 rewrites trailing dots and spaces only on Windows"
+)
+
+
+def _extended(path: Path) -> Path:
+    """Return *path* in the extended form, so Win32 keeps a trailing dot."""
+    back = chr(92)
+    return Path(back * 2 + "?" + back + str(path))
+
+
+@_WINDOWS_ONLY
+def test_a_trailing_dot_folder_beside_a_junction_is_not_entered(tmp_path: Path) -> None:
+    """``X.`` reopened by name becomes ``X``; the junction ``X`` is never reached.
+
+    The listing reports ``X.`` as a real folder, but Win32 drops the trailing
+    dot when the walk opens it again by name, so the walk would list the
+    junction ``X`` beside it, which leads out of the project.
+    """
+    outside = tmp_path / "outside"
+    _write(outside / "secret.md")
+    root = (tmp_path / "project").resolve()
+    _write(root / "README.md")
+    _link_folder(root / "X", outside)
+    _extended(root / "X.").mkdir()
+    try:
+        assert _walk(root, ".md") == ["README.md"]
+        assert sorted(p.name for p in list_real_entries(root)) == ["README.md"]
+        assert not is_project_file(root, root / "X." / "secret.md")
+    finally:
+        _extended(root / "X.").rmdir()
+
+
+@_WINDOWS_ONLY
+def test_trailing_dot_folders_beside_junctions_to_the_root_do_not_loop(
+    tmp_path: Path,
+) -> None:
+    """Two ``a.``/``a`` pairs that lead back to the root used to walk for ever."""
+    root = (tmp_path / "project").resolve()
+    _write(root / "page.md")
+    made: list[Path] = []
+    try:
+        for name in ("a", "b"):
+            _link_folder(root / name, root)
+            _extended(root / f"{name}.").mkdir()
+            made.append(root / f"{name}.")
+        found = [
+            p.relative_to(root).as_posix()
+            for p in itertools.islice(iter_tree_files(root, (".md",)), _LOOP_CAP)
+        ]
+        assert found == ["page.md"]
+    finally:
+        for folder in made:
+            _extended(folder).rmdir()
+
+
+def test_naming_checks_a_link_by_its_own_name(tmp_path: Path) -> None:
+    """A link is a name in the tree: naming checks it without entering it."""
+    outside = tmp_path / "outside"
+    _write(outside / "Worse_Name.md")
+    root = (tmp_path / "project").resolve()
+    _write(root / "src" / "apothem" / "good" / "page.md")
+    _link_folder(root / "src" / "apothem" / "Bad_Name", outside)
+
+    result = naming_grep.check_corpus(root)
+
+    assert [finding.component for finding in result.findings] == ["Bad_Name"]
+
+
+def test_an_absolute_link_through_the_typed_root_counts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A link written through the root as the operator typed it is inside it.
+
+    The root is resolved before the check, so an absolute link spelled through
+    another path to the same folder used to count as missing.
+    """
+    root = (tmp_path / "project").resolve()
+    agents = _write(root / "AGENTS.md")
+    alias = tmp_path / "alias"
+    _link_folder(alias, root)
+    link = root / "CLAUDE.md"
+    _fake_readlink(monkeypatch, link, str(alias / "AGENTS.md"))
+    try:
+        note_root_spelling(root, root)
+        assert _project_paths._link_target(root, link) is None
+        note_root_spelling(alias, root)
+        assert _project_paths._link_target(root, link) == agents
+    finally:
+        note_root_spelling(root, root)
+
+
+@pytest.mark.skipif(os.name == "nt", reason="a doubled leading slash is POSIX only")
+def test_a_doubled_leading_slash_names_the_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """POSIX reads a leading ``//`` as ``/``, so the link still counts."""
+    root = (tmp_path / "project").resolve()
+    agents = _write(root / "AGENTS.md")
+    link = root / "CLAUDE.md"
+    _fake_readlink(monkeypatch, link, "/" + str(agents))
+
+    assert _project_paths._link_target(root, link) == agents
+
+
+def test_a_fixed_folder_that_is_a_link_does_not_pass(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A workflows folder that is a link fails, where a missing one passes.
+
+    The workflow validators pass on a project with no workflows folder yet.
+    A folder behind a link may hold workflows the gate never reads, so that
+    run reports the link under ``skipped_links`` and does not pass.
+    """
+    outside = tmp_path / "outside"
+    _write(outside / "ci.yml", "name: ci" + chr(10))
+    root = (tmp_path / "project").resolve()
+    (root / ".github").mkdir(parents=True)
+    _link_folder(root / ".github" / "workflows", outside)
+
+    code = harden_runner_grep._main(["harden-runner-grep", str(root)])
+    report = json.loads(capsys.readouterr().out)
+
+    assert code == 2
+    assert report["passed"] is False
+    assert report["skipped_links"] == [".github/workflows"]
+
+
+def test_a_dangling_top_level_docs_link_is_a_finding(tmp_path: Path) -> None:
+    """A ``docs`` link whose target is gone is still the forbidden entry.
+
+    Following the link, as ``is_dir()`` does, finds nothing there.
+    """
+    gone = tmp_path / "gone"
+    gone.mkdir()
+    root = (tmp_path / "project").resolve()
+    root.mkdir()
+    _link_folder(root / "docs", gone)
+    gone.rmdir()
+
+    assert [f.path for f in no_toplevel_docs_grep.check(root).findings] == ["docs/"]
+
+
+def test_a_readme_link_inside_the_project_counts_for_coverage(tmp_path: Path) -> None:
+    """A folder whose README links inside the project carries a README.
+
+    One that leads out of the project does not, so that folder is not taken
+    to carry a contributor README.
+    """
+    root = (tmp_path / "project").resolve()
+    _write(root / "docs" / "guide.md")
+    beside = _write(tmp_path / "beside.md")
+    _symlink_file_or_skip(root / "guide" / "README.md", "../docs/guide.md")
+    _symlink_file_or_skip(root / "other" / "README.md", str(beside))
+
+    folders = agents_md_coverage_grep.meaningful_folders(root)
+
+    assert "guide" in folders
+    assert "other" not in folders

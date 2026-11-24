@@ -44,6 +44,17 @@ FILE_ENTRY: Final[EntryKind] = "file"
 LINK_ENTRY: Final[EntryKind] = "link"
 OTHER_ENTRY: Final[EntryKind] = "other"
 
+# Win32 drops a trailing dot or space from each path segment when a path is
+# opened by name, so ``X.`` listed as a real folder would be reopened as ``X``,
+# which can be a junction. Such a name is treated as a special entry there.
+_WIN32_REWRITTEN_ENDINGS: Final[tuple[str, ...]] = (".", " ")
+
+
+def _rewritten_by_win32(name: str) -> bool:
+    """Return True on Windows for a name Win32 would change when it is reopened."""
+    return os.name == "nt" and name.endswith(_WIN32_REWRITTEN_ENDINGS)
+
+
 # The prefix Windows puts on the target os.readlink returns for an absolute
 # link target, and the form it takes for a network path.
 _EXTENDED_PREFIX: Final[str] = "\\\\?\\"
@@ -62,6 +73,10 @@ def is_link(info: os.stat_result) -> bool:
 # ---------------------------------------------------------------------------
 
 _skip_root: Path | None = None
+# Other spellings of a root, such as the path the operator typed before it was
+# resolved, mapped to the resolved root; see :func:`note_root_spelling`.
+_root_spellings: dict[Path, Path] = {}
+
 # A dict used as an ordered set: a project can hold thousands of links.
 _skipped: dict[Path, None] = {}
 
@@ -82,6 +97,18 @@ def note_skipped(path: Path) -> None:
     """Note that *path*, a link or a special file, was left out."""
     if _skip_root is not None:
         _skipped.setdefault(path, None)
+
+
+def note_root_spelling(typed: Path, resolved: Path) -> None:
+    """Record that *typed*, an absolute path the operator gave, is *resolved*.
+
+    The command-line entry calls this (through ``parse_root_args``) so that an
+    absolute link written through the root as typed, before links above it
+    were resolved, still counts as inside the project.
+    """
+    _root_spellings.clear()
+    if typed != resolved:
+        _root_spellings[typed] = resolved
 
 
 def take_skipped_paths() -> list[str]:
@@ -111,8 +138,12 @@ def _entry_kind(entry: os.DirEntry[str]) -> EntryKind | None:
 
     On POSIX hosts the answer comes from the listing itself (``d_type``); on
     Windows from the listing's attributes and reparse tag. Neither stats the
-    target of a link.
+    target of a link. On Windows a name that ends in a dot or a space is
+    ``"other"``: a caller reopens an entry by name, and Win32 would drop that
+    ending and reach a different entry, such as a junction beside it.
     """
+    if _rewritten_by_win32(entry.name):
+        return OTHER_ENTRY
     try:
         if entry.is_symlink():
             return LINK_ENTRY
@@ -209,6 +240,10 @@ def _last_level(root: Path, path: Path) -> os.stat_result | None:
         return None
     if not parts or ".." in parts:
         return None
+    # A level Win32 would rewrite (a trailing dot or space) is not looked up:
+    # its lstat and a later open could reach a different entry.
+    if any(_rewritten_by_win32(part) for part in parts):
+        return None
     folder = root
     for part in parts[:-1]:
         folder = folder / part
@@ -279,6 +314,14 @@ def _inside(root: Path, path: Path) -> bool:
     return True
 
 
+def _respelled(root: Path, named: Path) -> Path:
+    """Return *named* spelled through *root* when it uses another spelling of it."""
+    for typed, resolved in _root_spellings.items():
+        if resolved == root and _inside(typed, named):
+            return root / named.relative_to(typed)
+    return named
+
+
 def _link_target(root: Path, link: Path) -> Path | None:
     """Return the file a link inside *root* names, found level by level, or None.
 
@@ -299,8 +342,11 @@ def _link_target(root: Path, link: Path) -> Path | None:
         text = text[len(_EXTENDED_PREFIX) :]
         if text.startswith(_EXTENDED_UNC_PREFIX):
             return None
+    if os.name != "nt" and text.startswith("//") and not text.startswith("///"):
+        text = text[1:]  # POSIX allows a doubled leading slash for the root
     named = Path(text)
     if named.is_absolute():
+        named = _respelled(root, named)
         if not _inside(root, named):
             return None
         folder, parts = root, named.relative_to(root).parts

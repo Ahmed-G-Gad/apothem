@@ -28,6 +28,7 @@ conformity-gate orchestrator's ``EXIT_FAIL`` constant.
 from __future__ import annotations
 
 import json
+import os
 import re
 import subprocess
 import sys
@@ -211,7 +212,8 @@ def _read_head_subject(root: Path) -> tuple[str | None, str]:
     # Imported here, not at module top, so the module stays stdlib-only.
     from apothem.conformity._git import run_git
 
-    if not (root / ".git").exists():
+    # lexists: the .git entry is looked at without following a link.
+    if not os.path.lexists(root / ".git"):
         return None, "not-a-git-repo"
     try:
         completed = run_git(

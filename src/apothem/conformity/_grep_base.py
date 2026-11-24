@@ -66,6 +66,7 @@ from apothem.conformity._project_paths import (
     DIR_ENTRY,
     FILE_ENTRY,
     LINK_ENTRY,
+    note_root_spelling,
     note_skipped,
     scan_entries,
     start_skip_log,
@@ -221,6 +222,10 @@ def parse_root_args(
         parser.error(f"root is not an existing directory: {root}")
     args.root = root.resolve()
     start_skip_log(args.root)
+    # The root as typed, made absolute but not resolved: an absolute link may
+    # be written through this spelling.
+    typed = root if root.is_absolute() else Path.cwd() / root
+    note_root_spelling(Path(os.path.normpath(typed)), args.root)
     return args
 
 
@@ -248,16 +253,21 @@ def finish_root_report(
     advisory validator, and :data:`EXIT_FAIL` for a failing blocking one.
     When the run left out links or special files, the payload lists them under
     ``skipped_links`` (relative to the root), so a link never hides a file
-    without a trace.
+    without a trace. A run that inspected nothing while it left a link out
+    does not pass, even when an empty scope is expected: a fixed folder that
+    is a link must not pass as a folder that is not there yet.
     """
     payload = json.loads(report_json)
     payload[INSPECTED_KEY] = inspected
     skipped = take_skipped_paths()
     if skipped:
         payload[SKIPPED_KEY] = skipped
-    vacuous = inspected == 0 and not empty_scope_expected
+    # A scope that is empty because a link was in the way is not the empty
+    # scope a validator expects: the files may be there, behind the link.
+    scope_expected = empty_scope_expected and not skipped
+    vacuous = inspected == 0 and not scope_expected
     if inspected == 0:
-        payload[EMPTY_SCOPE_KEY] = empty_scope_expected
+        payload[EMPTY_SCOPE_KEY] = scope_expected
     if vacuous:
         payload["passed"] = False
     print(json.dumps(payload, indent=2))
@@ -324,6 +334,7 @@ def iter_tree_files(
     names: Iterable[str] = (),
     extra_prune: Iterable[str] = (),
     prune: bool = True,
+    include_links: bool = False,
 ) -> Iterator[Path]:
     """Yield the matching regular files below ``root``, skipping pruned subtrees.
 
@@ -335,6 +346,8 @@ def iter_tree_files(
     ``prune=False`` drops the default pruning, so nested checkouts and the
     names in :data:`PRUNED_SEGMENTS` are walked too (``extra_prune`` still
     applies): the files a former ``Path.rglob`` caller saw, minus links.
+    ``include_links=True`` yields each link by its own name, never entering
+    it, for a caller that checks names and reads nothing.
     Post-conditions: yields regular files as ``root``-prefixed paths,
     directory by directory in name order, so a run is deterministic. The walk
     never enters a nested checkout (a directory below ``root`` that holds a
@@ -370,10 +383,17 @@ def iter_tree_files(
         folders: list[Path] = []
         for path, kind in sorted(entries, key=lambda entry: entry[0].name):
             if path.name in pruned and kind in (DIR_ENTRY, LINK_ENTRY):
+                if kind == LINK_ENTRY:
+                    note_skipped(path)
                 continue
             if kind == DIR_ENTRY:
                 folders.append(path)
             elif kind == FILE_ENTRY:
+                if wanted(path.name):
+                    files.append(path)
+            elif kind == LINK_ENTRY and include_links:
+                # A caller that checks names only gets the link by its own
+                # name; the walk still never enters it.
                 if wanted(path.name):
                     files.append(path)
             elif kind == LINK_ENTRY or wanted(path.name):

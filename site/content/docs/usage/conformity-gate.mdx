@@ -102,24 +102,31 @@ treats each of these as missing:
 - a link, even one that points inside the root. A walk or a folder listing
   skips it, so what it points to is checked only where the validator reaches
   it under its own path;
-- a named pipe, a device or a socket, where a read would wait or never end.
+- a named pipe, a device or a socket, where a read would wait or never end;
+- on Windows, a name that ends in a dot or a space, because Windows would
+  open a different entry under that name.
 
-Three cases look at a link without following it:
+A few checks still use a link without entering it:
 
-- a fixed file that is a link to a regular file inside the project, such as a
-  `CLAUDE.md` that points at another file there, is read at the file it points
-  to. A linked `.gitattributes` still counts as missing, because git does not
-  read it;
+- for a fixed file that is a symbolic link, such as a `CLAUDE.md` that points
+  at another file, the gate reads the link's own text and opens the file it
+  names only when that is a regular file inside the project, reached through
+  real folders. A per-folder `README.md` link counts the same way. An absolute
+  link counts when it is written through the project folder as you named it
+  or as it resolves. A linked `.gitattributes` still counts as missing,
+  because git does not read it;
 - the stray-plans check in `no-global-plans-grep` reports a plans folder or an
-  `.apothem` folder that is a link, by its name, wherever the link leads, and
-  lists every other link it does not search under `skipped_links`;
-- `no-toplevel-docs-grep` reports a `docs` link at the root by its name.
+  `.apothem` folder that is a link, by its name, wherever the link leads;
+- `no-toplevel-docs-grep` reports a `docs` link at the root by its name;
+- `naming-grep` checks a link's own name.
 
-A validator that passes when its folder is missing, such as the workflow
-validators, passes when that folder is a link. Each validator's report lists
-the links and special files it left out under `skipped_links`, so a link never
-hides a file without a trace. A hard link is a regular file and is read like
-one, and the checks that run git read the `.git` folder through git itself.
+Each validator's report lists the links and special files it left out under
+`skipped_links`, so a link never hides a file without a trace. A validator
+that passes when its folder is missing, such as the workflow validators, does
+not pass when that folder is a link: the files may be behind it, so the run
+fails like one that checked nothing. A hard link is a regular file and is read
+like one, and the checks that run git read the `.git` folder through git
+itself.
 
 Six validators start at the repository root and search the whole tree for the
 files they check:

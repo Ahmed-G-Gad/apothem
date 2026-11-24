@@ -1446,16 +1446,18 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   and a link to `/dev/zero` made a read that never ended. Every `--all`
   validator now opens and lists only regular files and real folders that it
   reaches through real folders below the root, and never follows a link. A
-  link, a named pipe, a device or a socket counts as missing, with three
-  exceptions that look at a link without following it: a fixed file that
-  links to a regular file inside the project, such as a `CLAUDE.md` that
-  points at another file there, is read at that file (a linked
-  `.gitattributes` still counts as missing, because git does not read it);
-  `no-global-plans-grep` reports a plans folder or an `.apothem` folder that
-  is a link, by name; and
-  `no-toplevel-docs-grep` reports a root `docs` link. Each report lists the
-  links and special files it left out under `skipped_links`. The checks that
-  run git read the `.git` folder through git itself.
+  link, a named pipe, a device, a socket, or on Windows a name ending in a dot
+  or a space, counts as missing. A few checks still use a link without
+  entering it: for a fixed file that is a symbolic link, such as a
+  `CLAUDE.md` that points at another file, the gate reads the link's text and
+  opens the named file only when it is a regular file inside the project (a
+  linked `.gitattributes` still counts as missing, because git does not read
+  it); `no-global-plans-grep` reports a plans folder or an `.apothem` folder
+  that is a link, by name; `no-toplevel-docs-grep` reports a root `docs` link;
+  and `naming-grep` checks a link's own name. Each report lists the links and
+  special files it left out under `skipped_links`, and a validator whose
+  folder is a link fails instead of passing as if the folder were not there
+  yet. The checks that run git read the `.git` folder through git itself.
 
 ## [1.5.0] - 2026-10-28
 

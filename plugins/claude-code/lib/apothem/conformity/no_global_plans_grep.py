@@ -181,7 +181,7 @@ def _git_ls_files(root: Path) -> list[str]:
 # Finding text for a plans location that is a link or a junction.
 _LINKED_PLANS_DETAIL: Final[str] = (
     "a plans location is a link: its plans tree lives wherever the link "
-    "leads, outside the project, and the gate does not follow links; the sole "
+    "leads, and the gate does not follow links; the sole "
     "canonical plans tree is a real folder at <root>/.apothem/plans inside "
     "the project per the suite-locality invariant — replace the link with a "
     "real folder there, or remove it"
@@ -190,7 +190,7 @@ _LINKED_PLANS_DETAIL: Final[str] = (
 # Finding text for an Apothem working folder (.apothem) that is a link.
 _LINKED_APOTHEM_DETAIL: Final[str] = (
     "the Apothem working folder, which holds the plans tree, is a link: what "
-    "it holds lives wherever the link leads, outside the project, and the "
+    "it holds lives wherever the link leads, and the "
     "gate does not follow links; the sole canonical plans tree is a real "
     "folder at <root>/.apothem/plans inside the project per the "
     "suite-locality invariant — replace the link with a real folder, or "
@@ -231,7 +231,7 @@ def _sweep_stray_plans_dirs(
     lists a tree outside the project. A link named ``.plans`` or ``.apothem``,
     and a ``plans`` link inside an ``.apothem`` folder, the canonical one
     included, is reported by name: its plans tree lives wherever the link
-    leads, which is outside the project's own folders. The canonical location
+    leads, not in the real folder the invariant names. The canonical location
     is compared by name, never resolved, so no link is followed to decide it.
     """
     findings: list[Finding] = []
