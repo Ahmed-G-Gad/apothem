@@ -928,7 +928,8 @@ def test_a_worker_that_cannot_send_a_refusal_says_why(
         ),
         f"writing {gone} failed: ": (
             {conftest._LATE_TO_THE_CONTROLLER: str(gone)},
-            "The run fails on it only when part of it reached that file.",
+            "The run fails on it only when part of it reached that file, or "
+            "when the file is left empty.",
         ),
     }
     for reason, (named, outcome) in reasons.items():
@@ -1149,6 +1150,53 @@ def test_a_write_ahead_that_fails_on_a_new_file_keeps_it(
         pluginmanager=SimpleNamespace(get_plugin=lambda name: None),
     )
     controller.stash[conftest._LATE_FILES] = {str(late): "gw0"}
+
+    conftest._take_late(controller)
+
+    held = controller.stash.get(conftest._HELD, [])
+    assert [where for where, _ in held] == ["in xdist worker gw0"]
+    assert "is empty" in held[0][1][0]
+
+
+def test_a_last_write_that_fails_on_a_new_file_says_the_run_fails(
+    request: pytest.FixtureRequest,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """A last write that leaves a new file empty fails the run, and says so.
+
+    No byte of the refusal reached the file, but the write created it, and
+    the controller holds the empty file as a refusal of its own.
+    """
+    conftest = _suite_conftest(request.config)
+    late = tmp_path / "gw0.jsonl"
+    worker = SimpleNamespace(
+        stash=pytest.Stash(),
+        workeroutput={},
+        workerinput={"workerid": "gw0", conftest._LATE_TO_THE_CONTROLLER: str(late)},
+        pluginmanager=SimpleNamespace(get_plugin=lambda name: None),
+    )
+    worker.stash[conftest._HANDED_OFF] = True
+    worker.stash[conftest._HELD] = [("after the session finished", ("a refusal",))]
+    opened = Path.open
+
+    def no_open(path: Path, *args: str, **kwargs: str) -> _NoWrites:
+        return _NoWrites(opened(path, *args, **kwargs))
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "open", no_open)
+        conftest._report_held(worker, None)
+
+    note = " ".join(capsys.readouterr().err.split())
+    assert note.endswith("or when the file is left empty."), note
+    assert late.read_bytes() == b""
+    controller = SimpleNamespace(
+        stash=pytest.Stash(),
+        pluginmanager=SimpleNamespace(get_plugin=lambda name: None),
+    )
+    controller.stash[conftest._LATE_FILES] = {str(late): "gw0"}
+    controller.stash[conftest._TAKEN] = {"gw0"}
 
     conftest._take_late(controller)
 

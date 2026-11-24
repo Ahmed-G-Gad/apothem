@@ -1821,8 +1821,8 @@ def _report_held(
     ``stderr``, with why it could not send them; one whose copy beside the
     hand-off fails writes why to ``stderr``. No try follows that write,
     so what part of it reached the file stays there, and the controller
-    fails the run on it; a later write starts on a line of its own after
-    it. The exit status of *session* becomes "tests failed" when it was
+    fails the run on it, as it does on a file the write left empty; a
+    later write starts on a line of its own after it. The exit status of *session* becomes "tests failed" when it was
     "OK" or "no tests collected", which some jobs accept as a pass.
     """
     held = config.stash.get(_HELD, [])
@@ -1870,7 +1870,8 @@ def _report_held(
         )
         named = getattr(config, "workerinput", {}).get(_LATE_TO_THE_CONTROLLER)
         outcome = (
-            "The run fails on it only when part of it reached that file."
+            "The run fails on it only when part of it reached that file, or "
+            "when the file is left empty."
             if named
             else "The run does not fail on it."
         )
@@ -1992,8 +1993,9 @@ def _sent_late(
     is cut off again, so the next try writes each report once; when that
     cut fails too, the controller may read a report twice. With *last_try*
     no try follows, so that part stays: the controller holds a line cut
-    off part way as a refusal of its own, and fails the run on it. A later
-    write starts on a new line after such a line. With no report it opens
+    off part way as a refusal of its own, and fails the run on it, as it
+    does on a file the write created and left empty. A later write starts
+    on a new line after such a line. With no report it opens
     no file: the worker creates its file only to write a refusal.
 
     With *copy* the reports are the copy written beside the hand-off, when
