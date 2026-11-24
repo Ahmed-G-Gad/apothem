@@ -98,10 +98,12 @@ with the same warning.
   warning.
 - **Your text next to Apothem's block stays.** When
   Apothem's block in a file has lost its END marker line, uninstall leaves the
-  file as it is and names it. {/* depends on #244 */} Install and update keep
-  your text after a BEGIN marker line that has no END, write a fresh block,
-  and print a warning that names the file. `apothem verify` fails until you
-  delete the stray BEGIN line.
+  file as it is and names it. Install and update keep your text after a
+  BEGIN marker line that has no END, write Apothem's block apart from it, and
+  print a warning that names the file and the marker's line. The warning gives
+  a numbered step that changes that line, and says not to add the END marker
+  back, because the file would then hold two Apothem blocks.
+  `apothem verify` fails until you change the line.
 - **Shared folders stay while another tool uses them.** Uninstalling a tool
   from one project no longer removes the shared memory, contexts and learning
   stores while the same tool in another project still uses them.
