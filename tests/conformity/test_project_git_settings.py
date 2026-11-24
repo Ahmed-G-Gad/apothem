@@ -1280,6 +1280,12 @@ _RUN_BOUNDED_CALLERS = {"gate.py": frozenset({"_run_standalone"})}
 _RUNNER_FLAGGED_NAMES: Final[frozenset[str]] = _PROGRAM_NAMES - {"run_bounded"}
 _RUNNER_SUBPROCESS_NAMES: Final[frozenset[str]] = _SUBPROCESS_ALLOWED | {"Popen"}
 _RUNNER_PROGRAM_MODULES: Final[frozenset[str]] = _PROGRAM_MODULES - {"ctypes"}
+# A string naming a shell, or the setting that names the Windows one: a
+# shell runs a command line, and an item such as "git log" names git there.
+_SHELL_PROGRAM: Final[re.Pattern[str]] = re.compile(
+    r"(?:^|[\\/])(?:cmd|sh|bash|pwsh|powershell)(?:\.exe)?$|^comspec$",
+    re.IGNORECASE,
+)
 
 
 def _runner_may_not_use(dotted: str) -> bool:
@@ -1302,12 +1308,19 @@ def _reaches_a_starter_indirectly(
     string. A call with ``shell`` set to anything but ``False`` runs a
     command line, which may name git, through the shell. A ``Popen`` call
     with ``*`` or ``**`` arguments, or more than eight in a row (``shell``
-    is the ninth), could set ``shell`` unseen.
+    is the ninth), could set ``shell`` unseen. ``getattr(sys, ...)`` and
+    ``vars(sys)`` reach ``sys.modules`` by a string too, and a subclass of
+    ``Popen`` hides its calls from the ``Popen`` rules.
     """
     if isinstance(node, ast.Name):
         return node.id == "__import__"
     if isinstance(node, ast.Attribute):
-        return node.attr == "__import__" or resolve(node) == "sys.modules"
+        return node.attr == "__import__" or resolve(node) in {
+            "sys.modules",
+            "sys.__dict__",
+        }
+    if isinstance(node, ast.ClassDef):
+        return any(resolve(base).rpartition(".")[2] == "Popen" for base in node.bases)
     if isinstance(node, ast.ImportFrom):
         wanted = {"sys": "modules", "builtins": "__import__"}.get(node.module or "")
         return wanted is not None and any(
@@ -1315,6 +1328,13 @@ def _reaches_a_starter_indirectly(
         )
     if not isinstance(node, ast.Call):
         return False
+    if (
+        isinstance(node.func, ast.Name)
+        and node.func.id in {"getattr", "vars"}
+        and node.args
+        and resolve(node.args[0]) == "sys"
+    ):
+        return True
     if any(
         keyword.arg == "shell"
         and not (
@@ -1391,7 +1411,10 @@ def _names_git_or_finds_programs(source: str) -> list[int]:
                 _root(alias.name) in _RUNNER_PROGRAM_MODULES for alias in node.names
             )
         else:
-            flagged = text is not None and bool(_GIT_PROGRAM.search(text.strip()))
+            flagged = text is not None and any(
+                pattern.search(text.strip())
+                for pattern in (_GIT_PROGRAM, _SHELL_PROGRAM)
+            )
         if flagged or _reaches_a_starter_indirectly(node, resolve):
             lines.add(node.lineno)  # type: ignore[attr-defined]
     return sorted(lines)
@@ -1590,6 +1613,24 @@ def test_the_runner_may_start_programs_but_never_names_git() -> None:
         "shell as the ninth argument": (
             "from subprocess import Popen\n"
             "Popen(line, -1, None, None, None, None, None, True, True)\n"
+        ),
+        "Popen subclass": (
+            "import subprocess\n"
+            "class P(subprocess.Popen):\n"
+            "    pass\n"
+            'P("git log", -1, None, None, None, None, None, True, True)\n'
+        ),
+        "getattr(sys, ...)": (
+            'import sys\ngetattr(sys, "modules")["os"].system("ls")\n'
+        ),
+        "vars(sys)": 'import sys\nvars(sys)["modules"]["os"].system("ls")\n',
+        "sys.__dict__": 'import sys\nsys.__dict__["modules"]["os"]\n',
+        "ComSpec": (
+            "import os, subprocess\n"
+            'subprocess.Popen([os.environ["ComSpec"], "/c", "git log"])\n'
+        ),
+        "a named shell": (
+            'import subprocess\nsubprocess.Popen(["cmd.exe", "/c", "git log"])\n'
         ),
     }
     for name, source in others.items():
@@ -2683,6 +2724,11 @@ _WINDOWS_NAME_FORMS = [
     pytest.param("con.x", b"con.x", False, id="another device name"),
     pytest.param("conin$", b"conin$", False, id="console input name"),
     pytest.param("conout$.d", b"CONOUT$.d", False, id="console output name"),
+    # Git for Windows refuses lpt before any digit, 0 too, but com only
+    # before 1 to 9, so com0 stays a repository.
+    pytest.param("lpt0", b"lpt0", False, id="printer name with 0"),
+    pytest.param("LPT0.d", b"LPT0.d", False, id="printer name with 0, dot"),
+    pytest.param("com0", b"com0", True, id="serial name with 0"),
 ]
 
 

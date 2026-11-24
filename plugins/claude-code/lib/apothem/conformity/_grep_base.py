@@ -395,11 +395,12 @@ _DRIVE_PREFIX: Final[re.Pattern[str]] = re.compile(r"[A-Za-z]:")
 # redirection characters, and the control characters.
 _REFUSED_WIN32_CHARACTERS: Final[re.Pattern[str]] = re.compile(r'[:<>"|?*\x01-\x1f]')
 # Device names Git for Windows refuses as a path name, in any case, alone or
-# before spaces, a dot, a colon or a separator.
+# before spaces, a dot, a colon or a separator. Git for Windows refuses
+# ``lpt`` before any digit, ``lpt0`` too, but ``com`` only before 1 to 9.
 _RESERVED_WIN32_NAMES: Final[frozenset[str]] = frozenset(
     {"aux", "con", "conin$", "conout$", "nul", "prn"}
     | {f"com{digit}" for digit in range(1, 10)}
-    | {f"lpt{digit}" for digit in range(1, 10)}
+    | {f"lpt{digit}" for digit in range(0, 10)}
 )
 
 
@@ -413,7 +414,7 @@ def _refused_by_git_for_windows(text: str) -> bool:
     of ``../repo/.git.`` or ``../repo/.git::$INDEX_ALLOCATION`` finds the
     repository git refuses. It also refuses a reserved device name (``aux``,
     ``con``, ``conin$``, ``conout$``, ``nul``, ``prn``, ``com1`` to ``com9``,
-    ``lpt1`` to ``lpt9``) in any case, alone or before a dot, such as
+    ``lpt0`` to ``lpt9``) in any case, alone or before a dot, such as
     ``aux.d``, which newer Windows opens as an ordinary folder. On POSIX git
     takes every such name as written, so nothing is refused.
     """
