@@ -297,11 +297,13 @@ in the file (a line of yours, or what is left of an older block that lost its
 END marker), the update names the file and the marker's line, with a
 numbered step that changes that line so it no longer reads as a marker;
 `apothem verify` fails until you change it. Any old Apothem text below it is
-then yours to keep or delete. If such a file holds two different blocks between Apothem's markers,
-the update leaves it as it is and names each block by its lines, or Apothem's
-block and the marker lines around it. Follow one of the warning's numbered
-fixes, which change the marker lines of each block that is not Apothem's. The
-next install, update or uninstall then takes Apothem's block out. If Apothem cannot tell its block in that
+then yours to delete by hand. If such a file holds two different blocks
+between Apothem's markers, the update leaves it as it is and names each block
+by its lines, or Apothem's block and the marker lines around it. Follow one of
+the warning's numbered fixes, which change BEGIN marker lines in place: with
+Apothem's block kept, the next install, update or uninstall then takes it out,
+and with every BEGIN marker line changed, Apothem finds no block of its own
+there. If Apothem cannot tell its block in that
 file from your text (the block sits inside a code block of yours, say), the
 update leaves the file as it is too, and its warning names each marker pair
 with how to fix it; once you fix it, the next install, update or uninstall

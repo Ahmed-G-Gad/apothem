@@ -69,7 +69,7 @@ the `✓` line it prints a `✗` line on standard error that names the file, the
 carries `"detail": {"left_as_is": "1"}`, and the exit code is `2`. Every
 update ends that way until you fix the marker lines the warning names; a
 marker example of yours in a code block holds such a file back too, until you
-change its two marker lines. Without `--quiet`, such an update with
+change its BEGIN marker line. Without `--quiet`, such an update with
 `--harness all` ends with a summary line that starts with `!` in place of `✓`
 and counts the files left as they are:
 `! Updated <n> harnesses (<m> files written); <k> file(s) left as they are, named above.`
