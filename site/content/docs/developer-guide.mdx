@@ -740,25 +740,26 @@ test while pytest collects a node fails that node's collection. Any other one
 logged outside any test, at the session start, between two collect reports,
 after collection, between two tests, after the last test, in the summary or in
 `pytest_unconfigure`, is reported when the session finishes, named for where
-it happened, and fails the run, also when a session-finish hook then ends the
-run with `pytest.exit(returncode=0)`, or with `sys.exit(0)` after the refusal
-was reported, and also when a parallel worker (`-n`) logs it, before or after
-it handed its refusals to the main process. A worker writes each refusal, as
-soon as it holds it, to a file the main process reads, so one it held before
-it crashed or was stopped short of that hand-off, or before a session-finish
-hook stopped it there, still fails the run. Three cases still show only on
-`stderr` and leave the exit code as it is: one logged after the `yield` of a
-`tryfirst` `pytest_unconfigure` wrapper that pytest registered after the
-guard, one logged in a cleanup registered with `config.add_cleanup`, and one a
-worker logs but neither hands over nor writes to that file, because the worker
-ended or was stopped first (a session-finish hook logged it and then crashed
-the worker, say) or because that file could not be made or written. At the end
-of the run the main process tells each worker to exit; a worker still running
-Python code 5 seconds later is interrupted (on Windows, not one blocked in a
-sleep or another call), and any worker still running after 10 seconds is
-stopped. The log is kept per process: a refusal that a child Apothem process
-absorbs shows only as a line on the child's `stderr`, and the test is not
-failed for it.
+it happened, and fails the run, also when a hook then ends the run with
+`pytest.exit(returncode=0)` or `sys.exit(0)` (but not a `sys.exit(0)` that
+ends the session finish when the only refusal comes in `pytest_unconfigure`
+after it), and also when a parallel worker (`-n`) logs it, before or after it
+handed its refusals to the main process. A worker writes each refusal, as soon
+as it holds it, to a file the main process reads, so one it held before it
+crashed or was stopped short of that hand-off, or before a session-finish hook
+stopped it there, still fails the run. Three cases still show only on `stderr`
+and leave the exit code as it is: one logged after the `yield` of a `tryfirst`
+`pytest_unconfigure` wrapper that pytest registered after the guard, one
+logged in a cleanup registered with `config.add_cleanup` (each unless a
+passing `sys.exit` then ends the run), and one a worker logs but neither hands
+over nor writes to that file, because the worker ended or was stopped first (a
+session-finish hook logged it and then crashed the worker, say) or because
+that file could not be made or written. At the end of the run the main process
+tells each worker to exit; a worker still running Python code 5 seconds later
+is interrupted (on Windows, not one blocked in a sleep or another call), and
+any worker still running after 10 seconds is stopped. The log is kept per
+process: a refusal that a child Apothem process absorbs shows only as a line
+on the child's `stderr`, and the test is not failed for it.
 
 The home is the one the operating system records for the account, not `HOME`
 or `USERPROFILE`. Reads, dry runs and previews still work; the one status

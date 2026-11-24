@@ -59,32 +59,35 @@ a teardown report), in a ``pytest_sessionfinish`` hook (also one that then
 calls ``pytest.exit(returncode=0)``, as a ``pytest_configure`` hook does before
 any session starts, and one that calls ``sys.exit(0)``, with and without xdist,
 or ``sys.exit(5)``, as a ``pytest_terminal_summary`` hook does with a bare
-``sys.exit()``, as a ``pytest_unconfigure`` hook does too, whose probe sessions
-run in a child process) or after a session-finish wrapper yields, in
-``pytest_terminal_summary``, in ``pytest_unconfigure`` (with ``-p no:xdist``),
-and under xdist (``-n 2``) at the session start and in a worker's session
-finish (reported once, and also when a controller hook ended its test loop with
-``pytest.exit`` before it took the worker's output), also in a ``trylast`` hook
-of a conftest that pytest finds during collection, and after a worker handed
-its refusals to the controller: in its ``pytest_terminal_summary``, in its
-``pytest_unconfigure`` and after its own ``tryfirst`` session-finish wrapper
-yields, which the worker writes to a file the controller reads and removes,
-also once a controller hook ended the run with ``pytest.exit`` before xdist
-ended the workers (a later run with the same ``--basetemp`` and no refusal
-passes and reads none of the files an earlier run left in its folder, and no
-such file is made in a protected folder), a worker whose session ends at its
-start, which handed nothing over, is not named as if it had, a worker that ends
-with ``os._exit(0)`` in its session finish, before it hands anything over,
-still fails the run with what it absorbed between two tests and after its last
-test (a worker that hands the same over has each reported once), and so does
-one whose session-finish wrapper raises or calls ``pytest.exit`` before its
-``yield``, which leaves the guard's hand-off out of its output, and an empty
-file a worker left, a line it cut short and a file the controller cannot read
-each fail the run; a worker that stops on Ctrl-C has its refusal reported once,
-and one the controller absorbs while its workers run the tests is named for the
-run. Each names where the refusal happened. A session that absorbs nothing
-exits 0, with and without xdist. The guard refuses before any write, so nothing
-lands in a home.
+``sys.exit()``, as a ``pytest_unconfigure`` hook does too, and so does a
+``sys.exit(0)`` after the guard's other hooks: in a ``tryfirst`` session-finish
+or unconfigure wrapper pytest registered after the guard, in a cleanup, and in
+an xdist controller's session-finish hook before it read its workers' files;
+these probe sessions run in a child process) or after a session-finish wrapper
+yields, in ``pytest_terminal_summary``, in ``pytest_unconfigure`` (with ``-p
+no:xdist``), and under xdist (``-n 2``) at the session start and in a worker's
+session finish (reported once, and also when a controller hook ended its test
+loop with ``pytest.exit`` before it took the worker's output), also in a
+``trylast`` hook of a conftest that pytest finds during collection, and after a
+worker handed its refusals to the controller: in its
+``pytest_terminal_summary``, in its ``pytest_unconfigure`` and after its own
+``tryfirst`` session-finish wrapper yields, which the worker writes to a file
+the controller reads and removes, also once a controller hook ended the run
+with ``pytest.exit`` before xdist ended the workers (a later run with the same
+``--basetemp`` and no refusal passes and reads none of the files an earlier run
+left in its folder, and no such file is made in a protected folder), a worker
+whose session ends at its start, which handed nothing over, is not named as if
+it had, a worker that ends with ``os._exit(0)`` in its session finish, before
+it hands anything over, still fails the run with what it absorbed between two
+tests and after its last test (a worker that hands the same over has each
+reported once), and so does one whose session-finish wrapper raises or calls
+``pytest.exit`` before its ``yield``, which leaves the guard's hand-off out of
+its output, and an empty file a worker left, a line it cut short and a file the
+controller cannot read each fail the run; a worker that stops on Ctrl-C has its
+refusal reported once, and one the controller absorbs while its workers run the
+tests is named for the run. Each names where the refusal happened. A session
+that absorbs nothing exits 0, with and without xdist. The guard refuses before
+any write, so nothing lands in a home.
 """
 
 from __future__ import annotations
@@ -694,6 +697,9 @@ def test_the_session_hooks_read_the_log_after_what_they_follow(
     (summary,) = [i for i in calls if i.plugin is reporter]
     assert summary.wrapper, "the summary is written after its yield"
     assert calls.index(after_the_summary) < calls.index(summary)
+    (main,) = guard_impls("pytest_cmdline_main")
+    assert main.wrapper
+    assert main.tryfirst, "it has to see an exit after the guard's other wrappers"
     (worker_down,) = guard_impls("pytest_testnodedown")
     assert worker_down.optionalhook, "only xdist defines the hook"
     (worker_up,) = guard_impls("pytest_configure_node")
@@ -1877,6 +1883,117 @@ def case_sys_exit_with_code_0_after_a_refusal_still_fails_the_run(
     for hook in (_ABSORBED_BEFORE_SYS_EXIT, _ABSORBED_BEFORE_SYS_EXIT_AT_UNCONFIGURE):
         kept = _run_absorbing_in_a_child(pytester, fake_real_home, hook.format(code=3))
         assert kept.ret == 3, kept.stdout.str()
+    assert not (fake_real_home / ".apothem").exists()
+
+
+#: A plain session-finish hook that absorbs the refusal, and a ``tryfirst``
+#: session-finish wrapper that pytest registers after the guard, so that it
+#: finishes after the guard's own wrappers: it ends the run with
+#: ``sys.exit`` and the code ``{code}`` after its ``yield``.
+_EXITS_AFTER_THE_GUARDS_SESSION_FINISH_WRAPPERS = """
+
+@pytest.hookimpl(specname="pytest_sessionfinish")
+def pytest_sessionfinish_absorbs(session):
+    _absorb()
+
+
+@pytest.hookimpl(wrapper=True, tryfirst=True)
+def pytest_sessionfinish(session):
+    try:
+        return (yield)
+    finally:
+        sys.exit({code})
+"""
+
+#: A ``tryfirst`` unconfigure wrapper that pytest registers after the guard,
+#: so that it finishes after the guard's own: after its ``yield`` it absorbs
+#: the refusal and ends the run with ``sys.exit`` and the code ``{code}``.
+_EXITS_AFTER_THE_GUARDS_UNCONFIGURE_WRAPPER = """
+
+@pytest.hookimpl(wrapper=True, tryfirst=True)
+def pytest_unconfigure(config):
+    try:
+        return (yield)
+    finally:
+        _absorb()
+        sys.exit({code})
+"""
+
+#: A cleanup registered with ``config.add_cleanup``, which pytest runs after
+#: every ``pytest_unconfigure`` hook: it absorbs the refusal and ends the run
+#: with ``sys.exit`` and the code ``{code}``.
+_EXITS_IN_A_CLEANUP = """
+
+def _absorb_and_exit():
+    _absorb()
+    sys.exit({code})
+
+
+def pytest_configure(config):
+    config.add_cleanup(_absorb_and_exit)
+"""
+
+#: In the xdist controller only, a plain session-finish hook that ends the
+#: run with ``sys.exit(0)`` before the controller has read the files its
+#: workers wrote.
+_THE_CONTROLLER_EXITS_AT_ITS_SESSION_FINISH = """
+
+def pytest_sessionfinish(session):
+    if not hasattr(session.config, "workerinput"):
+        sys.exit(0)
+"""
+
+
+def case_sys_exit_after_the_guards_other_hooks_still_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """The guard's ``pytest_cmdline_main`` wrapper sees the exit last.
+
+    pytest runs the session-finish and unconfigure hooks, and the cleanups,
+    inside ``pytest_cmdline_main``. A ``tryfirst`` wrapper of either hook
+    that pytest registers after the guard finishes after the guard's own,
+    and a cleanup runs after every unconfigure hook, so a ``sys.exit(0)``
+    there passed the run; so did one in an xdist controller's plain
+    session-finish hook, before it read what its workers found after they
+    handed their refusals over. Any other code stays.
+    """
+    late = f"{_AFTER_THE_HAND_OFF}, after the last test"
+    after = "outside any test, after the session finished, and the refusal"
+    found = {}
+    for label, hook, args, named in (
+        (
+            "a later tryfirst session-finish wrapper",
+            _EXITS_AFTER_THE_GUARDS_SESSION_FINISH_WRAPPERS.format(code=0),
+            (),
+            ("outside any test, after the last test, and the refusal",),
+        ),
+        (
+            "a later tryfirst unconfigure wrapper",
+            _EXITS_AFTER_THE_GUARDS_UNCONFIGURE_WRAPPER.format(code=0),
+            (),
+            (after,),
+        ),
+        ("a cleanup", _EXITS_IN_A_CLEANUP.format(code=0), (), (after,)),
+        (
+            "the xdist controller",
+            _ABSORBED_IN_A_WORKERS_TERMINAL_SUMMARY
+            + _THE_CONTROLLER_EXITS_AT_ITS_SESSION_FINISH,
+            ("-n", "2"),
+            (f"in xdist worker gw0, {late}", f"in xdist worker gw1, {late}"),
+        ),
+    ):
+        result = _run_absorbing_in_a_child(pytester, fake_real_home, hook, *args)
+
+        output = " ".join(result.stdout.str().split())
+        found[label] = (result.ret, [output.count(each) for each in named])
+    failed = pytest.ExitCode.TESTS_FAILED
+    assert {label: (failed, [1] * len(seen)) for label, (_, seen) in found.items()} == (
+        found
+    )
+    kept = _run_absorbing_in_a_child(
+        pytester, fake_real_home, _EXITS_IN_A_CLEANUP.format(code=3)
+    )
+    assert kept.ret == 3, kept.stdout.str()
     assert not (fake_real_home / ".apothem").exists()
 
 
