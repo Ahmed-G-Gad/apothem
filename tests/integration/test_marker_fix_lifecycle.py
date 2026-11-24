@@ -7,13 +7,15 @@ Apothem keeps its block in so Apothem cannot place its marker lines (its
 block inside a code block of yours, with an example or only text below; a
 BEGIN marker that lost its END above it; an older block whose END marker a
 rule hid in code, with a marker example of yours below it). The update is
-partial (exit code 2) and its warning prints numbered fixes. Each fix is
-then followed on its own, step by step in the order printed, each line
-number taken as it stands; after it the update exits 0, verify exits 0, the
-file holds one Apothem BEGIN marker, and every line of yours outside the
-lines the fix calls Apothem's block is still there and reads as before in a
-CommonMark viewer (markdown-it). The uninstall's first fix is followed the
-same way, and the uninstall run again then finishes and leaves no marker.
+partial (exit code 2) and its warning prints numbered fixes, each of which
+changes BEGIN marker lines in place. Each fix is then followed on its own,
+step by step in the order printed; after it the update exits 0, verify
+exits 0, the file holds one Apothem BEGIN marker, and every line of yours
+outside the lines the fix calls Apothem's block is still there and reads as
+before in a CommonMark viewer (markdown-it). The uninstall's first fix is
+followed the same way, and the uninstall run again then finishes and leaves
+no BEGIN marker; the old Apothem text, END marker lines included, is yours
+to delete by hand.
 """
 
 from __future__ import annotations
@@ -71,7 +73,7 @@ def _sEb(block: str) -> str:
 
 
 SHAPES = {"sA2": _sA2, "plain": _plain, "sF": _sF, "sE-b": _sEb}
-FIXES = {"sA2": "AB", "plain": "AB", "sF": "AB", "sE-b": "ABC"}
+FIXES = {"sA2": "A", "plain": "A", "sF": "A", "sE-b": "AB"}
 
 
 def _reshape(anchor: Path, shape: str) -> list[str]:
@@ -96,8 +98,7 @@ def _message(payload: dict[str, Any], anchor: Path) -> str:
     [message] = [
         str(warning["message"])
         for warning in payload["warnings"]
-        if Path(str(warning["path"])) == anchor
-        and "Fix A, if " in str(warning["message"])
+        if Path(str(warning["path"])) == anchor and "Fix A" in str(warning["message"])
     ]
     return message
 
@@ -110,10 +111,11 @@ def _apply(anchor: Path, lines: list[str], message: str, letter: str) -> set[int
     [(label, fix)] = [
         (label, fix)
         for label, fix in _fixes(message)
-        if fix.startswith(f"Fix {letter},")
+        if re.match(rf"Fix {letter}[,:]", fix)
     ]
-    texts, _, named = _follow(lines, fix)
+    texts = _follow(lines, fix)
     anchor.write_bytes("".join(f"{line}\n" for line in texts).encode("utf-8"))
+    named = {int(number) - 1 for number in re.findall(r"Change line (\d+):", fix)}
     claim = re.search(r"lines (\d+) to (\d+) are Apothem's block", label)
     if claim:
         named |= set(range(int(claim[1]) - 1, int(claim[2])))
@@ -177,7 +179,7 @@ def test_following_the_uninstall_fix_lets_the_uninstall_finish(
 
     assert again == 0, again_output
     now = _lines(anchor)
-    assert not [line for line in now if line.strip() in {B, E}], now
+    assert not [line for line in now if line.strip() == B], now
     before = _roles("".join(f"{line}\n" for line in lines))
     after = _roles("".join(f"{line}\n" for line in now))
     mine = [

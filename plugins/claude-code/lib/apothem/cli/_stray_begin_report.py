@@ -39,6 +39,7 @@ from apothem.harnesses._shared.install_driver_blocktext import (
 from apothem.harnesses._shared.install_driver_evidence import listed_in_record
 from apothem.lib.harness_materializer import (
     lone_begins,
+    stray_begins,
     uncertain_pairs,
     whole_blocks,
 )
@@ -101,8 +102,8 @@ def record_lists(
     return partial(listed_in_record, entry.package_key, root)
 
 
-def _named(path: Path, listed: Callable[[Path], bool]) -> str | None:
-    """Return the text for *path* when it holds more than a lone BEGIN marker.
+def _named(path: Path, text: str, listed: bool) -> str | None:
+    """Return the text for *path* when its *text* holds more than a lone BEGIN marker.
 
     *listed* says whether an install record lists *path* (see
     :func:`record_lists`): only then, or for a pair that holds exactly the
@@ -110,29 +111,35 @@ def _named(path: Path, listed: Callable[[Path], bool]) -> str | None:
     with marker pairs in code as it is, so only then does its text say they
     do.
     """
-    text = text_at(path)
     blocks = whole_blocks(text)
     if len(blocks) > 1:
         return two_blocks_report(path, text, blocks, left=False)
     pairs = uncertain_pairs(text)
     if pairs:
         return unclear_block_report(
-            path, text, pairs, left=False, lone=lone_begins(text), held=listed(path)
+            path,
+            text,
+            pairs,
+            left=False,
+            lone=lone_begins(text),
+            held=listed,
         )
     return None
 
 
 def stray_begin_note(
-    files: Sequence[Path], *, then: str, listed: Callable[[Path], bool] = _unlisted
+    files: Sequence[Path],
+    *,
+    then: str,
+    listed: Callable[[Path], bool] = _unlisted,
 ) -> str:
     """Return one line that names each of *files* and says how to clear its marker.
 
     A file with a BEGIN marker that starts no whole block gets its own text:
     the marker by its line, and a numbered step that changes that line (see
-    :func:`stray_fix_text`), checked on a copy of the file. The old Apothem
-    text below the marker is the operator's to keep or delete: an install or
-    update writes a whole block of its own apart from the marker, so that
-    text only repeats Apothem's rules. The text says not to add the END
+    :func:`stray_fix_text`). The old Apothem text below the marker is the
+    operator's to delete: an install or update writes a whole block of its
+    own apart from the marker, so that text only repeats Apothem's rules. The text says not to add the END
     marker back instead (see :func:`not_back_text`): once an install or
     update has written Apothem's block apart from the marker, the file would
     then hold two Apothem blocks, and before that, with a line of the
@@ -149,16 +156,17 @@ def stray_begin_note(
     """
     parts: list[str] = []
     for path in files:
-        named = _named(path, listed)
+        text = text_at(path)
+        named = _named(path, text, listed(path))
         if named is not None:
             parts.append(named)
             continue
-        text = text_at(path)
+        strays, blocks = stray_begins(text), whole_blocks(text)
         parts.extend(
             [
-                f"{path} has {stray_subject(text)} with no END marker.",
-                stray_fix_text(text),
-                not_back_text(text),
+                f"{path} has {stray_subject(text, strays=strays)} with no END marker.",
+                stray_fix_text(text, strays=strays, blocks=blocks),
+                not_back_text(text, blocks=blocks),
             ]
         )
-    return " ".join([*parts, f"Then {then}"])
+    return " ".join([*(part for part in parts if part), f"Then {then}"])

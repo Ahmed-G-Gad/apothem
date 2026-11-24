@@ -417,17 +417,20 @@ def _follow(anchor: Path, message: str) -> None:
     Apothem's block is the last marker pair the text names, so follow the
     numbered fix for the case that it is Apothem's block, step by step in the
     order printed: it changes each BEGIN marker of yours and each that starts
-    no pair.
+    no pair. When that pair gets no fix of its own (an older block whose END
+    marker a rule hid in code), follow the last fix, which changes every
+    BEGIN marker line.
     """
+    found = _fixes(message)
     fixes = [
         (int(claim[1]), fix)
-        for label, fix in _fixes(message)
-        if (claim := re.fullmatch(r"lines (\d+) to \d+ are Apothem's block", label))
+        for label, fix in found
+        if (claim := re.fullmatch(r"if lines (\d+) to \d+ are Apothem's block", label))
     ]
-    _, fix = max(fixes)
+    _, fix = max(fixes) if fixes else (0, found[-1][1])
     text = anchor.read_bytes().decode("utf-8")
     lines = text.split("\n")[:-1] if text.endswith("\n") else text.split("\n")
-    kept, _, _ = _follow_fix(lines, fix)
+    kept = _follow_fix(lines, fix)
     anchor.write_bytes("".join(f"{line}\n" for line in kept).encode("utf-8"))
 
 
@@ -512,8 +515,11 @@ def test_following_the_text_when_a_rule_leaves_a_code_block_open_keeps_your_line
 
     The block is one an earlier release wrote: this release closes the code
     block the rule opens before the END marker (markers-4), so here that
-    closer is taken out again. The install text's fix for that pair changes
-    your BEGIN marker at line 1 as well, and so does the uninstall's.
+    closer is taken out again. No fix keeps that pair: the line of yours that
+    closes its code block would open one once the next update replaced it.
+    The install text's last fix changes your BEGIN marker at line 1 with
+    every other one, and so does the uninstall's, which closes the code
+    block the file then ends in below its last line.
     """
     box = sandbox_factory("codex")
     profile = _profile_with(tmp_path, [_OPEN_RULE])

@@ -5,10 +5,9 @@
 Every warning for such a marker (install and update, verify and doctor, the
 uninstall's) names the marker's line and gives a numbered step that changes
 it: a word added inside its comment, so it no longer reads as a marker. The
-step is printed through the same renderer as the other marker fixes and
-checked on a copy of the file before it prints; when the check fails, the
-warning gives the fallback, which numbers no edit. Deleting a marker line
-changed how a line of the operator's read; changing it in place does not.
+step is printed through the same renderer as the other marker fixes.
+Deleting a marker line changed how a line of the operator's read; changing
+it in place does not.
 """
 
 from __future__ import annotations
@@ -26,8 +25,7 @@ from apothem.cli._cmd_uninstall import _FIX_STRAY
 from apothem.cli._stray_begin_report import stray_begin_note
 from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared import install_driver_blocks as blocks
-from apothem.harnesses._shared import install_driver_steps as steps
-from apothem.harnesses._shared.install_driver_steps import FALLBACK, INTRO
+from apothem.harnesses._shared.install_driver_steps import INTRO
 from apothem.lib.harness_materializer import (
     APOTHEM_BLOCK_BEGIN,
     APOTHEM_BLOCK_END,
@@ -56,6 +54,12 @@ E = APOTHEM_BLOCK_END
 #: A BEGIN marker at line 2 that lost its END marker, then Apothem's block at
 #: lines 6 to 8.
 _STRAY_ABOVE = f"# top\n{B}\nold rules\nmy own line\n\n{B}\nnew rules\n{E}\n"
+
+#: What a fix that leaves no block says the next update does.
+_AT_END = (
+    "Apothem then reads none of these lines as its markers, and the next update "
+    "writes its block at the end of the file."
+)
 
 _DELETE = re.compile(r"\b[Dd]elete (?:that|the) (?:marker )?line\b")
 
@@ -108,7 +112,7 @@ def test_a_preview_with_no_block_yet_changes_the_marker_line(tmp_path: Path) -> 
     )
 
     assert "Change line 2: add a word inside its comment." in warning.message
-    assert "The next update then adds Apothem's block to the file." in warning.message
+    assert _AT_END in warning.message
     assert not _DELETE.search(warning.message), warning.message
     assert _holds(text, warning.message) == 1
 
@@ -156,7 +160,7 @@ def test_the_endless_block_warning_changes_the_marker_line(tmp_path: Path) -> No
     assert warning is not None
     assert "BEGIN marker at line 3" in warning.message
     assert "Change line 3: add a word inside its comment." in warning.message
-    assert "No Apothem block is then left in this file." in warning.message
+    assert "Apothem then finds no block of its own in this file." in warning.message
     assert not _DELETE.search(warning.message), warning.message
     assert _holds(text, warning.message) == 1
 
@@ -187,26 +191,12 @@ def test_the_uninstall_summary_points_at_the_numbered_step() -> None:
     assert "numbered step" in text
 
 
-def test_a_fix_the_check_refuses_gives_the_fallback(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    target = tmp_path / "AGENTS.md"
-    target.write_text(_STRAY_ABOVE, encoding="utf-8")
-    monkeypatch.setattr(steps, "passes", lambda *_args, **_kwargs: False)
-
-    [warning] = blocks.stray_begin_install_warnings([_merged(target)])
-    note = stray_begin_note([target], then="run apothem update")
-
-    for message in (warning.message, note):
-        assert "Change line" not in message
-        assert FALLBACK.split(".")[0] in message
-        assert not _DELETE.search(message), message
-
-
 #: A backtick code block no line closes, then a stray BEGIN marker at line 2
 #: and a whole block at lines 3 to 5 whose END marker sits in a tilde code
-#: block. Changing every marker line leaves line 1's code block open, so a
-#: rule with a backtick code block would close it in the next update.
+#: block. The layout shows nothing of how that block reads once line 2
+#: changes, so the fix changes every marker line; that leaves line 1's code
+#: block open, which a rule with a backtick code block would close in the
+#: next update, so the fix closes it below the last line.
 _OPEN_FENCE = f"```\n{B}\n{B}\n~~~\n{E}\n~~~\n"
 
 #: Rules the next update may write: plain, and one with a closed code block.
@@ -223,12 +213,11 @@ def test_a_file_that_ends_in_an_open_code_block_gets_a_checked_fix(
     note = stray_begin_note([target], then="run apothem update")
 
     for message in (warning.message, note):
-        assert FALLBACK.split(".")[0] not in message, message
         [(label, fix)] = _fixes(message)
-        assert label == "lines 3 to 5 are text of yours", message
-        assert "Below line 6, add a line of 3 backticks." in fix
-        assert "The next update then adds Apothem's block to the file." in fix
-        texts, _tags, _named = _follow(_lines(_OPEN_FENCE), fix)
+        assert not label, message
+        assert "A1. Below line 6, add a line of 3 backticks." in fix
+        assert _AT_END in fix
+        texts = _follow(_lines(_OPEN_FENCE), fix)
         fixed = "".join(f"{line}\n" for line in texts)
         assert not whole_blocks(fixed)
         assert not has_stray_begin(fixed)
@@ -289,7 +278,7 @@ def test_following_the_printed_step_ends_with_one_block_and_verify_passing(
     assert has_stray_begin(after_first)
     [(_, fix)] = _fixes(message)
     assert re.search(r"Change line \d+: add a word inside its comment\.", fix)
-    fixed, _, _ = _follow(_lines(after_first), fix)
+    fixed = _follow(_lines(after_first), fix)
     anchor.write_bytes("".join(f"{line}\n" for line in fixed).encode())
 
     again, again_payload = _update(box)

@@ -35,7 +35,6 @@ EXPECTED_MODULES = {
     "install_driver_blocks",
     "install_driver_blocktext",
     "install_driver_steps",
-    "install_driver_stepcheck",
     "install_driver_outcome",
     "install_driver_evidence",
     "install_driver_expected",

@@ -11,13 +11,13 @@ that shows only once Apothem's is out, by its two marker lines); and one
 with a BEGIN marker that starts no whole block, which each caller names by
 its line (see :func:`stray_fix_text`). Another text,
 :func:`unlisted_block_report`, is for the one whole block an uninstall with
-no install record leaves. Each then
-gives its fixes as numbered steps, one list for each case (this pair is
-Apothem's block, or that one, or none is), each checked on a copy of the file
-before it is printed (see :mod:`install_driver_steps`); a case whose steps
-fail that check is left out, and with no case left the text gives
-:data:`install_driver_steps.FALLBACK`, which numbers no edit. Everything here
-builds text from the file's text and reads nothing.
+no install record leaves. Each then gives its fixes as numbered steps that
+change BEGIN marker lines in place (see :mod:`install_driver_steps`): one
+fix for each case whose block the layout of the file shows then reads whole
+(this pair or block is Apothem's), and one that changes every BEGIN marker
+line, so Apothem finds no block of its own. Old Apothem text below a changed
+line, with its END marker line, is the operator's to delete by hand.
+Everything here builds text from the file's text and reads nothing.
 """
 
 from __future__ import annotations
@@ -35,50 +35,56 @@ from apothem.lib.harness_materializer import (
 )
 
 from .install_driver_steps import (
-    FALLBACK,
     Fix,
     block_fixes,
-    delete_fixes,
     render_fixes,
     stray_fixes,
     unclear_fixes,
+    unlisted_fixes,
 )
 
 #: The outcome of an install or update (see :func:`unclear_block_report`): the
-#: next update replaces Apothem's block once a fix makes it whole.
+#: next update replaces Apothem's block once a fix makes it the one whole
+#: block, or writes it at the end of a file that then holds none.
 REPLACES = "the next update then replaces {lines}"
 
 #: The same for a rules file an install or update takes Apothem's block out of.
 TAKES_OUT = "the next install, update or uninstall then takes {lines} out"
 
+#: What a fix that leaves no block says the next run then does: Apothem reads
+#: none of the lines it changed as its markers.
+_NONE_LEFT = "Apothem then finds no block of its own in this file"
+_AT_END = (
+    "Apothem then reads none of these lines as its markers, and the next update "
+    "writes its block at the end of the file"
+)
+
 #: What the next run does after a fix, by outcome (``None``: an uninstall),
 #: when the file then holds Apothem's block and when it holds none.
 _PROMISES: dict[str | None, tuple[str, str]] = {
-    REPLACES: (
-        "The next update then replaces Apothem's block",
-        "The next update then adds Apothem's block to the file",
-    ),
+    REPLACES: ("The next update then replaces Apothem's block", _AT_END),
     TAKES_OUT: (
         "The next install, update or uninstall then takes Apothem's block out",
-        "No Apothem block is then left in this file",
+        _NONE_LEFT,
     ),
-    None: (
-        "The uninstall run again then takes Apothem's block out",
-        "The uninstall run again then finds no Apothem block in this file",
-    ),
+    None: ("The uninstall run again then takes Apothem's block out", _NONE_LEFT),
 }
 
-#: What a fix says about the old Apothem text below a BEGIN marker it changes.
-_OLD_TEXT = (
-    "Any old Apothem text below a BEGIN marker line you change is then yours "
-    "to keep or delete."
+#: The outcomes whose next run writes Apothem's block, at the end of a file
+#: that holds none.
+_WRITES = frozenset({REPLACES})
+
+#: What every list of fixes says about the text below the marker lines it
+#: changes.
+OLD_TEXT = (
+    "Any old Apothem text below a marker line you change, and its END marker "
+    "line if it has one, is then yours to delete by hand."
 )
 
-#: What a two-block fix says about the block it leaves.
+#: What a two-block text says about which block is Apothem's.
 _FRONTMATTER = (
-    "Old Apothem text between marker lines you change is then yours to keep or "
-    "delete. In a file that starts with Apothem's frontmatter, Apothem's block "
-    "is the one right below it."
+    "In a file that starts with Apothem's frontmatter, Apothem's block is the one "
+    "right below it."
 )
 
 
@@ -148,7 +154,7 @@ def _lone_text(lone: Sequence[int]) -> str:
 
     Each fix changes them (see :func:`install_driver_steps.unclear_fixes`):
     left in place, such a marker can pair with an END marker below it once
-    the pairs between are fixed.
+    the marker lines between are changed.
     """
     if not lone:
         return ""
@@ -167,12 +173,11 @@ def _lone_text(lone: Sequence[int]) -> str:
 def _fixes_text(fixes: Sequence[Fix], outcome: str | None) -> str:
     """Return *fixes*, numbered, each ended by what the next run then does.
 
-    With no fix, the text that numbers no edit (see
-    :data:`install_driver_steps.FALLBACK`).
+    Then :data:`OLD_TEXT`, since every fix changes marker lines.
     """
     kept, gone = _PROMISES[outcome]
     promises = [kept if fix.keeps else gone for fix in fixes]
-    return render_fixes(fixes, promises, FALLBACK.format(then=gone))
+    return f"{render_fixes(fixes, promises)} {OLD_TEXT}"
 
 
 def _example_reads(pairs: Sequence[UncertainPair]) -> str:
@@ -226,7 +231,7 @@ def _held_until(pairs: Sequence[UncertainPair], held: bool, wrote: bool) -> str:
     if held and any(not pair.split and not _outside(pair) for pair in pairs):
         text += (
             f" A marker example of yours {_example_reads(pairs)} holds the file "
-            "back the same way, until you change its two marker lines."
+            "back the same way, until you change its BEGIN marker line."
         )
     return text
 
@@ -250,20 +255,22 @@ def unclear_block_report(
     each BEGIN marker on lines *lone*, outside code, that starts no pair (see
     :func:`install_driver_blocks.lone_begins_at`). A pair after the one rule
     3 fired on, both of whose lines read outside code, is named with that
-    pair. Then come the numbered fixes, one for each case (see
-    :func:`install_driver_steps.unclear_fixes`), each checked on *text*: a
-    case whose steps fail the check is left out, and with none left the text
-    numbers no edit. *outcome* is what the next run does once a fix is made:
-    :data:`REPLACES` for an install or update, :data:`TAKES_OUT` for a rules
-    file an install or update takes Apothem's block out of, and ``None`` for
-    an uninstall, which stays unfinished while such a file holds a pair, so
-    its text ends by saying to run it again. With *left*, the text says
-    Apothem left the file as it is, or, with *dry_run*, that it would. With
-    :data:`REPLACES`, the text ends by saying that install and update leave
-    the file as it is, and end as partial, until its marker lines are fixed,
-    where the merge holds the file back: while *held*, or for the pair rule
-    3 fired on (see :func:`_held_until`); with *wrote* (the run wrote its
-    block), from the next run on.
+    pair. Then come the numbered fixes (see
+    :func:`install_driver_steps.unclear_fixes`): one for each pair the layout
+    of *text* shows reads as the one whole block once every other BEGIN
+    marker line changes, and one that changes every BEGIN marker line.
+    *outcome* is what
+    the next run does once a fix is made: :data:`REPLACES` for an install or
+    update, :data:`TAKES_OUT` for a rules file an install or update takes Apothem's
+    block out of, and ``None`` for an uninstall, which stays unfinished while
+    such a file holds a pair, so its text ends by saying to run it again.
+    With *left*, the text says Apothem left the file as it is, or, with
+    *dry_run*, that it would. With :data:`REPLACES`, the text
+    ends by saying that install and update leave the file as it is, and end
+    as partial, until its marker lines are fixed, where the merge holds the
+    file back: while *held*, or for the pair rule 3 fired on (see
+    :func:`_held_until`); with *wrote* (the run wrote its block), from the
+    next run on.
     """
     head = (
         f"{path}: Apothem cannot tell whether the marker lines in this file mark "
@@ -275,13 +282,11 @@ def unclear_block_report(
             continue
         later = pairs[index + 1] if index + 1 < len(pairs) else None
         parts.append(_pair_text(pair, later))
-    fixes = unclear_fixes(text, pairs, lone, removes=outcome != REPLACES)
+    fixes = unclear_fixes(text, pairs)
     parts.append(_fixes_text(fixes, outcome))
-    if lone and fixes:
-        parts.append(_OLD_TEXT)
     if outcome is None:
         parts.append("Then run the uninstall again.")
-    elif outcome == REPLACES:
+    elif outcome in _WRITES:
         parts.append(_held_until(pairs, held, wrote))
     return " ".join(part for part in parts if part)
 
@@ -310,24 +315,24 @@ def two_blocks_report(
     dry_run: bool = False,
     then: str | None = None,
     revealed: tuple[int, int] | None = None,
-    quoted: MarkerLine | None = None,
-    removes: bool = False,
+    outcome: str | None = REPLACES,
 ) -> str:
     """Return what is wrong with *path*, whose text *text* holds whole *blocks*.
 
     Each block is named by the lines of its BEGIN and END marker (see
     :func:`apothem.lib.harness_materializer.whole_blocks`). Apothem writes one
     block per file, so it cannot tell which one is its own: one numbered fix
-    for each block, for the case that it is Apothem's, changes the marker
-    lines of every other one (see :func:`install_driver_steps.block_fixes`),
-    each checked on *text* for the next update or, with *removes*, the next
-    uninstall. With *left*, the text says Apothem left the file as it is, or,
-    with *dry_run*, that it would. *then* is the step after the fix, when the
-    text names it. One block in *blocks* is a file that shows a second whole
-    block only once that one is out (a BEGIN marker above Apothem's block and
-    an END marker below it): *revealed* is that block, and the one fix
-    changes its marker lines (its BEGIN marker alone when *quoted*, its END
-    marker line, reads as code or as text).
+    for each block, for the case that it is Apothem's, changes the BEGIN
+    marker line of every other one, and every other BEGIN marker line (see
+    :func:`install_driver_steps.block_fixes`); a block whose fix the layout of
+    *text* does not show holds gets none, and one more fix then changes every
+    BEGIN marker line. *outcome* is what the next run does once a fix is made, as
+    for :func:`unclear_block_report`. With *left*, the text says Apothem left
+    the file as it is, or, with *dry_run*, that it would. *then* is the step
+    after the fix, when the text names it. One block in *blocks* is a file
+    that shows a second whole block only once that one is out (a BEGIN
+    marker above Apothem's block and an END marker below it): *revealed* is
+    that block, and the one fix changes its BEGIN marker line.
     """
     if len(blocks) > 1:
         spans = [f"lines {begin} to {end}" for begin, end in blocks]
@@ -352,17 +357,15 @@ def two_blocks_report(
         f"{head}. Apothem writes one block per file and cannot tell which one is "
         f"its own{_left(left, dry_run)}",
     )
-    fixes = block_fixes(
-        text, blocks, removes=removes, revealed=revealed, quoted=quoted is not None
-    )
+    fixes = block_fixes(text, blocks, revealed=revealed is not None)
     promises = [
         f"Lines {fix.block[0]} to {fix.block[1]} are then the one block in the file"
-        for fix in fixes
         if fix.block is not None
+        else _PROMISES[outcome][1]
+        for fix in fixes
     ]
-    gone = _PROMISES[None if removes else REPLACES][1]
-    parts.append(render_fixes(fixes, promises, FALLBACK.format(then=gone)))
-    if fixes:
+    parts.append(f"{render_fixes(fixes, promises)} {OLD_TEXT}")
+    if any(fix.keeps for fix in fixes):
         parts.append(_FRONTMATTER)
     if then is not None:
         parts.append(f"{then[0].upper()}{then[1:]}.")
@@ -373,20 +376,18 @@ def unlisted_block_report(path: str | Path, text: str, block: tuple[int, int]) -
     """Return the warning for *path*, whose text *text* holds one whole *block*.
 
     For an uninstall with no install record in place: nothing shows which
-    install wrote the block, so the file is left as it is. The text gives the
-    step that deletes the block by hand, checked on *text* (see
-    :func:`install_driver_steps.delete_fixes`), so it does not start at a
-    BEGIN marker of the operator's above the block or take a marker pair
-    they quote there; with no step that passes, the text that numbers no
-    edit (see :data:`install_driver_steps.FALLBACK`).
+    install wrote the block, so the file is left as it is. The text names the
+    block by its lines and gives the fix that changes every BEGIN marker line,
+    the block's included (see :func:`install_driver_steps.unlisted_fixes`): a
+    deleted marker line can change how the lines around it read, a changed
+    one cannot. The old text below it is the operator's to delete.
     """
-    gone = _PROMISES[TAKES_OUT][1]
-    fixes = delete_fixes(text, block)
+    fixes = unlisted_fixes(text)
     return (
-        f"{path} still holds Apothem's managed block: no install record lists "
-        "the file, so the uninstall leaves it as it is. If you no longer want "
-        "the block, take it out by hand. "
-        + render_fixes(fixes, [gone] * len(fixes), FALLBACK.format(then=gone))
+        f"{path} still holds Apothem's managed block (lines {block[0]} to "
+        f"{block[1]}): no install record lists the file, so the uninstall leaves "
+        "it as it is. If you no longer want the block, take it out by hand. "
+        + _fixes_text(fixes, None)
     )
 
 
@@ -401,35 +402,46 @@ def _at(lines: Sequence[int]) -> str:
     return f" at lines {listed} and {lines[-1]}"
 
 
-def stray_subject(text: str, *, article: str = "an") -> str:
+def stray_subject(
+    text: str, *, article: str = "an", strays: Sequence[int] | None = None
+) -> str:
     """Return the BEGIN markers in *text* that start no whole block, by their lines.
 
     ``an Apothem BEGIN marker at line 2``, or ``Apothem BEGIN markers at lines
-    1 and 4``; *article* is the word before one marker. Without the line when
-    the text holds no such marker (a file that cannot be read).
+    1 and 4``; *article* is the word before one marker, and *strays* their
+    lines, when the caller has them (see
+    :func:`apothem.lib.harness_materializer.stray_begins`). Without the line
+    when the text holds no such marker (a file that cannot be read).
     """
-    lines = stray_begins(text)
+    lines = stray_begins(text) if strays is None else strays
     if len(lines) > 1:
         return f"Apothem BEGIN markers{_at(lines)}"
     return f"{article} Apothem BEGIN marker{_at(lines)}"
 
 
-def stray_fix_text(text: str, outcome: str | None = REPLACES) -> str:
+def stray_fix_text(
+    text: str,
+    outcome: str | None = REPLACES,
+    *,
+    strays: Sequence[int] | None = None,
+    blocks: Sequence[tuple[int, int]] | None = None,
+) -> str:
     """Return the numbered fix for the BEGIN markers in *text* that start no whole block.
 
-    One CHANGE step for each (see :func:`install_driver_steps.stray_fixes`),
-    checked on *text*, ended by what the next run then does (*outcome*, as
-    for :func:`unclear_block_report`) and by what the old Apothem text below
-    such a marker then is: the operator's to keep or delete, so no step names
-    it. With no fix that passes, the text that numbers no edit (see
-    :data:`install_driver_steps.FALLBACK`).
+    A step that changes each (see :func:`install_driver_steps.stray_fixes`),
+    ended by what the next run then does (*outcome*, as for
+    :func:`unclear_block_report`) and by what the old Apothem text below such
+    a marker then is: the operator's to delete, so no step names it.
+    *strays* and *blocks* are those markers' lines and the whole blocks of
+    *text*, when the caller has them. Empty when *text* holds no such marker.
     """
-    fixes = stray_fixes(text, removes=outcome != REPLACES)
-    found = _fixes_text(fixes, outcome)
-    return f"{found} {_OLD_TEXT}" if fixes else found
+    found = stray_begins(text) if strays is None else strays
+    whole = whole_blocks(text) if blocks is None else blocks
+    fixes = stray_fixes(text, found, whole, appends=outcome in _WRITES)
+    return _fixes_text(fixes, outcome) if fixes else ""
 
 
-def not_back_text(text: str) -> str:
+def not_back_text(text: str, *, blocks: Sequence[tuple[int, int]] | None = None) -> str:
     """Return why not to add the END marker back instead of changing the marker line.
 
     With a whole block in *text* (an install or update wrote Apothem's block
@@ -439,9 +451,10 @@ def not_back_text(text: str) -> str:
     two markers for Apothem's, and once a run writes Apothem's block apart
     from the marker, two blocks follow. Once the marker line is changed, an
     END marker below it pairs with nothing, so this holds only for the END
-    marker added back in place of the fix.
+    marker added back in place of the fix. *blocks* are the whole blocks of
+    *text*, when the caller has them.
     """
-    if whole_blocks(text):
+    if whole_blocks(text) if blocks is None else blocks:
         return (
             "Do not add the END marker back instead of changing the marker line: "
             "the file would then hold two Apothem blocks, which install and "
@@ -463,10 +476,12 @@ def endless_block_report(path: str | Path, text: str, *, left: str) -> str:
     The marker is named by its line, and the fix changes it (see
     :func:`stray_fix_text`); *left* is ``left`` or ``would leave``.
     """
+    strays = stray_begins(text)
+    fix = stray_fix_text(text, TAKES_OUT, strays=strays)
     return (
-        f"{path} has {stray_subject(text, article='the')} but no END marker "
-        f"({APOTHEM_BLOCK_END}) after it, so Apothem cannot tell where its block "
-        f"ends and {left} the file as it is. {stray_fix_text(text, TAKES_OUT)}"
+        f"{path} has {stray_subject(text, article='the', strays=strays)} but no "
+        f"END marker ({APOTHEM_BLOCK_END}) after it, so Apothem cannot tell where "
+        f"its block ends and {left} the file as it is. {fix}"
     )
 
 
@@ -483,7 +498,7 @@ def begin_left_report(path: str | Path, text: str, *, why: str) -> str:
         f"{path} still holds {which} as the Apothem BEGIN marker{_at(lines)}, "
         f"with no END marker ({APOTHEM_BLOCK_END}) "
         f"after it, now that Apothem's block is out: {why}. "
-        f"{stray_fix_text(text, TAKES_OUT)}"
+        f"{stray_fix_text(text, TAKES_OUT, strays=lines)}"
     )
 
 
@@ -497,19 +512,22 @@ def stray_install_report(path: str | Path, text: str) -> str:
     :func:`not_back_text`). With no whole block yet (a preview reads the
     file before the write), the text says a block, not a whole block.
     """
-    one = len(stray_begins(text)) < 2
-    block = "a whole block" if whole_blocks(text) else "a block"
+    strays, blocks = stray_begins(text), whole_blocks(text)
+    one = len(strays) < 2
+    block = "a whole block" if blocks else "a block"
     gone = (
         f"its END marker {APOTHEM_BLOCK_END} is gone, or the marker is yours"
         if one
         else f"their END markers {APOTHEM_BLOCK_END} are gone, or the markers are yours"
     )
     return (
-        f"{path} has {stray_subject(text)} that {'starts' if one else 'start'} "
+        f"{path} has {stray_subject(text, strays=strays)} that "
+        f"{'starts' if one else 'start'} "
         f"no whole block of {'its' if one else 'their'} own ({gone}). Apothem "
         "never cuts the text after it: install and update keep that text as it "
         f"is and write {block} of their own apart from it, and apothem verify "
         "fails for this tool until you change "
         f"{'that marker line' if one else 'those marker lines'}. "
-        f"{stray_fix_text(text)} {not_back_text(text)}"
+        f"{stray_fix_text(text, strays=strays, blocks=blocks)} "
+        f"{not_back_text(text, blocks=blocks)}"
     )

@@ -68,17 +68,29 @@ def _close_fence(body: str) -> str:
     """Return *body* with the code fence it leaves open closed, if it leaves one.
 
     The body is read as Apothem's block reads it (see :func:`_hidden_end`),
-    and the closer is a run of the fence's character as long as its opener,
-    at the content column of the list item the fence sits in.
+    and the closer is the line :func:`trailing_fence` gives.
     """
-    lines = _split_lines(body)
+    found = trailing_fence(body)
+    return body if found is None else f"{body}\n{found[1]}"
+
+
+def trailing_fence(text: str) -> tuple[int, str] | None:
+    """Return where the fenced code block *text* ends in opens, and its closing line.
+
+    *text* is read as CommonMark reads it: every fence opener opens, one no
+    later line closes included (see :func:`_marker_lines`). The 1-based line
+    of the fence's opener, and a line that closes it: a run of the fence's
+    character as long as its opener, at the content column of the list item
+    the fence sits in. ``None`` when *text* ends in no fenced code block.
+    """
+    lines = _split_lines(text)
     state = _MarkdownState(lines, None)
     for index in range(len(lines)):
         state.step(index)
     fence = state.fence
     if fence is None:
-        return body
-    return f"{body}\n{' ' * fence.column}{fence.char * fence.length}"
+        return None
+    return fence.line + 1, f"{' ' * fence.column}{fence.char * fence.length}"
 
 
 _SENTINELS: Final[tuple[str, str]] = (APOTHEM_BLOCK_BEGIN, APOTHEM_BLOCK_END)
@@ -334,8 +346,7 @@ class _MarkdownState:
     indented that far stays in that item, so only such a line is held to the
     rules for a line under a paragraph; a line left of it goes on the
     paragraph lazily (CommonMark), and the column stays for the lines after
-    it. ``closed`` is the line of the fence the last line read closed with a
-    closing run of its own (``None`` when it closed none that way).
+    it.
     """
 
     lines: list[_Line]
@@ -347,7 +358,6 @@ class _MarkdownState:
     empty_item: bool = False
     para_column: int = 0
     raw_html: bool = False
-    closed: int | None = None
 
     def reset(self) -> None:
         """Start afresh after an Apothem block, which ends every open construct."""
@@ -361,7 +371,6 @@ class _MarkdownState:
 
     def step(self, index: int) -> _Kind:
         """Advance over line *index* and return what it is."""
-        self.closed = None
         columns, chars = _indent(self.lines[index].text)
         content = self.lines[index].text[chars:]
         if not content.strip():
@@ -469,7 +478,6 @@ class _MarkdownState:
         ):
             self.fence = None
             self.can_interrupt = True
-            self.closed = fence.line
         return True
 
     def _opens_fence(self, index: int, rest: str) -> bool:
@@ -541,15 +549,12 @@ class _Scan:
     another BEGIN/END pair after it (rule 3): no block is certain then.
     ``places`` maps each marker line of a candidate pair (see
     :func:`_candidate_pairs`) the reading went through to what it read as, and
-    the line of the fence holding it when that is fenced code. ``closers``
-    maps the line of each fence the reading saw closed by a closing run to
-    that run's line.
+    the line of the fence holding it when that is fenced code.
     """
 
     markers: list[_Marker]
     hidden: int | None = None
     places: dict[int, tuple[_Kind, int | None]] = field(default_factory=dict)
-    closers: dict[int, int] = field(default_factory=dict)
 
     @property
     def unclear(self) -> bool:
@@ -600,15 +605,12 @@ def _scan(lines: list[_Line], pairs: dict[int, int]) -> _Scan:
     state = _MarkdownState(lines, _Lookahead(lines))
     found: list[_Marker] = []
     places: dict[int, tuple[_Kind, int | None]] = {}
-    closers: dict[int, int] = {}
     marked = {*pairs, *pairs.values()}
     last = max(pairs, default=-1)
     hidden: int | None = None
     index = 0
     while index < len(lines):
         kind = state.step(index)
-        if state.closed is not None:
-            closers[state.closed] = index
         if index in marked:
             fence = state.fence if kind is _Kind.CODE else None
             places[index] = (kind, None if fence is None else fence.line)
@@ -626,7 +628,7 @@ def _scan(lines: list[_Line], pairs: dict[int, int]) -> _Scan:
                 state.reset()
                 index = end
         index += 1
-    return _Scan(found, hidden, places, closers)
+    return _Scan(found, hidden, places)
 
 
 def _read(text: str) -> tuple[list[_Line], dict[int, int], _Scan]:
@@ -772,17 +774,12 @@ class UncertainPair:
 
     ``split`` is True for the pair rule 3 fired on: its BEGIN marker is
     outside code, its END marker reads as code, and another pair follows, so
-    either pair can be Apothem's block. ``closer`` is the 1-based line of the
-    closing run that ends, below the END marker, the fenced code block that
-    holds that marker (``None`` when no such line does): a fix moves it up,
-    or opens that code block again below the END marker (see
-    :func:`apothem.harnesses._shared.install_driver_steps.unclear_fixes`).
+    either pair can be Apothem's block.
     """
 
     begin: MarkerLine
     end: MarkerLine
     split: bool = False
-    closer: int | None = None
 
 
 def _marker_line(index: int, scan: _Scan) -> MarkerLine:
@@ -819,58 +816,9 @@ def uncertain_pairs(text: str) -> list[UncertainPair]:
             _marker_line(begin, scan),
             _marker_line(end, scan),
             begin == scan.hidden,
-            _closer_of(end, scan),
         )
         for begin, end in sorted(pairs.items())
     ]
-
-
-def _closer_of(end: int, scan: _Scan) -> int | None:
-    """Return the 1-based line that closes, below line *end*, the code block holding it.
-
-    *end* is the END marker of a pair whose END marker reads as fenced code;
-    the line is the closing run that ends that code block (see
-    :attr:`UncertainPair.closer`). ``None`` when the END marker is not in a
-    fenced code block, or no closing run ends that code block below it (its
-    list item ends it, say).
-    """
-    kind, fence = scan.places.get(end, (_Kind.TEXT, None))
-    if kind is not _Kind.CODE or fence is None:
-        return None
-    close = scan.closers.get(fence)
-    if close is None or close <= end:
-        return None
-    return close + 1
-
-
-def line_roles(text: str) -> list[str | None]:
-    """Return how a Markdown viewer reads each line of *text*, in order.
-
-    ``"opener"`` for the line that opens a fenced code block, ``"closer"`` for
-    the line that closes one, ``"code"`` for a line inside one or of indented
-    code, ``"text"`` for any other line that is not blank, and ``None`` for a
-    blank line. The lines are numbered and read as :func:`whole_blocks` numbers
-    and reads them, but as CommonMark does: every fence opener opens, and
-    the lines of an Apothem block are read too. The advice for marker lines
-    Apothem cannot place checks with it that a fix keeps each line of the
-    operator's reading as before.
-    """
-    lines = _split_lines(text)
-    state = _MarkdownState(lines, None)
-    roles: list[str | None] = []
-    for index in range(len(lines)):
-        kind = state.step(index)
-        if kind is _Kind.BLANK:
-            roles.append(None)
-        elif kind is not _Kind.CODE:
-            roles.append("text")
-        elif state.closed is not None:
-            roles.append("closer")
-        elif state.fence is not None and state.fence.line == index:
-            roles.append("opener")
-        else:
-            roles.append("code")
-    return roles
 
 
 def lone_begins(text: str) -> list[int]:

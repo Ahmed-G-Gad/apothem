@@ -1,47 +1,45 @@
 # SPDX-License-Identifier: MIT
 
-"""Numbered fixes for Apothem marker lines, each checked on a copy of the file.
+"""Numbered fixes for Apothem marker lines: each step changes one marker line in place.
 
-The warnings for marker lines Apothem cannot place, and for a BEGIN marker
-that starts no whole block (see :mod:`install_driver_blocktext`), give their
-fixes as numbered steps built from
-four edits only, so an operator, or a script, can follow them line by line:
+The warnings for Apothem marker lines that install, update and uninstall
+cannot place (see :mod:`install_driver_blocktext`) give their fixes as
+numbered steps of one kind, ``Change line N: add a word inside its
+comment.``: the marker line stays where it is, with a word added before its
+``-->`` (the warning shows ``<!-- BEGIN APOTHEM MANAGED BLOCK (example) -->``
+once, before the first fix), so it no longer reads as a marker. It is still
+an HTML comment on a line of its own, so no line moves and a Markdown viewer
+reads every other line of the file as before. One more step closes a code
+block the file ends in, when a fix leaves no block (the next install or
+update writes one at the end of the file): ``Below line N, add a line of 3
+backticks.``
+(``tildes`` for ``~``, with ``, indented 2 spaces`` for a code block in a list
+item; see :func:`render_step`).
 
-- CHANGE: ``Change line N: add a word inside its comment.`` The marker line
-  stays where it is, with a word added before its ``-->`` (the text says
-  ``<!-- BEGIN APOTHEM MANAGED BLOCK (example) -->`` once, before the first
-  fix), so it no longer reads as a marker.
-- ADD: ``Above line N, add a copy of line K.`` or ``Below line N, add a copy
-  of line K.``, or, for a closing fence line, ``Above line N, add a line of
-  3 backticks, indented 2 spaces.`` (``tildes`` for ``~``; the indent part is
-  left out for a line at the left margin).
-- MOVE: ``Move line N to just above line M.`` (M is above N.)
-- DELETE: ``Delete lines B to E.`` (a whole range, never one marker line).
-
-Each fix is a list of such steps under a label such as ``Fix A, if lines 6
-to 38 are Apothem's block:``, and each step reads ``A1.``, ``A2.``, and so on.
-Every line number is the line's number in the file as it is before any step,
-and the steps run from the bottom of the file up, so no step moves a line a
-later step names: the steps give the same file whether they are read in
-order, each number taken as it stands, or each number taken as the line it
-named first.
-
-No fix is printed before it passes :func:`passes` (see
-:mod:`install_driver_stepcheck`) on a copy of the file: its
-steps, applied as printed, give the same file as applied by first numbers;
-the file then holds exactly the block the fix promises (or none), with no
-marker pair left that no rule can place and no BEGIN marker that starts no
-whole block; the next update (or uninstall) then holds that promise; and
-every line of the operator's that is left keeps how a Markdown viewer reads
-it (text, code, a code block's opening line, its closing line). When no fix
-passes, the warning gives :data:`FALLBACK` instead, which numbers no edit.
-Everything here builds and checks text and reads no file.
+Each fix lists its steps under a label such as ``Fix A, if lines 6 to 38 are
+Apothem's block:``, read ``A1.``, ``A2.`` and so on, from the bottom of the
+file up. Every block, marker pair and stray marker starts at a BEGIN marker,
+and an END marker pairs only with the BEGIN marker right above it, so a fix
+changes BEGIN marker lines alone: an END marker with no BEGIN marker above
+it marks nothing, and a quoted one stays the operator's text as it is. A fix
+that keeps a block changes every other BEGIN marker line in the file (for
+BEGIN markers that start no whole block, those lines alone, where that keeps
+every other line reading as before). It is given only where the layout of
+the file shows that the block then reads whole (see :func:`_keeps`), so no
+fix needs a reading of the file. A fix that keeps no block changes every
+BEGIN marker line in the file: Apothem then reads no block, the next update
+writes its block at the end of the file, and an uninstall finds no block of
+its own there. Everything here builds text and reads no file. It goes over
+the lines of the file once per warning, and reads them as Markdown only to
+find whether the file ends in an open code block when the layout of its
+fences does not show it (see :func:`_closing`).
 """
 
 from __future__ import annotations
 
+import bisect
 import re
-from collections.abc import Iterable, Sequence
+from collections.abc import Collection, Iterable, Sequence
 from dataclasses import dataclass
 
 from apothem.lib.harness_materializer import (
@@ -49,369 +47,361 @@ from apothem.lib.harness_materializer import (
     APOTHEM_BLOCK_END,
     MarkerPlace,
     UncertainPair,
-    line_roles,
-    stray_begins,
-    whole_blocks,
+    trailing_fence,
 )
 
-from .install_driver_stepcheck import WORD as _WORD
-from .install_driver_stepcheck import (
-    Edit,
-    Step,
-    apply_steps,
-    joined,
-    passes,
-    split_lines,
-)
+#: The word a step adds inside a marker line's comment.
+WORD = "(example)"
 
-#: A BEGIN marker line once a CHANGE step has changed it.
-_EXAMPLE = APOTHEM_BLOCK_BEGIN.replace(" -->", f" {_WORD} -->")
+#: A BEGIN marker line once a step has changed it.
+_EXAMPLE = APOTHEM_BLOCK_BEGIN.replace(" -->", f" {WORD} -->")
 
-#: The two marker lines a CHANGE step can change.
+#: The two marker lines.
 _MARKERS = frozenset({APOTHEM_BLOCK_BEGIN, APOTHEM_BLOCK_END})
 
-_RUN = re.compile(r"`{3,}|~{3,}")
+#: Text every marker line holds; a quick test before the exact one.
+_MARKER_TEXT = "APOTHEM MANAGED BLOCK"
+
+_EOL = re.compile(r"\r\n|\r|\n")
+
+#: A line that opens a fenced code block at the left margin, and one that
+#: closes one (see ``_FENCE_OPEN`` and ``_FENCE_CLOSE`` in
+#: :mod:`apothem.lib.harness_materializer`).
+_OPEN = re.compile(r"(`{3,}|~{3,})(.*)\Z", re.DOTALL)
+_CLOSE = re.compile(r"(`{3,}|~{3,})[ \t]*\Z")
+
+#: A line that may start an HTML block that runs to the next blank line: a
+#: tag after the indent and any list bullets (see ``_HTML_BLOCK_TAG`` in
+#: :mod:`apothem.lib.harness_materializer`, of which this is a wider form).
+#: In such a block a changed marker line goes on the block's text, where a
+#: marker line ends a paragraph, so the lines below it can read differently.
+_TAG = re.compile(r"[ \t]*(?:(?:[-+*]|[0-9]{1,9}[.)])[ \t]+)*</?[A-Za-z]")
+
+#: Columns of indentation that make a line indented code.
+_CODE_INDENT = 4
 
 #: What every list of numbered fixes says before its first fix.
 INTRO = (
-    "Each fix below lists its steps from the bottom of the file up. Do them "
-    "in that order, and read each line number as the line's number in the "
-    "file as it is now: no step moves a line that a later step names. To "
-    "change a marker line, add a word inside its comment, as in "
-    f"{_EXAMPLE}: the line then no longer reads as a marker."
+    "Each fix below lists its steps from the bottom of the file up. To change "
+    f"a marker line, add a word inside its comment, as in {_EXAMPLE}: the line "
+    "then no longer reads as a marker, and no other line moves or reads "
+    "differently."
 )
 
-#: What a warning says when no fix passes :func:`passes` (see
-#: :func:`render_fixes`); ``{then}`` is what the next run then does.
-FALLBACK = (
-    "Apothem has no step-by-step fix it could check for this file. Change "
-    "every Apothem marker line in it instead: add a word inside each comment, "
-    f"as in {_EXAMPLE}. That adds and removes no line, so "
-    "nothing else in the file reads differently. {then}; old Apothem text "
-    "between those lines is yours to delete."
-)
+#: The label of a fix that keeps no block, after fixes that keep one.
+OTHER_CASE = "in any other case"
+
+
+@dataclass(frozen=True)
+class Step:
+    """One numbered step, with the 1-based line it names.
+
+    With no ``fence``, the step changes line ``line``; with one, it adds that
+    closing fence line below line ``line``, the last line of the file.
+    """
+
+    line: int
+    fence: str = ""
 
 
 @dataclass(frozen=True)
 class Fix:
-    """One checked fix: the case it is for, its steps in order, and its result.
+    """One fix: the case it is for, its steps from the bottom up, and its result.
 
-    ``label`` names the case (``if lines 6 to 38 are Apothem's block``), and
-    ``block`` the 1-based first and last line of the block it calls
-    Apothem's (``None`` when it calls no pair Apothem's); ``keeps`` is True
-    when the file then holds that block, False when it then holds no block
-    (the steps took the block out, or the case says no pair is Apothem's).
+    ``label`` names the case (``if lines 6 to 38 are Apothem's block``), or is
+    ``None`` for a fix that holds whichever lines are Apothem's. ``keeps`` is
+    True when the file then holds ``block`` (its 1-based first and last line)
+    as its one whole block, False when it then holds no block.
     """
 
-    label: str
+    label: str | None
     steps: tuple[Step, ...]
     keeps: bool
     block: tuple[int, int] | None = None
 
 
-def _closing_line(opener: str) -> str | None:
-    """Return a line that closes the code block the line *opener* opens.
+def split_lines(text: str) -> list[str]:
+    """Return the lines of *text* as Apothem numbers them.
 
-    The opener's run of backticks or tildes, at the column it starts at
-    (``None`` when the line holds no such run).
+    They split at CRLF, LF and a lone CR, and a byte order mark at offset 0 is
+    no part of the first line, as in
+    :func:`apothem.lib.harness_materializer.whole_blocks`.
     """
-    match = _RUN.search(opener)
-    if match is None:
-        return None
-    column = len(opener[: match.start()].expandtabs(4))
-    return " " * column + match.group()
+    lines = _EOL.split(text.removeprefix("﻿"))
+    if lines and lines[-1] == "":
+        lines.pop()
+    return lines
+
+
+def changed(line: str) -> str:
+    """Return the marker line *line* with :data:`WORD` added inside its comment."""
+    cut = line.rfind("-->")
+    return f"{line[:cut].rstrip()} {WORD} {line[cut:]}"
 
 
 def render_step(step: Step) -> str:
     """Return the sentence for *step* (see the formats in this module's text)."""
-    if step.edit is Edit.CHANGE:
+    if not step.fence:
         return f"Change line {step.line}: add a word inside its comment."
-    if step.edit is Edit.MOVE:
-        return f"Move line {step.line} to just above line {step.other}."
-    if step.edit is Edit.DELETE:
-        return f"Delete lines {step.line} to {step.other}."
-    where = f"{'Below' if step.below else 'Above'} line {step.line}"
-    if step.other:
-        return f"{where}, add a copy of line {step.other}."
     run = step.fence.lstrip(" ")
     kind = "backticks" if run[0] == "`" else "tildes"
     indent = len(step.fence) - len(run)
     spaces = "" if not indent else f", indented {indent} space{'s' * (indent > 1)}"
-    return f"{where}, add a line of {len(run)} {kind}{spaces}."
+    return f"Below line {step.line}, add a line of {len(run)} {kind}{spaces}."
 
 
-def _order(steps: Iterable[Step]) -> tuple[Step, ...]:
-    """Return *steps* from the bottom of the file up, each once.
+class _Layout:
+    """What a fix needs to know about the lines of a file, from one pass over them.
 
-    By the first line a step can move: the line a CHANGE, an ADD or a DELETE
-    names, or the line a MOVE puts a line above; the lowest last. At one
-    line a CHANGE goes first, then an ADD below it, then an ADD above it or
-    a MOVE to above it, so no step moves a line a later one names.
+    ``markers`` are the 1-based lines that hold only a marker (whitespace
+    aside, as :func:`apothem.lib.harness_materializer.whole_blocks` reads
+    them), in code or not, and ``begins`` those of them that hold the BEGIN
+    marker; ``runs`` the 0-based lines that hold a run of
+    three backticks or tildes; ``first_tag`` the 0-based first line that may
+    start an HTML block (see :data:`_TAG`), or ``None``.
     """
 
-    def key(step: Step) -> tuple[int, int, int, int]:
-        if step.edit is Edit.MOVE:
-            low, rank = step.other, 2
-        elif step.edit is Edit.ADD:
-            low, rank = step.line, 1 if step.below else 2
-        else:
-            low, rank = step.line, 0
-        return -low, rank, -step.line, -step.other
-
-    return tuple(sorted(dict.fromkeys(steps), key=key))
-
-
-def _close_steps(
-    lines: Sequence[str], fence: int, at: int, end: int, closer: int | None
-) -> list[Step] | None:
-    """Return the steps that close, above line *at*, the code block of line *fence*.
-
-    *end* is the marker line that code block holds lowest, and *closer* the
-    line that closes it below *end* (``None`` when no line does). With only
-    blank lines between *end* and *closer*, that line moves up above *at*;
-    otherwise a closing line goes above *at*, and, when a line that is not
-    blank follows *end* in that code block, a copy of line *fence* below
-    *end* opens the code block again for the lines down to *closer*.
-    """
-    below = range(end, len(lines) if closer is None else closer - 1)
-    held = any(lines[index].strip() for index in below)
-    if closer is not None and not held:
-        return [Step(Edit.MOVE, closer, at)]
-    closing = _closing_line(lines[fence - 1])
-    if closing is None:
-        return None
-    steps = [Step(Edit.ADD, at, fence=closing)]
-    return [*steps, Step(Edit.ADD, end, fence, below=True)] if held else steps
-
-
-def _whole_steps(lines: Sequence[str], pair: UncertainPair) -> list[Step] | None:
-    """Return the steps that make *pair* read as a whole block, if any.
-
-    Both marker lines in one code block: close it above the BEGIN marker (see
-    :func:`_close_steps`). The BEGIN marker in a code block whose closing
-    line sits in the pair, the END marker outside code: a closing line above
-    the BEGIN marker. The BEGIN marker outside code and the END marker in a
-    code block that opens in the pair (the pair rule 3 fired on, or an older
-    block whose rule left a code block open): close it above the END marker.
-    ``None`` for any other pair: no step of these four makes it whole.
-    """
-    begin, end = pair.begin, pair.end
-    if begin.place is MarkerPlace.FENCE and begin.fence is not None:
-        if end.place is MarkerPlace.FENCE and end.fence == begin.fence:
-            return _close_steps(lines, begin.fence, begin.line, end.line, pair.closer)
-        if end.place is MarkerPlace.OUTSIDE:
-            closing = _closing_line(lines[begin.fence - 1])
-            return (
-                None if closing is None else [Step(Edit.ADD, begin.line, fence=closing)]
-            )
-        return None
-    if (
-        begin.place is MarkerPlace.OUTSIDE
-        and end.place is MarkerPlace.FENCE
-        and end.fence is not None
-        and end.fence > begin.line
-    ):
-        return _close_steps(lines, end.fence, end.line, end.line, pair.closer)
-    return None
-
-
-def _change_pairs(pairs: Iterable[UncertainPair], *, split_both: bool) -> list[Step]:
-    """Return the CHANGE steps for the marker lines of *pairs*.
-
-    Of the pair rule 3 fired on, only the BEGIN marker, unless *split_both*:
-    its END marker reads as code of the operator's once that BEGIN is theirs.
-    """
-    steps: list[Step] = []
-    for pair in pairs:
-        steps.append(Step(Edit.CHANGE, pair.begin.line))
-        if split_both or not pair.split:
-            steps.append(Step(Edit.CHANGE, pair.end.line))
-    return steps
-
-
-def _every_marker(lines: Sequence[str], keep: tuple[int, int] | None) -> list[Step]:
-    """Return a CHANGE step for each marker line of *lines* outside *keep*.
-
-    Each line that holds only a marker, in code or not, so no marker line is
-    left to pair once the others change: what a fix falls back on when
-    changing the marker lines it names does not pass.
-    """
-    first, last = keep if keep is not None else (0, 0)
-    return [
-        Step(Edit.CHANGE, number)
-        for number, line in enumerate(lines, 1)
-        if line.strip() in _MARKERS and not first <= number <= last
-    ]
-
-
-def _both(pairs: Iterable[UncertainPair]) -> tuple[bool, ...]:
-    """Return the ways to change the pair rule 3 fired on, if *pairs* hold it.
-
-    Its BEGIN marker alone first, then both marker lines; one way when no
-    pair of *pairs* is that pair.
-    """
-    return (False, True) if any(pair.split for pair in pairs) else (False,)
-
-
-def _open_tail(lines: Sequence[str], steps: Sequence[Step]) -> Step | None:
-    """Return the step that closes the code block the file ends in after *steps*.
-
-    An ADD, below the file's last line, of a closing line for that code block
-    (see :func:`_closing_line`). An install or update adds Apothem's block at
-    the end of a file that holds none, and a code block in its rules would
-    otherwise close the operator's, so the block's BEGIN marker would read
-    as code. ``None`` when the file then ends in no open code block, its
-    last line is one a step adds, or the line would not close that code block.
-    """
-    done = apply_steps(lines, steps, literal=False)
-    if done is None:
-        return None
-    texts, tags = done
-    roles = line_roles(joined(texts))
-    opener = next(
-        (at for at in range(len(texts) - 1, -1, -1) if roles[at] not in {None, "code"}),
-        None,
-    )
-    if opener is None or roles[opener] != "opener" or tags[-1] is None:
-        return None
-    closing = _closing_line(texts[opener])
-    if closing is None or line_roles(joined([*texts, closing]))[-1] != "closer":
-        return None
-    return Step(Edit.ADD, tags[-1] + 1, fence=closing, below=True)
-
-
-def _open_holder(lines: Sequence[str], block: tuple[int, int]) -> list[Step]:
-    """Return the steps that take *block* out of a code block no line closes.
-
-    A CommonMark viewer reads such a code block as running to the end of the
-    file (or of its list item), so it holds *block*, while Apothem reads its
-    opening line as text. A code block in the rules the next update writes
-    would close it, and the BEGIN marker would then read as code. The steps
-    close it above the BEGIN marker and, when a line that is not blank
-    follows the END marker, open it again below (see :func:`_close_steps`).
-    Empty when no such code block holds *block*.
-    """
-    roles = line_roles(joined(lines))
-    holder = next(
-        (at for at in range(block[0] - 2, -1, -1) if roles[at] not in {None, "code"}),
-        None,
-    )
-    if holder is None or roles[holder] != "opener":
-        return []
-    after = (role for role in roles[block[1] :] if role not in {None, "code"})
-    if next(after, None) == "closer":
-        return []
-    return _close_steps(lines, holder + 1, block[0], block[1], None) or []
-
-
-def _first_passing(
-    lines: Sequence[str],
-    variants: Iterable[tuple[list[Step], bool]],
-    *,
-    label: str,
-    block: tuple[int, int] | None,
-    removes: bool,
-    update: bool = False,
-) -> Fix | None:
-    """Return the first of *variants* (steps, and whether they keep *block*) that passes.
-
-    With *update*, a variant must pass for the next update too, not only for
-    the run *removes* names. A variant that leaves no block is tried first
-    with a step that closes the code block the file then ends in, if it ends
-    in one (see :func:`_open_tail`). A variant that keeps *block* for the next
-    update is tried as it is, then with the steps that take *block* out of a
-    code block no line closes (see :func:`_open_holder`).
-    """
-    runs = {removes, False} if update else {removes}
-    for steps, keeps in variants:
-        tries = [steps]
-        tail = None if keeps else _open_tail(lines, steps)
-        if tail is not None:
-            tries.insert(0, [*steps, tail])
-        elif keeps and block is not None and False in runs:
-            holder = _open_holder(lines, block)
-            if holder:
-                tries.append([*steps, *holder])
-        for tried in tries:
-            ordered = _order(tried)
-            if all(
-                passes(lines, ordered, block=block, keeps=keeps, removes=run)
-                for run in runs
-            ):
-                return Fix(label, ordered, keeps, block)
-    return None
-
-
-def unclear_fixes(
-    text: str,
-    pairs: Sequence[UncertainPair],
-    lone: Sequence[int],
-    *,
-    removes: bool,
-) -> list[Fix]:
-    """Return the checked fixes for *text*, whose marker pairs no rule can place.
-
-    One fix for each pair, for the case that it is Apothem's block: the marker
-    lines of every other pair change (of the pair rule 3 fired on, its BEGIN
-    marker first, both if that does not pass), and so does each BEGIN marker
-    on lines *lone*, which starts no pair; the pair itself is made whole (see
-    :func:`_whole_steps`), or deleted from its BEGIN marker line to its END
-    marker line. For an install or update the first passes first; for an
-    uninstall (*removes*) the second. One more fix for the case that no pair
-    is Apothem's: every marker line named changes. A case whose steps all
-    fail :func:`passes` is left out.
-    """
-    lines = split_lines(text)
-    lone_steps = [Step(Edit.CHANGE, line) for line in lone]
-    fixes: list[Fix] = []
-    for pair in pairs:
-        span = (pair.begin.line, pair.end.line)
-        others = [other for other in pairs if other is not pair]
-        own: list[tuple[list[Step], bool]] = []
-        if pair.begin.place is pair.end.place is MarkerPlace.OUTSIDE:
-            own.append(([], True))
-        else:
-            whole = _whole_steps(lines, pair)
-            delete = ([Step(Edit.DELETE, *span)], False)
-            made = [] if whole is None else [(whole, True)]
-            own.extend([delete, *made] if removes else [*made, delete])
-        variants = [
-            ([*steps, *changes], keeps)
-            for changes in (
-                *(
-                    [*_change_pairs(others, split_both=both), *lone_steps]
-                    for both in _both(others)
-                ),
-                _every_marker(lines, span),
-            )
-            for steps, keeps in own
+    def __init__(self, text: str) -> None:
+        self.lines = split_lines(text)
+        self.markers = [
+            number
+            for number, line in enumerate(self.lines, 1)
+            if _MARKER_TEXT in line and line.strip() in _MARKERS
         ]
-        label = f"if lines {span[0]} to {span[1]} are Apothem's block"
-        found = _first_passing(
-            lines, variants, label=label, block=span, removes=removes
-        )
-        if found is not None:
-            fixes.append(found)
-    label = (
-        f"if lines {pairs[0].begin.line} to {pairs[0].end.line} are text of yours"
-        if len(pairs) == 1
-        else "if none of these pairs is Apothem's block"
-    )
-    found = _first_passing(
-        lines,
-        (
-            *(
-                ([*_change_pairs(pairs, split_both=both), *lone_steps], False)
-                for both in _both(pairs)
+        self.begins = [
+            number
+            for number in self.markers
+            if self.lines[number - 1].strip() == APOTHEM_BLOCK_BEGIN
+        ]
+        self.runs = [
+            index
+            for index, line in enumerate(self.lines)
+            if "```" in line or "~~~" in line
+        ]
+        self.first_tag = next(
+            (
+                index
+                for index, line in enumerate(self.lines)
+                if "<" in line and _TAG.match(line)
             ),
-            (_every_marker(lines, None), False),
-        ),
-        label=label,
-        block=None,
-        removes=removes,
-    )
-    if found is not None:
-        fixes.append(found)
+            None,
+        )
+        self._as_is: tuple[int, str] | None | bool = False
+
+    def trailing(self, changes: Iterable[int]) -> tuple[int, str] | None:
+        """Return where the code block the file ends in opens once *changes* change.
+
+        *changes* are the BEGIN marker lines a fix changes. The 1-based line of the
+        opener of the fenced code block the file then ends in, as CommonMark
+        reads it, and the line that closes it (see :func:`_closing`); ``None``
+        when it ends in none. A changed line reads as the marker did, unless a
+        line above it may start an HTML block, so the reading of the file as
+        it is serves every fix but such a one.
+        """
+        numbers = set(changes)
+        if self.first_tag is not None and any(n > self.first_tag for n in numbers):
+            return _trailing(self, numbers)
+        if self._as_is is False:
+            self._as_is = _trailing(self, ())
+        return None if isinstance(self._as_is, bool) else self._as_is
+
+
+def _layout(text: str) -> _Layout:
+    """Return the layout of *text* (see :class:`_Layout`)."""
+    return _Layout(text)
+
+
+def _columns(line: str) -> int:
+    """Return the columns of *line*'s indent; a tab reaches the next multiple of 4."""
+    indent = line[: len(line) - len(line.lstrip(" \t"))]
+    return len(indent.expandtabs(_CODE_INDENT))
+
+
+def _change(numbers: Iterable[int]) -> tuple[Step, ...]:
+    """Return a step that changes each line of *numbers*, from the bottom up."""
+    return tuple(Step(number) for number in sorted(set(numbers), reverse=True))
+
+
+def _every(layout: _Layout, keep: tuple[int, int] | None = None) -> tuple[Step, ...]:
+    """Return a step for each BEGIN marker line of *layout* but that of *keep*.
+
+    With no BEGIN marker left but the one of the block *keep*, no other two
+    marker lines make a block, a pair or a stray BEGIN marker; an END marker
+    alone marks nothing.
+    """
+    first = keep[0] if keep is not None else 0
+    return _change(n for n in layout.begins if n != first)
+
+
+def _keeps(layout: _Layout, block: tuple[int, int], *, first: bool) -> bool:
+    """Return True when *block* is the one whole block once every other BEGIN marker changes.
+
+    *block* is a marker pair whose BEGIN marker reads outside code; *first*
+    says no whole block comes before it (Apothem's first whole block, or a
+    pair in a file with no whole block). A changed marker line still ends a
+    paragraph as the marker did, so the lines above the first changed line
+    read as before, and the lines between two marker lines that were a block
+    are read once those lines change. Above *block*, with no whole block
+    there, only the BEGIN marker of the pair rule 3 fired on reads
+    differently once changed: after it, Apothem reads every fence opener as
+    one, where it now reads one that no later line closes as text; with no
+    code block of the file left open to its end above *block* (see
+    :func:`_open_above`), every opener above it is closed by a later line,
+    so the two readings are one. Either of two layouts shows that the BEGIN
+    marker of *block* still reads outside code, and with no other BEGIN
+    marker left, its END marker, the next marker line, ends the one block:
+
+    - *first*, and no line above the last changed line above *block* may
+      start an HTML block (where a changed line would go on that block's
+      text and a marker line would not): every line above *block* then reads
+      as before.
+    - No line from the first changed line down to the BEGIN marker holds a
+      run of backticks or tildes, so no code block opens there, and the BEGIN
+      marker is indented less than four columns, so it is no indented code.
+
+    A block in a code block no line closes keeps no fix (see
+    :func:`_open_above`).
+    """
+    if _open_above(layout, block, _every(layout, block)):
+        return False
+    above = layout.begins[: bisect.bisect_left(layout.begins, block[0])]
+    if not above:
+        return True
+    if first and (layout.first_tag is None or layout.first_tag >= above[-1]):
+        return True
+    begin = block[0] - 1
+    if _columns(layout.lines[begin]) >= _CODE_INDENT:
+        return False
+    found = bisect.bisect_left(layout.runs, above[0] - 1)
+    return found == len(layout.runs) or layout.runs[found] >= begin
+
+
+def _plain_end(layout: _Layout) -> tuple[int, str] | None | bool:
+    """Return where the code block the file ends in opens, read from its fences.
+
+    When every line that holds a run of backticks or tildes starts with it,
+    at the left margin, those lines alone open and close every fenced code
+    block, as Apothem reads them for CommonMark (see
+    :func:`apothem.lib.harness_materializer.trailing_fence`), whatever the
+    marker lines hold: the 1-based line of the opener and the line that
+    closes it, or ``None`` when the file ends in none. ``False`` when another
+    line holds such a run.
+    """
+    fence: tuple[str, int, int] | None = None
+    for index in layout.runs:
+        line = layout.lines[index]
+        if not line.startswith(("```", "~~~")):
+            return False
+        if fence is None:
+            opened = _OPEN.match(line)
+            if opened is None:
+                return False
+            run, info = opened.groups()
+            if not (run[0] == "`" and "`" in info):
+                fence = (run[0], len(run), index + 1)
+            continue
+        closed = _CLOSE.match(line)
+        if closed is not None:
+            run = closed.group(1)
+            if run[0] == fence[0] and len(run) >= fence[1]:
+                fence = None
+    return None if fence is None else (fence[2], fence[0] * fence[1])
+
+
+def _trailing(layout: _Layout, changes: Collection[int]) -> tuple[int, str] | None:
+    """Return where the code block the file ends in opens once *changes* change.
+
+    See :meth:`_Layout.trailing`. The fences alone tell where the file's code
+    blocks end when each starts at the left margin (see :func:`_plain_end`);
+    otherwise the file, its BEGIN marker lines *changes* changed, is read as
+    Markdown once.
+    """
+    if not layout.runs:
+        return None
+    found = _plain_end(layout)
+    if found is False:
+        fixed = (
+            changed(line) if number in changes else line
+            for number, line in enumerate(layout.lines, 1)
+        )
+        found = trailing_fence("".join(f"{line}\n" for line in fixed))
+    return found if isinstance(found, tuple) else None
+
+
+def _closing(layout: _Layout, steps: Sequence[Step]) -> Step | None:
+    """Return the step that closes the code block the file ends in after *steps*, if any.
+
+    An install or update adds Apothem's block at the end of a file that holds
+    none; a code block in its rules would otherwise close the operator's, and
+    a Markdown viewer would read Apothem's block as code. The step adds the
+    closing line below the last line: the fence's character, as many as its
+    opener, at the content column of the list item it sits in (see
+    :func:`apothem.lib.harness_materializer.trailing_fence`). ``None`` when
+    the file ends in no fenced code block.
+    """
+    found = layout.trailing(step.line for step in steps)
+    return None if found is None else Step(len(layout.lines), found[1])
+
+
+def _open_above(layout: _Layout, block: tuple[int, int], steps: Sequence[Step]) -> bool:
+    """Return True when a code block that opens above *block* runs to the end of the file.
+
+    A Markdown viewer reads *block* as code then, while Apothem reads that
+    code block's opening line as text, since no line closes it; a code block
+    in the rules the next update writes into *block* would close it, and the
+    BEGIN marker would read as code. No fix keeps such a block: the fix that
+    changes every BEGIN marker line closes that code block below the last
+    line (see :func:`_closing`).
+    """
+    found = layout.trailing(step.line for step in steps)
+    return found is not None and found[0] < block[0]
+
+
+def _none(layout: _Layout, label: str | None) -> Fix:
+    """Return the fix that changes every BEGIN marker line of *layout*: no block is left.
+
+    The fix first closes the code block the file ends in, if it ends in one
+    (see :func:`_closing`): an install or update writes Apothem's block at
+    the end of a file that holds none, whether it runs next or after an
+    uninstall.
+    """
+    steps = _every(layout)
+    tail = _closing(layout, steps)
+    return Fix(label, steps if tail is None else (tail, *steps), keeps=False)
+
+
+def _label(block: tuple[int, int]) -> str:
+    """Return the label of a fix that keeps *block*."""
+    return f"if lines {block[0]} to {block[1]} are Apothem's block"
+
+
+def _kept(layout: _Layout, block: tuple[int, int]) -> Fix:
+    """Return the fix that keeps *block* and changes every other BEGIN marker line."""
+    return Fix(_label(block), _every(layout, block), keeps=True, block=block)
+
+
+def unclear_fixes(text: str, pairs: Sequence[UncertainPair]) -> list[Fix]:
+    """Return the fixes for *text*, whose marker pairs no rule can place.
+
+    One fix for each pair whose two marker lines read outside code (a pair
+    after the one rule 3 fired on), for the case that it is Apothem's block:
+    every other BEGIN marker line changes, the pair then reads as the one
+    whole block, and the next update replaces it. It is given only where the
+    layout shows that (see :func:`_keeps`). The pair rule 3 fired on gets no
+    such fix: its END marker reads as code, as an older block whose rule left
+    a code block open reads, and a line of the operator's below it closes
+    that code block; once the next update replaced the block, that line
+    would open a code block instead. Then one fix for every other case,
+    which changes every BEGIN marker line (see :func:`_none`).
+    """
+    layout = _layout(text)
+    fixes = [
+        _kept(layout, (pair.begin.line, pair.end.line))
+        for pair in pairs
+        if pair.begin.place is pair.end.place is MarkerPlace.OUTSIDE
+        and _keeps(layout, (pair.begin.line, pair.end.line), first=True)
+    ]
+    fixes.append(_none(layout, OTHER_CASE if fixes else None))
     return fixes
 
 
@@ -419,132 +409,98 @@ def block_fixes(
     text: str,
     blocks: Sequence[tuple[int, int]],
     *,
-    removes: bool,
-    revealed: tuple[int, int] | None = None,
-    quoted: bool = False,
+    revealed: bool = False,
 ) -> list[Fix]:
-    """Return the checked fixes for *text*, which holds two or more whole *blocks*.
+    """Return the fixes for *text*, which holds two or more whole *blocks*.
 
-    One fix for each block, for the case that it is Apothem's: the two marker
-    lines of every other block change. With *revealed* (a BEGIN marker above
-    the one block and an END marker below it, which make a second block once
-    it is out), one fix: those two marker lines change, or the BEGIN marker
-    alone when *quoted* (its END marker reads as code or text). Each fix says
-    the block is then the one in the file, so it must pass :func:`passes` for
-    the next update as well as, with *removes*, for the next uninstall: with
-    no install record the uninstall leaves the block, and a later install
-    merges into it. A case whose steps fail is left out.
+    One fix for each block, for the case that it is Apothem's: the BEGIN
+    marker line of every other block changes, and every other BEGIN marker
+    line too. With *revealed* (*blocks* holds the one block, and a BEGIN
+    marker above it and an END marker below it make a second block once it
+    is out), the one fix changes that BEGIN marker line and every other. A
+    fix is given only where the layout shows its block then reads whole (see
+    :func:`_keeps`); when a block gets none, one more fix changes every BEGIN
+    marker line (see :func:`_none`).
     """
-    lines = split_lines(text)
-    cases: list[tuple[tuple[int, int], list[Step]]]
-    if revealed is not None and blocks:
-        outer = [Step(Edit.CHANGE, revealed[0])]
-        if not quoted:
-            outer.append(Step(Edit.CHANGE, revealed[1]))
-        cases = [(blocks[0], outer)]
-    else:
-        cases = [
-            (
-                block,
-                [
-                    Step(Edit.CHANGE, line)
-                    for other in blocks
-                    if other != block
-                    for line in other
-                ],
-            )
-            for block in blocks
-        ]
-    fixes: list[Fix] = []
-    for block, steps in cases:
-        label = f"if lines {block[0]} to {block[1]} are Apothem's block"
-        variants = [(steps, True), (_every_marker(lines, block), True)]
-        found = _first_passing(
-            lines, variants, label=label, block=block, removes=removes, update=True
-        )
-        if found is not None:
-            fixes.append(found)
+    layout = _layout(text)
+    cases = list(blocks[:1] if revealed else blocks)
+    fixes = [
+        _kept(layout, block)
+        for index, block in enumerate(cases)
+        if _keeps(layout, block, first=index == 0)
+    ]
+    if len(fixes) < len(cases):
+        fixes.append(_none(layout, OTHER_CASE if fixes else None))
     return fixes
 
 
-def delete_fixes(text: str, block: tuple[int, int]) -> list[Fix]:
-    """Return the checked fix that deletes *block*, the one whole block in *text*.
+def _alone(layout: _Layout, strays: Sequence[int]) -> bool:
+    """Return True when changing the lines *strays* alone leaves every other line as it reads.
 
-    For a file whose block the operator takes out by hand (an uninstall with
-    no install record leaves it): one DELETE step for the whole block, or,
-    when that does not pass, the same step with a CHANGE step for every
-    other marker line (a BEGIN marker of the operator's that starts no
-    block, a marker pair they quote in a code block, which no rule can place
-    once the block is out). Either is tried with the step that closes the
-    code block the file then ends in, if it ends in one (see
-    :func:`_first_passing`). The fix must pass :func:`passes` for the next
-    update: no block, marker pair or BEGIN marker reads as Apothem's once
-    the steps are done, and every line of the operator's reads as before.
-    Empty when no variant does, as when a list item above the block would
-    then take a code block below it.
+    *strays* are BEGIN markers outside code that start no whole block. Each
+    is followed by a BEGIN marker or by none, so none pairs with an END
+    marker, and changing it pairs no other two (rule 3, which reads the
+    lines after such a pair differently, fired on none of them); and no line
+    above the last of them may start an HTML block (see :func:`_keeps`).
     """
-    lines = split_lines(text)
-    label = f"if lines {block[0]} to {block[1]} are Apothem's block"
-    delete = Step(Edit.DELETE, block[0], block[1])
-    found = _first_passing(
-        lines,
-        [([delete], False), ([delete, *_every_marker(lines, block)], False)],
-        label=label,
-        block=block,
-        removes=False,
-    )
-    return [] if found is None else [found]
+    for stray in strays:
+        after = bisect.bisect_right(layout.markers, stray)
+        if after == len(layout.markers):
+            continue
+        if layout.lines[layout.markers[after] - 1].strip() == APOTHEM_BLOCK_END:
+            return False
+    return layout.first_tag is None or layout.first_tag >= max(strays)
 
 
-def stray_fixes(text: str, *, removes: bool) -> list[Fix]:
-    """Return the checked fix for the BEGIN markers in *text* that start no whole block.
+def stray_fixes(
+    text: str,
+    strays: Sequence[int],
+    blocks: Sequence[tuple[int, int]],
+    *,
+    appends: bool,
+) -> list[Fix]:
+    """Return the fix for the BEGIN markers on lines *strays*, which start no whole block.
 
-    One CHANGE step for each such marker (see
-    :func:`apothem.lib.harness_materializer.stray_begins`), or, when that does
-    not pass, one for every marker line outside the file's one whole block.
-    The old text below such a marker stays: it is the operator's to keep or
-    delete, so no step names it. The fix calls the file's one whole block
-    Apothem's, and that block stays whole; with none, the fix leaves no
-    block. When no fix that keeps the block passes, the fix calls that block
-    the operator's text and changes every marker line, the block's too, with
-    the step that closes the code block the file then ends in, if it ends in
-    one (see :func:`_first_passing`): the next update then adds Apothem's
-    block after a closed code block, so a code block in its rules cannot
-    take the block's BEGIN marker. It must pass :func:`passes` for the next
-    update and, with *removes*, for the next uninstall too. Empty when no
-    variant passes, when *text* holds no such marker, or when it holds two or
-    more whole blocks (see :func:`block_fixes`).
+    *blocks* are the whole blocks of *text*. The fix changes those marker
+    lines alone (see :func:`_alone`), so the file's one whole block, if it
+    holds one, stays whole and the next update replaces it; for an uninstall
+    or a rules file whose block is taken out (no *appends*), only when the
+    file holds no whole block, and never for a block in a code block no line
+    closes (see :func:`_open_above`). Otherwise it keeps that block and changes
+    every other BEGIN marker line (see :func:`_keeps`), or else changes every
+    BEGIN marker line (see :func:`_none`). The old text below
+    such a marker stays: no step names it. Empty when *text* holds no such
+    marker, or two or more whole blocks (see :func:`block_fixes`).
     """
-    lines = split_lines(text)
-    strays = stray_begins(text)
-    blocks = whole_blocks(text)
     if not strays or len(blocks) > 1:
         return []
+    layout = _layout(text)
     block = blocks[0] if blocks else None
-    keeps = block is not None
-    if block is None:
-        label = f"if lines {strays[0]} to {len(lines)} are text of yours"
-    else:
-        label = f"if lines {block[0]} to {block[1]} are Apothem's block"
-    changes = [Step(Edit.CHANGE, line) for line in strays]
-    found = _first_passing(
-        lines,
-        [(changes, keeps), (_every_marker(lines, block), keeps)],
-        label=label,
-        block=block,
-        removes=removes,
-        update=True,
-    )
-    if found is None and block is not None:
-        found = _first_passing(
-            lines,
-            [(_every_marker(lines, None), False)],
-            label=f"if lines {block[0]} to {block[1]} are text of yours",
-            block=None,
-            removes=removes,
-            update=True,
-        )
-    return [] if found is None else [found]
+    steps = _change(strays)
+    alone = block is None or (appends and not _open_above(layout, block, steps))
+    if alone and _alone(layout, strays):
+        tail = _closing(layout, steps) if block is None else None
+        label = None if block is None else _label(block)
+        return [
+            Fix(
+                label,
+                steps if tail is None else (tail, *steps),
+                keeps=block is not None,
+                block=block,
+            )
+        ]
+    if block is not None and _keeps(layout, block, first=True):
+        return [_kept(layout, block)]
+    return [_none(layout, None)]
+
+
+def unlisted_fixes(text: str) -> list[Fix]:
+    """Return the fix for the one whole block an uninstall with no record leaves.
+
+    It changes every BEGIN marker line, the block's included, so no block is
+    left (see :func:`_none`): the operator deletes the old text by hand.
+    """
+    return [_none(_layout(text), None)]
 
 
 def _letter(index: int) -> str:
@@ -557,14 +513,11 @@ def _letter(index: int) -> str:
     return letters
 
 
-def render_fixes(fixes: Sequence[Fix], promises: Sequence[str], fallback: str) -> str:
-    """Return *fixes*, numbered, each ended by its promise; or *fallback*.
+def render_fixes(fixes: Sequence[Fix], promises: Sequence[str]) -> str:
+    """Return :data:`INTRO`, then *fixes*, numbered, each ended by its promise.
 
     *promises* holds one sentence per fix, what the next run then does.
-    *fallback* is the text when there is no fix (see :data:`FALLBACK`).
     """
-    if not fixes:
-        return fallback
     parts = [INTRO]
     for index, (fix, promise) in enumerate(zip(fixes, promises, strict=True)):
         letter = _letter(index)
@@ -572,6 +525,6 @@ def render_fixes(fixes: Sequence[Fix], promises: Sequence[str], fallback: str) -
             f"{letter}{number}. {render_step(step)}"
             for number, step in enumerate(fix.steps, 1)
         )
-        head = f"Fix {letter}, {fix.label}:"
-        parts.append(f"{head} {steps} {promise}." if steps else f"{head} {promise}.")
+        head = f"Fix {letter}:" if fix.label is None else f"Fix {letter}, {fix.label}:"
+        parts.append(f"{head} {steps} {promise}.")
     return " ".join(parts)

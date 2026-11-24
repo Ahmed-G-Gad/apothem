@@ -32,9 +32,6 @@ from pathlib import Path
 
 from apothem.lib import install_ledger
 from apothem.lib.harness_materializer import (
-    APOTHEM_BLOCK_BEGIN,
-    APOTHEM_BLOCK_END,
-    MarkerLine,
     UncertainPair,
     complete_managed_block,
     extract_managed_block,
@@ -582,57 +579,32 @@ def another_block_report(
     """
     text = text_at(target)
     found = whole_blocks(text)
-    revealed = _revealed_block(target, found[0]) if len(found) == 1 else None
+    revealed = _revealed_block(text, found[0]) if len(found) == 1 else None
     return two_blocks_report(
         _path_text(target),
         text,
         found,
         dry_run=dry_run,
         then=then,
-        revealed=None if revealed is None else revealed[0],
-        quoted=None if revealed is None else revealed[1],
-        removes=True,
+        revealed=revealed,
+        outcome=None,
     )
 
 
-def _revealed_block(
-    path: Path, block: tuple[int, int]
-) -> tuple[tuple[int, int], MarkerLine | None] | None:
-    """Return the whole block *path* shows once *block* is out, and its END line.
+def _revealed_block(text: str, block: tuple[int, int]) -> tuple[int, int] | None:
+    """Return the whole block *text* shows once *block* is out.
 
     The lines of *block* are blanked, not cut, so every other line keeps its
     number. They are split and numbered as
     :func:`apothem.lib.harness_materializer.whole_blocks` numbers *block*'s:
     at CRLF, a lone CR and LF, with a byte order mark at offset 0 kept out of
-    the first line. The END marker line is given when it reads as code or as
-    text (one the operator quotes in a code block, say): with no pair after
-    them, such a pair still reads as a whole block, and a pair added after
-    the text shows it, since rule 3 then fires on that pair (see
-    :func:`apothem.lib.harness_materializer.uncertain_pairs`). Only the BEGIN
-    marker of such a block needs to go. ``None`` when no whole block shows
-    then, or the file cannot be read.
+    the first line. ``None`` when no whole block shows then.
     """
-    try:
-        text = path.read_bytes().decode("utf-8", errors="replace")
-    except OSError:
-        return None
     lines = _EOL.split(text.removeprefix(_BOM))
     begin, end = block
     lines[begin - 1 : end] = [""] * (end - begin + 1)
-    text = "\n".join(lines)
-    found = whole_blocks(text)
-    if not found:
-        return None
-    probe = f"{text}\n\n{APOTHEM_BLOCK_BEGIN}\n{APOTHEM_BLOCK_END}\n"
-    quoted = next(
-        (
-            pair.end
-            for pair in uncertain_pairs(probe)
-            if pair.split and pair.begin.line == found[0][0]
-        ),
-        None,
-    )
-    return found[0], quoted
+    found = whole_blocks("\n".join(lines))
+    return found[0] if found else None
 
 
 #: Why the operator changes a BEGIN marker an uninstall leaves alone.

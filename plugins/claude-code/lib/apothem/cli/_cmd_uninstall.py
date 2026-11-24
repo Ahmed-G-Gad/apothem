@@ -379,13 +379,14 @@ _FIX_STRAY = (
 #: file), and in a file whose second block shows only once Apothem's is out
 #: (a BEGIN marker above Apothem's block and an END marker below it) it
 #: rewrites Apothem's block and keeps those two marker lines. So the operator
-#: follows one numbered fix of the file's warning, which changes the marker
-#: lines of each block that is not Apothem's, before any update.
+#: follows one numbered fix of the file's warning, which changes marker
+#: lines in place (those of each block that is not Apothem's, or every one),
+#: before any update.
 _FIX_ANOTHER = (
     "fix the {count} file(s) that hold two different blocks as each warning "
-    "says (follow one of its numbered fixes, which change the marker lines of "
-    "each block that is not Apothem's): an update does not fix such a file, "
-    "and apothem verify fails until you fix it"
+    "says (follow one of its numbered fixes, which change marker lines in "
+    "place): an update does not fix such a file, and apothem verify fails "
+    "until you fix it"
 )
 
 #: What to do first with each file whose marker pairs Apothem cannot place
@@ -425,8 +426,8 @@ def _marker_fix(run: MaterializationRun) -> str:
 _ANOTHER_BLOCK_LINE = (
     "{count} file(s) hold two different blocks between Apothem's markers, so "
     "Apothem left them as they are; fix each as its warning says, keeping your "
-    "own text (follow one of its numbered fixes, which change the marker lines "
-    "of each block that is not Apothem's), then run apothem uninstall again"
+    "own text (follow one of its numbered fixes, which change marker lines in "
+    "place), then run apothem uninstall again"
 )
 
 
