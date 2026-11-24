@@ -14,6 +14,7 @@ import threading
 from apothem.lib.harness_materializer import (
     APOTHEM_BLOCK_BEGIN,
     APOTHEM_BLOCK_END,
+    merge_managed_block,
     remove_managed_block,
 )
 
@@ -58,3 +59,27 @@ def test_the_strip_returns_when_a_copy_of_the_block_sits_after_frontmatter() -> 
     lines = removed.split("\n")
     assert lines.count("---") == 2
     assert lines[-2] == B
+
+
+# -- line-gone ---------------------------------------------------------------
+
+
+def test_the_strip_keeps_your_opening_lines_that_are_no_frontmatter_mapping() -> None:
+    """A file that opens with ``---``, a list item and ``---``, right above the block.
+
+    That reads as frontmatter followed by the BEGIN marker, the shape a
+    frontmatter-first rule file has, so the strip took the three lines for
+    Apothem's frontmatter and deleted the file. Apothem's own frontmatter is
+    a YAML mapping (``alwaysApply: true``, say); these lines are not one, so
+    they stay.
+    """
+    text = _lines("---", "- item", "---", B, "x", E)
+    assert remove_managed_block(text) == _lines("---", "- item", "---")
+
+
+def test_the_strip_still_takes_out_apothem_s_own_frontmatter() -> None:
+    """Apothem's frontmatter, a YAML mapping right above its block, goes with it."""
+    body = _lines("---", "alwaysApply: true", "---", "Apothem rules.")
+    merged = merge_managed_block(_lines("My notes."), body)
+    assert merged.startswith(_lines("---", "alwaysApply: true", "---", B))
+    assert remove_managed_block(merged) == _lines("My notes.")

@@ -1041,16 +1041,24 @@ def _owned_frontmatter_split(text: str) -> tuple[str, str] | None:
     """Return ``(frontmatter, rest)`` when *text* has the frontmatter-first shape.
 
     The shape is a byte-0 frontmatter block immediately followed by the BEGIN
-    sentinel, with no blank line between them. Only
-    :func:`_merge_frontmatter_block` writes it, so the frontmatter is Apothem's.
-    An operator file with its own frontmatter that later received an appended
-    block always has a blank line (and usually prose) before the sentinel, so it
-    never matches.
+    sentinel, with no blank line between them, and a frontmatter that holds a
+    YAML mapping, as the rule-file templates' keys do (``alwaysApply: true``,
+    say). Only :func:`_merge_frontmatter_block` writes it, so the frontmatter
+    is Apothem's. An operator file with its own frontmatter that later
+    received an appended block always has a blank line (and usually prose)
+    before the sentinel, so it never matches; nor do opening lines of the
+    operator's that only read as frontmatter, such as a ``---`` line, a list
+    item and another ``---`` line right above the BEGIN marker.
     """
     parts = split_frontmatter(text)
     if parts is None or parts[1].split("\n", 1)[0].strip() != APOTHEM_BLOCK_BEGIN:
         return None
-    return parts
+    inner = parts[0].split("\n", 1)[1].rsplit("---", 1)[0]
+    try:
+        keys = yaml.safe_load(inner)
+    except yaml.YAMLError:
+        return None
+    return parts if isinstance(keys, dict) and keys else None
 
 
 def _merge_frontmatter_block(
