@@ -513,10 +513,17 @@ def test_the_import_registers_one_guard_object(request: pytest.FixtureRequest) -
     # The conftest module itself defines none of them at module level, and
     # pytest registered it under none of them (a function of another name
     # with that specname would count), so a star import of it registers
-    # none of them a second time. Its own module-level hooks, such as the
-    # registrar, are not the guard's.
-    assert [name for name in sorted(hooks) if callable(vars(conftest).get(name))] == []
-    assert _registered_hooks(manager, conftest) & hooks == set()
+    # none of them a second time. The check goes by hook name only: a hook
+    # of the conftest's own, such as the registrar (a pytest_configure
+    # hook), fails it too once the guard implements a hook of that name.
+    shared = {name for name in hooks if callable(vars(conftest).get(name))}
+    shared |= _registered_hooks(manager, conftest) & hooks
+    assert not shared, (
+        f"tests/conftest.py implements the guard's hooks {sorted(shared)} at "
+        "module level, so a star import registers them a second time; a hook "
+        "of its own that shares a name with a guard hook needs an exception "
+        "made here on purpose"
+    )
     registrars = [
         impl
         for impl in request.config.hook.pytest_configure.get_hookimpls()
