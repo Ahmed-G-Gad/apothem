@@ -642,6 +642,10 @@ def test_the_session_hooks_read_the_log_after_what_they_follow(
         (impl,) = guard_impls(hook)
         assert impl.wrapper, hook
         assert impl.tryfirst, f"{hook}: it has to finish after every other one"
+    # On the object, like the others: at module level a star import would
+    # register it twice, and a conftest that imports single names not at all.
+    (collect,) = guard_impls("pytest_make_collect_report")
+    assert collect.wrapper, "it reads the log before and after each report"
     (loop,) = guard_impls("pytest_runtestloop")
     assert loop.wrapper
     assert loop.trylast, "it has to start after every other wrapper"
