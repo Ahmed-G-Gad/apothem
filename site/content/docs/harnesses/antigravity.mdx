@@ -157,6 +157,11 @@ earlier folder and, from the current one, only the Apothem files described
 above. It prints each warning, and it reports a failure rather than success
 when removing the earlier folder fails.
 
+Every install, update and uninstall also backs up
+`~/.antigravity/profile.yaml` under `~/.apothem/backups/` and then removes it.
+No Apothem release writes that file, so move any file of your own there before
+you run one of these commands.
+
 Install, update and uninstall never touch `~/.gemini/antigravity/`, the data
 folder of the Antigravity App. (The CLI's is `~/.gemini/antigravity-cli/` and
 the IDE's is `~/.gemini/antigravity-ide/`.) The App's folder holds its sign-in

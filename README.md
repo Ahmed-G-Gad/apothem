@@ -155,8 +155,8 @@ explicit step-by-step alternative.
 
 ### Other ways to install
 
-Apothem installs several ways — full detail (including the VS Code, Gemini CLI,
-and Codex extensions) under [Install](#install):
+Apothem installs several ways — full detail (including the VS Code and Gemini CLI
+extensions and the Codex plugin) under [Install](#install):
 
 ```text
 # 1 — Claude Code plugin (inside Claude Code)
@@ -226,8 +226,8 @@ carries its vendored dependencies and runs from a checkout on system Python
 [the self-contained runtime](https://apothem.ahmedgad.com/docs/architecture/self-contained-runtime/)).
 Two prerequisites are shared by every path — **system Python 3.10 or newer** on
 `PATH`, with the `click` and `rich` packages importable under it; the npm shim,
-the VS Code-family extension, and the Gemini CLI, Qwen Code and Codex
-extensions additionally need **Node.js 18 or newer** to run `npx`.
+the VS Code-family extension, the Gemini CLI and Qwen Code extensions, and the
+Codex plugin additionally need **Node.js 18 or newer** to run `npx`.
 
 Eight install channels are available. Pick by how you already work; each
 channel's own subsection below gives its prerequisites, one copy-ready command,
@@ -245,8 +245,8 @@ and a verification step.
 | 8 | [Direct engine (`python -m apothem`)](#8--direct-engine-python--m-apothem) | Full harness from a checkout | Python 3.10+ (`click`, `rich`) |
 
 The npm shim (2), the one-shot installers (3), and the direct engine (8) run
-the full install for any harness. The Gemini CLI, Qwen Code, and
-Codex extensions (5–7) install a small bootstrap that shells out to the engine
+the full install for any harness. The Gemini CLI and Qwen Code extensions and
+the Codex plugin (5–7) install a small bootstrap that shells out to the engine
 (`npx @ahmed-g-gad/apothem install`) to materialize the full harness — they are
 the entry point, not the full delivery on their own.
 
@@ -797,7 +797,7 @@ The seventeen adapters, their install scope (**User** = your home configuration 
 | Zed | Project | `<project>/.rules` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
 | GLM (Z.ai) | Project | `<project>/.apothem/providers/glm.toml` |
 
-Seven of the project-scope adapters (CodeBuddy, Cursor, GitHub Copilot, Kiro, Trae, Windsurf, and Zed) also write Apothem's skills, and the rules and templates they cite, to shared folders in your home directory; no skill or rule file is added to your repository, only the one rules file (and the `.apothem/` data folder).
+Seven of the project-scope adapters (CodeBuddy, Cursor, GitHub Copilot, Kiro, Trae, Windsurf, and Zed) also write Apothem's skills, and the rules and templates they cite, to shared folders in your home directory, so no skill or shared rule file is copied into your repository. Inside the project each writes its own rules or instruction file and the `.apothem/` folder, plus the hook and subagent files described below for the adapters that get them.
 CodeBuddy, Cursor, GitHub Copilot, Kiro and Windsurf also get hook entries in one file inside the project (`.codebuddy/settings.local.json`, `.cursor/hooks.json`, `.github/hooks/apothem.json`, `.kiro/hooks/apothem.json` and `.devin/config.local.json`); the hook scripts those entries run sit under `.apothem/support/`.
 CodeBuddy, Cursor, GitHub Copilot, Kiro, Trae and Windsurf also receive Apothem's helpers as subagent files inside the project, in `.codebuddy/agents/`, `.cursor/agents/`, `.github/agents/`, `.kiro/agents/`, `.trae/agents/` and `.devin/agents/` (Windsurf holds back the three helpers that need web tools), and Kimi Code receives them in `.kimi-code/agents/`. One copy serves every project, every install that names a folder writes the same files, and `apothem uninstall` keeps a folder while another install still uses it.
 

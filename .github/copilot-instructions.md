@@ -166,8 +166,9 @@ The SPDX line is **exempt** for the following classes — the validator returns
 
 The full glob list is at
 [`src/apothem/schemas/header-exceptions.txt`](../src/apothem/schemas/header-exceptions.txt). Adding a
-new exemption requires an explicit operator confirmation and an ADR under the
-repository's ratified ADR location.
+new exemption requires an explicit operator confirmation and a recorded
+decision (TODO(clarify): name the folder that holds header-exemption
+decisions; no validator checks for one).
 
 ## Plans Discipline
 
@@ -330,8 +331,10 @@ messages:
   `AGENTS.md` overlap on a shared discipline, they are semantically
   equivalent. A surface-specific override requires an inline
   `<!-- coherence-override: <claim-id> -->` marker paired with an ADR under
-  `site/content/docs/adr/` (the coherence validator warns while that folder
-  holds no ADR); a silent contradiction is a build failure.
+  `site/content/docs/adr/`. The coherence validator skips that claim's checks
+  on a surface with the marker. It warns (advisory) only when a marker stands
+  in for a claim the surface lacks and that folder holds no `.md` file; it
+  never reads an ADR's content. A silent contradiction is a build failure.
 
 ## Output Format
 

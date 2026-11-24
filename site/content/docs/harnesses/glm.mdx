@@ -32,8 +32,8 @@ The adapter writes one project-scope provider file recording the GLM backend
 endpoints and operator-configurable placeholders.
 
 **Files written:** `<project>/.apothem/providers/glm.toml`, plus the
-`.apothem/` data folder (`contexts/`, `learning/`, `memory/`, `plans/`) that
-every project install creates.
+data folder that every project install creates, `.apothem/` by default
+(`contexts/`, `learning/`, `memory/`, `plans/`).
 
 ## Profile-to-native-config mapping
 
@@ -73,7 +73,8 @@ Apothem pins none of these values and does not choose between them.
 The GLM backend exposes no surface for rules, commands, skills, or hooks, so
 the adapter writes the backend provider file and none of those. Apothem has not
 checked whether ZCode exposes such surfaces. Like every project install, the
-GLM install also creates the project's `.apothem/` data folder. Your Z.ai key
+GLM install also creates the Apothem data folder, `<project>/.apothem/` by
+default. Your Z.ai key
 and your model-id choices stay operator-owned. The vendor surface conventions
 the adapter relies on are pinned at
 `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md`, snapshotted against the

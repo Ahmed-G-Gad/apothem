@@ -136,8 +136,10 @@ apothem status [--profile PATH] [--project PATH]
 | `--project PATH` | Project root for project-scope harnesses. Without it they report `needs-project`. |
 
 Each row carries an `installed` flag, a `verified` flag, and a drift state.
-The drift state does not come from the two flags: it compares the installed
-configuration with the profile baseline, or names why no comparison ran:
+The drift state is `absent` whenever the `installed` flag is false, and it
+never depends on the `verified` flag. For an installed harness it compares the
+installed configuration with the profile baseline, or names why no comparison
+ran:
 
 | State | Meaning |
 |-------|---------|
