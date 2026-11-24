@@ -110,6 +110,8 @@ from typing import IO, TYPE_CHECKING, Any
 import pytest
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Generator
+
     from pluggy import HookImpl
 
 #: Hands the repo root to the pytester session, which runs from a copy of this file.
@@ -1040,6 +1042,46 @@ def test_a_passing_exit_fails_once_a_refusal_was_reported(
         for code in codes
         for reported in (False, True)
     }
+
+
+def test_the_session_finish_and_unconfigure_wrappers_fail_a_passing_exit(
+    request: pytest.FixtureRequest,
+) -> None:
+    """Both wrappers turn a passing exit from a hook they wrap into a failure.
+
+    Each is driven on its own with a stand-in config, and the guard's
+    holding and reporting helpers are replaced by no-ops for the duration,
+    so this checks only that the wrapper passes a ``SystemExit`` from its
+    ``yield`` through :func:`_a_passing_exit_fails`. The pytester cases do
+    not check that, because the ``pytest_cmdline_main`` wrapper converts
+    the same exits at the end of the run.
+    """
+    conftest = _suite_conftest(request.config)
+    guard = conftest.real_home_guard
+    config = SimpleNamespace(stash=pytest.Stash())
+    session = SimpleNamespace(config=config)
+
+    def ended(wrapper: Callable[[], Generator[None, None, None]]) -> object:
+        running = wrapper()
+        next(running)
+        with pytest.raises(SystemExit) as raised:
+            running.throw(SystemExit(0))
+        return raised.value.code
+
+    with pytest.MonkeyPatch.context() as patch:
+        for name in ("_hold", "_report_held", "_take_late", "_fail_the_run"):
+            patch.setattr(conftest, name, lambda *args, **kwargs: None)
+        for name in ("_is_controller", "_is_worker"):
+            patch.setattr(conftest, name, lambda *args: False)
+        config.stash[conftest._REPORTED] = True
+        found = {
+            "session finish": ended(
+                lambda: guard.pytest_sessionfinish_after_the_summary(session)
+            ),
+            "unconfigure": ended(lambda: guard.pytest_unconfigure(config)),
+        }
+
+    assert found == {"session finish": 1, "unconfigure": 1}
 
 
 def test_the_pytester_cases_pass(tmp_path: Path) -> None:
