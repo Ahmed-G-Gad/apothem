@@ -7,12 +7,21 @@ Markdown files from a fixed seed (prose, blank lines, backtick and tilde code
 blocks at indent 0 to 3 with and without an info string, list items, indented
 code, one to three marker pairs, BEGIN markers that start no pair, marker
 lines anywhere, a BEGIN marker above a block with an END marker below it)
-plus six fixed shapes. For each file it asks every caller
-for its warning, through the functions those callers use and with what they
+plus fixed shapes. A second set of random files holds BEGIN markers that
+start no block (one to three, and more at any line: at the top and the
+bottom, above, inside and below a whole block, in fenced and indented code,
+in a list item, under a paragraph, with old rule text below or none), with
+no whole block, one, or two. A third test puts one such marker at every
+line of two fixed files, at indent 0, 2 and 4. For each file it asks every
+caller for its warning, through the functions those callers use and with what they
 pass: the install and update warning (the file written or left as it is, a
 dry run too, with and without an install record), the verify and doctor
-note, the uninstall's warnings (with and without a record, and the warning
-for a file no record lists) and the OpenClaw rules-file retire.
+note (for one file, and for two files in one note, each read with its own
+steps), the uninstall's warnings (with and without a record, the warning
+for a file no record lists, and the warning for a BEGIN marker left once
+the uninstall took Apothem's block out), the OpenClaw rules-file retire
+(and its warning for such a marker once the retire took the block out), and
+the uninstall's summary of the files with such a marker.
 
 Each message is read with this file's own patterns, written from the step
 formats on the troubleshooting page (``site/content/docs/install/
@@ -36,12 +45,19 @@ taken as it stands, to a copy of the file, and the test holds that:
    operator's), after the steps and after the uninstall;
 3. no line outside a range a step deletes is gone.
 
+No message may tell the operator to delete a single marker line or a single
+numbered line (a marker line is only changed in place; a step deletes whole
+ranges), and a message for a file with a BEGIN marker that starts no block
+must give a numbered fix or the fallback.
+
 A message with no numbered fix (the fallback) is held to its own promise:
 change every marker line, and the next update gives one whole block.
 
-``APOTHEM_ADVICE_PROPERTY_FILES`` sets how many random files to make (default
-:data:`DEFAULT_FILES`). ``APOTHEM_ADVICE_PROPERTY_REPORT`` names a file each
-shard appends its counts to, as one JSON line.
+``APOTHEM_ADVICE_PROPERTY_FILES`` sets how many files each of the two random
+sets makes (default :data:`DEFAULT_FILES`, so the default run fits the CI
+test job; set 30,000 or more for a thorough run).
+``APOTHEM_ADVICE_PROPERTY_REPORT`` names a file each shard appends its
+counts to, as one JSON line.
 """
 
 from __future__ import annotations
@@ -58,8 +74,10 @@ from pathlib import Path
 import pytest
 from markdown_it import MarkdownIt
 
+from apothem.cli._cmd_uninstall import _FIX_STRAY
 from apothem.cli._stray_begin_report import stray_begin_note
 from apothem.harnesses._shared.install_driver_blocks import (
+    RETIRED_WHY,
     UNINSTALL_AGAIN,
     _install_warning,
     another_block_at,
@@ -67,14 +85,17 @@ from apothem.harnesses._shared.install_driver_blocks import (
     endless_block_warning,
     markers_to_fix_at,
     sentinel_refusal,
+    stray_begin_warnings,
     unclear_block_warning,
 )
 from apothem.harnesses._shared.install_driver_blocktext import TAKES_OUT
 from apothem.harnesses._shared.install_driver_retention import unlisted_block_warnings
+from apothem.harnesses._shared.install_driver_types import MaterializationResult
 from apothem.harnesses.open_claw.rules_file import _RETRIED, RETIRE
 from apothem.lib.harness_materializer import (
     APOTHEM_BLOCK_BEGIN,
     APOTHEM_BLOCK_END,
+    extract_managed_block,
     has_stray_begin,
     merge_managed_block,
     remove_managed_block,
@@ -85,13 +106,19 @@ from apothem.lib.harness_materializer import (
 B, E = APOTHEM_BLOCK_BEGIN, APOTHEM_BLOCK_END
 MARKERS = frozenset({B, E})
 
-#: Random files made when ``APOTHEM_ADVICE_PROPERTY_FILES`` is not set.
-DEFAULT_FILES = 1000
+#: Files each random set makes when ``APOTHEM_ADVICE_PROPERTY_FILES`` is not
+#: set: the whole file then runs in under a minute with four workers, inside
+#: the time the CI coverage job gives each of its two shards.
+DEFAULT_FILES = 200
 #: The test runs in this many parts, so pytest-xdist can spread them.
 SHARDS = 8
 SEED = 20261124
 #: Every caller whose advice a shard must see at least once.
 CALLERS = frozenset({"install/update", "verify/doctor", "uninstall", "openclaw retire"})
+#: The same for the files with BEGIN markers that start no block.
+STRAY_CALLERS = CALLERS | {"uninstall after strip", "openclaw after strip"}
+#: The uninstall's summary of the files whose warnings name such a marker.
+SUMMARY = "uninstall summary"
 
 #: Bodies the next update writes: plain, a closed code block, and a rule
 #: that opens a code block and never closes it (the merge closes it).
@@ -115,6 +142,17 @@ SHAPES: dict[str, list[str]] = {
     # it then reads as a whole block.
     "unlisted": ["- item KEEP1", f"  {B}", E, "   ~~~md", B, E, "   ~~~~"],
     "revealed": ["```md", "code KEEP", B, B, "Run:", "~~~", "npm test", E, "", "", E],
+    # A block that lost its END marker, its rule's code block left open, and
+    # the operator's text below it.
+    "lost-end": ["# mine KEEP0", B, "old rule", "```sh", "npm test", "", "my KEEP1"],
+    # Two BEGIN markers that start no block, one in a list item, above a
+    # whole block.
+    "two-lone": [B, "old KEEP1", "", "- item KEEP2", f"  {B}", "", *_BLOCK, "KEEP3"],
+    # The 30,000-file stray pass found this one: no numbered fix passed, and
+    # the fallback (change every marker line) left the backtick code block of
+    # line 1 open, so a rule with a code block made no whole block. Every
+    # caller must now give it a numbered fix.
+    "fallback-open-fence": ["```", B, B, "~~~", E, "~~~"],
     "sA2": [
         "My notes:",
         "```",
@@ -221,6 +259,13 @@ _FALLBACK_PROMISE = re.compile(
 #: numbered line: every such edit must be a numbered step.
 _EDIT_VERB = re.compile(r"\b(delete|move|add|change|remove|close|cut)\b", re.I)
 _LINE_NUMBER = re.compile(r"\blines? \d+")
+#: A sentence that tells the operator to delete one marker line, or one
+#: numbered line, on its own.
+_SINGLE_DELETE = re.compile(
+    r"\b(?:delete|remove|cut|drop)\b.*?\b(?:(?:marker|BEGIN|END|that|this|the|"
+    r"each|a) line|line \d+|(?:BEGIN|END) marker)\b(?!s)",
+    re.I,
+)
 
 
 @dataclass(frozen=True)
@@ -335,6 +380,22 @@ def stray_edits(message: str) -> list[str]:
         if sentence.lstrip().startswith(("Do not", "do not")):
             continue
         if _EDIT_VERB.search(sentence) and _LINE_NUMBER.search(sentence):
+            found.append(sentence.strip())
+    return found
+
+
+def single_deletes(message: str) -> list[str]:
+    """Return each sentence outside the steps that deletes a single line.
+
+    A marker line is only ever changed in place, and a step deletes whole
+    ranges ("Delete lines 2 to 5."); a sentence that says what not to do is
+    no edit.
+    """
+    found = []
+    for sentence in re.split(r"(?<=[.;:])\s+", _outside_steps(message)):
+        if sentence.lstrip().startswith(("Do not", "do not")):
+            continue
+        if _SINGLE_DELETE.search(sentence):
             found.append(sentence.strip())
     return found
 
@@ -689,6 +750,8 @@ def check_message(
     before = tuple(roles(original))
     for sentence in stray_edits(message):
         tally.flag(caller, "unnumbered-line-edit", text, message, sentence)
+    for sentence in single_deletes(message):
+        tally.flag(caller, "single-line-delete", text, message, sentence)
     try:
         fixes = read_fixes(message)
     except UnreadableError as error:
@@ -721,6 +784,10 @@ def check_message(
         return
     if not fixes:
         tally.prose_only += 1
+        # The uninstall's summary line points at the steps in each warning.
+        if has_stray_begin(text) and caller != SUMMARY:
+            problem = "a file with a stray BEGIN marker gets no numbered fix"
+            tally.flag(caller, "stray-without-steps", text, message, problem)
         return
     tally.advice += 1
     tally.numbered += 1
@@ -790,6 +857,38 @@ def caller_messages(text: str, body: str, home: Path) -> Iterator[tuple[str, str
     for warning in unlisted_block_warnings(root):
         yield "uninstall (no record, bolt-on anchor)", warning.message, text
     yield from _retire_messages(path, text)
+    yield from _strip_messages(path, text)
+    if has_stray_begin(text):
+        yield SUMMARY, _FIX_STRAY.format(count=1), text
+
+
+def _strip_messages(path: Path, text: str) -> Iterator[tuple[str, str, str]]:
+    """Yield the warnings for a BEGIN marker left once Apothem's block is out.
+
+    The uninstall takes the block out when it does not refuse the file (with
+    or without an install record); the OpenClaw retire takes it out the same
+    way. Their line numbers count the file after the strip.
+    """
+    _write(path, text)
+    if extract_managed_block(text) is None or all(
+        sentinel_refusal(path, recorded=recorded) is not None
+        for recorded in (True, False)
+    ):
+        return
+    stripped = remove_managed_block(text)
+    _write(path, stripped)
+    for name, operation, why in (
+        ("uninstall after strip", "surgical_uninstall", None),
+        ("openclaw after strip", "retire_anchor", RETIRED_WHY),
+    ):
+        done = [MaterializationResult("updated", operation, str(path), "")]
+        found = (
+            stray_begin_warnings(done)
+            if why is None
+            else stray_begin_warnings(done, why=why)
+        )
+        for warning in found:
+            yield name, warning.message, stripped
 
 
 def _verify_messages(
@@ -798,13 +897,18 @@ def _verify_messages(
     _write(path, text)
     if not markers_to_fix_at(path):
         return
+    then = "run apothem update and apothem verify again"
     for listed in (True, False):
-        note = stray_begin_note(
-            [path],
-            then="run apothem update and apothem verify again",
-            listed=_always(listed),
-        )
+        note = stray_begin_note([path], then=then, listed=_always(listed))
         yield f"verify/doctor (listed {listed}, {when})", note, text
+    # Two files in one note: each part is read with its own steps.
+    second = path.parent / "second" / path.name
+    _write(second, text)
+    note = stray_begin_note([path, second], then=then, listed=_always(False))
+    cut = note.find(str(second))
+    assert cut > 0, f"the note does not name the second file apart: {note}"
+    yield f"verify/doctor (two files, first, {when})", note[:cut], text
+    yield f"verify/doctor (two files, second, {when})", note[cut:], text
 
 
 def _always(listed: bool) -> Callable[[Path], bool]:
@@ -958,6 +1062,58 @@ class Maker:
             lines.pop()
         return _joined(lines)
 
+    def lone(self) -> list[str]:
+        """Return a BEGIN marker that starts no block, where one can stand."""
+        rng, keep = self.rng, self.keep
+        choice = rng.randrange(8)
+        if choice == 0:
+            return [self.marker(B)]
+        if choice == 1:
+            # A block that lost its END marker: its rule text, or a code
+            # block its rule opens, is left below the marker.
+            return [self.marker(B), *self.body()]
+        if choice == 2:
+            return [self.marker(B), f"old rule {keep()}", f"old rule {keep()}"]
+        if choice == 3:
+            return [f"- item {keep()}", f"  {B}", f"  rule {keep()}"]
+        if choice == 4:
+            opener, char, size = self.opener()
+            lines = [opener, self.marker(B), f"code {keep()}"]
+            if rng.random() < 0.8:
+                lines.append(self.closer(char, size))
+            return lines
+        if choice == 5:
+            return [f"text {keep()}", f"    {B}"]
+        if choice == 6:
+            return ["", f"    {B}", f"    code {keep()}", ""]
+        # Right above or inside a whole block.
+        if rng.random() < 0.5:
+            return [self.marker(B), *self.block()]
+        block = self.block()
+        return [block[0], *block[1:-1], self.marker(B), block[-1]]
+
+    def stray_file(self) -> str:
+        """Return a file with one or more BEGIN markers that start no block."""
+        rng = self.rng
+        parts = [self.plain() for _ in range(rng.randint(0, 4))]
+        parts += [self.lone() for _ in range(rng.randint(1, 3))]
+        parts += [self.block() for _ in range(rng.choice((0, 0, 1, 1, 1, 2)))]
+        rng.shuffle(parts)
+        lines: list[str] = []
+        for part in parts:
+            lines += part
+            if rng.random() < 0.6:
+                lines.append("")
+        # More of them at any line: the top, the bottom, inside a block or
+        # a code block; now and then an END marker on its own too.
+        for _ in range(rng.choice((0, 0, 1, 1, 2))):
+            spot = rng.randint(0, len(lines))
+            which = B if rng.random() < 0.85 else E
+            lines.insert(spot, " " * rng.choice((0, 0, 1, 3, 4)) + which)
+        while lines and not lines[-1].strip():
+            lines.pop()
+        return _joined(lines)
+
 
 def _files() -> int:
     return int(os.environ.get("APOTHEM_ADVICE_PROPERTY_FILES", DEFAULT_FILES))
@@ -1025,11 +1181,100 @@ def test_every_printed_fix_holds_when_followed_literally(
     assert not tally.violations, _summary(tally)
 
 
+@pytest.mark.parametrize("shard", range(SHARDS))
+def test_every_fix_for_a_stray_begin_holds_when_followed_literally(
+    shard: int, tmp_path: Path
+) -> None:
+    """Each fix any caller prints for a BEGIN marker that starts no block holds."""
+    maker = Maker(SEED * 300 + shard)
+    count = -(-_files() // SHARDS)
+    texts = [maker.stray_file() for _ in range(count)]
+    rng = random.Random(SEED * 3 + shard)  # noqa: S311 - seeded test input
+    tally = run_files(texts, tmp_path, lambda _index: rng.choice(BODIES))
+    _report(tally, f"stray shard {shard}")
+    assert set(tally.callers) >= STRAY_CALLERS, (
+        f"no advice from {STRAY_CALLERS - set(tally.callers)}"
+    )
+    assert not tally.violations, _summary(tally)
+
+
+#: Files that :func:`test_a_lone_begin_at_every_line_gets_a_fix_that_holds`
+#: puts one BEGIN marker into, at each line in turn, and the callers that
+#: must give advice for them.
+POSITION_BASES: dict[str, tuple[list[str], frozenset[str]]] = {
+    "with a block": (
+        [
+            "# head KEEP1",
+            "text KEEP2",
+            "```sh",
+            "ls KEEP3",
+            "```",
+            "",
+            B,
+            "rule one",
+            E,
+            "",
+            "- item KEEP4",
+            "  more KEEP5",
+            "",
+            "    code KEEP6",
+            "",
+            "tail KEEP7",
+        ],
+        frozenset(
+            {
+                "install/update",
+                "verify/doctor",
+                "uninstall after strip",
+                "openclaw after strip",
+            }
+        ),
+    ),
+    "with no block": (
+        [
+            "# head KEEP1",
+            "~~~",
+            "code KEEP2",
+            "~~~",
+            "text KEEP3",
+            "",
+            "- item KEEP4",
+            "",
+            "    code KEEP5",
+            "",
+            "tail KEEP6",
+        ],
+        frozenset({"install/update", "verify/doctor", "uninstall", "openclaw retire"}),
+    ),
+}
+
+
+@pytest.mark.parametrize("name", sorted(POSITION_BASES))
+def test_a_lone_begin_at_every_line_gets_a_fix_that_holds(
+    name: str, tmp_path: Path
+) -> None:
+    """A BEGIN marker at each line of a file, at indent 0, 2 and 4, gets fixes that hold."""
+    base, callers = POSITION_BASES[name]
+    tally = Tally()
+    for spot in range(len(base) + 1):
+        for indent in ("", "  ", "    "):
+            text = _joined([*base[:spot], f"{indent}{B}", *base[spot:]])
+            body = BODIES[spot % len(BODIES)]
+            tally.files += 1
+            for caller, message, on_disk in caller_messages(text, body, tmp_path):
+                check_message(tally, caller, on_disk, message, body)
+    _report(tally, f"every line, {name}")
+    assert set(tally.callers) >= callers, (
+        f"no advice from {callers - set(tally.callers)}"
+    )
+    assert not tally.violations, _summary(tally)
+
+
 @pytest.mark.parametrize("name", sorted(SHAPES))
 def test_named_shapes_hold_and_code_blocks_get_numbered_fixes(
     name: str, tmp_path: Path
 ) -> None:
-    """The reviewer's shapes hold; sA2 and plain get numbered fixes, no fallback."""
+    """The named shapes hold; three of them get numbered fixes, no fallback."""
     text = _joined(SHAPES[name])
     tally = Tally()
     numbered: list[bool] = []
@@ -1042,7 +1287,7 @@ def test_named_shapes_hold_and_code_blocks_get_numbered_fixes(
     _report(tally, f"shape {name}")
     assert not tally.violations, _summary(tally)
     assert numbered, f"{name}: no caller gave advice"
-    if name in {"sA2", "plain"}:
+    if name in {"sA2", "plain", "fallback-open-fence"}:
         assert all(numbered), f"{name}: a caller gave the fallback\n{_summary(tally)}"
 
 
@@ -1075,6 +1320,35 @@ def test_the_reader_reads_every_documented_step_format() -> None:
         "the uninstall leaves it as it is; delete lines 2 to 3, from "
         f"{B} to {E}, by hand if you no longer want them"
     )
+
+
+def test_the_reader_finds_a_single_marker_line_delete() -> None:
+    """A text that deletes one marker line on its own is read as such; ranges are not."""
+    # The texts these warnings gave before they changed the marker line.
+    assert single_deletes(
+        "Delete that marker line by hand, with the old Apothem text below it "
+        "that repeats the rules in Apothem's whole block, and keep your own lines"
+    )
+    assert single_deletes(
+        "Delete that line by hand, with any old Apothem text below it, and keep "
+        "your own lines: apothem verify fails for this tool until you do."
+    )
+    assert single_deletes(
+        "apothem verify fails until you delete that marker line by hand, with "
+        "any old Apothem text below it, keeping your own lines"
+    )
+    assert single_deletes("Then delete line 4.")
+    assert not single_deletes(
+        "Fix A, if lines 2 to 5 are text of yours: A1. Delete lines 2 to 5. No "
+        "Apothem block is then left in this file."
+    )
+    assert not single_deletes(
+        "Any old Apothem text below a BEGIN marker line you change is then yours "
+        "to keep or delete."
+    )
+    assert not single_deletes("Do not delete that marker line.")
+    for count in (1, 2):
+        assert not single_deletes(_FIX_STRAY.format(count=count))
 
 
 def test_both_readings_of_the_line_numbers_agree_only_bottom_up() -> None:
