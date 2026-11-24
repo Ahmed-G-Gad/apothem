@@ -127,7 +127,9 @@ that passes when its folder is missing, such as the workflow validators, does
 not pass when that folder is a link: the files may be behind it, so the run
 fails like one that checked nothing. A hard link is a regular file and is read
 like one, and the checks that run git read the `.git` folder through git
-itself; a `.git` that is a link is not taken as the project's checkout.
+itself. Every check that runs git first looks at the root's `.git` entry: when
+it is a link, the check does not run git, lists `.git` under `skipped_links`,
+and treats the project as having no checkout.
 
 Six validators start at the repository root and search the whole tree for the
 files they check:

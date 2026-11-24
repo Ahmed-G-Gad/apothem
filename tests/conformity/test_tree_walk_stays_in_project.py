@@ -27,6 +27,7 @@ from __future__ import annotations
 import itertools
 import json
 import os
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -55,6 +56,7 @@ from apothem.conformity._project_paths import (
     start_skip_log,
     take_skipped_paths,
 )
+from tests._shared.git_env import hermetic_git_env
 
 _POSIX_ONLY = pytest.mark.skipif(
     os.name == "nt", reason="named pipes and /dev/zero exist only on POSIX systems"
@@ -490,8 +492,9 @@ def test_a_link_target_is_found_level_by_level(
     }
     back = chr(92)  # a backslash, built here so no escape is needed
     unc = back.join(["", "", "?", "UNC", "server", "share", "AGENTS.md"])
-    cases[unc] = None
+    # On POSIX a backslash is part of a name; that case is tested below.
     if os.name == "nt":
+        cases[unc] = None
         cases["C:AGENTS.md"] = None
         cases[back + "AGENTS.md"] = None
     for text, expected in cases.items():
@@ -684,18 +687,22 @@ def test_a_readme_link_inside_the_project_counts_for_coverage(tmp_path: Path) ->
 
 
 @pytest.mark.parametrize(
-    "sibling", ["desk", "des" + chr(0x212A)], ids=["same", "kelvin"]
+    ("sibling", "inside"),
+    [("desk", True), ("des" + chr(0x212A), False)],
+    ids=["back-into-the-root", "kelvin-sibling"],
 )
-def test_a_link_target_never_steps_above_the_root(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, sibling: str
+def test_a_link_target_above_the_root_must_come_back_exactly(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, sibling: str, inside: bool
 ) -> None:
-    """``..`` from the root is refused, so no sibling spelled like it is reached.
+    """``../desk/AGENTS.md`` from the root ``desk`` lands inside it and counts.
 
-    Windows compares names without case, and the Kelvin sign folds to ``K``,
-    so a sibling ``desK`` beside a root ``desk`` would pass a by-name check.
+    Climbing above the root may only come straight back in under the root's
+    own name, spelled exactly. Windows compares names without case, and the
+    Kelvin sign folds to ``K``, so a sibling ``desK`` would pass a by-name
+    check and is refused.
     """
     root = (tmp_path / "desk").resolve()
-    _write(root / "AGENTS.md")
+    agents = _write(root / "AGENTS.md")
     if sibling != root.name:
         try:
             _write(tmp_path / sibling / "AGENTS.md")
@@ -704,7 +711,130 @@ def test_a_link_target_never_steps_above_the_root(
     link = root / "CLAUDE.md"
     _fake_readlink(monkeypatch, link, f"../{sibling}/AGENTS.md")
 
+    expected = agents if inside else None
+    assert _project_paths._link_target(root, link) == expected
+
+
+def test_an_absolute_link_to_a_sibling_that_folds_onto_the_root_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An absolute target is compared with the root's own parts, exactly."""
+    root = (tmp_path / "desk").resolve()
+    _write(root / "AGENTS.md")
+    link = root / "CLAUDE.md"
+    folded = root.parent / ("des" + chr(0x212A)) / "AGENTS.md"
+    _fake_readlink(monkeypatch, link, str(folded))
+
     assert _project_paths._link_target(root, link) is None
+
+
+def test_device_and_extended_paths_count_as_outside(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """On Windows only an extended drive path can name a project file."""
+    root = (tmp_path / "project").resolve()
+    agents = _write(root / "AGENTS.md")
+    link = root / "CLAUDE.md"
+    back = chr(92)
+    outside = [
+        back.join(["", "", "?", "unc", "server", "share", "AGENTS.md"]),
+        back.join(["", "", "?", "GLOBALROOT", "Device", "HarddiskVolume1", "x"]),
+        back.join(["", "", "?", "Volume{00000000-0000-0000-0000-000000000000}", "x"]),
+        back.join(["", "", ".", "pipe", "x"]),
+        back.join(["", "??", "C:", "x"]),
+    ]
+    if os.name == "nt":
+        # Decoys: read without its prefix, each text would name one of these.
+        for text in outside:
+            rest = text.split(back, 3)[-1]
+            _write(root.joinpath(*rest.split(back)))
+    for text in outside:
+        _fake_readlink(monkeypatch, link, text)
+        # On POSIX the same text is one plain name in the link's folder.
+        expected = None if os.name == "nt" else link.parent / text
+        assert _project_paths._link_target(root, link) == expected, text
+    if os.name == "nt":
+        _fake_readlink(monkeypatch, link, back * 2 + "?" + back + str(agents))
+        assert _project_paths._link_target(root, link) == agents
+
+
+@_WINDOWS_ONLY
+def test_the_walk_does_not_list_an_unwanted_trailing_dot_file(tmp_path: Path) -> None:
+    """A file the walk would not have read is not listed, so scopes stay empty."""
+    root = (tmp_path / "project").resolve()
+    _write(root / "page.md")
+    notes = _extended(root / "notes.")
+    notes.write_bytes(b"x")
+    try:
+        start_skip_log(root)
+        assert _walk(root, ".md") == ["page.md"]
+        assert take_skipped_paths() == []
+    finally:
+        notes.unlink()
+
+
+def test_a_linked_git_folder_stops_every_git_run(tmp_path: Path) -> None:
+    """The plans check and the coverage check do not run git through a link."""
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    root = (tmp_path / "project").resolve()
+    root.mkdir()
+    _link_folder(root / ".git", elsewhere)
+
+    start_skip_log(root)
+    with pytest.raises(RuntimeError, match="link"):
+        no_global_plans_grep._git_ls_files(root)
+    assert agents_md_coverage_grep._last_commit_times(root) is None
+    assert take_skipped_paths() == [".git"]
+
+
+@_POSIX_ONLY
+def test_a_package_folder_whose_readme_links_out_still_needs_coverage(
+    tmp_path: Path,
+) -> None:
+    """Rule B: a README that leads out of the project is no README."""
+    root = (tmp_path / "project").resolve()
+    _write(root / "src" / "apothem" / "foo" / "mod.py")
+    beside = _write(tmp_path / "beside.md")
+    (root / "src" / "apothem" / "foo" / "README.md").symlink_to(beside)
+
+    assert "src/apothem/foo" in agents_md_coverage_grep.meaningful_folders(root)
+
+
+@_POSIX_ONLY
+def test_a_companion_that_links_out_is_not_judged_stale(tmp_path: Path) -> None:
+    """A committed companion later swapped for an outside link is not read."""
+    root = (tmp_path / "project").resolve()
+    folder = root / "src" / "apothem" / "foo"
+    _write(folder / "AGENTS.md", "# Foo\n")
+    _write(folder / "mod.py", "x = 1\n")
+    env = hermetic_git_env()
+
+    def git(*args: str, when: int | None = None) -> None:
+        run_env = dict(env)
+        if when is not None:
+            stamp = f"{when} +0000"
+            run_env["GIT_AUTHOR_DATE"] = stamp
+            run_env["GIT_COMMITTER_DATE"] = stamp
+        subprocess.run(
+            ["git", *args], cwd=root, env=run_env, check=True, capture_output=True
+        )
+
+    git("init", "-q")
+    git("config", "user.email", "test@apothem.invalid")
+    git("config", "user.name", "apothem-test")
+    git("config", "commit.gpgsign", "false")
+    git("add", "src/apothem/foo/AGENTS.md")
+    git("commit", "-qm", "companion", when=1_000_000_000)
+    _write(folder / "mod.py", "x = 2\n")
+    git("add", "-A")
+    git("commit", "-qm", "content", when=1_000_100_000)
+    (folder / "AGENTS.md").unlink()
+    (folder / "AGENTS.md").symlink_to(_write(tmp_path / "outside.md", "# Out\n"))
+
+    result = agents_md_coverage_grep.check(root)
+
+    assert [f for f in result.findings if "AGENTS" in str(f)] == []
 
 
 def test_the_typed_root_is_recorded_by_parse_root_args(

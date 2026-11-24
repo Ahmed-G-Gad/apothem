@@ -28,6 +28,7 @@ file or a tree without a trace.
 from __future__ import annotations
 
 import os
+import re
 import stat
 from pathlib import Path
 from typing import Final, Literal
@@ -38,11 +39,13 @@ from typing import Final, Literal
 NAME_SURROGATE_TAG_BIT: Final[int] = 0x20000000
 
 # What a directory entry is, looked at without following it.
-EntryKind = Literal["dir", "file", "link", "other"]
+EntryKind = Literal["dir", "file", "link", "other", "skipped-folder"]
 DIR_ENTRY: Final[EntryKind] = "dir"
 FILE_ENTRY: Final[EntryKind] = "file"
 LINK_ENTRY: Final[EntryKind] = "link"
 OTHER_ENTRY: Final[EntryKind] = "other"
+# A folder the helpers leave out: on Windows, one whose name Win32 rewrites.
+SKIPPED_FOLDER_ENTRY: Final[EntryKind] = "skipped-folder"
 
 # Win32 drops a trailing dot or space from each path segment when a path is
 # opened by name, so ``X.`` listed as a real folder would be reopened as ``X``,
@@ -59,6 +62,11 @@ def _rewritten_by_win32(name: str) -> bool:
     """Return True on Windows for a name Win32 would change when it is reopened."""
     return os.name == "nt" and name.endswith(_WIN32_REWRITTEN_ENDINGS)
 
+
+# Every Windows device or extended path prefix; only an extended drive path
+# (``\\?\C:\...``) can name a file inside a project.
+_DEVICE_PREFIXES: Final[tuple[str, ...]] = ("\\\\?\\", "\\\\.\\", "\\??\\")
+_DRIVE_ROOT: Final[re.Pattern[str]] = re.compile(r"[A-Za-z]:\\")
 
 # The prefix Windows puts on the target os.readlink returns for an absolute
 # link target, and the form it takes for a network path.
@@ -148,7 +156,11 @@ def _entry_kind(entry: os.DirEntry[str]) -> EntryKind | None:
     ending and reach a different entry, such as a junction beside it.
     """
     if _rewritten_by_win32(entry.name):
-        return OTHER_ENTRY
+        try:
+            is_folder = entry.is_dir(follow_symlinks=False)
+        except OSError:
+            return None
+        return SKIPPED_FOLDER_ENTRY if is_folder else OTHER_ENTRY
     try:
         if entry.is_symlink():
             return LINK_ENTRY
@@ -322,9 +334,23 @@ def _inside(root: Path, path: Path) -> bool:
 def _respelled(root: Path, named: Path) -> Path:
     """Return *named* spelled through *root* when it uses another spelling of it."""
     for typed, resolved in _root_spellings.items():
-        if resolved == root and _inside(typed, named):
-            return root / named.relative_to(typed)
+        if resolved == root and _exactly_inside(typed, named):
+            return root.joinpath(*named.parts[len(typed.parts) :])
     return named
+
+
+def _exactly_inside(root: Path, path: Path) -> bool:
+    """Return True when *path* starts with *root*'s own parts, compared exactly.
+
+    ``Path.relative_to`` compares names without case on Windows, and a Kelvin
+    sign folds to ``K``, so a sibling such as ``desK`` would pass it. Only the
+    drive letter is compared without case.
+    """
+    count = len(root.parts)
+    if len(path.parts) < count:
+        return False
+    head, rest = path.parts[:count], path.parts[1:count]
+    return head[0].upper() == root.parts[0].upper() and rest == root.parts[1:]
 
 
 def _link_target(root: Path, link: Path) -> Path | None:
@@ -332,52 +358,61 @@ def _link_target(root: Path, link: Path) -> Path | None:
 
     ``os.readlink`` reads the link itself and never touches its target. The
     text is then walked one level at a time from the link's folder, as the
-    system would: ``..`` steps up from a folder already shown to be real, and
-    each named folder must be a real folder inside *root* (``os.lstat``), so
-    a ``..`` after a link is never tidied away as text. A level outside
-    *root* stops the walk before anything there is looked at. A network
-    path, a drive without a root (``C:name``), a rooted path without a drive
-    and an absolute path outside *root* give None.
+    system would. ``..`` steps up from a folder already shown to be real; it
+    may climb to the root's parent only to come straight back in under the
+    root's own name, spelled exactly. Each named folder must be a real folder
+    inside *root* (``os.lstat``), so a ``..`` after a link is never tidied
+    away as text, and nothing outside *root* is looked at. A device or
+    extended path other than a drive path (``\\?\\C:\\``), a drive without a
+    root (``C:name``), a rooted path without a drive and an absolute path
+    outside *root* give None.
     """
     try:
         text = str(link.readlink())
     except (OSError, ValueError):
         return None
-    if text.startswith(_EXTENDED_PREFIX):
+    # On POSIX a backslash is an ordinary name character, not a prefix.
+    if os.name == "nt" and text.startswith(_DEVICE_PREFIXES):
         text = text[len(_EXTENDED_PREFIX) :]
-        if text.startswith(_EXTENDED_UNC_PREFIX):
+        if _DRIVE_ROOT.match(text) is None:
             return None
     if os.name != "nt" and text.startswith("//") and not text.startswith("///"):
         text = text[1:]  # POSIX allows a doubled leading slash for the root
     named = Path(text)
     if named.is_absolute():
         named = _respelled(root, named)
-        if not _inside(root, named):
+        if not _exactly_inside(root, named):
             return None
-        folder, parts = root, named.relative_to(root).parts
+        folder, parts = root, named.parts[len(root.parts) :]
     elif named.anchor:
         return None
     else:
         folder, parts = link.parent, named.parts
     if not parts or parts[-1] == "..":
         return None
+    above = False
     for part in parts[:-1]:
-        if part == "..":
-            # Never step above the root: a name compared without case
-            # (Windows, or a Kelvin sign) could re-enter a sibling folder.
-            if folder == root:
+        if above:
+            # Only the root's own name, spelled exactly, leads back in.
+            if part != root.name:
                 return None
-            folder = folder.parent
+            folder, above = root, False
+            continue
+        if part == "..":
+            if folder == root:
+                folder, above = root.parent, True
+            else:
+                folder = folder.parent
             continue
         folder = folder / part
-        if not _inside(root, folder):
-            return None
         try:
             info = os.lstat(folder)
         except OSError:
             return None
         if is_link(info) or not stat.S_ISDIR(info.st_mode):
             return None
+    if above:
+        return None
     return folder / parts[-1]
 
 
@@ -406,9 +441,7 @@ def project_file_target(root: Path, path: Path) -> Path | None:
     # that leads to a file cannot be opened as one, so it is refused.
     target = _link_target(root, path) if stat.S_ISLNK(info.st_mode) else None
     if target is not None and _is_regular(_last_level(root, target)):
-        # Rebuilt from the root's own spelling, so the file opened is the
-        # one just checked, not a differently spelled twin.
-        return root.joinpath(*target.relative_to(root).parts)
+        return target
     note_skipped(path)
     return None
 
@@ -433,3 +466,17 @@ def child_folder_files(root: Path, folder: Path, name: str) -> list[Path]:
         for child in list_real_entries(folder)
         if child.is_dir() and is_project_file(root, child / name)
     ]
+
+
+def linked_git_entry(root: Path) -> bool:
+    """Return True, and note it, when *root*'s ``.git`` entry is a link.
+
+    git follows such a link to another repository, or climbs past it to an
+    enclosing one when it dangles, so every check that runs git in *root*
+    asks this first and treats a linked ``.git`` as no checkout.
+    """
+    entry = root / ".git"
+    if path_kind(entry) == LINK_ENTRY:
+        note_skipped(entry)
+        return True
+    return False

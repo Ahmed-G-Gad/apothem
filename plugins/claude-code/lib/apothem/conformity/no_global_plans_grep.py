@@ -71,6 +71,7 @@ from apothem.conformity._grep_base import (
 from apothem.conformity._project_paths import (
     DIR_ENTRY,
     LINK_ENTRY,
+    linked_git_entry,
     note_skipped,
     path_kind,
     scan_entries,
@@ -165,6 +166,10 @@ def _git_ls_files(root: Path) -> list[str]:
     through :func:`run_git`, so the repository's own settings cannot make it
     start a program.
     """
+    if linked_git_entry(root):
+        raise RuntimeError(
+            "the .git entry is a link, so git would read another repository"
+        )
     try:
         # -z: names end with NUL, unquoted, whatever characters they hold.
         completed = run_git(["ls-files", "-z"], cwd=root, check=True)

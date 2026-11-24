@@ -1457,7 +1457,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   and `naming-grep` checks a link's own name. Each report lists the links and
   special files it left out under `skipped_links`, and a validator whose
   folder is a link fails instead of passing as if the folder were not there
-  yet. The checks that run git read the `.git` folder through git itself.
+  yet. The checks that run git read the `.git` folder through git itself,
+  and none of them runs git when the root's `.git` entry is a link.
 
 ## [1.5.0] - 2026-10-28
 

@@ -77,6 +77,7 @@ from apothem.conformity._grep_base import (
     parse_root_args,
     project_file_target,
 )
+from apothem.conformity._project_paths import linked_git_entry
 
 GREP_NAME: Final[str] = "agents-md-coverage-grep"
 RULE_ANCHOR: Final[str] = "rules/agents-md-convention.md"
@@ -277,6 +278,8 @@ def _last_commit_times(root: Path) -> dict[str, int] | None:
     repository's program-running settings (a signature check, say) and prints
     path names as they are, decoded as UTF-8.
     """
+    if linked_git_entry(root):
+        return None
     try:
         completed = run_git(
             [

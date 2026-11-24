@@ -66,9 +66,9 @@ from apothem.conformity._project_paths import (
     DIR_ENTRY,
     FILE_ENTRY,
     LINK_ENTRY,
+    SKIPPED_FOLDER_ENTRY,
     note_root_spelling,
     note_skipped,
-    rewritten_by_win32,
     scan_entries,
     start_skip_log,
     take_skipped_paths,
@@ -399,9 +399,7 @@ def iter_tree_files(
                 # name; the walk still never enters it.
                 if wanted(path.name):
                     files.append(path)
-            elif (
-                kind == LINK_ENTRY or wanted(path.name) or rewritten_by_win32(path.name)
-            ):
+            elif kind in (LINK_ENTRY, SKIPPED_FOLDER_ENTRY) or wanted(path.name):
                 # A link may hide a folder or a file; a pipe, device or socket
                 # with a wanted name would make the read wait or never end.
                 note_skipped(path)

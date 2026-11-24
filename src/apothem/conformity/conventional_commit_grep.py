@@ -214,12 +214,9 @@ def _read_head_subject(root: Path) -> tuple[str | None, str]:
     # The .git entry is looked at without following a link. A .git that is
     # a link (dangling or not) is not taken as this checkout: git would
     # follow it, or climb to an enclosing repository when it dangles.
-    from apothem.conformity._project_paths import LINK_ENTRY, note_skipped, path_kind
+    from apothem.conformity._project_paths import linked_git_entry, path_kind
 
-    kind = path_kind(root / ".git")
-    if kind == LINK_ENTRY:
-        note_skipped(root / ".git")
-    if kind is None or kind == LINK_ENTRY:
+    if linked_git_entry(root) or path_kind(root / ".git") is None:
         return None, "not-a-git-repo"
     try:
         completed = run_git(
