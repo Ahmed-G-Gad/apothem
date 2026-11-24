@@ -183,3 +183,30 @@ def test_a_failed_step_gets_its_line_with_the_link_and_the_fix(
         assert "✗ alpha uninstall failed: uninstall stopped: disk full" in stderr
     row = json.loads(as_json.output)["results"][0]  # type: ignore[attr-defined]
     assert named in row["message"], row
+
+
+class _StoppedRepeatingAStep(_Adapter):
+    """An uninstall whose stop's text holds an earlier failed step's message."""
+
+    def uninstall(self) -> MaterializationRun:
+        failed = _result("error", "remove_existing", Path("/h/.x/agents"), "disk full")
+        run = MaterializationRun(harness="alpha", dry_run=False, results=(failed,))
+        raise MaterializationError(
+            "uninstall stopped: [Errno 28] disk full on /h/.x/skills", run
+        )
+
+
+def test_a_stop_whose_text_holds_a_failed_step_still_reports_the_step(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Only the refused step a link refusal repeats is left out; a failed step
+    # whose message the stop's text merely contains keeps its line.
+    _select(monkeypatch, _StoppedRepeatingAStep("error"))
+
+    plain = _run("--no-color")
+    as_json = _run("--format", "json")
+
+    stderr = " ".join(plain.stderr.split())  # type: ignore[attr-defined]
+    assert "✗ alpha uninstall did not finish: disk full" in stderr, stderr
+    row = json.loads(as_json.output)["results"][0]  # type: ignore[attr-defined]
+    assert row["message"].count("disk full") == 2, row
