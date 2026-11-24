@@ -204,12 +204,13 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   ``pytest_cmdline_main`` wrapper below does the same for one they do not see.
   Any other code stays. A refusal absorbed later still, in a cleanup registered
   with ``config.add_cleanup``, reaches only ``stderr``, unless such a passing
-  exit follows it. These ``tryfirst`` wrappers finish after every wrapper
-  except a ``tryfirst`` one that pytest registered after the guard (a
-  conftest's): a refusal absorbed after such a ``pytest_sessionfinish``
-  wrapper's ``yield`` is named "after the session finished", and one after such
-  a ``pytest_unconfigure`` wrapper's ``yield`` reaches only ``stderr``, unless
-  such a passing exit follows it.
+  exit follows it or one left the session finish before it. These ``tryfirst``
+  wrappers finish after every wrapper except a ``tryfirst`` one that pytest
+  registered after the guard (a conftest's): a refusal absorbed after such a
+  ``pytest_sessionfinish`` wrapper's ``yield`` is named "after the session
+  finished", and one after such a ``pytest_unconfigure`` wrapper's ``yield``
+  reaches only ``stderr``, unless such a passing exit follows it or one left
+  the session finish before it.
 - ``pytest_cmdline_main``, a ``tryfirst`` wrapper. pytest runs the
   session-finish and unconfigure hooks and the cleanups inside that hook, so it
   sees a ``SystemExit`` after all of them: one from a ``tryfirst`` wrapper of
@@ -227,7 +228,8 @@ deleting or rebinding a name in a conftest does not remove them. Its hooks:
   (``config._ensure_unconfigure``, which pytest then finds done), takes a
   ``SystemExit`` they raise as the exit, and judges the exit after them: a
   passing one fails the run also when the only refusal came in
-  ``pytest_unconfigure``.
+  ``pytest_unconfigure``, in a cleanup, or after the ``yield`` of such a later
+  ``tryfirst`` unconfigure wrapper.
 - ``pytest_testnodedown`` and ``pytest_configure_node``, optional hooks that
   only xdist defines and calls in the controller. A worker's terminal output is
   discarded and the controller does not use its exit code, so a worker sends
@@ -1513,7 +1515,8 @@ class RealHomeGuard:
         done) and treats a ``SystemExit`` it raises as the exit, as pytest
         would. The exit the session finish raised is judged after it, so a
         passing one fails the run also when the only refusal came in
-        ``pytest_unconfigure``. Without that call (a pytest that no longer
+        ``pytest_unconfigure``, in a cleanup, or after the ``yield`` of such
+        a later unconfigure wrapper. Without that call (a pytest that no longer
         has it) the exit is judged as it left the session finish.
         """
         try:
