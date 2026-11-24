@@ -662,7 +662,10 @@ def _record_stopped_prepass(
     Returns the run so far, for the caller to raise as a stopped uninstall:
     *done*, a warning that names the ledger when appending the record fails,
     and the files a removal in *done* kept. Returns ``None`` when *done*
-    changed nothing and took no backup: no record is due.
+    changed nothing and took no backup: no record is due, and the install
+    record stays the latest one, as before the uninstall. A stop in the
+    shared pass, by contrast, is recorded even then (see
+    :func:`install_driver.run_uninstall`).
 
     Only an :class:`OSError` or a
     :class:`~apothem.lib.install_ledger.LedgerError` that escapes writing the
@@ -737,7 +740,9 @@ def make_native_config_uninstall(
     then raised as a :class:`MaterializationError` that carries those
     results, with the error as its cause, so the CLI reports a partial
     uninstall (exit 2). When *before_fn* changed nothing and took no backup,
-    nothing is recorded, and an ordinary error is raised that way only when
+    nothing is recorded, also when it found Apothem's file behind a link, so
+    the install record stays the latest one; a stop in the shared pass is
+    recorded even then. An ordinary error is then raised that way only when
     its results hold a warning (Apothem's file behind a link, say), which
     the CLI then reports with the error; otherwise it is raised as it is. A
     refusal and Ctrl-C are always raised as they are. An error inside
