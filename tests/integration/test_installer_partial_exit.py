@@ -429,6 +429,60 @@ def test_ps1_finishes_a_partial_run_when_the_caller_stops_on_native_errors(
     _assert_lock_released(tmp_path, out)
 
 
+#: Words from the error each early stop ends a run with.
+EARLY_STOPS = {
+    "unusable-home": "CAUGHT:   x APOTHEM_HOME is not a usable folder path",
+    "held-lock": "apothem-home.lock exists but names no running process",
+}
+
+
+def _run_ps1_piped_stopping_early(
+    tmp_path: Path, script: str, stop: str, caller: str, report: str
+) -> str:
+    """Run SCRIPT piped into Invoke-Expression from a session that runs
+    CALLER first, and make the run stop before it takes the install lock
+    (STOP): APOTHEM_HOME names no file-system path, or a lock folder another
+    run left is in the way. The session catches the error, prints it, then
+    prints REPORT."""
+    env = {
+        **_ps_env(tmp_path, 0),
+        "APOTHEM_TEST_SCRIPT": str(INSTALLER / script),
+    }
+    if stop == "unusable-home":
+        env["APOTHEM_HOME"] = "Env:\\NoSuchApothemHome"
+    else:
+        (tmp_path / "apothem-home.lock").mkdir()
+    command = (
+        f"{caller}; "
+        "try { Get-Content -Raw -LiteralPath $env:APOTHEM_TEST_SCRIPT "
+        '| Invoke-Expression } catch { "CAUGHT: $_" }; '
+        f'"{report}"'
+    )
+    return _output(_pwsh(["-Command", command], tmp_path, env))
+
+
+@requires_pwsh
+@pytest.mark.parametrize("stop", ["unusable-home", "held-lock"])
+@pytest.mark.parametrize("script", ["install.ps1", "update.ps1"])
+def test_ps1_piped_run_that_stops_early_keeps_the_callers_native_preference(
+    tmp_path: Path, script: str, stop: str
+) -> None:
+    """A piped run that stops before it takes the install lock still puts
+    the caller's $PSNativeCommandUseErrorActionPreference back."""
+    out = _run_ps1_piped_stopping_early(
+        tmp_path,
+        script,
+        stop,
+        "$PSNativeCommandUseErrorActionPreference = $true",
+        "CALLER NATIVE=[$PSNativeCommandUseErrorActionPreference]",
+    )
+
+    assert "CAUGHT: " in out, out
+    assert _squashed(EARLY_STOPS[stop]) in _squashed(out), out
+    assert "CALLER NATIVE=[True]" in out, out
+    assert _engine_runs(tmp_path) == [], out
+
+
 @requires_pwsh
 @requires_windows
 def test_install_ps1_by_path_finishes_a_partial_install_and_exits_2(

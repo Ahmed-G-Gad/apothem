@@ -181,11 +181,17 @@ $ErrorActionPreference = 'Stop'
 # A caller's $PSNativeCommandUseErrorActionPreference = $true (PowerShell
 # 7.4+) would make any non-zero exit code of a program stop the run, the
 # engine's partial exit code 2 among them, so the run turns it off. A piped
-# run shares the caller's scope, so the finally block at the end puts the
-# caller's value back.
+# run shares the caller's scope, so the caller's value is put back as the
+# run ends: by the finally block at the end, or by this trap when the run
+# stops on an error (before it takes the install lock, too). The trap's
+# own scope is a child of the run's, hence -Scope 1.
 $HadNativeErrorPref = Test-Path -LiteralPath 'Variable:PSNativeCommandUseErrorActionPreference'
 $SavedNativeErrorPref = if ($HadNativeErrorPref) { $PSNativeCommandUseErrorActionPreference } else { $null }
 $PSNativeCommandUseErrorActionPreference = $false
+trap {
+    if ($HadNativeErrorPref) { Set-Variable -Name PSNativeCommandUseErrorActionPreference -Value $SavedNativeErrorPref -Scope 1 } else { Remove-Variable -Name PSNativeCommandUseErrorActionPreference -Scope 1 -ErrorAction SilentlyContinue }
+    break
+}
 
 $ApothemHome = if ($env:APOTHEM_HOME) { $env:APOTHEM_HOME } else { Join-Path $HOME '.apothem' }
 # A relative APOTHEM_HOME is resolved once, here, against the current
