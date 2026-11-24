@@ -11,12 +11,14 @@ from __future__ import annotations
 
 import re
 import threading
+from pathlib import Path
 
 from apothem.harnesses._shared.install_driver_blocktext import (
     REPLACES,
     TAKES_OUT,
     stray_fix_text,
 )
+from apothem.harnesses.open_claw import rules_file
 from apothem.lib.harness_materializer import (
     APOTHEM_BLOCK_BEGIN,
     APOTHEM_BLOCK_END,
@@ -171,3 +173,52 @@ def test_a_fix_that_keeps_a_block_leaves_no_marker_for_the_uninstall_to_show() -
     removed = remove_managed_block(merged)
     assert not whole_blocks(removed)
     assert not has_stray_begin(removed)
+
+
+# -- promise-refusal ---------------------------------------------------------
+
+
+def _size_refusal(tmp_path: Path, text: str) -> str:
+    """Return OpenClaw's size refusal for a rules file that holds *text*."""
+    workspace = rules_file.Workspace(tmp_path / "workspace")
+    workspace.rules_file.parent.mkdir(parents=True)
+    workspace.rules_file.write_bytes(text.encode("utf-8"))
+    config = {"agents": {"defaults": {"bootstrapMaxChars": 1}}}
+    reason = rules_file.refusal(
+        merge_managed_block(text, "Apothem rule."), config, workspace
+    )
+    assert reason is not None
+    return reason
+
+
+def test_the_size_refusal_names_every_marker_line_its_fix_needs(
+    tmp_path: Path,
+) -> None:
+    """A stray BEGIN marker above a code block no line closes, then more markers.
+
+    The refusal named only the line that reads as a stray BEGIN marker now
+    (line 1). Once it changed, the BEGIN marker at line 5 started no whole
+    block in its turn, and the file still did not fit. Every other caller
+    gives this file one fix: a closing line for the code block, and lines
+    5, 4 and 1 changed. The refusal now names the same lines.
+    """
+    text = _lines("   " + B, "````", E, B, B, E)
+    reason = _size_refusal(tmp_path, text)
+    assert (
+        "add a line of 4 backticks below line 6, change lines 1, 4 and 5 by "
+        "adding a word inside each comment, and delete that old text by hand"
+    ) in reason
+    fixed = _follow(text, [5, 4, 1]) + "````\n"
+    assert not has_stray_begin(fixed)
+    assert not whole_blocks(fixed)
+
+
+def test_the_size_refusal_for_one_stray_marker_still_names_its_line(
+    tmp_path: Path,
+) -> None:
+    """A block that lost its END marker: its BEGIN marker line is the only one."""
+    reason = _size_refusal(tmp_path, _lines("# mine", B, "old rule"))
+    assert (
+        "change line 2 by adding a word inside its comment and delete that old "
+        "text by hand"
+    ) in reason

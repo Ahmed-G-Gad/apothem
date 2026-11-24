@@ -168,11 +168,16 @@ A rules file whose Apothem block lost its END marker keeps the old Apothem text
 below its BEGIN marker, and an update writes Apothem's block beside it, so that
 old text counts against the per-file limit. When a rules file over the limit
 holds a BEGIN marker that starts no whole block (its END marker is gone, or the
-marker is yours), the warning names the file and each such marker by its line,
-for example "change line 3 by adding a word inside its comment" ("change lines
-3 and 9 by adding a word inside each comment" for two), and says to delete the
-old text below it by hand, keeping your own text, or to shorten the profile's
-custom rules, or to raise the limit.
+marker is yours), the warning names the file and each such marker by its line.
+It then names every marker line the fix for that file changes, the same lines
+the other warnings for the file give, for example "change line 3 by adding a
+word inside its comment" ("change lines 3 and 9 by adding a word inside each
+comment" for two, which can include a BEGIN marker you quote in a code block).
+When the file ends inside a code block that no line closes, it first says to
+add that code block's closing line, for example "add a line of 3 backticks
+below line 12". It says to delete the old text below the marker by hand,
+keeping your own text, or to shorten the profile's custom rules, or to raise
+the limit.
 
 ### Skills
 

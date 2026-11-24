@@ -142,11 +142,24 @@ def render_step(step: Step) -> str:
     """Return the sentence for *step* (see the formats in this module's text)."""
     if not step.fence:
         return f"Change line {step.line}: add a word inside its comment."
-    run = step.fence.lstrip(" ")
+    return f"Below line {step.line}, add {_closing_line(step.fence)}."
+
+
+def _closing_line(fence: str) -> str:
+    """Return the closing line *fence* in words: ``a line of 3 backticks``, say."""
+    run = fence.lstrip(" ")
     kind = "backticks" if run[0] == "`" else "tildes"
-    indent = len(step.fence) - len(run)
+    indent = len(fence) - len(run)
     spaces = "" if not indent else f", indented {indent} space{'s' * (indent > 1)}"
-    return f"Below line {step.line}, add a line of {len(run)} {kind}{spaces}."
+    return f"a line of {len(run)} {kind}{spaces}"
+
+
+def closing_clause(step: Step) -> str:
+    """Return the closing-line *step* as a clause for a sentence of steps.
+
+    ``add a line of 4 backticks below line 6``, say (see :func:`render_step`).
+    """
+    return f"add {_closing_line(step.fence)} below line {step.line}"
 
 
 class _Layout:
@@ -456,6 +469,20 @@ def stray_fixes(
     if blocks and _keeps(layout, blocks[0], first=True):
         return [_kept(layout, blocks[0])]
     return [_none(layout, None)]
+
+
+def stray_fix(
+    text: str, strays: Sequence[int], blocks: Sequence[tuple[int, int]]
+) -> Fix:
+    """Return the one fix for *text*, whose BEGIN markers on lines *strays* start no block.
+
+    The fix :func:`stray_fixes` gives, or, for a file with two or more whole
+    *blocks*, the fix that changes every BEGIN marker line (see :func:`_none`).
+    For a text that names its steps in a sentence, such as OpenClaw's size
+    refusal, which gives one fix.
+    """
+    found = stray_fixes(text, strays, blocks)
+    return found[0] if found else _none(_layout(text), None)
 
 
 def unlisted_fixes(text: str) -> list[Fix]:

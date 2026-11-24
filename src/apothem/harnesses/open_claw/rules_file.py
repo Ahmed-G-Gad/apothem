@@ -57,6 +57,7 @@ from apothem.harnesses._shared.install_driver_blocktext import (
 from apothem.harnesses._shared.install_driver_evidence import block_prior
 from apothem.harnesses._shared.install_driver_ownership import fold_block
 from apothem.harnesses._shared.install_driver_pathsafety import _unsafe_symlink
+from apothem.harnesses._shared.install_driver_steps import closing_clause, stray_fix
 from apothem.harnesses._shared.install_driver_types import KEPT_REASON, _path_text
 from apothem.harnesses.open_claw.materializer import (
     ENTRY_PATH,
@@ -71,6 +72,7 @@ from apothem.lib.harness_materializer import (
     has_stray_begin,
     merge_managed_block,
     stray_begins,
+    whole_blocks,
 )
 
 #: OpenClaw's default limits on what it injects (``bootstrapMaxChars`` and
@@ -741,26 +743,38 @@ def _stray_reason(path: Path, text: str) -> str:
     by its line in the file as it is (see
     :func:`~apothem.lib.harness_materializer.stray_begins`), where the
     operator changes it: an install replaces a whole block in place, so the
-    lines below it can move. The old Apothem text below such a marker is the
-    operator's to delete.
+    lines below it can move. The steps are those of the fix every other
+    warning gives for the file (see
+    :func:`~apothem.harnesses._shared.install_driver_steps.stray_fix`): every
+    marker line it changes, a BEGIN marker quoted in code included, and the
+    closing line it adds for a code block the file ends in, so no BEGIN
+    marker that starts no whole block is left once they are done. The old
+    Apothem text below such a marker is the operator's to delete.
     """
     existing = _raw_text(path) if path.is_file() else None
-    strays = stray_begins(existing or text)
-    lines = [str(line) for line in strays]
+    current = existing or text
+    strays = stray_begins(current)
+    fix = stray_fix(current, strays, whole_blocks(current))
+    numbers = sorted(step.line for step in fix.steps if not step.fence)
+    lines = [str(line) for line in numbers]
     if len(lines) > 1:
         where = f"lines {', '.join(lines[:-1])} and {lines[-1]}"
         change = f"change {where} by adding a word inside each comment"
-        them, gone = "them", "their END markers are gone, or the markers are yours"
-        verb = "start"
     else:
         where = f"line {lines[0]}" if lines else "that marker line"
         change = f"change {where} by adding a word inside its comment"
+    closing = [closing_clause(step) for step in fix.steps if step.fence]
+    steps = f"{closing[0]}, {change}, and" if closing else f"{change} and"
+    if len(strays) > 1:
+        them, gone = "them", "their END markers are gone, or the markers are yours"
+        verb = "start"
+    else:
         them, gone = "it", "its END marker is gone, or the marker is yours"
         verb = "starts"
-    subject = stray_subject(existing or text, strays=strays)
+    subject = stray_subject(current, strays=strays)
     return (
         f"{path} holds {subject} that {verb} no whole block ({gone}), and the old "
-        f"Apothem text below {them} counts against the limit: {change} and delete "
+        f"Apothem text below {them} counts against the limit: {steps} delete "
         "that old text by hand, keeping your own text, or shorten the profile's "
         "custom rules, or raise the limit."
     )
