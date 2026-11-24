@@ -578,15 +578,15 @@ as it is because of its Apothem marker lines, and wrote the rest, or it
 stopped after it had written something, for example when one tool failed
 after an earlier one in an `APOTHEM_HARNESS=all` run. Its messages name the
 file, or show the error that stopped it, and the script adds one line that
-starts "The engine ended as partial (exit code 2)." The installer still runs verify,
-places the `apothem` command and prints its banner, and the update script
-still prints its last line. A piped PowerShell run (`irm ... | iex`) leaves
+starts "The engine ended as partial (exit code 2)." The installer still runs
+verify, places the `apothem` command and prints its banner, and the update
+script still prints its last line. A piped PowerShell run (`irm ... | iex`) leaves
 `$LASTEXITCODE` at `2` and your session open. A one-shot
 `pwsh -Command "irm ... | iex"` (or `powershell -c`) reports a partial run
 only through `$LASTEXITCODE` and exits `0`: to get exit code `2` from the
 process, end the command with `; exit $LASTEXITCODE`, or run the script by
-path with `-File`. A dry run that ends as partial prints the warning line,
-writes nothing and ends with exit code `2`. Fix what the messages name. For a file, keep your own text (see
+path with `-File`. A dry run writes nothing, so it does not end as partial.
+Fix what the messages name. For a file, keep your own text (see
 [A file holds two blocks between Apothem's markers](#a-file-holds-two-blocks-between-apothems-markers)
 and
 [Apothem cannot tell its block from your text](#apothem-cannot-tell-its-block-from-your-text)),
