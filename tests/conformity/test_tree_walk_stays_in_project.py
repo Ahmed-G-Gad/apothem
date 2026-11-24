@@ -32,8 +32,10 @@ from pathlib import Path
 import pytest
 
 from apothem.conformity import (
+    _grep_base,
     _project_paths,
     agents_md_coverage_grep,
+    conventional_commit_grep,
     dynamism_grep,
     harden_runner_grep,
     naming_grep,
@@ -674,3 +676,105 @@ def test_a_readme_link_inside_the_project_counts_for_coverage(tmp_path: Path) ->
 
     assert "guide" in folders
     assert "other" not in folders
+
+
+# ---------------------------------------------------------------------------
+# Review round 5: ".." above the root, the typed root, skip-log traces
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "sibling", ["desk", "des" + chr(0x212A)], ids=["same", "kelvin"]
+)
+def test_a_link_target_never_steps_above_the_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, sibling: str
+) -> None:
+    """``..`` from the root is refused, so no sibling spelled like it is reached.
+
+    Windows compares names without case, and the Kelvin sign folds to ``K``,
+    so a sibling ``desK`` beside a root ``desk`` would pass a by-name check.
+    """
+    root = (tmp_path / "desk").resolve()
+    _write(root / "AGENTS.md")
+    if sibling != root.name:
+        try:
+            _write(tmp_path / sibling / "AGENTS.md")
+        except OSError as exc:
+            pytest.skip(f"this file system folds the sibling name: {exc}")
+    link = root / "CLAUDE.md"
+    _fake_readlink(monkeypatch, link, f"../{sibling}/AGENTS.md")
+
+    assert _project_paths._link_target(root, link) is None
+
+
+def test_the_typed_root_is_recorded_by_parse_root_args(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Through the command-line parser, a link spelled via the typed root counts."""
+    root = (tmp_path / "project").resolve()
+    agents = _write(root / "AGENTS.md")
+    alias = tmp_path / "alias"
+    _link_folder(alias, root)
+    link = root / "CLAUDE.md"
+    _fake_readlink(monkeypatch, link, str(alias / "AGENTS.md"))
+    try:
+        resolved = _grep_base.parse_root_args(["v", str(alias)], prog="v").root
+        assert resolved == root
+        assert _project_paths._link_target(root, link) == agents
+        _grep_base.parse_root_args(["v", str(alias / ".." / "alias")], prog="v")
+        assert _project_paths._link_target(root, link) is None
+    finally:
+        note_root_spelling(root, root)
+        take_skipped_paths()
+
+
+@_WINDOWS_ONLY
+def test_a_trailing_dot_part_is_refused_even_when_it_names_a_real_folder(
+    tmp_path: Path,
+) -> None:
+    """``X.`` would be opened as ``X``; the check refuses the spelling itself."""
+    root = (tmp_path / "project").resolve()
+    _write(root / "X" / "page.md")
+
+    assert is_project_file(root, root / "X" / "page.md")
+    assert not is_project_file(root, root / "X." / "page.md")
+
+
+@_WINDOWS_ONLY
+def test_the_walk_names_a_trailing_dot_folder_it_skips(tmp_path: Path) -> None:
+    """A folder ending in a dot is left out and listed under the skip log."""
+    root = (tmp_path / "project").resolve()
+    _write(root / "page.md")
+    _extended(root / "X.").mkdir()
+    try:
+        start_skip_log(root)
+        assert _walk(root, ".md") == ["page.md"]
+        assert take_skipped_paths() == ["X."]
+    finally:
+        _extended(root / "X.").rmdir()
+
+
+def test_the_walk_names_a_link_with_a_pruned_name(tmp_path: Path) -> None:
+    """A link named like a pruned folder is not walked, but it is listed."""
+    outside = tmp_path / "outside"
+    _write(outside / "page.md")
+    root = (tmp_path / "project").resolve()
+    _write(root / "page.md")
+    _link_folder(root / "node_modules", outside)
+
+    start_skip_log(root)
+    assert _walk(root, ".md") == ["page.md"]
+    assert take_skipped_paths() == ["node_modules"]
+
+
+def test_a_linked_git_folder_is_not_taken_as_the_checkout(tmp_path: Path) -> None:
+    """git would follow a ``.git`` link, or climb past a dangling one, so neither runs."""
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    root = (tmp_path / "project").resolve()
+    root.mkdir()
+    _link_folder(root / ".git", elsewhere)
+
+    start_skip_log(root)
+    assert conventional_commit_grep._read_head_subject(root) == (None, "not-a-git-repo")
+    assert take_skipped_paths() == [".git"]

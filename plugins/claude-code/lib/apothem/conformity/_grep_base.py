@@ -68,6 +68,7 @@ from apothem.conformity._project_paths import (
     LINK_ENTRY,
     note_root_spelling,
     note_skipped,
+    rewritten_by_win32,
     scan_entries,
     start_skip_log,
     take_skipped_paths,
@@ -224,8 +225,10 @@ def parse_root_args(
     start_skip_log(args.root)
     # The root as typed, made absolute but not resolved: an absolute link may
     # be written through this spelling.
+    # ``..`` is not collapsed by name: through a link it can name another
+    # folder, so such a spelling is not recorded at all.
     typed = root if root.is_absolute() else Path.cwd() / root
-    note_root_spelling(Path(os.path.normpath(typed)), args.root)
+    note_root_spelling(typed if ".." not in typed.parts else args.root, args.root)
     return args
 
 
@@ -396,7 +399,9 @@ def iter_tree_files(
                 # name; the walk still never enters it.
                 if wanted(path.name):
                     files.append(path)
-            elif kind == LINK_ENTRY or wanted(path.name):
+            elif (
+                kind == LINK_ENTRY or wanted(path.name) or rewritten_by_win32(path.name)
+            ):
                 # A link may hide a folder or a file; a pipe, device or socket
                 # with a wanted name would make the read wait or never end.
                 note_skipped(path)

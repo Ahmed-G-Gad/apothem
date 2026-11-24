@@ -50,6 +50,11 @@ OTHER_ENTRY: Final[EntryKind] = "other"
 _WIN32_REWRITTEN_ENDINGS: Final[tuple[str, ...]] = (".", " ")
 
 
+def rewritten_by_win32(name: str) -> bool:
+    """Return True on Windows for a name Win32 would change when it is reopened."""
+    return _rewritten_by_win32(name)
+
+
 def _rewritten_by_win32(name: str) -> bool:
     """Return True on Windows for a name Win32 would change when it is reopened."""
     return os.name == "nt" and name.endswith(_WIN32_REWRITTEN_ENDINGS)
@@ -358,6 +363,10 @@ def _link_target(root: Path, link: Path) -> Path | None:
         return None
     for part in parts[:-1]:
         if part == "..":
+            # Never step above the root: a name compared without case
+            # (Windows, or a Kelvin sign) could re-enter a sibling folder.
+            if folder == root:
+                return None
             folder = folder.parent
             continue
         folder = folder / part
@@ -397,7 +406,9 @@ def project_file_target(root: Path, path: Path) -> Path | None:
     # that leads to a file cannot be opened as one, so it is refused.
     target = _link_target(root, path) if stat.S_ISLNK(info.st_mode) else None
     if target is not None and _is_regular(_last_level(root, target)):
-        return target
+        # Rebuilt from the root's own spelling, so the file opened is the
+        # one just checked, not a differently spelled twin.
+        return root.joinpath(*target.relative_to(root).parts)
     note_skipped(path)
     return None
 
