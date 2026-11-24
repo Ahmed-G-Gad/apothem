@@ -19,6 +19,9 @@ The tests cover:
   stay exempt;
 - the limit holds on Windows behind Git for Windows' ``cmd\\git.exe``
   launcher, which starts the real git that holds the output;
+- on Windows a program runs only once it is in its job object, so a child it
+  starts at once is stopped with it, and a program that cannot be let run
+  fails at once and is not left behind;
 - the gate gives each standalone validator a time limit, stops a validator
   that runs past it together with every program it started, and reports it
   as not passed. The advisory default still exits ``0``; only ``--strict``
@@ -48,6 +51,7 @@ import time
 import uuid
 from collections.abc import Callable
 from pathlib import Path
+from types import FrameType
 from typing import TypeVar
 
 import pytest
@@ -368,8 +372,15 @@ def test_commit_subject_timeout_does_not_pass(
     assert payload["empty_scope_expected"] is False
 
 
-def test_commit_subject_without_history_still_passes(tmp_path: Path) -> None:
-    """No ``.git`` is still the documented exemption, not a check error."""
+def test_commit_subject_without_history_still_passes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """No ``.git`` is still the documented exemption, not a check error.
+
+    The search does not go above ``tmp_path``, so a repository above the
+    temp folder cannot count.
+    """
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path.parent))
     result = conventional_commit_grep.check_repo(tmp_path)
     assert result.passed is True
     assert result.status == "not-a-git-repo"
@@ -1066,3 +1077,250 @@ def test_gate_stop_ends_the_git_a_validator_started_on_windows(
         assert pipe.readers()[1] == 0, "a git the validator started still waits"
     finally:
         pipe.close()
+
+
+# How long the slowed job add waits before it puts the program in the job: long
+# enough for a program that runs at once to start its own child first.
+_SLOW_ADD_SECONDS = 2.0
+# The time limit of the early-child test below: longer than the slowed add, and
+# long enough for the program to start its child on a busy machine.
+_RUN_TIMEOUT_SECONDS = 10
+
+# A program that at once starts a child with no pipe of the parent's, writes
+# that child's process ID to the file named by its first argument, and sleeps.
+# It writes a side file and renames it, so the file is never seen half written.
+_EARLY_CHILD_PROGRAM = (
+    "import subprocess, sys, time\n"
+    "from pathlib import Path\n"
+    "child = subprocess.Popen(\n"
+    f"    [sys.executable, '-c', 'import time; time.sleep({_SLEEP_SECONDS})'],\n"
+    "    stdin=subprocess.DEVNULL,\n"
+    "    stdout=subprocess.DEVNULL,\n"
+    "    stderr=subprocess.DEVNULL,\n"
+    ")\n"
+    "side = Path(sys.argv[1] + '.tmp')\n"
+    "side.write_text(str(child.pid), encoding='utf-8')\n"
+    "side.replace(sys.argv[1])\n"
+    f"time.sleep({_SLEEP_SECONDS})\n"
+)
+
+
+def _read_pid(pid_file: Path) -> int | None:
+    """Return the process ID in *pid_file*, or None when it holds none."""
+    try:
+        text = pid_file.read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    return int(text) if text.isdigit() else None
+
+
+def _skip_without_a_job() -> None:
+    """Skip the test when Windows refuses this process a job object."""
+    job = _bounded_run._Job()
+    try:
+        if not job.suspends:
+            pytest.skip("Windows refuses a job object here")
+    finally:
+        job.close()
+
+
+def _wait_gone(pid: int) -> bool:
+    """Return True once *pid* has ended, waiting at most the exit wait."""
+    give_up = time.monotonic() + _EXIT_WAIT_SECONDS
+    while not _process_gone(pid) and time.monotonic() < give_up:
+        time.sleep(0.1)
+    return _process_gone(pid)
+
+
+@_WINDOWS_ONLY
+def test_child_started_before_the_job_add_is_stopped_with_the_program(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A child the program starts at once is in the job, so a stop ends it.
+
+    The job add is slowed down here. A program that ran before the add would
+    start its child outside the job, and that child would outlive the stop.
+    The program starts suspended and runs only once it is in the job.
+    """
+    _skip_without_a_job()
+    real_add = _bounded_run._Job.add
+
+    def slow_add(job: _bounded_run._Job, pid: int) -> None:
+        time.sleep(_SLOW_ADD_SECONDS)
+        real_add(job, pid)
+
+    monkeypatch.setattr(_bounded_run._Job, "add", slow_add)
+    pid_file = tmp_path / "child.pid"
+    child_gone = False
+    try:
+        with pytest.raises(subprocess.TimeoutExpired):
+            _bounded_run.run_bounded(
+                [sys.executable, "-c", _EARLY_CHILD_PROGRAM, str(pid_file)],
+                timeout=_RUN_TIMEOUT_SECONDS,
+            )
+        child = _read_pid(pid_file)
+        assert child is not None, (
+            f"the program never wrote its child's process ID within "
+            f"{_RUN_TIMEOUT_SECONDS}s (the file exists: {pid_file.is_file()})"
+        )
+        child_gone = _wait_gone(child)
+        assert child_gone, "the program's child still runs after the stop"
+    finally:
+        # Stop a child still running, but never signal an ID already seen
+        # gone: the system may reuse it.
+        leftover = _read_pid(pid_file)
+        if leftover is not None and not child_gone:
+            _end_process(leftover)
+
+
+@_WINDOWS_ONLY
+def test_program_that_cannot_be_resumed_is_stopped_at_once(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A suspended program that cannot run raises OSError and is not left behind."""
+    _skip_without_a_job()
+    started: list[int] = []
+    real_add = _bounded_run._Job.add
+
+    def recording_add(job: _bounded_run._Job, pid: int) -> None:
+        started.append(pid)
+        real_add(job, pid)
+
+    monkeypatch.setattr(_bounded_run._Job, "add", recording_add)
+    monkeypatch.setattr(_bounded_run._Job, "resume", lambda _job, _process: False)
+    program_gone = False
+    begun = time.monotonic()
+    try:
+        with pytest.raises(OSError, match="could not resume"):
+            _bounded_run.run_bounded(
+                [sys.executable, "-c", f"import time; time.sleep({_SLEEP_SECONDS})"],
+                timeout=_SLEEP_SECONDS,
+            )
+        took = time.monotonic() - begun
+        assert took < _bounded_run.STOP_GRACE_SECONDS, f"the failure took {took:.1f}s"
+        assert len(started) == 1, started
+        program_gone = _wait_gone(started[0])
+        assert program_gone, "the program that could not run still exists"
+    finally:
+        if started and not program_gone:
+            _end_process(started[0])
+
+
+# A program that prints one line and ends.
+_PRINT_PROGRAM = "print('ran')"
+
+
+def _record_snapshots(monkeypatch: pytest.MonkeyPatch) -> list[int]:
+    """Record the process ID of each thread snapshot run_bounded takes."""
+    taken: list[int] = []
+    real_thread_ids = _bounded_run._thread_ids
+
+    def recording_thread_ids(pid: int) -> list[int]:
+        taken.append(pid)
+        return real_thread_ids(pid)
+
+    monkeypatch.setattr(_bounded_run, "_thread_ids", recording_thread_ids)
+    return taken
+
+
+@_WINDOWS_ONLY
+def test_suspended_program_resumes_without_a_thread_snapshot(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The program is resumed through its process handle, not a snapshot.
+
+    A thread snapshot holds every thread on the machine, which made each start
+    several times slower.
+    """
+    _skip_without_a_job()
+    if _bounded_run._NT_RESUME_PROCESS is None:
+        pytest.skip("this Windows has no NtResumeProcess")
+    taken = _record_snapshots(monkeypatch)
+    completed = _bounded_run.run_bounded(
+        [sys.executable, "-c", _PRINT_PROGRAM], timeout=_DEADLINE_SECONDS
+    )
+    assert completed.stdout == "ran\n"
+    assert taken == [], "the program was resumed through a thread snapshot"
+
+
+def _failing_nt_resume(_handle: int) -> int:
+    """Stand in for an NtResumeProcess that fails (STATUS_UNSUCCESSFUL)."""
+    return -0x3FFFFFFF
+
+
+@_WINDOWS_ONLY
+@pytest.mark.parametrize(
+    "nt_resume", [None, _failing_nt_resume], ids=["missing", "failing"]
+)
+def test_suspended_program_resumes_through_the_snapshot_fallback(
+    monkeypatch: pytest.MonkeyPatch, nt_resume: Callable[[int], int] | None
+) -> None:
+    """Without a working NtResumeProcess the thread snapshot resumes it."""
+    _skip_without_a_job()
+    monkeypatch.setattr(_bounded_run, "_NT_RESUME_PROCESS", nt_resume)
+    taken = _record_snapshots(monkeypatch)
+    completed = _bounded_run.run_bounded(
+        [sys.executable, "-c", _PRINT_PROGRAM], timeout=_DEADLINE_SECONDS
+    )
+    assert completed.stdout == "ran\n"
+    assert len(taken) == 1, taken
+
+
+@_WINDOWS_ONLY
+def test_interrupt_right_after_the_start_stops_the_program(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An interrupt just after the program starts never leaves it suspended.
+
+    A trace function raises KeyboardInterrupt at the first line run_bounded
+    runs after Popen returns, before the program is in the job or resumed.
+    """
+    _skip_without_a_job()
+    started: list[subprocess.Popen[bytes]] = []
+    real_popen = subprocess.Popen
+
+    def recording_popen(*args: object, **kwargs: object) -> subprocess.Popen[bytes]:
+        process: subprocess.Popen[bytes] = real_popen(*args, **kwargs)  # type: ignore[call-overload]
+        started.append(process)
+        return process
+
+    monkeypatch.setattr(_bounded_run.subprocess, "Popen", recording_popen)
+    code = _bounded_run.run_bounded.__code__
+    interrupted_at: list[int] = []
+
+    def trace_line(frame: FrameType, event: str, _arg: object) -> object:
+        if event == "line" and started and not interrupted_at:
+            interrupted_at.append(frame.f_lineno)
+            raise KeyboardInterrupt
+        return trace_line
+
+    def trace_call(frame: FrameType, _event: str, _arg: object) -> object:
+        return trace_line if frame.f_code is code else None
+
+    program_gone = False
+    previous = sys.gettrace()
+    try:
+        sys.settrace(trace_call)
+        try:
+            with pytest.raises(KeyboardInterrupt):
+                _bounded_run.run_bounded(
+                    [
+                        sys.executable,
+                        "-c",
+                        f"import time; time.sleep({_SLEEP_SECONDS})",
+                    ],
+                    timeout=_SLEEP_SECONDS,
+                )
+        finally:
+            sys.settrace(previous)
+        assert interrupted_at, "the interrupt never fired"
+        assert len(started) == 1, started
+        program_gone = _wait_gone(started[0].pid)
+        assert program_gone, (
+            f"the program interrupted at line {interrupted_at[0]} still exists"
+        )
+    finally:
+        for process in started:
+            with contextlib.suppress(OSError, subprocess.TimeoutExpired):
+                process.kill()
+                process.communicate(timeout=_EXIT_WAIT_SECONDS)

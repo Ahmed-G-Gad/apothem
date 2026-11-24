@@ -16,9 +16,13 @@ the stall.
 
 :func:`run_bounded` keeps the limit for the whole tree of programs:
 
-- on Windows the program starts in a job object that ends every program in it
-  when the job is closed, so a stop, or the end of this process, also ends every
-  program it started;
+- on Windows, whenever Windows grants a job object, the program starts
+  suspended, is added to the job, and only then is resumed. The job ends every
+  program in it when it is closed, so a stop, or the end of this process, also
+  ends every program it started, even one it starts at once (the launcher's
+  real git). When the add fails the program is still resumed, but it runs
+  outside the job. Without a job, or outside it, a stop reaches only the
+  program itself;
 - elsewhere, ``new_session=True`` starts the program in a session and process
   group of its own, and a stop ends the whole group. While it waits, a
   ``SIGTERM`` or ``SIGHUP`` to this process stops that group first and then
@@ -66,6 +70,10 @@ from typing import Any, Final
 
 # Seconds to wait, after a stop, for the stopped program's output to close.
 STOP_GRACE_SECONDS: Final[float] = 5.0
+
+# The Windows process creation flag that starts a program with its main thread
+# suspended.
+_CREATE_SUSPENDED: Final[int] = 0x00000004
 
 if sys.platform == "win32":
     import ctypes
@@ -143,6 +151,60 @@ if sys.platform == "win32":
     _CloseHandle.argtypes = (wintypes.HANDLE,)
     _CloseHandle.restype = wintypes.BOOL
 
+    _TH32CS_SNAPTHREAD: Final[int] = 0x00000004
+    _THREAD_SUSPEND_RESUME: Final[int] = 0x0002
+    # What ResumeThread returns when it fails: (DWORD)-1.
+    _RESUME_FAILED: Final[int] = 0xFFFFFFFF
+    # What CreateToolhelp32Snapshot returns when it fails.
+    _INVALID_HANDLE_VALUE: Final[int | None] = ctypes.c_void_p(-1).value
+
+    class _ThreadEntry(ctypes.Structure):
+        """THREADENTRY32."""
+
+        _fields_ = (
+            ("dwSize", wintypes.DWORD),
+            ("cntUsage", wintypes.DWORD),
+            ("th32ThreadID", wintypes.DWORD),
+            ("th32OwnerProcessID", wintypes.DWORD),
+            ("tpBasePri", wintypes.LONG),
+            ("tpDeltaPri", wintypes.LONG),
+            ("dwFlags", wintypes.DWORD),
+        )
+
+    # The entry size Windows must fill for the owner's process ID to be valid.
+    _OWNER_FIELD_END: Final[int] = _ThreadEntry.th32OwnerProcessID.offset + (
+        ctypes.sizeof(wintypes.DWORD)
+    )
+
+    _CreateToolhelp32Snapshot = _KERNEL32.CreateToolhelp32Snapshot
+    _CreateToolhelp32Snapshot.argtypes = (wintypes.DWORD, wintypes.DWORD)
+    _CreateToolhelp32Snapshot.restype = wintypes.HANDLE
+    _Thread32First = _KERNEL32.Thread32First
+    _Thread32First.argtypes = (wintypes.HANDLE, ctypes.POINTER(_ThreadEntry))
+    _Thread32First.restype = wintypes.BOOL
+    _Thread32Next = _KERNEL32.Thread32Next
+    _Thread32Next.argtypes = (wintypes.HANDLE, ctypes.POINTER(_ThreadEntry))
+    _Thread32Next.restype = wintypes.BOOL
+    _OpenThread = _KERNEL32.OpenThread
+    _OpenThread.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+    _OpenThread.restype = wintypes.HANDLE
+    _ResumeThread = _KERNEL32.ResumeThread
+    _ResumeThread.argtypes = (wintypes.HANDLE,)
+    _ResumeThread.restype = wintypes.DWORD
+
+    # ntdll's NtResumeProcess lets every thread of a process run in one call.
+    # It is not documented, but it has been stable for many Windows versions
+    # and psutil relies on it. When it is missing or fails, the program is
+    # resumed through a thread snapshot instead, which is much slower: the
+    # snapshot holds every thread on the machine. A private handle again, and
+    # None when this Windows has no such function.
+    _NTDLL = ctypes.WinDLL("ntdll")
+    _NT_RESUME_PROCESS: Any = getattr(_NTDLL, "NtResumeProcess", None)
+    if _NT_RESUME_PROCESS is not None:
+        _NT_RESUME_PROCESS.argtypes = (wintypes.HANDLE,)
+        # An NTSTATUS: zero or more is a success.
+        _NT_RESUME_PROCESS.restype = wintypes.LONG
+
     def _new_job() -> int | None:
         """Return a job object that ends its programs when closed, or None."""
         job = _CreateJobObjectW(None, None)
@@ -170,14 +232,65 @@ if sys.platform == "win32":
         finally:
             _CloseHandle(process)
 
+    def _thread_ids(pid: int) -> list[int]:
+        """Return the IDs of the threads of process *pid*, or [] on a failure."""
+        snapshot = _CreateToolhelp32Snapshot(_TH32CS_SNAPTHREAD, 0)
+        if not snapshot or snapshot == _INVALID_HANDLE_VALUE:
+            return []
+        found: list[int] = []
+        try:
+            entry = _ThreadEntry()
+            entry.dwSize = ctypes.sizeof(entry)
+            more = _Thread32First(snapshot, ctypes.byref(entry))
+            while more:
+                if entry.dwSize >= _OWNER_FIELD_END and entry.th32OwnerProcessID == pid:
+                    found.append(int(entry.th32ThreadID))
+                entry.dwSize = ctypes.sizeof(entry)
+                more = _Thread32Next(snapshot, ctypes.byref(entry))
+        finally:
+            _CloseHandle(snapshot)
+        return found
+
+    def _resume_process(handle: int | None, pid: int) -> bool:
+        """Let process *pid*, started suspended, run; return False on a failure.
+
+        *handle* is the process handle that started it, or None when it is not
+        known. NtResumeProcess on that handle comes first; the thread snapshot
+        is the fallback.
+        """
+        if (
+            handle is not None
+            and _NT_RESUME_PROCESS is not None
+            and int(_NT_RESUME_PROCESS(handle)) >= 0
+        ):
+            return True
+        return _resume_threads(pid)
+
+    def _resume_threads(pid: int) -> bool:
+        """Let process *pid*, started suspended, run; return False on a failure."""
+        threads = _thread_ids(pid)
+        if not threads:
+            return False
+        for thread_id in threads:
+            thread = _OpenThread(_THREAD_SUSPEND_RESUME, False, thread_id)
+            if not thread:
+                return False
+            try:
+                if _ResumeThread(thread) == _RESUME_FAILED:
+                    return False
+            finally:
+                _CloseHandle(thread)
+        return True
+
 
 class _Job:
     """A Windows job object that ends every program in it once it is closed.
 
     Elsewhere, and when Windows refuses a job (a sandbox that forbids one), it
-    does nothing, and a stop reaches only the program itself. The program is
-    added right after it starts; a process it starts before that moment stays
-    outside the job, which the bounded wait after a stop still covers.
+    does nothing, and a stop reaches only the program itself. When the job
+    exists the program starts suspended (:attr:`suspends`), is added, and only
+    then runs, so every process it starts is in the job as well. When Windows
+    refuses to add it, it still runs, and a stop reaches only the program.
     """
 
     def __init__(self) -> None:
@@ -186,10 +299,23 @@ class _Job:
         if sys.platform == "win32":
             self._handle = _new_job()
 
+    @property
+    def suspends(self) -> bool:
+        """True when the program should start suspended and wait for the job."""
+        return sys.platform == "win32" and self._handle is not None
+
     def add(self, pid: int) -> None:
         """Put the program with process ID *pid* in the job."""
         if sys.platform == "win32" and self._handle is not None:
             self._holds_program = _add_to_job(self._handle, pid)
+
+    def resume(self, process: subprocess.Popen[bytes]) -> bool:
+        """Let the suspended *process* run; return False if it cannot."""
+        if sys.platform == "win32" and self._handle is not None:
+            # Popen keeps the process handle in a private attribute.
+            handle = getattr(process, "_handle", None)
+            return _resume_process(None if handle is None else int(handle), process.pid)
+        return True
 
     def terminate(self) -> None:
         """End every program in the job."""
@@ -268,6 +394,23 @@ def _stop(process: subprocess.Popen[bytes], job: _Job, *, group: bool) -> None:
         process.kill()
 
 
+def _let_run(process: subprocess.Popen[bytes], job: _Job, program: str) -> None:
+    """Let *process*, started suspended, run, or stop it and raise OSError.
+
+    A program that cannot be resumed would wait out the whole time limit, so
+    it is stopped at once, its output is awaited for at most
+    :data:`STOP_GRACE_SECONDS`, and the start counts as failed.
+    """
+    if job.resume(process):
+        return
+    job.terminate()
+    with contextlib.suppress(OSError):
+        process.kill()
+    with contextlib.suppress(subprocess.TimeoutExpired):
+        process.communicate(timeout=STOP_GRACE_SECONDS)
+    raise OSError(f"could not resume {program!r} after it joined the job object")
+
+
 def run_bounded(
     argv: Sequence[str],
     *,
@@ -292,11 +435,22 @@ def run_bounded(
     the program and every program it started that the platform can reach are
     stopped (see the module docstring), the output is awaited for at most
     :data:`STOP_GRACE_SECONDS`, and :class:`subprocess.TimeoutExpired` is
-    raised. An interrupt, such as Ctrl+C, stops them the same way before it
-    goes on. A program that cannot be started raises :class:`OSError`.
+    raised. An interrupt, such as Ctrl+C, that arrives once Popen has
+    returned stops them the same way before it goes on. An interrupt inside
+    Popen itself, after Windows created the program but before Popen returns,
+    can leave the program suspended; that window is microseconds wide. A
+    program that cannot be started raises :class:`OSError`. On
+    Windows a program that started suspended and cannot be resumed is stopped
+    and raises :class:`OSError` too, so a caller sees it as a program that
+    could not be started.
     """
     command = list(argv)
     job = _Job()
+    suspended = job.suspends
+    process: subprocess.Popen[bytes] | None = None
+    # One try covers everything from the moment Popen returns, so an interrupt
+    # at any point after the start (even before the program is added or
+    # resumed) stops the program instead of leaving it suspended.
     try:
         process = subprocess.Popen(  # noqa: S603 — argv list from the caller, never a shell
             command,
@@ -306,21 +460,20 @@ def run_bounded(
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             start_new_session=new_session and sys.platform != "win32",
+            creationflags=_CREATE_SUSPENDED if suspended else 0,
         )
-    except BaseException:
-        job.close()
-        raise
-    try:
         job.add(process.pid)
+        if suspended:
+            _let_run(process, job, command[0])
         with _exit_on_termination(new_session):
             stdout, stderr = process.communicate(timeout=timeout)
-    except subprocess.TimeoutExpired:
-        _stop(process, job, group=new_session)
-        with contextlib.suppress(subprocess.TimeoutExpired):
-            process.communicate(timeout=STOP_GRACE_SECONDS)
-        raise
-    except BaseException:
-        _stop(process, job, group=new_session)
+    except BaseException as error:
+        # process is None only when Popen itself failed: nothing started.
+        if process is not None:
+            _stop(process, job, group=new_session)
+            if isinstance(error, subprocess.TimeoutExpired):
+                with contextlib.suppress(subprocess.TimeoutExpired):
+                    process.communicate(timeout=STOP_GRACE_SECONDS)
         raise
     finally:
         job.close()
