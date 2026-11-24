@@ -155,13 +155,14 @@ partial run only through `$LASTEXITCODE`, so the process itself exits `0`.
 When a CI job or script needs the code, end the command with
 `; exit $LASTEXITCODE`, or run the script by path with `-File`. An installer
 dry run (`--dry-run`, or `-DryRun` on Windows) writes nothing, so the engine
-does not end it as partial. Fix what the engine's messages name. For a file, keep your own text (see
+does not end it as partial. Fix what the engine's messages name. For a file,
+keep your own text (see
 [A file holds two blocks between Apothem's markers](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)
 and
 [Apothem cannot tell its block from your text](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)),
 then run `apothem update --harness <name>`, or the update script, again, for
-each tool the run left unfinished. Any other non-zero exit code from the engine stops the
-script there.
+each tool the run left unfinished. Any other non-zero exit code from the
+engine stops the script there.
 
 ## Re-materialize harness output
 
