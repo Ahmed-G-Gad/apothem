@@ -404,9 +404,12 @@ def _names_the_root(root: Path, candidate: Path) -> bool:
     so ``desK`` with one is refused without being looked at. Then each
     level spelled differently is decided by identity, from the top down:
     it must be a real folder (``os.lstat``, not a link) and
-    ``os.path.samestat`` with the root's folder at that level. So a
-    case-sensitive folder whose other-case child is a junction, or another
-    folder, is refused at that level, and nothing below it is looked at.
+    ``os.path.samestat`` with the root's folder at that level. That
+    ``os.lstat`` reads the metadata of an entry outside the project (never
+    its content), and only of an entry whose name differs from the root's
+    folder at that level by letter case. So a case-sensitive folder whose
+    other-case child is a junction, or another folder, is refused at that
+    level, and nothing below it is looked at.
     """
     if os.path.normcase(str(candidate)) != os.path.normcase(str(root)):
         return False
@@ -443,7 +446,7 @@ def _link_target(root: Path, link: Path) -> Path | None:
     never tidied away as text, and nothing outside *root* is looked at
     beyond the root's own folder under another spelling. A device or
     extended path other than a drive path (``\\?\\C:\\``), an extended path
-    that holds ``.``, ``..`` or ``/`` (Windows takes those literally there),
+    that holds ``.``, ``..``, an empty part or ``/`` (Windows takes those literally there),
     a drive without a root (``C:name``), on Windows a part holding a colon
     (another drive, or a stream), a rooted path without a drive, a NUL, and
     an absolute path outside *root* give None.
@@ -462,7 +465,7 @@ def _link_target(root: Path, link: Path) -> Path | None:
         text = text[len(_EXTENDED_PREFIX) :]
         if _DRIVE_ROOT.match(text) is None:
             return None
-        if literal and ("/" in text or {".", ".."} & set(text.split("\\"))):
+        if literal and ("/" in text or {"", ".", ".."} & set(text.split("\\"))):
             return None
     if os.name != "nt" and text.startswith("//") and not text.startswith("///"):
         text = text[1:]  # POSIX allows a doubled leading slash for the root

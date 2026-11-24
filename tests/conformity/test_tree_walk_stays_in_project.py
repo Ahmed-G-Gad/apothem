@@ -43,6 +43,9 @@ from apothem.conformity import (
     naming_grep,
     no_global_plans_grep,
     no_toplevel_docs_grep,
+    oidc_trusted_publishing_grep,
+    plan_next_step_consistency_grep,
+    plan_suite_structure_grep,
     plans_discipline_language_grep,
 )
 from apothem.conformity._grep_base import (
@@ -1074,6 +1077,7 @@ def test_an_extended_target_takes_dots_and_slashes_literally(
         str(root) + back + "sub" + back + ".." + back + "AGENTS.md",
         str(root) + back + "." + back + "AGENTS.md",
         str(root) + "/AGENTS.md",
+        str(root) + back * 2 + "AGENTS.md",
     ):
         _fake_readlink(monkeypatch, link, prefix + rest)
         assert _project_paths._link_target(root, link) is None, rest
@@ -1289,3 +1293,63 @@ def test_an_other_case_ancestor_that_is_a_junction_is_not_crossed(
     assert _project_paths._link_target(root, link) is None
     below = str(base / "work") + chr(92)
     assert [p for p in looked if p.startswith(below)] == []
+
+
+@_WINDOWS_ONLY
+@pytest.mark.parametrize(
+    ("validator", "expected"),
+    [
+        (plan_suite_structure_grep, [".apothem/plans/demo/01-intro.md."]),
+        (plan_next_step_consistency_grep, []),
+        (oidc_trusted_publishing_grep, [".github/workflows/publish-py.yml."]),
+    ],
+    ids=["suite-root-prefixes", "folders-only", "publish-workflows"],
+)
+def test_each_listing_caller_names_only_the_trailing_dot_files_it_would_read(
+    tmp_path: Path, validator: object, expected: list[str]
+) -> None:
+    """A caller's own name rule decides which skipped files the report lists."""
+    root = (tmp_path / "project").resolve()
+    plans = root / ".apothem" / "plans"
+    suite = plans / "demo"
+    _write(suite / "PLAN.md")
+    workflows = root / ".github" / "workflows"
+    workflows.mkdir(parents=True)
+    for odd in (
+        suite / "01-intro.md.",
+        suite / "notes.",
+        plans / "stray.",
+        workflows / "publish-py.yml.",
+        workflows / "readme.txt.",
+    ):
+        _extended(odd).write_bytes(b"x")
+    start_skip_log(root)
+    validator.check(root)  # type: ignore[attr-defined]
+    assert take_skipped_paths() == expected
+
+
+def test_a_sibling_the_host_case_rule_keeps_apart_is_not_looked_at(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``desK`` with a Kelvin sign is refused by name, before any ``os.lstat``."""
+    root = (tmp_path / "desk").resolve()
+    _write(root / "AGENTS.md")
+    sibling = tmp_path / ("des" + chr(0x212A))
+    try:
+        _write(sibling / "AGENTS.md")
+    except OSError as exc:
+        pytest.skip(f"this file system folds the sibling name: {exc}")
+    link = root / "CLAUDE.md"
+    looked: list[str] = []
+    real_lstat = os.lstat
+
+    def lstat(path: os.PathLike[str] | str, *args: object, **kwargs: object) -> object:
+        looked.append(str(path))
+        return real_lstat(path, *args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(os, "lstat", lstat)
+    for text in (f"../{sibling.name}/AGENTS.md", str(sibling / "AGENTS.md")):
+        _fake_readlink(monkeypatch, link, text)
+        looked.clear()
+        assert _project_paths._link_target(root, link) is None, text
+        assert [p for p in looked if p.startswith(str(sibling))] == [], text
