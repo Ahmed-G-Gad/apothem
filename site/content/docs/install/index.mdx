@@ -143,10 +143,11 @@ identity fields: edit it, then run `apothem update --harness <name>` to apply
 yours. Re-running is idempotent: a git clone is fetched, its new tag is
 checked, and only then is the clone checked out to the resolved tag; a
 release-archive install is updated in place; and the harness is
-re-materialized. When the engine leaves a file as it is because of its
-Apothem marker lines, the installer prints a warning line, still verifies,
-places the `apothem` command and prints its banner, then ends with exit code
-`2` (see
+re-materialized. When the engine ends as partial (exit code `2`), the
+installer prints a warning line, still verifies, places the `apothem` command
+and prints its banner, then ends with exit code `2`. The engine ends as
+partial when it leaves a file as it is because of its Apothem marker lines,
+or when it stops after it has written something (see
 [When the engine leaves a file as it is](/docs/install/updating#when-the-engine-leaves-a-file-as-it-is)).
 The verified install is the default and recommended path.
 

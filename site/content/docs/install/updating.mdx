@@ -134,24 +134,28 @@ The engine can leave a file that holds Apothem's block (`CLAUDE.md` or
 `AGENTS.md`, say) as it is because of its Apothem marker lines: for example,
 when the file holds two whole blocks between Apothem's markers. It then writes
 everything else, prints a warning that names the file and says how to fix it,
-and ends as partial with exit code `2`. The installer and the update script
+and ends as partial with exit code `2`. The engine also ends as partial when
+it stops after it has written something: for example, when one tool fails
+after an earlier one in an `APOTHEM_HARNESS=all` run wrote its files. Its
+error then names the tool that stopped. The installer and the update script
 then print one more line:
 
 ```text
-! The engine left some files as they are (exit code 2). Fix them as its warning above says, then run 'apothem update --harness claude-code' again.
+! The engine ended as partial (exit code 2): its messages above say which files it left as they are, or which harness stopped. Fix what they name, then run 'apothem update --harness claude-code' again.
 ```
 
 They finish the run as after a full success: the installer still runs verify,
 places the `apothem` command and prints its closing banner, and the update
 script still prints "Update complete." as its last line. Each script then ends
 with exit code `2`. A piped PowerShell run (`irm ... | iex`) leaves
-`$LASTEXITCODE` at `2` instead, so your PowerShell session stays open. Fix the
-file as the engine's warning says, keeping your own text (see
+`$LASTEXITCODE` at `2` instead, so your PowerShell session stays open. Fix
+what the engine's messages name. For a file, keep your own text (see
 [A file holds two blocks between Apothem's markers](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)
 and
 [Apothem cannot tell its block from your text](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)),
-then run `apothem update --harness <name>`, or the update script, again. Any
-other non-zero exit code from the engine stops the script there.
+then run `apothem update --harness <name>`, or the update script, again, for
+each tool it names. Any other non-zero exit code from the engine stops the
+script there.
 
 ## Re-materialize harness output
 

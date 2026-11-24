@@ -7,7 +7,7 @@
 # Contract: Idempotent on rerun (a re-run fetches, checks and checks out the
 #           clone, then re-materializes). Throws on unrecoverable error.
 #           When the engine ends as partial (exit code 2: it left some
-#           files as they are because of their Apothem marker lines), the
+#           files as they are, or it stopped after it had written some), the
 #           run still verifies, places the shim and prints the banner,
 #           then ends with code 2 (see the end of this script).
 #
@@ -3166,13 +3166,13 @@ try {
     $env:PYTHONSAFEPATH = '1'
     & $PY -c $EngineProgram install --harness $Harness --profile $EngineProfile @EngineFlags
     # Exit code 2 means the engine ended as partial: it left some files as
-    # they are because of their Apothem marker lines, and its warning above
-    # says how to fix them. The install then goes on as on success, through
+    # they are, or it stopped after it had written some, and its messages
+    # above say which. The install then goes on as on success, through
     # verify, the shim and the banner, and the run ends with code 2 (see the
     # end of this script). Any other non-zero code stops the run here.
     $EngineCode = $LASTEXITCODE
     if ($EngineCode -eq 2) {
-        Write-Warn "The engine left some files as they are (exit code 2). Fix them as its warning above says, then run 'apothem update --harness $Harness' again."
+        Write-Warn "The engine ended as partial (exit code 2): its messages above say which files it left as they are, or which harness stopped. Fix what they name, then run 'apothem update --harness $Harness' again."
     } elseif ($EngineCode -ne 0) {
         Write-Fail "Harness materialization failed for $Harness"
     }

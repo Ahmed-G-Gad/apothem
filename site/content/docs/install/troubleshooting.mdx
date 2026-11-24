@@ -573,18 +573,19 @@ clone follows origin's copy of that branch.
 
 ### The installer or update script ends with exit code 2
 
-The engine left a file that holds Apothem's block as it is because of its
-Apothem marker lines, and wrote the rest. Its warning names the file and says
-how to fix it, and the script adds one line that starts "The engine left some
-files as they are (exit code 2)." The installer still runs verify, places the
-`apothem` command and prints its banner, and the update script still prints
-its last line. A piped PowerShell run
-(`irm ... | iex`) leaves `$LASTEXITCODE` at `2` and your session open. Fix the
-file as the warning says, keeping your own text (see
+The engine ended as partial. Either it left a file that holds Apothem's block
+as it is because of its Apothem marker lines, and wrote the rest, or it
+stopped after it had written something, for example when one tool failed
+after an earlier one in an `APOTHEM_HARNESS=all` run. Its messages name the
+file or the tool that stopped, and the script adds one line that starts "The
+engine ended as partial (exit code 2)." The installer still runs verify,
+places the `apothem` command and prints its banner, and the update script
+still prints its last line. A piped PowerShell run (`irm ... | iex`) leaves
+`$LASTEXITCODE` at `2` and your session open. Fix what the messages name. For a file, keep your own text (see
 [A file holds two blocks between Apothem's markers](#a-file-holds-two-blocks-between-apothems-markers)
 and
 [Apothem cannot tell its block from your text](#apothem-cannot-tell-its-block-from-your-text)),
-then run `apothem update --harness <name>` again.
+then run `apothem update --harness <name>` again for each tool they name.
 [When the engine leaves a file as it is](/docs/install/updating#when-the-engine-leaves-a-file-as-it-is)
 describes the whole run.
 

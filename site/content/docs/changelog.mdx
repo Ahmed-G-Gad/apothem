@@ -959,11 +959,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   names it. The troubleshooting page lists the step formats under "Follow a
   numbered fix".
 - **The installers and update scripts finish a run that ends as partial.**
-  When `apothem install` or `apothem update` leaves a file as it is because of
-  its marker lines and exits with code `2`, `install.sh`, `install.ps1`,
-  `update.sh` and `update.ps1` print one line, which says that the engine left
-  some files as they are, to fix them as its warning above says, and then to
-  run `apothem update --harness <name>` again. The installers then run verify,
+  When `apothem install` or `apothem update` exits with code `2`, because it
+  left a file as it is because of its marker lines or because it stopped
+  after it had written something, `install.sh`, `install.ps1`, `update.sh`
+  and `update.ps1` print one line. The line says that the engine ended as
+  partial, that its messages above say which files it left as they are or
+  which harness stopped, and to fix what they name, then run
+  `apothem update --harness <name>` again. The installers then run verify,
   place the `apothem` command and print their closing banner, and the update
   scripts print "Update complete.", as after a full success. Each script then
   ends with exit code `2`. A piped PowerShell run (`irm ... | iex`) leaves

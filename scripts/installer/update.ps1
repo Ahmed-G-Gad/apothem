@@ -5,7 +5,7 @@
 #          parity to update.sh).
 # Usage:   pwsh -NoProfile -File scripts/installer/update.ps1
 # Contract: When the engine ends as partial (exit code 2: it left some
-#           files as they are because of their Apothem marker lines),
+#           files as they are, or it stopped after it had written some),
 #           the update still finishes, then ends with code 2 (see the
 #           end of this script).
 #
@@ -1797,13 +1797,13 @@ $EngineCode = 0
 try {
     & $PY -c $EngineProgram update --harness $Harness --profile $ApothemProfile
     # Exit code 2 means the engine ended as partial (mirrors install.ps1): it
-    # left some files as they are because of their Apothem marker lines,
-    # and its warning above says how to fix them. The update then finishes
+    # left some files as they are, or it stopped after it had written some,
+    # and its messages above say which. The update then finishes
     # and the run ends with code 2 (see the end of this script). Any other
     # non-zero code stops the run here.
     $EngineCode = $LASTEXITCODE
     if ($EngineCode -eq 2) {
-        Write-Warn "The engine left some files as they are (exit code 2). Fix them as its warning above says, then run 'apothem update --harness $Harness' again."
+        Write-Warn "The engine ended as partial (exit code 2): its messages above say which files it left as they are, or which harness stopped. Fix what they name, then run 'apothem update --harness $Harness' again."
     } elseif ($EngineCode -ne 0) {
         Write-Fail "Harness re-materialization failed for $Harness"
     } else {

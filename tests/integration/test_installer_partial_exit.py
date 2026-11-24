@@ -4,7 +4,9 @@
 
 ``apothem install`` and ``apothem update`` exit with code 2 (``status``
 ``partial``) when they leave a file Apothem keeps its block in as it is
-because of its marker lines, after writing the rest of the install. The
+because of its marker lines, after writing the rest of the install, or when
+they stop after they have written something (a harness fails after an
+earlier one in an ``APOTHEM_HARNESS=all`` batch wrote its files). The
 one-shot scripts (``install.sh``, ``install.ps1``, ``update.sh`` and
 ``update.ps1``) read that code as partial: each prints one warning line, goes
 on as on success (verify, the ``apothem`` shim and the next-step banner for
@@ -44,8 +46,9 @@ TIMEOUT_SECONDS = 300
 
 #: The one line each script prints when the engine ends as partial.
 PARTIAL_WARNING = (
-    "The engine left some files as they are (exit code 2). Fix them as its "
-    f"warning above says, then run 'apothem update --harness {HARNESS}' again."
+    "The engine ended as partial (exit code 2): its messages above say which "
+    "files it left as they are, or which harness stopped. Fix what they name, "
+    f"then run 'apothem update --harness {HARNESS}' again."
 )
 
 #: The stand-in engine. ``print`` ends each record with a newline.
