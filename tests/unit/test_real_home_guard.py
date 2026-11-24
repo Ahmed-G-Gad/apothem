@@ -1106,12 +1106,20 @@ def test_the_session_finish_and_unconfigure_wrappers_fail_a_passing_exit(
     so this checks only that the wrapper passes a ``SystemExit`` from its
     ``yield`` through :func:`_a_passing_exit_fails`. The pytester cases do
     not check that, because the ``pytest_cmdline_main`` wrapper converts
-    the same exits at the end of the run.
+    the same exits at the end of the run. Each wrapper gets a config of its
+    own, with no session held and no ``session`` plugin, so neither depends
+    on what the other set.
     """
     conftest = _suite_conftest(request.config)
     guard = conftest.real_home_guard
-    config = SimpleNamespace(stash=pytest.Stash())
-    session = SimpleNamespace(config=config)
+
+    def reported() -> SimpleNamespace:
+        config = SimpleNamespace(
+            stash=pytest.Stash(),
+            pluginmanager=SimpleNamespace(get_plugin=lambda name: None),
+        )
+        config.stash[conftest._REPORTED] = True
+        return config
 
     def ended(wrapper: Callable[[], Generator[None, None, None]]) -> object:
         running = wrapper()
@@ -1125,12 +1133,13 @@ def test_the_session_finish_and_unconfigure_wrappers_fail_a_passing_exit(
             patch.setattr(conftest, name, lambda *args, **kwargs: None)
         for name in ("_is_controller", "_is_worker"):
             patch.setattr(conftest, name, lambda *args: False)
-        config.stash[conftest._REPORTED] = True
         found = {
+            "unconfigure": ended(lambda: guard.pytest_unconfigure(reported())),
             "session finish": ended(
-                lambda: guard.pytest_sessionfinish_after_the_summary(session)
+                lambda: guard.pytest_sessionfinish_after_the_summary(
+                    SimpleNamespace(config=reported())
+                )
             ),
-            "unconfigure": ended(lambda: guard.pytest_unconfigure(config)),
         }
 
     assert found == {"session finish": 1, "unconfigure": 1}
