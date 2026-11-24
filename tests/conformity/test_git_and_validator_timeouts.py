@@ -1689,6 +1689,68 @@ def test_program_ended_before_the_resume_is_no_result(
 
 
 @_WINDOWS_ONLY
+@pytest.mark.parametrize("exit_code", [0, 3])
+def test_program_read_late_after_the_resume_still_gives_its_result(
+    monkeypatch: pytest.MonkeyPatch, exit_code: int
+) -> None:
+    """A program that ran and ended before the read after the resume counts.
+
+    The calling thread can be slow to read the exit code after the resume,
+    for example while other Python threads hold the GIL. The program may then
+    have run and ended. Its exit code used to read as a kill before the
+    resume, and a git that had printed its answer failed with "ended before
+    it could run". Here the resume waits until the program has ended.
+    """
+    import _winapi
+
+    _skip_without_a_job()
+    real_resume = _bounded_run._NT_RESUME_PROCESS
+    if real_resume is None:
+        pytest.skip("this Windows has no NtResumeProcess")
+
+    def resume_then_wait(handle: int) -> int:
+        status = int(real_resume(handle))
+        _winapi.WaitForSingleObject(handle, int(_EXIT_WAIT_SECONDS * 1000))
+        return status
+
+    monkeypatch.setattr(_bounded_run, "_NT_RESUME_PROCESS", resume_then_wait)
+    completed = _bounded_run.run_bounded(
+        [sys.executable, "-c", f"import sys; print('ran'); sys.exit({exit_code})"],
+        timeout=_DEADLINE_SECONDS,
+    )
+    assert completed.stdout == "ran\n"
+    assert completed.returncode == exit_code
+
+
+@_WINDOWS_ONLY
+def test_program_ended_with_exit_code_259_reads_as_told_to_end() -> None:
+    """A suspended program ended with exit code 259 is not read as running.
+
+    259 is also the exit code Windows gives a running process (STILL_ACTIVE).
+    Once the program has ended, its signalled handle tells the two apart.
+    """
+    import _winapi
+
+    process = subprocess.Popen(
+        [sys.executable, "-c", f"import time; time.sleep({_SLEEP_SECONDS})"],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        creationflags=_bounded_run._CREATE_SUSPENDED,
+    )
+    try:
+        handle = int(process._handle)  # type: ignore[attr-defined]  # Popen's own
+        assert _bounded_run._told_to_end(handle) is False
+        _winapi.TerminateProcess(handle, 259)
+        _winapi.WaitForSingleObject(handle, int(_EXIT_WAIT_SECONDS * 1000))
+        assert _bounded_run._told_to_end(handle) is True
+    finally:
+        with contextlib.suppress(OSError, subprocess.TimeoutExpired):
+            process.kill()
+            process.wait(timeout=_EXIT_WAIT_SECONDS)
+
+
+@_WINDOWS_ONLY
 def test_interrupt_before_a_failed_resume_acts_at_once(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1846,6 +1908,224 @@ def test_interrupt_inside_the_start_does_not_leave_the_program_behind(
             with contextlib.suppress(OSError, subprocess.TimeoutExpired):
                 process.kill()
                 process.communicate(timeout=_EXIT_WAIT_SECONDS)
+
+
+def _popen_interrupted_in_its_wait(
+    started: list[subprocess.Popen[bytes]],
+) -> type[subprocess.Popen[bytes]]:
+    """Return a Popen that records each program and raises SIGINT in its wait.
+
+    Only the first wait is interrupted, so a test's own clean-up can wait.
+    """
+    real_popen = subprocess.Popen
+
+    class InterruptedPopen(real_popen):  # type: ignore[misc,valid-type]
+        def communicate(self, *args: object, **kwargs: object) -> object:
+            if self not in started:
+                started.append(self)
+                signal.raise_signal(signal.SIGINT)
+            return super().communicate(*args, **kwargs)
+
+    return InterruptedPopen
+
+
+@pytest.mark.parametrize(
+    "new_session",
+    [
+        False,
+        True,
+        pytest.param(None, marks=_WINDOWS_ONLY, id="windows-without-a-job"),
+    ],
+)
+def test_second_interrupt_during_the_stop_does_not_skip_it(
+    monkeypatch: pytest.MonkeyPatch, new_session: bool | None
+) -> None:
+    """A Ctrl+C that lands as the stop for the first one begins still stops.
+
+    The first Ctrl+C lands while run_bounded waits, the second as the stop
+    begins. The second used to skip the kill. Outside Windows the program
+    then ran on, in a session of its own with *new_session*, out of the
+    terminal's reach. On Windows without a job (None here) it ran on too.
+    """
+    if new_session is None:
+        monkeypatch.setattr(_bounded_run, "_new_job", lambda: None)
+    started: list[subprocess.Popen[bytes]] = []
+    monkeypatch.setattr(
+        _bounded_run.subprocess, "Popen", _popen_interrupted_in_its_wait(started)
+    )
+    real_stop = _bounded_run._stop
+    stops: list[int] = []
+
+    def interrupted_stop(
+        process: subprocess.Popen[bytes], job: _bounded_run._Job, *, group: bool
+    ) -> None:
+        stops.append(process.pid)
+        if len(stops) == 1:
+            signal.raise_signal(signal.SIGINT)
+        real_stop(process, job, group=group)
+
+    monkeypatch.setattr(_bounded_run, "_stop", interrupted_stop)
+    program_gone = False
+    try:
+        with _python_interrupt_handler():
+            with pytest.raises(KeyboardInterrupt):
+                _bounded_run.run_bounded(
+                    [
+                        sys.executable,
+                        "-c",
+                        f"import time; time.sleep({_SLEEP_SECONDS})",
+                    ],
+                    timeout=_SLEEP_SECONDS,
+                    new_session=bool(new_session),
+                )
+            assert signal.getsignal(signal.SIGINT) is signal.default_int_handler
+        assert len(started) == 1, started
+        program_gone = _ends(started[0])
+        assert program_gone, "the program still runs after the second interrupt"
+    finally:
+        for process in started:
+            with contextlib.suppress(OSError, subprocess.TimeoutExpired):
+                process.kill()
+                process.communicate(timeout=_EXIT_WAIT_SECONDS)
+
+
+@pytest.mark.parametrize(
+    "new_session",
+    [
+        False,
+        True,
+        pytest.param(None, marks=_WINDOWS_ONLY, id="windows-without-a-job"),
+    ],
+)
+def test_interrupted_program_is_waited_for(
+    monkeypatch: pytest.MonkeyPatch, new_session: bool | None
+) -> None:
+    """A program stopped by a Ctrl+C has ended by the time the interrupt leaves.
+
+    Before, only a time-out waited for the stopped program. Outside Windows a
+    program stopped by an interrupt stayed a zombie, holding its process ID,
+    until a later Popen happened to reap it. On Windows with a job, the kill
+    after the job's stop already records the exit code; without a job (None
+    here) nothing did.
+    """
+    if new_session is None:
+        monkeypatch.setattr(_bounded_run, "_new_job", lambda: None)
+    started: list[subprocess.Popen[bytes]] = []
+    monkeypatch.setattr(
+        _bounded_run.subprocess, "Popen", _popen_interrupted_in_its_wait(started)
+    )
+    try:
+        with _python_interrupt_handler(), pytest.raises(KeyboardInterrupt):
+            _bounded_run.run_bounded(
+                [sys.executable, "-c", f"import time; time.sleep({_SLEEP_SECONDS})"],
+                timeout=_SLEEP_SECONDS,
+                new_session=bool(new_session),
+            )
+        assert len(started) == 1, started
+        assert started[0].returncode is not None, "the stopped program was not reaped"
+    finally:
+        for process in started:
+            with contextlib.suppress(OSError, subprocess.TimeoutExpired):
+                process.kill()
+                process.communicate(timeout=_EXIT_WAIT_SECONDS)
+
+
+# A program that runs run_bounded with a new session, with a Popen that sends
+# this process the signal named by the first argument right after the real
+# Popen started the program. It writes that program's process ID to the file
+# named by the second argument first.
+_SIGNALLED_START_PROGRAM = (
+    "import os, subprocess, sys\n"
+    "from pathlib import Path\n"
+    "from apothem.conformity import _bounded_run\n"
+    "signum, pid_file = int(sys.argv[1]), Path(sys.argv[2])\n"
+    "real_popen = subprocess.Popen\n"
+    "def signalled_popen(*args, **kwargs):\n"
+    "    process = real_popen(*args, **kwargs)\n"
+    "    pid_file.write_text(str(process.pid), encoding='utf-8')\n"
+    "    os.kill(os.getpid(), signum)\n"
+    "    return process\n"
+    "_bounded_run.subprocess.Popen = signalled_popen\n"
+    "_bounded_run.run_bounded(\n"
+    f"    [sys.executable, '-c', 'import time; time.sleep({_SLEEP_SECONDS})'],\n"
+    f"    timeout={_SLEEP_SECONDS},\n"
+    "    new_session=True,\n"
+    ")\n"
+)
+
+
+@_POSIX_ONLY
+@pytest.mark.parametrize("signal_name", ["SIGTERM", "SIGHUP"])
+def test_termination_during_the_start_stops_the_program(
+    tmp_path: Path, signal_name: str
+) -> None:
+    """A SIGTERM or SIGHUP as a new-session program starts does not leave it.
+
+    The signal turned into an exit only once run_bounded waited. During the
+    start it kept its default action: this process died at once, and the
+    program, in a session of its own, ran on. It is now held back until the
+    program exists, which is then stopped before the exit (128 plus the
+    signal's number). The run is a process of its own, so a regression ends
+    that process and not the test run.
+    """
+    # Looked up here: Windows, where the test is skipped, has no SIGHUP.
+    signum = int(getattr(signal, signal_name))
+    pid_file = tmp_path / "program.pid"
+    env = {**os.environ, "PYTHONPATH": str(_REPO_ROOT / "src")}
+    program_gone = False
+    try:
+        run = subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                _SIGNALLED_START_PROGRAM,
+                str(signum),
+                str(pid_file),
+            ],
+            env=env,
+            capture_output=True,
+            check=False,
+            timeout=_DEADLINE_SECONDS,
+        )
+        assert run.returncode == 128 + signum, (
+            f"exit {run.returncode}: {run.stderr.decode('utf-8', 'replace')}"
+        )
+        program = _read_pid(pid_file)
+        assert program is not None, "the run never started its program"
+        program_gone = _wait_gone(program)
+        assert program_gone, "the program still runs after the signal"
+    finally:
+        leftover = _read_pid(pid_file)
+        if leftover is not None and not program_gone:
+            with contextlib.suppress(OSError):
+                os.kill(leftover, signal.SIGKILL)
+
+
+def test_a_refused_signal_handler_leaves_no_trace_on_errors(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """When no handler can be set, the start runs without the hold.
+
+    Only the main interpreter may set a signal handler; elsewhere
+    ``signal.signal`` raises ValueError. The program then runs as usual, and
+    an error from the start does not carry that ValueError as its context
+    (the hold used to yield inside the ``except ValueError`` block).
+    """
+
+    def refused(_signum: int, _handler: object) -> object:
+        raise ValueError("signal only works in main thread of the main interpreter")
+
+    with _python_interrupt_handler(), monkeypatch.context() as patch:
+        patch.setattr(_bounded_run.signal, "signal", refused)
+        completed = _bounded_run.run_bounded(
+            [sys.executable, "-c", _PRINT_PROGRAM], timeout=_DEADLINE_SECONDS
+        )
+        with pytest.raises(FileNotFoundError) as raised:
+            _bounded_run.run_bounded(
+                [str(tmp_path / "missing-program")], timeout=_DEADLINE_SECONDS
+            )
+    assert completed.stdout == "ran\n"
+    assert not isinstance(raised.value.__context__, ValueError), raised.value
 
 
 @_WINDOWS_ONLY
@@ -2033,3 +2313,73 @@ def test_interrupt_right_after_the_start_stops_the_program(
             with contextlib.suppress(OSError, subprocess.TimeoutExpired):
                 process.kill()
                 process.communicate(timeout=_EXIT_WAIT_SECONDS)
+
+
+def test_every_handler_comes_back_when_one_restore_raises(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A signal that lands mid-restore leaves no hold handler behind.
+
+    Restoring ``SIGTERM`` first lets a pending ``SIGTERM`` raise
+    ``SystemExit`` there; ``SIGINT`` must still get its handler back, or every
+    later Ctrl+C in the process is recorded and dropped.
+    """
+    real_signal = signal.signal
+    old_int = signal.getsignal(signal.SIGINT)
+    old_term = signal.getsignal(signal.SIGTERM)
+    calls: list[int] = []
+
+    def raising_once(signum: int, handler: object) -> object:
+        previous = real_signal(signum, handler)  # type: ignore[arg-type]
+        calls.append(signum)
+        if len(calls) == 1:
+            raise SystemExit(143)
+        return previous
+
+    def wanted(_signum: int, _frame: object) -> None:
+        return None
+
+    try:
+        monkeypatch.setattr(_bounded_run.signal, "signal", raising_once)
+        with pytest.raises(SystemExit):
+            _bounded_run._set_handlers(
+                [(signal.SIGTERM, wanted), (signal.SIGINT, wanted)]
+            )
+        assert signal.getsignal(signal.SIGINT) is wanted
+    finally:
+        monkeypatch.undo()
+        real_signal(signal.SIGINT, old_int)
+        real_signal(signal.SIGTERM, old_term)
+
+
+def test_ctrl_c_during_the_stop_keeps_a_termination_exit_code(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A Ctrl+C held while a SIGTERM's stop runs does not turn 143 into 130."""
+    process = subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(30)"],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    job = _bounded_run._Job()
+    real_stop = _bounded_run._stop
+
+    def stop_then_interrupt(*args: object, **kwargs: object) -> None:
+        signal.raise_signal(signal.SIGINT)
+        real_stop(*args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(_bounded_run, "_stop", stop_then_interrupt)
+    try:
+        # Returns quietly: the caller then raises the SystemExit it holds.
+        _bounded_run._stop_after_error(process, job, SystemExit(143), group=False)
+        assert process.poll() is not None, "the program was not stopped"
+        with pytest.raises(KeyboardInterrupt):
+            _bounded_run._stop_after_error(
+                process, job, RuntimeError("other"), group=False
+            )
+    finally:
+        job.close()
+        with contextlib.suppress(OSError):
+            process.kill()
+        process.communicate(timeout=_EXIT_WAIT_SECONDS)
