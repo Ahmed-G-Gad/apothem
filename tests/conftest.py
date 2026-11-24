@@ -1839,7 +1839,7 @@ def _report_held(
         # The file holds a copy, for a controller whose test loop ends before
         # it takes the output or a worker that ends before xdist sends it;
         # the controller skips the copy otherwise (see _take_late).
-        _sent_late(config, reports[written:])
+        _sent_late(config, reports[written:], copy=True)
         return
     if worker:
         reports = reports[written:]
@@ -1968,6 +1968,7 @@ def _sent_late(
     reports: Sequence[tuple[str, tuple[str, ...]]],
     *,
     last_try: bool = False,
+    copy: bool = False,
 ) -> str | None:
     """Append *reports* to the file the xdist controller gave this worker.
 
@@ -1986,6 +1987,16 @@ def _sent_late(
     off part way as a refusal of its own, and fails the run on it. A later
     write starts on a new line after such a line. With no report it opens
     no file: the worker creates its file only to write a refusal.
+
+    With *copy* the reports are the copy written beside the hand-off, when
+    every refusal the worker held is in the output it hands over. A failed
+    write then also removes the file when it is left empty: one that an
+    earlier write created and no byte reached (a full disk, say). The
+    controller would hold that empty file as one more refusal, though the
+    output brings it every refusal the file was opened for. An empty file
+    left at any other write stays: before the hand-off it is the only sign
+    of a refusal when the worker crashes before it sends its output, and
+    after it the only sign of what the worker found then.
     """
     if not reports:
         return None
@@ -2027,8 +2038,17 @@ def _sent_late(
         if start is not None and not last_try:
             with contextlib.suppress(OSError):
                 os.truncate(path, start)
+        if copy:
+            _remove_if_empty(Path(path))
         return f"writing {path} failed: {error.strerror or error}"
     return None
+
+
+def _remove_if_empty(path: Path) -> None:
+    """Remove *path* when it holds no byte; leave it on any error."""
+    with contextlib.suppress(OSError):
+        if path.stat().st_size == 0:
+            path.unlink()
 
 
 def _take_late(config: pytest.Config) -> None:
@@ -2047,8 +2067,10 @@ def _take_late(config: pytest.Config) -> None:
     wrote no file. A file that cannot be read, or that holds no line, is held
     as a refusal of its own, so the run fails: the worker creates its file only
     to write a refusal it found, and one stopped after it created the file and
-    before the text reached it leaves the file empty. Nothing happens outside
-    an xdist controller, which alone names files.
+    before the text reached it leaves the file empty. A worker whose copy
+    write beside the hand-off fails removes an empty file (see
+    :func:`_sent_late`), as the hand-off holds its refusals. Nothing happens
+    outside an xdist controller, which alone names files.
     """
     files = config.stash.get(_LATE_FILES, {})
     if files:
