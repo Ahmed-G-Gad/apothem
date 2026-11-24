@@ -52,7 +52,7 @@ import warnings
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
-from typing import IO, Any
+from typing import IO, Any, Final
 
 import pytest
 
@@ -1264,22 +1264,49 @@ def test_the_program_guard_passes_run_git_and_exception_types() -> None:
 _RUN_BOUNDED_CALLERS = {"gate.py": frozenset({"_run_standalone"})}
 
 
+_PROGRAM_FINDERS: Final[frozenset[str]] = frozenset({"which", "find_git", "git_argv"})
+
+
+def _names_git_or_finds_programs(source: str) -> list[int]:
+    """Return the lines where *source* names the git program or finds one.
+
+    The check ``_bounded_run.py`` is held to: it starts whatever program it is
+    given, so its ``subprocess`` and ``ctypes`` use is its job, but it must
+    never pick git, or look a program up, itself.
+    """
+    lines: set[int] = set()
+    for node in ast.walk(ast.parse(source)):
+        text = _fixed_string(node)
+        if (
+            (text is not None and _GIT_PROGRAM.search(text.strip()))
+            or (isinstance(node, ast.Name) and node.id in _PROGRAM_FINDERS)
+            or (isinstance(node, ast.Attribute) and node.attr in _PROGRAM_FINDERS)
+            or (
+                isinstance(node, ast.ImportFrom)
+                and any(alias.name in _PROGRAM_FINDERS for alias in node.names)
+            )
+        ):
+            lines.add(node.lineno)
+    return sorted(lines)
+
+
 def _modules_that_start_programs(package: Path) -> list[str]:
     """Return ``path:line`` for each program start below *package*.
 
-    Only the package's own ``_git.py`` and ``_bounded_run.py`` are left out,
-    by their path: a file of the same name in a subfolder is checked. A call
-    to ``run_bounded`` counts everywhere but in ``_run_standalone`` of the
-    package's own ``gate.py`` and in ``run_git`` of its ``_git.py``, which is
-    checked for that one rule.
+    Only the package's own ``_git.py`` and ``_bounded_run.py`` are held to
+    rules of their own, by their path: a file of the same name in a subfolder
+    is checked like any other. ``_bounded_run.py`` must name no git and look
+    no program up. A call to ``run_bounded`` counts everywhere but in
+    ``_run_standalone`` of the package's own ``gate.py`` and in ``run_git`` of
+    its ``_git.py``, which is checked for that one rule.
     """
     offenders: list[str] = []
     for module in sorted(package.rglob("*.py")):
         relative = module.relative_to(package).as_posix()
-        if relative == "_bounded_run.py":
-            continue
         source = module.read_text(encoding="utf-8")
-        if relative == "_git.py":
+        if relative == "_bounded_run.py":
+            lines = _names_git_or_finds_programs(source)
+        elif relative == "_git.py":
             lines = _run_bounded_uses(source, inside=frozenset({"run_git"}))
         else:
             allowed = _RUN_BOUNDED_CALLERS.get(relative, frozenset())
@@ -1382,7 +1409,10 @@ def test_run_bounded_in_the_git_helper_is_called_by_run_git_only() -> None:
 def test_the_module_walk_leaves_out_the_two_starters_by_path_only(
     tmp_path: Path,
 ) -> None:
-    """A ``_git.py`` in a subfolder, or an aliased import, is not passed over."""
+    """A ``_git.py`` in a subfolder, or an aliased import, is not passed over.
+
+    The package's own ``_bounded_run.py`` is still held to naming no git.
+    """
     package = tmp_path / "conformity"
     (package / "sub").mkdir(parents=True)
     direct = 'import subprocess\nsubprocess.run(["git", "log"])\n'
@@ -1398,10 +1428,27 @@ def test_the_module_walk_leaves_out_the_two_starters_by_path_only(
     )
 
     assert _modules_that_start_programs(package) == [
+        "_bounded_run.py:2",
         "sub/_bounded_run.py:2",
         "sub/_git.py:2",
         "zz_alias.py:2",
     ]
+
+
+def test_the_runner_may_start_programs_but_never_names_git() -> None:
+    """In ``_bounded_run.py`` a string naming git, or a program lookup, counts."""
+    assert (
+        _names_git_or_finds_programs("import subprocess\nsubprocess.Popen(argv)\n")
+        == []
+    )
+    assert _names_git_or_finds_programs(
+        'import subprocess\nsubprocess.Popen(["git", "log"])\n'
+    ) == [2]
+    assert _names_git_or_finds_programs('import shutil\nshutil.which("x")\n') == [2]
+    assert _names_git_or_finds_programs(
+        "from shutil import which\nfrom apothem.conformity._git import find_git\n"
+    ) == [1, 2]
+    assert _names_git_or_finds_programs('PROGRAM = "C:/Git/cmd/git.exe"\n') == [1]
 
 
 def test_only_the_shared_runner_and_git_helper_start_programs() -> None:

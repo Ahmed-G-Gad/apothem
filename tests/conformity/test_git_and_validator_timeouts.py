@@ -58,9 +58,11 @@ import pytest
 
 from apothem.conformity import (
     _bounded_run,
+    _grep_base,
     agents_md_coverage_grep,
     conventional_commit_grep,
     gate,
+    no_global_plans_grep,
     production_ready_pr_grep,
     semver_stability_grep,
 )
@@ -170,20 +172,6 @@ def _release_fifo(fifo: Path) -> None:
     except OSError:
         return
     os.close(descriptor)
-
-
-def _fifo_has_reader(fifo: Path) -> bool:
-    """Return True while a process has *fifo* open, or is opening it, to read.
-
-    A write-only open that does not wait fails when no reader exists. When it
-    succeeds, closing it lets that reader go on.
-    """
-    try:
-        descriptor = os.open(fifo, os.O_WRONLY | os.O_NONBLOCK)
-    except OSError:
-        return False
-    os.close(descriptor)
-    return True
 
 
 def _include_fifo(repo: Path, fifo: Path) -> None:
@@ -324,7 +312,7 @@ def _timing_out_run(
 
 # The git subcommands the validators run; ``run_git`` puts its own options
 # (and ``-C <folder>``) before the subcommand.
-_SUBCOMMANDS = frozenset({"cat-file", "diff", "log", "rev-parse"})
+_SUBCOMMANDS = frozenset({"cat-file", "config", "diff", "log", "ls-files", "rev-parse"})
 
 
 def _subcommand(argv: list[str]) -> str:
@@ -478,6 +466,266 @@ def test_companion_history_read_past_its_limit_does_not_pass(
     )
 
 
+def _history_read_failing(
+    config: subprocess.CompletedProcess[str] | None,
+) -> Callable[..., subprocess.CompletedProcess[str]]:
+    """Stand in for ``run_bounded``: a history exists, but its read fails.
+
+    ``git rev-parse`` finds a commit and ``git log`` exits 128. ``git config``
+    answers with *config*, or runs past its limit when *config* is None.
+    """
+
+    def run(
+        argv: list[str], *, timeout: float | None, **kwargs: object
+    ) -> subprocess.CompletedProcess[str]:
+        command = _subcommand(argv)
+        if command == "rev-parse":
+            # --show-prefix prints an empty line at the top, then the commit.
+            return subprocess.CompletedProcess(argv, 0, "\n" + "0" * 40 + "\n", "")
+        if command == "log":
+            return subprocess.CompletedProcess(argv, 128, "", "fatal: unreadable")
+        if config is None:
+            return _timing_out_run(argv, timeout=timeout, **kwargs)
+        return config
+
+    return run
+
+
+def test_companion_history_read_that_fails_does_not_pass(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """After ``git rev-parse`` found a history, a failed read of it is no pass.
+
+    The repository is no partial clone, so nothing it left out explains the
+    failure: the history is there but was not read.
+    """
+    (tmp_path / "pkg").mkdir()
+    (tmp_path / "pkg" / "README.md").write_text("# pkg\n", encoding="utf-8")
+    no_promisor = subprocess.CompletedProcess(["git", "config"], 1, "", "")
+    monkeypatch.setattr(_bounded_run, "run_bounded", _history_read_failing(no_promisor))
+
+    result = agents_md_coverage_grep.check(tmp_path)
+    assert result.passed is False
+    assert result.freshness_checked is False
+    assert result.check_error == "git log failed with exit code 128"
+
+
+def test_companion_history_read_in_a_partial_clone_falls_back(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A partial clone's failed history read is missing history, not a failure.
+
+    git may not fetch the trees the clone left out, so the check falls back to
+    presence only, as it does where there is no history.
+    """
+    (tmp_path / "pkg").mkdir()
+    (tmp_path / "pkg" / "README.md").write_text("# pkg\n", encoding="utf-8")
+    promisor = subprocess.CompletedProcess(
+        ["git", "config"], 0, "remote.origin.promisor true\n", ""
+    )
+    monkeypatch.setattr(_bounded_run, "run_bounded", _history_read_failing(promisor))
+
+    result = agents_md_coverage_grep.check(tmp_path)
+    assert result.passed is True
+    assert result.freshness_checked is False
+    assert result.check_error is None
+
+
+def test_companion_promisor_turned_off_is_no_partial_clone(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``promisor = false`` names no promisor, so a failed read still fails."""
+    (tmp_path / "pkg").mkdir()
+    (tmp_path / "pkg" / "README.md").write_text("# pkg\n", encoding="utf-8")
+    turned_off = subprocess.CompletedProcess(
+        ["git", "config"], 0, "remote.origin.promisor false\n", ""
+    )
+    monkeypatch.setattr(_bounded_run, "run_bounded", _history_read_failing(turned_off))
+
+    result = agents_md_coverage_grep.check(tmp_path)
+    assert result.passed is False
+    assert result.check_error == "git log failed with exit code 128"
+
+
+@pytest.mark.parametrize(
+    ("advisory_report", "expected"),
+    [
+        (
+            {
+                "advisory": True,
+                "passed": False,
+                "findings": [],
+                CHECK_ERROR_KEY: "git log did not finish within 300 seconds",
+            },
+            False,
+        ),
+        (
+            {
+                "advisory": True,
+                "passed": False,
+                "findings": [{"surface": "pkg/AGENTS.md", "kind": "stale-companion"}],
+            },
+            True,
+        ),
+    ],
+)
+def test_all_counts_advisory_findings_not_unfinished_checks(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    advisory_report: dict[str, object],
+    expected: bool,
+) -> None:
+    """An advisory validator that could not finish reports no advisory findings."""
+
+    def run(name: str, root: Path) -> tuple[bool, str]:
+        if name == "agents-md-coverage-grep":
+            report = advisory_report
+            return CHECK_ERROR_KEY not in report, json.dumps(report)
+        return True, json.dumps({"passed": True})
+
+    monkeypatch.setattr(gate, "_run_standalone", run)
+
+    _passed, output = gate._run_all(tmp_path)
+    payload = json.loads(output)
+    assert payload["advisory_findings_present"] is expected
+    (entry,) = [
+        entry
+        for entry in payload["results"]
+        if entry["validator"] == "agents-md-coverage-grep"
+    ]
+    assert (CHECK_ERROR_KEY in entry) is not expected
+
+
+def test_companion_partial_clone_question_past_its_limit_does_not_pass(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The ``git config`` that asks about a partial clone has a limit too."""
+    (tmp_path / "pkg").mkdir()
+    (tmp_path / "pkg" / "README.md").write_text("# pkg\n", encoding="utf-8")
+    monkeypatch.setattr(_bounded_run, "run_bounded", _history_read_failing(None))
+
+    result = agents_md_coverage_grep.check(tmp_path)
+    assert result.passed is False
+    assert result.check_error == (
+        "git config did not finish within "
+        f"{agents_md_coverage_grep.GIT_TIMEOUT_SECONDS} seconds"
+    )
+
+
+def test_companion_check_falls_back_in_a_treeless_clone(tmp_path: Path) -> None:
+    """A real ``--filter=tree:0`` clone passes, as it did before the limits.
+
+    The clone has the trees of its newest commit only. Reading the history
+    needs the older ones, and git may not fetch them in the checked project,
+    so the read fails; the clone's promisor remote marks that history as left
+    out rather than unreadable.
+    """
+    source = _project(tmp_path)
+    (source / "pkg" / "notes.md").write_text("later\n", encoding="utf-8")
+    _git(source, "add", "-A")
+    _git(source, "commit", "-qm", "docs(pkg): add notes")
+    _git(source, "config", "uploadpack.allowFilter", "true")
+    clone = tmp_path / "clone"
+    _git(
+        tmp_path,
+        "clone",
+        "-q",
+        "--no-local",
+        "--filter=tree:0",
+        source.as_uri(),
+        str(clone),
+    )
+
+    result = agents_md_coverage_grep.check(clone)
+    assert result.check_error is None
+    assert result.passed is True
+    assert result.freshness_checked is False
+
+
+def _history_with_a_lost_tree(tmp_path: Path) -> Path:
+    """Return a full repository whose older commit's tree object is deleted.
+
+    Fresh commits are loose objects, so deleting the file loses the tree, and
+    reading the history then fails with exit code 128.
+    """
+    repo = _project(tmp_path)
+    (repo / "pkg" / "notes.md").write_text("later\n", encoding="utf-8")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "docs(pkg): add notes")
+    tree = subprocess.run(
+        ["git", "rev-parse", "HEAD~1^{tree}"],
+        cwd=str(repo),
+        check=True,
+        capture_output=True,
+        encoding="utf-8",
+    ).stdout.strip()
+    lost = repo / ".git" / "objects" / tree[:2] / tree[2:]
+    # git writes objects read-only, and Windows deletes no read-only file.
+    lost.chmod(0o644)
+    lost.unlink()
+    return repo
+
+
+@pytest.mark.parametrize(
+    "setting",
+    [("remote.origin.promisor", "true"), ("extensions.partialClone", "origin")],
+)
+def test_any_failed_history_read_in_a_partial_clone_is_unavailable_history(
+    tmp_path: Path, setting: tuple[str, str]
+) -> None:
+    """In a partial clone, a failed history read passes, whatever the cause.
+
+    git gives no answer that tells a tree the clone left out from one that was
+    lost (``rev-list --missing=allow-promisor`` fails on both), so the check
+    treats every failed read there as history that is not available, as it
+    did before it had limits. A repository's own settings make it a partial
+    clone, recent git writing the promisor setting and older git the
+    extension.
+    """
+    repo = _history_with_a_lost_tree(tmp_path)
+    assert agents_md_coverage_grep.check(repo).check_error == (
+        "git log failed with exit code 128"
+    )
+    _git(repo, "config", *setting)
+
+    result = agents_md_coverage_grep.check(repo)
+    assert result.check_error is None
+    assert result.passed is True
+    assert result.freshness_checked is False
+
+
+def test_a_promisor_outside_the_repository_does_not_make_a_partial_clone(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Only the repository's own settings count, not the user's global ones."""
+    repo = _history_with_a_lost_tree(tmp_path)
+    global_config = tmp_path / "global.gitconfig"
+    global_config.write_text('[remote "origin"]\n\tpromisor = true\n', encoding="utf-8")
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(global_config))
+
+    result = agents_md_coverage_grep.check(repo)
+    assert result.passed is False
+    assert result.check_error == "git log failed with exit code 128"
+
+
+def test_plans_listing_timeout_does_not_pass(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """``no-global-plans-grep``'s ``git ls-files`` has a limit, and it fails there."""
+    monkeypatch.setattr(_bounded_run, "run_bounded", _timing_out_run)
+
+    exit_code = no_global_plans_grep._main(["no-global-plans-grep", str(tmp_path)])
+    payload = _printed_payload(capsys)
+    assert exit_code == no_global_plans_grep.EXIT_FAIL
+    assert payload[CHECK_ERROR_KEY] == (
+        "git ls-files did not finish within "
+        f"{_grep_base.GIT_LS_FILES_TIMEOUT_SECONDS} seconds"
+    )
+    assert payload["passed"] is False
+    assert payload["inspected"] == 0
+    assert payload["empty_scope_expected"] is False
+
+
 def test_staged_change_set_timeout_does_not_pass(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -568,6 +816,43 @@ def test_companion_check_fails_when_git_refuses_the_checkout(tmp_path: Path) -> 
     result = agents_md_coverage_grep.check(repo)
     assert result.passed is False
     assert result.check_error == "git rev-parse failed with exit code 128"
+
+
+def _dangling_git_file(folder: Path) -> None:
+    """Leave a ``.git`` file that names a repository folder that is gone."""
+    (folder / ".git").write_text("gitdir: ../gone/.git/worktrees/x\n", encoding="utf-8")
+
+
+def _empty_git_folder(folder: Path) -> None:
+    """Leave an empty ``.git`` folder, which holds no repository."""
+    (folder / ".git").mkdir()
+
+
+@pytest.mark.parametrize("leave", [_dangling_git_file, _empty_git_folder])
+def test_checks_fail_on_a_git_entry_git_cannot_open(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, leave: Callable[[Path], None]
+) -> None:
+    """A ``.git`` entry git cannot open is a checkout that was not read.
+
+    git calls such a folder "not a git repository", but the folder claims to be
+    a checkout: the history the checks need may be there, unread, so they do
+    not pass as if it had none. A folder with no ``.git`` entry still passes.
+    """
+    folder = tmp_path / "unpacked"
+    (folder / "pkg").mkdir(parents=True)
+    (folder / "pkg" / "README.md").write_text("# pkg\n", encoding="utf-8")
+    leave(folder)
+    # Keep git from finding a repository above the test's own folder.
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path))
+
+    subject = conventional_commit_grep.check_repo(folder)
+    assert subject.passed is False
+    assert subject.status == "git-failed"
+    assert subject.check_error == "git log failed with exit code 128"
+
+    companions = agents_md_coverage_grep.check(folder)
+    assert companions.passed is False
+    assert companions.check_error == "git rev-parse failed with exit code 128"
 
 
 def test_staged_checks_fail_when_git_refuses_the_checkout(
@@ -815,7 +1100,13 @@ def test_interrupt_ends_the_gate_with_one_line(
 
     monkeypatch.setattr(gate, "_run_all", interrupted)
 
-    assert gate.main(["gate", "--all", str(tmp_path)]) == gate.EXIT_INTERRUPTED == 130
+    try:
+        exit_code = gate.main(["gate", "--all", str(tmp_path)])
+    except KeyboardInterrupt:
+        # Escaping, the interrupt would end the whole test session, workers and
+        # all, and hide every result after this one: fail this test alone.
+        pytest.fail("the gate let the interrupt escape")
+    assert exit_code == gate.EXIT_INTERRUPTED == 130
     assert capsys.readouterr().err.strip() == "conformity-gate: interrupted"
 
 
@@ -909,33 +1200,104 @@ def test_semver_staged_read_that_waits_on_its_configuration_ends(
 
 
 @_POSIX_ONLY
+def test_plans_listing_that_waits_on_its_configuration_ends(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """``no-global-plans-grep``'s ``git ls-files`` ends at its limit and fails."""
+    repo = _project(tmp_path)
+    fifo = tmp_path / "config-fifo"
+    _include_fifo(repo, fifo)
+    monkeypatch.setattr(
+        no_global_plans_grep, "GIT_LS_FILES_TIMEOUT_SECONDS", _SHORT_GIT_TIMEOUT_SECONDS
+    )
+
+    exit_code = _run_guarded(
+        lambda: no_global_plans_grep._main(["no-global-plans-grep", str(repo)]),
+        release=lambda: _release_fifo(fifo),
+    )
+    assert exit_code == no_global_plans_grep.EXIT_FAIL
+    _assert_check_error(_printed_payload(capsys), "git ls-files")
+
+
+@_POSIX_ONLY
 def test_gate_stops_a_validator_whose_git_waits_and_ends_that_git(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The gate's limit ends the validator and the waiting git it started.
 
     The commit-subject validator's own git limit is longer than the gate's
-    limit here, so the gate stops the run. Afterwards no process may still be
-    waiting to read the FIFO: the gate stopped the validator's process group.
+    limit here, so the gate stops the run. Afterwards no process may be left in
+    the validator's process group, where its git runs: the gate stopped the
+    group. The check asks the group itself, because probing the FIFO for a
+    reader would let a git that is still waiting go on.
     """
     repo = _project(tmp_path)
     fifo = tmp_path / "config-fifo"
     _include_fifo(repo, fifo)
     _short_validator_limit(monkeypatch, _STALL_VALIDATOR_TIMEOUT_SECONDS)
+    started: list[int] = []
+    real_popen = subprocess.Popen
 
-    passed, output = _run_guarded(
-        lambda: gate._run_standalone("conventional-commit-grep", repo),
-        release=lambda: _release_fifo(fifo),
-    )
-    assert passed is False
-    _stopped_report(output, _STALL_VALIDATOR_TIMEOUT_SECONDS)
-    give_up = time.monotonic() + _EXIT_WAIT_SECONDS
-    while time.monotonic() < give_up:
-        if not _fifo_has_reader(fifo):
-            break
-        time.sleep(0.1)
-    else:
-        pytest.fail("a git started by the stopped validator still waits on the FIFO")
+    class RecordingPopen(real_popen):  # type: ignore[misc,valid-type]
+        def __init__(self, *args: object, **kwargs: object) -> None:
+            super().__init__(*args, **kwargs)
+            started.append(self.pid)
+
+    monkeypatch.setattr(subprocess, "Popen", RecordingPopen)
+
+    try:
+        # _run_guarded releases the FIFO only after its deadline, to end a run
+        # that stalled; a run that ends in time is never released.
+        passed, output = _run_guarded(
+            lambda: gate._run_standalone("conventional-commit-grep", repo),
+            release=lambda: _release_fifo(fifo),
+        )
+        assert passed is False
+        _stopped_report(output, _STALL_VALIDATOR_TIMEOUT_SECONDS)
+        # The validator leads a session, and so a process group, of its own.
+        (group,) = started
+        give_up = time.monotonic() + _EXIT_WAIT_SECONDS
+        while _group_has_live_member(group):
+            if time.monotonic() > give_up:
+                pytest.fail("a process the stopped validator started is still running")
+            time.sleep(0.1)
+    finally:
+        # Only now let any reader left waiting go on; git opens an included
+        # file more than once.
+        for _ in range(4):
+            _release_fifo(fifo)
+            time.sleep(0.05)
+
+
+def _group_has_live_member(group: int) -> bool:
+    """Return True while process group *group* holds a process that is not a zombie.
+
+    A killed process stays a zombie until its parent waits for it, and a
+    killed git's parent, process 1 once the validator is gone, may wait late or
+    never (pytest as process 1 of a container). On Linux the zombies are told
+    apart through /proc; macOS answers ``EPERM`` for a group that holds only
+    zombies, and ``ESRCH`` for one that is gone.
+    """
+    proc = Path("/proc")
+    if (proc / "self" / "stat").is_file():
+        for entry in proc.iterdir():
+            if not entry.name.isdigit():
+                continue
+            try:
+                stat = (entry / "stat").read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            # Fields after the command name, which ends at the last ")":
+            # state, parent id, process group.
+            fields = stat.rpartition(")")[2].split()
+            if len(fields) > 2 and fields[2] == str(group) and fields[0] != "Z":
+                return True
+        return False
+    try:
+        os.killpg(group, 0)
+    except (ProcessLookupError, PermissionError):
+        return False
+    return True
 
 
 def _processes_naming(text: str, *words: str) -> list[int]:

@@ -54,9 +54,11 @@ RULE_ANCHOR: Final[str] = "CLAUDE.md Coding Conventions — Conventional Commits
 EXIT_PASS: Final[int] = 0
 EXIT_FAIL: Final[int] = 2
 
-# Bound the gate-path git invocation so a hung `git log` cannot block a
+# Bound the gate-path git invocations so a hung `git log` cannot block a
 # commit indefinitely. A timeout does not pass: the subject was never read.
-GIT_TIMEOUT_SECONDS: Final[int] = 5
+# The limit sits far above the fraction of a second these commands take, so a
+# slow or busy machine does not fail the check.
+GIT_TIMEOUT_SECONDS: Final[int] = 60
 
 # Statuses with nothing to inspect, which pass: no repository, no commit
 # yet, or no git to read the history with.
@@ -201,7 +203,8 @@ class GrepResult:
     status: str
     subject: str | None = None
     drifts: list[Drift] = field(default_factory=list)
-    # Why the check could not finish (``git-timeout``); None otherwise.
+    # Why the check could not finish (``git-timeout`` or ``git-failed``);
+    # None otherwise.
     check_error: str | None = None
 
     def to_json(self) -> str:
@@ -450,8 +453,9 @@ def _main(argv: list[str]) -> int:
     result = check_repo(root)
     # One HEAD subject is inspected. A directory with no commit history (no
     # repository, or no commit yet) is the documented exempt state, not a
-    # vacuous pass. A ``git log`` that ran past its limit is not exempt: it
-    # reports an unexpected empty scope plus the ``check_error``.
+    # vacuous pass. A git command that ran past its limit, or a git that
+    # refused the repository, is not exempt: it reports an unexpected empty
+    # scope plus the ``check_error``.
     return finish_root_report(
         result.to_json(),
         passed=result.passed,

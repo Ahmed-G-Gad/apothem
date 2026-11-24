@@ -160,9 +160,10 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   `os` functions that start a program; `which`, `find_git`, `git_argv`, and
   `run_bounded` outside its two callers; an import of `ctypes`,
   `multiprocessing` or `pty`; `exec`, `eval` and the import-by-name calls; and
-  a string naming the git program. It leaves out only this folder's own
-  `_git.py` and `_bounded_run.py`, by path, and in `_git.py` it still checks
-  that `run_git` alone calls `run_bounded`. Code that reaches a starter some
+  a string naming the git program. It holds only this folder's own `_git.py`
+  and `_bounded_run.py`, by path, to rules of their own: in `_git.py` it checks
+  that `run_git` alone calls `run_bounded`, and `_bounded_run.py` must name no
+  git and look no program up. Code that reaches a starter some
   way the test does not know can still pass it: source text run through
   `runpy`, `timeit` or a profiler, an attribute fetched through `builtins`,
   `inspect` or `operator`, a `sys.modules` lookup by a computed name. So
@@ -182,7 +183,9 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   walker on a checkout without the gitignored plans tree, a workflow walker
   where no workflow directory exists yet).
 - **No unfinished pass.** A check that could not finish does not pass either.
-  Give every `run_git` call a timeout. `run_git` runs git through `run_bounded`,
+  Give every `run_git` call a timeout, far above what the command takes, since
+  a timeout fails the check: the validators give each command 60 seconds and a
+  read of the whole history 300. `run_git` runs git through `run_bounded`,
   so the limit holds for every program git starts; `subprocess.run` would stop
   only git and, on Windows, then wait for every program that holds the output,
   such as the real git behind Git's launcher. Turn `subprocess.TimeoutExpired`
@@ -195,9 +198,10 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   Windows). The messages name the command in fixed words and never repeat
   git's own output. A corpus walker hands that message to
   `finish_root_report(check_error=...)`, which stamps `check_error` and exits
-  `2`, advisory or not. A timeout or a refused checkout is not the exempt state
-  of a missing repository, a repository with no commit, or a host without git:
-  the data is there but was not read, and a checked repository's own
+  `2`, advisory or not. A timeout or a refused checkout is not an exempt state
+  (a missing repository, a repository with no commit, a host without git, or a
+  partial clone, where `run_git` does not let git fetch what the clone left
+  out and any failed history read counts as unavailable): the data is there but was not read, and a checked repository's own
   configuration can make git wait for ever or refuse to read it. The gate gives
   each standalone validator `STANDALONE_TIMEOUT_SECONDS` and reports one it had
   to stop with a `check_error` of its own.
