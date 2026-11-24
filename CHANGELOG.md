@@ -773,19 +773,24 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `apothem update` and `apothem uninstall` again. An uninstall that does not
   finish (a failed step, an error or an interrupt, or Apothem's own files
   reached through a link) appends an `uninstall-incomplete` record to the
-  install ledger, so running it again finishes the job. One that an error or
-  `Ctrl+C` stops before its last step, the one that removes what the install
-  record lists, appends it only when a step before the one that stopped had
-  changed or backed up a file: an Open-Claw uninstall stopped at
-  `openclaw.json` appends it when its rules-file step had taken Apothem's
-  block out of a workspace's rules file, and nothing when that step changed
-  nothing (also when it found Apothem's rules file behind a link). One stopped
-  inside that rules-file step, or inside the older-layout sweep of Antigravity
-  or Kimi Code, appends nothing, whatever the step had changed. Then the
-  install record stays the latest one, with the same effect. An install,
-  update, rollback or finished uninstall replaces that state, and so does
-  removing the files by hand. A file where Apothem keeps a managed block (such
-  as `CLAUDE.md`) counts as Apothem's while the block is there, even after you
+  install ledger, so running it again finishes the job. One that an unexpected
+  error (an exception, such as a backup that cannot be written) or `Ctrl+C`
+  stops before its last step, the one that removes what the install record
+  lists, appends it only when a step before the one that stopped had changed
+  or backed up a file: an Open-Claw uninstall stopped at `openclaw.json`
+  appends it when its rules-file step had taken Apothem's block out of a
+  workspace's rules file, and nothing when that step changed nothing (also
+  when it found Apothem's rules file behind a link). One stopped inside that
+  rules-file step, or inside the older-layout sweep of Antigravity or Kimi
+  Code, appends nothing, whatever the step had changed. A rules-file step that
+  reports an error instead (a rules file it cannot rewrite, or an
+  `openclaw.json` with comments) is a failed step: the uninstall records
+  itself unfinished with that step's backups, prints `did not finish:` and
+  exits `2` when that step had changed a file, otherwise `1`. Then the install
+  record stays the latest one, with the same effect. An install, update,
+  rollback or finished uninstall replaces that state, and so does removing the
+  files by hand. A file where Apothem keeps a managed block (such as
+  `CLAUDE.md`) counts as Apothem's while the block is there, even after you
   add text of your own beside it, so the second run still finishes the job. A
   linked folder that holds only your own files no longer stops an uninstall:
   it is left in place with a warning and the uninstall finishes. An uninstall
@@ -793,8 +798,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `partial`, and the `--format json` warnings are grouped like the printed
   ones, with `count` and `paths`. An uninstall that stops with an error after
   removing files, or after taking Apothem's entries out of a file such as
-  `openclaw.json`, exits `2` too; one stopped by an error inside the
-  rules-file step of Open-Claw or the older-layout sweep of Antigravity or
+  `openclaw.json`, exits `2` too; one stopped by an unexpected error inside
+  the rules-file step of Open-Claw or the older-layout sweep of Antigravity or
   Kimi Code exits `1`, whatever that step had changed, as it reports nothing
   the step did, and one stopped by `Ctrl+C` exits `1` with `Aborted!`. A
   stopped uninstall now also reports what it found that leaves it unfinished,
@@ -810,18 +815,18 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `detail.leads_to`. Such a link, or such files of an earlier release's
   install or of an install with no record, make it exit `2`, also when it
   removed nothing; otherwise one that changed nothing exits `1`. Its warnings
-  also name a link its steps left in place and a file left with a BEGIN
-  marker of yours and no END after it, whose fix the update step then puts
-  first, as for one that ran all its steps. An error that stops the
-  settings-file step of Hermes, Open-Claw, OpenCode or Qwen Code now reads
-  `uninstall stopped: <error>`, as one in a later step does, whether or not an
-  earlier step found something to report. `apothem rollback` now undoes the
-  newest install still in place, so a second rollback undoes the one before,
-  refuses an `--install-id` that was already rolled back or uninstalled, and
-  removes a file an install created only while it still has the content that
-  install wrote. Uninstalling a tool from one project no longer removes the
-  shared memory, contexts and learning stores in your home folder while the
-  same tool installed in another project still uses them.
+  also name a link its steps left in place and a file left with a BEGIN marker
+  of yours and no END after it, whose fix the update step then puts first, as
+  for one that ran all its steps. An error that stops the settings-file step
+  of Hermes, Open-Claw, OpenCode or Qwen Code now reads `uninstall stopped:
+  <error>`, as one in a later step does, whether or not an earlier step found
+  something to report. `apothem rollback` now undoes the newest install still
+  in place, so a second rollback undoes the one before, refuses an
+  `--install-id` that was already rolled back or uninstalled, and removes a
+  file an install created only while it still has the content that install
+  wrote. Uninstalling a tool from one project no longer removes the shared
+  memory, contexts and learning stores in your home folder while the same tool
+  installed in another project still uses them.
 - **Uninstall checks more strictly which files are Apothem's.** An install
   recorded by an earlier release does not say which files Apothem wrote, so
   the uninstall compares them with what this release writes. In the two places

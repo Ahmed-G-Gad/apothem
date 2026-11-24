@@ -745,10 +745,10 @@ def make_native_config_uninstall(
     shared driver raises one: the CLI reports what *before_fn* removed (a
     partial uninstall, exit 2) or found (Apothem's file behind a link, say)
     with the error, and the same error reads the same with or without such
-    results. A refusal and Ctrl-C are always raised as they are. An error
-    inside *before_fn* itself records nothing: the files it changed before
-    the error keep their backups, but no record names them. A backup root
-    or ledger in a protected folder is refused before *before_fn* runs.
+    results. A refusal and Ctrl-C are always raised as they are. An exception
+    inside *before_fn* itself records nothing: the files it changed before it
+    keep their backups, but no record names them. A backup root or ledger in a
+    protected folder is refused before *before_fn* runs.
     """
 
     @install_driver.backup_session()

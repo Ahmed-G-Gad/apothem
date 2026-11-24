@@ -305,13 +305,19 @@ and the steps that failed before it name one link, the row carries it in
 `detail.symlink` and the folder it leads to in `detail.leads_to`. It exits `2`
 with `status` `"partial"` when it had removed or changed files first, found
 Apothem's own files behind a link, or kept files of an earlier release's
-install or of an install with no record, otherwise `1`. An error inside the
-first step of an Open-Claw, Antigravity or Kimi Code uninstall (see
+install or of an install with no record, otherwise `1`. An unexpected error
+(an exception, such as a backup that cannot be written) inside the first step
+of an Open-Claw, Antigravity or Kimi Code uninstall (see
 [An uninstall that did not finish](#an-uninstall-that-did-not-finish)) reports
 nothing that step did: the uninstall prints `failed:` and exits `1`, whatever
-the step had changed. `Ctrl+C` prints `Aborted!` and exits `1`, whatever the
-uninstall had removed by then. A refused uninstall (a link that leads the
-folder out of your home directory, say) removes nothing and exits `1`.
+the step had changed. When Open-Claw's rules-file step reports an error
+instead (a rules file it cannot rewrite, or an `openclaw.json` with comments),
+that is a failed step, as above: the uninstall prints `did not finish:`,
+records itself unfinished with that step's backups, and exits `2` when that
+step had changed a file, otherwise `1`. `Ctrl+C` prints `Aborted!` and exits
+`1`, whatever the uninstall had removed by then. A refused uninstall (a link
+that leads the folder out of your home directory, say) removes nothing and
+exits `1`.
 
 ### An uninstall that did not finish
 
@@ -323,7 +329,7 @@ an earlier release recorded differ from what this release writes, and when the
 install has no record. The last two exit `2` with `status` `"partial"` even
 when nothing was removed, and finish only after `apothem update` (see
 [What an uninstall removes](#what-an-uninstall-removes)). An uninstall that an
-error or `Ctrl+C` stops appends, by the step it stopped in:
+exception or `Ctrl+C` stops appends, by the step it stopped in:
 
 - in the first step of Open-Claw, which takes Apothem's block out of each
   workspace's rules file, or of Antigravity and Kimi Code, which removes what
@@ -536,8 +542,8 @@ apothem uninstall --harness cursor --project A --yes     # removes it: no instal
 | Code | Meaning |
 |---|---|
 | 0 | Adapter uninstalled, or was not installed |
-| 1 | Harness not found, confirmation declined or unavailable (non-interactive or JSON mode without `--yes`), nothing was removed because each installed harness failed before removing or changing anything, named no link that keeps Apothem's own files in place and kept no files of an earlier release's install or of an install with no record (an error inside the first step of an Open-Claw, Antigravity or Kimi Code uninstall counts as such a failure, whatever that step had changed), or the command was interrupted (`Ctrl+C`, which prints `Aborted!`), whatever it had removed by then |
-| 2 | Partial removal — an uninstall failed or stopped after removing files or taking Apothem's entries out of one (except an error inside such a first step, see `1`), at least one harness was removed and another failed, an uninstall left Apothem's own files in place because a link leads to them, files of an install an earlier release recorded differ from what this release writes, or an install has no record to show which files Apothem wrote |
+| 1 | Harness not found, confirmation declined or unavailable (non-interactive or JSON mode without `--yes`), nothing was removed because each installed harness failed before removing or changing anything, named no link that keeps Apothem's own files in place and kept no files of an earlier release's install or of an install with no record (an unexpected error, an exception, inside the first step of an Open-Claw, Antigravity or Kimi Code uninstall counts as such a failure, whatever that step had changed), or the command was interrupted (`Ctrl+C`, which prints `Aborted!`), whatever it had removed by then |
+| 2 | Partial removal — an uninstall failed or stopped after removing files or taking Apothem's entries out of one (except an unexpected error inside such a first step, see `1`), at least one harness was removed and another failed, an uninstall left Apothem's own files in place because a link leads to them, files of an install an earlier release recorded differ from what this release writes, or an install has no record to show which files Apothem wrote |
 | 64 | Usage error: an unknown option or command, or a missing or invalid option value. Under `--json` the error is a JSON envelope with code `cli.usage`. |
 
 ## See also

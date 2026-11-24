@@ -381,10 +381,11 @@ def run_uninstall(
     appended instead (see :func:`record_uninstall`): the install stays
     active, so verify, status, rollback and a second uninstall keep operating
     against it. A pass stopped by an error or Ctrl-C appends that record
-    even when it had changed nothing (a refusal, below, does not); a
-    native-config uninstall that stops at a step before this pass appends
-    one only when a step of its own had changed something (see
-    :func:`~.wrapper_factories.make_native_config_uninstall`), and the
+    even when it had changed nothing (a refusal, below, does not). A
+    native-config uninstall stopped at its settings-file step, before this
+    pass, appends one only when the step before it changed or backed up a
+    file, and one whose first step reports an error appends one in any case
+    (see :func:`~.wrapper_factories.make_native_config_uninstall`); the
     install stays active either way. Either record references every backup
     the uninstall took, including those in *prior_results*: removals the
     caller made just before this pass, such as a native config stripped of
