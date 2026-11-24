@@ -961,8 +961,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   ends with exit code `2`. A piped PowerShell run (`irm ... | iex`) leaves
   `$LASTEXITCODE` at `2` instead and keeps your PowerShell session open. The
   PowerShell scripts do the same when your session sets
-  `$PSNativeCommandUseErrorActionPreference` to `$true`, and a piped run puts
-  that setting back as it was. A one-shot `pwsh -Command "irm ... | iex"`
+  `$PSNativeCommandUseErrorActionPreference` to `$true`. A piped run puts
+  that setting and `$ErrorActionPreference` back as they were, however the
+  run ends, a stop before it starts included. A one-shot `pwsh -Command "irm ... | iex"`
   reports a partial run only through `$LASTEXITCODE`: end it with
   `; exit $LASTEXITCODE`, or run the script by path with `-File`, to get exit
   code `2` from the process. A partial dry run prints the warning line,

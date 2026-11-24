@@ -436,21 +436,27 @@ EARLY_STOPS = {
 }
 
 
-def _run_ps1_piped_stopping_early(
-    tmp_path: Path, script: str, stop: str, caller: str, report: str
+def _run_ps1_piped_caught(
+    tmp_path: Path,
+    script: str,
+    caller: str,
+    report: str,
+    *,
+    engine_exit: int = 0,
+    stop: str | None = None,
 ) -> str:
     """Run SCRIPT piped into Invoke-Expression from a session that runs
-    CALLER first, and make the run stop before it takes the install lock
-    (STOP): APOTHEM_HOME names no file-system path, or a lock folder another
-    run left is in the way. The session catches the error, prints it, then
-    prints REPORT."""
+    CALLER first. With STOP the run stops before it takes the install lock:
+    APOTHEM_HOME names no file-system path, or a lock folder another run left
+    is in the way. The session catches any error the run ends with, prints
+    it, then prints REPORT."""
     env = {
-        **_ps_env(tmp_path, 0),
+        **_ps_env(tmp_path, engine_exit),
         "APOTHEM_TEST_SCRIPT": str(INSTALLER / script),
     }
     if stop == "unusable-home":
         env["APOTHEM_HOME"] = "Env:\\NoSuchApothemHome"
-    else:
+    elif stop == "held-lock":
         (tmp_path / "apothem-home.lock").mkdir()
     command = (
         f"{caller}; "
@@ -469,18 +475,63 @@ def test_ps1_piped_run_that_stops_early_keeps_the_callers_native_preference(
 ) -> None:
     """A piped run that stops before it takes the install lock still puts
     the caller's $PSNativeCommandUseErrorActionPreference back."""
-    out = _run_ps1_piped_stopping_early(
+    out = _run_ps1_piped_caught(
         tmp_path,
         script,
-        stop,
         "$PSNativeCommandUseErrorActionPreference = $true",
         "CALLER NATIVE=[$PSNativeCommandUseErrorActionPreference]",
+        stop=stop,
     )
 
     assert "CAUGHT: " in out, out
     assert _squashed(EARLY_STOPS[stop]) in _squashed(out), out
     assert "CALLER NATIVE=[True]" in out, out
     assert _engine_runs(tmp_path) == [], out
+
+
+@requires_pwsh
+@pytest.mark.parametrize(
+    ("engine_exit", "stop", "ending"),
+    [
+        pytest.param(0, None, None, id="engine-exit-0"),
+        pytest.param(2, None, None, id="engine-exit-2"),
+        pytest.param(1, None, "CAUGHT: ", id="engine-exit-1"),
+        pytest.param(0, "unusable-home", "CAUGHT: ", id="unusable-home"),
+        pytest.param(0, "held-lock", "CAUGHT: ", id="held-lock"),
+    ],
+)
+@pytest.mark.parametrize(
+    "script",
+    [
+        pytest.param("install.ps1", marks=requires_windows, id="install.ps1"),
+        pytest.param("update.ps1", id="update.ps1"),
+    ],
+)
+def test_ps1_piped_run_keeps_the_callers_error_action_preference(
+    tmp_path: Path,
+    script: str,
+    engine_exit: int,
+    stop: str | None,
+    ending: str | None,
+) -> None:
+    """A piped run sets $ErrorActionPreference to Stop in the caller's scope
+    and puts the caller's value back however it ends: after the engine
+    succeeds, ends as partial or fails, and when it stops before it takes
+    the install lock."""
+    out = _run_ps1_piped_caught(
+        tmp_path,
+        script,
+        "$ErrorActionPreference = 'Continue'",
+        "CALLER EAP=[$ErrorActionPreference]",
+        engine_exit=engine_exit,
+        stop=stop,
+    )
+
+    if ending is None:
+        assert "CAUGHT: " not in out, out
+    else:
+        assert ending in out, out
+    assert "CALLER EAP=[Continue]" in out, out
 
 
 @requires_pwsh

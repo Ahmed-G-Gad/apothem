@@ -75,6 +75,11 @@
 
 #Requires -Version 5.1
 Set-StrictMode -Version Latest
+# A piped run (irm ... | iex) runs in the caller's scope: the caller's
+# $ErrorActionPreference is kept here and put back as the run ends, as the
+# native-command preference below is. Strict mode stays on in that session,
+# since PowerShell has no way to read the caller's setting.
+$SavedErrorPref = $ErrorActionPreference
 $ErrorActionPreference = 'Stop'
 # A caller's $PSNativeCommandUseErrorActionPreference = $true (PowerShell
 # 7.4+) would make any non-zero exit code of a program stop the run, the
@@ -87,6 +92,7 @@ $HadNativeErrorPref = Test-Path -LiteralPath 'Variable:PSNativeCommandUseErrorAc
 $SavedNativeErrorPref = if ($HadNativeErrorPref) { $PSNativeCommandUseErrorActionPreference } else { $null }
 $PSNativeCommandUseErrorActionPreference = $false
 trap {
+    Set-Variable -Name ErrorActionPreference -Value $SavedErrorPref -Scope 1
     if ($HadNativeErrorPref) { Set-Variable -Name PSNativeCommandUseErrorActionPreference -Value $SavedNativeErrorPref -Scope 1 } else { Remove-Variable -Name PSNativeCommandUseErrorActionPreference -Scope 1 -ErrorAction SilentlyContinue }
     break
 }
@@ -1832,8 +1838,8 @@ finally {
 Write-Bold "Update complete."
 } finally {
     # The caller's git variables, the encoding PowerShell read a program's
-    # output in, and the caller's native-command preference, as they were
-    # before the run.
+    # output in, and the caller's native-command and error preferences, as
+    # they were before the run (the error preference last).
     if ($HadNativeErrorPref) { $PSNativeCommandUseErrorActionPreference = $SavedNativeErrorPref } else { Remove-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue }
     foreach ($GitVar in @($SavedGitEnv.Keys)) {
         if ($null -eq $SavedGitEnv[$GitVar]) {
@@ -1843,6 +1849,7 @@ Write-Bold "Update complete."
         }
     }
     if ($SavedOutputEncoding) { try { [Console]::OutputEncoding = $SavedOutputEncoding } catch { $SavedOutputEncoding = $null } }
+    $ErrorActionPreference = $SavedErrorPref
 }
 
 # A partial engine run (exit code 2) ends the run with that code (mirrors
