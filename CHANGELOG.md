@@ -31,10 +31,17 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
     (MCP sign-in tokens, session transcripts, skills).
 
   No release ever installed a file into any of these places, so this release
-  stops removing them. It keeps sweeping only folders in Apothem's own
-  namespace that a release wrote into (`apothem/rules/` under the OpenCode,
-  Qwen Code, Hermes and Open-Claw folders, and Kimi Code's
-  `.kimi-code/.apothem/support/{skills,agents}/`).
+  stops removing them. It still sweeps the folders in Apothem's own namespace
+  that a release wrote into, files of yours in them included, after saving
+  them under `~/.apothem/backups/`: `apothem/rules/` under the OpenCode,
+  Qwen Code, Hermes and Open-Claw folders, Kimi Code's
+  `.kimi-code/.apothem/support/{skills,agents}/`, and Antigravity's earlier
+  plugin folder, `~/.gemini/antigravity-cli/plugins/apothem/`. Every install
+  and update of OpenCode, Qwen Code, Hermes and Open-Claw deletes each file in
+  that tool's `apothem/rules/` folder except the profile document Apothem
+  writes there (`00-apothem-profile.md`), so keep your own files elsewhere.
+  Every Antigravity install, update and uninstall also still backs up and
+  removes `~/.antigravity/profile.yaml`, a path no release installed into.
 
   **To recover:** each removed folder was copied first to
   `~/.apothem/backups/<timestamp>/<harness>/`, under its path relative to your
@@ -170,7 +177,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   and the `VSCE_PAT` token stay as alternatives. An unrecognised
   `VSCE_AUTH` value now logs a warning, without echoing the value. The
   release-cycle runbook gains the setup procedure. `tools/vsce` now locks
-  vsce 4.1.0, so `VSCE_AUTH=oidc` works from this release.
+  vsce 4.1.1, so `VSCE_AUTH=oidc` works from this release.
 - **The weekly convention monitor watches each tool's release channels.**
   OpenCode 2 shipped as the npm package `@opencode/cli`, with its first
   GitHub Release, v2.2.0, on 2026-10-27, and the pins did not record it for a
@@ -225,8 +232,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `main` and on pull requests.
 - **The Windows test cells in CI get 120 minutes.** The Windows cells of the
   `ci.yml` quality job take 64 to 88 minutes, and the 90-minute limit
-  cancelled cells whose tests had passed. They now get 120, as the CI Matrix
-  Windows cells already do; the other cells keep 90. The workflow
+  cancelled cells whose tests had passed. They now get 120, and so do the CI
+  Matrix Windows cells; the other cells keep 90. The workflow
   validator (`workflow-concurrency-grep`) accepts this one form for a matrix
   job's limit, `${{ matrix.os == 'windows-latest' && N || M }}`, with N at
   most 120 and M at most 90, and still flags any other expression. Every
@@ -408,6 +415,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   as present through the shared folders it writes there. A Codex install into
   a removed or emptied `~/.codex` skips such a folder too: the files it had
   just written there no longer make its old install count as present.
+  Outside these four shared skills folders, such as in `~/.claude/skills/` or
+  Kimi Code's `.kimi-code/skills/`, an install or update still replaces a
+  skill folder of yours that has an Apothem skill's name, after saving it
+  under `~/.apothem/backups/`, and an uninstall does not put it back.
 - **`apothem doctor` checks the hooks of the install it is looking at.** It
   read the newest install record of a harness from any folder. When that
   record came from another folder (another project, a `CODEX_HOME`, or one you
@@ -553,7 +564,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   - The docs say rollback reaches an install only while its record is among
     the newest 10 kept, and that the install deletes any file it did not put
     in the `apothem/rules/` folders OpenCode, Qwen Code, Hermes and Open-Claw
-    use, or in Kimi Code's old support folders.
+    use, in Kimi Code's old support folders, or in Antigravity's earlier
+    plugin folder.
 - **The always-on bytes metric follows six more tools' loading rules.** The
   metrics collector, which reports how many bytes of instructions each tool
   loads at launch, now counts:
@@ -693,7 +705,20 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   and an uninstall removes a file only while it still has that content. A file
   you added to an Apothem folder, an Apothem file you edited, and a file of
   your own with an Apothem name stay, with a warning, and so does the folder
-  that holds them. Before, an uninstall removed the whole folder, and after a
+  that holds them. An install or update, though, replaces a file or skill
+  folder of yours with the same name as one Apothem copies into that folder,
+  an Apothem file you edited included, after saving it under
+  `~/.apothem/backups/`; the uninstall then removes Apothem's copy and does
+  not put yours back. That holds in the folders Apothem copies helpers,
+  commands, skills or rules into, such as `~/.claude/agents/`, Kimi Code's
+  `.kimi-code/skills/` and `.kimi-code/agents/`, and the project helper
+  folders of CodeBuddy, Cursor, GitHub Copilot, Kiro, Trae and Windsurf. A
+  Codex install or update also removes a `.md` file in its `agents/` folder
+  that has an Apothem helper's name. Only in `~/.agents/skills/`,
+  `~/.codebuddy/skills/`, `~/.kiro/skills/` and `~/.trae/skills/` does the
+  install skip a skill folder Apothem did not write, with a warning, instead
+  of replacing it.
+  Before, an uninstall removed the whole folder, and after a
   partial uninstall followed by cleaning up by hand it could remove files you
   had put there since. For an install recorded by an earlier release, which
   does not say which files Apothem wrote, the uninstall removes the files that
@@ -791,16 +816,18 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   damaged rather than cut short stays for the ledger reader to report, and a
   new record is never joined to a last line Apothem cannot check. On Windows,
   records now end with a plain newline, as they do elsewhere.
-- **Rollback no longer restores a folder Apothem has stopped removing.** An
+- **Rollback no longer replaces a folder Apothem has stopped removing.** An
   install record from an earlier release can name a folder that release
   removed as a leftover, such as `~/.gemini/antigravity/`. Restoring that
-  record's copy would replace what is in the folder now with the older copy,
-  so `apothem rollback` leaves such a folder in place, reports it as skipped
-  with the path of its copy, and prints a note in plain output. An install,
-  update, uninstall or `--dry-run` also leaves a leftover path in place when
-  it is a link (on Windows, a junction) to a folder the install writes now,
-  and an install that exists only in an earlier layout's folder still counts
-  as installed, so `apothem uninstall` reaches it.
+  record's copy whole would replace what is in the folder now with the older
+  copy, so `apothem rollback` copies back only the files the folder no longer
+  has and keeps every file that is there. A path that is now a link, a file
+  where a folder was (or the other way round), or a path whose copy is gone
+  is left in place with a warning, which names the copy when there is one.
+  An install, update, uninstall or `--dry-run` also leaves a leftover path in
+  place when it is a link (on Windows, a junction) to a folder the install
+  writes now, and an install that exists only in an earlier layout's folder
+  still counts as installed, so `apothem uninstall` reaches it.
 - **Codex installs say when an `AGENTS.override.md` hides the Apothem block.**
   In its home folder (`~/.codex`, or the folder `CODEX_HOME` names), Codex
   loads only the first of `AGENTS.override.md` and `AGENTS.md` that has text,
@@ -963,13 +990,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **The provenance check says when it skipped a check.**
   `scripts/release/verify-provenance.sh` and `verify-provenance.ps1` printed
   `chain OK` even when a run skipped cosign or slsa-verifier because the tool
-  was missing. They now print `chain OK (3 of 3 layers verified: ...)` only
-  when all three checks ran. Otherwise the last line starts `partial check`
-  and names the checks that ran and the ones skipped. A partial check still
-  exits 0 unless you pass the new `--require-all` flag (`-RequireAll` for
-  the PowerShell script); with it, a partial check exits 1, so a script can
-  rely on the exit status alone. The SLSA check now also covers
-  `apothem.vsix` when the release has it.
+  was missing. They now print
+  `verify-provenance: chain OK (3 of 3 layers verified: ...)` only when all
+  three checks ran. Otherwise they print a line that starts
+  `verify-provenance: partial check` and names the checks that ran and the
+  ones skipped. A partial check still exits 0 unless you pass the new
+  `--require-all` flag (`-RequireAll` for the PowerShell script); with it, a
+  partial check exits 1, so a script can rely on the exit status alone. The
+  SLSA check now also covers `apothem.vsix` when the release has it.
 - **The pipeline overview's command index is current in every translation.**
   The docs generator wrote the index of shipped commands into the English page
   only, so the eleven translated overviews kept older summaries for every
@@ -1170,13 +1198,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   names what would make it write OpenCode 2's own shapes instead. The page also
   states that OpenCode 1 loads the Claude Code block in `~/.claude/CLAUDE.md`.
 - **The always-on bytes metric counts only the instruction files Hermes and
-  Codex load.** Hermes loads one kind of project context per session, the
+  Codex load.** Hermes loads one type of project context per session, the
   first with a non-empty file: `.hermes.md` or `HERMES.md` (the first of the
-  two that exists is the only candidate of its kind), `AGENTS.override.md` or
+  two that exists is the only candidate of its type), `AGENTS.override.md` or
   `AGENTS.md`, `CLAUDE.md`, then `.cursorrules` with every
   `.cursor/rules/*.mdc`. The metrics collector added up `.hermes.md`,
   `AGENTS.md` and `CLAUDE.md` together and left out the other files. It now
-  counts `~/.hermes/SOUL.md` plus that one kind. Codex loads the first
+  counts `~/.hermes/SOUL.md` plus that one type. Codex loads the first
   non-empty of `AGENTS.override.md` and `AGENTS.md` in its home folder, and in
   the project the first of `AGENTS.override.md`, `AGENTS.md` and its
   `project_doc_fallback_filenames` names that exists, where an empty one loads
@@ -1304,16 +1332,17 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   never opened the project in the tool. Doctor now takes hook commands only
   from the places the tool reads them, and starts one only when its
   interpreter is the one the install recorded (outside the project) or the
-  Python Apothem runs under, its options run no code, its script is the hook script the install
-  wrote, in a folder whose files still match the SHA-256 checksums the
-  install recorded and that holds no other Python file and no link, and its
-  arguments are the ones Apothem writes. It starts those known paths rather
-  than the text it read, and looks up no other path a hook command names,
-  such as a network share. A recorded interpreter or script that is gone is
-  reported as unable to start, without anything being started; any other
-  command is reported as `hook.unchecked`, which the plain output now shows
-  too, with any control character in it spelled out. Install records now keep the interpreter written into hook commands,
-  so hooks installed by an earlier release stay unchecked until you run
+  Python Apothem runs under, its options run no code, its script is the hook
+  script the install wrote, in a folder whose files still match the SHA-256
+  checksums the install recorded and that holds no other Python file and no
+  link, and its arguments are the ones Apothem writes. It starts those known
+  paths rather than the text it read, and looks up no other path a hook
+  command names, such as a network share. A recorded interpreter or script
+  that is gone is reported as unable to start, without anything being
+  started; any other command is reported as `hook.unchecked`, which the plain
+  output now shows too, with any control character in it spelled out. Install
+  records now keep the interpreter written into hook commands, so hooks
+  installed by an earlier release stay unchecked until you run
   `apothem update`. An install now keeps only a true or false `enabled` flag
   on Kiro's hooks, so no other value can ride along in the file.
 - **A checked project's git settings no longer make the conformity gate start
@@ -1541,7 +1570,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **The VS Code packaging tool's lockfile takes the `minimatch` fix.** The
   locked `vsce` toolchain (`tools/vsce`) moves its transitive `minimatch` from
   10.2.6 to 11.0.1, which fixes GHSA-g3hv-75wg-m249 (a denial of service
-  through a crafted glob pattern). vsce 4.0.0 and 4.1.0 still require
+  through a crafted glob pattern). vsce 4.0.0, 4.1.0 and 4.1.1 still require
   `minimatch` 10.x, which has no fixed release, so `tools/vsce/package.json`
   overrides it. vsce did not reach the affected code, which runs only at
   optimization level 2 or higher: it matches its own ignore list and the
@@ -1728,13 +1757,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   refused, at every step of the redirect, as the POSIX installers' `curl`
   already did; on 5.1 the message names that address, and on 7 it says the
   download was redirected to an http:// address.
-- **The website builds with Next.js 16.4.5.** Next.js 16.4.5 fixes seven
+- **The website builds with Next.js 16.4.6.** Next.js 16.4.5 fixed seven
   moderate advisories, among them GHSA-mfr8-8qww-v76h, GHSA-pc58-hwjq-p385 and
   GHSA-7qx7-33qx-rqx2. They concern Next.js running as a server (its caches,
   image optimization, Edge routes and self-hosted response forwarding). The
   site is published as static files with no Next.js server, so none of them
-  reached it. The same update moves Fumadocs (`fumadocs-core` and
-  `fumadocs-ui` to 16.18.4, `fumadocs-mdx` to 15.5.3) and Tailwind CSS
+  reached it. The same updates move Fumadocs (`fumadocs-core` and
+  `fumadocs-ui` to 16.19.3, `fumadocs-mdx` to 15.6.2) and Tailwind CSS
   (`tailwindcss` and `@tailwindcss/postcss` to 4.3.5).
 
 ## [1.5.0] - 2026-10-28

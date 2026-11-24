@@ -7,8 +7,9 @@ description: "Apothem v1.6.0 stops removing folders that hold your own files, sh
 {/* TODO(clarify): release date for the blog index line; the frontmatter of the existing posts carries none. */}
 
 Apothem v1.6.0 fixes a data-loss bug, makes uninstall and update leave your
-files alone, and checks each release more strictly before it installs. Read
-the first section before you upgrade.
+files alone apart from the cases listed under *Safer uninstall and update*,
+and checks each release more strictly before it installs. Read the first
+section before you upgrade.
 
 ## What this release fixes
 
@@ -75,17 +76,19 @@ with the same warning.
   a fingerprint (SHA-256) of every file it copies into place. An uninstall
   removes a file only while it still has that content. A file you added, an
   Apothem file you edited, and a file of your own with an Apothem name all
-  stay, with a warning.
+  stay, with a warning, unless an install or update has replaced them since
+  (see below).
 - **An install made by an earlier release** does not say which files Apothem
   wrote. The uninstall removes the files that match what v1.6.0 writes. If a
   file differs, the uninstall stops unfinished (exit `2`) and tells you the
-  next step: move your own files out, run `apothem update`, then run
-  `apothem uninstall` again.
+  next step: `apothem update` writes this release's files over the listed
+  ones (after a backup), so first copy any listed file you edited or added,
+  then run `apothem update`, then run `apothem uninstall` again.
 - **An unfinished uninstall says so.** Before, a refused or failed uninstall
   could still print `Uninstalled` and exit 0. Now it reports the failure, keeps
   the install recorded, and a second run finishes the job.
-  The output lists every path it kept, including the
-  files inside a kept folder.
+  The output lists every file it kept, including the files inside a kept
+  folder; paths behind a link are counted, not listed.
   When no install record matches, it prints `uninstall did not finish`
   instead of `Uninstalled`, then a `Note:` line that names what it left,
   what it still removed and what to check next.
@@ -108,17 +111,40 @@ with the same warning.
   shared folder look like two, so an uninstall no longer removes skills and
   rules another install still uses. A rollback keeps them for the same tool's
   install under another spelling of the home folder, too.
-- **A skill of your own is not replaced.** Say you put your own skill in a
-  shared skills folder such as `~/.agents/skills/`, under the name of an
-  Apothem skill, and the only install that listed that folder was in a folder
-  you have since deleted. The next install skips it with a warning and leaves
-  it as it is. It no longer replaces it. The same holds for a skill folder you
-  edited, and for one an earlier release wrote there that differs from what
-  v1.6.0 writes. While such a folder stays there, `apothem verify` reports
-  that harness as not verified and names the folder. To keep your skill,
-  leave it there. To use Apothem's version, move the folder out of the skills
-  folder, then run `apothem update` for that harness (with `--project` for a
-  project install).
+- **A skill of your own in a shared skills folder is not replaced.** Say you
+  put your own skill in a shared skills folder such as `~/.agents/skills/`,
+  under the name of an Apothem skill, and the only install that listed that
+  folder was in a folder you have since deleted. The next install skips it
+  with a warning and leaves it as it is. It no longer replaces it. The same
+  holds for a skill folder you edited, and for one an earlier release wrote
+  there that differs from what v1.6.0 writes. While such a folder stays there,
+  `apothem verify` reports that harness as not verified and names the folder.
+  To keep your skill, leave it there. To use Apothem's version, move the
+  folder out of the skills folder, then run `apothem update` for that harness
+  (with `--project` for a project install).
+- **What install and update still replace or delete.** In each case below,
+  Apothem saves your file under `~/.apothem/backups/` first.
+  - A file or skill folder of yours with the same name as one Apothem copies
+    into the same folder is replaced, and an uninstall does not put it back.
+    That covers, for example, a helper in `~/.claude/agents/`, a skill in
+    `~/.claude/skills/`, the skills and helpers in a project's `.kimi-code/`
+    folder, and the helpers Apothem writes into a project for CodeBuddy,
+    Cursor, GitHub Copilot, Kiro, Trae and Windsurf. A Codex install or
+    update also removes a `.md` file in `~/.codex/agents/` that has an Apothem
+    helper's name. Only the shared skill folders in your home folder
+    (`~/.agents/skills/`, `~/.codebuddy/skills/`, `~/.kiro/skills/` and
+    `~/.trae/skills/`) skip a skill folder Apothem did not write, with a
+    warning. Give your own files names that differ from Apothem's.
+  - Every OpenCode, Qwen Code, Hermes and Open-Claw install and update deletes
+    each file in that tool's `apothem/rules/` folder except the profile
+    document Apothem writes there (`00-apothem-profile.md`). Keep your own
+    files elsewhere.
+  - Folders an earlier release wrote and Apothem no longer uses are removed
+    whole, files of yours in them included: Kimi Code's `skills/` and
+    `agents/` folders under `.kimi-code/.apothem/support/`, and Antigravity's
+    `~/.gemini/antigravity-cli/plugins/apothem/`. Every Antigravity install,
+    update and uninstall also removes `~/.antigravity/profile.yaml`, a file
+    no release wrote.
 - **`apothem doctor` checks the right hooks.** It now starts the hooks of the
   install in the folder it checks: the tool's own folder, or the `--project`
   folder. Before, it used the newest install of that tool in any folder. When
@@ -200,7 +226,9 @@ folder it was started in.
 
 - The install now writes `{env:NAME}` for the MCP secrets your profile names
   as `${NAME}` in a server's environment, headers and URL. OpenCode expands
-  only the first form.
+  only the first form. An environment entry that passes a variable on under
+  its own name, such as `FOO: ${FOO}`, is left out, since OpenCode starts the
+  server with its own environment.
 - The install follows `XDG_CONFIG_HOME`, the folder OpenCode reads.
 - Apothem's OpenCode helpers no longer turn off OpenCode's prompt before
   reading `.env` files, and no longer override your own `permission` rules.
@@ -218,9 +246,10 @@ folder it was started in.
 ### OpenClaw
 
 - OpenClaw now loads Apothem's rules. The install writes `apothem/AGENTS.md`
-  into each OpenClaw workspace and lists it in the `bootstrap-extra-files`
-  hook entry in `openclaw.json`. Your workspace's own `AGENTS.md` is never
-  edited.
+  into each OpenClaw workspace in your home folder and lists it in the
+  `bootstrap-extra-files` hook entry in `openclaw.json`. A workspace outside
+  your home folder, or reached through a link, is skipped with a warning.
+  Your workspace's own `AGENTS.md` is never edited.
 - If your `openclaw.json` has comments, Apothem does not rewrite it, since
   that would drop them. When only the hook entry is missing, install and
   update print the entry for you to add, and `apothem verify` fails until you
