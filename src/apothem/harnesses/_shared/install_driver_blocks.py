@@ -27,7 +27,6 @@ what follows from it.
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
 
 from apothem.lib import install_ledger
@@ -37,6 +36,7 @@ from apothem.lib.harness_materializer import (
     extract_managed_block,
     has_stray_begin,
     lone_begins,
+    numbered_lines,
     remove_managed_block,
     uncertain_block,
     uncertain_pairs,
@@ -441,12 +441,6 @@ def another_block_at(path: Path) -> bool:
     return complete_managed_block(remove_managed_block(text)) is not None
 
 
-#: The line endings :func:`apothem.lib.harness_materializer.whole_blocks`
-#: splits a text at, and the byte order mark it leaves out of the first line.
-_EOL = re.compile(r"\r\n|\r|\n")
-_BOM = "\ufeff"
-
-
 def _copies_only(text: str) -> bool:
     """Return True when each whole block of *text* after the first copies it.
 
@@ -455,11 +449,11 @@ def _copies_only(text: str) -> bool:
     order mark at offset 0 is not part of the first line. True when *text*
     holds one whole block or none.
     """
-    lines = _EOL.split(text.removeprefix(_BOM))
-    blocks = [
-        [line.strip() for line in lines[begin - 1 : end]]
-        for begin, end in whole_blocks(text)
-    ]
+    found = whole_blocks(text)
+    if len(found) < 2:
+        return True
+    lines = numbered_lines(text)
+    blocks = [[line.strip() for line in lines[begin - 1 : end]] for begin, end in found]
     return all(block == blocks[0] for block in blocks[1:])
 
 
@@ -602,7 +596,7 @@ def _revealed_block(text: str, block: tuple[int, int]) -> tuple[int, int] | None
     at CRLF, a lone CR and LF, with a byte order mark at offset 0 kept out of
     the first line. ``None`` when no whole block shows then.
     """
-    lines = _EOL.split(text.removeprefix(_BOM))
+    lines = numbered_lines(text)
     begin, end = block
     lines[begin - 1 : end] = [""] * (end - begin + 1)
     found = whole_blocks("\n".join(lines))

@@ -28,10 +28,11 @@ the file shows that the block then reads whole (see :func:`_keeps`), so no
 fix needs a reading of the file. A fix that keeps no block changes every
 BEGIN marker line in the file: Apothem then reads no block, the next update
 writes its block at the end of the file, and an uninstall finds no block of
-its own there. Everything here builds text and reads no file. It goes over
-the lines of the file once per warning, and reads them as Markdown only to
-find whether the file ends in an open code block when the layout of its
-fences does not show it (see :func:`_closing`).
+its own there. Everything here builds text and reads no file. It finds the
+marker lines, and the lines that may start an HTML block, by searching the
+text, not by going over each line, and reads the file as Markdown once per
+warning to find whether it ends in an open code block (see
+:func:`_closing`).
 """
 
 from __future__ import annotations
@@ -46,6 +47,7 @@ from apothem.lib.harness_materializer import (
     APOTHEM_BLOCK_END,
     MarkerPlace,
     UncertainPair,
+    numbered_lines,
     trailing_fence,
 )
 
@@ -61,27 +63,12 @@ _MARKERS = frozenset({APOTHEM_BLOCK_BEGIN, APOTHEM_BLOCK_END})
 #: Text every marker line holds; a quick test before the exact one.
 _MARKER_TEXT = "APOTHEM MANAGED BLOCK"
 
-_EOL = re.compile(r"\r\n|\r|\n")
-
-#: A line that opens a fenced code block at the left margin, and one that
-#: closes one (see ``_FENCE_OPEN`` and ``_FENCE_CLOSE`` in
-#: :mod:`apothem.lib.harness_materializer`).
-_OPEN = re.compile(r"(`{3,}|~{3,})(.*)\Z", re.DOTALL)
-_CLOSE = re.compile(r"(`{3,}|~{3,})[ \t]*\Z")
-
 #: A line that may start an HTML block that runs to the next blank line: a
 #: tag after the indent and any list bullets (see ``_HTML_BLOCK_TAG`` in
 #: :mod:`apothem.lib.harness_materializer`, of which this is a wider form).
 #: In such a block a changed marker line goes on the block's text, where a
 #: marker line ends a paragraph, so the lines below it can read differently.
 _TAG = re.compile(r"[ \t]*(?:(?:[-+*]|[0-9]{1,9}[.)])[ \t]+)*</?[A-Za-z]")
-
-#: A line that may start an HTML block of any kind but a comment that ends on
-#: its own line, such as ``<!-- note -->``: the lines after it can be that
-#: block's raw text, where a run of backticks or tildes opens no code block.
-_RAW = re.compile(
-    r"[ \t]*(?:(?:[-+*]|[0-9]{1,9}[.)])[ \t]+)*<(?:[A-Za-z/?]|!(?!--.*-->))"
-)
 
 #: Columns of indentation that make a line indented code.
 _CODE_INDENT = 4
@@ -133,10 +120,7 @@ def split_lines(text: str) -> list[str]:
     no part of the first line, as in
     :func:`apothem.lib.harness_materializer.whole_blocks`.
     """
-    lines = _EOL.split(text.removeprefix("﻿"))
-    if lines and lines[-1] == "":
-        lines.pop()
-    return lines
+    return numbered_lines(text)
 
 
 def changed(line: str) -> str:
@@ -170,45 +154,72 @@ def closing_clause(step: Step) -> str:
 
 
 class _Layout:
-    """What a fix needs to know about the lines of a file, from one pass over them.
+    """What a fix needs to know about the lines of a file, found by searching it.
 
-    ``markers`` are the 1-based lines that hold only a marker (whitespace
-    aside, as :func:`apothem.lib.harness_materializer.whole_blocks` reads
-    them), in code or not, and ``begins`` those of them that hold the BEGIN
-    marker; ``runs`` the 0-based lines that hold a run of
-    three backticks or tildes; ``first_tag`` the 0-based first line that may
-    start an HTML block (see :data:`_TAG`), or ``None``; ``raw`` whether a
-    line may start an HTML block whose lines are its raw text (see
-    :data:`_RAW`).
+    ``lines`` are its lines (see :func:`split_lines`), and ``text`` the same
+    lines each ended by ``\\n``, as one text. ``markers`` are the 1-based lines
+    that hold only a marker (whitespace aside, as
+    :func:`apothem.lib.harness_materializer.whole_blocks` reads them), in code
+    or not, and ``begins`` those of them that hold the BEGIN marker;
+    ``starts`` maps each of them to where it starts in ``text``.
+    ``first_tag`` is the 0-based first line that may start an HTML block (see
+    :data:`_TAG`), or ``None``.
     """
 
     def __init__(self, text: str) -> None:
         self.lines = split_lines(text)
-        self.markers = [
-            number
-            for number, line in enumerate(self.lines, 1)
-            if _MARKER_TEXT in line and line.strip() in _MARKERS
-        ]
+        self.text = "\n".join(self.lines) + "\n"
+        self.starts: dict[int, int] = {}
+        line, prev, pos = 1, 0, self.text.find(_MARKER_TEXT)
+        while pos != -1:
+            line += self.text.count("\n", prev, pos)
+            prev = pos
+            if line not in self.starts and self.lines[line - 1].strip() in _MARKERS:
+                self.starts[line] = self.text.rfind("\n", 0, pos) + 1
+            pos = self.text.find(_MARKER_TEXT, pos + len(_MARKER_TEXT))
+        self.markers = list(self.starts)
         self.begins = [
             number
             for number in self.markers
             if self.lines[number - 1].strip() == APOTHEM_BLOCK_BEGIN
         ]
-        self.runs = [
-            index
-            for index, line in enumerate(self.lines)
-            if "```" in line or "~~~" in line
-        ]
-        self.first_tag = next(
-            (
-                index
-                for index, line in enumerate(self.lines)
-                if "<" in line and _TAG.match(line)
-            ),
-            None,
-        )
-        self.raw = any("<" in line and _RAW.match(line) for line in self.lines)
+        self.first_tag = self._first(_TAG)
         self._as_is: tuple[int, str] | None | bool = False
+
+    def _first(self, pattern: re.Pattern[str]) -> int | None:
+        """Return the 0-based first line *pattern* matches at its start, or ``None``.
+
+        *pattern* starts its match at ``<`` after the indent and any list
+        bullets, so only the lines that hold a ``<`` are tried.
+        """
+        text = self.text
+        pos = text.find("<")
+        while pos != -1:
+            start = text.rfind("\n", 0, pos) + 1
+            end = text.find("\n", pos)
+            if pattern.match(text, start, end):
+                return text.count("\n", 0, start)
+            pos = text.find("<", end)
+        return None
+
+    def runs_between(self, first: int, last: int) -> bool:
+        """Return True when a line from marker line *first* up to marker line *last* holds a run.
+
+        A run of three backticks or tildes; *first* and *last* are 1-based
+        marker lines, and line *last* is not read.
+        """
+        part = self.text[self.starts[first] : self.starts[last]]
+        return "```" in part or "~~~" in part
+
+    def changed_text(self, changes: Collection[int]) -> str:
+        """Return :attr:`text` with each marker line of *changes* changed (see :func:`changed`)."""
+        parts, prev = [], 0
+        for number in sorted(changes):
+            start = self.starts[number]
+            parts += [self.text[prev:start], changed(self.lines[number - 1])]
+            prev = start + len(self.lines[number - 1])
+        parts.append(self.text[prev:])
+        return "".join(parts)
 
     def trailing(self, changes: Iterable[int]) -> tuple[int, str] | None:
         """Return where the code block the file ends in opens once *changes* change.
@@ -294,61 +305,19 @@ def _keeps(layout: _Layout, block: tuple[int, int], *, first: bool) -> bool:
     begin = block[0] - 1
     if _columns(layout.lines[begin]) >= _CODE_INDENT:
         return False
-    found = bisect.bisect_left(layout.runs, above[0] - 1)
-    return found == len(layout.runs) or layout.runs[found] >= begin
-
-
-def _plain_end(layout: _Layout) -> tuple[int, str] | None | bool:
-    """Return where the code block the file ends in opens, read from its fences.
-
-    When every line that holds a run of backticks or tildes starts with it,
-    at the left margin, those lines alone open and close every fenced code
-    block, as Apothem reads them for CommonMark (see
-    :func:`apothem.lib.harness_materializer.trailing_fence`), whatever the
-    marker lines hold: the 1-based line of the opener and the line that
-    closes it, or ``None`` when the file ends in none. ``False`` when another
-    line holds such a run.
-    """
-    fence: tuple[str, int, int] | None = None
-    for index in layout.runs:
-        line = layout.lines[index]
-        if not line.startswith(("```", "~~~")):
-            return False
-        if fence is None:
-            opened = _OPEN.match(line)
-            if opened is None:
-                return False
-            run, info = opened.groups()
-            if not (run[0] == "`" and "`" in info):
-                fence = (run[0], len(run), index + 1)
-            continue
-        closed = _CLOSE.match(line)
-        if closed is not None:
-            run = closed.group(1)
-            if run[0] == fence[0] and len(run) >= fence[1]:
-                fence = None
-    return None if fence is None else (fence[2], fence[0] * fence[1])
+    return not layout.runs_between(above[0], block[0])
 
 
 def _trailing(layout: _Layout, changes: Collection[int]) -> tuple[int, str] | None:
     """Return where the code block the file ends in opens once *changes* change.
 
-    See :meth:`_Layout.trailing`. The fences alone tell where the file's code
-    blocks end when each starts at the left margin (see :func:`_plain_end`)
-    and no line may start an HTML block whose lines are its raw text (see
-    :data:`_RAW`); otherwise the file, its BEGIN marker lines *changes*
+    See :meth:`_Layout.trailing`: the file, its BEGIN marker lines *changes*
     changed, is read as Markdown once.
     """
-    if not layout.runs:
+    if "```" not in layout.text and "~~~" not in layout.text:
         return None
-    found = False if layout.raw else _plain_end(layout)
-    if found is False:
-        fixed = (
-            changed(line) if number in changes else line
-            for number, line in enumerate(layout.lines, 1)
-        )
-        found = trailing_fence("".join(f"{line}\n" for line in fixed))
-    return found if isinstance(found, tuple) else None
+    text = layout.changed_text(changes) if changes else layout.text
+    return trailing_fence(text)
 
 
 def _closing(layout: _Layout, steps: Sequence[Step]) -> Step | None:
