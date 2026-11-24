@@ -65,9 +65,11 @@ import stat
 import subprocess
 import sys
 import time
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator, Sequence
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TypeVar
 
 import pytest
 
@@ -316,6 +318,38 @@ def _run(
     return result, time.perf_counter() - started
 
 
+_Unit = TypeVar("_Unit")
+
+
+def _each_in_parallel(check: Callable[[_Unit], None], units: Sequence[_Unit]) -> None:
+    """Run *check* once per unit, side by side; re-raise the first unit's failure.
+
+    A unit holds every call of the sessions it touches, in order, inside one
+    thread, and no two units share a session id, so each session's state file
+    sees exactly the calls it would see in a one-by-one run. Most of a hook
+    call's time is process start-up, which overlaps across sessions.
+    """
+    if not units:
+        return
+    with ThreadPoolExecutor(max_workers=len(units)) as pool:
+        futures = [pool.submit(check, unit) for unit in units]
+    for future in futures:
+        future.result()
+
+
+def _by_surface(entries: list[HookEntry]) -> list[list[HookEntry]]:
+    """Group *entries* by surface, keeping their order inside each group.
+
+    The clause 2 tests name each session after its surface, so the entries of
+    one group share sessions and run one after another, as before; different
+    groups share nothing and may run side by side.
+    """
+    groups: dict[str, list[HookEntry]] = {}
+    for entry in entries:
+        groups.setdefault(entry.surface, []).append(entry)
+    return list(groups.values())
+
+
 def _parse(stdout: str) -> dict[str, object]:
     text = stdout.strip()
     if not text:
@@ -554,7 +588,13 @@ def test_engine_gate_hook_starts(workspace: dict[str, Path]) -> None:
 
 def test_clause2_stop_is_bounded_and_off_by_default(workspace: dict[str, Path]) -> None:
     """Stop: at most one emission per session, none while stop_hook_active."""
-    for entry in (e for e in _all_entries(workspace) if e.event == "Stop"):
+    entries = [e for e in _all_entries(workspace) if e.event == "Stop"]
+
+    def check(group: list[HookEntry]) -> None:
+        for entry in group:
+            check_entry(entry)
+
+    def check_entry(entry: HookEntry) -> None:
         env = _env_for(entry, workspace, workspace["project"])
         emitted = 0
         for _ in range(50):
@@ -577,37 +617,52 @@ def test_clause2_stop_is_bounded_and_off_by_default(workspace: dict[str, Path]) 
             assert result.returncode == 0, (entry.label, result.stderr[-300:])
             assert _context_chars(_parse(result.stdout)) == 0
 
+    _each_in_parallel(check, _by_surface(entries))
+
 
 def test_clause2_posttooluse_advisory_is_capped(workspace: dict[str, Path]) -> None:
     """PostToolUse: at most two advisories in 60 heavy calls; none when switched off."""
     entries = [e for e in _all_entries(workspace) if e.event == "PostToolUse"]
     assert entries
-    for entry in entries:
-        for switch, ceiling in (("1", _MAX_POSTTOOLUSE_EMISSIONS), ("0", 0)):
-            env = _env_for(
-                entry,
-                workspace,
+    # One session per (surface, switch) pair: "ptu-<surface>-<switch>".
+    sessions = [
+        (group, switch, ceiling)
+        for group in _by_surface(entries)
+        for switch, ceiling in (("1", _MAX_POSTTOOLUSE_EMISSIONS), ("0", 0))
+    ]
+
+    def check(session: tuple[list[HookEntry], str, int]) -> None:
+        group, switch, ceiling = session
+        for entry in group:
+            check_entry(entry, switch, ceiling)
+
+    def check_entry(entry: HookEntry, switch: str, ceiling: int) -> None:
+        env = _env_for(
+            entry,
+            workspace,
+            workspace["project"],
+            APOTHEM_PROACTIVE_COMPACTION_ENABLED=switch,
+        )
+        emitted = 0
+        for _ in range(60):
+            payload = _payload(
+                "PostToolUse",
+                "*",
                 workspace["project"],
-                APOTHEM_PROACTIVE_COMPACTION_ENABLED=switch,
+                f"ptu-{entry.surface}-{switch}",
             )
-            emitted = 0
-            for _ in range(60):
-                payload = _payload(
-                    "PostToolUse",
-                    "*",
-                    workspace["project"],
-                    f"ptu-{entry.surface}-{switch}",
-                )
-                payload["tool_response"] = "y" * 8_192
-                result, _ = _run(entry, payload, env, workspace["project"])
-                # _parse reads a dead command's empty stdout as no emission.
-                assert result.returncode == 0, (
-                    entry.label,
-                    switch,
-                    result.stderr[-300:],
-                )
-                emitted += _context_chars(_parse(result.stdout)) > 0
-            assert emitted <= ceiling, (entry.surface, switch, emitted)
+            payload["tool_response"] = "y" * 8_192
+            result, _ = _run(entry, payload, env, workspace["project"])
+            # _parse reads a dead command's empty stdout as no emission.
+            assert result.returncode == 0, (
+                entry.label,
+                switch,
+                result.stderr[-300:],
+            )
+            emitted += _context_chars(_parse(result.stdout)) > 0
+        assert emitted <= ceiling, (entry.surface, switch, emitted)
+
+    _each_in_parallel(check, sessions)
 
 
 def test_clause4_claude_surfaces_use_valid_channels(workspace: dict[str, Path]) -> None:
