@@ -113,6 +113,9 @@ GIT_TIMEOUT_SECONDS: Final[int] = 60
 # with the history: about 18 seconds for 200,000 commits on a test machine.
 GIT_HISTORY_TIMEOUT_SECONDS: Final[int] = 300
 
+# The values git reads as true for a boolean setting ("" is a key with no value).
+_GIT_TRUE: Final[frozenset[str]] = frozenset({"", "true", "yes", "on", "1"})
+
 # Path segments that mark a directory as out of scope wherever they appear.
 # Vendored trees, generated output, caches, and ephemera are never navigable
 # subsystems an agent reasons about by hand.
@@ -291,7 +294,8 @@ def _is_partial_clone(root: Path) -> bool:
     A partial clone (``git clone --filter=...``) leaves objects out and names
     the remote that can send them later, its promisor: git sets
     ``remote.<name>.promisor``, and older releases set
-    ``extensions.partialClone``. Raises
+    ``extensions.partialClone``. Only the repository's own settings count, and
+    a promisor setting only when it is true. Raises
     :class:`~apothem.conformity._grep_base.GitTimeoutError` past
     ``GIT_TIMEOUT_SECONDS``, like the other git commands here.
     """
@@ -299,6 +303,7 @@ def _is_partial_clone(root: Path) -> bool:
         completed = run_git(
             [
                 "config",
+                "--local",
                 "--get-regexp",
                 r"^(remote\..*\.promisor|extensions\.partialclone)$",
             ],
@@ -309,7 +314,16 @@ def _is_partial_clone(root: Path) -> bool:
         raise GitTimeoutError("git config", GIT_TIMEOUT_SECONDS) from exc
     except OSError:
         return False
-    return completed.returncode == 0 and bool(completed.stdout.strip())
+    if completed.returncode != 0:
+        return False
+    for line in completed.stdout.splitlines():
+        key, _, value = line.partition(" ")
+        if key == "extensions.partialclone" and value.strip():
+            return True
+        # A setting written with no value is true to git.
+        if key.endswith(".promisor") and value.strip().lower() in _GIT_TRUE:
+            return True
+    return False
 
 
 def _last_commit_times(root: Path) -> dict[str, int] | None:

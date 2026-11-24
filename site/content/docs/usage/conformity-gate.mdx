@@ -147,9 +147,9 @@ example one another user owns or one with a bad line in its `.git/config`; the
 `check_error` then gives git's exit code, and exit code 128 is the one git uses
 when it cannot open or read a repository. A folder whose `.git` entry git
 cannot open counts as such a checkout, because the history the checks need may
-be there unread: an empty `.git` folder, or a `.git` file that names a folder
-that no longer exists, as an unpacked worktree or a copied submodule leaves
-behind. Remove that entry, or run the gate on a full checkout. That holds for
+be there unread: an empty `.git` folder outside any other checkout, or a
+`.git` file that names a folder that no longer exists, as an unpacked worktree
+or a copied submodule leaves behind. Remove that entry, or run the gate on a full checkout. That holds for
 the stale-companion check too, although its findings are otherwise advisory,
 and the commit-subject check then also reports `inspected: 0` with
 `empty_scope_expected: false`. The stale-companion check reads the whole history
@@ -159,9 +159,13 @@ that is not inside any git checkout, a repository with no commit yet, or a
 machine without `git` still passes these checks as before. So does a partial
 clone, one made with `git clone --filter`: the gate does not let `git` fetch
 what the clone left out, so where the history read needs it, the
-stale-companion check checks only that each companion file is there, as it
-does with no history. As with any result that does not pass, the advisory
-default reports it and exits `0`, and `--strict` exits `2`.
+stale-companion check skips its freshness test and passes, as it does with no
+history. These exemptions, and the `check_error` for a checkout git refuses,
+are for the other four validators: `no-global-plans-grep` needs a checkout git
+can read, so outside one, on a machine without `git`, or in a checkout git
+refuses, it fails as before, with git's reason on standard error. As with any
+result that does not pass, the advisory default reports it and exits `0`, and
+`--strict` exits `2`.
 
 Six validators start at the repository root and search the whole tree for the
 files they check:

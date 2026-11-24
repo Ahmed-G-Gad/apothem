@@ -11,8 +11,8 @@ configuration can make git wait for ever, for example through an
 Windows it then waits, with no limit, until every program that still holds the
 output open has ended. Git for Windows puts a launcher on ``PATH``
 (``Git\\cmd\\git.exe``) that starts the real git, and that real git holds the
-output after the launcher is stopped, so a 5-second limit could last as long as
-the stall.
+output after the launcher is stopped, so a limit could last as long as the
+stall.
 
 :func:`run_bounded` keeps the limit for the whole tree of programs:
 

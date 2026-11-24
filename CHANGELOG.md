@@ -1738,15 +1738,17 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   checkout it found, such as one another user owns or one with a bad
   configuration line, which used to count as a repository with no commit. This
   can turn a run that passed red: a folder whose `.git` entry git cannot open,
-  such as an empty `.git` folder or a `.git` file that names a folder that no
-  longer exists, now fails these checks, because the history they need may be
-  there unread. `agents-md-coverage-grep` exits `2` for either although its
-  findings are otherwise advisory, and its read of the whole history now gets
-  5 minutes, so a large history is slow rather than a failure. A plain folder
-  that is not inside any git checkout, a repository with no commit yet, a
-  partial clone whose history read needs what the clone left out, or a machine
-  without `git` still passes these checks. The gate's advisory default still
-  exits `0` on such a result, and `--strict` exits `2`.
+  such as an empty `.git` folder outside any other checkout or a `.git` file
+  that names a folder that no longer exists, now fails these checks, because
+  the history they need may be there unread. `agents-md-coverage-grep` exits
+  `2` for either although its findings are otherwise advisory, and its read of
+  the whole history now gets 5 minutes, so a large history is slow rather than
+  a failure. A plain folder that is not inside any git checkout, a repository
+  with no commit yet, a partial clone whose history read needs what the clone
+  left out, or a machine without `git` still passes these checks.
+  `no-global-plans-grep` still fails, as before, outside a checkout git can
+  read or without `git`. The gate's advisory default still exits `0` on such a
+  result, and `--strict` exits `2`.
 
 ## [1.5.0] - 2026-10-28
 

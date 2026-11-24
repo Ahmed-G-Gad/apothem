@@ -732,14 +732,17 @@ def _dotted(node: ast.expr, imported: dict[str, str]) -> str:
 
 
 def _program_starts(
-    source: str, *, allowed: frozenset[str] = frozenset(), starts: bool = True
+    source: str,
+    *,
+    allowed: frozenset[str] = frozenset(),
+    allowed_starts: frozenset[str] = frozenset(),
 ) -> list[int]:
     """Return the lines where *source* starts or finds a program, or names git.
 
     Every process-starting call counts, whatever its arguments, and so does any
     ``which``, any use of ``git_argv``, and any string naming the git program.
-    Calls inside a function named in *allowed* are skipped. With *starts*
-    false, process-starting calls do not count; the rest still does.
+    Calls inside a function named in *allowed* are skipped, and so are the
+    process-starting calls named in *allowed_starts*; the rest still counts.
     """
     tree = ast.parse(source)
     imported: dict[str, str] = {}
@@ -761,7 +764,7 @@ def _program_starts(
                 _PROCESS_PREFIXES
             )
             if (
-                (starts and starts_one)
+                (starts_one and target not in allowed_starts)
                 or target == "which"
                 or target.endswith(".which")
             ):
@@ -839,20 +842,35 @@ def test_no_conformity_module_starts_a_program_itself() -> None:
         if relative == "_git.py":
             continue
         source = module.read_text(encoding="utf-8")
-        lines = _program_starts(source, starts=relative != "_bounded_run.py")
+        allowed_starts = (
+            frozenset({"subprocess.Popen"})
+            if relative == "_bounded_run.py"
+            else frozenset()
+        )
+        lines = _program_starts(source, allowed_starts=allowed_starts)
         offenders.extend(f"{relative}:{line}" for line in lines)
     assert offenders == []
 
 
+_POPEN = frozenset({"subprocess.Popen"})
+
+
 def test_the_guard_still_finds_git_named_where_programs_may_start() -> None:
-    """With program starts allowed, a string naming git is still caught."""
+    """With ``Popen`` allowed, a string naming git and every other start count."""
     source = 'import subprocess\nsubprocess.Popen(["git", "log"])\n'
-    assert _program_starts(source, starts=False) == [2]
+    assert _program_starts(source, allowed_starts=_POPEN) == [2]
     assert (
-        _program_starts("import subprocess\nsubprocess.Popen(argv)\n", starts=False)
+        _program_starts(
+            "import subprocess\nsubprocess.Popen(argv)\n", allowed_starts=_POPEN
+        )
         == []
     )
-    assert _program_starts('import shutil\nshutil.which("x")\n', starts=False) == [2]
+    assert _program_starts(
+        'import shutil\nshutil.which("x")\n', allowed_starts=_POPEN
+    ) == [2]
+    assert _program_starts(
+        'import os\nos.system("git log")\n', allowed_starts=_POPEN
+    ) == [2]
 
 
 def test_only_the_shared_runner_and_git_helper_start_programs() -> None:

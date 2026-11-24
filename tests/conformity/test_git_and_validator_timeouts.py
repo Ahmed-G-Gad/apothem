@@ -517,6 +517,71 @@ def test_companion_history_read_in_a_partial_clone_falls_back(
     assert result.check_error is None
 
 
+def test_companion_promisor_turned_off_is_no_partial_clone(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``promisor = false`` names no promisor, so a failed read still fails."""
+    (tmp_path / "pkg").mkdir()
+    (tmp_path / "pkg" / "README.md").write_text("# pkg\n", encoding="utf-8")
+    turned_off = subprocess.CompletedProcess(
+        ["git", "config"], 0, "remote.origin.promisor false\n", ""
+    )
+    monkeypatch.setattr(_bounded_run, "run_bounded", _history_read_failing(turned_off))
+
+    result = agents_md_coverage_grep.check(tmp_path)
+    assert result.passed is False
+    assert result.check_error == "git log failed with exit code 128"
+
+
+@pytest.mark.parametrize(
+    ("advisory_report", "expected"),
+    [
+        (
+            {
+                "advisory": True,
+                "passed": False,
+                "findings": [],
+                CHECK_ERROR_KEY: "git log did not finish within 300 seconds",
+            },
+            False,
+        ),
+        (
+            {
+                "advisory": True,
+                "passed": False,
+                "findings": [{"surface": "pkg/AGENTS.md", "kind": "stale-companion"}],
+            },
+            True,
+        ),
+    ],
+)
+def test_all_counts_advisory_findings_not_unfinished_checks(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    advisory_report: dict[str, object],
+    expected: bool,
+) -> None:
+    """An advisory validator that could not finish reports no advisory findings."""
+
+    def run(name: str, root: Path) -> tuple[bool, str]:
+        if name == "agents-md-coverage-grep":
+            report = advisory_report
+            return CHECK_ERROR_KEY not in report, json.dumps(report)
+        return True, json.dumps({"passed": True})
+
+    monkeypatch.setattr(gate, "_run_standalone", run)
+
+    _passed, output = gate._run_all(tmp_path)
+    payload = json.loads(output)
+    assert payload["advisory_findings_present"] is expected
+    (entry,) = [
+        entry
+        for entry in payload["results"]
+        if entry["validator"] == "agents-md-coverage-grep"
+    ]
+    assert (CHECK_ERROR_KEY in entry) is not expected
+
+
 def test_companion_partial_clone_question_past_its_limit_does_not_pass(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -1112,20 +1177,47 @@ def test_gate_stops_a_validator_whose_git_waits_and_ends_that_git(
         # The validator leads a session, and so a process group, of its own.
         (group,) = started
         give_up = time.monotonic() + _EXIT_WAIT_SECONDS
-        while time.monotonic() < give_up:
-            try:
-                os.killpg(group, 0)
-            except ProcessLookupError:
-                break
+        while _group_has_live_member(group):
+            if time.monotonic() > give_up:
+                pytest.fail("a process the stopped validator started is still running")
             time.sleep(0.1)
-        else:
-            pytest.fail("a process the stopped validator started is still running")
     finally:
         # Only now let any reader left waiting go on; git opens an included
         # file more than once.
         for _ in range(4):
             _release_fifo(fifo)
             time.sleep(0.05)
+
+
+def _group_has_live_member(group: int) -> bool:
+    """Return True while process group *group* holds a process that is not a zombie.
+
+    A killed process stays a zombie until its parent waits for it, and a
+    killed git's parent, process 1 once the validator is gone, may wait late or
+    never (pytest as process 1 of a container). On Linux the zombies are told
+    apart through /proc; macOS answers ``EPERM`` for a group that holds only
+    zombies, and ``ESRCH`` for one that is gone.
+    """
+    proc = Path("/proc")
+    if (proc / "self" / "stat").is_file():
+        for entry in proc.iterdir():
+            if not entry.name.isdigit():
+                continue
+            try:
+                stat = (entry / "stat").read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            # Fields after the command name, which ends at the last ")":
+            # state, parent id, process group.
+            fields = stat.rpartition(")")[2].split()
+            if len(fields) > 2 and fields[2] == str(group) and fields[0] != "Z":
+                return True
+        return False
+    try:
+        os.killpg(group, 0)
+    except (ProcessLookupError, PermissionError):
+        return False
+    return True
 
 
 def _processes_naming(text: str, *words: str) -> list[int]:

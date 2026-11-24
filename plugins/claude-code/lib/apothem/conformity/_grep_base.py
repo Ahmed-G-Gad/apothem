@@ -92,7 +92,7 @@ class GitTimeoutError(GitCheckError):
 
     A repository's own configuration can make git wait for ever, for example
     through an ``include.path`` that names a FIFO. The message reads, for
-    example, ``git log did not finish within 5 seconds``.
+    example, ``git log did not finish within 60 seconds``.
     """
 
     def __init__(self, command: str, seconds: float) -> None:
