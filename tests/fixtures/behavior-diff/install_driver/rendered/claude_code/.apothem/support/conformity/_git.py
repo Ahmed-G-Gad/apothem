@@ -29,7 +29,8 @@ while it only reads:
   over every configuration file and reach any git that git starts: no pager,
   no file-system monitor, signature programs that cannot exist, submodule
   changes shown as commit ids only, no mailmap, no excludes file, no automatic
-  maintenance, and a hooks path no hook can exist under;
+  maintenance, a hooks path no hook can exist under, and diff names given
+  from the top of the work tree;
 - ``--no-ext-diff``, ``--no-textconv`` and ``-O/dev/null`` on ``diff``, ``log``
   and ``show`` (:data:`DIFF_OPTIONS`), so no diff driver or text-conversion
   program runs and no ``diff.orderFile`` is read;
@@ -99,6 +100,12 @@ _NOWHERE: Final[str] = str(Path(__file__).resolve() / "nothing-here")
 # reading an excludes file it names (either can be a network path).
 # ``core.quotePath=false`` prints path names as they are rather than C-quoting
 # every byte above 0x7f, so a non-ASCII path reads as itself.
+# ``diff.relative=false`` makes ``diff`` name every path from the top of the
+# work tree, even when the user's own ``diff.relative`` is on and git runs in a
+# subfolder; a command that wants names below the folder passes
+# ``--relative``, which wins over it. ``log`` and ``show`` read the key too, so
+# their names also come from the top. git older than 2.28 ignores it (that git
+# refuses ``--no-relative``).
 PROTECTIVE_OPTIONS: Final[tuple[str, ...]] = (
     "--no-pager",
     "-c",
@@ -127,6 +134,8 @@ PROTECTIVE_OPTIONS: Final[tuple[str, ...]] = (
     "maintenance.auto=false",
     "-c",
     "core.quotePath=false",
+    "-c",
+    "diff.relative=false",
 )
 
 # Subcommands that can show a diff or a blob, and the options they get: no

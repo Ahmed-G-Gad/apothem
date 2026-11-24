@@ -388,8 +388,10 @@ def _package_folder_above() -> tuple[Path, bool] | None:
     (or the current folder is gone). Then the project has no package to
     check, whatever state its repository is in, and no git command is needed
     to say so. Otherwise returns the folder and whether a ``.git`` file that
-    names no repository lies between it and the current folder. git stops
-    with an error at such a file, so the caller must not read the package's
+    git refuses (one that names no repository, is malformed or too large, or
+    names a network or device path on Windows) lies between it and the
+    current folder. git stops with an error at such a file, so the caller
+    must not read the package's
     change set as if the run had started in the package's folder.
     """
     from apothem.conformity._grep_base import (
@@ -419,14 +421,18 @@ def check_staged() -> list[Finding]:
     """Per-change-set check across the staged diff.
 
     The package is looked for below the current folder first. When it is not
-    there, it is looked for in the folders above, up to the top of the
-    checkout, and git then runs in the nearest folder that holds it, so a run
-    from a subfolder of the checkout checks the same change set as a run from
-    that folder. A project with no package there has nothing to check: the
-    list of findings is empty and no git command runs. Where a ``.git`` file
-    that names no repository lies between the current folder and the package,
-    git runs in the current folder, stops at that file, and the failure is
-    reported. ``GIT_WORK_TREE`` in the environment is not read by the search.
+    there, it is looked for in the folders above, up to the nearest folder
+    that holds a repository. The search also stops where git's own search
+    stops: below a folder ``GIT_CEILING_DIRECTORIES`` names, and, outside
+    Windows, at a file-system boundary. git then runs in the nearest folder
+    that holds the package, so a run from a subfolder of the checkout checks
+    the same change set as a run from that folder. A project with no package
+    there has nothing to check: the list of findings is empty and no git
+    command runs. Where a ``.git`` file that git refuses (see
+    :func:`_package_folder_above`) lies between the current folder and the
+    package, git runs in the current folder, stops
+    at that file, and the failure is reported. ``GIT_WORK_TREE`` in the
+    environment is not read by the search.
 
     git runs through :func:`~apothem.conformity._git.run_git`, which turns off
     the repository's program-running settings. File contents are read with
@@ -478,10 +484,12 @@ def check_staged() -> list[Finding]:
 
     # Get list of staged Python files under src/apothem/. -z ends each name
     # with NUL, unquoted, and the list is read as file names, so each name
-    # comes back with every byte it holds. git prints each name from the top
-    # of the work tree, which is also how ``cat-file blob :<name>`` reads it.
-    # ``--`` marks the package as a path: without it git stops with "ambiguous
-    # argument" in a work tree where the folder is gone.
+    # comes back with every byte it holds. ``run_git`` turns
+    # ``diff.relative`` off, so git prints each name from the top of the work
+    # tree even when the user's setting is on, which is how
+    # ``cat-file blob :<name>`` reads it. ``--`` marks the package as a path:
+    # without it git stops with "ambiguous argument" in a work tree where the
+    # folder is gone.
     try:
         result = _git(
             "git diff --cached",
@@ -534,8 +542,10 @@ def check_staged() -> list[Finding]:
 
     if findings:
         # Cross-reference: did the staged change include a MAJOR bump?
-        # git names a path with forward slashes on every platform.
-        init_spec = INIT_PATH.as_posix()
+        # git names a path with forward slashes on every platform. The
+        # leading ``./`` makes git read the path from the folder it runs in,
+        # the package's folder, which can sit below the top of the work tree.
+        init_spec = f"./{INIT_PATH.as_posix()}"
         try:
             staged_init = blob(f":{init_spec}", check=True)
             prior_init = blob(f"HEAD:{init_spec}", check=False)

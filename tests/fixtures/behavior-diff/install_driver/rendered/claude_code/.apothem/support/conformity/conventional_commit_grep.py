@@ -16,14 +16,21 @@ specific drift classes that fail.
 Scope. Corpus-level standalone validator. Reads HEAD only. Merge commit
 subjects (``Merge branch ...`` / ``Merge pull request ...``) pass
 through — the merger does not author the merged content's subject form.
-Shallow-clone or no-git contexts (no ``.git/``, empty repo) exit 0 with
-an informational status so the validator never blocks a fresh clone or
-a non-git working tree. Two other outcomes are not such a context: a git
-command that runs past ``GIT_TIMEOUT_SECONDS`` (the repository's own
-configuration can make git wait for ever) gives status ``git-timeout``, and a
-git that refuses the repository (another owner, a bad configuration line, an
-include it cannot read) gives ``git-failed``. In both the repository is there
-but its HEAD subject was never read, so the check does not pass.
+Shallow-clone or no-git contexts (an empty repository, or a folder outside
+any checkout) exit 0 with an informational status, so the validator never
+blocks a fresh clone. A folder is outside any checkout when no ``.git`` entry
+of any kind lies in it or in a folder above it that git's own search reaches.
+A repository in a folder above it counts, and its HEAD subject is checked.
+A ``.git`` entry that git cannot open, such as an empty ``.git`` folder or a
+``.git`` file that names no repository, also counts: when git then finds no
+repository it can use, it fails, and so does the check, with ``git-failed``.
+Two outcomes are not an
+exempt context: a git command that runs past ``GIT_TIMEOUT_SECONDS`` (the
+repository's own configuration can make git wait for ever) gives status
+``git-timeout``, and a git that refuses the repository (another owner, a bad
+configuration line, an include it cannot read, a ``.git`` entry it cannot
+open) gives ``git-failed``. In both no HEAD subject was read, so the check
+does not pass.
 
 Exit semantics. Exits 0 when HEAD is conformant (or informationally
 exempt). Exits 2 on any drift class, and on ``git-timeout`` or
@@ -256,9 +263,12 @@ def _read_head_subject(root: Path) -> tuple[str | None, str, str | None]:
         GitCheckError,
         GitFailedError,
         GitTimeoutError,
+        in_checkout,
     )
 
-    if not (root / ".git").exists():
+    # git finds the repository in ``root`` or a folder above it, so a run on
+    # a subfolder of a checkout reads the checkout's history.
+    if not in_checkout(root):
         return None, "not-a-git-repo", None
     try:
         completed = _git(root, "git log", "log", "-1", "--pretty=%B")
@@ -387,12 +397,17 @@ def _classify_drift(subject: str) -> list[Drift]:
 def check_repo(root: Path) -> GrepResult:
     """Inspect ``root``'s HEAD commit; return a structured result.
 
-    Pre-conditions: ``root`` is the working-tree directory.
-    Post-conditions: ``result.passed`` is True iff HEAD is conformant
-    or the repo state is informationally exempt (no .git, no commits).
-    A git command past ``GIT_TIMEOUT_SECONDS`` gives status ``git-timeout``,
-    and a git that refused the repository gives ``git-failed``: both have
-    ``passed`` False and a ``check_error`` that names the command.
+    Pre-conditions: ``root`` is a folder; git reads the repository it is in,
+    which can be in a folder above it.
+    Post-conditions: ``result.passed`` is True iff HEAD is conformant or the
+    repository state is informationally exempt: no ``.git`` entry in ``root``
+    or above it (as far as git's own search goes), or no commits yet. A
+    ``.git`` entry git cannot open (an empty ``.git`` folder, say) is not
+    exempt: when git finds no repository it can use, it fails and the status
+    is ``git-failed``. A git command
+    past ``GIT_TIMEOUT_SECONDS`` gives status ``git-timeout``, and a git that
+    refused the repository gives ``git-failed``: both have ``passed`` False
+    and a ``check_error`` that names the command.
     """
     subject, status, check_error = _read_head_subject(root)
     if check_error is not None:

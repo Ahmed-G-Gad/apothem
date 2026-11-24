@@ -14,6 +14,7 @@ was never read, so the status is ``git-timeout`` with a ``check_error``.
 from __future__ import annotations
 
 import importlib.util
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -145,8 +146,61 @@ def test_check_repo_fails_on_drifting_head(tmp_path: Path) -> None:
     assert result.drifts
 
 
-def test_no_git_repo_is_informational_pass(tmp_path: Path) -> None:
-    # No .git/ directory: never block a fresh clone or non-git tree.
+def _hermetic_check_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    # git in the check reads os.environ: give it the shared hermetic
+    # environment, so the host's git configuration cannot change the result.
+    env = hermetic_git_env()
+    for name in list(os.environ):
+        if name not in env:
+            monkeypatch.delenv(name)
+    for name, value in env.items():
+        monkeypatch.setenv(name, value)
+
+
+def test_subfolder_of_a_checkout_reads_the_checkout_head(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # git finds the repository above a subfolder, so the check does too: a
+    # drifting HEAD is reported, not taken for a folder outside a checkout.
+    if not _git_available():
+        pytest.skip("git not available")
+    _init_git_repo(tmp_path, "Added a feature without a conventional prefix")
+    sub = tmp_path / "pkg" / "inner"
+    sub.mkdir(parents=True)
+    _hermetic_check_env(monkeypatch)
+    result = _MOD.check_repo(sub)
+    assert result.status == "ok", result.to_json()
+    assert not result.passed
+    assert result.drifts
+
+
+def test_empty_git_folder_above_fails_the_check(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # An empty .git folder above is a .git entry git cannot open. It counts
+    # as a checkout, git finds no repository and refuses the folder, so the
+    # check fails rather than passing as a folder outside any checkout.
+    if not _git_available():
+        pytest.skip("git not available")
+    (tmp_path / ".git").mkdir()
+    sub = tmp_path / "proj"
+    sub.mkdir()
+    _hermetic_check_env(monkeypatch)
+    # git's search stops at tmp_path, so a repository above it cannot count.
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path.parent))
+    result = _MOD.check_repo(sub)
+    assert not result.passed, result.to_json()
+    assert result.status == "git-failed"
+    assert result.check_error is not None
+
+
+def test_no_git_repo_is_informational_pass(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # No .git/ directory: never block a fresh clone or non-git tree. The
+    # search does not go above tmp_path, so a repository above the temp
+    # folder cannot count.
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path.parent))
     result = _MOD.check_repo(tmp_path)
     assert result.passed
     assert result.status == "not-a-git-repo"
