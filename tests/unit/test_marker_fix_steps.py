@@ -611,3 +611,68 @@ def test_the_advice_for_a_large_file_takes_well_under_a_second(shape: str) -> No
         took.append(time.perf_counter() - start)
     assert "Change line" in message
     assert min(took) < 1.5, took
+
+
+#: The troubleshooting page that lists the step formats word for word.
+_TROUBLESHOOTING = (
+    Path(__file__).resolve().parents[2]
+    / "site"
+    / "content"
+    / "docs"
+    / "install"
+    / "troubleshooting.mdx"
+)
+
+
+def _flat_page() -> str:
+    """Return the troubleshooting page with its line breaks read as spaces."""
+    return " ".join(_TROUBLESHOOTING.read_text(encoding="utf-8").split())
+
+
+def test_the_troubleshooting_step_table_lists_each_printed_step_word_for_word():
+    """docs-tests-r6-5: no test tied the page's step table to the printed steps.
+
+    The table under "Follow a numbered fix" says its steps are printed word
+    for word. Each of its rows, with a sample line number in place of N, is
+    the sentence a step prints, and the forms it names in words (tildes, and
+    a closing line indented in a list item) are the ones a step prints.
+    """
+    page = _TROUBLESHOOTING.read_text(encoding="utf-8")
+    section = page[page.index("### Follow a numbered fix") :]
+    section = section[: section.index("\n### ", 1)]
+    rows = re.findall(r"^\| `([^`]+)` \|", section, re.MULTILINE)
+
+    assert rows == [
+        steps.render_step(Step(7)).replace(" 7", " N"),
+        steps.render_step(Step(7, "```")).replace(" 7", " N"),
+    ]
+    assert "`tildes`" in section
+    assert steps.render_step(Step(7, "~~~")) == (
+        "Below line 7, add a line of 3 tildes."
+    )
+    assert "`, indented 2 spaces`" in section
+    assert steps.render_step(Step(7, "  ```")) == (
+        "Below line 7, add a line of 3 backticks, indented 2 spaces."
+    )
+
+
+def test_the_troubleshooting_stray_marker_example_is_the_fix_printed():
+    """docs-tests-r6-4: the example quoted a fix and left out two of its steps.
+
+    The page's example for a stray BEGIN marker in a file that ends inside a
+    code block is quoted whole, and it is the fix the warning prints for such
+    a file, word for word.
+    """
+    text = _text(["```", B, B, "~~~", E, "~~~"])
+    fixes = steps.stray_fixes(
+        text, stray_begins(text), whole_blocks(text), appends=True
+    )
+    promise = (
+        "Apothem then reads none of these lines as its markers, and the next "
+        "update writes its block at the end of the file"
+    )
+    printed = steps.render_fixes(fixes, [promise])
+    quoted = re.search(r'for example "(Fix A: A1\. Below line 6.*?\.)"', _flat_page())
+
+    assert quoted is not None
+    assert printed.endswith(quoted[1])
