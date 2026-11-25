@@ -609,10 +609,11 @@ Keep-a-Changelog convention. The release commit's CHANGELOG edit:
   shortens a longer section to 120,000: it keeps the `###` headings, cuts
   entries to their bold titles (Security and the data-loss section last),
   drops entries only when titles are not enough, says how many it left out,
-  and links the full notes in the tagged `CHANGELOG.md`. The script never
-  drops `####` headings, or paragraphs and code blocks outside list entries;
-  if those alone pass 120,000 characters, the release job fails before it
-  publishes.
+  and links the full notes in the tagged `CHANGELOG.md`. It shortens only
+  sections made of top-level `- ` entries with indented lines; a long section
+  with a code fence, a `####` heading, a paragraph or another list marker stops
+  it with an error that names the line. A CI test runs the same check on
+  every release in the `CHANGELOG.md`, so such a section fails before the tag.
 - Confirms the standard headings — Added, Changed, Deprecated, Removed,
   Fixed, Security — are used where applicable. Empty headings are dropped from
   the rendered file.

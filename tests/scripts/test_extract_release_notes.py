@@ -225,67 +225,27 @@ def test_fit_to_limit_shortens_security_only_after_every_other_section() -> None
     assert fixed.count("y" * 300) < 20
 
 
-def test_fit_to_limit_keeps_a_fenced_block_and_a_closing_paragraph_whole() -> None:
-    body = (
-        "### Fixed\n\n"
-        + "".join(f"- entry {n}. " + "z" * 300 + "\n" for n in range(10))
-        + "\n```sh\n### not a heading\n- not an entry\n```\n\n"
-        + "A closing paragraph about the section.\n"
-    )
-    fitted = extract_release_notes.fit_to_limit(body, "1.2.3", limit=len(body) - 600)
-    assert fitted.count("```") == 2
-    assert "### not a heading\n- not an entry\n```" in fitted
-    assert "A closing paragraph about the section." in fitted
-    assert fitted.count("### ") == 2  # the section and the fenced line
-
-
-def test_fit_to_limit_shortens_star_and_numbered_lists() -> None:
-    body = "### Fixed\n\n" + "".join(
-        f"{marker} item {n}. " + "w" * 300 + "\n"
-        for n, marker in enumerate(["*", "+", "1.", "2)"] * 5)
-    )
-    fitted = extract_release_notes.fit_to_limit(body, "1.2.3", limit=len(body) // 2)
-    assert len(fitted) <= len(body) // 2
-    assert "more entries in the full notes." in fitted
-
-
-def _fixed_then_security(fixed_entry: str) -> str:
-    fixed = "".join(f"- **Fixed {n}.** " + "v" * 300 + "\n" for n in range(6))
-    security = "".join(f"- **S{n}.** " + "u" * 300 + "\n" for n in range(5))
-    return f"### Fixed\n\n{fixed}{fixed_entry}\n### Security\n\n{security}"
-
-
 @pytest.mark.parametrize(
-    "fixed_entry",
+    ("extra", "why"),
     [
-        # A four-backtick block that shows a three-backtick line.
-        "- **Docs example.** x\n\n  ````md\n  ```\n  ````\n",
-        # An indented fence left open; the list item ends it.
-        "- **Open fence.** x\n\n  ```sh\n  make\n",
-        # A closing-looking line with an info string does not close a fence.
-        "- **Info.** x\n\n  ```sh\n  ```py\n  ```\n",
+        ("  ```sh\n  ### not a heading\n  ```\n", "code fence"),
+        ("```sh\nmake\n```\n", "code fence"),
+        ("#### A sub-heading\n", "not a '- ' entry"),
+        ("A closing paragraph.\n", "not a '- ' entry"),
+        ("1. **Numbered.** x\n2. **Next.** y\n", "not a '- ' entry"),
+        ("* **Star.** x\n", "not a '- ' entry"),
     ],
 )
-def test_fit_to_limit_keeps_sections_after_unusual_fences(fixed_entry: str) -> None:
-    body = _fixed_then_security(fixed_entry)
-    fitted = extract_release_notes.fit_to_limit(body, "1.2.3", limit=len(body) // 2)
-    assert "### Security" in fitted
-    for n in range(5):
-        assert f"- **S{n}.**" in fitted
+def test_fit_to_limit_refuses_a_shape_it_cannot_shorten_safely(
+    extra: str, why: str
+) -> None:
+    body = _titled_body(("Fixed",), 10) + "\n" + extra + _titled_body(("Security",), 5)
+    with pytest.raises(ValueError, match=why):
+        extract_release_notes.fit_to_limit(body, "1.2.3", limit=len(body) // 2)
 
 
-def test_a_kept_paragraph_stays_apart_from_the_item_above_a_dropped_one() -> None:
-    body = (
-        "### Fixed\n\n"
-        + "".join(f"- plain {n} " + "y" * 300 + "\n" for n in range(6))
-        + "\nClosing paragraph.\n"
+def test_fit_to_limit_leaves_any_shape_alone_when_it_fits() -> None:
+    body = _titled_body(("Fixed",), 2) + "\n```sh\nmake\n```\n\n1. one\n"
+    assert (
+        extract_release_notes.fit_to_limit(body, "1.2.3", limit=10 * len(body)) == body
     )
-    fitted = extract_release_notes.fit_to_limit(body, "1.2.3", limit=900)
-    assert "\n\nClosing paragraph." in fitted
-
-
-def test_a_wrapped_line_that_starts_with_a_number_stays_in_its_entry() -> None:
-    _lead, sections = extract_release_notes._split_sections(
-        "### Fixed\n\n- **One.** In the release of\n2025. it changed.\n- **Two.** x\n"
-    )
-    assert [len(e.lines) for e in sections[0].entries] == [2, 1]

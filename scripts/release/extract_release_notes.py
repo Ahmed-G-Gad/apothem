@@ -72,10 +72,7 @@ def extract_section(changelog: str, version: str) -> str:
     return "\n".join(body).strip() + "\n"
 
 
-_FENCE_OPEN = re.compile(r"^( *)(`{3,}|~{3,})(.*)$")
-_FENCE_CLOSE = re.compile(r"^ *(`{3,}|~{3,}) *$")
-_ENTRY_START = re.compile(r"^(?:[-*+]|([0-9]{1,9})[.)]) ")
-_HEADLINE = re.compile(r"^((?:[-*+]|[0-9]{1,9}[.)]) \*\*.+?\*\*)")
+_HEADLINE = re.compile(r"^(- \*\*.+?\*\*)")
 # Sections a reader must see whole: they are shortened only when no other
 # section has anything left to shorten.
 _PROTECTED = ("Security", "Data loss")
@@ -83,10 +80,9 @@ _PROTECTED = ("Security", "Data loss")
 
 @dataclass
 class _Entry:
-    """One top-level list entry, or a structural line that is never dropped."""
+    """One top-level ``- `` list entry with its indented continuation lines."""
 
     lines: list[str]
-    pinned: bool = False
     short: bool = False
 
     def size(self) -> int:
@@ -94,7 +90,7 @@ class _Entry:
 
     def headline(self) -> list[str] | None:
         """Return the entry cut to its bold title, or None when it cannot be."""
-        if self.pinned or self.short:
+        if self.short:
             return None
         text = " ".join(line.strip() for line in self.lines if line.strip())
         match = _HEADLINE.match(text)
@@ -120,102 +116,37 @@ class _Section:
         return any(name in self.head[0] for name in _PROTECTED)
 
 
-def _indent(line: str) -> int:
-    return len(line) - len(line.lstrip(" "))
-
-
-def _opens_fence(line: str) -> tuple[str, int, int] | None:
-    """Return (character, length, indent) when the line opens a code fence."""
-    match = _FENCE_OPEN.match(line)
-    if match is None:
-        return None
-    marker, info = match.group(2), match.group(3)
-    if marker[0] == "`" and "`" in info:
-        return None  # CommonMark: a backtick fence's info string has no backtick
-    return marker[0], len(marker), len(match.group(1))
-
-
-def _closes_fence(line: str, fence: tuple[str, int, int]) -> bool:
-    match = _FENCE_CLOSE.match(line)
-    return (
-        match is not None
-        and match.group(1)[0] == fence[0]
-        and len(match.group(1)) >= fence[1]
-    )
-
-
-def _starts_entry(line: str, previous: str) -> bool:
-    """A top-level list item; after a non-blank line, a numbered one starts at 1."""
-    match = _ENTRY_START.match(line)
-    if match is None:
-        return False
-    number = match.group(1)
-    return not number or not previous.strip() or int(number) == 1
-
-
 def _split_sections(body: str) -> tuple[list[str], list[_Section]]:
     """Split a release body into its lead lines and ``###`` sections.
 
-    Each section holds its ``###`` line and any lines before its first
-    entry, then its entries: a top-level list item with its continuation
-    lines, or a pinned line at column 0 after a blank line (a ``####``
-    heading, a closing paragraph or a code fence), which is never dropped.
-    A fenced code block stays whole with the line that opens it. Fences
-    follow CommonMark: a fence closes on a line of the same character that
-    is at least as long and carries no info string, and a fence opened
-    inside a list item also ends where that item ends (a non-blank line
-    indented less than the fence).
+    Only the shape the CHANGELOG uses can be shortened safely: each section
+    is a ``###`` line, then top-level ``- `` entries whose other lines are
+    indented, with blank lines between. Any other line in a section (a code
+    fence, a ``####`` heading, a paragraph or another list marker at column
+    0, or text before the first entry) raises ValueError instead of risking
+    a release page that silently loses part of a section.
     """
     lead: list[str] = []
     sections: list[_Section] = []
-    fence: tuple[str, int, int] | None = None
-    previous = ""
-
-    def append(line: str) -> None:
-        if sections and sections[-1].entries:
-            sections[-1].entries[-1].lines.append(line)
-        elif sections:
-            sections[-1].head.append(line)
-        else:
-            lead.append(line)
-
-    for line in body.splitlines():
-        if fence is not None and line.strip() and _indent(line) < fence[2]:
-            fence = None  # the list item holding the fence ended
-        if fence is not None:
-            append(line)
-            if _closes_fence(line, fence):
-                fence = None
-            previous = line
-            continue
-        opened = _opens_fence(line)
-        if opened is not None:
-            if (
-                sections
-                and sections[-1].entries
-                and opened[2] == 0
-                and not previous.strip()
-            ):
-                sections[-1].entries.append(_Entry([line], pinned=True))
-            else:
-                append(line)
-            fence = opened
-        elif line.startswith("### "):
+    for number, line in enumerate(body.splitlines(), start=1):
+        stripped = line.strip()
+        if line.startswith("### "):
             sections.append(_Section([line]))
         elif not sections:
             lead.append(line)
-        elif _starts_entry(line, previous):
+        elif not stripped:
+            target = sections[-1].entries[-1].lines if sections[-1].entries else None
+            (target if target is not None else sections[-1].head).append(line)
+        elif stripped.startswith(("```", "~~~")):
+            raise ValueError(f"line {number} opens a code fence: {line!r}")
+        elif line.startswith("- "):
             sections[-1].entries.append(_Entry([line]))
-        elif (
-            line.strip()
-            and not line[0].isspace()
-            and not previous.strip()
-            and sections[-1].entries
-        ):
-            sections[-1].entries.append(_Entry([line], pinned=True))
+        elif line[0].isspace() and sections[-1].entries:
+            sections[-1].entries[-1].lines.append(line)
         else:
-            append(line)
-        previous = line
+            raise ValueError(
+                f"line {number} is not a '- ' entry or an indented line of one: {line!r}"
+            )
     return lead, sections
 
 
@@ -224,8 +155,6 @@ def _render(lead: list[str], sections: list[_Section], footer: str) -> str:
     for section in sections:
         parts.extend(section.head)
         for entry in section.entries:
-            if entry.pinned and parts and parts[-1].strip():
-                parts.append("")  # keep a pinned line out of the item above it
             parts.extend(entry.lines)
         if section.dropped:
             if parts and parts[-1].strip():
@@ -260,11 +189,10 @@ def _shorten_one(sections: list[_Section]) -> bool:
                     return True
     for protected in (False, True):
         pool = [s for s in sections if s.protected == protected]
-        sizes = [sum(e.size() for e in s.entries if not e.pinned) for s in pool]
+        sizes = [sum(e.size() for e in s.entries) for s in pool]
         if any(sizes):
             section = pool[sizes.index(max(sizes))]
-            last = max(i for i, e in enumerate(section.entries) if not e.pinned)
-            del section.entries[last]
+            section.entries.pop()
             section.dropped += 1
             return True
     return False
@@ -289,11 +217,19 @@ def fit_to_limit(body: str, version: str, limit: int = MAX_BODY_CHARS) -> str:
     to the full notes in the tagged CHANGELOG.md.
 
     Raises:
-        ValueError: If the body cannot fit even with every entry dropped.
+        ValueError: If the body cannot fit even with every entry dropped, or
+            a section that must be shortened has a shape other than ``- ``
+            entries (see ``_split_sections``).
     """
     if _github_length(body) <= limit:
         return body
-    lead, sections = _split_sections(body)
+    try:
+        lead, sections = _split_sections(body)
+    except ValueError as exc:
+        raise ValueError(
+            f"the [{version}] notes are too long for a release page and cannot be "
+            f"shortened safely ({exc}); shorten that section by hand"
+        ) from exc
     full_notes = CHANGELOG_URL.format(version=version)
     footer = (
         "\n---\n\nThese notes are shortened to fit GitHub's size limit for a "
