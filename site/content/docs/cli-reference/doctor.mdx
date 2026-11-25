@@ -117,7 +117,9 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   file the install did not write, inside the hook script's folder also leaves
   the command unstarted. An update keeps either one, so the fix says to
   remove the entry the line names (for a link, only the link itself; move
-  your own scripts elsewhere), then run doctor again. A project folder the
+  your own scripts elsewhere), then run doctor again. If the link took the
+  place of a folder the install wrote, the next run reports that folder as
+  missing, and running `update` puts it back. A project folder the
   check cannot open gets a line too, and its fix says to give your account
   permission to open it. On Windows, which has no way to open a file while
   refusing a link, the link check is made just before the file is opened. A
