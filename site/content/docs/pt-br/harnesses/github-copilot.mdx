@@ -165,7 +165,7 @@ PowerShell precisa antes de um caminho de programa entre aspas. Um comando `bash
 com o seu interpretador e o caminho do seu projeto no lugar dos dois caminhos:
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
 ```
 
 `--contract copilot` faz o despachante ler a entrada em camelCase do Copilot e imprimir

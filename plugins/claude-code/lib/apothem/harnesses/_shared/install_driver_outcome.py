@@ -18,7 +18,7 @@ from pathlib import Path
 from apothem.lib import install_ledger
 from apothem.lib.install_ledger import LedgerRecord
 
-from .install_driver_blocks import ANOTHER_BLOCK, stray_begin_warnings
+from .install_driver_blocks import ANOTHER_BLOCK, UNCLEAR_BLOCK, stray_begin_warnings
 from .install_driver_digests import backup_ledger_targets
 from .install_driver_pathsafety import _is_link
 from .install_driver_retention import unrecorded_warning
@@ -33,10 +33,12 @@ from .install_driver_types import (
 from .install_driver_written import UNPROVEN_REASONS, kept_file_warnings
 
 #: Kept reasons that leave the uninstall unfinished: the ones ``apothem
-#: update`` settles (:data:`install_driver_written.UNPROVEN_REASONS`), and a
-#: file that holds another block between Apothem's markers (``another-block``),
-#: which the operator deletes by hand before a second uninstall.
-UNFINISHED_REASONS: frozenset[str] = UNPROVEN_REASONS | {ANOTHER_BLOCK}
+#: update`` settles (:data:`install_driver_written.UNPROVEN_REASONS`), a file
+#: that holds another block between Apothem's markers (``another-block``), and
+#: a file whose marker pairs no rule can place (``unclear-block``), one of which
+#: may be Apothem's block. The operator fixes those two by hand before a second
+#: uninstall.
+UNFINISHED_REASONS: frozenset[str] = UNPROVEN_REASONS | {ANOTHER_BLOCK, UNCLEAR_BLOCK}
 
 
 def links_named(results: Iterable[MaterializationResult]) -> set[str]:
@@ -114,8 +116,9 @@ def left_unfinished(results: list[MaterializationResult]) -> bool:
     this release cannot show whether they are Apothem's (an earlier release
     recorded them without digests, or no install record is left; ``apothem
     update`` records them, then a second uninstall finishes), or a file holds
-    another block between Apothem's markers (deleted by hand, then a second
-    uninstall finishes). See :data:`UNFINISHED_REASONS`.
+    another block between Apothem's markers or marker pairs no rule can place
+    (fixed by hand, then a second uninstall finishes). See
+    :data:`UNFINISHED_REASONS`.
     """
     return any(
         result.outcome == "error"

@@ -109,6 +109,11 @@ make test                                                     # exit 0, no failu
 
 ## 5. Uninstall Verification
 
+Run these from `$HOME/.apothem`, the folder section 4 changed into. The
+uninstall removes the `apothem` shim, so the `verify` lines start the engine
+from the kept source with `python3 -m`, which reads modules from the current
+folder first: run them only from that folder or another folder you trust.
+
 ```bash
 # POSIX path — interactive uninstall
 bash scripts/installer/uninstall.sh                           # answers: "y" to confirm

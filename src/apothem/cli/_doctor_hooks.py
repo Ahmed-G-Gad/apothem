@@ -153,6 +153,15 @@ _NOT_STARTED = "so it was not started"
 _UNREAD: Final = object()  # what _ProjectInstall._load returns for an unread file
 
 
+class LedgerOpenError(Exception):
+    """The ledger file exists but the system will not open it.
+
+    Raised by :func:`registered_hooks` for an :class:`OSError` from the ledger
+    read alone, so the caller tells a ledger it cannot open apart from an
+    error while it checks the hook files. The original error is the cause.
+    """
+
+
 def registered_hooks(
     package_key: str, *, root: Path, project: bool = False
 ) -> RegisteredHooks | None:
@@ -171,8 +180,12 @@ def registered_hooks(
 
     Raises:
         install_ledger.LedgerError: The ledger exists but cannot be read.
+        LedgerOpenError: The system will not open the ledger file.
     """
-    record = _install_record(package_key, root)
+    try:
+        record = _install_record(package_key, root)
+    except OSError as exc:
+        raise LedgerOpenError(exc) from exc
     if record is None:
         return None
     keys = _command_keys(package_key)

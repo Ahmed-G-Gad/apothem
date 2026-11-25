@@ -1,0 +1,700 @@
+# SPDX-License-Identifier: MIT
+
+"""Numbered fixes for Apothem marker lines: each step changes one marker line in place.
+
+The warnings for Apothem marker lines that install, update and uninstall cannot
+place (see :mod:`install_driver_blocktext`) give their fixes as numbered steps
+of one kind, ``Change line N: add a word inside its comment.``: the marker line
+stays where it is, with a word added before its ``-->`` (the warning shows
+``<!-- BEGIN APOTHEM MANAGED BLOCK (example) -->`` once, before the first fix),
+so it no longer reads as a marker. It is still an HTML comment on a line of its
+own, so no line moves and a Markdown viewer reads every other line of the file
+as before. One more step closes a code block the file ends in, when a fix
+leaves no block (the next install or update writes one at the end of the file):
+``Below line N, add a line of 3 backticks.`` (``tildes`` for ``~``, with ``,
+indented 2 spaces`` for a code block in a list item; see :func:`render_step`).
+
+Each fix lists its steps under a label such as ``Fix A, if lines 6 to 38 are
+Apothem's block:``, read ``A1.``, ``A2.`` and so on, from the bottom of the
+file up. Every block, marker pair and stray marker starts at a BEGIN marker,
+and an END marker pairs only with the BEGIN marker right above it, so a fix
+changes BEGIN marker lines alone: an END marker with no BEGIN marker above it
+marks nothing, and a quoted one stays the operator's text as it is. A fix that
+keeps a block changes every other BEGIN marker line in the file, a quoted one
+included. It is given only where the layout of the file shows that the block
+then reads whole (see :func:`_keeps`), so no fix needs a reading of the file. A
+fix that keeps no block changes every BEGIN marker line in the file: Apothem
+then reads no block, the next update writes its block at the end of the file,
+and an uninstall finds no block of its own there. Everything here builds text
+and reads no file. It finds the marker lines, and the lines that may start an
+HTML block, by searching the text, not by going over each line, and reads the
+file as Markdown once per warning to find whether it ends in an open code block
+(see :func:`_closing`), and once more up to that code block's opener when a
+line above it may start an HTML block (see :func:`_html_block_above`).
+
+Apothem reads the lines of an HTML block, and a line of a list item's text
+that goes on at the left margin, otherwise than a Markdown viewer does (see
+:func:`apothem.lib.harness_materializer._marker_lines`). Where such a line
+comes above the code block a file ends in, the closing line a fix would add
+can start a code block in a viewer instead, so that fix gives no numbered
+steps: its text says so plainly (see :func:`no_steps_text`).
+"""
+
+from __future__ import annotations
+
+import bisect
+import re
+from collections.abc import Collection, Iterable, Sequence
+from dataclasses import dataclass
+
+from apothem.lib.harness_materializer import (
+    APOTHEM_BLOCK_BEGIN,
+    APOTHEM_BLOCK_END,
+    HTML_BLOCK_TAG,
+    MarkdownKind,
+    MarkdownLines,
+    MarkdownState,
+    MarkerPlace,
+    UncertainPair,
+    numbered_lines,
+    trailing_fence,
+)
+
+#: The word a step adds inside a marker line's comment.
+WORD = "(example)"
+
+#: A BEGIN marker line once a step has changed it.
+_EXAMPLE = APOTHEM_BLOCK_BEGIN.replace(" -->", f" {WORD} -->")
+
+#: The two marker lines.
+_MARKERS = frozenset({APOTHEM_BLOCK_BEGIN, APOTHEM_BLOCK_END})
+
+#: Text every marker line holds; a quick test before the exact one.
+_MARKER_TEXT = "APOTHEM MANAGED BLOCK"
+
+#: A line that may start an HTML block that runs to the next blank line: a
+#: tag after the indent and any list bullets (see ``HTML_BLOCK_TAG`` in
+#: :mod:`apothem.lib.harness_materializer`, of which this is a wider form).
+#: In such a block a changed marker line goes on the block's text, where a
+#: marker line ends a paragraph, so the lines below it can read differently.
+_TAG = re.compile(r"[ \t]*(?:(?:[-+*]|[0-9]{1,9}[.)])[ \t]+)*</?[A-Za-z]")
+
+#: A line that may start an HTML block of any kind but a comment that ends on
+#: its own line, such as ``<!-- note -->`` (a marker line among them): after
+#: the indent and any list bullets or block-quote marks, ``<`` and a letter,
+#: ``/``, ``?`` or ``!``. A Markdown viewer reads the lines of such a block as
+#: its text, where Apothem can read a code fence. Only these lines are read
+#: further (see :func:`_html_block_above`).
+_HTML_START = re.compile(
+    r"^[ \t]*(?:(?:[-+*]|[0-9]{1,9}[.)])[ \t]+|>[ \t]*)*"
+    r"<(?:[A-Za-z/?]|!(?!--.*-->))",
+    re.MULTILINE,
+)
+
+#: The start of a CommonMark HTML block of kinds 1 to 5, such as ``<!--`` or
+#: ``<pre``: these and kind 6, a block-level tag, can end a paragraph.
+_HTML_OPEN = re.compile(
+    r"<!--|<\?|<![A-Za-z]|<!\[CDATA\["
+    r"|(?i:<(?:pre|script|style|textarea)(?:[ \t>]|\Z))"
+)
+
+#: A line that starts with an autolink (CommonMark: a scheme and URI, or an
+#: email address, in ``<>``) after at most 3 spaces and holds no other ``<``.
+_AUTOLINK_LINE = re.compile(
+    r" {0,3}<(?:[A-Za-z][A-Za-z0-9+.-]{1,31}:[^\x00-\x20<>]*"
+    r"|[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}"
+    r"[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*)>[^<]*\Z"
+)
+
+#: A line of plain paragraph text: at most 3 spaces, then no list bullet, ``>``,
+#: heading, break, fence, underline, HTML, link label or ``|`` (a table cell).
+_PLAIN_TEXT = re.compile(r" {0,3}(?!\d{1,9}[.)](?:[ \t]|\Z))[^-\s+*>#`~<=_\[|][^|]*\Z")
+
+#: A line that may start a link reference definition or be a table row: ``[``
+#: after the indent, list bullets and ``>`` marks, or a ``|`` anywhere.
+_LABEL = re.compile(r"[ \t>]*(?:(?:[-+*]|[0-9]{1,9}[.)])[ \t][ \t>]*)*\[|.*\|")
+
+#: A line's list bullets after the indent, each with the gap after it: the
+#: text of the innermost item starts at the column where the match ends.
+_ITEM = re.compile(r"[ \t]*(?:(?:[-+*]|[0-9]{1,9}[.)])(?:[ \t]+|\Z))+")
+
+#: Columns of indentation that make a line indented code.
+_CODE_INDENT = 4
+
+#: What every list of numbered fixes says before its first fix.
+INTRO = (
+    "Each fix below lists its steps from the bottom of the file up. To change "
+    f"a marker line, add a word inside its comment, as in {_EXAMPLE}: the line "
+    "then no longer reads as a marker, and no other line moves or reads "
+    "differently."
+)
+
+#: The label of a fix that keeps no block, after fixes that keep one.
+OTHER_CASE = "in any other case"
+
+
+@dataclass(frozen=True)
+class Step:
+    """One numbered step, with the 1-based line it names.
+
+    With no ``fence``, the step changes line ``line``; with one, it adds that
+    closing fence line below line ``line``, the last line of the file.
+    """
+
+    line: int
+    fence: str = ""
+
+
+@dataclass(frozen=True)
+class Fix:
+    """One fix: the case it is for, its steps from the bottom up, and its result.
+
+    ``label`` names the case (``if lines 6 to 38 are Apothem's block``), or is
+    ``None`` for a fix that holds whichever lines are Apothem's. ``keeps`` is
+    True when the file then holds ``block`` (its 1-based first and last line)
+    as its one whole block, False when it then holds no block. ``opener`` is
+    set, and ``steps`` empty, for a fix that gives no numbered steps: the
+    1-based line that opens the code block the file ends in, whose closing
+    line a Markdown viewer may not read as one (see :func:`_none`).
+    """
+
+    label: str | None
+    steps: tuple[Step, ...]
+    keeps: bool
+    block: tuple[int, int] | None = None
+    opener: int | None = None
+
+
+def split_lines(text: str) -> list[str]:
+    """Return the lines of *text* as Apothem numbers them.
+
+    They split at CRLF, LF and a lone CR, and a byte order mark at offset 0 is
+    no part of the first line, as in
+    :func:`apothem.lib.harness_materializer.whole_blocks`.
+    """
+    return numbered_lines(text)
+
+
+def changed(line: str) -> str:
+    """Return the marker line *line* with :data:`WORD` added inside its comment."""
+    cut = line.rfind("-->")
+    return f"{line[:cut].rstrip()} {WORD} {line[cut:]}"
+
+
+def render_step(step: Step) -> str:
+    """Return the sentence for *step* (see the formats in this module's text)."""
+    if not step.fence:
+        return f"Change line {step.line}: add a word inside its comment."
+    return f"Below line {step.line}, add {_closing_line(step.fence)}."
+
+
+def _closing_line(fence: str) -> str:
+    """Return the closing line *fence* in words: ``a line of 3 backticks``, say."""
+    run = fence.lstrip(" ")
+    kind = "backticks" if run[0] == "`" else "tildes"
+    indent = len(fence) - len(run)
+    spaces = "" if not indent else f", indented {indent} space{'s' * (indent > 1)}"
+    return f"a line of {len(run)} {kind}{spaces}"
+
+
+def no_steps_text(opener: int, steps: str = "numbered steps for this fix") -> str:
+    """Return what a fix with no numbered steps says (see :attr:`Fix.opener`).
+
+    *opener* is the 1-based line that opens the code block the file ends in,
+    as Apothem reads it; *steps* names what Apothem cannot give.
+    """
+    return (
+        f"Apothem cannot give {steps}. It reads the file as "
+        f"ending inside a code block that opens at line {opener}, so the fix "
+        "would add that code block's closing line below the last line, but a "
+        f"line above line {opener} may start an HTML block or go on a list "
+        "item's text, where a Markdown viewer can read the lines differently and "
+        "take the added line for the start of a code block. Edit the file by "
+        f"hand so that line {opener} opens no code block, or so that the code "
+        "block is closed where your viewer shows it ends; a warning for this "
+        "file then gives numbered steps."
+    )
+
+
+def closing_clause(step: Step) -> str:
+    """Return the closing-line *step* as a clause for a sentence of steps.
+
+    ``add a line of 4 backticks below line 6``, say (see :func:`render_step`).
+    """
+    return f"add {_closing_line(step.fence)} below line {step.line}"
+
+
+class _Layout:
+    """What a fix needs to know about the lines of a file, found by searching it.
+
+    ``lines`` are its lines (see :func:`split_lines`), and ``text`` the same
+    lines each ended by ``\\n``, as one text. ``markers`` are the 1-based lines
+    that hold only a marker (whitespace aside, as
+    :func:`apothem.lib.harness_materializer.whole_blocks` reads them), in code
+    or not, and ``begins`` those of them that hold the BEGIN marker;
+    ``starts`` maps each of them to where it starts in ``text``.
+    ``first_tag`` is the 0-based first line that may start an HTML block (see
+    :data:`_TAG`), or ``None``.
+    """
+
+    def __init__(self, text: str) -> None:
+        self.lines = split_lines(text)
+        self.text = "\n".join(self.lines) + "\n"
+        self.starts: dict[int, int] = {}
+        line, prev, pos = 1, 0, self.text.find(_MARKER_TEXT)
+        while pos >= 0:
+            line += self.text.count("\n", prev, pos)
+            prev = pos
+            if line not in self.starts and self.lines[line - 1].strip() in _MARKERS:
+                self.starts[line] = self.text.rfind("\n", 0, pos) + 1
+            pos = self.text.find(_MARKER_TEXT, pos + len(_MARKER_TEXT))
+        self.markers = list(self.starts)
+        self.begins = [
+            number
+            for number in self.markers
+            if self.lines[number - 1].strip() == APOTHEM_BLOCK_BEGIN
+        ]
+        self.first_tag = self._first(_TAG)
+        self._as_is: tuple[int, str] | bool | None = False
+
+    def _first(self, pattern: re.Pattern[str]) -> int | None:
+        """Return the 0-based first line *pattern* matches at its start, or ``None``.
+
+        *pattern* starts its match at ``<`` after the indent and any list
+        bullets, so only the lines that hold a ``<`` are tried.
+        """
+        text = self.text
+        pos = text.find("<")
+        while pos >= 0:
+            start = text.rfind("\n", 0, pos) + 1
+            end = text.find("\n", pos)
+            if pattern.match(text, start, end):
+                return text.count("\n", 0, start)
+            pos = text.find("<", end)
+        return None
+
+    def runs_between(self, first: int, last: int) -> bool:
+        """Return True when a line from marker line *first* up to marker line *last* holds a run.
+
+        A run of three backticks or tildes; *first* and *last* are 1-based
+        marker lines, and line *last* is not read.
+        """
+        part = self.text[self.starts[first] : self.starts[last]]
+        return "```" in part or "~~~" in part
+
+    def changed_text(self, changes: Collection[int]) -> str:
+        """Return :attr:`text` with each marker line of *changes* changed (see :func:`changed`)."""
+        parts, prev = [], 0
+        for number in sorted(changes):
+            start = self.starts[number]
+            parts += [self.text[prev:start], changed(self.lines[number - 1])]
+            prev = start + len(self.lines[number - 1])
+        parts.append(self.text[prev:])
+        return "".join(parts)
+
+    def trailing(self, changes: Iterable[int]) -> tuple[int, str] | None:
+        """Return where the code block the file ends in opens once *changes* change.
+
+        *changes* are the BEGIN marker lines a fix changes. The 1-based line of the
+        opener of the fenced code block the file then ends in, as CommonMark
+        reads it, and the line that closes it (see :func:`_closing`); ``None``
+        when it ends in none. A changed line reads as the marker did, unless a
+        line above it may start an HTML block, so the reading of the file as
+        it is serves every fix but such a one.
+        """
+        numbers = set(changes)
+        if self.first_tag is not None and any(n > self.first_tag for n in numbers):
+            return _trailing(self, numbers)
+        if self._as_is is False:
+            self._as_is = _trailing(self, ())
+        return None if isinstance(self._as_is, bool) else self._as_is
+
+
+def _columns(line: str) -> int:
+    """Return the columns of *line*'s indent; a tab reaches the next multiple of 4."""
+    indent = line[: len(line) - len(line.lstrip(" \t"))]
+    return len(indent.expandtabs(_CODE_INDENT))
+
+
+def _change(numbers: Iterable[int]) -> tuple[Step, ...]:
+    """Return a step that changes each line of *numbers*, from the bottom up."""
+    return tuple(Step(number) for number in sorted(set(numbers), reverse=True))
+
+
+def _every(layout: _Layout, keep: tuple[int, int] | None = None) -> tuple[Step, ...]:
+    """Return a step for each BEGIN marker line of *layout* but that of *keep*.
+
+    With no BEGIN marker left but the one of the block *keep*, no other two
+    marker lines make a block, a pair or a stray BEGIN marker; an END marker
+    alone marks nothing.
+    """
+    first = keep[0] if keep is not None else 0
+    return _change(n for n in layout.begins if n != first)
+
+
+def _keeps(layout: _Layout, block: tuple[int, int], *, first: bool) -> bool:
+    """Return True when *block* is the one whole block once every other BEGIN marker changes.
+
+    *block* is a marker pair whose BEGIN marker reads outside code; *first*
+    says no whole block comes before it (Apothem's first whole block, or a
+    pair in a file with no whole block). A changed marker line still ends a
+    paragraph as the marker did, so the lines above the first changed line
+    read as before, and the lines between two marker lines that were a block
+    are read once those lines change. Above *block*, with no whole block
+    there, only the BEGIN marker of the pair rule 3 fired on reads
+    differently once changed: after it, Apothem reads every fence opener as
+    one, where it now reads one that no later line closes as text; with no
+    code block of the file left open to its end above *block* (see
+    :func:`_open_above`), every opener above it is closed by a later line,
+    so the two readings are one. Either of two layouts shows that the BEGIN
+    marker of *block* still reads outside code, and with no other BEGIN
+    marker left, its END marker, the next marker line, ends the one block:
+
+    - *first*, and no line above the last changed line above *block* may
+      start an HTML block (where a changed line would go on that block's
+      text and a marker line would not): every line above *block* then reads
+      as before.
+    - No line from the first changed line down to the BEGIN marker holds a
+      run of backticks or tildes, so no code block opens there, and the BEGIN
+      marker is indented less than four columns, so it is no indented code.
+
+    A block in a code block no line closes keeps no fix (see
+    :func:`_open_above`).
+    """
+    if _open_above(layout, block, _every(layout, block)):
+        return False
+    above = layout.begins[: bisect.bisect_left(layout.begins, block[0])]
+    if not above:
+        return True
+    if first and (layout.first_tag is None or layout.first_tag >= above[-1]):
+        return True
+    begin = block[0] - 1
+    if _columns(layout.lines[begin]) >= _CODE_INDENT:
+        return False
+    return not layout.runs_between(above[0], block[0])
+
+
+def _trailing(layout: _Layout, changes: Collection[int]) -> tuple[int, str] | None:
+    """Return where the code block the file ends in opens once *changes* change.
+
+    See :meth:`_Layout.trailing`: the file, its BEGIN marker lines *changes*
+    changed, is read as Markdown once.
+    """
+    if "```" not in layout.text and "~~~" not in layout.text:
+        return None
+    text = layout.changed_text(changes) if changes else layout.text
+    return trailing_fence(text)
+
+
+def _closing(layout: _Layout, steps: Sequence[Step]) -> tuple[int, Step] | None:
+    """Return the step that closes the code block the file ends in after *steps*, if any.
+
+    An install or update adds Apothem's block at the end of a file that holds
+    none; a code block in its rules would otherwise close the operator's, and
+    a Markdown viewer would read Apothem's block as code. The step adds the
+    closing line below the last line: the fence's character, as many as its
+    opener, at the content column of the list item it sits in (see
+    :func:`apothem.lib.harness_materializer.trailing_fence`). It comes with
+    the 1-based line of the code block's opener. ``None`` when the file ends
+    in no fenced code block.
+    """
+    found = layout.trailing(step.line for step in steps)
+    if found is None:
+        return None
+    return found[0], Step(len(layout.lines), found[1])
+
+
+def _viewer_may_differ(layout: _Layout, opener: int) -> bool:
+    """Return True when a Markdown viewer may read line *opener* otherwise than Apothem.
+
+    *opener* is the 1-based line that opens the code block the file ends in,
+    as Apothem reads it. Apothem reads every line as a viewer does but the
+    lines of an HTML block, and a line of a list item's text that goes on at
+    the left margin, which ends that item for Apothem but not for a viewer
+    (see :func:`apothem.lib.harness_materializer._marker_lines`). So a viewer
+    may read the code block otherwise when a line above *opener* may start an
+    HTML block (see :func:`_html_block_above`), or when a list item's text goes
+    on at the left margin above it and an indented line follows while a
+    viewer may still hold that item open (see :func:`_lazy_item_above`): the
+    closing line a fix adds can then start a code block in a viewer. Either
+    can hold for a file that Apothem and a viewer read alike, too; the fix
+    gives no numbered steps for it all the same.
+    """
+    above = layout.lines[: opener - 1]
+    start = sum(len(line) + 1 for line in above)
+    if _html_block_above(layout.text[:start]):
+        return True
+    return _lazy_item_above(layout.lines[:opener])
+
+
+def _html_block_above(text: str) -> bool:
+    """Return True when a line of *text* may start an HTML block in a Markdown viewer.
+
+    *text* is the lines above the opener of the code block the file ends in,
+    each ended by a line break. Each line :data:`_HTML_START` finds counts
+    unless it plainly starts none: a line in a fenced or indented code block
+    (Apothem reads which lines are code as a viewer does, up to the first
+    HTML block), one that starts with an autolink such as
+    ``<https://example.com>`` (see :data:`_AUTOLINK_LINE`), or one that goes
+    on a paragraph (see :func:`_goes_on_text`) in which no line since the
+    last blank one may start a link reference definition or be a table row
+    (see :data:`_LABEL`): the address and title lines of a definition look
+    like plain text but are none. Any other counts: the check errs wide.
+    The lines between are read as :func:`trailing_fence` reads them.
+    """
+    found = _HTML_START.search(text)
+    if found is None:
+        return False
+    lines = MarkdownLines(text)
+    texts = lines.texts
+    state = MarkdownState(lines, None)
+    index, pos, label = 0, 0, False
+    while found is not None:
+        start = found.start()
+        line = index + text.count("\n", pos, start)
+        state.advance(index, pos, line, start)
+        for row in texts[index:line]:
+            label = bool(row.strip()) and (label or _LABEL.match(row) is not None)
+        on_text = line > 0 and not label
+        on_text = on_text and _goes_on_text(state, texts[line - 1], texts[line])
+        code = state.step(line) is MarkdownKind.CODE
+        if not (code or on_text or _AUTOLINK_LINE.match(texts[line])):
+            return True
+        index, pos = line + 1, text.find("\n", start) + 1
+        found = _HTML_START.search(text, pos)
+    return False
+
+
+def _goes_on_text(state: MarkdownState, above: str, line: str) -> bool:
+    """Return True when *line* plainly goes on the paragraph *above* is in.
+
+    *state* is read up to *above*, a line of plain text in a paragraph outside
+    any list item and block quote (see :data:`_PLAIN_TEXT`). After its indent
+    *line* starts with a tag, not a list bullet or ``>``, of none of the
+    CommonMark HTML block kinds 1 to 6, which alone can end a paragraph (see
+    :data:`_HTML_OPEN` and the materializer's ``HTML_BLOCK_TAG``).
+    """
+    tag = line.lstrip(" \t")
+    return (
+        not (state.can_interrupt or state.items or state.para_column)
+        and not (state.fence or state.raw_html)
+        and _PLAIN_TEXT.match(above) is not None
+        and tag.startswith("<")
+        and not (_HTML_OPEN.match(tag) or HTML_BLOCK_TAG.match(tag))
+    )
+
+
+def _lazy_item_above(lines: Sequence[str]) -> bool:
+    """Return True when a viewer may keep a list item open over an indented line of *lines*.
+
+    A line that is not blank, starts no list item and sits left of the text
+    of a list item above it, with no blank line between them, may go on
+    that item's text at the left margin: Apothem then ends the item, while a
+    viewer keeps it open. An indented line after it, the last of *lines*
+    included, can then sit in that item for a viewer and outside it for
+    Apothem, so a code fence it opens or closes can pair otherwise, as can
+    every fence line below it. Lines at the left margin up to there read
+    alike: each goes on the item's text, or ends the item for a viewer as
+    for Apothem. The item ends for both at a line at the left margin after a
+    blank line, or at a list item there, so an indented line only after
+    that reads alike, too.
+    """
+    # The text column of the innermost list item a line may sit in; whether a
+    # line went on an item's text at the left margin, the item maybe still open
+    # for a viewer; and whether a blank line came just before.
+    column: int | None = None
+    lazy = blank = False
+    for line in lines:
+        if not line.strip():
+            blank = True
+            continue
+        columns = _columns(line)
+        if lazy and columns:
+            return True
+        item = _ITEM.match(line)
+        if item is not None:
+            lazy = False
+            column = len(item.group().expandtabs(_CODE_INDENT))
+        elif lazy or (column is not None and columns < column):
+            lazy = not blank
+            column = None
+        blank = False
+    return False
+
+
+def _open_above(layout: _Layout, block: tuple[int, int], steps: Sequence[Step]) -> bool:
+    """Return True when a code block that opens above *block* runs to the end of the file.
+
+    A Markdown viewer reads *block* as code then, while Apothem reads that
+    code block's opening line as text, since no line closes it; a code block
+    in the rules the next update writes into *block* would close it, and the
+    BEGIN marker would read as code. No fix keeps such a block: the fix that
+    changes every BEGIN marker line closes that code block below the last
+    line (see :func:`_closing`).
+    """
+    found = layout.trailing(step.line for step in steps)
+    return found is not None and found[0] < block[0]
+
+
+def _none(layout: _Layout, label: str | None) -> Fix:
+    """Return the fix that changes every BEGIN marker line of *layout*: no block is left.
+
+    The fix first closes the code block the file ends in, if it ends in one
+    (see :func:`_closing`): an install or update writes Apothem's block at
+    the end of a file that holds none, whether it runs next or after an
+    uninstall. Where a Markdown viewer may read that code block otherwise
+    (see :func:`_viewer_may_differ`), the closing line may start a code block
+    instead, so the fix gives no numbered steps (see :attr:`Fix.opener`).
+    """
+    steps = _every(layout)
+    tail = _closing(layout, steps)
+    if tail is None:
+        return Fix(label, steps, keeps=False)
+    opener, close = tail
+    if _viewer_may_differ(layout, opener):
+        return Fix(label, (), keeps=False, opener=opener)
+    return Fix(label, (close, *steps), keeps=False)
+
+
+def _label(block: tuple[int, int]) -> str:
+    """Return the label of a fix that keeps *block*."""
+    return f"if lines {block[0]} to {block[1]} are Apothem's block"
+
+
+def _kept(layout: _Layout, block: tuple[int, int]) -> Fix:
+    """Return the fix that keeps *block* and changes every other BEGIN marker line."""
+    return Fix(_label(block), _every(layout, block), keeps=True, block=block)
+
+
+def unclear_fixes(text: str, pairs: Sequence[UncertainPair]) -> list[Fix]:
+    """Return the fixes for *text*, whose marker pairs no rule can place.
+
+    One fix for each pair whose two marker lines read outside code (a pair
+    after the one rule 3 fired on), for the case that it is Apothem's block:
+    every other BEGIN marker line changes, the pair then reads as the one
+    whole block, and the next update replaces it. It is given only where the
+    layout shows that (see :func:`_keeps`). The pair rule 3 fired on gets no
+    such fix: its END marker reads as code, as an older block whose rule left
+    a code block open reads, and a line of the operator's below it closes
+    that code block; once the next update replaced the block, that line
+    would open a code block instead. Then one fix for every other case,
+    which changes every BEGIN marker line (see :func:`_none`).
+    """
+    layout = _Layout(text)
+    fixes = [
+        _kept(layout, (pair.begin.line, pair.end.line))
+        for pair in pairs
+        if pair.begin.place is pair.end.place is MarkerPlace.OUTSIDE
+        and _keeps(layout, (pair.begin.line, pair.end.line), first=True)
+    ]
+    fixes.append(_none(layout, OTHER_CASE if fixes else None))
+    return fixes
+
+
+def block_fixes(
+    text: str,
+    blocks: Sequence[tuple[int, int]],
+    *,
+    revealed: bool = False,
+) -> list[Fix]:
+    """Return the fixes for *text*, which holds two or more whole *blocks*.
+
+    One fix for each block, for the case that it is Apothem's: the BEGIN
+    marker line of every other block changes, and every other BEGIN marker
+    line too. With *revealed* (*blocks* holds the one block, and a BEGIN
+    marker above it and an END marker below it make a second block once it
+    is out), the one fix changes that BEGIN marker line and every other. A
+    fix is given only where the layout shows its block then reads whole (see
+    :func:`_keeps`); when a block gets none, one more fix changes every BEGIN
+    marker line (see :func:`_none`).
+    """
+    layout = _Layout(text)
+    cases = list(blocks[:1] if revealed else blocks)
+    fixes = [
+        _kept(layout, block)
+        for index, block in enumerate(cases)
+        if _keeps(layout, block, first=index == 0)
+    ]
+    if len(fixes) < len(cases):
+        fixes.append(_none(layout, OTHER_CASE if fixes else None))
+    return fixes
+
+
+def stray_fixes(
+    text: str, strays: Sequence[int], blocks: Sequence[tuple[int, int]]
+) -> list[Fix]:
+    """Return the fix for the BEGIN markers on lines *strays*, which start no whole block.
+
+    *blocks* are the whole blocks of *text*. With one whole block, the fix
+    keeps it and changes every other BEGIN marker line, where the layout
+    shows the block then reads whole (see :func:`_keeps`); otherwise it
+    changes every BEGIN marker line (see :func:`_none`). Either way no BEGIN
+    marker line is left but the kept block's: changing the stray lines alone
+    would leave a BEGIN marker quoted in code, which can pair with an END
+    marker once the uninstall takes the block out and the lines around it
+    join, or which an install record keeps as a pair no rule can place. The
+    old text below such a marker stays: no step names it. Empty when *text*
+    holds no such marker, or two or more whole blocks (see
+    :func:`block_fixes`).
+    """
+    if not strays or len(blocks) > 1:
+        return []
+    layout = _Layout(text)
+    if blocks and _keeps(layout, blocks[0], first=True):
+        return [_kept(layout, blocks[0])]
+    return [_none(layout, None)]
+
+
+def stray_fix(
+    text: str, strays: Sequence[int], blocks: Sequence[tuple[int, int]]
+) -> Fix:
+    """Return the one fix for *text*, whose BEGIN markers on lines *strays* start no block.
+
+    The fix :func:`stray_fixes` gives, or, for a file with two or more whole
+    *blocks*, the fix that changes every BEGIN marker line (see :func:`_none`).
+    For a text that names its steps in a sentence, such as OpenClaw's size
+    refusal, which gives one fix.
+    """
+    found = stray_fixes(text, strays, blocks)
+    return found[0] if found else _none(_Layout(text), None)
+
+
+def unlisted_fixes(text: str) -> list[Fix]:
+    """Return the fix for the one whole block an uninstall with no record leaves.
+
+    It changes every BEGIN marker line, the block's included, so no block is
+    left (see :func:`_none`): the operator deletes the old text by hand.
+    """
+    return [_none(_Layout(text), None)]
+
+
+def _letter(index: int) -> str:
+    """Return the letter of fix number *index* (0-based): A, B, ... Z, then AA."""
+    letters = ""
+    index += 1
+    while index:
+        index, rest = divmod(index - 1, 26)
+        letters = chr(ord("A") + rest) + letters
+    return letters
+
+
+def render_fixes(fixes: Sequence[Fix], promises: Sequence[str]) -> str:
+    """Return :data:`INTRO`, then *fixes*, numbered, each ended by its promise.
+
+    *promises* holds one sentence per fix, what the next run then does. A fix
+    with no numbered steps says so instead (see :func:`no_steps_text`); with
+    no fix that has steps, the text leaves :data:`INTRO` out.
+    """
+    parts = [INTRO] if any(fix.opener is None for fix in fixes) else []
+    for index, (fix, promise) in enumerate(zip(fixes, promises, strict=True)):
+        letter = _letter(index)
+        head = f"Fix {letter}:" if fix.label is None else f"Fix {letter}, {fix.label}:"
+        if fix.opener is not None:
+            parts.append(f"{head} {no_steps_text(fix.opener)}")
+            continue
+        steps = " ".join(
+            f"{letter}{number}. {render_step(step)}"
+            for number, step in enumerate(fix.steps, 1)
+        )
+        parts.append(f"{head} {steps} {promise}.")
+    return " ".join(parts)

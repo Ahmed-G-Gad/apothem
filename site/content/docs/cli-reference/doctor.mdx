@@ -23,10 +23,43 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
 - **Installed harnesses only.** A harness that is not installed is reported as
   `not_installed` and is not a failure, so a machine with one healthy harness
   passes. Project-scope harnesses are checked when `--project` names their root;
-  without it they are reported as `needs_project`.
+  without it they are reported as `needs_project`. A file with marker lines
+  Apothem cannot tell from your text counts as an install while the install
+  ledger cannot be read, so such a harness is checked rather than reported
+  as `not_installed`. Doctor names a ledger it cannot read in a
+  `ledger.unreadable` check where it reads that ledger to start the
+  harness's hooks (see **Hook runtime** below): for a harness that verifies,
+  and for one whose failed check names files with Apothem markers
+  (`harness.stray_begin`). Its fix says to move a damaged ledger aside and
+  run `update`, or, for a ledger doctor cannot open (another program holds
+  it open, say), to make that file readable. A harness whose verify fails
+  for another reason gets the `harness.verify_failed` check and no hook
+  check, so no `ledger.unreadable` check either.
 - **Verify.** Each installed harness must pass the same check as
-  [`verify`](/docs/cli-reference/verify).
-- **Hook runtime.** For each verified harness, doctor reads the files that the
+  [`verify`](/docs/cli-reference/verify). When a file holds an Apothem BEGIN
+  marker with no END marker, the failed check is `harness.stray_begin`, and its
+  fix names each such file and the marker's line, gives numbered steps that
+  change that line and every other BEGIN marker line but the one that opens
+  Apothem's block (a word added inside each comment), and says not to add
+  the END marker back instead, which would leave two Apothem blocks once an
+  install or update has written Apothem's block apart from it: an update
+  alone does not clear it
+  (see
+  [Troubleshooting](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
+  A file that holds two or more whole blocks between Apothem's markers, or
+  whose marker pairs Apothem cannot tell from your text, such as its block
+  inside a code block of yours, fails the same check: its message says the
+  file holds "Apothem markers to fix by hand", and its fix names each block
+  by its lines (see
+  [A file holds two blocks between Apothem's markers](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)),
+  or each marker pair, where its lines read and how to fix it, along with each
+  BEGIN marker that starts no marker pair (see
+  [Apothem cannot tell its block from your text](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+  For an OpenClaw rules file the fix says, as the verify note does, that the
+  next update writes Apothem's block if the file then fits OpenClaw's
+  per-file limit, which old Apothem text you keep counts against.
+- **Hook runtime.** For each verified harness, and for each one that such a
+  marker fails, doctor reads the files that the
   install it checks wrote: the install in the harness's own folder (a
   `CODEX_HOME` set where doctor runs is that folder), or, for a project-scope
   harness, in the `--project` folder. An install in another folder, such as a
@@ -147,8 +180,8 @@ and `profile_error` when the profile is invalid) and adds:
   (`{"probed": N, "failed": [...]}`, or `null` when the checked folder has no
   install record or the install ledger cannot be read).
 - `checks` — one record per check: `code` (for example `harness.verify_failed`,
-  `hook.start_failed`, `hook.unchecked`, `ledger.unreadable`, or a `profile.*`
-  code), `status`
+  `harness.stray_begin`, `hook.start_failed`, `hook.unchecked`,
+  `ledger.unreadable`, or a `profile.*` code), `status`
   (`pass`, `fail`, or `info`), `harness`, `message`, and `fix`.
 
 ```json
@@ -196,7 +229,7 @@ suitable for piping into other tooling.
 | Code | Meaning |
 |---|---|
 | 0 | All checks passed (also when no harness is installed yet) |
-| 1 | An installed harness does not verify, a registered hook command cannot start, an adapter could not be loaded or probed, or a present profile failed schema validation |
+| 1 | An installed harness does not verify, a registered hook command cannot start, an install ledger cannot be read, an adapter could not be loaded or probed, or a present profile failed schema validation |
 | 64 | Usage error: an unknown option or command, or a missing or invalid option value. Under `--json` the error is a JSON envelope with code `cli.usage`. |
 
 ## See also

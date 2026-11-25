@@ -101,7 +101,7 @@ accounts itself; they travel the way your project's files already travel
 ## Does Apothem need pip?
 
 No — not for the engine itself. The engine is a self-contained source tree
-with vendored dependencies — it runs as `python -m apothem` from any
+with vendored dependencies — it runs from any
 checkout, the npx cache, or the plugin tree on system Python 3.10+, and
 installs none of its own code into `site-packages` (`click` and `rich` are
 the only interpreter prerequisites). The one optional exception: if `click`

@@ -70,7 +70,7 @@ en `hooks/emit_hook_context.py` y `hooks/session_start_bootstrap.py`.
 
 Un entorno que no es Claude Code ejecuta el mismo despachador con
 `--contract <id>` después del script, por ejemplo
-`"<python>" "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`.
+`"<python>" -E -s "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`.
 El contrato (`hooks/lib/vendor_contract.py`) traduce las grafías de eventos y de
 nombres de herramientas del proveedor y las claves de su carga útil a la forma de
 Claude que leen los manejadores, reescribe el sobre en la forma que lee el

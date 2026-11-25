@@ -371,6 +371,63 @@ def test_an_unreadable_ledger_fix_ends_with_the_update_command(
     )
 
 
+def test_a_ledger_the_system_will_not_open_is_named_as_the_ledger(
+    runner: CliRunner, home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An OSError from the ledger read alone gives ``ledger.unreadable``."""
+    from apothem.cli import _doctor_hooks
+
+    project = tmp_path / "proj"
+    project.mkdir()
+    result = runner.invoke(
+        main, ["install", "--harness", "cursor", "--project", str(project), "--yes"]
+    )
+    assert result.exit_code == 0, result.output
+
+    def locked(*args: object, **kwargs: object) -> None:
+        raise PermissionError(13, "Permission denied", "ledger.jsonl")
+
+    monkeypatch.setattr(_doctor_hooks, "_install_record", locked)
+    result = runner.invoke(main, ["doctor", "--json", "--project", str(project)])
+
+    payload = json.loads(result.stdout)
+    failed = [c for c in payload["checks"] if c["code"] == "ledger.unreadable"]
+    assert [c["harness"] for c in failed] == ["cursor"]
+    assert "Permission denied" in failed[0]["message"]
+    assert failed[0]["fix"].startswith("Make ")
+
+
+def test_an_error_while_checking_hook_files_is_not_blamed_on_the_ledger(
+    runner: CliRunner, home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An OSError after the ledger is read leaves the hooks unchecked."""
+    from apothem.cli import _doctor_hooks
+
+    project = tmp_path / "proj"
+    project.mkdir()
+    result = runner.invoke(
+        main, ["install", "--harness", "cursor", "--project", str(project), "--yes"]
+    )
+    assert result.exit_code == 0, result.output
+
+    def unreadable(*args: object, **kwargs: object) -> None:
+        raise PermissionError(13, "Permission denied", "hooks.json")
+
+    monkeypatch.setattr(_doctor_hooks._ProjectInstall, "read_file", unreadable)
+    result = runner.invoke(main, ["doctor", "--json", "--project", str(project)])
+
+    payload = json.loads(result.stdout)
+    codes = [c["code"] for c in payload["checks"] if c.get("harness") == "cursor"]
+    assert "ledger.unreadable" not in codes
+    [note] = [
+        c
+        for c in payload["checks"]
+        if c["code"] == "hook.unchecked" and c.get("harness") == "cursor"
+    ]
+    assert "a hook file could not be read" in note["message"]
+    assert "ledger" not in note["fix"]
+
+
 def test_doctor_names_the_project_in_a_project_harness_fix(
     runner: CliRunner, home: Path, tmp_path: Path
 ) -> None:
@@ -1903,7 +1960,10 @@ def test_doctor_starts_the_hooks_of_a_claude_code_install(
     hooks = _doctor_hooks.registered_hooks("claude_code", root=home / ".claude")
     assert hooks is not None
     assert hooks.argvs
-    assert any(Path(argv[1]).name == "dispatch.py" for argv in hooks.argvs)
+    # The interpreter may take options (``-E -s``) before the script.
+    assert any(
+        any(Path(arg).name == "dispatch.py" for arg in argv[1:]) for argv in hooks.argvs
+    )
 
 
 def _pad_past_the_cap(path: Path) -> None:
