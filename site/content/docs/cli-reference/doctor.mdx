@@ -103,12 +103,21 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   In a project, the check reads no hook file it reaches through a link, such
   as a settings folder replaced by a link to a folder outside the project.
   Each such file gets a `hook.unchecked` line, whether it holds only hooks or
-  is a settings file the hooks are merged into. The line names the file, and
-  the link may be the file or one of its folders. The fix says to check where
-  the link leads: remove a link you did not make and run update, or replace
-  the link with the real folder or file and check the hook commands in it. A
-  hook command whose hook script is reached through a link is not started,
-  and its line names the script, with the same fix. A project folder the
+  is a settings file the hooks are merged into. The line names the file and
+  the link, which may be the file itself or one of its folders. The fix says
+  to check where the link leads: replace a link you made with a real copy of
+  the folder or file it leads to and check the hook commands in it, or remove
+  a link you did not make and run the `update` command the fix ends with.
+  Either way, only the link itself is removed, not the folder or file it leads
+  to. A hook command whose hook script is reached through a link is not
+  started; its line names the script and the link, which may be the script
+  itself or one of its folders, and its fix is the same except that there are
+  no hook commands to check. A hook script the install recorded outside the
+  project is not started either, and its line says so. A link, or a Python
+  file the install did not write, inside the hook script's folder also leaves
+  the command unstarted. An update keeps either one, so the fix says to
+  remove the entry the line names (for a link, only the link itself; move
+  your own scripts elsewhere), then run doctor again. A project folder the
   check cannot open gets a line too, and its fix says to give your account
   permission to open it. On Windows, which has no way to open a file while
   refusing a link, the link check is made just before the file is opened. A

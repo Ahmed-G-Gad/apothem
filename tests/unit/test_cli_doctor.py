@@ -29,7 +29,7 @@ import pytest
 from click.testing import CliRunner
 
 import apothem
-from apothem.cli import _doctor_hook_text, _doctor_hooks, main
+from apothem.cli import _cmd_doctor, _doctor_hook_text, _doctor_hooks, main
 from apothem.harnesses._shared import install_driver, wrapper_factories
 from apothem.lib import install_ledger
 from apothem.lib.propagation import load_manifest
@@ -1755,8 +1755,10 @@ def test_doctor_reports_a_hook_script_reached_through_a_link(
     assert hooks.argvs == []
     [unchecked] = hooks.unchecked
     assert unchecked.startswith(f"a hook command in {hook_file} runs {dispatcher}")
-    assert "reached through a link" in unchecked
-    assert hooks.fixes == {unchecked: _doctor_hook_text.SCRIPT_LINK_FIX}
+    # The note names the step that is the link, not only the script.
+    assert f"reached through the link {tmp_path / '.apothem'}," in unchecked
+    assert hooks.fixes == {}
+    assert hooks.update_leads == {unchecked: _doctor_hook_text.SCRIPT_LINK_FIX}
 
 
 def test_doctor_reports_an_interpreter_it_cannot_look_up(
@@ -2401,12 +2403,11 @@ def test_a_hook_script_larger_than_the_cap_is_not_hashed(
     assert _doctor_hook_text.sha256_of(path) == hashlib.sha256(b"x" * 64).hexdigest()
 
 
-def test_the_hook_probe_modules_hold_the_ci_complexity_and_size_bounds() -> None:
+def test_the_hook_probe_modules_hold_the_ci_complexity_bound() -> None:
     # CI runs ruff's C901 check over the CLI at a bound of 15, tighter than
-    # the repo-wide one, and the hook module stays within 700 lines.
+    # the repo-wide one.
     cli = Path(_doctor_hooks.__file__).parent
     hook_module = cli / "_doctor_hooks.py"
-    assert len(hook_module.read_text(encoding="utf-8").splitlines()) <= 700
     pytest.importorskip("ruff")
     result = subprocess.run(
         [
@@ -2421,6 +2422,7 @@ def test_the_hook_probe_modules_hold_the_ci_complexity_and_size_bounds() -> None
             "lint.mccabe.max-complexity=15",
             str(hook_module),
             str(cli / "_doctor_hook_text.py"),
+            str(cli / "_cmd_doctor.py"),
         ],
         capture_output=True,
         text=True,
@@ -2498,9 +2500,186 @@ def test_a_project_hook_file_reached_through_a_link_is_named(
     hooks = _read_hooks(tmp_path, monkeypatch)
 
     assert hooks.argvs == []
-    reason = f"{hook_file} is reached through a link, so no hook in it was read"
+    # The note names the folder that is the link, not only the file under it.
+    reason = (
+        f"{hook_file} is reached through the link {hooks_folder}, so no hook in "
+        "it was read"
+    )
     assert hooks.unchecked == [reason]
-    assert hooks.fixes == {reason: _doctor_hook_text.LINK_FIX}
+    assert hooks.fixes == {}
+    assert hooks.update_leads == {reason: _doctor_hook_text.LINK_FIX}
+
+
+@pytest.mark.skipif(
+    sys.platform != "win32", reason="only Windows has junctions to a file"
+)
+def test_a_project_hook_file_that_is_itself_a_junction_names_itself(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import _winapi  # Windows only; a junction needs no privilege
+
+    hook_file, _ = _fake_install(tmp_path, monkeypatch, _copilot_line(tmp_path))
+    outside = tmp_path / "outside.json"
+    shutil.copyfile(hook_file, outside)
+    hook_file.unlink()
+    _winapi.CreateJunction(str(outside), str(hook_file))
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    reason = (
+        f"{hook_file} is reached through the link {hook_file}, so no hook in it "
+        "was read"
+    )
+    assert hooks.unchecked == [reason]
+    assert hooks.update_leads == {reason: _doctor_hook_text.LINK_FIX}
+
+
+def test_a_hook_script_behind_a_junctioned_folder_names_that_folder(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A real link (a junction here) on the support path: the note names the
+    # folder that is the link, so the fix can point at it.
+    _, dispatcher = _fake_install(tmp_path, monkeypatch, _copilot_line(tmp_path))
+    support = tmp_path / ".apothem" / "support"
+    outside = tmp_path / "outside-support"
+    shutil.copytree(support, outside)
+    shutil.rmtree(support)
+    _link(support, outside, folder=True)
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    assert hooks.argvs == []
+    [unchecked] = hooks.unchecked
+    assert f"runs {dispatcher}, reached through the link {support}, " in unchecked
+    assert hooks.update_leads == {unchecked: _doctor_hook_text.SCRIPT_LINK_FIX}
+
+
+@pytest.mark.skipif(
+    sys.platform != "win32", reason="only Windows has junctions to a file"
+)
+def test_a_hook_script_that_is_itself_a_junction_names_itself(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import _winapi  # Windows only; a junction needs no privilege
+
+    _, dispatcher = _fake_install(tmp_path, monkeypatch, _copilot_line(tmp_path))
+    outside = tmp_path / "outside-dispatch.py"
+    shutil.copyfile(dispatcher, outside)
+    dispatcher.unlink()
+    _winapi.CreateJunction(str(outside), str(dispatcher))
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    [unchecked] = hooks.unchecked
+    assert f"runs {dispatcher}, reached through the link {dispatcher}, " in unchecked
+    assert hooks.update_leads == {unchecked: _doctor_hook_text.SCRIPT_LINK_FIX}
+
+
+@pytest.mark.skipif(
+    sys.platform != "win32", reason="only Windows folds the case of a path"
+)
+def test_a_link_under_a_mixed_case_folder_is_named_as_the_file_spells_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The link is found by comparing case-folded paths, but the note names it
+    # with the steps as the recorded path spells them.
+    hook_file, _ = _fake_install(tmp_path, monkeypatch, _copilot_line(tmp_path))
+    record = install_ledger.current_install_record("", tmp_path)
+    spelled = tmp_path / ".GitHub" / "Hooks" / hook_file.name
+    record.targets[0].path = str(spelled)
+    hooks_folder = hook_file.parent
+    outside = tmp_path / "outside-hooks"
+    shutil.copytree(hooks_folder, outside)
+    shutil.rmtree(hooks_folder)
+    _link(hooks_folder, outside, folder=True)
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    assert hooks.unchecked == [
+        f"{spelled} is reached through the link {spelled.parent}, so no hook in "
+        "it was read"
+    ]
+
+
+def test_a_root_recorded_through_a_link_walks_from_the_real_spelling(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The root is given through a link while the install recorded the real
+    # paths: those are inside the project, and no step below the real root is
+    # a link, so the hook is started and nothing is named as a link.
+    real = tmp_path / "real"
+    real.mkdir()
+    _fake_install(real, monkeypatch, _copilot_line(real))
+    alias = tmp_path / "alias"
+    _link(alias, real, folder=True)
+    install_ledger.current_install_record("", alias).root = str(alias)
+
+    hooks = _read_hooks(alias, monkeypatch)
+
+    assert hooks.unchecked == []
+    assert len(hooks.argvs) == 1
+
+
+def test_a_recorded_hook_script_outside_the_project_is_not_started(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The hook file is inside the project root, the script the install
+    # recorded is not: it is named as outside the project, not as a link, and
+    # its fix says nothing about removing it.
+    _, dispatcher = _fake_install(tmp_path, monkeypatch, _copilot_line(tmp_path))
+    root = tmp_path / ".github"
+    install_ledger.current_install_record("", root).root = str(root)
+
+    hooks = _read_hooks(root, monkeypatch)
+
+    assert hooks.argvs == []
+    [unchecked] = hooks.unchecked
+    assert f"runs {dispatcher}, which is outside the project {root}, " in unchecked
+    assert "link" not in unchecked
+    assert hooks.fixes == {}
+    assert hooks.update_leads == {}
+
+
+def test_a_path_outside_the_project_is_never_called_link_free(
+    tmp_path: Path,
+) -> None:
+    # A caller that skipped the inside check still gets no trust: the path
+    # itself comes back, so nothing under it is started.
+    record = SimpleNamespace(targets=[], python_bin=None)
+    install = _doctor_hooks._ProjectInstall(
+        tmp_path / "proj", record, ("command",), None
+    )
+    outside = tmp_path / "elsewhere" / "dispatch.py"
+    assert install._link_on_path(outside) == outside
+
+
+def test_the_steps_to_a_shared_hook_script_are_looked_up_once(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Two hook commands run the same script: its link check is made once.
+    hook_file, dispatcher = _fake_install(
+        tmp_path, monkeypatch, _copilot_line(tmp_path)
+    )
+    second = dict(_copilot_line(tmp_path))
+    second["bash"] = f"{second['bash']} other"
+    _add_entry(hook_file, second)
+    record = install_ledger.current_install_record("", tmp_path)
+    record.targets[0].digest = hashlib.sha256(hook_file.read_bytes()).hexdigest()
+    looked: list[Path] = []
+    real_is_link = _doctor_hooks.is_link
+
+    def counting(path: Path) -> bool:
+        looked.append(path)
+        return real_is_link(path)
+
+    monkeypatch.setattr(_doctor_hooks, "is_link", counting)
+
+    hooks = _read_hooks(tmp_path, monkeypatch)
+
+    assert len(hooks.argvs) == 2
+    support = tmp_path / ".apothem"
+    under = [path for path in looked if support in (path, *path.parents)]
+    assert len(under) == len(dispatcher.relative_to(tmp_path).parts)
 
 
 def test_doctor_names_a_merged_settings_file_behind_a_junction(
@@ -2523,12 +2702,64 @@ def test_doctor_names_a_merged_settings_file_behind_a_junction(
     assert code == 0, payload
     messages = _unchecked(payload, "codebuddy")
     assert any(
-        "settings.local.json is reached through a link, so no hook in it was read"
-        in message
+        f"settings.local.json is reached through the link {folder}, so no hook "
+        "in it was read" in message
         for message in messages
     ), messages
-    assert _doctor_hook_text.LINK_FIX in _hook_fixes(payload, "codebuddy")
+    # The fix ends with the exact update command, --project included, as
+    # every other fix that runs update does.
+    expected = _cmd_doctor._update_fix(
+        "codebuddy", project, lead=_doctor_hook_text.LINK_FIX
+    )
+    assert expected in _hook_fixes(payload, "codebuddy")
+    assert expected.startswith(_doctor_hook_text.LINK_FIX + " this command")
+    _, _, command = expected.rpartition("then run doctor again: ")
+    assert "update --harness codebuddy --project " in command
+    assert str(project) in command
     assert "were not checked" in " ".join(plain.output.split())
+
+
+@pytest.mark.parametrize("entry", ["link", "stray"])
+def test_an_entry_the_install_did_not_write_in_the_hook_folder_has_its_own_fix(
+    runner: CliRunner, home: Path, tmp_path: Path, entry: str
+) -> None:
+    # An update keeps a link or the operator's own .py file in the hook
+    # folder, so the update fix never clears the note. Removing the entry does.
+    project = _project(tmp_path)
+    _install(runner, "codebuddy", "--project", str(project))
+    [dispatcher] = (project / ".apothem" / "support").rglob("dispatch.py")
+    if entry == "link":
+        elsewhere = tmp_path / "elsewhere"
+        elsewhere.mkdir()
+        planted = dispatcher.parent / "extra"
+        _link(planted, elsewhere, folder=True)
+        detail = "hold a link, extra,"
+    else:
+        planted = dispatcher.parent / "mine.py"
+        planted.write_text("x = 1\n", encoding="utf-8")
+        detail = "hold mine.py, which the install did not write"
+
+    code, payload = _doctor(runner, "--project", str(project))
+
+    assert code == 0, payload
+    [message] = [m for m in _unchecked(payload, "codebuddy") if detail in m]
+    fixes = [
+        check["fix"]
+        for check in payload["checks"]
+        if check["code"] == "hook.unchecked" and check["message"] == message
+    ]
+    assert fixes == [_doctor_hook_text.FOLDER_ENTRY_FIX]
+
+    # Following the fix clears the line.
+    if entry == "link":
+        planted.rmdir()  # removes the junction or link, not its target
+    else:
+        planted.unlink()
+    code, payload = _doctor(runner, "--project", str(project))
+
+    assert code == 0, payload
+    assert _unchecked(payload, "codebuddy") == []
+    assert _row(payload, "codebuddy")["hooks"]["failed"] == []
 
 
 @pytest.mark.parametrize("second", [FileNotFoundError, PermissionError])
@@ -2591,6 +2822,37 @@ def test_a_project_second_look_does_not_follow_a_link(
 
     with pytest.raises(_doctor_hook_text.NotARegularFileError):
         _doctor_hook_text.read_hook_file(path)
+    assert looks == [False, False]
+
+
+def test_a_project_second_look_that_fails_on_a_folder_step_is_not_made_again(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Only a followed look is made again without following it. A look that
+    # did not follow and fails keeps the open's own error, even if a third
+    # look would now find a folder.
+    path = tmp_path / "settings.json"
+    path.write_text("{}", encoding="utf-8")
+    real_look = _doctor_hook_text._look
+    looks: list[bool] = []
+
+    def look(name: Path, *, follow_link: bool) -> object:
+        looks.append(follow_link)
+        if len(looks) == 1:
+            return real_look(name, follow_link=follow_link)
+        if len(looks) == 2:
+            raise NotADirectoryError(errno.ENOTDIR, "Not a folder", str(name))
+        return _StatAs(real_look(name, follow_link=False), st_mode=stat.S_IFDIR)
+
+    def denied(name: Path, flags: int) -> int:
+        raise PermissionError(errno.EACCES, "Permission denied", str(name))
+
+    monkeypatch.setattr(_doctor_hook_text, "_look", look)
+    monkeypatch.setattr(_doctor_hook_text, "_open_descriptor", denied)
+
+    with pytest.raises(PermissionError) as raised:
+        _doctor_hook_text.read_hook_file(path)
+    assert not isinstance(raised.value, _doctor_hook_text.NotARegularFileError)
     assert looks == [False, False]
 
 

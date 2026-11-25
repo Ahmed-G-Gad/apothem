@@ -1305,9 +1305,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   ones Apothem writes. Doctor reads no hook file larger than 4 MB or that is
   not a regular file, and no project hook file reached through a link. When
   the tool runs hooks from such a file, a settings file the hooks are merged
-  into included, a `hook.unchecked` line names it. An update keeps the file
-  as it is, so the fix says to shrink or replace the file, or to check where
-  the link leads and remove or replace it. It starts those known
+  into included, a `hook.unchecked` line names it, and for a link it also
+  names the link on the path. An update keeps the file as it is, so the fix
+  says to shrink or replace the file, or to check where the link leads and
+  replace it, or remove only the link itself and run the `update` command
+  the fix ends with. A link, or a Python file the install did not write, in
+  the hook script's folder gets a fix that says to remove it (for a link,
+  only the link itself), since an update keeps it too. It
+  starts those known
   paths rather than the text it read, looks up no other path a hook command
   names, such as a network share, and follows no link to a project hook file
   or to the files a hook command runs. A recorded interpreter or script that

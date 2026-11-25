@@ -33,6 +33,7 @@ from apothem.cli._common_flags import (
     get_console,
     resolve_format,
 )
+from apothem.cli._doctor_hook_text import RegisteredHooks
 from apothem.cli._doctor_hooks import probe_hooks, registered_hooks
 from apothem.cli._epilogs import _EP_DOCTOR
 from apothem.cli._helpers import (
@@ -116,6 +117,43 @@ def _update_fix(
             f"--project, {then}: {project}"
         )
     return f"{lead} this command{prefix}, {then}: {command}"
+
+
+def _unchecked_fix(
+    name: str, project: Path | None, hooks: RegisteredHooks, reason: str
+) -> str:
+    """Return the fix for the ``hook.unchecked`` line that says *reason*."""
+    # A file too large or not a regular file, or a link or stray file in the
+    # hook folder, keeps its own fix: an update keeps such a file as it is.
+    if reason in hooks.fixes:
+        return hooks.fixes[reason]
+    # A link the operator did not make is removed, then the update runs.
+    if reason in hooks.update_leads:
+        return _update_fix(name, project, lead=hooks.update_leads[reason])
+    # Run under the same Python, an update would record that Python inside the
+    # project again, and doctor starts no such one unless it runs under it.
+    # The update runs from a folder outside the project, which the command
+    # names by its absolute root: a `python -m apothem` run in the project
+    # folder would import an `apothem` package committed there, whatever
+    # prefix started it. An active project environment puts its Python first
+    # on PATH, where the npx shim finds it unless APOTHEM_PYTHON names one.
+    if reason in hooks.run_with:
+        return _update_fix(
+            name,
+            project,
+            lead="If the project's virtual environment is active, "
+            "deactivate it. Then from a folder outside the project, "
+            "with an Apothem that runs under a Python outside the "
+            "project (not one installed into the project's own "
+            "environment; for npx, set APOTHEM_PYTHON to that "
+            "Python), run",
+            same_prefix=False,
+        )
+    return _update_fix(
+        name,
+        project,
+        lead="Check the hook command or file named here. If Apothem installed it, run",
+    )
 
 
 def _probe_harness(
@@ -244,38 +282,7 @@ def _probe_registered_hooks(
                 "info",
                 f"{name}: {reason}.",
                 harness=name,
-                # A file too large, not a regular file, or reached through a
-                # link keeps its own fix: an update keeps such a file as it is.
-                # Run under the same Python, an update would record that Python
-                # inside the project again, and doctor starts no such one unless
-                # it runs under it. The update runs from a folder outside the
-                # project, which the command names by its absolute root: a
-                # `python -m apothem` run in the project folder would import an
-                # `apothem` package committed there, whatever prefix started it.
-                # An active project environment puts its Python first on PATH,
-                # where the npx shim finds it unless APOTHEM_PYTHON names one.
-                fix=(
-                    hooks.fixes[reason]
-                    if reason in hooks.fixes
-                    else _update_fix(
-                        name,
-                        project,
-                        lead="If the project's virtual environment is active, "
-                        "deactivate it. Then from a folder outside the project, "
-                        "with an Apothem that runs under a Python outside the "
-                        "project (not one installed into the project's own "
-                        "environment; for npx, set APOTHEM_PYTHON to that "
-                        "Python), run",
-                        same_prefix=False,
-                    )
-                    if reason in hooks.run_with
-                    else _update_fix(
-                        name,
-                        project,
-                        lead="Check the hook command or file named here. "
-                        "If Apothem installed it, run",
-                    )
-                ),
+                fix=_unchecked_fix(name, project, hooks, reason),
             )
         )
     probes = [*hooks.unstartable, *probe_hooks(hooks.argvs)]

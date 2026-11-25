@@ -75,9 +75,12 @@ class RegisteredHooks:
     not start, naming it and the reason. *run_with* maps each sentence whose
     fix needs a Python outside the project to the one the install recorded
     inside it, as data only: the fix never names it. *fixes* maps each
-    sentence that no update clears (a file too large, not a regular file, or
-    reached through a link) to its own fix. Every sentence and command text
-    has its control characters spelled out (:func:`printable`).
+    sentence that no update clears (a file too large or not a regular file,
+    a link or a stray Python file in the hook folder) to its own fix.
+    *update_leads* maps each sentence whose fix ends with the update command
+    to the words that come before it (a link that may be removed, then
+    updated). Every sentence and command text has its control characters
+    spelled out (:func:`printable`).
     """
 
     argvs: list[list[str]] = field(default_factory=list)
@@ -85,6 +88,7 @@ class RegisteredHooks:
     unchecked: list[str] = field(default_factory=list)
     run_with: dict[str, str] = field(default_factory=dict)
     fixes: dict[str, str] = field(default_factory=dict)
+    update_leads: dict[str, str] = field(default_factory=dict)
     # What each list already holds, so nothing is kept twice. One set per list:
     # an argv never stands in for a sentence, nor a sentence for an argv.
     _argvs_seen: set[tuple[str, ...]] = field(
@@ -112,11 +116,18 @@ class RegisteredHooks:
             self.unstartable.append(shown)
 
     def note(
-        self, reason: str, *, run_with: str | None = None, fix: str | None = None
+        self,
+        reason: str,
+        *,
+        run_with: str | None = None,
+        fix: str | None = None,
+        update_lead: str | None = None,
     ) -> None:
         """Keep *reason* for a command or file doctor does not start, once.
 
-        *fix* is the fix for a reason no update clears (:attr:`fixes`).
+        *fix* is the fix for a reason no update clears (:attr:`fixes`);
+        *update_lead* starts a fix that ends with the update command
+        (:attr:`update_leads`).
         """
         shown = printable(reason)
         if shown in self._notes_seen:
@@ -127,6 +138,8 @@ class RegisteredHooks:
             self.run_with[shown] = run_with
         if fix is not None:
             self.fixes[shown] = fix
+        if update_lead is not None:
+            self.update_leads[shown] = update_lead
 
 
 def spelling(path: str) -> str | None:
@@ -194,23 +207,34 @@ class NotARegularFileError(OSError):
     """A path doctor reads names a pipe, a device, a folder or a link, not a file."""
 
 
-#: The fix for a project hook file doctor does not read because it is reached
-#: through a link, which an update keeps. The note names the file; the link
-#: may be the file or one of its folders, and may lead to hooks someone else
-#: wrote.
+#: The start of the fix for a project hook file doctor does not read because
+#: it is reached through a link, which an update keeps. The note names the
+#: file and the link (the file or one of its folders), which may lead to hooks
+#: someone else wrote. Doctor ends the fix with the update command
+#: (:attr:`RegisteredHooks.update_leads`).
 LINK_FIX: Final = (
-    "Find the link on the path named here (the file or one of its folders) and "
-    "check where it leads. If you did not make it, remove it and run update. "
-    "Otherwise replace it with the real folder or file, check the hook "
-    "commands in it, then run doctor again."
+    "Check where the link named here leads. If you made it, replace the link "
+    "itself with a real copy of the folder or file it leads to, check the hook "
+    "commands in it, and run doctor again. If you did not make it, remove only "
+    "the link itself, not the folder or file it leads to, and run"
 )
 
-#: The fix for a hook command whose hook script is reached through a link.
+#: The start of the fix for a hook command whose hook script is reached
+#: through a link; the note names the script and the link (the script or one
+#: of its folders). Doctor ends it with the update command.
 SCRIPT_LINK_FIX: Final = (
-    "Find the link on the path to the hook script named here (the script or "
-    "one of its folders) and check where it leads. If you did not make it, "
-    "remove it and run update. Otherwise replace it with the real folder, "
-    "then run doctor again."
+    "Check where the link named here leads. If you made it, replace the link "
+    "itself with a real copy of the folder or file it leads to, and run doctor "
+    "again. If you did not make it, remove only the link itself, not the "
+    "folder or file it leads to, and run"
+)
+
+#: The fix for a link, or a Python file the install did not write, inside a
+#: project hook folder. An update keeps both, so it never clears the note.
+FOLDER_ENTRY_FIX: Final = (
+    "Remove the named entry from the hook folder (for a link, only the link "
+    "itself, not the folder or file it leads to; move your own scripts "
+    "elsewhere), then run doctor again."
 )
 
 #: The fix for a project hook file in a folder the operator cannot search,

@@ -64,6 +64,7 @@ from pathlib import Path, PurePath
 from typing import Final
 
 from apothem.cli._doctor_hook_text import (
+    FOLDER_ENTRY_FIX,
     LINK_FIX,
     LOOKUP_FIX,
     SCRIPT_LINK_FIX,
@@ -344,6 +345,11 @@ class _ProjectInstall:
             for key in (spelling(str(root)), resolved_spelling(root))
             if key is not None
         }
+        # The root spellings a path inside is walked down from, to look for a
+        # link on it: as recorded, then as resolved when that differs.
+        self._bases = [root]
+        if resolved_spelling(root) not in (None, spelling(str(root))):
+            self._bases.append(root.resolve())
         # The files and folders the install wrote, by spelling: the path as
         # recorded and its checksum. A folder target lists its files' checksums;
         # a record from before checksums lists files and folders with none.
@@ -378,7 +384,8 @@ class _ProjectInstall:
                 self._pythons.setdefault(key, interpreter)
         # One answer per trusted path and per hook folder.
         self._looked_up: dict[tuple[str, str], bool] = {}
-        self._folders: dict[str, str | None] = {}
+        self._links: dict[str, Path | None] = {}
+        self._folders: dict[str, tuple[str, str | None] | None] = {}
 
     def _remember(self, path: str, digest: str | None) -> None:
         key = spelling(path)
@@ -393,36 +400,44 @@ class _ProjectInstall:
         )
 
     def _cached(self, kind: str, path: Path) -> bool:
-        """Return the answer to *kind* (link-free, exists, is a file) for *path*, once."""
+        """Return the answer to *kind* (exists, is a file) for *path*, once."""
         key = (kind, str(path))
         if key not in self._looked_up:
-            if kind == "link-free":
-                answer = self._link_free(path)
-            elif kind == "exists":
-                answer = path.exists()
-            else:
-                answer = path.is_file()
-            self._looked_up[key] = answer
+            self._looked_up[key] = path.exists() if kind == "exists" else path.is_file()
         return self._looked_up[key]
 
-    def _link_free(self, path: Path) -> bool:
-        """Return True when no folder or file from the project root to *path* is a link.
+    def _link_on_path(self, path: Path) -> Path | None:
+        """Return the first link from the project root down to *path*, or ``None``; once.
 
         Each step is looked at without following it, after the steps above it
         were found to be no link, so the check itself never leaves the project.
+        The walk starts from the root spelling *path* is under, as recorded or
+        as resolved. Callers pass only a path :meth:`_inside` the project; any
+        other cannot be checked, so it is returned itself and never trusted.
         """
-        try:
-            relative = PurePath(os.path.normcase(str(path))).relative_to(
-                os.path.normcase(str(self._root))
-            )
-        except ValueError:
-            return False
-        current = self._root
-        for part in relative.parts:
-            current = current / part
-            if is_link(current):
-                return False
-        return True
+        key = str(path)
+        if key not in self._links:
+            self._links[key] = self._first_link(path)
+        return self._links[key]
+
+    def _first_link(self, path: Path) -> Path | None:
+        """Look for :meth:`_link_on_path`'s link, uncached."""
+        for base in self._bases:
+            try:
+                relative = PurePath(os.path.normcase(str(path))).relative_to(
+                    os.path.normcase(str(base))
+                )
+            except ValueError:
+                continue
+            # The steps as *path* spells them (the comparison folded their case).
+            steps = path.parts[len(path.parts) - len(relative.parts) :]
+            current = base
+            for part in steps:
+                current = current / part
+                if is_link(current):
+                    return current
+            return None
+        return path
 
     def read_file(
         self,
@@ -476,7 +491,7 @@ class _ProjectInstall:
         hooks merged into settings included; a link also for a file of nothing
         but hooks (*hook_file*), and text that is not JSON only for that."""
         try:
-            link_free = self._cached("link-free", path)
+            link = self._link_on_path(path)
         except OSError as exc:
             # Python 3.10 to 3.13 raise from a lookup in a folder the operator
             # cannot search, where later releases answer False.
@@ -486,11 +501,12 @@ class _ProjectInstall:
                     fix=LOOKUP_FIX,
                 )
             return _UNREAD
-        if not link_free:
+        if link is not None:
             if hook_file or may_hold:
                 hooks.note(
-                    f"{path} is reached through a link, so no hook in it was read",
-                    fix=LINK_FIX,
+                    f"{path} is reached through the link {link}, so no hook in "
+                    "it was read",
+                    update_lead=LINK_FIX,
                 )
             return _UNREAD
         try:
@@ -543,10 +559,18 @@ class _ProjectInstall:
             return
         # Only trusted paths are looked at from here on, each once.
         dispatcher = Path(recorded[0])
-        if not self._cached("link-free", dispatcher):
+        if not self._inside(recorded[0]):
             hooks.note(
-                f"{line} runs {dispatcher}, reached through a link, {_NOT_STARTED}",
-                fix=SCRIPT_LINK_FIX,
+                f"{line} runs {dispatcher}, which is outside the project "
+                f"{self._root}, {_NOT_STARTED}"
+            )
+            return
+        link = self._link_on_path(dispatcher)
+        if link is not None:
+            hooks.note(
+                f"{line} runs {dispatcher}, reached through the link {link}, "
+                f"{_NOT_STARTED}",
+                update_lead=SCRIPT_LINK_FIX,
             )
             return
         if not self._cached("exists", Path(python)):
@@ -561,7 +585,8 @@ class _ProjectInstall:
             return
         problem = self._folder_problem(dispatcher.parent)
         if problem is not None:
-            hooks.note(problem)
+            reason, fix = problem
+            hooks.note(reason, fix=fix)
             return
         hooks.add([python, *options, str(dispatcher), *tail])
 
@@ -597,14 +622,19 @@ class _ProjectInstall:
                 f"{_NOT_STARTED}"
             )
 
-    def _folder_problem(self, folder: Path) -> str | None:
-        """Return why *folder*'s scripts cannot be trusted, or ``None``; once per folder."""
+    def _folder_problem(self, folder: Path) -> tuple[str, str | None] | None:
+        """Return why *folder*'s scripts cannot be trusted, or ``None``; once per folder.
+
+        The reason comes with its own fix when no update clears it (a link or
+        a Python file the install did not write, which an update keeps), and
+        with ``None`` when the update fix does.
+        """
         key = spelling(str(folder)) or ""
         if key not in self._folders:
             self._folders[key] = self._check_folder(folder, key)
         return self._folders[key]
 
-    def _check_folder(self, folder: Path, key: str) -> str | None:
+    def _check_folder(self, folder: Path, key: str) -> tuple[str, str | None] | None:
         """Compare *folder* with the files and checksums the install recorded."""
         prefix = key + os.sep
         recorded = {
@@ -617,25 +647,29 @@ class _ProjectInstall:
         if any(digest is None for _, digest in recorded.values()):
             return (
                 f"{reason} were installed by an earlier Apothem that kept no "
-                f"checksums of them, {stop}"
+                f"checksums of them, {stop}",
+                None,
             )
         try:
             for entry, kind in walk(folder):
                 shown = os.path.relpath(entry, folder)
                 if kind == "link":
-                    return f"{reason} hold a link, {shown}, {stop}"
+                    return f"{reason} hold a link, {shown}, {stop}", FOLDER_ENTRY_FIX
                 if (
                     kind == "file"
                     and entry.suffix.lower() in _IMPORTABLE_SUFFIXES
                     and spelling(str(entry)) not in recorded
                 ):
-                    return f"{reason} hold {shown}, which the install did not write, {stop}"
+                    return (
+                        f"{reason} hold {shown}, which the install did not write, {stop}",
+                        FOLDER_ENTRY_FIX,
+                    )
         except OSError:
-            return f"{reason} cannot be read, {stop}"
+            return f"{reason} cannot be read, {stop}", None
         for spelled, (path, digest) in sorted(recorded.items()):
             if sha256_of(Path(path)) != digest:
                 shown = os.path.relpath(spelled, key)
-                return f"{reason} changed after the install ({shown}), {stop}"
+                return f"{reason} changed after the install ({shown}), {stop}", None
         return None
 
 
