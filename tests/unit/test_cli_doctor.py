@@ -2811,9 +2811,9 @@ def test_an_entry_the_install_did_not_write_in_the_hook_folder_has_its_own_fix(
     assert fixes == [_doctor_hook_text.FOLDER_ENTRY_FIX]
 
     # Following the fix clears the line.
-    if entry == "link":
-        planted.rmdir()  # removes the junction or link, not its target
-    else:
+    if entry == "link" and os.name == "nt":
+        planted.rmdir()  # removes the junction, not its target
+    else:  # a POSIX symlink, like a file, is removed with unlink
         planted.unlink()
     code, payload = _doctor(runner, "--project", str(project))
 
