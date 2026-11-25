@@ -1817,46 +1817,56 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   limit, and a start that fails once Popen has the program's process ID
   stops that program. A second Ctrl+C that arrives while the gate stops a
   program waits until the stop is done. One that arrives just before the
-  stop begins, or between two tries, makes the stop start over, up to ten
-  times in all; when all ten fail, or a Ctrl+C ends the tries early, the
-  gate stops the program once more without holding signals back. When the gate changes its own signal handlers, a signal that
-  arrives mid-change no longer leaves a handler changed, such as Ctrl+C
-  ignored for the rest of the process. On Linux and macOS the gate blocks
-  Ctrl+C, `SIGTERM` and `SIGHUP`, and no other signal, for the few
-  microseconds the change takes, so such a signal waits and meets the
-  handlers then in place. For any other signal, on Windows, and for a
-  signal that arrived just before the block, a change the signal stopped is
-  made again. A handler that raises an error at the very edge of a change,
-  such as one the calling process installed itself, or two signals that
-  arrive back to back, can still leave a handler changed in rare cases.
-  The gate then waits up to half a second for the stopped program to
+  stop begins makes the gate try the stop again, up to three times, and
+  then stop the program without holding signals back, again up to three
+  times, so one more Ctrl+C does not skip the stop. When the gate changes
+  its own signal handlers, a signal that arrives mid-change no longer
+  leaves a handler changed, such as Ctrl+C ignored for the rest of the
+  process. On Linux and macOS the gate blocks Ctrl+C, `SIGTERM` and
+  `SIGHUP`, and no other signal, for the few microseconds the change
+  takes, so such a signal waits and meets the handlers then in place. The
+  gate then unblocks only the signals it blocked. For any other signal, on
+  Windows, and for a signal that arrived just before the block, a change
+  the signal stopped is made again, up to three times. When putting its
+  handlers back fails at every try, the gate makes one last try for each
+  handler left. A handler stays changed only when an error stops that last
+  try too, such as a `TimeoutError` from a timer the calling process set
+  that fires each time. An error that comes back at every try, such as a
+  `RecursionError` near Python's recursion limit, ends the change within
+  two tries and goes on. The gate puts its handlers back with calls no
+  deeper than the ones that changed them, so near that limit it does not
+  leave Ctrl+C ignored. A `SIGTERM` handler that the calling process sets
+  during a run stays in place. In a Python subinterpreter, where no signal
+  handler may be set, the gate runs its programs without changing handlers.
+  After a stop the gate waits up to half a second for the stopped program to
   end, so on Linux and macOS it does not linger as a defunct process. Ctrl+C
   prints one line and exits `130`. The `git` commands of
   `conventional-commit-grep`, `agents-md-coverage-grep` and the `--staged`
-  checks of `production-ready-pr-grep` and `semver-stability-grep` had limits
-  of 5 or 10 seconds, but a command that ran past its limit passed: the
-  commit-subject check took it for a folder without history, the companion
-  check skipped its freshness test, and the `--staged` checks read an empty
-  change set or skipped the file. On Windows, where `git` on `PATH` is usually
-  the launcher Git installs, the limit did not even end the wait.
+  checks of `production-ready-pr-grep` and `semver-stability-grep` had
+  limits of 5 or 10 seconds, but a command that ran past its limit passed:
+  the commit-subject check took it for a folder without history, the
+  companion check skipped its freshness test, and the `--staged` checks read
+  an empty change set or skipped the file. On Windows, where `git` on `PATH`
+  is usually the launcher Git installs, the limit did not even end the wait.
   `no-global-plans-grep` gave its `git ls-files` no limit at all. Each of
-  these commands now has 1 minute, far more than it takes, the limit holds on
-  every platform, and a command past it reports `passed: false` with a
+  these commands now has 1 minute, far more than it takes, the limit holds
+  on every platform, and a command past it reports `passed: false` with a
   `check_error` that names the command. So does a `git` that refuses a
   checkout it found, such as one another user owns or one with a bad
-  configuration line, which used to count as a repository with no commit. This
-  can turn a run that passed red: a folder whose `.git` entry git cannot open,
-  such as an empty `.git` folder outside any other checkout or a `.git` file
-  that names a folder that no longer exists, now fails these checks, because
-  the history they need may be there unread. `agents-md-coverage-grep` exits
-  `2` for either although its findings are otherwise advisory, and its read of
-  the whole history now gets 5 minutes, so a large history is slow rather than
-  a failure. A plain folder that is not inside any git checkout, a repository
-  with no commit yet, a partial clone, where any failed history read counts as
-  history that is not available, or a machine without `git` still passes these
-  checks. `no-global-plans-grep` still fails, as before, outside a checkout
-  git can read or without `git`. The gate's advisory default still exits `0`
-  on such a result, and `--strict` exits `2`.
+  configuration line, which used to count as a repository with no commit.
+  This can turn a run that passed red: a folder whose `.git` entry git
+  cannot open, such as an empty `.git` folder outside any other checkout or
+  a `.git` file that names a folder that no longer exists, now fails these
+  checks, because the history they need may be there unread.
+  `agents-md-coverage-grep` exits `2` for either although its findings are
+  otherwise advisory, and its read of the whole history now gets 5 minutes,
+  so a large history is slow rather than a failure. A plain folder that is
+  not inside any git checkout, a repository with no commit yet, a partial
+  clone, where any failed history read counts as history that is not
+  available, or a machine without `git` still passes these checks.
+  `no-global-plans-grep` still fails, as before, outside a checkout git can
+  read or without `git`. The gate's advisory default still exits `0` on such
+  a result, and `--strict` exits `2`.
 
 ## [1.5.0] - 2026-10-28
 

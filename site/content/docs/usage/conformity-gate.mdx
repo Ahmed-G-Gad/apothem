@@ -124,8 +124,9 @@ finish. On Linux and macOS each validator runs in a session of its own, and a
 stops the validator's programs before the gate exits with code 128 plus the
 signal's number. That holds too for one that arrives while the gate starts or
 stops a validator: it waits until that step is done, and the exit code stays
-128 plus its number even when a Ctrl+C follows during that step. A `SIGKILL`, which no
-program can catch, ends only the gate there: a validator it started runs on
+128 plus its number even when a Ctrl+C follows during that step. A `SIGKILL`,
+which no program can catch, ends only the gate there: a validator it started
+runs on
 until it finishes, and a `git` command that validator waits on still stops at
 its own limit. On Windows each validator runs in a job object, which also ends
 its programs when the gate itself ends.
@@ -147,22 +148,32 @@ every platform, in the gate's own run, a Ctrl+C that arrives during the start
 waits until the program runs (on Windows, until the gate has tried to resume
 it), so no program is left suspended or running past its limit. A second
 Ctrl+C that arrives while the gate stops a program waits until the stop is
-done. One that arrives just before the stop begins, or between two tries,
-makes the stop start over, up to ten times in all. When all ten fail, or a
-Ctrl+C ends the tries early, the gate stops the program once more without
-holding signals back. The gate then waits up to half a second for
-that program to end, so on Linux and macOS it does not linger as a defunct
-process. When the gate changes its own signal handlers, a signal that arrives
-mid-change does not leave a handler changed. On Linux and macOS the gate blocks
-Ctrl+C, `SIGTERM` and `SIGHUP`, and no other signal, for the few microseconds
-the change takes, so such a signal waits until the change is done and meets
-the handlers that are then in place. For any other signal, on Windows, and for
-a signal that arrived just before the block, a change the signal stopped is
-made again. A handler that raises an error at the very edge of a change, such
-as one the calling process installed itself, or two signals that arrive back
-to back, can still leave a handler changed in rare cases. Ctrl+C prints one
-line and exits `130`. The limits add
-up: a run in which several validators wait takes the sum of their limits.
+done. One that arrives just before the stop begins makes the gate try the
+stop again, up to three times. When those tries fail, or a Ctrl+C lands
+between two of them, the gate stops the program without holding signals
+back, again up to three times, so one more Ctrl+C does not skip the stop. It
+takes several Ctrl+C presses, each within microseconds of one of these
+points, to leave the program running. The gate then waits up to half a
+second for that program to end, so on Linux and macOS it does not linger as a
+defunct process. When the gate changes its own signal handlers, a signal that
+arrives mid-change does not leave a handler changed. On Linux and macOS the
+gate blocks Ctrl+C, `SIGTERM` and `SIGHUP`, and no other signal, for the few
+microseconds the change takes, so such a signal waits until the change is
+done and meets the handlers that are then in place. The gate then unblocks
+only the signals it blocked. For any other signal, on Windows, and for a
+signal that arrived just before the block, a change the signal stopped is
+made again, up to three times. When putting its handlers back fails at
+every try, the gate makes one last try for each handler left. A handler stays
+changed only when an error stops that last try too, such as a `TimeoutError`
+from a timer the calling process set that fires each time. An error that
+comes back at every try, such as a `RecursionError` near Python's recursion
+limit, ends the change within two tries and goes on. The gate puts its
+handlers back with calls no deeper than the ones that changed them, so near
+that limit it does not leave Ctrl+C ignored. A `SIGTERM` handler that the
+calling process sets during a run stays in place. In a Python subinterpreter,
+where no signal handler may be set, the gate runs its programs without changing
+handlers. Ctrl+C prints one line and exits `130`. The limits add up: a run in
+which several validators wait takes the sum of their limits.
 
 Five validators also give each `git` command they run a time limit of its own.
 The limits hold on every platform, including on Windows when `git` on `PATH`

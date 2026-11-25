@@ -49,6 +49,7 @@ import subprocess
 import sys
 import threading
 import time
+import tracemalloc
 import uuid
 import weakref
 from collections.abc import Callable, Iterable, Iterator, Sequence
@@ -2103,28 +2104,39 @@ def test_termination_during_the_start_stops_the_program(
                 os.kill(leftover, signal.SIGKILL)
 
 
+@pytest.mark.parametrize("new_session", [False, True])
 def test_a_refused_signal_handler_leaves_no_trace_on_errors(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, new_session: bool
 ) -> None:
     """When no handler can be set, the start runs without the hold.
 
     Only the main interpreter may set a signal handler; elsewhere
     ``signal.signal`` raises ValueError. The program then runs as usual, and
     an error from the start does not carry that ValueError as its context
-    (the hold used to yield inside the ``except ValueError`` block).
+    (the hold used to yield inside the ``except ValueError`` block). With
+    *new_session*, outside Windows, the termination handlers are refused
+    too: that refusal used to fail the run before the program started.
     """
 
     def refused(_signum: int, _handler: object) -> object:
         raise ValueError("signal only works in main thread of the main interpreter")
 
-    with _python_interrupt_handler(), monkeypatch.context() as patch:
-        patch.setattr(_bounded_run.signal, "signal", refused)
+    with (
+        _python_interrupt_handler(),
+        _default_terminations(),
+        monkeypatch.context() as patch,
+    ):
+        patch.setattr(_bounded_run, "_SET_HANDLER", refused)
         completed = _bounded_run.run_bounded(
-            [sys.executable, "-c", _PRINT_PROGRAM], timeout=_DEADLINE_SECONDS
+            [sys.executable, "-c", _PRINT_PROGRAM],
+            timeout=_DEADLINE_SECONDS,
+            new_session=new_session,
         )
         with pytest.raises(FileNotFoundError) as raised:
             _bounded_run.run_bounded(
-                [str(tmp_path / "missing-program")], timeout=_DEADLINE_SECONDS
+                [str(tmp_path / "missing-program")],
+                timeout=_DEADLINE_SECONDS,
+                new_session=new_session,
             )
     assert completed.stdout == "ran\n"
     assert not isinstance(raised.value.__context__, ValueError), raised.value
@@ -2328,19 +2340,19 @@ _HANDLER_ERRORS = pytest.mark.parametrize(
 
 
 @_HANDLER_ERRORS
-def test_every_handler_comes_back_when_one_restore_raises(
+def test_a_change_a_signal_stopped_is_made_again(
     monkeypatch: pytest.MonkeyPatch, first_error: BaseException
 ) -> None:
-    """A signal that lands mid-restore leaves no handler unchanged.
+    """A signal that lands as a handler changes leaves no pair unset.
 
     CPython runs the handler of a signal that has arrived before
     ``signal.signal`` changes anything, so a pending ``SIGTERM`` whose
     handler raises ``SystemExit`` stops that change. The stand-in raises the
     way CPython does, before the real change. That pair used to stay unset
-    (``SIGTERM`` kept the hold's handler); every pair is now set, and the
-    error still goes on. A ``TimeoutError`` from a caller's handler is not
-    taken for ``signal.signal`` refusing the pair: it does not come back on
-    the next try.
+    (``SIGTERM`` kept the hold's handler); it is now set in the next pass,
+    the pair after it is set in the first, and the error is kept to go on. A
+    ``TimeoutError`` from a caller's handler comes once, so it does not end
+    the tries.
     """
     real_signal = signal.signal
     old_int = signal.getsignal(signal.SIGINT)
@@ -2356,17 +2368,21 @@ def test_every_handler_comes_back_when_one_restore_raises(
     def wanted(_signum: int, _frame: object) -> None:
         return None
 
+    errors: list[BaseException] = []
     try:
-        monkeypatch.setattr(_bounded_run.signal, "signal", raising_first)
-        with pytest.raises(type(first_error)):
-            _bounded_run._set_handlers(
-                [(signal.SIGTERM, wanted), (signal.SIGINT, wanted)]
-            )
+        monkeypatch.setattr(_bounded_run, "_SET_HANDLER", raising_first)
+        done = _bounded_run._swap(
+            [(signal.SIGTERM, wanted), (signal.SIGINT, wanted)], errors
+        )
         monkeypatch.undo()
+        assert done
+        assert errors == [first_error]
+        assert calls == [signal.SIGTERM, signal.SIGINT, signal.SIGTERM]
         assert signal.getsignal(signal.SIGTERM) is wanted
         assert signal.getsignal(signal.SIGINT) is wanted
     finally:
         monkeypatch.undo()
+        errors.clear()
         real_signal(signal.SIGINT, old_int)
         real_signal(signal.SIGTERM, old_term)
 
@@ -2376,9 +2392,10 @@ def test_a_refused_handler_is_left_and_the_next_one_set(
 ) -> None:
     """A handler ``signal.signal`` refuses at every try is left as it was.
 
-    The refusal comes back on the second try, so the pair counts as refused:
-    its old handler is not saved to be put back, the next pair is still set,
-    and the ``ValueError`` goes on.
+    The same ``ValueError`` comes back on the second try, so the tries end
+    and the pair keeps its old handler. The other pair is still set, the
+    block runs, the refusal goes no further, and the restore leaves the
+    refused pair alone.
     """
     real_signal = signal.signal
     old_int = signal.getsignal(signal.SIGINT)
@@ -2394,22 +2411,305 @@ def test_a_refused_handler_is_left_and_the_next_one_set(
     def wanted(_signum: int, _frame: object) -> None:
         return None
 
-    saved: list[tuple[int, Any]] = []
+    inside: list[object] = []
     try:
-        monkeypatch.setattr(_bounded_run.signal, "signal", refusing_sigterm)
-        with pytest.raises(ValueError, match="main thread"):
-            _bounded_run._set_handlers(
-                [(signal.SIGTERM, wanted), (signal.SIGINT, wanted)], saved=saved
+        monkeypatch.setattr(_bounded_run, "_SET_HANDLER", refusing_sigterm)
+        with _bounded_run._swapped(
+            [signal.SIGTERM, signal.SIGINT], wanted, lambda current: current is wanted
+        ):
+            inside.extend(
+                signal.getsignal(signum) for signum in (signal.SIGTERM, signal.SIGINT)
             )
         monkeypatch.undo()
         assert len(tries) == 2, f"signal.signal was tried {len(tries)} times"
+        assert inside == [old_term, wanted]
         assert signal.getsignal(signal.SIGTERM) is old_term
-        assert signal.getsignal(signal.SIGINT) is wanted
-        assert saved == [(signal.SIGINT, old_int)]
+        assert signal.getsignal(signal.SIGINT) is old_int
     finally:
         monkeypatch.undo()
         real_signal(signal.SIGINT, old_int)
         real_signal(signal.SIGTERM, old_term)
+
+
+def test_a_callers_one_off_value_error_is_not_taken_for_a_refusal(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A ``ValueError`` raised once as a hold is set goes on.
+
+    Only a refusal, the same error at every try, leaves a pair unset, and
+    only then is its ``ValueError`` dropped. A caller's handler raising
+    ``ValueError`` once used to be dropped too, and the block ran.
+    """
+    real_signal = signal.signal
+    calls: list[int] = []
+
+    def value_error_once(signum: int, handler: object) -> object:
+        calls.append(signum)
+        if len(calls) == 1:
+            raise ValueError("a caller's own error")
+        return real_signal(signum, handler)  # type: ignore[arg-type]
+
+    ran: list[bool] = []
+    with _python_interrupt_handler():
+        monkeypatch.setattr(_bounded_run, "_SET_HANDLER", value_error_once)
+        with pytest.raises(ValueError, match="own error"), _bounded_run._held_signals():
+            ran.append(True)
+        monkeypatch.undo()
+        assert signal.getsignal(signal.SIGINT) is signal.default_int_handler
+    assert not ran, "the block ran: the caller's ValueError was dropped"
+
+
+@pytest.mark.parametrize("kind", [RuntimeError, KeyboardInterrupt])
+def test_an_error_at_every_change_ends_the_tries(
+    monkeypatch: pytest.MonkeyPatch, kind: type[BaseException]
+) -> None:
+    """An error that comes back at every change ends within a few tries.
+
+    A ``signal.signal`` that raises ``RuntimeError`` at every call stands in
+    for any error that recurs, such as a ``RecursionError`` near the limit.
+    The change used to be tried for ever, with the signals blocked and the
+    list of errors growing. It now ends at the second ``RuntimeError``, the
+    run raises it, nothing is left blocked, and one error is kept. A
+    ``KeyboardInterrupt``, which a signal's handler raises once per signal,
+    is tried again, but only up to the bound. The stand-in gives up after a
+    thousand calls, so a regression fails the test instead of hanging it.
+    """
+    real_signal = signal.signal
+    calls: list[int] = []
+
+    def always_failing(signum: int, handler: object) -> object:
+        calls.append(signum)
+        if len(calls) < 1000:
+            raise kind("signal.signal failed")
+        return real_signal(signum, handler)  # type: ignore[arg-type]
+
+    errors: list[BaseException] = []
+    mask_before = _blocked_now()
+    tries = 2 if kind is RuntimeError else _bounded_run._TRIES
+    tracemalloc.start()
+    try:
+        with _python_interrupt_handler(), _default_terminations():
+            monkeypatch.setattr(_bounded_run, "_SET_HANDLER", always_failing)
+            assert not _bounded_run._swap([(signal.SIGINT, signal.SIG_IGN)], errors)
+            assert len(calls) == tries, f"signal.signal was tried {len(calls)} times"
+            assert [type(error) for error in errors] == [kind]
+            calls.clear()
+            with pytest.raises(kind, match="failed"):
+                _bounded_run.run_bounded(
+                    [sys.executable, "-c", _PRINT_PROGRAM],
+                    timeout=_DEADLINE_SECONDS,
+                    new_session=True,
+                )
+            monkeypatch.undo()
+            peak = tracemalloc.get_traced_memory()[1]
+            assert signal.getsignal(signal.SIGINT) is signal.default_int_handler
+    finally:
+        tracemalloc.stop()
+        errors.clear()
+    assert 0 < len(calls) <= 2 * _bounded_run._TRIES, f"{len(calls)} calls"
+    assert _blocked_now() == mask_before
+    assert peak < 1_000_000, f"the tries took {peak} bytes"
+
+
+def test_an_error_that_would_come_back_ends_the_tries_at_once() -> None:
+    """Only an error a signal's handler raises once per signal earns a new try.
+
+    A ``SystemExit`` or ``KeyboardInterrupt`` is tried again, even when it
+    came before. A ``RecursionError`` or ``MemoryError`` would come back at
+    once: no new try. Any other error is tried again once, until its type
+    comes back. One error of each type is kept.
+    """
+    note = _bounded_run._note
+    errors: list[BaseException] = []
+    assert note(errors, KeyboardInterrupt())
+    assert note(errors, KeyboardInterrupt())
+    assert note(errors, SystemExit(143))
+    assert note(errors, SystemExit(129))
+    assert not note(errors, RecursionError())
+    assert not note(errors, MemoryError())
+    assert note(errors, TimeoutError("a caller's alarm"))
+    assert not note(errors, TimeoutError("a caller's alarm"))
+    assert [type(error) for error in errors] == [
+        KeyboardInterrupt,
+        SystemExit,
+        RecursionError,
+        MemoryError,
+        TimeoutError,
+    ]
+    assert errors[1].code == 143
+
+
+def test_the_change_takes_an_enum_handler() -> None:
+    """``signal.SIG_IGN`` given as the enum reaches the C call as a plain int.
+
+    The C ``signal`` that the gate calls refuses the ``Handlers`` enum with
+    ``TypeError``; ``signal.signal`` converts it, and the gate does the same.
+    """
+    errors: list[BaseException] = []
+    with _python_interrupt_handler():
+        try:
+            assert _bounded_run._swap([(signal.SIGINT, signal.SIG_IGN)], errors)
+            assert errors == []
+            assert signal.getsignal(signal.SIGINT) is signal.SIG_IGN
+        finally:
+            signal.signal(signal.SIGINT, signal.default_int_handler)
+
+
+def test_a_restore_that_raises_every_time_ends_within_the_bound(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The call that puts handlers back is made again at most a few times.
+
+    Each restore call meets a Ctrl+C as it begins. Such a restore used to be
+    tried until a call returned, for ever if the Ctrl+C came every time. It
+    now ends after :data:`_bounded_run._TRIES` calls and the Ctrl+C goes on.
+    The last try, made from the hold's own frame, still puts Python's
+    handler back: a Ctrl+C left on the hold's recorder would be dropped for
+    the rest of the process.
+    """
+    calls: list[int] = []
+    after: object = None
+    raising: dict[int, BaseException] = {
+        number: KeyboardInterrupt() for number in range(2, 1000)
+    }
+    with _python_interrupt_handler():
+        monkeypatch.setattr(
+            _bounded_run, "_swap", _swap_raising_as_it_begins(raising, calls)
+        )
+        try:
+            with pytest.raises(KeyboardInterrupt), _bounded_run._held_signals():
+                pass
+        finally:
+            monkeypatch.undo()
+            after = signal.getsignal(signal.SIGINT)
+            # Should the test fail, put Python's handler back by hand.
+            signal.signal(signal.SIGINT, signal.default_int_handler)
+    assert len(calls) == 1 + _bounded_run._TRIES, f"{len(calls)} calls"
+    assert after is signal.default_int_handler, f"SIGINT left on {after!r}"
+
+
+def _blocked_now() -> list[int]:
+    """Return the signals this thread blocks; none where there is no mask."""
+    if not hasattr(signal, "pthread_sigmask"):
+        return []
+    return sorted(signal.pthread_sigmask(signal.SIG_BLOCK, []))
+
+
+# A program that calls run_bounded a few frames below the recursion limit, at
+# each gap from 1 to 15 frames, and prints, as JSON, what each call did, then
+# the signal mask and the SIGINT handler it was left with.
+_NEAR_THE_LIMIT_PROGRAM = """\
+import json, signal, sys
+from apothem.conformity import _bounded_run
+
+new_session = sys.argv[1] == "1"
+limit = sys.getrecursionlimit()
+argv = [sys.executable, "-c", "pass"]
+
+
+def depth():
+    frame, count = sys._getframe(), 0
+    while frame is not None:
+        count += 1
+        frame = frame.f_back
+    return count
+
+
+def dive(gap):
+    if depth() < limit - gap:
+        return dive(gap)
+    return _bounded_run.run_bounded(argv, timeout=60, new_session=new_session)
+
+
+outcomes = []
+for gap in range(1, 16):
+    try:
+        dive(gap)
+        outcomes.append("returned")
+    except Exception as error:
+        outcomes.append(type(error).__name__)
+mask = []
+if hasattr(signal, "pthread_sigmask"):
+    mask = sorted(signal.pthread_sigmask(signal.SIG_BLOCK, []))
+interrupt = signal.getsignal(signal.SIGINT) is signal.default_int_handler
+print(json.dumps({"outcomes": outcomes, "mask": mask, "interrupt": interrupt}))
+"""
+
+
+@pytest.mark.parametrize("new_session", [False, True])
+def test_a_run_near_the_recursion_limit_raises_at_once(new_session: bool) -> None:
+    """A run a few frames below the recursion limit ends with an error at once.
+
+    Every signal call there raises ``RecursionError``, and the change of
+    handlers used to try again for ever: the process hung with ``SIGINT``,
+    ``SIGTERM`` and ``SIGHUP`` blocked, and its memory grew. The error now
+    goes on (on Windows, Python 3.10's ctypes may wrap it in an
+    ``ArgumentError``), nothing stays blocked, and ``SIGINT`` has its
+    handler back. The run is a process of its own with a deadline, so a
+    regression fails the test instead of hanging it.
+    """
+    env = {**os.environ, "PYTHONPATH": str(_REPO_ROOT / "src")}
+    run = subprocess.run(
+        [sys.executable, "-c", _NEAR_THE_LIMIT_PROGRAM, "1" if new_session else "0"],
+        env=env,
+        capture_output=True,
+        check=False,
+        timeout=_DEADLINE_SECONDS * 4,
+    )
+    assert run.returncode == 0, run.stderr.decode("utf-8", "replace")
+    result = json.loads(run.stdout)
+    errors = {outcome for outcome in result["outcomes"] if outcome != "returned"}
+    assert errors, f"no run reached the limit: {result}"
+    assert errors <= {"RecursionError", "ArgumentError"}, result
+    assert result["mask"] == [], result
+    assert result["interrupt"], result
+
+
+# A program that runs run_bounded in a subinterpreter, which may not set a
+# signal handler, with and without a new session.
+_SUBINTERPRETER_PROGRAM = """\
+from concurrent import interpreters
+
+interpreter = interpreters.create()
+interpreter.exec('''
+import sys
+from apothem.conformity import _bounded_run
+
+for new_session in (False, True):
+    done = _bounded_run.run_bounded(
+        [sys.executable, "-c", "print(42)"], timeout=60, new_session=new_session
+    )
+    assert done.stdout == "42\\\\n", done
+''')
+print("ran")
+"""
+
+
+# Windows is left out: there Popen.communicate reads the output on daemon
+# threads, which a subinterpreter does not allow.
+@_POSIX_ONLY
+@pytest.mark.skipif(
+    sys.version_info < (3, 14), reason="concurrent.interpreters is Python 3.14+"
+)
+def test_a_run_in_a_subinterpreter_runs_its_program() -> None:
+    """A subinterpreter, where ``signal.signal`` refuses, still runs programs.
+
+    Outside Windows the subinterpreter's ``SIGTERM`` reads as the default
+    action, so the termination handlers were set, and their refusal
+    (``ValueError``) failed every run with a new session before it started.
+    The refusal now leaves the handlers as they are, as the Ctrl+C hold
+    does.
+    """
+    env = {**os.environ, "PYTHONPATH": str(_REPO_ROOT / "src")}
+    run = subprocess.run(
+        [sys.executable, "-c", _SUBINTERPRETER_PROGRAM],
+        env=env,
+        capture_output=True,
+        check=False,
+        timeout=_DEADLINE_SECONDS * 2,
+    )
+    assert run.returncode == 0, run.stderr.decode("utf-8", "replace")
+    assert run.stdout.decode("utf-8").split() == ["ran"]
 
 
 def test_the_gravest_error_ranks_a_termination_then_ctrl_c() -> None:
@@ -2450,7 +2750,7 @@ def test_a_ctrl_c_beside_a_refused_hold_is_not_swallowed(
             name: signal.getsignal(getattr(signal, name))
             for name in ("SIGINT", "SIGTERM", "SIGHUP")
         }
-        monkeypatch.setattr(_bounded_run.signal, "signal", refuse_sigint_then_interrupt)
+        monkeypatch.setattr(_bounded_run, "_SET_HANDLER", refuse_sigint_then_interrupt)
         with (
             pytest.raises(KeyboardInterrupt),
             _bounded_run._held_signals(terminations=True),
@@ -2491,6 +2791,32 @@ def test_a_hold_closed_late_does_not_undo_the_outer_restore() -> None:
         assert signal.getsignal(signal.SIGINT) is signal.default_int_handler
 
 
+def _swap_raising_as_it_begins(
+    raising: dict[int, BaseException], calls: list[int]
+) -> Callable[..., bool]:
+    """Return a stand-in for ``_swap`` that raises as some of its calls begin.
+
+    Call *n* (from 1) raises ``raising[n]`` before it changes anything, as a
+    signal's handler that Python runs at the start of the call would. Each
+    call adds the number of pairs it was given to *calls*.
+    """
+    real_swap = _bounded_run._swap
+
+    def swap(
+        pairs: Sequence[tuple[int, Any]],
+        errors: list[BaseException],
+        *,
+        saved: list[tuple[int, Any]] | None = None,
+        ours: Callable[[object], bool] | None = None,
+    ) -> bool:
+        calls.append(len(pairs))
+        if len(calls) in raising:
+            raise raising[len(calls)]
+        return real_swap(pairs, errors, saved=saved, ours=ours)
+
+    return swap
+
+
 @contextlib.contextmanager
 def _default_terminations() -> Iterator[None]:
     """Give ``SIGTERM`` and ``SIGHUP`` their default action for the block."""
@@ -2525,22 +2851,11 @@ def test_a_restore_stopped_as_it_begins_is_made_again(
     """The handlers come back even when the call that restores them raises.
 
     A signal's handler can raise as that call begins, before it changed
-    anything; the stand-in raises there. The restore is tried again until a
-    call returns, and the error still goes on. A ``TimeoutError`` comes once
-    here, so it is not taken for ``signal.signal`` refusing a handler.
+    anything; the stand-in raises there. The restore is made again, and the
+    error still goes on. A ``TimeoutError`` comes once here, so it does not
+    end the tries.
     """
-    real_set_handlers = _bounded_run._set_handlers
     calls: list[int] = []
-
-    def raising_as_the_restore_begins(
-        handlers: Sequence[tuple[int, Any]],
-        saved: list[tuple[int, Any]] | None = None,
-    ) -> None:
-        calls.append(len(handlers))
-        if len(calls) == 2:
-            raise first_error
-        real_set_handlers(handlers, saved)
-
     with _python_interrupt_handler(), _default_terminations():
         before = {
             name: signal.getsignal(getattr(signal, name))
@@ -2548,7 +2863,7 @@ def test_a_restore_stopped_as_it_begins_is_made_again(
             if hasattr(signal, name)
         }
         monkeypatch.setattr(
-            _bounded_run, "_set_handlers", raising_as_the_restore_begins
+            _bounded_run, "_swap", _swap_raising_as_it_begins({2: first_error}, calls)
         )
         manager = (
             _bounded_run._held_signals()
@@ -2671,7 +2986,7 @@ def test_handlers_change_with_the_signals_blocked(
 
     before = signal.pthread_sigmask(signal.SIG_BLOCK, [])
     with _python_interrupt_handler(), _default_terminations():
-        monkeypatch.setattr(_bounded_run.signal, "signal", watching)
+        monkeypatch.setattr(_bounded_run, "_SET_HANDLER", watching)
         with _bounded_run._held_signals(terminations=True):
             during = signal.pthread_sigmask(signal.SIG_BLOCK, [])
         monkeypatch.undo()
@@ -2712,7 +3027,7 @@ def test_a_ctrl_c_as_the_handlers_come_back_keeps_a_held_termination(
     def hold_a_termination() -> None:
         with _bounded_run._held_signals(terminations=True):
             signal.raise_signal(signal.SIGTERM)
-            monkeypatch.setattr(_bounded_run.signal, "signal", ctrl_c_once_restored)
+            monkeypatch.setattr(_bounded_run, "_SET_HANDLER", ctrl_c_once_restored)
 
     with _python_interrupt_handler():
         if signal.SIGTERM not in _bounded_run._signals_to_hold(terminations=True):
@@ -2886,14 +3201,17 @@ def test_stop_leaves_the_group_of_a_reaped_program_alone(
     assert sent == [], "the stop signalled the group of a reaped program"
 
 
+@pytest.mark.parametrize("unheld_error", ["ctrl-c", "own-error"])
 def test_a_stop_whose_every_held_try_fails_still_stops_the_program(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch, unheld_error: str
 ) -> None:
-    """After every held try failed, the program is stopped once more, unheld.
+    """After every held try failed, the program is stopped without the hold.
 
     A Ctrl+C lands before the hold at each try. The program used to run on
-    after the last one: no stop had run at all. The last stop raises an
-    error of its own here, after the kill; the Ctrl+C still goes on.
+    after the last one: no stop had run at all. The first stop without the
+    hold meets one more Ctrl+C before its kill, or raises an error of its
+    own after it; a stop without the hold used to be tried once, and that
+    Ctrl+C left the program running. The Ctrl+C still goes on.
     """
     process = _sleeping_program()
     job = _bounded_run._Job()
@@ -2905,51 +3223,61 @@ def test_a_stop_whose_every_held_try_fails_still_stops_the_program(
         tries.append(True)
         raise KeyboardInterrupt
 
-    def stop_then_fail(
+    def stop_failing_once(
         stopped: subprocess.Popen[bytes], stop_job: _bounded_run._Job, *, group: bool
     ) -> None:
         stops.append(stopped.pid)
+        if len(stops) == 1 and unheld_error == "ctrl-c":
+            raise KeyboardInterrupt
         real_stop(stopped, stop_job, group=group)
-        raise OSError("the stop's own error")
+        if len(stops) == 1:
+            raise OSError("the stop's own error")
 
     monkeypatch.setattr(_bounded_run, "_signals_to_hold", interrupt_every_hold)
-    monkeypatch.setattr(_bounded_run, "_stop", stop_then_fail)
+    monkeypatch.setattr(_bounded_run, "_stop", stop_failing_once)
     try:
         with pytest.raises(KeyboardInterrupt):
             _bounded_run._stop_after_error(
                 process, job, KeyboardInterrupt(), group=False
             )
-        assert len(tries) == _bounded_run._STOP_ATTEMPTS
-        assert len(stops) == 1, f"the stop ran {len(stops)} times"
+        assert len(tries) == _bounded_run._TRIES
+        assert len(stops) == 2, f"the stop ran {len(stops)} times"
         assert _ends(process), "the program still runs after every try failed"
     finally:
         _end_and_reap(process, job)
 
 
 class _InterruptingCount:
-    """A count of tries whose use as a ``range()`` bound raises Ctrl+C.
+    """A count of tries whose first comparison raises Ctrl+C.
 
-    It stands in for a signal whose handler Python runs as the stop's loop
-    begins, outside any of the tries' own ``try``.
+    It stands in for a signal whose handler Python runs in the stop's loop,
+    outside any of the tries' own ``try``. Later comparisons read it as
+    :data:`_bounded_run._TRIES`.
     """
 
-    def __index__(self) -> int:
-        raise KeyboardInterrupt
+    def __init__(self) -> None:
+        self.compared = False
+
+    def __gt__(self, other: int) -> bool:
+        if not self.compared:
+            self.compared = True
+            raise KeyboardInterrupt
+        return other < 3
 
 
-def test_a_ctrl_c_as_the_stop_loop_begins_still_stops_the_program(
+def test_a_ctrl_c_in_the_stop_loop_still_stops_the_program(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A Ctrl+C outside every held try still leaves the program stopped.
 
     Python runs a waiting signal's handler after a call returns and on a
-    jump back, so a Ctrl+C can raise at the loop's ``range()`` call, in the
-    ``except`` that records a try's error, or on the way to the next try.
-    The program used to run on: no stop had run.
+    jump back, so a Ctrl+C can raise in the ``except`` that records a try's
+    error, or on the way to the next try. The program used to run on: no
+    stop had run.
     """
     process = _sleeping_program()
     job = _bounded_run._Job()
-    monkeypatch.setattr(_bounded_run, "_STOP_ATTEMPTS", _InterruptingCount())
+    monkeypatch.setattr(_bounded_run, "_TRIES", _InterruptingCount())
     try:
         with pytest.raises(KeyboardInterrupt):
             _bounded_run._stop_after_error(
@@ -2997,15 +3325,18 @@ def test_an_error_as_the_block_takes_hold_still_sets_every_pair(
     """A handler run as the block takes hold cannot skip the handler changes.
 
     The C mask call runs a waiting handler after it set the mask. Its error
-    used to leave ``_set_handlers`` before any pair was set, and a
-    termination the restore of the mask raised was dropped.
+    used to leave the change before any pair was set, and a termination the
+    restore of the mask raised was dropped. The pass is now made again, the
+    mask is put back, and the error is kept to go on.
     """
     real_block = _bounded_run._BLOCK_MASK
     assert real_block is not None
+    interrupted: list[bool] = []
 
     def block_then_interrupt(signals: Iterable[int]) -> Iterable[int]:
         before = real_block(signals)
-        if signals:
+        if signals and not interrupted:
+            interrupted.append(True)
             raise KeyboardInterrupt
         return before
 
@@ -3016,14 +3347,19 @@ def test_an_error_as_the_block_takes_hold_still_sets_every_pair(
     def mark(_signum: int, _frame: object) -> None:
         return None
 
+    errors: list[BaseException] = []
     try:
-        with pytest.raises(KeyboardInterrupt):
-            _bounded_run._set_handlers([(signal.SIGINT, mark), (signal.SIGTERM, mark)])
+        assert _bounded_run._swap(
+            [(signal.SIGINT, mark), (signal.SIGTERM, mark)], errors
+        )
+        assert interrupted, "the block never raised"
+        assert [type(error) for error in errors] == [KeyboardInterrupt]
         assert signal.getsignal(signal.SIGINT) is mark
         assert signal.getsignal(signal.SIGTERM) is mark
         blocked = signal.pthread_sigmask(signal.SIG_BLOCK, [])
         assert {signal.SIGINT, signal.SIGTERM, signal.SIGHUP}.isdisjoint(blocked)
     finally:
+        errors.clear()
         signal.signal(signal.SIGINT, old_int)
         signal.signal(signal.SIGTERM, old_term)
 
@@ -3071,38 +3407,40 @@ def test_a_termination_before_a_stop_try_wins_over_an_earlier_ctrl_c(
     [KeyboardInterrupt(), ValueError("a caller's own error")],
     ids=["ctrl-c", "value-error"],
 )
-def test_two_different_errors_in_a_row_are_no_refusal(
+def test_two_different_errors_in_a_row_still_set_the_pair(
     monkeypatch: pytest.MonkeyPatch, first_error: BaseException
 ) -> None:
-    """A pair counts as refused only when the same kind of error comes back.
+    """The tries of a change end only when an error of a known kind comes back.
 
     The first try of the change meets *first_error*, the second a caller's
     ``TimeoutError``, a kind ``signal.signal`` also raises when it refuses a
     handler (an ``OSError``). The kinds differ, so the third try is made and
-    sets the handler; the first error goes on.
+    sets the handler; both errors are kept to go on, the first one first.
     """
     real_signal = signal.signal
     old_term = signal.getsignal(signal.SIGTERM)
-    errors = [first_error, TimeoutError("a caller's alarm")]
+    raising = [first_error, TimeoutError("a caller's alarm")]
 
     def raising_twice(signum: int, handler: object) -> object:
-        if errors:
-            raise errors.pop(0)
+        if raising:
+            raise raising.pop(0)
         return real_signal(signum, handler)  # type: ignore[arg-type]
 
     def wanted(_signum: int, _frame: object) -> None:
         return None
 
+    errors: list[BaseException] = []
     try:
-        monkeypatch.setattr(_bounded_run.signal, "signal", raising_twice)
-        with pytest.raises((type(first_error), TimeoutError)) as raised:
-            _bounded_run._set_handlers([(signal.SIGTERM, wanted)])
+        monkeypatch.setattr(_bounded_run, "_SET_HANDLER", raising_twice)
+        assert _bounded_run._swap([(signal.SIGTERM, wanted)], errors)
         monkeypatch.undo()
-        assert not errors, "the second error was never raised"
+        assert not raising, "the second error was never raised"
         assert signal.getsignal(signal.SIGTERM) is wanted
-        assert raised.value is first_error
+        assert [type(error) for error in errors] == [type(first_error), TimeoutError]
+        assert errors[0] is first_error
     finally:
         monkeypatch.undo()
+        errors.clear()
         real_signal(signal.SIGTERM, old_term)
 
 
@@ -3121,29 +3459,18 @@ def test_two_different_errors_in_a_row_are_no_refusal(
 def test_two_different_refusal_kinds_in_a_row_still_restore(
     monkeypatch: pytest.MonkeyPatch, hold: str
 ) -> None:
-    """A restore stops trying only when the same refusal comes back.
+    """A restore stops trying only when an error of a known kind comes back.
 
     A ``ValueError`` stops the restore as it begins, then a caller's
     ``TimeoutError``. ``signal.signal`` raises both kinds when it refuses a
     handler, but they differ, so the restore is tried a third time and the
     handlers come back; the first error goes on.
     """
-    real_set_handlers = _bounded_run._set_handlers
-    errors: list[BaseException] = [
-        ValueError("a caller's own error"),
-        TimeoutError("a caller's alarm"),
-    ]
     calls: list[int] = []
-
-    def raising_as_the_restore_begins(
-        handlers: Sequence[tuple[int, Any]],
-        saved: list[tuple[int, Any]] | None = None,
-    ) -> None:
-        calls.append(len(handlers))
-        if len(calls) > 1 and errors:
-            raise errors.pop(0)
-        real_set_handlers(handlers, saved)
-
+    raising: dict[int, BaseException] = {
+        2: ValueError("a caller's own error"),
+        3: TimeoutError("a caller's alarm"),
+    }
     with _python_interrupt_handler(), _default_terminations():
         before = {
             name: signal.getsignal(getattr(signal, name))
@@ -3151,7 +3478,7 @@ def test_two_different_refusal_kinds_in_a_row_still_restore(
             if hasattr(signal, name)
         }
         monkeypatch.setattr(
-            _bounded_run, "_set_handlers", raising_as_the_restore_begins
+            _bounded_run, "_swap", _swap_raising_as_it_begins(raising, calls)
         )
         manager = (
             _bounded_run._held_signals()
@@ -3176,20 +3503,12 @@ def test_a_held_termination_wins_over_one_that_lands_in_the_restore(
     SIGTERM came first, so its exit code, 143, is the one that goes on,
     not 129.
     """
-    real_set_handlers = _bounded_run._set_handlers
     calls: list[int] = []
-
-    def hangup_as_the_restore_begins(
-        handlers: Sequence[tuple[int, Any]],
-        saved: list[tuple[int, Any]] | None = None,
-    ) -> None:
-        calls.append(len(handlers))
-        if len(calls) == 2:
-            raise SystemExit(128 + signal.SIGHUP)
-        real_set_handlers(handlers, saved)
-
+    hangup = {2: SystemExit(128 + signal.SIGHUP)}
     with _python_interrupt_handler(), _default_terminations():
-        monkeypatch.setattr(_bounded_run, "_set_handlers", hangup_as_the_restore_begins)
+        monkeypatch.setattr(
+            _bounded_run, "_swap", _swap_raising_as_it_begins(hangup, calls)
+        )
         with (
             pytest.raises(SystemExit) as raised,
             _bounded_run._held_signals(terminations=True),
@@ -3227,19 +3546,24 @@ def test_an_error_before_popen_sets_its_process_id_goes_on_as_itself() -> None:
         job.close()
 
 
+@pytest.mark.parametrize("where", ["in-the-stop", "as-the-hold-is-set"])
 def test_a_ctrl_c_held_during_the_stop_leaves_no_cycle_holding_the_program(
-    monkeypatch: pytest.MonkeyPatch,
+    monkeypatch: pytest.MonkeyPatch, where: str
 ) -> None:
     """The errors the stop met do not keep the program's Popen in a cycle.
 
     Each list of errors is emptied once its error goes on, as their
     tracebacks hold the frame that lists them. A list left as it was kept
     the stop's frame, and the Popen in it, alive until the next garbage
-    collection; the collector is off here, so only a cycle keeps it.
+    collection; the collector is off here, so only a cycle keeps it. The
+    Ctrl+C lands during the held stop, or as the stop's hold is set, where
+    the change of handlers keeps it before the hold raises it.
     """
     process = _sleeping_program()
     job = _bounded_run._Job()
     real_stop = _bounded_run._stop
+    real_signal = signal.signal
+    interrupted_hold: list[bool] = []
 
     def interrupt_the_stop(
         stopped: subprocess.Popen[bytes], stop_job: _bounded_run._Job, *, group: bool
@@ -3247,7 +3571,16 @@ def test_a_ctrl_c_held_during_the_stop_leaves_no_cycle_holding_the_program(
         signal.raise_signal(signal.SIGINT)
         real_stop(stopped, stop_job, group=group)
 
-    monkeypatch.setattr(_bounded_run, "_stop", interrupt_the_stop)
+    def interrupt_the_hold(signum: int, handler: object) -> object:
+        if isinstance(handler, _bounded_run._Recorder) and not interrupted_hold:
+            interrupted_hold.append(True)
+            signal.raise_signal(signal.SIGINT)
+        return real_signal(signum, handler)  # type: ignore[arg-type]
+
+    if where == "in-the-stop":
+        monkeypatch.setattr(_bounded_run, "_stop", interrupt_the_stop)
+    else:
+        monkeypatch.setattr(_bounded_run, "_SET_HANDLER", interrupt_the_hold)
     collecting = gc.isenabled()
     gc.disable()
     try:
@@ -3264,7 +3597,192 @@ def test_a_ctrl_c_held_during_the_stop_leaves_no_cycle_holding_the_program(
         program = weakref.ref(process)
         del process
         assert interrupted, "the held Ctrl+C did not go on"
+        assert interrupted_hold or where == "in-the-stop", "the hold was not set"
         assert program() is None, "a reference cycle still holds the program"
     finally:
         if collecting:
             gc.enable()
+
+
+@pytest.mark.parametrize(
+    "new_session",
+    [
+        False,
+        True,
+        pytest.param(None, marks=_WINDOWS_ONLY, id="windows-without-a-job"),
+    ],
+)
+def test_a_ctrl_c_as_the_stop_begins_still_stops_the_program(
+    monkeypatch: pytest.MonkeyPatch, new_session: bool | None
+) -> None:
+    """A second Ctrl+C that lands as the stop's call begins does not skip it.
+
+    Python runs a waiting signal's handler as a function begins, before its
+    first line, so a Ctrl+C there skipped every try of the stop, and the
+    program ran on (outside Windows in a session of its own with
+    *new_session*). A trace function raises the Ctrl+C at that point here;
+    run_bounded now stops the program itself.
+    """
+    if new_session is None:
+        monkeypatch.setattr(_bounded_run, "_new_job", lambda: None)
+    started: list[subprocess.Popen[bytes]] = []
+    monkeypatch.setattr(
+        _bounded_run.subprocess, "Popen", _popen_interrupted_in_its_wait(started)
+    )
+    code = _bounded_run._stop_after_error.__code__
+    fired: list[bool] = []
+
+    def trace_call(frame: FrameType, event: str, _arg: object) -> None:
+        if event == "call" and frame.f_code is code and not fired:
+            fired.append(True)
+            raise KeyboardInterrupt
+
+    program_gone = False
+    previous = sys.gettrace()
+    try:
+        with _python_interrupt_handler():
+            sys.settrace(trace_call)
+            try:
+                with pytest.raises(KeyboardInterrupt):
+                    _bounded_run.run_bounded(
+                        [
+                            sys.executable,
+                            "-c",
+                            f"import time; time.sleep({_SLEEP_SECONDS})",
+                        ],
+                        timeout=_SLEEP_SECONDS,
+                        new_session=bool(new_session),
+                    )
+            finally:
+                sys.settrace(previous)
+        assert fired, "the Ctrl+C at the stop's start was never raised"
+        assert len(started) == 1, started
+        program_gone = _ends(started[0])
+        assert program_gone, "the program still runs after the second interrupt"
+    finally:
+        for process in started:
+            with contextlib.suppress(OSError, subprocess.TimeoutExpired):
+                process.kill()
+                process.communicate(timeout=_EXIT_WAIT_SECONDS)
+
+
+@pytest.mark.parametrize(
+    "hold",
+    [
+        "held_signals",
+        pytest.param(
+            "exit_on_termination",
+            marks=pytest.mark.skipif(
+                sys.platform == "win32", reason="no termination handlers on Windows"
+            ),
+        ),
+    ],
+)
+def test_a_ctrl_c_in_the_restore_keeps_the_termination_on_its_way_out(
+    monkeypatch: pytest.MonkeyPatch, hold: str
+) -> None:
+    """A Ctrl+C that lands as the handlers come back does not replace a SIGTERM.
+
+    The block ends with the ``SystemExit`` of a termination, and a Ctrl+C
+    stops the restore of a handler once. Only the errors met on the way were
+    ranked, so the Ctrl+C went on in place of the termination: exit 130,
+    not 143. The error already on its way out is ranked with them now.
+    """
+    real_signal = signal.signal
+    restored = signal.default_int_handler if hold == "held_signals" else signal.SIG_DFL
+    interrupted: list[bool] = []
+
+    def ctrl_c_as_the_restore_begins(signum: int, handler: object) -> object:
+        # ==, not is: the gate hands the C call SIG_DFL as a plain 0.
+        if handler == restored and not interrupted:
+            interrupted.append(True)
+            raise KeyboardInterrupt
+        return real_signal(signum, handler)  # type: ignore[arg-type]
+
+    with _python_interrupt_handler(), _default_terminations():
+        before = {
+            name: signal.getsignal(getattr(signal, name))
+            for name in ("SIGINT", "SIGTERM", "SIGHUP")
+            if hasattr(signal, name)
+        }
+        manager = (
+            _bounded_run._held_signals()
+            if hold == "held_signals"
+            else _bounded_run._exit_on_termination(True)
+        )
+
+        def end_with_a_termination() -> None:
+            with manager:
+                monkeypatch.setattr(
+                    _bounded_run, "_SET_HANDLER", ctrl_c_as_the_restore_begins
+                )
+                raise SystemExit(143)
+
+        # Both caught: a KeyboardInterrupt that wins fails the test below
+        # instead of ending the pytest run.
+        with pytest.raises((SystemExit, KeyboardInterrupt)) as raised:
+            end_with_a_termination()
+        monkeypatch.undo()
+        after = {name: signal.getsignal(getattr(signal, name)) for name in before}
+    assert interrupted, "the Ctrl+C was never raised"
+    assert isinstance(raised.value, SystemExit), f"raised {raised.value!r}"
+    assert raised.value.code == 143
+    assert after == before
+
+
+@_POSIX_ONLY
+def test_a_termination_handler_set_during_the_run_stays() -> None:
+    """A ``SIGTERM`` handler the caller sets while the block runs is kept.
+
+    The block's end used to put the default action back over it, so a later
+    ``SIGTERM`` ended the process without the caller's clean-up.
+    """
+
+    def own_handler(_signum: int, _frame: FrameType | None) -> None:
+        """Stand in for a handler the caller installs."""
+
+    with _default_terminations():
+        with _bounded_run._exit_on_termination(True):
+            assert signal.getsignal(signal.SIGTERM) is _bounded_run._exit_on_signal
+            signal.signal(signal.SIGTERM, own_handler)
+        assert signal.getsignal(signal.SIGTERM) is own_handler
+        assert signal.getsignal(signal.SIGHUP) is signal.SIG_DFL
+
+
+@_POSIX_ONLY
+def test_a_mask_change_made_during_a_change_of_handlers_stays(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A signal block that a handler adds while the handlers change is kept.
+
+    A handler that runs mid-change (a caller's ``SIGALRM`` handler, say) can
+    block a signal itself. The change used to end by setting the whole mask
+    back as it found it, which undid that block; it now unblocks only the
+    signals it blocked. ``SIGHUP``, one of the three a change blocks, was
+    blocked by the caller before: it stays blocked too.
+    """
+    real_signal = signal.signal
+    added: list[bool] = []
+
+    def block_usr1_first(signum: int, handler: object) -> object:
+        if not added:
+            added.append(True)
+            signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGUSR1})
+        return real_signal(signum, handler)  # type: ignore[arg-type]
+
+    ours = {signal.SIGUSR1, signal.SIGHUP}
+    before = signal.pthread_sigmask(signal.SIG_BLOCK, [])
+    if ours & set(before):
+        pytest.skip("SIGUSR1 or SIGHUP is blocked already")
+    signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGHUP})
+    try:
+        with _python_interrupt_handler():
+            monkeypatch.setattr(_bounded_run, "_SET_HANDLER", block_usr1_first)
+            with _bounded_run._held_signals():
+                pass
+            monkeypatch.undo()
+        after = signal.pthread_sigmask(signal.SIG_BLOCK, [])
+        assert added, "the stand-in never ran"
+        assert set(after) == set(before) | ours
+    finally:
+        signal.pthread_sigmask(signal.SIG_UNBLOCK, ours)
