@@ -96,8 +96,8 @@ load them. After the checkout, it removes the Python
 cache folders (`__pycache__`) under `src` before the engine runs from the
 clone. The clone's git hooks never run during the update, and a clone of a
 project other than Apothem is not updated at all. The update sets
-`GIT_NO_LAZY_FETCH=1`, `GIT_ALLOW_PROTOCOL` and `GIT_ATTR_NOSYSTEM=1` for its
-run, and git reads no attributes file outside the clone (see the
+`GIT_NO_REPLACE_OBJECTS=1`, `GIT_NO_LAZY_FETCH=1`, `GIT_ALLOW_PROTOCOL` and
+`GIT_ATTR_NOSYSTEM=1` for its run, and git reads no attributes file outside the clone (see the
 [installer environment variables](/docs/how-to/installer-environment-variables#the-installer-variables)).
 Each run holds a lock, `<APOTHEM_HOME>.lock`, for its whole length, so a
 second install, update or uninstall on the same `APOTHEM_HOME` stops; see
@@ -127,6 +127,45 @@ in place and needs `APOTHEM_ALLOW_UNVERIFIED=1`. Checksum mode does not verify
 the release. SHA256SUMS comes from the same release as the archive, so a match
 only shows the download isn't damaged; anyone who can change the release's
 files can change both.
+
+### When the engine leaves a file as it is
+
+The engine can leave a file that holds Apothem's block (`CLAUDE.md` or
+`AGENTS.md`, say) as it is because of its Apothem marker lines: for example,
+when the file holds two whole blocks between Apothem's markers. It then writes
+everything else, prints a warning that names the file and says how to fix it,
+and ends as partial with exit code `2`. The engine also ends as partial when
+it stops after it has written something: for example, when one tool fails
+after an earlier one in an `APOTHEM_HARNESS=all` run wrote its files. Its
+error says what failed, and each tool that finished before it has its own
+line above the error. The installer and the
+update script then print one more line:
+
+```text
+! The engine ended as partial (exit code 2): its messages above name the files it left as they are, or the error that stopped it. Fix what they name, then run 'apothem update --harness claude-code' again.
+```
+
+They finish the run as after a full success: the installer still runs verify,
+places the `apothem` command and prints its closing banner, and the update
+script still prints "Update complete." as its last line. Each script then ends
+with exit code `2`. A piped PowerShell run (`irm ... | iex`) leaves
+`$LASTEXITCODE` at `2` instead, so your PowerShell session stays open. A
+one-shot `pwsh -Command "irm ... | iex"` (or `powershell -c`) reports a
+partial run only through `$LASTEXITCODE`, so the process itself exits `0`.
+When a CI job or script needs the code, end the command with
+`; exit $LASTEXITCODE`, or run the script by path with `-File`. From
+PowerShell, bash or another POSIX shell, put that command in single quotes. In
+double quotes the calling shell puts in its own `$LASTEXITCODE` before the new
+process starts (a POSIX shell puts in an empty string), so the process does not
+exit with the run's code. From cmd.exe, double quotes are fine. An installer dry run (`--dry-run`, or `-DryRun` on Windows)
+writes nothing, so the engine does not end it as partial. Fix what the
+engine's messages name. For a file, keep your own text (see
+[A file holds two blocks between Apothem's markers](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)
+and
+[Apothem cannot tell its block from your text](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)),
+then run `apothem update --harness <name>`, or the update script, again, for
+each tool the run left unfinished. Any other non-zero exit code from the
+engine stops the script there.
 
 ## Re-materialize harness output
 
