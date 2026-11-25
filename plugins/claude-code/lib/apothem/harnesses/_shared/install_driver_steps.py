@@ -112,7 +112,7 @@ _PLAIN_TEXT = re.compile(r" {0,3}(?!\d{1,9}[.)](?:[ \t]|\Z))[^-\s+*>#`~<=_\[|][^
 
 #: A line that may start a link reference definition or be a table row: ``[``
 #: after the indent, list bullets and ``>`` marks, or a ``|`` anywhere.
-_LABEL = re.compile(r"[ \t>]*(?:(?:[-+*]|[0-9]{1,9}[.)])[ \t]+[ \t>]*)*\[|.*\|")
+_LABEL = re.compile(r"[ \t>]*(?:(?:[-+*]|[0-9]{1,9}[.)])[ \t][ \t>]*)*\[|.*\|")
 
 #: A line's list bullets after the indent, each with the gap after it: the
 #: text of the innermost item starts at the column where the match ends.

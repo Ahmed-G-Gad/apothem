@@ -777,3 +777,20 @@ def test_the_troubleshooting_stray_marker_example_is_the_fix_printed():
 
     assert quoted is not None
     assert printed.endswith(quoted[1])
+
+
+def test_a_line_of_many_bullets_is_read_in_linear_time() -> None:
+    """The definition-or-table check never backtracks over a run of bullets.
+
+    A line of ``*`` bullets each followed by tabs and no ``[`` took time that
+    doubled with every few bullets before the gap after a bullet was read one
+    way only.
+    """
+    line = "*" + "\t\t*" * 5000 + "x"
+
+    started = time.perf_counter()
+    found = steps._LABEL.match(line)
+    elapsed = time.perf_counter() - started
+
+    assert found is None
+    assert elapsed < 1.0
