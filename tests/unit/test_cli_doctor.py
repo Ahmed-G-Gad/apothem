@@ -424,8 +424,69 @@ def test_an_error_while_checking_hook_files_is_not_blamed_on_the_ledger(
         for c in payload["checks"]
         if c["code"] == "hook.unchecked" and c.get("harness") == "cursor"
     ]
-    assert "a hook file could not be read" in note["message"]
+    assert "could not finish checking the hook commands" in note["message"]
+    assert note["fix"] == "Make hooks.json readable, then run doctor again."
     assert "ledger" not in note["fix"]
+    assert _row(payload, "cursor")["hooks"] is None
+
+
+def test_an_error_without_a_file_names_no_file_in_its_fix(
+    runner: CliRunner, home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An OSError that names no file (a root resolve) gets a fix with no path."""
+    from apothem.cli import _doctor_hooks
+
+    project = tmp_path / "proj"
+    project.mkdir()
+    result = runner.invoke(
+        main, ["install", "--harness", "cursor", "--project", str(project), "--yes"]
+    )
+    assert result.exit_code == 0, result.output
+
+    def unresolvable(*args: object, **kwargs: object) -> None:
+        raise OSError(5, "Input/output error")
+
+    monkeypatch.setattr(_doctor_hooks._ProjectInstall, "read_file", unresolvable)
+    result = runner.invoke(main, ["doctor", "--json", "--project", str(project)])
+
+    payload = json.loads(result.stdout)
+    [note] = [
+        c
+        for c in payload["checks"]
+        if c["code"] == "hook.unchecked" and c.get("harness") == "cursor"
+    ]
+    assert note["fix"] == "Fix the error named here, then run doctor again."
+
+
+def test_a_ledger_file_that_will_not_open_is_named_as_the_ledger(
+    runner: CliRunner, home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A real read of the ledger file that raises gives ``ledger.unreadable``."""
+    from apothem.lib.install_ledger import ledger_path
+
+    project = tmp_path / "proj"
+    project.mkdir()
+    result = runner.invoke(
+        main, ["install", "--harness", "cursor", "--project", str(project), "--yes"]
+    )
+    assert result.exit_code == 0, result.output
+    ledger = ledger_path("cursor")
+    original_read = Path.read_text
+
+    def denied_read(
+        self: Path, encoding: str | None = None, errors: str | None = None
+    ) -> str:
+        if self == ledger:
+            raise PermissionError(13, "Permission denied", str(self))
+        return original_read(self, encoding=encoding, errors=errors)
+
+    monkeypatch.setattr(Path, "read_text", denied_read)
+    result = runner.invoke(main, ["doctor", "--json", "--project", str(project)])
+
+    payload = json.loads(result.stdout)
+    failed = [c for c in payload["checks"] if c["code"] == "ledger.unreadable"]
+    assert [c["harness"] for c in failed] == ["cursor"]
+    assert result.exit_code == 1
 
 
 def test_doctor_names_the_project_in_a_project_harness_fix(

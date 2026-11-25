@@ -178,7 +178,8 @@ and `profile_error` when the profile is invalid) and adds:
 - `harnesses[].status` — `ok`, `not_installed`, `needs_project`,
   `verify_failed`, `hook_failed`, or `error`; plus `verified` and `hooks`
   (`{"probed": N, "failed": [...]}`, or `null` when the checked folder has no
-  install record or the install ledger cannot be read).
+  install record, the install ledger cannot be read, or doctor could not
+  finish checking the hook commands; a `hook.unchecked` check says why).
 - `checks` — one record per check: `code` (for example `harness.verify_failed`,
   `harness.stray_begin`, `hook.start_failed`, `hook.unchecked`,
   `ledger.unreadable`, or a `profile.*` code), `status`

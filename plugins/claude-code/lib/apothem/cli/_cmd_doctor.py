@@ -334,18 +334,20 @@ def _probe_registered_hooks(
         )
         return
     except OSError as exc:
-        # Not the ledger: a hook file or folder could not be read while doctor
-        # checked it, so the hook commands go unchecked rather than blamed on
-        # the ledger.
+        # Not the ledger: a lookup failed while doctor checked the hook
+        # commands (a path, the project root or the interpreter), so they go
+        # unchecked rather than blamed on the ledger.
         row["hooks"] = None
         checks.append(
             _check(
                 "hook.unchecked",
                 "info",
-                f"{name}: a hook file could not be read ({exc}), so its hook "
-                "commands were not checked.",
+                f"{name}: doctor could not finish checking the hook commands "
+                f"({exc}), so they were not checked.",
                 harness=name,
-                fix="Make the file named here readable, then run doctor again.",
+                fix=f"Make {exc.filename} readable, then run doctor again."
+                if exc.filename
+                else "Fix the error named here, then run doctor again.",
             )
         )
         return
