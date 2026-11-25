@@ -1,11 +1,11 @@
 ---
 title: "Settings"
-description: "Claude Code harness configuration in settings.json covering tool permissions, hook wiring, environment variables, and status-line templates."
+description: "Claude Code harness configuration in settings.json covering tool permissions and hook wiring."
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-`settings.json` carries the Claude Code harness configuration: hook wiring,
-tool permissions, environment variables, and status-line settings.
+`settings.json` carries the Claude Code harness configuration Apothem merges
+into your file: tool permissions and hook wiring.
 
 The full canonical reference lives at
 [settings-reference.md](/docs/reference/settings-reference). This page summarizes the contract
@@ -15,10 +15,14 @@ and points at the deeper reference.
 
 | Section | Purpose |
 |---------|---------|
+| `$schema` | Schema URL that editors use to check the file |
 | `permissions` | Tool whitelists and blacklists per matcher |
 | `hooks` | Event-keyed hook command table (the canonical wiring) |
-| `env` | Per-session environment variables |
-| `statusLine` | Status-line template the host renders |
+
+Apothem's template sets no other key, so keys such as `env` and `statusLine`
+stay yours. The status-line renderer is copied to `~/.claude/statuslines/`
+but not wired; the [Claude Code page](/docs/harnesses/claude-code) shows the
+`statusLine` entry to add yourself.
 
 ## Single-template invariant
 

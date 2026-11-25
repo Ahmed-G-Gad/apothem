@@ -71,7 +71,8 @@ The installer performs these steps:
 3. **Profile bootstrap.** If you have no profile yet, the installer copies the
    example profile to `~/.config/apothem/profile.yaml`, installs and verifies
    Claude Code from it in the same run, and warns that the identity fields are
-   placeholders.
+   placeholders. The example also holds sample rules, two sample MCP servers
+   and per-harness overrides; in Step 2 you remove what you do not want.
 
 You can steer the install with environment variables. The ones you are most
 likely to use:
@@ -170,6 +171,9 @@ with:
 ```bash
 apothem update --harness claude-code
 ```
+
+If the installer did not install Claude Code (for example, you set
+`APOTHEM_HARNESS` to another harness), install it now:
 
 ```bash
 apothem install --harness claude-code
