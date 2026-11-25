@@ -18,10 +18,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   that is not a regular file, and no project hook file reached through a link.
   When the tool runs hooks from such a file (including a settings file the
   hooks are merged into), a `hook.unchecked` line names it; for a link, the
-  line also names the link on the path. An update keeps the file as it is, so the
-  fix says to shrink or replace the file, or to check where the link leads and
-  replace it, or remove only the link itself and run the `update` command the
-  fix ends with. A link, or a Python file the install did not write, in the
+  line also names the link on the path. An update keeps the file as it is, so
+  the fix says to shrink or replace the file, or to check where the link leads
+  and replace it, or remove only the link itself and run the `update` command
+  the fix ends with. A link, or a Python file the install did not write, in the
   hook script's folder gets a fix that says to remove it (for a link, only the
   link itself), since an update keeps it too. A hook script the install
   recorded outside the project is not started, and its line says so. Doctor
