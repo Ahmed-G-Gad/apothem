@@ -2,38 +2,35 @@
 
 """Numbered fixes for Apothem marker lines: each step changes one marker line in place.
 
-The warnings for Apothem marker lines that install, update and uninstall
-cannot place (see :mod:`install_driver_blocktext`) give their fixes as
-numbered steps of one kind, ``Change line N: add a word inside its
-comment.``: the marker line stays where it is, with a word added before its
-``-->`` (the warning shows ``<!-- BEGIN APOTHEM MANAGED BLOCK (example) -->``
-once, before the first fix), so it no longer reads as a marker. It is still
-an HTML comment on a line of its own, so no line moves and a Markdown viewer
-reads every other line of the file as before. One more step closes a code
-block the file ends in, when a fix leaves no block (the next install or
-update writes one at the end of the file): ``Below line N, add a line of 3
-backticks.``
-(``tildes`` for ``~``, with ``, indented 2 spaces`` for a code block in a list
-item; see :func:`render_step`).
+The warnings for Apothem marker lines that install, update and uninstall cannot
+place (see :mod:`install_driver_blocktext`) give their fixes as numbered steps
+of one kind, ``Change line N: add a word inside its comment.``: the marker line
+stays where it is, with a word added before its ``-->`` (the warning shows
+``<!-- BEGIN APOTHEM MANAGED BLOCK (example) -->`` once, before the first fix),
+so it no longer reads as a marker. It is still an HTML comment on a line of its
+own, so no line moves and a Markdown viewer reads every other line of the file
+as before. One more step closes a code block the file ends in, when a fix
+leaves no block (the next install or update writes one at the end of the file):
+``Below line N, add a line of 3 backticks.`` (``tildes`` for ``~``, with ``,
+indented 2 spaces`` for a code block in a list item; see :func:`render_step`).
 
 Each fix lists its steps under a label such as ``Fix A, if lines 6 to 38 are
 Apothem's block:``, read ``A1.``, ``A2.`` and so on, from the bottom of the
 file up. Every block, marker pair and stray marker starts at a BEGIN marker,
 and an END marker pairs only with the BEGIN marker right above it, so a fix
-changes BEGIN marker lines alone: an END marker with no BEGIN marker above
-it marks nothing, and a quoted one stays the operator's text as it is. A fix
-that keeps a block changes every other BEGIN marker line in the file, a
-quoted one included. It is given only where the layout of
-the file shows that the block then reads whole (see :func:`_keeps`), so no
-fix needs a reading of the file. A fix that keeps no block changes every
-BEGIN marker line in the file: Apothem then reads no block, the next update
-writes its block at the end of the file, and an uninstall finds no block of
-its own there. Everything here builds text and reads no file. It finds the
-marker lines, and the lines that may start an HTML block, by searching the
-text, not by going over each line, and reads the file as Markdown once per
-warning to find whether it ends in an open code block (see
-:func:`_closing`), and once more up to that code block's opener when a line
-above it may start an HTML block (see :func:`_html_block_above`).
+changes BEGIN marker lines alone: an END marker with no BEGIN marker above it
+marks nothing, and a quoted one stays the operator's text as it is. A fix that
+keeps a block changes every other BEGIN marker line in the file, a quoted one
+included. It is given only where the layout of the file shows that the block
+then reads whole (see :func:`_keeps`), so no fix needs a reading of the file. A
+fix that keeps no block changes every BEGIN marker line in the file: Apothem
+then reads no block, the next update writes its block at the end of the file,
+and an uninstall finds no block of its own there. Everything here builds text
+and reads no file. It finds the marker lines, and the lines that may start an
+HTML block, by searching the text, not by going over each line, and reads the
+file as Markdown once per warning to find whether it ends in an open code block
+(see :func:`_closing`), and once more up to that code block's opener when a
+line above it may start an HTML block (see :func:`_html_block_above`).
 
 Apothem reads the lines of an HTML block, and a line of a list item's text
 that goes on at the left margin, otherwise than a Markdown viewer does (see
@@ -112,6 +109,10 @@ _AUTOLINK_LINE = re.compile(
 #: A line of plain paragraph text: at most 3 spaces, then no list bullet, ``>``,
 #: heading, break, fence, underline, HTML, link label or ``|`` (a table cell).
 _PLAIN_TEXT = re.compile(r" {0,3}(?!\d{1,9}[.)](?:[ \t]|\Z))[^-\s+*>#`~<=_\[|][^|]*\Z")
+
+#: A line that may start a link reference definition or be a table row: ``[``
+#: after the indent, list bullets and ``>`` marks, or a ``|`` anywhere.
+_LABEL = re.compile(r"[ \t>]*(?:(?:[-+*]|[0-9]{1,9}[.)])[ \t]+[ \t>]*)*\[|.*\|")
 
 #: A line's list bullets after the indent, each with the gap after it: the
 #: text of the innermost item starts at the column where the match ends.
@@ -309,11 +310,6 @@ class _Layout:
         return None if isinstance(self._as_is, bool) else self._as_is
 
 
-def _layout(text: str) -> _Layout:
-    """Return the layout of *text* (see :class:`_Layout`)."""
-    return _Layout(text)
-
-
 def _columns(line: str) -> int:
     """Return the columns of *line*'s indent; a tab reaches the next multiple of 4."""
     indent = line[: len(line) - len(line.lstrip(" \t"))]
@@ -440,8 +436,10 @@ def _html_block_above(text: str) -> bool:
     (Apothem reads which lines are code as a viewer does, up to the first
     HTML block), one that starts with an autolink such as
     ``<https://example.com>`` (see :data:`_AUTOLINK_LINE`), or one that goes
-    on a paragraph (see :func:`_goes_on_text`). Any other counts, a lone tag
-    in a list item or below a block quote among them: the check errs wide.
+    on a paragraph (see :func:`_goes_on_text`) in which no line since the
+    last blank one may start a link reference definition or be a table row
+    (see :data:`_LABEL`): the address and title lines of a definition look
+    like plain text but are none. Any other counts: the check errs wide.
     The lines between are read as :func:`trailing_fence` reads them.
     """
     found = _HTML_START.search(text)
@@ -450,12 +448,15 @@ def _html_block_above(text: str) -> bool:
     lines = _Lines(text)
     texts = lines.texts
     state = _MarkdownState(lines, None)
-    index = pos = 0
+    index, pos, label = 0, 0, False
     while found is not None:
         start = found.start()
         line = index + text.count("\n", pos, start)
         state.advance(index, pos, line, start)
-        on_text = line > 0 and _goes_on_text(state, texts[line - 1], texts[line])
+        for row in texts[index:line]:
+            label = bool(row.strip()) and (label or _LABEL.match(row) is not None)
+        on_text = line > 0 and not label
+        on_text = on_text and _goes_on_text(state, texts[line - 1], texts[line])
         code = state.step(line) is _Kind.CODE
         if not (code or on_text or _AUTOLINK_LINE.match(texts[line])):
             return True
@@ -579,7 +580,7 @@ def unclear_fixes(text: str, pairs: Sequence[UncertainPair]) -> list[Fix]:
     would open a code block instead. Then one fix for every other case,
     which changes every BEGIN marker line (see :func:`_none`).
     """
-    layout = _layout(text)
+    layout = _Layout(text)
     fixes = [
         _kept(layout, (pair.begin.line, pair.end.line))
         for pair in pairs
@@ -607,7 +608,7 @@ def block_fixes(
     :func:`_keeps`); when a block gets none, one more fix changes every BEGIN
     marker line (see :func:`_none`).
     """
-    layout = _layout(text)
+    layout = _Layout(text)
     cases = list(blocks[:1] if revealed else blocks)
     fixes = [
         _kept(layout, block)
@@ -638,7 +639,7 @@ def stray_fixes(
     """
     if not strays or len(blocks) > 1:
         return []
-    layout = _layout(text)
+    layout = _Layout(text)
     if blocks and _keeps(layout, blocks[0], first=True):
         return [_kept(layout, blocks[0])]
     return [_none(layout, None)]
@@ -655,7 +656,7 @@ def stray_fix(
     refusal, which gives one fix.
     """
     found = stray_fixes(text, strays, blocks)
-    return found[0] if found else _none(_layout(text), None)
+    return found[0] if found else _none(_Layout(text), None)
 
 
 def unlisted_fixes(text: str) -> list[Fix]:
@@ -664,7 +665,7 @@ def unlisted_fixes(text: str) -> list[Fix]:
     It changes every BEGIN marker line, the block's included, so no block is
     left (see :func:`_none`): the operator deletes the old text by hand.
     """
-    return [_none(_layout(text), None)]
+    return [_none(_Layout(text), None)]
 
 
 def _letter(index: int) -> str:

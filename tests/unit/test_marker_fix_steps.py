@@ -528,6 +528,10 @@ HTML_BLOCK = {
     "ordered-item-under-a-paragraph": ["Intro", "1. <span>", "   x", ""],
     "below-an-empty-quote-line": [">", "<span>", "x", ""],
     "in-a-block-quote": ["> <div>", "> x", ""],
+    "below-a-link-definition-title": ["[a]: /u", '"t"', "<span>", "x", ""],
+    "below-a-link-definition-address": ["[a]:", "/u", '<img alt="x">', ""],
+    "below-a-title-in-parentheses": ["[a]: /u", "(t)", "<my-el>", ""],
+    "below-a-title-in-single-quotes": ["[a]: /u", "'t'", "<my-el>", ""],
 }
 
 #: Text above it with a line that may start no HTML block, but that Apothem
@@ -536,6 +540,8 @@ UNSURE_HTML_BLOCK = {
     "first-line-inline-tag": ["<kbd>Ctrl</kbd>+<kbd>C</kbd> copies."],
     "below-a-quoted-paragraph": ["> text", "<span>", "x", ""],
     "two-autolinks": ["", "<https://example.com> and <https://example.org>", ""],
+    "below-a-paragraph-that-starts-with-a-link": ["[Docs](/d) say", "so", "<span>"],
+    "below-a-table-row": ["| a | b |", "| - | - |", "row", "<span>", "x", ""],
 }
 
 
@@ -570,7 +576,8 @@ def test_a_line_that_starts_an_html_block_still_gives_no_numbered_steps(name: st
 
     delta-1 (round 7b): a lone tag with ``>`` or ``<`` in an attribute, one in
     a list item that ends a paragraph, and one below a block-quote line start
-    an HTML block too.
+    an HTML block too. Round 7c: so does a lone tag below the address or title
+    line of a link reference definition, which looks like plain text.
     """
     lines = [*HTML_BLOCK[name], *_OPEN_STRAY]
     message = _stray_message(lines)
