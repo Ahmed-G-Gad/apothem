@@ -1887,3 +1887,85 @@ def test_quarter_of_nul_is_the_binary_line(
     _shrink_limit(monkeypatch, 16384)
 
     assert _skipped(_run(repo)) == {reason: 1}
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="the Windows open")
+def test_windows_open_never_follows_a_link_at_the_last_level(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The open asks Windows for the reparse point itself, never its target."""
+    import _winapi
+
+    corpus = _corpus_module()
+    target = tmp_path / "doc.md"
+    target.write_text("doc\n")
+    real_create = _winapi.CreateFile
+    flags: list[int] = []
+
+    def recording_create(*args: Any) -> int:  # noqa: ANN401
+        flags.append(args[5])
+        return int(real_create(*args))
+
+    monkeypatch.setattr(_winapi, "CreateFile", recording_create)
+    assert corpus.read_entry(tmp_path, corpus.TrackedEntry(target, "100644")) == (
+        "doc\n",
+        None,
+    )
+    assert flags
+    assert all(flag & 0x00200000 for flag in flags)
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows reparse tags")
+@pytest.mark.parametrize(
+    ("tag", "expected"),
+    [
+        (0xA000000C, (None, "unreadable")),  # a symbolic link
+        (0xA0000003, (None, "unreadable")),  # a junction
+        (0x80000013, ("kept\n", None)),  # Data Deduplication
+        (0x9000001A, ("kept\n", None)),  # a cloud sync placeholder, hydrated
+        (0, ("kept\n", None)),
+    ],
+    ids=["symlink", "junction", "dedup", "cloud", "none"],
+)
+def test_only_a_reparse_point_naming_another_file_is_refused(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tag: int,
+    expected: tuple[str | None, str | None],
+) -> None:
+    """A link or junction in the file's place is never read through; a file
+    deduplication or a sync program keeps behind a reparse point is read."""
+    corpus = _corpus_module()
+    target = tmp_path / "kept.md"
+    target.write_text("kept\n")
+    monkeypatch.setattr(corpus, "_reparse_tag", lambda _handle: tag)
+
+    assert (
+        corpus.read_entry(tmp_path, corpus.TrackedEntry(target, "100644")) == expected
+    )
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows reparse tags")
+def test_reparse_tag_is_read_from_the_handle(tmp_path: Path) -> None:
+    """A plain file has no tag; a junction opened as itself has its own."""
+    import _winapi
+
+    corpus = _corpus_module()
+    plain = tmp_path / "plain.md"
+    plain.write_text("x\n")
+    folder = tmp_path / "folder"
+    folder.mkdir()
+    junction = tmp_path / "junction"
+    _winapi.CreateJunction(str(folder), str(junction))
+    backup_semantics = 0x02000000
+    for path, flags, tag in (
+        (plain, 0, 0),
+        (junction, 0x00200000 | backup_semantics, 0xA0000003),
+    ):
+        handle = _winapi.CreateFile(
+            str(path), _winapi.GENERIC_READ, 0x7, 0, _winapi.OPEN_EXISTING, flags, 0
+        )
+        try:
+            assert corpus._reparse_tag(handle) == tag
+        finally:
+            _winapi.CloseHandle(handle)

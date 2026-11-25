@@ -55,10 +55,12 @@ _RETRY_DELAY_SECONDS: Final[float] = 0.2
 # Windows' error for a file another program has open without sharing it.
 _SHARING_VIOLATION: Final[int] = 32
 # The share modes read, write and delete, so the gate's own open of a file on
-# Windows conflicts only with a program that shares nothing.
+# Windows conflicts only with a holder that does not share reading.
 _SHARE_ALL: Final[int] = 0x7
 # Opens a link or junction itself on Windows, never the file it names.
 _FILE_FLAG_OPEN_REPARSE_POINT: Final[int] = 0x00200000
+# The FILE_INFO_BY_HANDLE_CLASS value of a file's attributes and reparse tag.
+_FILE_ATTRIBUTE_TAG_INFO: Final[int] = 9
 # How many leading bytes of a file over the limit decide whether it is
 # binary: the span git looks at for the same question.
 _BINARY_SNIFF_BYTES: Final[int] = 8000
@@ -356,8 +358,11 @@ def _open_binary(path: Path) -> BinaryIO:
     """Open *path* to read bytes, never through a link at its last level.
 
     On Windows the open goes through the Windows API with
-    ``FILE_FLAG_OPEN_REPARSE_POINT``, so a link or junction there is opened
-    itself and :func:`_same_file` refuses it; the API also reports a sharing
+    ``FILE_FLAG_OPEN_REPARSE_POINT``, so a reparse point there is opened
+    itself. One that names another file or folder (a link or junction, see
+    :func:`is_link`) raises ``ELOOP``, as ``O_NOFOLLOW`` does elsewhere;
+    any other, such as a file Data Deduplication or a cloud sync program
+    keeps behind one, is read as usual. The API also reports a sharing
     violation as such, which Python's ``open`` does not. Elsewhere the open
     neither follows a link (``O_NOFOLLOW``) nor waits for a named pipe to get
     a writer or a lease to break (``O_NONBLOCK``, cleared once the file is
@@ -377,6 +382,8 @@ def _open_binary(path: Path) -> BinaryIO:
             0,
         )
         try:
+            if _reparse_tag(handle) & _NAME_SURROGATE_TAG_BIT:
+                raise OSError(errno.ELOOP, "a link is in the file's place", str(path))
             fd = msvcrt.open_osfhandle(handle, os.O_RDONLY)
         except BaseException:
             _winapi.CloseHandle(handle)
@@ -393,19 +400,45 @@ def _open_binary(path: Path) -> BinaryIO:
         raise
 
 
+def _reparse_tag(handle: int) -> int:
+    """Return the reparse tag of the open Windows file *handle*, 0 for none.
+
+    ``os.fstat`` reports no tag on Windows, so the file's attribute and tag
+    record (``FileAttributeTagInfo``) is read from the handle. Raises
+    ``OSError`` when it cannot be read, so the file is not read either.
+    """
+    if sys.platform != "win32":
+        return 0
+    import ctypes  # Windows only, so imported here.
+    from ctypes import wintypes
+
+    class _AttributeTagInfo(ctypes.Structure):
+        _fields_ = (("attributes", wintypes.DWORD), ("tag", wintypes.DWORD))
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    query = kernel32.GetFileInformationByHandleEx
+    query.argtypes = (wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD)
+    query.restype = wintypes.BOOL
+    info = _AttributeTagInfo()
+    if not query(
+        handle, _FILE_ATTRIBUTE_TAG_INFO, ctypes.byref(info), ctypes.sizeof(info)
+    ):
+        raise ctypes.WinError(ctypes.get_last_error())
+    if not info.attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT:
+        return 0
+    return int(info.tag)
+
+
 def _same_file(seen: os.stat_result, opened: os.stat_result) -> bool:
     """Return True when the *opened* file is the regular file ``os.lstat`` *seen*.
 
-    It must be a regular file and not a link (on Windows, a reparse point
-    opened as itself). The file ID (device and inode) is compared when the
-    system gives one; on a file system that gives none (an inode of 0), the
-    open never followed a link at the last level, so a swap to another
-    regular file is the one change left unseen.
+    It must be a regular file. The file ID (device and inode) is compared
+    when the system gives one; on a file system that gives none (an inode of
+    0), the open never followed a link at the last level (see
+    :func:`_open_binary`), so a swap to another regular file is the one
+    change left unseen.
     """
     if not stat.S_ISREG(opened.st_mode):
-        return False
-    attributes = getattr(opened, "st_file_attributes", 0) or 0
-    if attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT:
         return False
     if not seen.st_ino or not opened.st_ino:
         return True

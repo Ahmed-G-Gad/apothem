@@ -1284,13 +1284,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   run while text with a stray NUL still does. A file swapped for another file, a
   link or a named pipe between its check and its open is looked up once more
   and, swapped again, counted as unreadable; the gate never waits on the pipe or
-  reads through a link at the file's own name. A tracked file a link points to
-  is still checked under its own path. Each `git ls-files` call, in
-  `--all-perwrite` and in `no-global-plans-grep`, now stops after 60 seconds, so
-  a repository setting that makes git wait, such as an `include.path` that
-  points at a named pipe, holds up each call for that long at most; on Windows,
-  when `git` is the launcher in Git's `cmd` folder, the git it starts can keep
-  running past the limit, and the wait for it may never end;
+  reads through a link at the file's own name, while a Windows file that
+  deduplication or cloud tiering keeps behind a reparse point is read as usual.
+  A tracked file a link points to is still checked under its own path. Each `git
+  ls-files` call, in `--all-perwrite` and in `no-global-plans-grep`, now stops
+  after 60 seconds, so a repository setting that makes git wait, such as an
+  `include.path` that points at a named pipe, holds up each call for that long
+  at most; on Windows, when `git` is the launcher in Git's `cmd` folder, the git
+  it starts can keep running past the limit, and the wait for it may never end;
   `no-global-plans-grep` reports its timeout as `check_error` and, when git
   fails, gives git's exit code instead of git's own text. A `--all-perwrite` run
   that read no file reports `passed: false` with `empty_scope_expected: false`,

@@ -143,7 +143,8 @@ by reason:
 - `not_regular_file`: anything else that is not a regular file, such as a
   folder, a named pipe or a device, where a read would wait or never end;
 - `missing`: a tracked file that is not in the working tree, including a name
-  git listed in bytes that are not UTF-8;
+  git listed in bytes that are not UTF-8, and on Windows a path longer than
+  the system allows when long paths are not turned on;
 - `unreadable`: a file, or a folder on the way to it, that the system will not
   let the gate look at, open or read: for lack of permission, because
   another program holds the file or part of it, or because the system cannot
@@ -151,7 +152,11 @@ by reason:
   another program holds the whole file, the gate waits 0.2 seconds and tries
   once more: on Windows, a program that has it open without sharing it;
   elsewhere, a write lease being broken, such as a Samba oplock or an NFS
-  delegation. The run does not pass, since a finding in it would go unseen;
+  delegation. The run does not pass, since a finding in it would go unseen.
+  A few cases fail the run this way though they would read in time: a lease
+  break that takes longer than 0.2 seconds, a file waiting to be deleted,
+  and a named pipe in a project on a `\\wsl$` share, where each read first
+  waits about 10 seconds;
 - `too_large`: a file over 64 MiB whose first 64 MiB are UTF-8 text, or a
   file that grows past 64 MiB while the gate reads it. The run does not
   pass, for the same reason;
@@ -159,7 +164,8 @@ by reason:
   file with a byte-order mark. Over 64 MiB, the first 64 MiB decide, and a
   file is binary when a quarter or more of its first 8000 bytes are NUL,
   such as a large zero-filled image or a UTF-16 file of mostly Latin text
-  without a byte-order mark, so it does not fail the run; a few NUL bytes in text do not count;
+  without a byte-order mark, so it does not fail the run; a few NUL bytes in
+  text do not count;
 - `exempt`: a file the checks leave out by design: one whose suffix marks it
   as binary, such as an image or an archive, and anything under a
   `.apothem/plans`, `tests/conformity`, `tests/fixtures`, `_vendor` or
@@ -176,8 +182,11 @@ shows only stderr says why the run failed.
 Each file's levels are checked right before it is read, and the file opened
 must be the one that check found. A file another program swaps in between,
 for another file, a link or a named pipe, is looked up once more, and
-counted as `unreadable` if it is swapped again; the gate never waits on a
-named pipe or reads through a link that took the file's place.
+counted as `unreadable` if it is swapped again; on Windows a junction
+swapped in is `unreadable` at once. The gate never waits on a named pipe or
+reads through a link that took the file's place. On Windows, a file that
+Data Deduplication or a cloud sync program keeps behind a reparse point is
+read as usual.
 
 Two things these checks do not see. A hard link reads as an ordinary file, so
 a hard link to a file elsewhere is read; git does not create one. And a
