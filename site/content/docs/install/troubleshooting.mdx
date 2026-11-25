@@ -1062,8 +1062,9 @@ Apothem reads a code fence inside an HTML block, such as a comment that opens
 with `<!--` and ends on a later line, as it reads any other code fence, and a
 line of a list item's text that goes on at the left margin ends that item for
 Apothem. A Markdown viewer does neither. When a line above the code block your
-file ends in starts an HTML block (a link in angle brackets, a tag inside a
-line of text and HTML in a code block start none), or a list item's text goes
+file ends in may start an HTML block (any line that starts with a tag counts,
+except a link in angle brackets, a tag on a line right below a line of plain
+text, and HTML in a code block), or a list item's text goes
 on at the left margin above it and an indented line follows, that closing line
 could start a code block in a viewer instead. That fix then gives no numbered steps: it says "Apothem cannot give
 numbered steps for this fix" and names the line that opens the code block.

@@ -955,8 +955,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   END marker once the uninstall takes Apothem's block out. OpenClaw's size
   refusal for a rules file names the same marker lines and closing line as
   the other warnings for that file. Where a line above the code block a
-  file ends in starts an HTML block (a link in angle brackets, a tag inside
-  a line of text and HTML in a code block start none), or a list item's text
+  file ends in may start an HTML block (any line that starts with a tag
+  counts, except a link in angle brackets, a tag on a line right below a
+  line of plain text, and HTML in a code block), or a list item's text
   goes on at the left margin above it and an indented line follows, a
   Markdown viewer can read that code block otherwise than Apothem, so the
   closing line could start a code block in a viewer:

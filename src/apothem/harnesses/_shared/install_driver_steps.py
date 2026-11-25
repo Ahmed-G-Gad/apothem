@@ -51,7 +51,7 @@ from collections.abc import Collection, Iterable, Sequence
 from dataclasses import dataclass
 
 from apothem.lib.harness_materializer import (
-    _HTML_LINE,
+    _HTML_BLOCK_TAG,
     APOTHEM_BLOCK_BEGIN,
     APOTHEM_BLOCK_END,
     MarkerPlace,
@@ -84,22 +84,34 @@ _TAG = re.compile(r"[ \t]*(?:(?:[-+*]|[0-9]{1,9}[.)])[ \t]+)*</?[A-Za-z]")
 
 #: A line that may start an HTML block of any kind but a comment that ends on
 #: its own line, such as ``<!-- note -->`` (a marker line among them): after
-#: the indent and any list bullets, ``<`` and a letter, ``/``, ``?`` or ``!``.
-#: A Markdown viewer reads the lines of such a block as its text, where
-#: Apothem can read a code fence. Only these lines are read further (see
-#: :func:`_html_block_above`).
+#: the indent and any list bullets or block-quote marks, ``<`` and a letter,
+#: ``/``, ``?`` or ``!``. A Markdown viewer reads the lines of such a block as
+#: its text, where Apothem can read a code fence. Only these lines are read
+#: further (see :func:`_html_block_above`).
 _HTML_START = re.compile(
-    r"^[ \t]*(?:(?:[-+*]|[0-9]{1,9}[.)])[ \t]+)*<(?:[A-Za-z/?]|!(?!--.*-->))",
+    r"^[ \t]*(?:(?:[-+*]|[0-9]{1,9}[.)])[ \t]+|>[ \t]*)*"
+    r"<(?:[A-Za-z/?]|!(?!--.*-->))",
     re.MULTILINE,
 )
 
-#: The start of an HTML block that runs to the line that holds its end, such
-#: as ``<!--`` up to ``-->`` (CommonMark kinds 1 to 5); ``_HTML_LINE`` in
-#: :mod:`apothem.lib.harness_materializer` is one that ends on its own line.
+#: The start of a CommonMark HTML block of kinds 1 to 5, such as ``<!--`` or
+#: ``<pre``: these and kind 6, a block-level tag, can end a paragraph.
 _HTML_OPEN = re.compile(
     r"<!--|<\?|<![A-Za-z]|<!\[CDATA\["
     r"|(?i:<(?:pre|script|style|textarea)(?:[ \t>]|\Z))"
 )
+
+#: A line that starts with an autolink (CommonMark: a scheme and URI, or an
+#: email address, in ``<>``) after at most 3 spaces and holds no other ``<``.
+_AUTOLINK_LINE = re.compile(
+    r" {0,3}<(?:[A-Za-z][A-Za-z0-9+.-]{1,31}:[^\x00-\x20<>]*"
+    r"|[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}"
+    r"[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*)>[^<]*\Z"
+)
+
+#: A line of plain paragraph text: at most 3 spaces, then no list bullet, ``>``,
+#: heading, break, fence, underline, HTML, link label or ``|`` (a table cell).
+_PLAIN_TEXT = re.compile(r" {0,3}(?!\d{1,9}[.)](?:[ \t]|\Z))[^-\s+*>#`~<=_\[|][^|]*\Z")
 
 #: A line's list bullets after the indent, each with the gap after it: the
 #: text of the innermost item starts at the column where the match ends.
@@ -404,7 +416,7 @@ def _viewer_may_differ(layout: _Layout, opener: int) -> bool:
     lines of an HTML block, and a line of a list item's text that goes on at
     the left margin, which ends that item for Apothem but not for a viewer
     (see :func:`apothem.lib.harness_materializer._marker_lines`). So a viewer
-    may read the code block otherwise when a line above *opener* starts an
+    may read the code block otherwise when a line above *opener* may start an
     HTML block (see :func:`_html_block_above`), or when a list item's text goes
     on at the left margin above it and an indented line follows while a
     viewer may still hold that item open (see :func:`_lazy_item_above`): the
@@ -420,44 +432,55 @@ def _viewer_may_differ(layout: _Layout, opener: int) -> bool:
 
 
 def _html_block_above(text: str) -> bool:
-    """Return True when a line of *text* starts an HTML block in a Markdown viewer.
+    """Return True when a line of *text* may start an HTML block in a Markdown viewer.
 
     *text* is the lines above the opener of the code block the file ends in,
-    each ended by a line break. A line counts when it is no code (Apothem
-    reads which lines are as a viewer does, up to the first HTML block) and
-    its text after the indent and any list bullets starts an HTML block as
-    CommonMark 0.31 reads it: a comment, processing instruction, declaration,
-    CDATA section or ``pre``, ``script``, ``style`` or ``textarea`` element
-    that does not end on that line (see :data:`_HTML_OPEN`), a block-level
-    tag, or any other whole tag alone on its line where no paragraph is open
-    (as the materializer's ``_HTML_BLOCK_TAG`` and ``_HTML_LONE_TAG`` read
-    them). An autolink such as ``<https://example.com>``, a tag inside a line
-    of text, and HTML in a fenced or indented code block start none. A line
-    in a list item is read by its text after the bullets, so the check stays
-    wide there. Only the lines :data:`_HTML_START` finds are read one at a
-    time; the lines between are read as
-    :func:`apothem.lib.harness_materializer.trailing_fence` reads them.
+    each ended by a line break. Each line :data:`_HTML_START` finds counts
+    unless it plainly starts none: a line in a fenced or indented code block
+    (Apothem reads which lines are code as a viewer does, up to the first
+    HTML block), one that starts with an autolink such as
+    ``<https://example.com>`` (see :data:`_AUTOLINK_LINE`), or one that goes
+    on a paragraph (see :func:`_goes_on_text`). Any other counts, a lone tag
+    in a list item or below a block quote among them: the check errs wide.
+    The lines between are read as :func:`trailing_fence` reads them.
     """
     found = _HTML_START.search(text)
     if found is None:
         return False
     lines = _Lines(text)
+    texts = lines.texts
     state = _MarkdownState(lines, None)
     index = pos = 0
     while found is not None:
         start = found.start()
         line = index + text.count("\n", pos, start)
         state.advance(index, pos, line, start)
-        if state.step(line) is not _Kind.CODE:
-            rest = lines.texts[line]
-            rest = rest[rest.index("<") :]
-            if state.raw_html or (
-                _HTML_OPEN.match(rest) and not _HTML_LINE.match(rest)
-            ):
-                return True
+        on_text = line > 0 and _goes_on_text(state, texts[line - 1], texts[line])
+        code = state.step(line) is _Kind.CODE
+        if not (code or on_text or _AUTOLINK_LINE.match(texts[line])):
+            return True
         index, pos = line + 1, text.find("\n", start) + 1
         found = _HTML_START.search(text, pos)
     return False
+
+
+def _goes_on_text(state: _MarkdownState, above: str, line: str) -> bool:
+    """Return True when *line* plainly goes on the paragraph *above* is in.
+
+    *state* is read up to *above*, a line of plain text in a paragraph outside
+    any list item and block quote (see :data:`_PLAIN_TEXT`). After its indent
+    *line* starts with a tag, not a list bullet or ``>``, of none of the
+    CommonMark HTML block kinds 1 to 6, which alone can end a paragraph (see
+    :data:`_HTML_OPEN` and the materializer's ``_HTML_BLOCK_TAG``).
+    """
+    tag = line.lstrip(" \t")
+    return (
+        not (state.can_interrupt or state.items or state.para_column)
+        and not (state.fence or state.raw_html)
+        and _PLAIN_TEXT.match(above) is not None
+        and tag.startswith("<")
+        and not (_HTML_OPEN.match(tag) or _HTML_BLOCK_TAG.match(tag))
+    )
 
 
 def _lazy_item_above(lines: Sequence[str]) -> bool:

@@ -507,7 +507,8 @@ _OPEN_STRAY = [B, "old", "Example:", "```sh", "run"]
 #: a CommonMark viewer: the viewer reads the code block as Apothem does.
 NO_HTML_BLOCK = {
     "autolink": ["See <https://example.com> or", "<https://example.org>"],
-    "inline-tag": ["<kbd>Ctrl</kbd>+<kbd>C</kbd> copies."],
+    "email-autolink": ["", "<me@example.com> writes it.", ""],
+    "inline-tag": ["Copy with", "<kbd>Ctrl</kbd>+<kbd>C</kbd>."],
     "html-in-fence": ["```html", "<div>hi</div>", "```"],
     "html-in-indented-code": ["Text", "", "    <div>hi</div>", ""],
     "lone-tag-under-a-paragraph": ["text", "<span>", ""],
@@ -521,6 +522,20 @@ HTML_BLOCK = {
     "lone-tag": ["", "<span>", "x", ""],
     "pre-under-a-paragraph": ["text", "<pre>", "x", "</pre>", ""],
     "in-a-list-item": ["- <!-- draft", "  note -->"],
+    "gt-in-an-attribute": ["", '<img alt="a > b">', "x", ""],
+    "lt-in-an-attribute": ["", "<a title='<'>", "x", ""],
+    "list-item-under-a-paragraph": ["Intro", "- <span>", "  x", ""],
+    "ordered-item-under-a-paragraph": ["Intro", "1. <span>", "   x", ""],
+    "below-an-empty-quote-line": [">", "<span>", "x", ""],
+    "in-a-block-quote": ["> <div>", "> x", ""],
+}
+
+#: Text above it with a line that may start no HTML block, but that Apothem
+#: does not read as plainly none: the fix gives no numbered steps either.
+UNSURE_HTML_BLOCK = {
+    "first-line-inline-tag": ["<kbd>Ctrl</kbd>+<kbd>C</kbd> copies."],
+    "below-a-quoted-paragraph": ["> text", "<span>", "x", ""],
+    "two-autolinks": ["", "<https://example.com> and <https://example.org>", ""],
 }
 
 
@@ -534,9 +549,9 @@ def _stray_message(lines: list[str]) -> str:
 def test_a_line_that_starts_no_html_block_keeps_the_numbered_steps(name: str):
     """advice-1 (round 7): any line starting with ``<`` and a letter withheld them.
 
-    An autolink, a tag inside a line of text, HTML in a fenced or indented
-    code block, or a lone tag a paragraph holds starts no HTML block, so a
-    viewer reads the code block the file ends in as Apothem does. The fix
+    An autolink, a tag that starts a line a paragraph holds, or HTML in a
+    fenced or indented code block starts no HTML block, so a viewer reads
+    the code block the file ends in as Apothem does. The fix
     closes it and changes the BEGIN marker line, and holds when followed.
     """
     lines = [*NO_HTML_BLOCK[name], *_OPEN_STRAY]
@@ -551,10 +566,27 @@ def test_a_line_that_starts_no_html_block_keeps_the_numbered_steps(name: str):
 
 @pytest.mark.parametrize("name", sorted(HTML_BLOCK))
 def test_a_line_that_starts_an_html_block_still_gives_no_numbered_steps(name: str):
-    """A viewer may read the lines of an HTML block otherwise than Apothem."""
-    message = _stray_message([*HTML_BLOCK[name], *_OPEN_STRAY])
+    """A viewer may read the lines of an HTML block otherwise than Apothem.
+
+    delta-1 (round 7b): a lone tag with ``>`` or ``<`` in an attribute, one in
+    a list item that ends a paragraph, and one below a block-quote line start
+    an HTML block too.
+    """
+    lines = [*HTML_BLOCK[name], *_OPEN_STRAY]
+    message = _stray_message(lines)
     assert _NO_STEPS in message
     assert not _STEP.search(message), message
+    assert _check(lines, message, removes=False) == 0
+
+
+@pytest.mark.parametrize("name", sorted(UNSURE_HTML_BLOCK))
+def test_a_line_not_plainly_free_of_html_gives_no_numbered_steps(name: str):
+    """Only a line that plainly starts no HTML block keeps the numbered steps."""
+    lines = [*UNSURE_HTML_BLOCK[name], *_OPEN_STRAY]
+    message = _stray_message(lines)
+    assert _NO_STEPS in message
+    assert not _STEP.search(message), message
+    assert _check(lines, message, removes=False) == 0
 
 
 _GONE = "Apothem then finds no block of its own in this file"
