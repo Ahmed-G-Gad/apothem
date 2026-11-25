@@ -48,6 +48,11 @@ Shared claims that every active AI-assistant surface preserves:
 - Release tags follow `vMAJOR.MINOR.PATCH` SemVer.
 - Directive prose follows the RFC 2119 hierarchy: MUST, MUST NOT, SHOULD,
   SHOULD NOT, MAY.
+- User-facing copy (README, CHANGELOG, documentation and site pages, and the
+  other in-scope surfaces `src/apothem/rules/plain-language.md` lists) stays
+  free of the process-tooling vocabulary in that rule's closed term set; the
+  `plain-language-grep` validator checks the root `README.md` and the
+  user-facing pages under `site/content/docs/` against it.
 - Any change to a documented public surface (a CLI command or flag, a harness
   adapter, a profile field, an installer flag or environment variable, a
   configuration key, or any surface with a page under
@@ -184,7 +189,7 @@ pre-commit run --all-files
 
 ## Plans Discipline
 
-Planning artifacts are written to <project-root>/.apothem/plans/ — the sole canonical plans home. A legacy <project-root>/.plans/ tree is no longer canonical; operators upgrade an existing one via `apothem migrate-workspace`. They are never written to any harness configuration directory (for example `~/.codex/` or `~/.claude/`) and never to a global location. This rule is non-negotiable; cite §3 of the project spec on every related decision.
+Planning artifacts are written to <project-root>/.apothem/plans/ — the sole canonical plans home. A legacy <project-root>/.plans/ tree is no longer canonical; operators upgrade an existing one via `apothem migrate-workspace`. They are never written to any harness configuration directory (for example `~/.codex/` or `~/.claude/`) and never to a global location. This rule is non-negotiable; §2 of `site/content/docs/reference/plans-discipline.mdx` states it in full.
 
 ## Release Facade
 
@@ -241,9 +246,10 @@ python scripts/inject-header.py --mode fix-in-place <path>
 ```
 
 The SPDX line is exempt for: `LICENSE`, JSON config files, lockfiles,
-generated assets, vendored trees, `.audit/` ephemera, `.apothem/` and
-`.plans/` ephemera,
-`.keep` markers, binaries. Full list: `src/apothem/schemas/header-exceptions.txt`.
+generated assets, vendored trees, `.audit/` ephemera, `.apothem/` ephemera,
+`.keep` markers, binaries. A legacy `.plans/` tree is not exempt:
+`apothem migrate-workspace` moves it under `.apothem/plans/`. Full list:
+`src/apothem/schemas/header-exceptions.txt`.
 
 ## Ambiguity Handling
 

@@ -19,7 +19,45 @@ selected adapters report their managed targets are present and valid. Without
 `--profile` the check is **structural** — every managed target must be present
 and valid. With `--profile` the check additionally requires **profile
 fidelity**, so a present-but-drifted install fails verify, answering "is THIS
-profile faithfully installed?" rather than merely "does it exist?".
+profile faithfully installed?" rather than merely "does it exist?". Line
+endings do not count, so a file saved with CRLF or CR endings passes as well.
+Either way, a file where Apothem keeps a managed block fails verify while it
+holds a BEGIN marker that starts no whole block, such as one whose END marker
+is gone (see
+[Troubleshooting](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)),
+two or more whole blocks between Apothem's markers (see
+[A file holds two blocks between Apothem's markers](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)),
+or no whole block but marker pairs Apothem cannot tell from your text, such as
+its block inside a code block of yours (see
+[Apothem cannot tell its block from your text](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+An update keeps such a marker, or leaves such a file as it is, so running
+`apothem update` does not clear the failure.
+The files checked are the ones the harness's install writes a block into and
+the ones its install records list since the last uninstall that finished, a
+rules file in an OpenClaw workspace the install no longer uses included. A
+marker in a file of your own, such as a project's notes file, does not fail
+it. With no install record, `CLAUDE.md` and the profile document are not
+checked: only the record shows that the install wrote them. The OpenClaw
+verify still fails, without naming the file, when the rules file in a
+workspace it finds holds no whole block or a BEGIN marker that starts none.
+The failed row names each such file and
+says what to fix: the stray marker's line, with numbered steps that change
+that line and every other BEGIN marker line but the one that opens Apothem's
+block, a BEGIN marker you quote in code included, for each file on its own (the note also says not to add the END
+marker back instead, which would leave two Apothem blocks once an install or
+update has written Apothem's block apart from it); each whole block, by its
+lines; or,
+for marker pairs
+Apothem cannot tell from your text, the lines of each pair, where they read
+and how to fix them, along with each BEGIN marker that starts no marker pair.
+For an OpenClaw rules file, which an update writes only while it fits
+OpenClaw's per-file limit, the note says the next update writes Apothem's
+block if the file then fits that limit, which old Apothem text you keep
+counts against (see
+[Open-Claw](/docs/harnesses/open-claw#rules-in-each-workspace)).
+In plain mode a `Note:` line follows the row,
+which then leaves out the expected path, and the JSON row gains a `stray_begin`
+object with the `files` and a `message`.
 
 For an adapter that writes skills to your home directory, verify also checks
 that every skill folder it expects exists with a `SKILL.md`, whichever install

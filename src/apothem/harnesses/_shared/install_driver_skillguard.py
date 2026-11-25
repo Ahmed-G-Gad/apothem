@@ -125,7 +125,11 @@ def root_state(root: Path) -> str:
     return _PRESENT if stat.S_ISDIR(info.st_mode) else _GONE
 
 
-def holds_apothem_files(root: Path, record: install_ledger.LedgerRecord) -> bool:
+def holds_apothem_files(
+    root: Path,
+    record: install_ledger.LedgerRecord,
+    memo: dict[str, str] | None = None,
+) -> bool:
     """Return True when *root* still holds a file of its install *record* that is Apothem's.
 
     Only the record's root-local targets count: the paths under *root*, not
@@ -137,21 +141,22 @@ def holds_apothem_files(root: Path, record: install_ledger.LedgerRecord) -> bool
     shows Apothem's content (:func:`_still_apothems`). A record with no
     root-local target leaves only the folder to go by, so it counts as holding
     them. A file that cannot be read shows nothing, and the next target is
-    read.
+    read. *memo* is the caller's (see :func:`path_key`).
     """
+    memo = {} if memo is None else memo  # one pass: each folder resolved once
     base = Path(os.path.normpath(root))
-    prefix = path_key(base).rstrip(os.sep) + os.sep
-    shared = _user_level_prefixes()
+    prefix = path_key(base, memo).rstrip(os.sep) + os.sep
+    shared = _user_level_prefixes(memo)
+    keys = ((target, path_key(target.path, memo)) for target in record.targets)
     local = [
         target
-        for target in record.targets
-        if path_key(target.path).startswith(prefix)
-        and not path_key(target.path).startswith(shared)
+        for target, key in keys
+        if key.startswith(prefix) and not key.startswith(shared)
     ]
     return not local or any(_shows_apothems(base, target) for target in local)
 
 
-def _user_level_prefixes() -> tuple[str, ...]:
+def _user_level_prefixes(memo: dict[str, str]) -> tuple[str, ...]:
     """Return the comparison keys, each ending in a separator, of the user-level folders.
 
     Every folder a user-level manifest entry writes (the shared skills
@@ -164,7 +169,7 @@ def _user_level_prefixes() -> tuple[str, ...]:
         rules = rules_for(package_key)
         for entry in rules.install if rules is not None else ():
             if entry.user_level:
-                key = path_key(resolve_target(entry.target)).rstrip(os.sep)
+                key = path_key(resolve_target(entry.target), memo).rstrip(os.sep)
                 folders[key + os.sep] = None
     return tuple(folders)
 
@@ -258,6 +263,8 @@ class SkillGuard:
         self._records: dict[Holder, install_ledger.LedgerRecord | None] = {}
         self._lives: dict[Holder, bool] = {}
         self._listed_before: dict[str, list[dict[str, str] | None]] | None = None
+        # One pass per guard: each folder is resolved once (see path_key).
+        self._memo: dict[str, str] = {} if evidence is None else evidence.memo
 
     @property
     def readable(self) -> bool:
@@ -361,12 +368,12 @@ class SkillGuard:
                         if record.kind != "install":
                             continue
                         for target in record.targets:
-                            key = path_key(target.path)
+                            key = path_key(target.path, self._memo)
                             listed.setdefault(key, []).append(target.files)
             except (install_ledger.LedgerError, OSError, ValueError):
                 listed = {}
             self._listed_before = listed
-        return self._listed_before.get(path_key(directory), [])
+        return self._listed_before.get(path_key(directory, self._memo), [])
 
     def _live(self, holder: Holder) -> bool:
         """Return True when *holder*'s install folder is there and holds Apothem files.
@@ -380,7 +387,7 @@ class SkillGuard:
             self._lives[holder] = (
                 record is not None
                 and root_state(root) == _PRESENT
-                and holds_apothem_files(root, record)
+                and holds_apothem_files(root, record, self._memo)
             )
         return self._lives[holder]
 
@@ -396,8 +403,11 @@ class SkillGuard:
         record = self._record_of(holder)
         if record is None:
             return False
-        wanted = path_key(directory)
-        target = next((t for t in record.targets if path_key(t.path) == wanted), None)
+        wanted = path_key(directory, self._memo)
+        target = next(
+            (t for t in record.targets if path_key(t.path, self._memo) == wanted),
+            None,
+        )
         return target is not None and _holds_exactly(directory, target.files)
 
     def _record_of(self, holder: Holder) -> install_ledger.LedgerRecord | None:

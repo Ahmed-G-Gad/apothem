@@ -172,7 +172,9 @@ def _restore_enabled(
     when an update rewrites the entry. Hooks are matched by ``name`` (the list
     shape only; the event-map shape has no such flag). Every other field of an
     Apothem hook is Apothem's: a changed ``timeout`` is indistinguishable from an
-    earlier release's, so it is refreshed, not kept. Returns the incoming
+    earlier release's, so it is refreshed, not kept. Only a true or false
+    value is carried: anything else under that key is not the flag, and an
+    Apothem hook keeps no data the install did not write. Returns the incoming
     registration and its text, both unchanged when no flag is carried.
     """
     old, new = (
@@ -187,7 +189,7 @@ def _restore_enabled(
         if isinstance(hook, dict)
         and _is_ours(hook)
         and isinstance(hook.get("name"), str)
-        and "enabled" in hook
+        and isinstance(hook.get("enabled"), bool)
     }
     carried = [
         {**hook, "enabled": flags[hook["name"]]}

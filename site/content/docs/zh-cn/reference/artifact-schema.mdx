@@ -285,7 +285,7 @@ argument-hint: "[--focus area] [--fix]"
         {
           "type": "command",
           "command": "${PYTHON_BIN}",
-          "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "<EventName>", "<message-name>"],
+          "args": ["-E", "-s", "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "<EventName>", "<message-name>"],
           "timeout": <seconds>,
           "statusMessage": "<short human-readable label>"
         }
@@ -302,7 +302,7 @@ argument-hint: "[--focus area] [--fix]"
 | `matcher` | string | 工具名称模式（对与工具无关的事件则为 `"*"`） | `"Write"` |
 | `hooks[].type` | 字面量 `"command"` | 目前唯一支持的钩子处理器类型 | `"command"` |
 | `hooks[].command` | string | 可执行命令；Apothem 使用 `${PYTHON_BIN}` 占位符，在安装时解析 | `"${PYTHON_BIN}"` |
-| `hooks[].args` | 字符串数组 | exec 形式的参数：`${HARNESS_ROOT}/.apothem/support/` 下的脚本路径，然后是其参数 | `["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
+| `hooks[].args` | 字符串数组 | exec 形式的参数：`${HARNESS_ROOT}/.apothem/support/` 下的脚本路径，然后是其参数 | `["-E", "-s", "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
 | `hooks[].timeout` | 整数（秒） | 宿主终止该钩子之前的最长运行时间 | `30` |
 | `hooks[].statusMessage` | string | 在宿主界面中显示的简短标签 | `"Session start"` |
 

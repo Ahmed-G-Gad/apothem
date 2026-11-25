@@ -16,7 +16,7 @@ The wiring example below targets the Claude Code adapter (which materializes hoo
 
 1. Copy `sample-hook.sh` to a stable location under your apothem checkout (e.g., `src/apothem/hooks/sample-hook.sh`); the active harness adapter materializes it into the harness's native hook location on install / sync.
 2. Make it executable: `chmod +x src/apothem/hooks/sample-hook.sh`.
-3. Wire it into `~/.claude/settings.json` (Claude Code adapter) under the `hooks` block. This standalone example sets `command` directly to the hook script and passes the event name in `args`, with `${HARNESS_ROOT}` resolving to the harness's installed location. (Apothem's own dispatcher hooks use a different shape — `command` is the Python interpreter `${PYTHON_BIN}`, and the `args` array carries the dispatcher script path followed by the event name.)
+3. Wire it into `~/.claude/settings.json` (Claude Code adapter) under the `hooks` block. This standalone example sets `command` directly to the hook script and passes the event name in `args`, with `${HARNESS_ROOT}` resolving to the harness's installed location. (Apothem's own dispatcher hooks use a different shape — `command` is the Python interpreter `${PYTHON_BIN}`, and the `args` array carries `-E` and `-s`, then the dispatcher script path, then the event name. The two flags make Python ignore `PYTHONPATH` and the other `PYTHON*` variables and skip the user's site-packages, so nothing in the opened project loads into the hook.)
 
    ```json
    {

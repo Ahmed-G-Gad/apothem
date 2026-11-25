@@ -173,7 +173,7 @@ yang dikutip. Perintah `bash` terlihat seperti ini, dengan interpreter dan jalur
 proyek Anda menggantikan kedua jalur tersebut:
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
 ```
 
 `--contract copilot` membuat dispatcher membaca input camelCase Copilot dan

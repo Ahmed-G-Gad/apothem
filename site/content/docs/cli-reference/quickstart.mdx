@@ -81,11 +81,22 @@ supported harness and is always an explicit choice.
   "steps": [
     {"step": "profile", "outcome": "created", "path": "…", "placeholder_identity": ["name", "email", "github"]},
     {"step": "install", "status": "success", "harness": "all", "files_written": ["…"], "warnings": [], "results": []},
-    {"step": "recommend", "next": ["apothem verify --harness all --project .", "apothem doctor"]}
+    {"step": "recommend", "next": ["apothem verify --harness all --project \".\"", "apothem doctor"]}
   ],
-  "recommended_next": ["apothem verify --harness all --project .", "apothem doctor"]
+  "recommended_next": ["apothem verify --harness all --project \".\"", "apothem doctor"]
 }
 ```
+
+When the install step leaves a file as it is because of its Apothem marker
+lines (see [`install`](/docs/cli-reference/install#capability-notes)), both
+`status` values are `"partial"` and the exit code is `2`. In plain mode the
+run prints the install's `✗` line, then the recommended next steps. Since
+`apothem verify` fails for that file until you fix it, the first step is then
+to fix each file the install left as it is, as its warning says, and run
+`apothem update` for the same tools (`Fix the files it left:` in plain mode,
+and the first `recommended_next` entry in JSON, `Fix each file the install
+left as it is, as its warning says, then run apothem update --harness …`), in
+place of `apothem verify`.
 
 ## Examples
 
@@ -102,7 +113,7 @@ apothem quickstart --harness claude-code --json
 |---|---|
 | 0 | Guided run completed |
 | 1 | Expected validation, profile, harness, project, or adapter error |
-| 2 | Partial batch materialization after at least one write |
+| 2 | Partial: a batch stopped after at least one write, or the install left a file Apothem keeps its block in as it is because of its Apothem marker lines |
 | 64 | Usage error: an unknown option or command, or a missing or invalid option value. Under `--json` the error is a JSON envelope with code `cli.usage`. |
 
 ## See also

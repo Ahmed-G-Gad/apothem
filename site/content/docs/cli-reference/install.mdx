@@ -72,7 +72,10 @@ link, and a link inside a target is removed without being entered. When
 step stops with `Clean-slate removal was refused` before it backs up or removes
 anything, since removing `~/.config/apothem` would delete the folder at the far
 end of that link. The error names the link: replace it with a real folder, or
-make it lead to a folder inside your home directory.
+make it lead to a folder inside your home directory. The step also stops before
+it changes anything, and before it creates the starter profile, when your home
+directory is not a full path, is the root of a drive or file system, is a link
+or a junction that leads to one, or is reached through a link that loops.
 
 The clean-slate step removes the default profile,
 `~/.config/apothem/profile.yaml`, with `~/.config/apothem`, and writes it back
@@ -203,9 +206,50 @@ mode this is a single grouped note per harness (for example
 `Note: <harness> - 9 capabilities not projected; pass --verbose for detail`);
 under `--verbose` each capability prints its own rationale line. Any other
 adapter warning prints on its own `Warning:` line in plain mode too, for example
-the Zed warning that names an instruction file the new `.rules` hides. The
-`--format json` envelope always carries the full `warnings` array regardless of
-verbosity.
+the Zed warning that names an instruction file the new `.rules` hides, and the
+warning that names a file holding an Apothem BEGIN marker with no END after it:
+the install keeps the text after that marker and writes Apothem's block apart
+from it, so the warning names the marker's line, gives numbered steps that
+change that line and every other BEGIN marker line but the one that opens
+Apothem's block (a BEGIN marker you quote in code too), and says not to add
+the END marker back instead, which
+would then leave two Apothem blocks (see
+[Troubleshooting](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
+So do the warning for a file that holds two or more whole blocks between
+Apothem's markers, which names each block by its lines (see
+[A file holds two blocks between Apothem's markers](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)),
+and the warning for a file where Apothem cannot tell its block from your
+text, which names each marker pair and how to fix it (see
+[Apothem cannot tell its block from your text](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)):
+the install leaves such a file as it is (for marker pairs, while an install
+record lists the file; see [`update`](/docs/cli-reference/update)). An install
+that leaves such a file as it is ends as partial, since the tool gets no
+current Apothem block from that file: in place of the `✓` line it prints a
+`✗` line on standard error that names the file (so `--quiet` keeps it), the
+`--format json` envelope's `status` is `"partial"` and that file's warning
+carries `"detail": {"left_as_is": "1"}`, and the exit code is `2`. Every
+install and update ends that way until you fix the marker lines the warning
+names. Without `--quiet`, such an install with `--harness all` ends with a
+summary line that starts with `!` in place of `✓` and counts the files left
+as they are:
+`! Installed <n> harnesses (<m> files written); <k> file(s) left as they are, named above.`
+With `--clean`, such an install does not print its next step,
+`apothem verify`, which fails until you fix the file. In a dry run, the
+warning for a file left as it is says that Apothem
+"would leave the file as it is", and the run still ends with `status`
+`"dry_run"` and exit code `0`. A rule in your profile that opens a code block and never
+closes it does not hide the END marker of the block the install writes: the
+install closes that code block at the end of the block. A block an earlier
+release wrote from such a rule has no such closing line. A code block of yours
+that opens above Apothem's block and never closes is a different case: a
+closing line in the block closes it, so the block reads as code. The install
+warns about such a block as soon as it writes it, and the warning names the
+code block to close above the BEGIN marker (see
+[Apothem cannot tell its block from your text](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+A dry run reads the file before anything is written, so it does not show that
+the block would read as code once written.
+The `--format json` envelope always carries the full `warnings` array regardless
+of verbosity.
 
 Install and update also print advisories as `Note:` lines. An advisory never
 changes what the install writes. When an install writes a shared root, a path
@@ -338,6 +382,10 @@ is written to stdout:
 }
 ```
 
+An install that left a file as it is because of its Apothem marker lines has
+`status` `"partial"` and exits with code `2` (see
+[Capability notes](#capability-notes)).
+
 For `--dry-run`, nothing is written and `results` lists every path the install
 would write, each with the outcome it would have (`created`, `updated` or
 `unchanged`) and, for a file you also edit, the unified diff in
@@ -429,7 +477,7 @@ apothem Installing --harness claude-code   # capitalized variant
 |---|---|
 | 0 | Adapter installed successfully or dry-run planned cleanly |
 | 1 | Expected validation, profile, harness, project, or adapter error |
-| 2 | Partial batch materialization after at least one write |
+| 2 | Partial: a batch stopped after at least one write, or the install left a file Apothem keeps its block in as it is because of its Apothem marker lines (see [Capability notes](#capability-notes)); `status` is `"partial"` |
 | 64 | Usage error: an unknown option or command, or a missing or invalid option value. Under `--json` the error is a JSON envelope with code `cli.usage`. |
 
 ## See also
