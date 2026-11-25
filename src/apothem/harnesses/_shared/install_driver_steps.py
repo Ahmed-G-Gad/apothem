@@ -48,14 +48,14 @@ from collections.abc import Collection, Iterable, Sequence
 from dataclasses import dataclass
 
 from apothem.lib.harness_materializer import (
-    _HTML_BLOCK_TAG,
     APOTHEM_BLOCK_BEGIN,
     APOTHEM_BLOCK_END,
+    HTML_BLOCK_TAG,
+    MarkdownKind,
+    MarkdownLines,
+    MarkdownState,
     MarkerPlace,
     UncertainPair,
-    _Kind,
-    _Lines,
-    _MarkdownState,
     numbered_lines,
     trailing_fence,
 )
@@ -73,7 +73,7 @@ _MARKERS = frozenset({APOTHEM_BLOCK_BEGIN, APOTHEM_BLOCK_END})
 _MARKER_TEXT = "APOTHEM MANAGED BLOCK"
 
 #: A line that may start an HTML block that runs to the next blank line: a
-#: tag after the indent and any list bullets (see ``_HTML_BLOCK_TAG`` in
+#: tag after the indent and any list bullets (see ``HTML_BLOCK_TAG`` in
 #: :mod:`apothem.lib.harness_materializer`, of which this is a wider form).
 #: In such a block a changed marker line goes on the block's text, where a
 #: marker line ends a paragraph, so the lines below it can read differently.
@@ -445,9 +445,9 @@ def _html_block_above(text: str) -> bool:
     found = _HTML_START.search(text)
     if found is None:
         return False
-    lines = _Lines(text)
+    lines = MarkdownLines(text)
     texts = lines.texts
-    state = _MarkdownState(lines, None)
+    state = MarkdownState(lines, None)
     index, pos, label = 0, 0, False
     while found is not None:
         start = found.start()
@@ -457,7 +457,7 @@ def _html_block_above(text: str) -> bool:
             label = bool(row.strip()) and (label or _LABEL.match(row) is not None)
         on_text = line > 0 and not label
         on_text = on_text and _goes_on_text(state, texts[line - 1], texts[line])
-        code = state.step(line) is _Kind.CODE
+        code = state.step(line) is MarkdownKind.CODE
         if not (code or on_text or _AUTOLINK_LINE.match(texts[line])):
             return True
         index, pos = line + 1, text.find("\n", start) + 1
@@ -465,14 +465,14 @@ def _html_block_above(text: str) -> bool:
     return False
 
 
-def _goes_on_text(state: _MarkdownState, above: str, line: str) -> bool:
+def _goes_on_text(state: MarkdownState, above: str, line: str) -> bool:
     """Return True when *line* plainly goes on the paragraph *above* is in.
 
     *state* is read up to *above*, a line of plain text in a paragraph outside
     any list item and block quote (see :data:`_PLAIN_TEXT`). After its indent
     *line* starts with a tag, not a list bullet or ``>``, of none of the
     CommonMark HTML block kinds 1 to 6, which alone can end a paragraph (see
-    :data:`_HTML_OPEN` and the materializer's ``_HTML_BLOCK_TAG``).
+    :data:`_HTML_OPEN` and the materializer's ``HTML_BLOCK_TAG``).
     """
     tag = line.lstrip(" \t")
     return (
@@ -480,7 +480,7 @@ def _goes_on_text(state: _MarkdownState, above: str, line: str) -> bool:
         and not (state.fence or state.raw_html)
         and _PLAIN_TEXT.match(above) is not None
         and tag.startswith("<")
-        and not (_HTML_OPEN.match(tag) or _HTML_BLOCK_TAG.match(tag))
+        and not (_HTML_OPEN.match(tag) or HTML_BLOCK_TAG.match(tag))
     )
 
 

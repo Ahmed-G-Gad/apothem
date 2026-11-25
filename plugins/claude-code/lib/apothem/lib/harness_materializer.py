@@ -1587,3 +1587,12 @@ def build_yaml_managed_config(profile: dict[str, Any], header: str) -> str:
         config["rules"] = rules
 
     return header + yaml.safe_dump(config, default_flow_style=False, allow_unicode=True)
+
+
+#: Public names for the Markdown reader the fix advice in
+#: ``apothem.harnesses._shared.install_driver_steps`` reuses, so that module
+#: does not reach this package's private names.
+HTML_BLOCK_TAG: Final = _HTML_BLOCK_TAG
+MarkdownKind = _Kind
+MarkdownLines = _Lines
+MarkdownState = _MarkdownState
