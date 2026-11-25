@@ -239,10 +239,18 @@ def test_fit_to_limit_shortens_security_only_after_every_other_section() -> None
         (" - **Sibling.** x\n", "not a '- ' entry"),
         ("-   **Wide.** x\n", "not a '- ' entry"),
         (chr(0xA0) + "Paragraph after a no-break space.\n", "not a '- ' entry"),
-        ("\tTabbed.\n", "not a '- ' entry"),
+        ("\tTabbed.\n", "tab"),
         ("  <!-- a comment\n", "HTML block"),
         ("  <div>\n", "HTML block"),
         ("  [ref]: https://example.com\n", "link reference definition"),
+        ("  > [ref]: https://example.com\n", "link reference definition"),
+        ("- **Ref.** x\n  [a\\]b]: https://example.com\n", "link reference definition"),
+        ("- - -\n  ### Hidden heading\n", "thematic break"),
+        ("- ---\n", "thematic break"),
+        ("- \t**Tab.** x\n", "tab"),
+        ("- ```\n", "code fence"),
+        ("- **Title.** x\n  ===\n", "underline"),
+        ("- **Title.** x\n    ---\n", "underline"),
     ],
 )
 def test_fit_to_limit_refuses_a_shape_it_cannot_shorten_safely(
@@ -271,3 +279,20 @@ def test_a_wrapped_line_that_starts_with_an_unknown_tag_stays_in_its_entry() -> 
         "### Fixed\n\n- **One.** `apothem remove\n  <file>` now works.\n"
     )
     assert [len(e.lines) for e in sections[0].entries] == [2]
+
+
+@pytest.mark.parametrize(
+    "entry",
+    [
+        "- **a\\** b** rest\n",  # an escaped star: not bold as written
+        "- ** spaced** rest\n",  # a space inside the markers: not bold
+        "- **Globs like `**/*.md` now match.** rest\n",  # '**' inside code
+    ],
+)
+def test_an_entry_without_a_clean_bold_title_is_not_cut(entry: str) -> None:
+    assert extract_release_notes._Entry([entry]).headline() is None
+
+
+def test_a_clean_bold_title_with_code_is_cut() -> None:
+    entry = extract_release_notes._Entry(["- **Run `apothem verify` again.** rest", ""])
+    assert entry.headline() == ["- **Run `apothem verify` again.**", ""]

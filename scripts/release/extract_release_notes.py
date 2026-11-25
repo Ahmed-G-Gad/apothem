@@ -72,8 +72,13 @@ def extract_section(changelog: str, version: str) -> str:
     return "\n".join(body).strip() + "\n"
 
 
-_HEADLINE = re.compile(r"^(- \*\*.+?\*\*)")
-_LINK_DEFINITION = re.compile(r"^\[[^\]]+\]:")
+# A bold title CommonMark reads as bold: no '*' or backslash inside, and no
+# space just inside the markers. Other entries are dropped, never mis-cut.
+_HEADLINE = re.compile(r"^(- \*\*[^\s*\\](?:[^*\\]*[^\s*\\])?\*\*)")
+# '- - -' or '- ---' is a thematic break, not an entry, and ends the list.
+_THEMATIC_BREAK = re.compile(r"^-(?: *-){2,} *$")
+# A '===' or '---' line under an entry's text turns it into a heading.
+_UNDERLINE = re.compile(r"^(?:=+|-+)$")
 # CommonMark HTML blocks: kinds 1-6 can start anywhere; kind 7 (any other
 # tag alone on its line) only after a blank line.
 _HTML_ANYWHERE = re.compile(
@@ -108,8 +113,8 @@ class _Entry:
             return None
         text = " ".join(line.strip() for line in self.lines if line.strip())
         match = _HEADLINE.match(text)
-        if match is None:
-            return None
+        if match is None or match.group(1).count("`") % 2:
+            return None  # no bold title, or its '**' sits inside a code span
         blanks = 0
         for line in reversed(self.lines):
             if line.strip():
@@ -138,10 +143,11 @@ def _split_sections(body: str) -> tuple[list[str], list[_Section]]:
     ``- `` followed by text, or a continuation line of an entry that starts
     with two ASCII spaces. A line of any other shape raises ValueError: text
     before the first heading, a ``####`` heading, a paragraph, another list
-    marker or a wider ``-`` marker, a line indented by one space, a tab or a
-    non-ASCII space, and, even when indented, a code fence, an HTML line or
-    a link reference definition, which could reach past the entry that holds
-    it. The release page then never silently loses part of a section.
+    marker or a wider ``-`` marker, a ``- - -`` thematic break, a line
+    indented by one space or a non-ASCII space, any tab, and, even when
+    indented, a code fence, an HTML line or a ``]:`` that may start a link
+    reference definition, which could reach past the entry that holds it.
+    The release page then never silently loses part of a section.
     """
     lead: list[str] = []
     sections: list[_Section] = []
@@ -157,20 +163,26 @@ def _split_sections(body: str) -> tuple[list[str], list[_Section]]:
             else:
                 lead.append(line)
             continue
-        if line.startswith("### ") and line[4:5] not in ("", " "):
+        if "\t" not in line and line.startswith("### ") and line[4:5] not in ("", " "):
             sections.append(_Section([line]))
             continue
         problem = None
-        if not sections:
+        if "\t" in line:
+            problem = "holds a tab"
+        elif "]:" in line:
+            problem = "may hold a link reference definition"
+        elif _THEMATIC_BREAK.match(line):
+            problem = "is a thematic break"
+        elif not sections:
             problem = "comes before the first ### heading"
-        elif stripped.startswith(("```", "~~~")):
+        elif _UNDERLINE.match(stripped):
+            problem = "is a heading underline or a rule"
+        elif stripped.lstrip("- ").startswith(("```", "~~~")):
             problem = "is a code fence"
         elif _HTML_ANYWHERE.match(stripped) or (
             not line_before.strip() and _HTML_TAG_LINE.match(stripped)
         ):
             problem = "starts an HTML block"
-        elif _LINK_DEFINITION.match(stripped):
-            problem = "is a link reference definition"
         elif line.startswith("- ") and line[2:3] not in ("", " "):
             sections[-1].entries.append(_Entry([line]))
         elif line.startswith("  ") and sections[-1].entries:
