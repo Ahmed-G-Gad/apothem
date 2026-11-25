@@ -26,9 +26,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `args` list only for Claude Code, the one tool that runs one) and takes at
   most 100 commands from one file. It reads no hook file larger than 4 MB or
   that is not a regular file, and no project hook file reached through a link.
-  When the tool runs hooks from such a file, a settings file the hooks are
-  merged into included, a `hook.unchecked` line names it, and for a link it
-  also names the link on the path. An update keeps the file as it is, so the
+  When the tool runs hooks from such a file (including a settings file the
+  hooks are merged into), a `hook.unchecked` line names it; for a link, the
+  line also names the link on the path. An update keeps the file as it is, so the
   fix says to shrink or replace the file, or to check where the link leads and
   replace it, or remove only the link itself and run the `update` command the
   fix ends with. A link, or a Python file the install did not write, in the
@@ -41,10 +41,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   says "some hook commands" of a harness that also started others that passed.
   For a recorded interpreter inside the project, the fix runs `apothem update`
   from a folder outside the project, with an Apothem that runs under a Python
-  outside the project, which records that Python instead, after you deactivate
-  the project's virtual environment if it is active (for npx, `APOTHEM_PYTHON`
-  picks the Python); run in the project folder, `python -m apothem` would start
-  a folder named `apothem` committed there. A ledger doctor cannot open, or an
+  outside the project, which records that Python instead. Before that, you
+  deactivate the project's virtual environment if it is active; for npx,
+  `APOTHEM_PYTHON` picks the Python. The update runs outside the project
+  because `python -m apothem`, run in the project folder, would start a folder
+  named `apothem` committed there. A ledger doctor cannot open, or an
   error while it checks the hook files, is now named as such instead of
   stopping the check.
 
