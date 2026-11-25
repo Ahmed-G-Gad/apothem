@@ -1974,8 +1974,8 @@ def test_reparse_tag_is_read_from_the_handle(tmp_path: Path) -> None:
 def _set_reparse_tag(path: Path, tag: int, *, remove: bool = False) -> None:
     """Put a Microsoft reparse *tag* with no owner on *path*, or take it off.
 
-    No elevation is needed. The tag must be removed again before the test
-    folder is cleaned up, or the file cannot be deleted.
+    No elevation is needed. The tag is removed again, so the test folder is
+    left as it was found.
     """
     import _winapi
     import ctypes
@@ -2061,6 +2061,7 @@ def test_windows_open_reads_through_the_filter_and_closes_every_handle(
     target = tmp_path / "kept.md"
     target.write_text("kept\n")
     opened: list[int] = []
+    flags_used: list[int] = []
     closed: list[int] = []
     real_create, real_close, real_id = (
         corpus._create_file,
@@ -2071,6 +2072,7 @@ def test_windows_open_reads_through_the_filter_and_closes_every_handle(
     def creating(path: Path, flags: int) -> int:
         handle = int(real_create(path, flags))
         opened.append(handle)
+        flags_used.append(flags)
         return handle
 
     def closing(handle: int) -> None:
@@ -2098,3 +2100,57 @@ def test_windows_open_reads_through_the_filter_and_closes_every_handle(
     # other one was closed here.
     read_through = 1 if expected[0] is not None else 0
     assert len(closed) == len(opened) - read_through
+    if tag is None or (isinstance(tag, int) and tag and not tag & 0x20000000):
+        # Read through a second, plain open after the reparse-point one.
+        assert flags_used[:2] == [0x00200000, 0]
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="the Windows tag query")
+@pytest.mark.parametrize(
+    ("error", "expected", "opens"),
+    [
+        (87, ("kept\n", None), [0x00200000, 0]),  # class not supported
+        (50, ("kept\n", None), [0x00200000, 0]),
+        (1, ("kept\n", None), [0x00200000, 0]),
+        (5, (None, "unreadable"), [0x00200000]),  # any other failure
+    ],
+    ids=["invalid-parameter", "not-supported", "invalid-function", "access-denied"],
+)
+def test_tag_query_that_fails_is_handled_by_its_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    error: int,
+    expected: tuple[str | None, str | None],
+    opens: list[int],
+) -> None:
+    """The real tag query, made to fail: a file system without the tag class
+    is read through a second, plain open; any other failure is unreadable."""
+    import ctypes
+    from types import SimpleNamespace
+
+    corpus = _corpus_module()
+    target = tmp_path / "kept.md"
+    target.write_text("kept\n")
+    real_kernel32 = corpus._kernel32()
+
+    def failing_query(*_args: object) -> int:
+        ctypes.set_last_error(error)  # type: ignore[attr-defined,unused-ignore]
+        return 0
+
+    fake = SimpleNamespace(
+        GetFileInformationByHandleEx=failing_query,
+        GetFileInformationByHandle=real_kernel32.GetFileInformationByHandle,
+    )
+    monkeypatch.setattr(corpus, "_kernel32", lambda: fake)
+    real_create = corpus._create_file
+    flags_used: list[int] = []
+
+    def creating(path: Path, flags: int) -> int:
+        flags_used.append(flags)
+        return int(real_create(path, flags))
+
+    monkeypatch.setattr(corpus, "_create_file", creating)
+
+    entry = corpus.TrackedEntry(target, "100644")
+    assert corpus.read_entry(tmp_path, entry) == expected
+    assert flags_used == opens
