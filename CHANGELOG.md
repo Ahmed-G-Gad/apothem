@@ -9,6 +9,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-11-26
+
 ### Data loss in earlier releases: recover your files
 
 - **Releases 1.0.1 to 1.5.0 deleted folders that hold your own files.** Every
@@ -3532,7 +3534,8 @@ harnesses behind a conformity governance gate and signed, reproducible releases.
   constraints and document an inspect-first alternative to the pipe-to-shell
   one-liner.
 
-[Unreleased]: https://github.com/ahmed-g-gad/apothem/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/ahmed-g-gad/apothem/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.6.0
 [1.5.0]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.5.0
 [1.4.0]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.4.0
 [1.3.0]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.3.0

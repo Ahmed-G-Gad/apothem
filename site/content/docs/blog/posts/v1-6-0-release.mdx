@@ -4,8 +4,6 @@ description: "Apothem v1.6.0 stops removing folders that hold your own files, sh
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-{/* TODO(clarify): release date for the blog index line; the frontmatter of the existing posts carries none. */}
-
 Apothem v1.6.0 fixes a data-loss bug, makes uninstall and update leave your
 files alone apart from the cases listed under *Safer uninstall and update*,
 and checks each release more strictly before it installs. Read the first
@@ -39,6 +37,11 @@ from a file such as `CLAUDE.md` or `AGENTS.md`. When the block Apothem writes
 in that file had lost its END marker line, the uninstall removed everything
 from the BEGIN marker line to the end of the file. It copied the file to
 the backups first, so the steps below apply to it too.
+
+In a file that quotes Apothem's marker lines in a code example, `apothem install`
+and `apothem update` could also write Apothem's block over that example, and
+`apothem uninstall` could remove it. These commands copied the file to the
+backups first too.
 
 ### How to recover your files
 
@@ -103,7 +106,8 @@ with the same warning.
   print a warning that names the file and the marker's line. The warning gives
   a numbered step that changes that line, and says not to add the END marker
   back, because the file would then hold two Apothem blocks.
-  `apothem verify` fails until you change the line.
+  `apothem verify` fails until you change the line. A marker pair quoted in a code
+  example is no longer taken for Apothem's block.
 - **Shared folders stay while another tool uses them.** Uninstalling a tool
   from one project no longer removes the shared memory, contexts and learning
   stores while the same tool in another project still uses them.
