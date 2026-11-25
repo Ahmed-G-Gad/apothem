@@ -210,7 +210,7 @@ class _Lines:
         norm, found = self.norm, {}
         line, prev = 0, 0
         pos, source = norm.find(_MARKER_WORDS), text.find(_MARKER_WORDS)
-        while pos != -1:
+        while pos >= 0:
             line += norm.count("\n", prev, pos)
             prev = pos
             if line not in found and self.texts[line].strip() in _SENTINELS:

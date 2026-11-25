@@ -215,7 +215,7 @@ class _Layout:
         self.text = "\n".join(self.lines) + "\n"
         self.starts: dict[int, int] = {}
         line, prev, pos = 1, 0, self.text.find(_MARKER_TEXT)
-        while pos != -1:
+        while pos >= 0:
             line += self.text.count("\n", prev, pos)
             prev = pos
             if line not in self.starts and self.lines[line - 1].strip() in _MARKERS:
@@ -238,7 +238,7 @@ class _Layout:
         """
         text = self.text
         pos = text.find("<")
-        while pos != -1:
+        while pos >= 0:
             start = text.rfind("\n", 0, pos) + 1
             end = text.find("\n", pos)
             if pattern.match(text, start, end):
