@@ -610,10 +610,12 @@ Keep-a-Changelog convention. The release commit's CHANGELOG edit:
   entries to their bold titles (Security and the data-loss section last),
   drops entries only when titles are not enough, says how many it left out,
   and links the full notes in the tagged `CHANGELOG.md`. It shortens only
-  sections made of top-level `- ` entries with indented lines; a long section
-  with a code fence, a `####` heading, a paragraph or another list marker stops
-  it with an error that names the line. A CI test runs the same check on
-  every release in the `CHANGELOG.md`, so such a section fails before the tag.
+  notes made of `###` sections of `- ` entries whose other lines start with
+  two spaces. When notes that need shortening hold any other line (text
+  before the first heading, a `####` heading, a paragraph, another list
+  marker, a code fence, an HTML block or a link definition), it stops with an
+  error that names the line. A CI test runs every release in the
+  `CHANGELOG.md` through it, so such a line fails before the tag.
 - Confirms the standard headings — Added, Changed, Deprecated, Removed,
   Fixed, Security — are used where applicable. Empty headings are dropped from
   the rendered file.

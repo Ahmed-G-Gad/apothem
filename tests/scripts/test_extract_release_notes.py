@@ -192,7 +192,8 @@ def test_every_release_in_the_changelog_fits_a_github_release_page() -> None:
         body = extract_release_notes.fit_to_limit(
             extract_release_notes.extract_section(text, version), version
         )
-        assert len(body) <= extract_release_notes.MAX_BODY_CHARS < 125_000
+        length = extract_release_notes._github_length(body)
+        assert length <= extract_release_notes.MAX_BODY_CHARS < 125_000
 
 
 def _titled_body(sections: tuple[str, ...], entries: int) -> str:
@@ -234,6 +235,14 @@ def test_fit_to_limit_shortens_security_only_after_every_other_section() -> None
         ("A closing paragraph.\n", "not a '- ' entry"),
         ("1. **Numbered.** x\n2. **Next.** y\n", "not a '- ' entry"),
         ("* **Star.** x\n", "not a '- ' entry"),
+        (" ### Indented heading\n", "not a '- ' entry"),
+        (" - **Sibling.** x\n", "not a '- ' entry"),
+        ("-   **Wide.** x\n", "not a '- ' entry"),
+        (chr(0xA0) + "Paragraph after a no-break space.\n", "not a '- ' entry"),
+        ("\tTabbed.\n", "not a '- ' entry"),
+        ("  <!-- a comment\n", "HTML block"),
+        ("  <div>\n", "HTML block"),
+        ("  [ref]: https://example.com\n", "link reference definition"),
     ],
 )
 def test_fit_to_limit_refuses_a_shape_it_cannot_shorten_safely(
@@ -249,3 +258,16 @@ def test_fit_to_limit_leaves_any_shape_alone_when_it_fits() -> None:
     assert (
         extract_release_notes.fit_to_limit(body, "1.2.3", limit=10 * len(body)) == body
     )
+
+
+def test_fit_to_limit_refuses_text_before_the_first_heading() -> None:
+    body = "Intro.\n\n" + _titled_body(("Fixed",), 10)
+    with pytest.raises(ValueError, match="before the first ### heading"):
+        extract_release_notes.fit_to_limit(body, "1.2.3", limit=len(body) // 2)
+
+
+def test_a_wrapped_line_that_starts_with_an_unknown_tag_stays_in_its_entry() -> None:
+    _lead, sections = extract_release_notes._split_sections(
+        "### Fixed\n\n- **One.** `apothem remove\n  <file>` now works.\n"
+    )
+    assert [len(e.lines) for e in sections[0].entries] == [2]

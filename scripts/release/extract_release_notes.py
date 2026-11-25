@@ -73,6 +73,20 @@ def extract_section(changelog: str, version: str) -> str:
 
 
 _HEADLINE = re.compile(r"^(- \*\*.+?\*\*)")
+_LINK_DEFINITION = re.compile(r"^\[[^\]]+\]:")
+# CommonMark HTML blocks: kinds 1-6 can start anywhere; kind 7 (any other
+# tag alone on its line) only after a blank line.
+_HTML_ANYWHERE = re.compile(
+    r"^<(?:!|\?|(?:script|pre|style|textarea)(?:\s|>|$)"
+    r"|/?(?:address|article|aside|base|basefont|blockquote|body|caption|center"
+    r"|col|colgroup|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure"
+    r"|footer|form|frame|frameset|h[1-6]|head|header|hr|html|iframe|legend|li"
+    r"|link|main|menu|menuitem|nav|noframes|ol|optgroup|option|p|param|search"
+    r"|section|summary|table|tbody|td|tfoot|th|thead|title|tr|track|ul)"
+    r"(?:\s|/?>|$))",
+    re.IGNORECASE,
+)
+_HTML_TAG_LINE = re.compile(r"^</?[A-Za-z][A-Za-z0-9-]*(?:\s[^>]*)?/?>\s*$")
 # Sections a reader must see whole: they are shortened only when no other
 # section has anything left to shorten.
 _PROTECTED = ("Security", "Data loss")
@@ -117,36 +131,54 @@ class _Section:
 
 
 def _split_sections(body: str) -> tuple[list[str], list[_Section]]:
-    """Split a release body into its lead lines and ``###`` sections.
+    """Split a release body into ``###`` sections of ``- `` entries.
 
-    Only the shape the CHANGELOG uses can be shortened safely: each section
-    is a ``###`` line, then top-level ``- `` entries whose other lines are
-    indented, with blank lines between. Any other line in a section (a code
-    fence, a ``####`` heading, a paragraph or another list marker at column
-    0, or text before the first entry) raises ValueError instead of risking
-    a release page that silently loses part of a section.
+    Only the exact shape the CHANGELOG uses can be shortened safely, so
+    every non-blank line must be one of: a ``### `` heading, an entry line
+    ``- `` followed by text, or a continuation line of an entry that starts
+    with two ASCII spaces. A line of any other shape raises ValueError: text
+    before the first heading, a ``####`` heading, a paragraph, another list
+    marker or a wider ``-`` marker, a line indented by one space, a tab or a
+    non-ASCII space, and, even when indented, a code fence, an HTML line or
+    a link reference definition, which could reach past the entry that holds
+    it. The release page then never silently loses part of a section.
     """
     lead: list[str] = []
     sections: list[_Section] = []
+    previous = ""
     for number, line in enumerate(body.splitlines(), start=1):
         stripped = line.strip()
-        if line.startswith("### "):
+        line_before, previous = previous, line
+        if not stripped:
+            if sections and sections[-1].entries:
+                sections[-1].entries[-1].lines.append(line)
+            elif sections:
+                sections[-1].head.append(line)
+            else:
+                lead.append(line)
+            continue
+        if line.startswith("### ") and line[4:5] not in ("", " "):
             sections.append(_Section([line]))
-        elif not sections:
-            lead.append(line)
-        elif not stripped:
-            target = sections[-1].entries[-1].lines if sections[-1].entries else None
-            (target if target is not None else sections[-1].head).append(line)
+            continue
+        problem = None
+        if not sections:
+            problem = "comes before the first ### heading"
         elif stripped.startswith(("```", "~~~")):
-            raise ValueError(f"line {number} opens a code fence: {line!r}")
-        elif line.startswith("- "):
+            problem = "is a code fence"
+        elif _HTML_ANYWHERE.match(stripped) or (
+            not line_before.strip() and _HTML_TAG_LINE.match(stripped)
+        ):
+            problem = "starts an HTML block"
+        elif _LINK_DEFINITION.match(stripped):
+            problem = "is a link reference definition"
+        elif line.startswith("- ") and line[2:3] not in ("", " "):
             sections[-1].entries.append(_Entry([line]))
-        elif line[0].isspace() and sections[-1].entries:
+        elif line.startswith("  ") and sections[-1].entries:
             sections[-1].entries[-1].lines.append(line)
         else:
-            raise ValueError(
-                f"line {number} is not a '- ' entry or an indented line of one: {line!r}"
-            )
+            problem = "is not a '- ' entry or a two-space-indented line of one"
+        if problem is not None:
+            raise ValueError(f"line {number} {problem}: {line!r}")
     return lead, sections
 
 
@@ -228,7 +260,7 @@ def fit_to_limit(body: str, version: str, limit: int = MAX_BODY_CHARS) -> str:
     except ValueError as exc:
         raise ValueError(
             f"the [{version}] notes are too long for a release page and cannot be "
-            f"shortened safely ({exc}); shorten that section by hand"
+            f"shortened safely: {exc}. Change that line, or shorten the notes by hand"
         ) from exc
     full_notes = CHANGELOG_URL.format(version=version)
     footer = (
