@@ -143,7 +143,13 @@ identity fields: edit it, then run `apothem update --harness <name>` to apply
 yours. Re-running is idempotent: a git clone is fetched, its new tag is
 checked, and only then is the clone checked out to the resolved tag; a
 release-archive install is updated in place; and the harness is
-re-materialized. The verified install is the default and recommended path.
+re-materialized. When the engine ends as partial (exit code `2`), the
+installer prints a warning line, still verifies, places the `apothem` command
+and prints its banner, then ends with exit code `2`. The engine ends as
+partial when it leaves a file as it is because of its Apothem marker lines,
+or when it stops after it has written something (see
+[When the engine leaves a file as it is](/docs/install/updating#when-the-engine-leaves-a-file-as-it-is)).
+The verified install is the default and recommended path.
 
 Import the maintainer signing key once first. Every network install checks
 the release tag against it, with or without cosign, and stops when the key is
@@ -246,13 +252,14 @@ set it; it only stops git reading the system config. git still reads your own
 global config and, unless you set `GIT_CONFIG_NOSYSTEM`, the system config
 from the places it always looks, and `git`, `gpg` and `cosign` are the
 programs your `PATH` finds: the installer trusts them as found. For the whole
-run the installer sets `GIT_NO_LAZY_FETCH=1`, so git never fetches a missing
-object from the remote on its own, `GIT_ALLOW_PROTOCOL` to the file, git,
-http, https and ssh transports, so a value in your environment cannot widen
-that list, and `GIT_ATTR_NOSYSTEM=1`; with `core.attributesFile` emptied on
-every git command run on a clone, git then reads no attributes file outside
+run the installer sets `GIT_NO_REPLACE_OBJECTS=1`, so git never swaps an
+object through replace refs, `GIT_NO_LAZY_FETCH=1`, so git never fetches a
+missing object from the remote on its own, `GIT_ALLOW_PROTOCOL` to the file,
+git, http, https and ssh transports, so a value in your environment cannot
+widen that list, and `GIT_ATTR_NOSYSTEM=1`; with `core.attributesFile` emptied
+on every git command run on a clone, git then reads no attributes file outside
 the clone, so a macro defined in yours cannot name a filter there. The
-PowerShell script puts all three back when the run ends. The installer
+PowerShell script puts all four back when the run ends. The installer
 reads the release tag once, records the commit it names, verifies the tag,
 checks that commit out by ID, and requires `HEAD` to be that commit, so a tag
 moved after the check changes nothing. On Windows PowerShell 5.1 and 7, a
