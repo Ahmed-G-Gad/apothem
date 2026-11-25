@@ -123,7 +123,8 @@ finish. On Linux and macOS each validator runs in a session of its own, and a
 `SIGTERM` or `SIGHUP` to the gate, such as from `timeout` or a closed terminal,
 stops the validator's programs before the gate exits with code 128 plus the
 signal's number. That holds too for one that arrives while the gate starts or
-stops a validator: it waits until that step is done. A `SIGKILL`, which no
+stops a validator: it waits until that step is done, and the exit code stays
+128 plus its number even when a Ctrl+C follows during that step. A `SIGKILL`, which no
 program can catch, ends only the gate there: a validator it started runs on
 until it finishes, and a `git` command that validator waits on still stops at
 its own limit. On Windows each validator runs in a job object, which also ends
@@ -135,8 +136,9 @@ resumed never ran, and fails the same way, whatever its exit code, with two
 exceptions. One ended with exit code 259, the code Windows also gives a
 running program, reads as running while Windows is still ending it. One ended
 just before the resume is caught only when the gate reads its exit code within
-1 ms of the resume; a later read, for example while other threads of the gate
-are busy, takes its exit code as the program's own. On the machine it was
+1 ms of the resume; a later read, for example on a busy machine or while other
+threads in the calling process are busy, takes its exit code as the program's
+own. On the machine it was
 measured on, the smallest program Windows can run lived at least 3 ms past
 its resume, and `git` 27 ms, so a program that ran is not taken for one that
 was ended. One ended just after
@@ -145,10 +147,22 @@ every platform, in the gate's own run, a Ctrl+C that arrives during the start
 waits until the program runs (on Windows, until the gate has tried to resume
 it), so no program is left suspended or running past its limit. A second
 Ctrl+C that arrives while the gate stops a program waits until the stop is
-done, and the gate then waits up to half a second for that program to end,
-so on Linux and macOS it does not linger as a defunct process. Ctrl+C prints
-one line and exits `130`. The limits add up: a run in which several
-validators wait takes the sum of their limits.
+done. One that arrives just before the stop begins, or between two tries,
+makes the stop start over, up to ten times in all. When all ten fail, or a
+Ctrl+C ends the tries early, the gate stops the program once more without
+holding signals back. The gate then waits up to half a second for
+that program to end, so on Linux and macOS it does not linger as a defunct
+process. When the gate changes its own signal handlers, a signal that arrives
+mid-change does not leave a handler changed. On Linux and macOS the gate blocks
+Ctrl+C, `SIGTERM` and `SIGHUP`, and no other signal, for the few microseconds
+the change takes, so such a signal waits until the change is done and meets
+the handlers that are then in place. For any other signal, on Windows, and for
+a signal that arrived just before the block, a change the signal stopped is
+made again. A handler that raises an error at the very edge of a change, such
+as one the calling process installed itself, or two signals that arrive back
+to back, can still leave a handler changed in rare cases. Ctrl+C prints one
+line and exits `130`. The limits add
+up: a run in which several validators wait takes the sum of their limits.
 
 Five validators also give each `git` command they run a time limit of its own.
 The limits hold on every platform, including on Windows when `git` on `PATH`

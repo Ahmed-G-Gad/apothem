@@ -1804,34 +1804,48 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   program it started, and reported with `passed: false` and a `check_error`
   that says it did not finish. Each validator runs in a session of its own on
   Linux and macOS, where a `SIGTERM` or `SIGHUP` to the gate stops it before
-  the gate exits, even one that arrives while the gate starts or stops it,
-  and in a job object on Windows, which ends its programs when
-  the gate ends too. On Windows, when Windows grants the job, each program the
-  gate starts waits, suspended, until it is in the job, so a program it starts
-  at once, such as the real `git` behind Git for Windows' launcher, is stopped
-  with it. A program the gate cannot resume is stopped, and the error says
+  the gate exits, even one that arrives while the gate starts or stops it
+  (the exit code stays 128 plus the signal's number when a Ctrl+C follows
+  during that step), and in a job object on Windows, which ends its programs when the gate ends
+  too. On Windows, when Windows grants the job, each program the gate starts
+  waits, suspended, until it is in the job, so a program it starts at once,
+  such as the real `git` behind Git for Windows' launcher, is stopped with
+  it. A program the gate cannot resume is stopped, and the error says
   whether it is in the job. A `git` that cannot be resumed, or that something
   else told to end before it was resumed, even with exit code `0`, counts as
   a failed `git` with exit code `128`, never as a missing one or as `git`'s
   own answer, so the `git` checks named next fail rather than pass. A `git`
   ended just after the resume cannot be told apart from one that ran, and
   its exit code counts. So does one ended just before the resume when the
-  gate reads its exit code more than 1 ms after the resume, for example
-  while other threads of the gate are busy, and one ended with exit code
-  `259`, the code Windows gives a running program, while Windows is still
-  ending it. A `git` that ran and printed its answer is not taken for one
-  that was ended when other threads of the gate are busy. On every
-  platform, when the gate itself starts the program, a Ctrl+C that arrives
-  during the start waits until the program runs (on Windows, until the gate
-  has tried to resume it), so it does not leave a program suspended or
-  running past its time limit, and a start that fails once Popen has the
-  program's process ID stops that program. A second Ctrl+C that arrives
-  while the gate stops a program waits until the stop is done. The gate then
-  waits up to half a second for the stopped program to end, so on Linux and
-  macOS it does not linger as a defunct process. Ctrl+C prints one line and
-  exits `130`. The `git` commands of `conventional-commit-grep`,
-  `agents-md-coverage-grep` and the `--staged` checks of
-  `production-ready-pr-grep` and `semver-stability-grep` had limits
+  gate reads its exit code more than 1 ms after the resume, for example on
+  a busy machine or while other threads in the calling process are busy,
+  and one ended with exit code `259`, the code Windows gives a running
+  program, while Windows is still ending it. A `git` that ran and printed
+  its answer is not taken for one that was ended when the machine or other
+  threads in the calling process are busy. On every platform, when the gate
+  itself starts the program, a Ctrl+C that arrives during the start waits
+  until the program runs (on Windows, until the gate has tried to resume
+  it), so it does not leave a program suspended or running past its time
+  limit, and a start that fails once Popen has the program's process ID
+  stops that program. A second Ctrl+C that arrives while the gate stops a
+  program waits until the stop is done. One that arrives just before the
+  stop begins, or between two tries, makes the stop start over, up to ten
+  times in all; when all ten fail, or a Ctrl+C ends the tries early, the
+  gate stops the program once more without holding signals back. When the gate changes its own signal handlers, a signal that
+  arrives mid-change no longer leaves a handler changed, such as Ctrl+C
+  ignored for the rest of the process. On Linux and macOS the gate blocks
+  Ctrl+C, `SIGTERM` and `SIGHUP`, and no other signal, for the few
+  microseconds the change takes, so such a signal waits and meets the
+  handlers then in place. For any other signal, on Windows, and for a
+  signal that arrived just before the block, a change the signal stopped is
+  made again. A handler that raises an error at the very edge of a change,
+  such as one the calling process installed itself, or two signals that
+  arrive back to back, can still leave a handler changed in rare cases.
+  The gate then waits up to half a second for the stopped program to
+  end, so on Linux and macOS it does not linger as a defunct process. Ctrl+C
+  prints one line and exits `130`. The `git` commands of
+  `conventional-commit-grep`, `agents-md-coverage-grep` and the `--staged`
+  checks of `production-ready-pr-grep` and `semver-stability-grep` had limits
   of 5 or 10 seconds, but a command that ran past its limit passed: the
   commit-subject check took it for a folder without history, the companion
   check skipped its freshness test, and the `--staged` checks read an empty

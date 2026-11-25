@@ -60,13 +60,14 @@ well as from the package.
 from __future__ import annotations
 
 import contextlib
+import functools
 import os
 import signal
 import subprocess
 import sys
 import threading
 import time
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from pathlib import Path
 from types import FrameType
 from typing import Any, Final, NoReturn
@@ -94,6 +95,13 @@ _ENDING_WAIT_SECONDS: Final[float] = 0.5
 # ``python -c pass`` 40 ms. A read later than this is ambiguous, for example
 # when other Python threads hold the GIL: the program may have run and ended.
 _NEVER_RAN_WINDOW_SECONDS: Final[float] = 0.001
+
+# How many times the stop after an error is tried. A try fails only when a
+# signal raises in the few microseconds before its hold is in place, so a
+# second try almost never fails; the bound keeps an error that recurs at every
+# try from looping for ever. After the last failed try, one more stop runs
+# without the hold.
+_STOP_ATTEMPTS: Final[int] = 10
 
 
 class ProgramResumeError(OSError):
@@ -435,32 +443,198 @@ def _exit_on_termination(enabled: bool) -> Iterator[None]:
     if sys.platform == "win32":
         yield
     else:
-        changed: list[tuple[signal.Signals, Any]] = []
-        if enabled and threading.current_thread() is threading.main_thread():
-            for signum in (signal.SIGTERM, signal.SIGHUP):
-                if signal.getsignal(signum) is signal.SIG_DFL:
-                    changed.append((signum, signal.signal(signum, _exit_on_signal)))
+        changed: list[tuple[int, Any]] = []
+        late: list[BaseException] = []
         try:
+            if enabled and threading.current_thread() is threading.main_thread():
+                _set_handlers(
+                    [
+                        (signum, _exit_on_signal)
+                        for signum in (signal.SIGTERM, signal.SIGHUP)
+                        if signal.getsignal(signum) is signal.SIG_DFL
+                    ],
+                    saved=changed,
+                )
             yield
         finally:
-            _set_handlers(changed)
+            # Again until a call returns: a signal can raise as the call
+            # begins, before it changed anything. A refusal would come back.
+            while True:
+                try:
+                    _set_handlers(changed[::-1])
+                    break
+                except BaseException as error:
+                    late.append(error)
+                    if _refused(late):
+                        break
+            if late:
+                try:
+                    raise _gravest(late)
+                finally:
+                    # The errors' tracebacks hold this frame: a cycle.
+                    late.clear()
 
 
-def _set_handlers(handlers: Sequence[tuple[int, Any]]) -> None:
-    """Set each ``(signal, handler)`` pair, all of them even if one raises.
+def _gravest(errors: Sequence[BaseException]) -> BaseException:
+    """Return the error to raise of several.
 
-    A signal that lands once its own handler is back can raise from inside
-    this loop (``SystemExit`` from :func:`_exit_on_signal`, say). Each later
-    pair is still set, so no handler is left behind for the rest of the
-    process; the first error then goes on.
+    A termination wins, then Ctrl+C, then the first of the rest: an error a
+    caller may suppress, such as a refused handler's ``ValueError``, never
+    hides a signal.
+    """
+    for kind in (SystemExit, KeyboardInterrupt):
+        for error in errors:
+            if isinstance(error, kind):
+                return error
+    return errors[0]
+
+
+def _refused(errors: Sequence[BaseException]) -> bool:
+    """Return True when the last two errors say a change can never be made.
+
+    ``signal.signal`` refuses a handler with one of :data:`_REFUSALS`, and
+    again at every try. A signal's handler that Python runs first can raise
+    the same kinds of error (a caller's ``SIGALRM`` handler raising
+    ``TimeoutError``, say), but it runs once: the try after it succeeds.
+    """
+    return (
+        len(errors) > 1
+        and isinstance(errors[-1], _REFUSALS)
+        and type(errors[-1]) is type(errors[-2])
+    )
+
+
+# Outside Windows, the signal-mask calls of _set_handlers. They are the C
+# function under signal.pthread_sigmask, with the action bound in by
+# functools.partial (C too). A Python function would give a signal handler a
+# chance to run, and raise, as it begins, before the mask is put back, and
+# signal.pthread_sigmask turns each signal number it returns into an enum,
+# which made each change of handlers several times slower. _BLOCKED is the
+# signals whose handlers the gate changes, and no other: a handler that runs
+# mid-change (a caller's SIGALRM handler, say) and a program it starts find at
+# most these three blocked.
+_BLOCK_MASK: Callable[[Iterable[int]], Iterable[int]] | None = None
+_SET_MASK: Callable[[Iterable[int]], Iterable[int]] | None = None
+_BLOCKED: frozenset[int] = frozenset()
+if sys.platform != "win32":
+    _SIGMASK_C: Callable[[int, Iterable[int]], Iterable[int]] | None
+    try:
+        import _signal  # type: ignore[import-not-found]  # no stub: CPython's C module
+
+        _SIGMASK_C = _signal.pthread_sigmask
+    except (ImportError, AttributeError):  # pragma: no cover - not CPython
+        # No signal mask here: the per-pair retry alone covers the change.
+        _SIGMASK_C = getattr(signal, "pthread_sigmask", None)
+    if _SIGMASK_C is not None:
+        _BLOCK_MASK = functools.partial(_SIGMASK_C, signal.SIG_BLOCK)
+        _SET_MASK = functools.partial(_SIGMASK_C, signal.SIG_SETMASK)
+        _BLOCKED = frozenset({signal.SIGINT, signal.SIGTERM, signal.SIGHUP})
+
+
+# What signal.signal takes as a handler.
+_Handler = Callable[[int, FrameType | None], object] | int | signal.Handlers | None
+
+# The errors signal.signal raises itself when it refuses a handler: setting it
+# again cannot succeed.
+_REFUSALS: Final = (ValueError, TypeError, OSError)
+
+
+def _set_handler(
+    signum: int,
+    handler: _Handler,
+    saved: list[tuple[int, Any]] | None,
+    errors: list[BaseException],
+) -> None:
+    """Set *handler* for *signum*, again when a signal's handler raised first.
+
+    Python runs the handler of a signal that has arrived before
+    ``signal.signal`` changes anything, so an error from it (``SystemExit``
+    from :func:`_exit_on_signal`, say) can mean the change was not made. The
+    change is then tried again; an error raised after the change leaves it
+    made. The pair counts as refused only when the same refusal comes back
+    on the next try (see :func:`_refused`). Each error is added to *errors*.
+    With *saved*, the handler before the change is added to it first, so it
+    can be put back.
+    """
+    last: type[BaseException] | None = None
+    while True:
+        try:
+            if signal.getsignal(signum) == handler:
+                return
+            if saved is not None and not (saved and saved[-1][0] == signum):
+                saved.append((signum, signal.getsignal(signum)))
+            signal.signal(signum, handler)
+            return
+        except BaseException as error:
+            errors.append(error)
+            refused = type(error) is last and isinstance(error, _REFUSALS)
+            last = type(error)
+            if refused and signal.getsignal(signum) != handler:
+                # The old handler is still in place: nothing to put back.
+                if saved and saved[-1][0] == signum:
+                    saved.pop()
+                return
+
+
+def _set_handlers(
+    handlers: Sequence[tuple[int, Any]],
+    saved: list[tuple[int, Any]] | None = None,
+) -> None:
+    """Set each ``(signal, handler)`` pair, all of them even if a signal lands.
+
+    Outside Windows, ``SIGINT``, ``SIGTERM`` and ``SIGHUP``, the signals
+    whose handlers the gate changes, are blocked on this thread while the
+    handlers change, for a few microseconds: one that arrives waits, and is
+    handled once every pair is set, by the handler then in place. No other
+    signal is blocked, so a handler that runs meanwhile (a caller's
+    ``SIGALRM`` handler, say), and a program it starts, find at most those
+    three blocked. A signal that is still handled meanwhile (any other
+    signal; on Windows, where there is no signal mask, any signal; outside
+    it one that arrived just before the block, or one another thread of the
+    process received, as the mask is per thread) cannot leave a pair unset:
+    a pair whose change it stopped is set again, and the next pair follows.
+    Only two handlers that raise the same refusal-like error back to back
+    (two ``SIGALRM`` handlers raising ``TimeoutError``, say) leave a pair
+    unset: they read as a refusal (see :func:`_set_handler`). With *saved*,
+    the handler each change replaces is added to it first. One error then
+    goes on, chosen by :func:`_gravest`. A signal can still raise as this
+    call begins, before it changed anything, so a caller that must put
+    handlers back calls it again until it returns.
     """
     if not handlers:
         return
-    signum, handler = handlers[0]
+    errors: list[BaseException] = []
+    block, set_mask = _BLOCK_MASK, _SET_MASK
+    # Read first: a handler Python runs here raises before anything changed.
+    before = None if block is None else block(())
     try:
-        signal.signal(signum, handler)
+        if block is not None:
+            try:
+                block(_BLOCKED)
+            except BaseException as error:
+                # A handler run as the block took hold: the mask is set.
+                errors.append(error)
+        index = 0
+        while index < len(handlers):
+            try:
+                while index < len(handlers):
+                    signum, handler = handlers[index]
+                    _set_handler(signum, handler, saved, errors)
+                    index += 1
+            except BaseException as error:
+                errors.append(error)
     finally:
-        _set_handlers(handlers[1:])
+        if set_mask is not None and before is not None:
+            try:
+                set_mask(before)
+            except BaseException as error:
+                errors.append(error)
+    if errors:
+        try:
+            raise _gravest(errors)
+        finally:
+            # The errors' tracebacks hold this frame: a cycle.
+            errors.clear()
 
 
 # The encoding of a file name in a program's output. Outside Windows a name is
@@ -489,10 +663,14 @@ def decode_output(data: bytes, *, file_names: bool = False) -> str:
 
 
 def _stop(process: subprocess.Popen[bytes], job: _Job, *, group: bool) -> None:
-    """Stop *process* and every program it started that the platform can reach."""
+    """Stop *process* and every program it started that the platform can reach.
+
+    The process group is signalled only while the program is not yet reaped:
+    once it is, its process ID can name an unrelated process group later.
+    """
     job.terminate()
     if sys.platform != "win32":
-        if group:
+        if group and process.returncode is None:
             with contextlib.suppress(ProcessLookupError, PermissionError):
                 os.killpg(process.pid, signal.SIGKILL)
     with contextlib.suppress(OSError):
@@ -571,11 +749,15 @@ def _held_signals(*, terminations: bool = False) -> Iterator[None]:
     With *terminations*, outside Windows, ``SIGTERM`` and ``SIGHUP`` are held
     back too, and raised as :class:`SystemExit` (128 plus the signal
     number). :func:`_signals_to_hold` says which signals are held. The
-    previous handlers come back when the block ends. A signal that arrived
-    meanwhile is then raised, in place of any error the block raised.
+    previous handlers come back when the block ends, each one while the
+    hold's own handler is still in place. A signal that arrived meanwhile is
+    then raised, in place of any error the block raised.
 
     The hold is a Python handler, not a blocked signal: a program started
-    meanwhile inherits a blocked signal mask, but not a Python handler.
+    meanwhile inherits a blocked signal mask, but not a Python handler. Only
+    the change of handlers, at each end, runs with the signals blocked (see
+    :func:`_set_handlers`). A signal that lands as the handlers come back
+    does not hide one held before: a termination still wins over Ctrl+C.
     """
     received: list[int] = []
 
@@ -583,27 +765,49 @@ def _held_signals(*, terminations: bool = False) -> Iterator[None]:
         received.append(signum)
 
     previous: list[tuple[int, Any]] = []
+    late: list[BaseException] = []
     try:
-        for signum in _signals_to_hold(terminations):
-            previous.append((signum, signal.signal(signum, record)))
-    except ValueError:
         # Only the main interpreter may set a handler. A subinterpreter's
-        # main thread normally fails the default-handler test first, as
-        # each interpreter has its own default_int_handler, so nothing is
-        # held there; this covers an interpreter that passes it.
-        _set_handlers(previous[::-1])
-        previous = []
-    except BaseException:
-        # A signal that lands between two installs (a SIGTERM once Ctrl+C
-        # is held, say) must not leave the handlers set so far behind.
-        _set_handlers(previous[::-1])
-        raise
-    try:
+        # main thread normally fails the default-handler test first, as each
+        # interpreter has its own default_int_handler, so nothing is held
+        # there; the refusal covers an interpreter that passes it. Any other
+        # error (a SIGTERM that lands once Ctrl+C is held, say) goes on, and
+        # the handlers set so far come back first. A termination or Ctrl+C
+        # that lands beside a refusal wins over it (see _gravest).
+        with contextlib.suppress(ValueError):
+            _set_handlers(
+                [(signum, record) for signum in _signals_to_hold(terminations)],
+                saved=previous,
+            )
         yield
     finally:
-        _set_handlers(previous[::-1])
+        # Again until a call returns: a signal can raise as the call begins,
+        # before it changed anything. A refusal would come back. Only a
+        # handler the hold still has in place comes back: a hold closed late
+        # (a signal raised in contextlib's __enter__ or __exit__, which left
+        # this generator suspended) must not undo an outer restore made since.
+        while True:
+            try:
+                _set_handlers(
+                    [
+                        pair
+                        for pair in previous[::-1]
+                        if signal.getsignal(pair[0]) is record
+                    ]
+                )
+                break
+            except BaseException as error:
+                late.append(error)
+                if _refused(late):
+                    break
         if received:
-            raise _held_error(received)
+            late.insert(0, _held_error(received))
+        if late:
+            try:
+                raise _gravest(late)
+            finally:
+                # The errors' tracebacks hold this frame: a cycle.
+                late.clear()
 
 
 def _stop_unreturned(error: BaseException, job: _Job, *, group: bool) -> None:
@@ -623,10 +827,12 @@ def _stop_unreturned(error: BaseException, job: _Job, *, group: bool) -> None:
     while traceback is not None:
         candidate = traceback.tb_frame.f_locals.get("self")
         traceback = traceback.tb_next
+        # Popen sets neither attribute until its start is under way: an error
+        # in its first lines must not turn into an AttributeError here.
         if (
             isinstance(candidate, _POPEN)
-            and candidate.pid is not None
-            and candidate.returncode is None
+            and getattr(candidate, "pid", None) is not None
+            and getattr(candidate, "returncode", None) is None
         ):
             started: subprocess.Popen[bytes] = candidate
             _stop(started, job, group=group)
@@ -648,26 +854,55 @@ def _stop_after_error(
     back, and with *group* also ``SIGTERM`` and ``SIGHUP``: a second Ctrl+C
     that lands as the stop begins would skip the kill, and a program in a
     session of its own would run on, out of the terminal's reach. A signal
-    that lands before the hold is in place still meets the stop again on its
-    way out. The wait reaps the program, so outside Windows no zombie is left
-    behind. After a time-out, the output is then awaited for at most
-    :data:`STOP_GRACE_SECONDS`.
+    that lands before the hold is in place, and so raises, cannot skip the
+    stop either: the stop starts over, held again, up to
+    :data:`_STOP_ATTEMPTS` times in all. When every try fails, or a signal
+    raises between tries, the program is stopped once more without the hold.
+    The gravest error of all the tries then goes on (see :func:`_gravest`),
+    unless the error the stop began with outranks it: the caller raises that
+    one again. The wait reaps the program, so
+    outside Windows no zombie is left behind. After a time-out, the output
+    is then awaited for at most :data:`STOP_GRACE_SECONDS`.
     """
+    late: list[BaseException] = []
     stopped = False
     try:
-        with _held_signals(terminations=group):
-            _stop(process, job, group=group)
-            stopped = True
-            with contextlib.suppress(subprocess.TimeoutExpired):
-                process.wait(timeout=_ENDING_WAIT_SECONDS)
-    except KeyboardInterrupt:
-        # A termination already on its way out keeps its exit code: a
-        # Ctrl+C held during its stop does not turn 143 into 130.
-        if not isinstance(error, SystemExit):
-            raise
+        try:
+            for _attempt in range(_STOP_ATTEMPTS):
+                try:
+                    with _held_signals(terminations=group):
+                        _stop(process, job, group=group)
+                        stopped = True
+                        with contextlib.suppress(subprocess.TimeoutExpired):
+                            process.wait(timeout=_ENDING_WAIT_SECONDS)
+                except BaseException as caught:
+                    late.append(caught)
+                if stopped:
+                    break
+        except BaseException as caught:
+            # A signal outside the tries' own handling: the range() call, the
+            # append above, or the jump back to the next try.
+            late.append(caught)
     finally:
         if not stopped:
-            _stop(process, job, group=group)
+            # No held try stopped the program: one last stop, without the
+            # hold, so it does not run on. Its error is ranked with the rest.
+            try:
+                _stop(process, job, group=group)
+            except BaseException as caught:
+                late.append(caught)
+    # The errors' tracebacks hold this frame, so neither the list nor a name
+    # keeps one past the raise: a cycle would keep the program's Popen.
+    pending = _gravest(late) if late else None
+    late.clear()
+    try:
+        # The error that began the stop is ranked too: a termination on its
+        # way out keeps its exit code when a Ctrl+C, or a caller's own error,
+        # lands during its stop.
+        if pending is not None and _gravest((pending, error)) is pending:
+            raise pending
+    finally:
+        pending = None
     if isinstance(error, subprocess.TimeoutExpired):
         with contextlib.suppress(subprocess.TimeoutExpired):
             process.communicate(timeout=STOP_GRACE_SECONDS)
