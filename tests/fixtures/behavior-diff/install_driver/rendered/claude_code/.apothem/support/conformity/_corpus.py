@@ -54,9 +54,11 @@ _SNIFF_BLOCK_BYTES: Final[int] = 1024 * 1024
 _RETRY_DELAY_SECONDS: Final[float] = 0.2
 # Windows' error for a file another program has open without sharing it.
 _SHARING_VIOLATION: Final[int] = 32
-# The share modes read, write and delete, so a probe open of a file conflicts
-# only with a program that shares nothing.
+# The share modes read, write and delete, so the gate's own open of a file on
+# Windows conflicts only with a program that shares nothing.
 _SHARE_ALL: Final[int] = 0x7
+# Opens a link or junction itself on Windows, never the file it names.
+_FILE_FLAG_OPEN_REPARSE_POINT: Final[int] = 0x00200000
 # How many leading bytes of a file over the limit decide whether it is
 # binary: the span git looks at for the same question.
 _BINARY_SNIFF_BYTES: Final[int] = 8000
@@ -64,9 +66,6 @@ _BINARY_SNIFF_BYTES: Final[int] = 8000
 # are NUL, as in a zero-filled image (nearly all) or UTF-16 text (half). A
 # text file with a stray NUL stays text, so its findings are not hidden.
 _BINARY_NUL_SHARE: Final[float] = 0.25
-# Why an opened file is not the one ``os.lstat`` approved: it was swapped
-# for another file, a link or a named pipe in between.
-_SWAPPED: Final[str] = "swapped"
 
 # The index modes git gives a symbolic link and a submodule.
 _LINK_MODE: Final[str] = "120000"
@@ -337,46 +336,57 @@ def _read_failure(exc: OSError) -> str:
     return SKIP_UNREADABLE
 
 
-def _held_by_another_program(path: Path, exc: OSError) -> bool:
-    """Return True when the refused open of *path* (*exc*) is worth one retry:
-    another program has the file open without sharing it.
+def _held_by_another_program(exc: OSError) -> bool:
+    """Return True when the refused open (*exc*) is worth one retry: another
+    program holds the file for now.
 
-    Windows reports that as a refusal (``PermissionError``), but Python's
-    ``open`` keeps only the C library's error number, not the Windows error,
-    so the file is opened once more through the Windows API, which reports
-    it. A refusal for lack of permission, or a file being deleted, is not
-    worth a retry. Elsewhere, no program can hold a file this way.
+    On Windows that is a program that has the file open without sharing it,
+    which the Windows API reports as a sharing violation. Elsewhere it is a
+    write lease (a Samba oplock, an NFS delegation, ``F_SETLEASE``): the
+    non-blocking open reports ``EAGAIN`` and starts the lease break, which
+    usually ends within the wait. A refusal for lack of permission, or a file
+    being deleted, is not worth a retry.
     """
-    if sys.platform != "win32" or not isinstance(exc, PermissionError):
-        return False
-    import _winapi  # Windows only, so imported here.
-
-    try:
-        handle = _winapi.CreateFile(
-            str(path), _winapi.GENERIC_READ, _SHARE_ALL, 0, _winapi.OPEN_EXISTING, 0, 0
-        )
-    except OSError as probe:
-        return getattr(probe, "winerror", None) == _SHARING_VIOLATION
-    # The file opens now, so the hold may be over: try the real open again.
-    _winapi.CloseHandle(handle)
-    return True
+    if sys.platform == "win32":
+        return getattr(exc, "winerror", None) == _SHARING_VIOLATION
+    return exc.errno in (errno.EAGAIN, errno.EWOULDBLOCK)
 
 
 def _open_binary(path: Path) -> BinaryIO:
-    """Open *path* to read bytes, without following a link at its last level.
+    """Open *path* to read bytes, never through a link at its last level.
 
-    On Windows this is a plain ``open``: a link or junction there opens the
-    file it names, and :func:`_read_file` then finds that file is not the one
-    ``os.lstat`` approved. Elsewhere the open neither follows a link
-    (``O_NOFOLLOW``) nor waits for a named pipe to get a writer
-    (``O_NONBLOCK``, cleared once the file is open).
+    On Windows the open goes through the Windows API with
+    ``FILE_FLAG_OPEN_REPARSE_POINT``, so a link or junction there is opened
+    itself and :func:`_same_file` refuses it; the API also reports a sharing
+    violation as such, which Python's ``open`` does not. Elsewhere the open
+    neither follows a link (``O_NOFOLLOW``) nor waits for a named pipe to get
+    a writer or a lease to break (``O_NONBLOCK``, cleared once the file is
+    open).
     """
     if sys.platform == "win32":
-        return path.open("rb")
-    flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_CLOEXEC
-    fd = os.open(path, flags)
+        import _winapi  # Windows only, so imported here.
+        import msvcrt
+
+        handle = _winapi.CreateFile(
+            str(path),
+            _winapi.GENERIC_READ,
+            _SHARE_ALL,
+            0,
+            _winapi.OPEN_EXISTING,
+            _FILE_FLAG_OPEN_REPARSE_POINT,
+            0,
+        )
+        try:
+            fd = msvcrt.open_osfhandle(handle, os.O_RDONLY)
+        except BaseException:
+            _winapi.CloseHandle(handle)
+            raise
+    else:
+        flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_NOCTTY
+        fd = os.open(path, flags | os.O_CLOEXEC)
     try:
-        os.set_blocking(fd, True)
+        if sys.platform != "win32":
+            os.set_blocking(fd, True)
         return os.fdopen(fd, "rb")
     except BaseException:
         os.close(fd)
@@ -386,27 +396,34 @@ def _open_binary(path: Path) -> BinaryIO:
 def _same_file(seen: os.stat_result, opened: os.stat_result) -> bool:
     """Return True when the *opened* file is the regular file ``os.lstat`` *seen*.
 
-    The file ID (device and inode) is compared when the system gives one; a
-    file system that gives none (an inode of 0) is judged by its type alone.
+    It must be a regular file and not a link (on Windows, a reparse point
+    opened as itself). The file ID (device and inode) is compared when the
+    system gives one; on a file system that gives none (an inode of 0), the
+    open never followed a link at the last level, so a swap to another
+    regular file is the one change left unseen.
     """
     if not stat.S_ISREG(opened.st_mode):
+        return False
+    attributes = getattr(opened, "st_file_attributes", 0) or 0
+    if attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT:
         return False
     if not seen.st_ino or not opened.st_ino:
         return True
     return (seen.st_dev, seen.st_ino) == (opened.st_dev, opened.st_ino)
 
 
-def _read_file(path: Path, seen: os.stat_result) -> bytes | str:
+def _read_file(path: Path, seen: os.stat_result) -> bytes | str | None:
     """Return the bytes of the regular file *path*, or why it was not read.
 
     *seen* is what ``os.lstat`` found at *path*. The opened file must be that
     same regular file; when it is not (it was swapped for another file, a link
-    or a named pipe since), the result is :data:`_SWAPPED` and nothing is read.
-    The file is opened once per attempt, and each attempt starts afresh. An
-    open refused because another program holds the file is tried once more
-    after :data:`_RETRY_DELAY_SECONDS`, since such a hold is often brief. A
-    refusal for lack of permission is not retried, and neither is an error
-    while reading, such as a range of the file another program has locked.
+    or a named pipe since), the result is None and nothing is read. The file
+    is opened once per attempt, and each attempt starts afresh. An open
+    refused because another program holds the file (see
+    :func:`_held_by_another_program`) is tried once more after
+    :data:`_RETRY_DELAY_SECONDS`, since such a hold is often brief. A refusal
+    for lack of permission is not retried, and neither is an error while
+    reading, such as a range of the file another program has locked.
     """
     for attempt in range(2):
         try:
@@ -414,8 +431,8 @@ def _read_file(path: Path, seen: os.stat_result) -> bytes | str:
         except OSError as exc:
             if exc.errno == errno.ELOOP:
                 # O_NOFOLLOW met a link that took the file's place.
-                return _SWAPPED
-            if attempt == 0 and _held_by_another_program(path, exc):
+                return None
+            if attempt == 0 and _held_by_another_program(exc):
                 time.sleep(_RETRY_DELAY_SECONDS)
                 continue
             return _read_failure(exc)
@@ -423,7 +440,7 @@ def _read_file(path: Path, seen: os.stat_result) -> bytes | str:
             with handle:
                 opened = os.fstat(handle.fileno())
                 if not _same_file(seen, opened):
-                    return _SWAPPED
+                    return None
                 return _read_open_file(handle, opened.st_size)
         except OSError as exc:
             return _read_failure(exc)
@@ -510,7 +527,7 @@ def read_entry(root: Path, entry: TrackedEntry) -> tuple[str | None, str | None]
         return None, SKIP_LINK
     if entry.mode == _SUBMODULE_MODE:
         return None, SKIP_SUBMODULE
-    data: bytes | str = _SWAPPED
+    data: bytes | str | None = None
     for _attempt in range(2):
         info = lstat_inside(root, entry.path)
         if isinstance(info, str):
@@ -518,9 +535,10 @@ def read_entry(root: Path, entry: TrackedEntry) -> tuple[str | None, str | None]
         if not stat.S_ISREG(info.st_mode):
             return None, SKIP_NOT_REGULAR
         data = _read_file(entry.path, info)
-        if data != _SWAPPED:
+        if data is not None:
             break
-    if data == _SWAPPED:
+    if data is None:
+        # Swapped again on the second look.
         return None, SKIP_UNREADABLE
     if isinstance(data, str):
         return None, data

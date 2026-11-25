@@ -1330,11 +1330,12 @@ def _refuse_opens(
 
     monkeypatch.setattr(_corpus_module(), "_open_binary", refusing_open)
     monkeypatch.setattr(corpus.time, "sleep", sleeps.append)
-    # What the Windows probe would say (a real hold is tested on Windows).
+    # Read the made-up winerror on every system (a real hold is tested on
+    # Windows, and the errno rule for a lease below).
     monkeypatch.setattr(
         corpus,
         "_held_by_another_program",
-        lambda _path, exc: getattr(exc, "winerror", None) == 32,
+        lambda exc: getattr(exc, "winerror", None) == 32,
     )
     return sleeps
 
@@ -1792,28 +1793,97 @@ def test_swap_to_a_pipe_or_a_link_neither_waits_nor_reads_it(
     assert result == (None, "not_regular_file" if kind == "fifo" else "link")
 
 
-@pytest.mark.skipif(sys.platform != "win32", reason="the probe is Windows-only")
-def test_windows_probe_tells_a_hold_from_a_denial(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """The probe says retry for a file that opens now or that a program holds,
-    and not for a denial or for an error that is not a refusal."""
-    import _winapi
+def test_hold_is_told_from_a_denial() -> None:
+    """Only a hold is retried: a sharing violation on Windows, a lease being
+    broken (EAGAIN) elsewhere; never a lack of permission."""
+    import errno
 
     corpus = _corpus_module()
-    target = tmp_path / "f.md"
-    target.write_text("x\n")
-    refused = PermissionError(13, "Permission denied")
-    assert corpus._held_by_another_program(target, refused) is True
-    assert corpus._held_by_another_program(target, OSError(22, "Invalid")) is False
-    handle = _hold_without_sharing(target)
+    if sys.platform == "win32":
+        assert corpus._held_by_another_program(_refusal(32)) is True
+        assert corpus._held_by_another_program(_refusal(5)) is False
+    else:
+        assert corpus._held_by_another_program(OSError(errno.EAGAIN, "lease")) is True
+        assert corpus._held_by_another_program(_refusal(None)) is False
+    assert corpus._held_by_another_program(OSError(22, "Invalid")) is False
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows share modes")
+def test_file_another_program_writes_while_sharing_is_read(tmp_path: Path) -> None:
+    """A program that has the file open to write, delete or rename, sharing
+    it, does not keep the gate from reading it."""
+    import _winapi
+
+    from apothem.conformity import _corpus
+
+    target = tmp_path / "open.md"
+    target.write_bytes(b"open\n")
+    access = _winapi.GENERIC_READ | _winapi.GENERIC_WRITE | 0x00010000  # DELETE
+    handle = _winapi.CreateFile(
+        str(target), access, 0x7, 0, _winapi.OPEN_EXISTING, 0, 0
+    )
     try:
-        assert corpus._held_by_another_program(target, refused) is True
+        entry = _corpus.TrackedEntry(target, "100644")
+        assert _corpus.read_entry(tmp_path, entry) == ("open\n", None)
     finally:
         _winapi.CloseHandle(handle)
 
-    def denied(*_args: object) -> int:
-        raise _refusal(5)
 
-    monkeypatch.setattr(_winapi, "CreateFile", denied)
-    assert corpus._held_by_another_program(target, refused) is False
+@pytest.mark.skipif(sys.platform != "win32", reason="junctions are Windows-only")
+def test_junction_swapped_in_after_the_lookup_is_not_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """On Windows the open never goes through a link at the file's own name,
+    so a junction swapped in after the lookup is not followed."""
+    import _winapi
+
+    corpus = _corpus_module()
+    project = tmp_path / "proj"
+    project.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    target = project / "doc.md"
+    target.write_text("inside\n")
+
+    def swap_in(path: Path, look: int) -> None:
+        if look == 1:
+            path.unlink()
+            _winapi.CreateJunction(str(outside), str(path))
+
+    _swap_after_each_look(monkeypatch, target, swap_in)
+    text, reason = corpus.read_entry(project, corpus.TrackedEntry(target, "100644"))
+    assert text is None
+    assert reason in {"link", "unreadable"}
+
+
+def test_file_system_without_file_ids_is_still_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A file system that gives every file an inode of 0 is judged by the
+    file's type; the file is read."""
+    corpus = _corpus_module()
+    target = tmp_path / "doc.md"
+    target.write_text("no ids\n")
+    real_fstat = os.fstat
+    monkeypatch.setattr(
+        corpus.os,
+        "fstat",
+        lambda fd: os.stat_result((*real_fstat(fd)[:1], 0, *real_fstat(fd)[2:])),
+    )
+    entry = corpus.TrackedEntry(target, "100644")
+    assert corpus.read_entry(tmp_path, entry) == ("no ids\n", None)
+
+
+@pytest.mark.parametrize(
+    ("nuls", "reason"), [(1999, "too_large"), (2000, "not_utf8_text")]
+)
+def test_quarter_of_nul_is_the_binary_line(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, nuls: int, reason: str
+) -> None:
+    """Exactly a quarter of the first 8000 bytes being NUL makes a large
+    file binary; one fewer keeps it text."""
+    repo = _project(tmp_path, {"dump.sql": "small\n"})
+    (repo / "dump.sql").write_bytes(b"\0" * nuls + b"a" * (20000 - nuls))
+    _shrink_limit(monkeypatch, 16384)
+
+    assert _skipped(_run(repo)) == {reason: 1}

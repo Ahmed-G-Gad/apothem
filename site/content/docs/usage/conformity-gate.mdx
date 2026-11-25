@@ -149,15 +149,17 @@ by reason:
   another program holds the file or part of it, or because the system cannot
   open it, such as an online-only file whose sync program is stopped. When
   another program holds the whole file, the gate waits 0.2 seconds and tries
-  once more. The run does not pass, since a finding in it would go unseen;
+  once more: on Windows, a program that has it open without sharing it;
+  elsewhere, a write lease being broken, such as a Samba oplock or an NFS
+  delegation. The run does not pass, since a finding in it would go unseen;
 - `too_large`: a file over 64 MiB whose first 64 MiB are UTF-8 text, or a
   file that grows past 64 MiB while the gate reads it. The run does not
   pass, for the same reason;
 - `not_utf8_text`: a file whose bytes are not UTF-8 text, such as a UTF-16
   file with a byte-order mark. Over 64 MiB, the first 64 MiB decide, and a
   file is binary when a quarter or more of its first 8000 bytes are NUL,
-  such as a large zero-filled image or a UTF-16 file without a byte-order
-  mark, so it does not fail the run; a few NUL bytes in text do not count;
+  such as a large zero-filled image or a UTF-16 file of mostly Latin text
+  without a byte-order mark, so it does not fail the run; a few NUL bytes in text do not count;
 - `exempt`: a file the checks leave out by design: one whose suffix marks it
   as binary, such as an image or an archive, and anything under a
   `.apothem/plans`, `tests/conformity`, `tests/fixtures`, `_vendor` or
