@@ -606,10 +606,13 @@ Keep-a-Changelog convention. The release commit's CHANGELOG edit:
   matches the `## [X.Y.Z]` prefix).
 - Needs no trimming for the GitHub Release page. GitHub refuses a release
   body over 125,000 characters, so the release job's `extract_release_notes.py`
-  shortens a longer section to 120,000: it keeps the `###` headings, cuts entries
-  to their bold titles (Security and the data-loss section last), drops
-  entries only when titles are not enough, says how many it left out, and
-  links the full notes in the tagged `CHANGELOG.md`.
+  shortens a longer section to 120,000: it keeps the `###` headings, cuts
+  entries to their bold titles (Security and the data-loss section last),
+  drops entries only when titles are not enough, says how many it left out,
+  and links the full notes in the tagged `CHANGELOG.md`. The script never
+  drops `####` headings, or paragraphs and code blocks outside list entries;
+  if those alone pass 120,000 characters, the release job fails before it
+  publishes.
 - Confirms the standard headings — Added, Changed, Deprecated, Removed,
   Fixed, Security — are used where applicable. Empty headings are dropped from
   the rendered file.

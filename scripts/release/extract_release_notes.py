@@ -72,8 +72,9 @@ def extract_section(changelog: str, version: str) -> str:
     return "\n".join(body).strip() + "\n"
 
 
-_FENCE = re.compile(r"^\s*(```|~~~)")
-_ENTRY_START = re.compile(r"^(?:[-*+]|[0-9]{1,9}[.)]) ")
+_FENCE_OPEN = re.compile(r"^( *)(`{3,}|~{3,})(.*)$")
+_FENCE_CLOSE = re.compile(r"^ *(`{3,}|~{3,}) *$")
+_ENTRY_START = re.compile(r"^(?:[-*+]|([0-9]{1,9})[.)]) ")
 _HEADLINE = re.compile(r"^((?:[-*+]|[0-9]{1,9}[.)]) \*\*.+?\*\*)")
 # Sections a reader must see whole: they are shortened only when no other
 # section has anything left to shorten.
@@ -119,6 +120,39 @@ class _Section:
         return any(name in self.head[0] for name in _PROTECTED)
 
 
+def _indent(line: str) -> int:
+    return len(line) - len(line.lstrip(" "))
+
+
+def _opens_fence(line: str) -> tuple[str, int, int] | None:
+    """Return (character, length, indent) when the line opens a code fence."""
+    match = _FENCE_OPEN.match(line)
+    if match is None:
+        return None
+    marker, info = match.group(2), match.group(3)
+    if marker[0] == "`" and "`" in info:
+        return None  # CommonMark: a backtick fence's info string has no backtick
+    return marker[0], len(marker), len(match.group(1))
+
+
+def _closes_fence(line: str, fence: tuple[str, int, int]) -> bool:
+    match = _FENCE_CLOSE.match(line)
+    return (
+        match is not None
+        and match.group(1)[0] == fence[0]
+        and len(match.group(1)) >= fence[1]
+    )
+
+
+def _starts_entry(line: str, previous: str) -> bool:
+    """A top-level list item; after a non-blank line, a numbered one starts at 1."""
+    match = _ENTRY_START.match(line)
+    if match is None:
+        return False
+    number = match.group(1)
+    return not number or not previous.strip() or int(number) == 1
+
+
 def _split_sections(body: str) -> tuple[list[str], list[_Section]]:
     """Split a release body into its lead lines and ``###`` sections.
 
@@ -126,35 +160,51 @@ def _split_sections(body: str) -> tuple[list[str], list[_Section]]:
     entry, then its entries: a top-level list item with its continuation
     lines, or a pinned line at column 0 after a blank line (a ``####``
     heading, a closing paragraph or a code fence), which is never dropped.
-    A fenced code block stays whole with the line that opens it.
+    A fenced code block stays whole with the line that opens it. Fences
+    follow CommonMark: a fence closes on a line of the same character that
+    is at least as long and carries no info string, and a fence opened
+    inside a list item also ends where that item ends (a non-blank line
+    indented less than the fence).
     """
     lead: list[str] = []
     sections: list[_Section] = []
-    in_fence = False
+    fence: tuple[str, int, int] | None = None
     previous = ""
+
+    def append(line: str) -> None:
+        if sections and sections[-1].entries:
+            sections[-1].entries[-1].lines.append(line)
+        elif sections:
+            sections[-1].head.append(line)
+        else:
+            lead.append(line)
+
     for line in body.splitlines():
-        fence = _FENCE.match(line) is not None
-        if in_fence or fence:
-            opens_at_column_0 = (
-                fence
-                and not in_fence
-                and not line[0].isspace()
+        if fence is not None and line.strip() and _indent(line) < fence[2]:
+            fence = None  # the list item holding the fence ended
+        if fence is not None:
+            append(line)
+            if _closes_fence(line, fence):
+                fence = None
+            previous = line
+            continue
+        opened = _opens_fence(line)
+        if opened is not None:
+            if (
+                sections
+                and sections[-1].entries
+                and opened[2] == 0
                 and not previous.strip()
-            )
-            if sections and sections[-1].entries and opens_at_column_0:
+            ):
                 sections[-1].entries.append(_Entry([line], pinned=True))
-            elif sections and sections[-1].entries:
-                sections[-1].entries[-1].lines.append(line)
-            elif sections:
-                sections[-1].head.append(line)
             else:
-                lead.append(line)
-            in_fence = in_fence != fence
+                append(line)
+            fence = opened
         elif line.startswith("### "):
             sections.append(_Section([line]))
         elif not sections:
             lead.append(line)
-        elif _ENTRY_START.match(line):
+        elif _starts_entry(line, previous):
             sections[-1].entries.append(_Entry([line]))
         elif (
             line.strip()
@@ -163,10 +213,8 @@ def _split_sections(body: str) -> tuple[list[str], list[_Section]]:
             and sections[-1].entries
         ):
             sections[-1].entries.append(_Entry([line], pinned=True))
-        elif sections[-1].entries:
-            sections[-1].entries[-1].lines.append(line)
         else:
-            sections[-1].head.append(line)
+            append(line)
         previous = line
     return lead, sections
 
@@ -176,6 +224,8 @@ def _render(lead: list[str], sections: list[_Section], footer: str) -> str:
     for section in sections:
         parts.extend(section.head)
         for entry in section.entries:
+            if entry.pinned and parts and parts[-1].strip():
+                parts.append("")  # keep a pinned line out of the item above it
             parts.extend(entry.lines)
         if section.dropped:
             if parts and parts[-1].strip():

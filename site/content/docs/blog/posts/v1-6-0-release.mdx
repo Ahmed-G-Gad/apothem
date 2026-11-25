@@ -126,8 +126,9 @@ with the same warning.
   Apothem's block from your text, for example in a file with two Apothem
   blocks or a quoted marker pair that an install record lists, they leave the
   file as it is, print a warning with numbered fixes, and exit with code 2.
-  The installer and update scripts then end with code 2 too (a piped
-  PowerShell run sets `$LASTEXITCODE` to 2 and keeps the window open). Apply
+  The installer and update scripts then end with code 2 too. A piped
+  PowerShell run sets `$LASTEXITCODE` to 2 and keeps the session open; with
+  `pwsh -Command`, add `; exit $LASTEXITCODE` to get code 2. Apply
   a fix the warning names, then run `apothem update` again.
 - **Shared folders stay while another tool uses them.** Uninstalling a tool
   from one project no longer removes the shared memory, contexts and learning
