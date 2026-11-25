@@ -228,7 +228,7 @@ class _Layout:
             if self.lines[number - 1].strip() == APOTHEM_BLOCK_BEGIN
         ]
         self.first_tag = self._first(_TAG)
-        self._as_is: tuple[int, str] | None | bool = False
+        self._as_is: tuple[int, str] | bool | None = False
 
     def _first(self, pattern: re.Pattern[str]) -> int | None:
         """Return the 0-based first line *pattern* matches at its start, or ``None``.
