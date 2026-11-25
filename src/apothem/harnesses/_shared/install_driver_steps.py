@@ -32,7 +32,8 @@ its own there. Everything here builds text and reads no file. It finds the
 marker lines, and the lines that may start an HTML block, by searching the
 text, not by going over each line, and reads the file as Markdown once per
 warning to find whether it ends in an open code block (see
-:func:`_closing`).
+:func:`_closing`), and once more up to that code block's opener when a line
+above it may start an HTML block (see :func:`_html_block_above`).
 
 Apothem reads the lines of an HTML block, and a line of a list item's text
 that goes on at the left margin, otherwise than a Markdown viewer does (see
@@ -50,10 +51,14 @@ from collections.abc import Collection, Iterable, Sequence
 from dataclasses import dataclass
 
 from apothem.lib.harness_materializer import (
+    _HTML_LINE,
     APOTHEM_BLOCK_BEGIN,
     APOTHEM_BLOCK_END,
     MarkerPlace,
     UncertainPair,
+    _Kind,
+    _Lines,
+    _MarkdownState,
     numbered_lines,
     trailing_fence,
 )
@@ -81,10 +86,19 @@ _TAG = re.compile(r"[ \t]*(?:(?:[-+*]|[0-9]{1,9}[.)])[ \t]+)*</?[A-Za-z]")
 #: its own line, such as ``<!-- note -->`` (a marker line among them): after
 #: the indent and any list bullets, ``<`` and a letter, ``/``, ``?`` or ``!``.
 #: A Markdown viewer reads the lines of such a block as its text, where
-#: Apothem can read a code fence.
+#: Apothem can read a code fence. Only these lines are read further (see
+#: :func:`_html_block_above`).
 _HTML_START = re.compile(
     r"^[ \t]*(?:(?:[-+*]|[0-9]{1,9}[.)])[ \t]+)*<(?:[A-Za-z/?]|!(?!--.*-->))",
     re.MULTILINE,
+)
+
+#: The start of an HTML block that runs to the line that holds its end, such
+#: as ``<!--`` up to ``-->`` (CommonMark kinds 1 to 5); ``_HTML_LINE`` in
+#: :mod:`apothem.lib.harness_materializer` is one that ends on its own line.
+_HTML_OPEN = re.compile(
+    r"<!--|<\?|<![A-Za-z]|<!\[CDATA\["
+    r"|(?i:<(?:pre|script|style|textarea)(?:[ \t>]|\Z))"
 )
 
 #: A line's list bullets after the indent, each with the gap after it: the
@@ -390,8 +404,8 @@ def _viewer_may_differ(layout: _Layout, opener: int) -> bool:
     lines of an HTML block, and a line of a list item's text that goes on at
     the left margin, which ends that item for Apothem but not for a viewer
     (see :func:`apothem.lib.harness_materializer._marker_lines`). So a viewer
-    may read the code block otherwise when a line above *opener* may start
-    an HTML block (see :data:`_HTML_START`), or when a list item's text goes
+    may read the code block otherwise when a line above *opener* starts an
+    HTML block (see :func:`_html_block_above`), or when a list item's text goes
     on at the left margin above it and an indented line follows while a
     viewer may still hold that item open (see :func:`_lazy_item_above`): the
     closing line a fix adds can then start a code block in a viewer. Either
@@ -400,9 +414,50 @@ def _viewer_may_differ(layout: _Layout, opener: int) -> bool:
     """
     above = layout.lines[: opener - 1]
     start = sum(len(line) + 1 for line in above)
-    if _HTML_START.search(layout.text, 0, start) is not None:
+    if _html_block_above(layout.text[:start]):
         return True
     return _lazy_item_above(layout.lines[:opener])
+
+
+def _html_block_above(text: str) -> bool:
+    """Return True when a line of *text* starts an HTML block in a Markdown viewer.
+
+    *text* is the lines above the opener of the code block the file ends in,
+    each ended by a line break. A line counts when it is no code (Apothem
+    reads which lines are as a viewer does, up to the first HTML block) and
+    its text after the indent and any list bullets starts an HTML block as
+    CommonMark 0.31 reads it: a comment, processing instruction, declaration,
+    CDATA section or ``pre``, ``script``, ``style`` or ``textarea`` element
+    that does not end on that line (see :data:`_HTML_OPEN`), a block-level
+    tag, or any other whole tag alone on its line where no paragraph is open
+    (as the materializer's ``_HTML_BLOCK_TAG`` and ``_HTML_LONE_TAG`` read
+    them). An autolink such as ``<https://example.com>``, a tag inside a line
+    of text, and HTML in a fenced or indented code block start none. A line
+    in a list item is read by its text after the bullets, so the check stays
+    wide there. Only the lines :data:`_HTML_START` finds are read one at a
+    time; the lines between are read as
+    :func:`apothem.lib.harness_materializer.trailing_fence` reads them.
+    """
+    found = _HTML_START.search(text)
+    if found is None:
+        return False
+    lines = _Lines(text)
+    state = _MarkdownState(lines, None)
+    index = pos = 0
+    while found is not None:
+        start = found.start()
+        line = index + text.count("\n", pos, start)
+        state.advance(index, pos, line, start)
+        if state.step(line) is not _Kind.CODE:
+            rest = lines.texts[line]
+            rest = rest[rest.index("<") :]
+            if state.raw_html or (
+                _HTML_OPEN.match(rest) and not _HTML_LINE.match(rest)
+            ):
+                return True
+        index, pos = line + 1, text.find("\n", start) + 1
+        found = _HTML_START.search(text, pos)
+    return False
 
 
 def _lazy_item_above(lines: Sequence[str]) -> bool:

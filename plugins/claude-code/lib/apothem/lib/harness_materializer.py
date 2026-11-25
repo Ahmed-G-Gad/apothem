@@ -1368,7 +1368,11 @@ def _owned_frontmatter_split(text: str) -> tuple[str, str] | None:
     received an appended block always has a blank line (and usually prose)
     before the sentinel, so it never matches; nor do opening lines of the
     operator's that only read as frontmatter, such as a ``---`` line, a list
-    item and another ``---`` line right above the BEGIN marker.
+    item and another ``---`` line right above the BEGIN marker. Frontmatter
+    that YAML cannot read is Apothem's when a line of it starts with one of
+    the rule-file templates' keys (see :data:`_TEMPLATE_KEY`): the operator
+    may have edited a value Cursor reads but YAML does not, such as
+    ``globs: **/*.ts``.
     """
     parts = split_frontmatter(text)
     if parts is None or parts[1].split("\n", 1)[0].strip() != APOTHEM_BLOCK_BEGIN:
@@ -1377,8 +1381,15 @@ def _owned_frontmatter_split(text: str) -> tuple[str, str] | None:
     try:
         keys = yaml.safe_load(inner)
     except yaml.YAMLError:
-        return None
+        return parts if _TEMPLATE_KEY.search(inner) else None
     return parts if isinstance(keys, dict) and keys else None
+
+
+#: A frontmatter line that starts with a key Apothem's rule-file templates
+#: write (``src/apothem/harnesses/*/templates/apothem-rules.*``).
+_TEMPLATE_KEY: Final = re.compile(
+    r"^(?:alwaysApply|description|globs|inclusion|trigger):", re.MULTILINE
+)
 
 
 def _merge_frontmatter_block(

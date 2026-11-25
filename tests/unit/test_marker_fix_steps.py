@@ -500,6 +500,63 @@ def test_a_fix_that_takes_the_block_out_closes_the_code_block_too(
     assert _check(lines, message, removes=True) == 1
 
 
+#: A stray BEGIN marker whose old text ends in a code block no line closes.
+_OPEN_STRAY = [B, "old", "Example:", "```sh", "run"]
+
+#: Text above it with a line that looks like HTML but starts no HTML block in
+#: a CommonMark viewer: the viewer reads the code block as Apothem does.
+NO_HTML_BLOCK = {
+    "autolink": ["See <https://example.com> or", "<https://example.org>"],
+    "inline-tag": ["<kbd>Ctrl</kbd>+<kbd>C</kbd> copies."],
+    "html-in-fence": ["```html", "<div>hi</div>", "```"],
+    "html-in-indented-code": ["Text", "", "    <div>hi</div>", ""],
+    "lone-tag-under-a-paragraph": ["text", "<span>", ""],
+}
+
+#: Text above it with a line that starts an HTML block in a CommonMark viewer.
+HTML_BLOCK = {
+    "comment": ["<!-- draft", "note", "-->"],
+    "div": ["<div>", "hi", "</div>", ""],
+    "details": ["<details>", "", "Shown.", "", "</details>", ""],
+    "lone-tag": ["", "<span>", "x", ""],
+    "pre-under-a-paragraph": ["text", "<pre>", "x", "</pre>", ""],
+    "in-a-list-item": ["- <!-- draft", "  note -->"],
+}
+
+
+def _stray_message(lines: list[str]) -> str:
+    text = _text(lines)
+    fixes = steps.stray_fixes(text, stray_begins(text), whole_blocks(text))
+    return steps.render_fixes(fixes, ["Then done"] * len(fixes))
+
+
+@pytest.mark.parametrize("name", sorted(NO_HTML_BLOCK))
+def test_a_line_that_starts_no_html_block_keeps_the_numbered_steps(name: str):
+    """advice-1 (round 7): any line starting with ``<`` and a letter withheld them.
+
+    An autolink, a tag inside a line of text, HTML in a fenced or indented
+    code block, or a lone tag a paragraph holds starts no HTML block, so a
+    viewer reads the code block the file ends in as Apothem does. The fix
+    closes it and changes the BEGIN marker line, and holds when followed.
+    """
+    lines = [*NO_HTML_BLOCK[name], *_OPEN_STRAY]
+    begin = len(NO_HTML_BLOCK[name]) + 1
+    message = _stray_message(lines)
+    assert _NO_STEPS not in message
+    assert f"A1. Below line {len(lines)}, add a line of 3 backticks." in message
+    assert f"A2. Change line {begin}: add a word inside its comment." in message
+    assert _check(lines, message, removes=False) == 1
+    assert _check(lines, message, removes=True) == 1
+
+
+@pytest.mark.parametrize("name", sorted(HTML_BLOCK))
+def test_a_line_that_starts_an_html_block_still_gives_no_numbered_steps(name: str):
+    """A viewer may read the lines of an HTML block otherwise than Apothem."""
+    message = _stray_message([*HTML_BLOCK[name], *_OPEN_STRAY])
+    assert _NO_STEPS in message
+    assert not _STEP.search(message), message
+
+
 _GONE = "Apothem then finds no block of its own in this file"
 
 

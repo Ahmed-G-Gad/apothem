@@ -955,10 +955,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   END marker once the uninstall takes Apothem's block out. OpenClaw's size
   refusal for a rules file names the same marker lines and closing line as
   the other warnings for that file. Where a line above the code block a
-  file ends in may start an HTML block, or a list item's text goes on at the
-  left margin above it and an indented line follows, a Markdown viewer can
-  read that code block otherwise than Apothem, so the closing line could
-  start a code block in a viewer:
+  file ends in starts an HTML block (a link in angle brackets, a tag inside
+  a line of text and HTML in a code block start none), or a list item's text
+  goes on at the left margin above it and an indented line follows, a
+  Markdown viewer can read that code block otherwise than Apothem, so the
+  closing line could start a code block in a viewer:
   that fix then says it cannot give numbered steps and names the line that
   opens the code block. The fixes are built from the file's
   lines, with no Markdown reading of their own, and each reading of a file
@@ -973,7 +974,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   frontmatter.** A file that opened with a `---` line, a list item and
   another `---` line right above Apothem's block lost those lines, and with
   nothing else in it the file was deleted. Only frontmatter that holds keys,
-  as Apothem's own rule files have, now goes with the block.
+  as Apothem's own rule files have, now goes with the block. So does
+  frontmatter that YAML cannot read when a line of it starts with one of the
+  keys Apothem's rule files write, such as `globs: **/*.ts` in Cursor's.
 - **The installers and update scripts finish a run that ends as partial.**
   `apothem install` and `apothem update` exit with code `2` when they leave a
   file as it is because of its marker lines, or when they stop after they
@@ -992,9 +995,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   ends or stops on an error. A one-shot `pwsh -Command "irm ... | iex"`
   reports a partial run only through `$LASTEXITCODE`: end it with
   `; exit $LASTEXITCODE`, or run the script by path with `-File`, to get exit
-  code `2` from the process. From bash or another POSIX shell, put that
-  command in single quotes, so the shell does not replace `$LASTEXITCODE`.
-  Any other non-zero exit code from the engine stops the script there.
+  code `2` from the process. From PowerShell, bash or another POSIX shell,
+  put that command in single quotes, so the calling shell does not replace
+  `$LASTEXITCODE`. From cmd.exe, double quotes are fine. Any other non-zero
+  exit code from the engine stops the script there.
 - **`install.ps1 -DryRun` no longer prints "Installation complete."** A dry
   run printed that line and the next-step banner after "Dry-run complete -
   no changes were made.", although it installs nothing and places no

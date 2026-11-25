@@ -32,6 +32,7 @@ from apothem.harnesses._shared.install_driver_retention import (
 )
 from apothem.harnesses._shared.install_driver_types import MaterializationResult
 from apothem.harnesses.open_claw import rules_file
+from apothem.lib import harness_materializer as materializer
 from apothem.lib.harness_materializer import (
     APOTHEM_BLOCK_BEGIN,
     APOTHEM_BLOCK_END,
@@ -108,6 +109,55 @@ def test_the_strip_still_takes_out_apothem_s_own_frontmatter() -> None:
     merged = merge_managed_block(_lines("My notes."), body)
     assert merged.startswith(_lines("---", "alwaysApply: true", "---", B))
     assert remove_managed_block(merged) == _lines("My notes.")
+
+
+#: Cursor's rule-file head with its ``globs`` value edited to one Cursor reads
+#: but YAML does not: ``*`` starts a YAML alias.
+_EDITED_HEAD = (
+    "---",
+    'description: "Apothem engineering disciplines for this project."',
+    "globs: **/*.ts",
+    "alwaysApply: true",
+    "---",
+)
+
+
+def test_the_strip_takes_out_apothem_s_frontmatter_that_yaml_cannot_read() -> None:
+    """identity-1 (round 7): an edited ``globs`` value left Apothem's file behind.
+
+    The head held Apothem's template keys, but YAML could not read it, so it
+    did not count as Apothem's and the uninstall left a file with Apothem's
+    description and ``alwaysApply: true``. It now goes with the block, and
+    the next update replaces it in place.
+    """
+    text = _lines(*_EDITED_HEAD, B, "Apothem rules.", E)
+    assert remove_managed_block(text) == ""
+    assert remove_managed_block(text + _lines("", "My notes.")) == _lines("My notes.")
+    body = _lines("---", "alwaysApply: true", "---", "New rules.")
+    assert merge_managed_block(text, body) == _lines(
+        "---", "alwaysApply: true", "---", B, "New rules.", E
+    )
+
+
+def test_the_strip_keeps_your_frontmatter_that_yaml_cannot_read() -> None:
+    """A head YAML cannot read and that holds none of Apothem's keys stays."""
+    text = _lines("---", "title: [draft", "---", B, "x", E)
+    assert remove_managed_block(text) == _lines("---", "title: [draft", "---")
+
+
+def test_every_rule_file_template_key_counts_as_apothem_s() -> None:
+    """Each key Apothem's rule-file templates write is a key the strip knows."""
+    root = Path(materializer.__file__).resolve().parents[1] / "harnesses"
+    templates = sorted(root.glob("*/templates/apothem-rules.*"))
+    assert templates
+    for template in templates:
+        text = template.read_text(encoding="utf-8")
+        if not text.startswith("---\n"):
+            continue
+        head = text.split("\n---", 1)[0].split("\n")[1:]
+        for line in head:
+            if line and not line[0].isspace():
+                assert materializer._TEMPLATE_KEY.match(line), (template, line)
 
 
 # -- following a printed fix -------------------------------------------------
