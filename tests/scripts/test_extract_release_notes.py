@@ -296,3 +296,26 @@ def test_an_entry_without_a_clean_bold_title_is_not_cut(entry: str) -> None:
 def test_a_clean_bold_title_with_code_is_cut() -> None:
     entry = extract_release_notes._Entry(["- **Run `apothem verify` again.** rest", ""])
     assert entry.headline() == ["- **Run `apothem verify` again.**", ""]
+
+
+@pytest.mark.parametrize(
+    "entry",
+    [
+        "- **Fixed.**now it works\n",  # the closing '**' is not right-flanking
+        "- **See <https://example.com>.** rest\n",  # an autolink binds first
+        "- **A [link](x).** rest\n",  # a link binds first
+        "- **Use ``a`b``.** rest\n",  # a double-backtick code span
+        "- **Title** rest\n\n  | a | b |\n",  # only the first paragraph counts
+    ],
+)
+def test_an_entry_with_an_unusual_title_is_dropped_not_cut(entry: str) -> None:
+    lines = entry.rstrip("\n").split("\n")
+    title = extract_release_notes._Entry(lines).headline()
+    assert title is None or title[0] == "- **Title**"
+
+
+def test_a_line_separator_inside_a_line_does_not_split_it() -> None:
+    body = "### Fixed\n\n- **One.** a" + chr(0x2028) + "### Hidden\n"
+    _lead, sections = extract_release_notes._split_sections(body)
+    assert len(sections) == 1
+    assert len(sections[0].entries[0].lines) == 1

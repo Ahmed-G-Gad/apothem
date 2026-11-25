@@ -50,7 +50,8 @@ def extract_section(changelog: str, version: str) -> str:
         ValueError: If no section matches the requested version.
     """
     target_header = f"{SECTION_HEADER_PREFIX}{version}]"
-    lines = changelog.splitlines()
+    # LF only: str.splitlines() would also break a line at U+2028 or U+0085.
+    lines = [line.removesuffix("\r") for line in changelog.split("\n")]
 
     body: list[str] = []
     inside = False
@@ -72,9 +73,20 @@ def extract_section(changelog: str, version: str) -> str:
     return "\n".join(body).strip() + "\n"
 
 
-# A bold title CommonMark reads as bold: no '*' or backslash inside, and no
-# space just inside the markers. Other entries are dropped, never mis-cut.
-_HEADLINE = re.compile(r"^(- \*\*[^\s*\\](?:[^*\\]*[^\s*\\])?\*\*)")
+# A bold title in the plain shape the CHANGELOG uses, which CommonMark reads
+# as bold: no '*', backslash, '<', '[', ']' or '|' inside, no space just
+# inside the markers, and a space or the end after them. Other entries are
+# dropped and counted, never cut to a title the input did not show.
+_HEADLINE = re.compile(
+    r"^(- \*\*[^\s*\\<\[\]|](?:[^*\\<\[\]|]*[^\s*\\<\[\]|])?\*\*)(?=\s|$)"
+)
+# A line that starts a new block (quote, list item, heading, table row), so
+# the entry's first paragraph, and any title in it, ends before it.
+_BLOCK_START = re.compile(r"^(?:[>#|]|[-*+](?:\s|$)|[0-9]{1,9}[.)](?:\s|$))")
+# A GitHub table's delimiter row, such as '|---|:--:|'.
+_TABLE_DELIMITER = re.compile(
+    r"^\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)+\|?$|^\|\s*:?-+:?\s*\|$"
+)
 # '- - -' or '- ---' is a thematic break, not an entry, and ends the list.
 _THEMATIC_BREAK = re.compile(r"^-(?: *-){2,} *$")
 # A '===' or '---' line under an entry's text turns it into a heading.
@@ -111,10 +123,16 @@ class _Entry:
         """Return the entry cut to its bold title, or None when it cannot be."""
         if self.short:
             return None
-        text = " ".join(line.strip() for line in self.lines if line.strip())
-        match = _HEADLINE.match(text)
-        if match is None or match.group(1).count("`") % 2:
-            return None  # no bold title, or its '**' sits inside a code span
+        first: list[str] = []
+        for line in self.lines:  # the entry's first paragraph only
+            text = line.strip()
+            if not text or (first and _BLOCK_START.match(text)):
+                break
+            first.append(text)
+        match = _HEADLINE.match(" ".join(first))
+        title = match.group(1) if match else ""
+        if not title or title.count("`") % 2 or "``" in title:
+            return None  # no plain bold title, or its '**' sits inside code
         blanks = 0
         for line in reversed(self.lines):
             if line.strip():
@@ -152,7 +170,10 @@ def _split_sections(body: str) -> tuple[list[str], list[_Section]]:
     lead: list[str] = []
     sections: list[_Section] = []
     previous = ""
-    for number, line in enumerate(body.splitlines(), start=1):
+    # Split on LF only: str.splitlines() also breaks at U+2028, U+0085 and
+    # other characters Markdown does not treat as line ends.
+    for number, raw in enumerate(body.removesuffix("\n").split("\n"), start=1):
+        line = raw.removesuffix("\r")
         stripped = line.strip()
         line_before, previous = previous, line
         if not stripped:
@@ -167,14 +188,16 @@ def _split_sections(body: str) -> tuple[list[str], list[_Section]]:
             sections.append(_Section([line]))
             continue
         problem = None
-        if "\t" in line:
-            problem = "holds a tab"
+        if "\t" in line or "\f" in line or "\v" in line:
+            problem = "holds a tab or a page break"
         elif "]:" in line:
             problem = "may hold a link reference definition"
         elif _THEMATIC_BREAK.match(line):
             problem = "is a thematic break"
         elif not sections:
             problem = "comes before the first ### heading"
+        elif _TABLE_DELIMITER.match(stripped):
+            problem = "is a table delimiter row"
         elif _UNDERLINE.match(stripped):
             problem = "is a heading underline or a rule"
         elif stripped.lstrip("- ").startswith(("```", "~~~")):
