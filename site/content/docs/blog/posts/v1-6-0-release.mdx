@@ -41,7 +41,11 @@ the backups first, so the steps below apply to it too.
 In a file that quotes Apothem's marker lines in a code example, `apothem install`
 and `apothem update` could also write Apothem's block over that example, and
 `apothem uninstall` could remove it. These commands copied the file to the
-backups first too.
+backups first too. To recover such an example, copy only the example from the
+newest backup that still holds it back into the file, in place of any Apothem
+text written over it. Do not copy the whole old file back and then run an
+update: when the file holds your quoted marker pair and no Apothem block, the
+update leaves it as it is and ends unfinished (exit code 2).
 
 ### How to recover your files
 
@@ -54,9 +58,10 @@ update, uninstall and rollback adds one. Older sets may already be gone, and
 each further run of an earlier release can delete the oldest one. v1.6.0
 never deletes a backup set that holds one of these paths, either on its own
 or through `apothem backups prune`. The copy an uninstall made of a file
-whose block had lost its END marker line is not covered: v1.6.0 still keeps
+whose block had lost its END marker line, and the copy of a file whose marker
+example was written over, are not covered: v1.6.0 still keeps
 only the newest 10 sets per harness, unless an install record it keeps refers
-to that set, so it can still delete it. Copy the backups first.
+to that set, so it can still delete them. Copy the backups first.
 
 1. Copy `~/.apothem/backups/` somewhere else before you run Apothem again.
 2. Copy the files you need from that copy back to their place by hand.
@@ -98,7 +103,10 @@ with the same warning.
 - **Links are left alone.** An install, update or uninstall no longer enters,
   removes or backs up anything through a symbolic link or a Windows junction
   in a folder it cleans up. It leaves the link in place and names it in a
-  warning.
+  warning. On Windows, a junction at or inside a folder an install writes,
+  such as `~/.claude` or `~/.claude/skills`, now stops the install with
+  `target path crosses a link`, as a symbolic link already did. Replace such a
+  junction with the folder itself, or link `~/.config` or `~/.agents` instead.
 - **Your text next to Apothem's block stays.** When
   Apothem's block in a file has lost its END marker line, uninstall leaves the
   file as it is and names it. Install and update keep your text after a
@@ -106,8 +114,14 @@ with the same warning.
   print a warning that names the file and the marker's line. The warning gives
   a numbered step that changes that line, and says not to add the END marker
   back, because the file would then hold two Apothem blocks.
-  `apothem verify` fails until you change the line. A marker pair quoted in a code
-  example is no longer taken for Apothem's block.
+  `apothem verify` fails until you change the line. A marker pair quoted in a
+  code example is no longer taken for Apothem's block.
+- **Install and update can now end unfinished.** When they cannot tell
+  Apothem's block from your text, for example in a file with two Apothem
+  blocks or a quoted marker pair that an install record lists, they leave the
+  file as it is, print a warning with numbered fixes, and exit with code 2.
+  The one-line installers and update scripts then exit with code 2 too. Apply
+  a fix the warning names, then run `apothem update` again.
 - **Shared folders stay while another tool uses them.** Uninstalling a tool
   from one project no longer removes the shared memory, contexts and learning
   stores while the same tool in another project still uses them.
@@ -177,7 +191,9 @@ strictly before they install it.
   accept only the key with fingerprint
   `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`, the key
   [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#maintainer-signing-key)
-  publishes. A valid signature from any other key in your keyring is refused.
+  publishes. A valid signature from any other key in your keyring is refused,
+  unless `APOTHEM_ALLOW_UNVERIFIED=1` is set: that setting, which checksum mode
+  needs, also lets an unsigned tag or another key's signature through.
   The signed tag must also name the release being installed.
 - **With cosign, the release archive must match too.** When `cosign` is on
   your `PATH`, the default mode downloads the platform archive, `SHA256SUMS`
@@ -192,7 +208,8 @@ strictly before they install it.
 - **An existing clone is checked before it changes.** The installer fetches
   the new tag, checks it, and only then checks it out. A failed check leaves
   the clone as it was. A clone with changes to tracked files stops the update
-  instead of losing them.
+  instead of losing them. If an update reports changes in a clone you never
+  changed, run `git -C ~/.apothem status` once, then run the update again.
 - **The folder you run the installer from is ignored.** A piped
   `curl ... | bash` or `irm ... | iex` no longer picks up a source tree from
   the current folder or its parents

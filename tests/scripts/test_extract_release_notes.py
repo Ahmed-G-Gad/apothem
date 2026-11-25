@@ -127,3 +127,64 @@ def test_main_returns_nonzero_when_version_absent(
     assert rc == 1
     assert "no '## [9.9.9]'" in capsys.readouterr().err
     assert not output.exists()
+
+
+def _long_body(entries_per_section: int) -> str:
+    """A release body with three sections of numbered, equal-size entries."""
+    parts = []
+    for name in ("Added", "Fixed", "Security"):
+        parts.append(f"### {name}\n")
+        for n in range(entries_per_section):
+            parts.append(f"- {name} entry {n:03d}.\n  " + "x" * 200 + "\n")
+    return "\n".join(parts)
+
+
+def test_fit_to_limit_keeps_a_body_within_the_limit_unchanged() -> None:
+    body = _long_body(3)
+    assert extract_release_notes.fit_to_limit(body, "1.2.3", limit=len(body)) == body
+
+
+def test_fit_to_limit_shortens_a_long_body_and_links_the_full_notes() -> None:
+    body = _long_body(20)
+    limit = len(body) // 2
+    fitted = extract_release_notes.fit_to_limit(body, "1.2.3", limit=limit)
+
+    assert len(fitted) <= limit
+    # Every section heading stays, in its order.
+    headings = [line for line in fitted.splitlines() if line.startswith("### ")]
+    assert headings == ["### Added", "### Fixed", "### Security"]
+    # Entries leave from the end of a section; the first ones stay.
+    for name in ("Added", "Fixed", "Security"):
+        assert f"- {name} entry 000." in fitted
+    # Each shortened section counts what it left out, and the counts add up.
+    counts = [
+        int(line.split()[1])
+        for line in fitted.splitlines()
+        if line.endswith("in the full notes.") and line.startswith("- ")
+    ]
+    kept = sum(1 for line in fitted.splitlines() if " entry " in line)
+    assert counts
+    assert kept + sum(counts) == 60
+    assert fitted.rstrip().endswith(
+        "[CHANGELOG.md](https://github.com/ahmed-g-gad/apothem/blob/v1.2.3/CHANGELOG.md)."
+    )
+
+
+def test_fit_to_limit_raises_when_nothing_more_can_be_left_out() -> None:
+    with pytest.raises(ValueError, match="do not fit"):
+        extract_release_notes.fit_to_limit(_long_body(2), "1.2.3", limit=10)
+
+
+def test_every_release_in_the_changelog_fits_a_github_release_page() -> None:
+    text = (REPO_ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+    versions = [
+        line[len("## [") :].split("]", 1)[0]
+        for line in text.splitlines()
+        if line.startswith("## [") and not line.startswith("## [Unreleased]")
+    ]
+    assert versions
+    for version in versions:
+        body = extract_release_notes.fit_to_limit(
+            extract_release_notes.extract_section(text, version), version
+        )
+        assert len(body) <= extract_release_notes.MAX_BODY_CHARS < 125_000
