@@ -1,0 +1,388 @@
+---
+title: "Apothem v1.6.0 — recover lost files, safer uninstall"
+description: "Apothem v1.6.0 stops removing folders that hold your own files, shows how to recover them from backups, makes uninstall remove only what Apothem wrote, and tightens the installer's release checks."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+Apothem v1.6.0 fixes a data-loss bug, makes uninstall and update leave your
+files alone apart from the cases listed under *Safer uninstall and update*,
+and checks each release more strictly before it installs. Read the first
+section before you upgrade.
+
+## What this release fixes
+
+### Releases 1.0.1 to 1.5.0 deleted some of your files
+
+Every `apothem install` and `apothem update` in releases 1.0.1 to 1.5.0
+removed whole folders that hold your own files, and some of your own config
+files. The main ones:
+
+- **Claude Code:** `~/.claude/commands/` (your slash commands) and
+  `~/.claude/hooks/` (your hook scripts), plus other folders under
+  `~/.claude/`.
+- **Codex:** `~/.codex/rules/` (your `.rules` execution policies) and
+  `~/.codex/commands/`.
+- **Antigravity:** `~/.gemini/antigravity/`, the Antigravity App's data
+  folder, with its MCP sign-in tokens, session transcripts and skills.
+- **Hermes:** `~/.hermes/cli-config.yaml` and `~/.hermes/profile.yaml`.
+- **Open-Claw:** `~/.open-claw/config.yaml`.
+- **Gemini CLI:** a project's own `skills/AGENTS.md`.
+
+The [changelog](/docs/changelog#data-loss-in-earlier-releases-recover-your-files)
+lists every affected path. No release ever installed a file in these places,
+so v1.6.0 stops removing them.
+
+In the same releases, `apothem uninstall` could also remove your own text
+from a file such as `CLAUDE.md` or `AGENTS.md`. When the block Apothem writes
+in that file had lost its END marker line, the uninstall removed everything
+from the BEGIN marker line to the end of the file. It copied the file to
+the backups first, so the steps below apply to it too.
+
+In a file that quotes Apothem's marker lines in a code example, `apothem install`
+and `apothem update` could also write Apothem's block over that example, and
+`apothem uninstall` could remove it. These commands copied the file to the
+backups first too. To recover such an example, copy only the example from the
+newest backup that still holds it back into the file, in place of any Apothem
+text written over it; copying the whole old file back loses what you changed
+since. If the file then holds your quoted marker pair and no Apothem block,
+install and update leave it as it is and end unfinished (exit code 2) while an
+install record lists the file. Add a word inside the example's BEGIN marker
+comment, as the warning says, then run `apothem update`.
+
+### How to recover your files
+
+Each removed folder or file was copied first to
+`~/.apothem/backups/<timestamp>/<harness>/`, under its path relative to your
+home folder, or to the project for a project install (for example
+`claude_code/.claude/commands/`). Releases 1.2.0 to
+1.5.0 keep only the newest 10 backup sets per harness, and every install,
+update, uninstall and rollback adds one. Older sets may already be gone, and
+each further run of an earlier release can delete the oldest one. v1.6.0
+never deletes a backup set that holds one of these paths, either on its own
+or through `apothem backups prune`. The copy an uninstall made of a file
+whose block had lost its END marker line, and the copy of a file whose marker
+example was written over, are not covered: v1.6.0 still keeps
+only the newest 10 sets per harness, unless an install record it keeps refers
+to that set, so it can still delete them. Copy the backups first.
+
+1. Copy `~/.apothem/backups/` somewhere else before you run Apothem again.
+2. Copy the files you need from that copy back to their place by hand. For
+   a code example that was written over, copy only the example, as described
+   above.
+3. Run `apothem update`.
+
+Do not use `apothem rollback --install-id ID` to recover these files. It
+reverses the whole old install, including files that install wrote or
+changed, such as `settings.json` and `CLAUDE.md`.
+
+The [changelog](/docs/changelog#data-loss-in-earlier-releases-recover-your-files)
+has the full list and the same steps. The
+[Claude Code page](/docs/harnesses/claude-code#recovering-files-an-earlier-release-removed)
+and the [Codex page](/docs/harnesses/codex) give the steps for their folders.
+The [Updating guide](/docs/install/updating) opens
+with the same warning.
+
+## Safer uninstall and update
+
+- **Uninstall removes only the files Apothem wrote.** Each install now records
+  a fingerprint (SHA-256) of every file it copies into place. An uninstall
+  removes a file only while it still has that content. A file you added, an
+  Apothem file you edited, and a file of your own with an Apothem name all
+  stay, with a warning, unless an install or update has replaced them since
+  (see below).
+- **An install made by an earlier release** does not say which files Apothem
+  wrote. The uninstall removes the files that match what v1.6.0 writes. If a
+  file differs, the uninstall stops unfinished (exit `2`) and tells you the
+  next step: `apothem update` writes this release's files over the listed
+  ones (after a backup), so first copy any listed file you edited or added,
+  then run `apothem update`, then run `apothem uninstall` again.
+- **An unfinished uninstall says so.** Before, a refused or failed uninstall
+  could still print `Uninstalled` and exit 0. Now it reports the failure, keeps
+  the install recorded, and a second run finishes the job.
+  The output lists every file it kept, including the files inside a kept
+  folder; paths behind a link are counted, not listed.
+  When no install record matches, it prints `uninstall did not finish`
+  instead of `Uninstalled`, then a `Note:` line that names what it left,
+  what it still removed and what to check next.
+- **Links are left alone.** An install, update or uninstall no longer enters,
+  removes or backs up anything through a symbolic link or a Windows junction
+  in a folder it cleans up. It leaves the link in place and names it in a
+  warning. On Windows, a junction at or inside a folder an install writes,
+  such as `~/.claude` or `~/.claude/skills`, now stops the install with
+  `target path crosses a link`, as a symbolic link already did. Replace such a
+  junction with the folder itself, or link `~/.config` or `~/.agents` instead,
+  which Apothem follows while they lead to a folder inside your home
+  directory.
+- **Your text next to Apothem's block stays.** When
+  Apothem's block in a file has lost its END marker line, uninstall leaves the
+  file as it is and names it. Install and update keep your text after a
+  BEGIN marker line that has no END, write Apothem's block apart from it, and
+  print a warning that names the file and the marker's line. The warning gives
+  a numbered step that changes that line, and says not to add the END marker
+  back, because the file would then hold two Apothem blocks.
+  `apothem verify` fails until you change the line. A marker pair quoted in a
+  code example is no longer taken for Apothem's block.
+- **Install and update can now end unfinished.** When they cannot tell
+  Apothem's block from your text, for example in a file with two Apothem
+  blocks or a quoted marker pair that an install record lists, they leave the
+  file as it is, print a warning with numbered fixes, and exit with code 2.
+  The installer and update scripts then end with code 2 too. A piped
+  PowerShell run sets `$LASTEXITCODE` to 2 and keeps the session open; with
+  `pwsh -Command`, add `; exit $LASTEXITCODE` to get code 2. Apply
+  a fix the warning names, then run `apothem update` again.
+- **Shared folders stay while another tool uses them.** Uninstalling a tool
+  from one project no longer removes the shared memory, contexts and learning
+  stores while the same tool in another project still uses them.
+  The shared skill, rule and template folders (`~/.agents/skills/`,
+  `~/.config/apothem/rules/` and `~/.config/apothem/templates/`) are now
+  counted by folder. A home folder reached through a link no longer makes one
+  shared folder look like two, so an uninstall no longer removes skills and
+  rules another install still uses. A rollback keeps them for the same tool's
+  install under another spelling of the home folder, too.
+- **A skill of your own in a shared skills folder is not replaced.** Say you
+  put your own skill in a shared skills folder such as `~/.agents/skills/`,
+  under the name of an Apothem skill, and the only install that listed that
+  folder was in a folder you have since deleted. The next install skips it
+  with a warning and leaves it as it is. It no longer replaces it. The same
+  holds for a skill folder you edited, and for one an earlier release wrote
+  there that differs from what v1.6.0 writes. While such a folder stays there,
+  `apothem verify` reports that harness as not verified and names the folder.
+  To keep your skill, leave it there. To use Apothem's version, move the
+  folder out of the skills folder, then run `apothem update` for that harness
+  (with `--project` for a project install).
+- **What install and update still replace or delete.** In each case below,
+  Apothem saves your file under `~/.apothem/backups/` first.
+  - A file or skill folder of yours with the same name as one Apothem copies
+    into the same folder is replaced, and an uninstall does not put it back.
+    That covers, for example, a helper in `~/.claude/agents/`, a skill in
+    `~/.claude/skills/`, the skills and helpers in a project's `.kimi-code/`
+    folder, and the helpers Apothem writes into a project for CodeBuddy,
+    Cursor, GitHub Copilot, Kiro, Trae and Windsurf. A Codex install or
+    update also removes a `.md` file in `~/.codex/agents/` that has an Apothem
+    helper's name. Only the shared skill folders in your home folder
+    (`~/.agents/skills/`, `~/.codebuddy/skills/`, `~/.kiro/skills/` and
+    `~/.trae/skills/`) skip a skill folder Apothem did not write, with a
+    warning. Give your own files names that differ from Apothem's.
+  - Every OpenCode, Qwen Code, Hermes and Open-Claw install and update deletes
+    each file in that tool's `apothem/rules/` folder except the profile
+    document Apothem writes there (`00-apothem-profile.md`). Keep your own
+    files elsewhere.
+  - Folders an earlier release wrote and Apothem no longer uses are removed
+    whole, files of yours in them included: Kimi Code's `skills/` and
+    `agents/` folders under `.kimi-code/.apothem/support/`, and Antigravity's
+    `~/.gemini/antigravity-cli/plugins/apothem/`. Every Antigravity install,
+    update and uninstall also removes `~/.antigravity/profile.yaml`, a file
+    no release wrote.
+- **`apothem doctor` checks the right hooks.** It now starts the hooks of the
+  install in the folder it checks: the tool's own folder, or the `--project`
+  folder. Before, it used the newest install of that tool in any folder. When
+  the folder it checks has no install record, the report shows the hooks as
+  `not checked` instead of saying that all checks passed.
+  It also starts GitHub Copilot's hooks, and Cursor's on Windows. It starts
+  a hook command only when the command runs the hook script the install
+  wrote, so a command someone else committed to a project's hook files no
+  longer runs when you run `apothem doctor`. It reports any other command
+  as `hook.unchecked`. Hooks installed by an earlier release stay unchecked
+  until you run `apothem update`.
+- **The installers keep the engine's data.** Replacing an install at
+  `APOTHEM_HOME` with `--yes` used to delete the whole folder, with the rollback backups,
+  install records, plans and memory. The installer now checks the new release
+  in a folder beside it, swaps it in only after every check passes, and keeps
+  everything that is not part of the source tree.
+
+## Installer trust
+
+The one-line installers and the update scripts now check each release more
+strictly before they install it.
+
+- **The release tag must carry the maintainer's signature.** The installers
+  accept only the key with fingerprint
+  `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`, the key
+  [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#maintainer-signing-key)
+  publishes. A valid signature from any other key in your keyring is refused,
+  unless `APOTHEM_ALLOW_UNVERIFIED=1` is set: that setting, which checksum mode
+  needs, also lets an unsigned tag or another key's signature through.
+  The signed tag must also name the release being installed.
+- **With cosign, the release archive must match too.** When `cosign` is on
+  your `PATH`, the default mode downloads the platform archive, `SHA256SUMS`
+  and its cosign bundle. cosign must confirm that Apothem's release workflow,
+  at that exact tag, signed `SHA256SUMS`, and that its certificate was issued
+  to a run on the commit the signed tag points at. Then the archive's SHA-256
+  must match. Without cosign, and for an existing git clone at
+  `APOTHEM_HOME`, the installer checks the signed tag alone.
+- **Checksum mode needs an explicit opt-in.** `APOTHEM_VERIFY=checksum`
+  only shows the download is not damaged; it does not verify the release. It
+  now also needs `APOTHEM_ALLOW_UNVERIFIED=1`.
+- **An existing clone is checked before it changes.** The installer fetches
+  the new tag, checks it, and only then checks it out. A failed check leaves
+  the clone as it was. A clone with changes to tracked files stops the update
+  instead of losing them. Line-ending settings in your own git attributes
+  can make a clone you never changed report changes: run `git status` once in
+  the folder the message names, then run the update again.
+- **The folder you run the installer from is ignored.** A piped
+  `curl ... | bash` or `irm ... | iex` no longer picks up a source tree from
+  the current folder or its parents
+  ([GHSA-799g-h543-w5gg](https://github.com/ahmed-g-gad/apothem/security/advisories/GHSA-799g-h543-w5gg)).
+  The installers, the `apothem` command and `npx @ahmed-g-gad/apothem` no
+  longer load Python modules from the current folder
+  ([GHSA-4rh9-7m5x-94j9](https://github.com/ahmed-g-gad/apothem/security/advisories/GHSA-4rh9-7m5x-94j9)).
+- **Hooks start Python isolated.** Every hook command Apothem writes now
+  starts Python with `-E -s`, so `PYTHONPATH` and your user site-packages
+  cannot bring code from the opened project into a hook.
+- **`APOTHEM_HOME`.** It must be a folder only you can write, since the code
+  Apothem runs as you lives there. The installers now warn when other users
+  can write to it or to the folder that holds it. A symbolic link at
+  `APOTHEM_HOME` is refused when the installer would replace it. A clone that
+  another user owns stops the run with an explanation. Each run of the
+  install, update and uninstall scripts, a dry run included, takes a lock
+  beside `APOTHEM_HOME`, so it needs write access to the folder that holds
+  `APOTHEM_HOME`. An existing clone whose own git config holds a setting
+  outside a short allow-list stops the update until you remove that setting.
+
+The [trust model](/docs/install#trust-model) explains each mode.
+
+## The conformity gate in a project you did not make
+
+The whole-project runs of the [conformity gate](/docs/conformity-gate)
+(`--all` and `--all-perwrite`), its `--staged` checks and three of its
+validators run `git` in the project they check. A project that came with its
+own `.git` folder, in an archive or a shared folder, could set git options
+that made such a run start a program. The gate now turns those options off on
+git's command line, and on Windows it no longer runs a `git.exe` from the
+folder it was started in.
+
+## Harness changes worth knowing
+
+### OpenCode
+
+- The install now writes `{env:NAME}` for the MCP secrets your profile names
+  as `${NAME}` in a server's environment, headers and URL. OpenCode expands
+  only the first form. An environment entry that passes a variable on under
+  its own name, such as `FOO: ${FOO}`, is left out, since OpenCode starts the
+  server with its own environment.
+- The install follows `XDG_CONFIG_HOME`, the folder OpenCode reads.
+- Apothem's OpenCode helpers no longer turn off OpenCode's prompt before
+  reading `.env` files, and no longer override your own `permission` rules.
+  They carry only `deny` rules
+  ([GHSA-qpmp-8g2h-296c](https://github.com/ahmed-g-gad/apothem/security/advisories/GHSA-qpmp-8g2h-296c)).
+  The upgrade leaves the installed helpers as they are, so run
+  `apothem update` for OpenCode after you upgrade.
+- Install, update and verify print a note when an
+  `instructions` list in `opencode.jsonc` hides the one Apothem writes in
+  `opencode.json`, or when one of the config files would stop OpenCode 1 from
+  loading any configuration.
+- The install writes one configuration in OpenCode 1's format, which
+  OpenCode 2 translates.
+
+### OpenClaw
+
+- OpenClaw now loads Apothem's rules. The install writes `apothem/AGENTS.md`
+  into each OpenClaw workspace in your home folder and lists it in the
+  `bootstrap-extra-files` hook entry in `openclaw.json`. A workspace outside
+  your home folder, or reached through a link, is skipped with a warning.
+  Your workspace's own `AGENTS.md` is never edited.
+- If your `openclaw.json` has comments, Apothem does not rewrite it, since
+  that would drop them. When only the hook entry is missing, install and
+  update print the entry for you to add, and `apothem verify` fails until you
+  do.
+- A rules file that OpenClaw would cut or skip for its size limits is not
+  written.
+
+### Codex, Cursor and Windsurf
+
+- A `CODEX_HOME` that starts with `~` now names the folder Codex uses, because
+  Codex does not expand `~`. If your `CODEX_HOME` starts with `~`, run
+  `apothem install --harness codex` again. Files an earlier release wrote
+  under your home folder stay until you delete them.
+- Codex installs print a note when an `AGENTS.override.md` in the Codex home
+  keeps Codex from loading Apothem's block.
+- When `CODEX_HOME` points elsewhere, the Codex install no longer says that
+  Cursor shares its agents folder. The Cursor docs name only
+  `~/.codex/agents/`.
+- Windsurf, now Devin Desktop, imports `.cursor/rules/*.mdc` and
+  `~/.claude/CLAUDE.md` by default. The Cursor and Claude Code installs now
+  name Windsurf among the tools that load their files. The
+  [Windsurf](/docs/harnesses/windsurf) and [Cursor](/docs/harnesses/cursor)
+  pages show the `read_config_from` keys that turn these imports off.
+
+### Antigravity
+
+- The install now writes its plugin to `~/.gemini/config/plugins/apothem/`,
+  where the Antigravity CLI loads plugins. This folder is shared by the CLI,
+  the App and the IDE, so the plugin applies in all three. An install or
+  update over an earlier install backs up the old folder and removes it.
+
+## How to upgrade
+
+Before you upgrade by any channel, copy `~/.apothem/backups/` somewhere else.
+
+### One-line installer
+
+Re-run the installer. It checks the release, keeps your engine data, and
+updates the `apothem` command. The update scripts do not replace an `apothem`
+command written by an earlier release, so re-run the installer at least once.
+On Windows, the installer now checks out a release whose paths pass 260
+characters, so a long home folder path no longer stops it with
+`Filename too long`.
+
+```bash title="macOS · Linux · WSL2 · BSD"
+curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
+```
+
+```powershell title="Windows · PowerShell"
+irm https://apothem.ahmedgad.com/install.ps1 | iex
+```
+
+Import the maintainer key first if it is not in your keyring; the
+[install guide](/docs/install#3-one-shot-installers) shows how. If you set
+`APOTHEM_VERIFY=checksum`, also set `APOTHEM_ALLOW_UNVERIFIED=1`.
+
+### npx
+
+`npx` runs the current release. If a cached copy is older, ask for `latest`:
+
+```bash
+npx @ahmed-g-gad/apothem@latest --version
+```
+
+In the commands below, type `npx @ahmed-g-gad/apothem` in place of
+`apothem`.
+
+### Claude Code plugin
+
+```text title="Inside Claude Code"
+/plugin marketplace update apothem
+```
+
+Then open `/plugin`, select **apothem**, and choose the update action.
+
+### VS Code extension
+
+Install version 1.6.0 of `ahmed-g-gad.apothem-vscode` from the
+[Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=ahmed-g-gad.apothem-vscode),
+or install the `apothem.vsix` attached to the
+[v1.6.0 GitHub Release](https://github.com/ahmed-g-gad/apothem/releases/tag/v1.6.0).
+With its default runner, the extension runs the engine version it ships
+with, so this also upgrades the engine it runs. If you still have the older `ahmed-g-gad.apothem` copy,
+uninstall it.
+VS Code installs Marketplace extension updates on its own after a short
+delay, but not for a copy installed from `apothem.vsix`; the
+[Updating guide](/docs/install/updating#update-the-vs-code-extension) shows
+how to update either one by hand.
+
+### Then refresh each harness
+
+After the engine is current, refresh each harness you use. This moves files
+to their new places, such as the Antigravity plugin.
+It also rewrites the hook commands an earlier release wrote, so they start
+Python isolated. No update writes Claude Code's `statusLine` setting, so if
+you copied Apothem's statusline command into your `settings.json`, add
+`-E -s` after the interpreter yourself.
+
+```bash
+apothem update --harness claude-code
+apothem update --harness cursor --project /path/to/project
+apothem verify --harness claude-code
+```
+
+The full release notes are in the [changelog](/docs/changelog).

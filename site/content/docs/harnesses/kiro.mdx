@@ -230,6 +230,14 @@ front matter and never clobbers Kiro's operator-authored foundation files
 operator-owned; Apothem does not write them. It writes one hook file,
 `.kiro/hooks/apothem.json`, and no other file in `.kiro/hooks/`.
 
+Kiro also reads the `AGENTS.md` file at the workspace root, and the
+[Kimi Code](/docs/harnesses/kimi-code) install writes an Apothem block into the
+project `AGENTS.md`, so in a project with both installs that block reaches Kiro
+too. When the file already holds the block, installing `kiro` prints a note that
+names it and the install that wrote it. The
+[harness registry](/docs/reference/harness-registry#shared-roots) lists the
+other tools that load the file.
+
 Kiro documents `~/.kiro/skills/` for global skills and does not mention
 `~/.agents/skills/`, so the install writes the Kiro folder and not the
 cross-tool one. A workspace skill with the same name wins over the global one.

@@ -84,7 +84,9 @@ before writing; an invalid set is refused and the profile on disk is unchanged.
 
 ### `profile edit`
 
-Open the shared profile in the system editor.
+Open the shared profile in the system editor. When no profile exists at the
+path yet, `edit` first writes the starter profile there, the same scaffold
+`profile init` writes, then opens it.
 
 ### Profiles behind a link
 

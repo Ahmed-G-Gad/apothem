@@ -30,7 +30,7 @@ migration is idempotent — re-running on an already-migrated tree is a no-op.
 
 | Option | Description |
 |---|---|
-| `--project PATH` | Project root for project-scope adapters that materialize into a project tree rather than a user-scope configuration directory. |
+| `--project PATH` | Folder whose legacy layout is migrated. Without it, the current working directory is used. |
 | `--dry-run` | Detect the legacy layout and report what would migrate without writing. |
 | `--quiet`, `-q` | Suppress informational output; only errors are emitted. |
 | `--verbose`, `-v` | Emit additional diagnostic output. |
