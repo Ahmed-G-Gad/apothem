@@ -39,7 +39,7 @@ import threading
 import time
 from collections.abc import Callable
 from pathlib import Path
-from typing import IO, Any, TypeVar
+from typing import IO, Any, TypeVar, cast
 
 import pytest
 
@@ -1969,3 +1969,132 @@ def test_reparse_tag_is_read_from_the_handle(tmp_path: Path) -> None:
             assert corpus._reparse_tag(handle) == tag
         finally:
             _winapi.CloseHandle(handle)
+
+
+def _set_reparse_tag(path: Path, tag: int, *, remove: bool = False) -> None:
+    """Put a Microsoft reparse *tag* with no owner on *path*, or take it off.
+
+    No elevation is needed. The tag must be removed again before the test
+    folder is cleaned up, or the file cannot be deleted.
+    """
+    import _winapi
+    import ctypes
+    import struct
+    from ctypes import wintypes
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)  # type: ignore[attr-defined,unused-ignore]
+    control = kernel32.DeviceIoControl
+    control.argtypes = (
+        wintypes.HANDLE,
+        wintypes.DWORD,
+        ctypes.c_void_p,
+        wintypes.DWORD,
+        ctypes.c_void_p,
+        wintypes.DWORD,
+        ctypes.POINTER(wintypes.DWORD),
+        ctypes.c_void_p,
+    )
+    control.restype = wintypes.BOOL
+    data = b"" if remove else b"\0" * 8
+    request = struct.pack("<IHH", tag, len(data), 0) + data
+    code = 0x000900AC if remove else 0x000900A4  # FSCTL_DELETE / SET_REPARSE_POINT
+    access = _winapi.GENERIC_READ | 0x40000000  # GENERIC_WRITE
+    handle = _winapi.CreateFile(
+        str(path), access, 0x7, 0, _winapi.OPEN_EXISTING, 0x00200000 | 0x02000000, 0
+    )
+    try:
+        buffer = ctypes.create_string_buffer(request)
+        returned = wintypes.DWORD()
+        if not control(
+            handle, code, buffer, len(request), None, 0, ctypes.byref(returned), None
+        ):
+            raise ctypes.WinError(ctypes.get_last_error())  # type: ignore[attr-defined,unused-ignore]
+    finally:
+        _winapi.CloseHandle(handle)
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows reparse tags")
+def test_reparse_point_no_filter_claims_is_unreadable(tmp_path: Path) -> None:
+    """A file behind a reparse point whose program is stopped (here an Azure
+    File Sync tag with no filter) is unreadable, not read as its empty stub,
+    and the run does not pass."""
+    repo = _project(tmp_path, {"tiered.yml": _UNPINNED_WORKFLOW})
+    tiered = repo / "tiered.yml"
+    _set_reparse_tag(tiered, 0x8000001E)
+    try:
+        payload = _run(repo)
+    finally:
+        _set_reparse_tag(tiered, 0x8000001E, remove=True)
+    _assert_only_clean_file_read(payload, passed=False)
+    assert _skipped(payload) == {"unreadable": 1}
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="the Windows open")
+@pytest.mark.parametrize(
+    ("tag", "second_id", "expected"),
+    [
+        (0x80000013, None, ("kept\n", None)),
+        (0x80000013, (1, 2), (None, "unreadable")),
+        (None, None, ("kept\n", None)),
+        (OSError(5, "query refused"), None, (None, "unreadable")),
+        (0xA000000C, None, (None, "unreadable")),
+    ],
+    ids=[
+        "dedup-same-file",
+        "dedup-other-file",
+        "no-tag-support",
+        "query-fails",
+        "symlink",
+    ],
+)
+def test_windows_open_reads_through_the_filter_and_closes_every_handle(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    tag: object,
+    second_id: tuple[int, int] | None,
+    expected: tuple[str | None, str | None],
+) -> None:
+    """A reparse point that is not a link, or a file whose tag cannot be told,
+    is read through a second, plain open that must name the same file; a
+    failed query or a link is not read; no handle is left open."""
+    corpus = _corpus_module()
+    target = tmp_path / "kept.md"
+    target.write_text("kept\n")
+    opened: list[int] = []
+    closed: list[int] = []
+    real_create, real_close, real_id = (
+        corpus._create_file,
+        corpus._close_handle,
+        corpus._file_id,
+    )
+
+    def creating(path: Path, flags: int) -> int:
+        handle = int(real_create(path, flags))
+        opened.append(handle)
+        return handle
+
+    def closing(handle: int) -> None:
+        closed.append(handle)
+        real_close(handle)
+
+    def reading_tag(_handle: int) -> int | None:
+        if isinstance(tag, OSError):
+            raise tag
+        return cast("int | None", tag)
+
+    def file_id(handle: int) -> tuple[int, int]:
+        if second_id is not None and handle == opened[-1] and len(opened) % 2 == 0:
+            return second_id
+        return cast("tuple[int, int]", real_id(handle))
+
+    monkeypatch.setattr(corpus, "_create_file", creating)
+    monkeypatch.setattr(corpus, "_close_handle", closing)
+    monkeypatch.setattr(corpus, "_reparse_tag", reading_tag)
+    monkeypatch.setattr(corpus, "_file_id", file_id)
+
+    result = corpus.read_entry(tmp_path, corpus.TrackedEntry(target, "100644"))
+    assert result == expected
+    # Handles that reached the reader are closed with the file object; every
+    # other one was closed here.
+    read_through = 1 if expected[0] is not None else 0
+    assert len(closed) == len(opened) - read_through

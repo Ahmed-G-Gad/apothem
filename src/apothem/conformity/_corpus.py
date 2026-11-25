@@ -61,6 +61,9 @@ _SHARE_ALL: Final[int] = 0x7
 _FILE_FLAG_OPEN_REPARSE_POINT: Final[int] = 0x00200000
 # The FILE_INFO_BY_HANDLE_CLASS value of a file's attributes and reparse tag.
 _FILE_ATTRIBUTE_TAG_INFO: Final[int] = 9
+# The Windows errors a file system gives for an information class it does
+# not have: invalid function, not supported, invalid parameter.
+_QUERY_NOT_SUPPORTED: Final[frozenset[int]] = frozenset({1, 50, 87})
 # How many leading bytes of a file over the limit decide whether it is
 # binary: the span git looks at for the same question.
 _BINARY_SNIFF_BYTES: Final[int] = 8000
@@ -357,36 +360,18 @@ def _held_by_another_program(exc: OSError) -> bool:
 def _open_binary(path: Path) -> BinaryIO:
     """Open *path* to read bytes, never through a link at its last level.
 
-    On Windows the open goes through the Windows API with
-    ``FILE_FLAG_OPEN_REPARSE_POINT``, so a reparse point there is opened
-    itself. One that names another file or folder (a link or junction, see
-    :func:`is_link`) raises ``ELOOP``, as ``O_NOFOLLOW`` does elsewhere;
-    any other, such as a file Data Deduplication or a cloud sync program
-    keeps behind one, is read as usual. The API also reports a sharing
-    violation as such, which Python's ``open`` does not. Elsewhere the open
-    neither follows a link (``O_NOFOLLOW``) nor waits for a named pipe to get
-    a writer or a lease to break (``O_NONBLOCK``, cleared once the file is
-    open).
+    On Windows see :func:`_open_windows_handle`. Elsewhere the open neither
+    follows a link (``O_NOFOLLOW``) nor waits for a named pipe to get a writer
+    or a lease to break (``O_NONBLOCK``, cleared once the file is open).
     """
     if sys.platform == "win32":
-        import _winapi  # Windows only, so imported here.
-        import msvcrt
+        import msvcrt  # Windows only, so imported here.
 
-        handle = _winapi.CreateFile(
-            str(path),
-            _winapi.GENERIC_READ,
-            _SHARE_ALL,
-            0,
-            _winapi.OPEN_EXISTING,
-            _FILE_FLAG_OPEN_REPARSE_POINT,
-            0,
-        )
+        handle = _open_windows_handle(path)
         try:
-            if _reparse_tag(handle) & _NAME_SURROGATE_TAG_BIT:
-                raise OSError(errno.ELOOP, "a link is in the file's place", str(path))
             fd = msvcrt.open_osfhandle(handle, os.O_RDONLY)
         except BaseException:
-            _winapi.CloseHandle(handle)
+            _close_handle(handle)
             raise
     else:
         flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_NOCTTY
@@ -400,33 +385,138 @@ def _open_binary(path: Path) -> BinaryIO:
         raise
 
 
-def _reparse_tag(handle: int) -> int:
-    """Return the reparse tag of the open Windows file *handle*, 0 for none.
-
-    ``os.fstat`` reports no tag on Windows, so the file's attribute and tag
-    record (``FileAttributeTagInfo``) is read from the handle. Raises
-    ``OSError`` when it cannot be read, so the file is not read either.
-    """
-    if sys.platform != "win32":
-        return 0
-    import ctypes  # Windows only, so imported here.
+if sys.platform == "win32":
+    import _winapi
+    import ctypes
+    import functools
     from ctypes import wintypes
 
     class _AttributeTagInfo(ctypes.Structure):
+        """``FILE_ATTRIBUTE_TAG_INFO``: a file's attributes and reparse tag."""
+
         _fields_ = (("attributes", wintypes.DWORD), ("tag", wintypes.DWORD))
 
-    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-    query = kernel32.GetFileInformationByHandleEx
-    query.argtypes = (wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD)
-    query.restype = wintypes.BOOL
-    info = _AttributeTagInfo()
-    if not query(
-        handle, _FILE_ATTRIBUTE_TAG_INFO, ctypes.byref(info), ctypes.sizeof(info)
-    ):
-        raise ctypes.WinError(ctypes.get_last_error())
-    if not info.attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT:
-        return 0
-    return int(info.tag)
+    class _ByHandleFileInformation(ctypes.Structure):
+        """``BY_HANDLE_FILE_INFORMATION``, of which the file ID is used."""
+
+        _fields_ = tuple(
+            (name, wintypes.DWORD)
+            for name in (
+                "attributes",
+                "created_low",
+                "created_high",
+                "accessed_low",
+                "accessed_high",
+                "written_low",
+                "written_high",
+                "volume_serial",
+                "size_high",
+                "size_low",
+                "links",
+                "index_high",
+                "index_low",
+            )
+        )
+
+    @functools.cache
+    def _kernel32() -> ctypes.WinDLL:
+        """Return ``kernel32`` with the two queries used here typed, built once."""
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        by_class = kernel32.GetFileInformationByHandleEx
+        by_class.argtypes = (
+            wintypes.HANDLE,
+            ctypes.c_int,
+            ctypes.c_void_p,
+            wintypes.DWORD,
+        )
+        by_class.restype = wintypes.BOOL
+        basic = kernel32.GetFileInformationByHandle
+        basic.argtypes = (wintypes.HANDLE, ctypes.c_void_p)
+        basic.restype = wintypes.BOOL
+        return kernel32
+
+    def _create_file(path: Path, flags: int) -> int:
+        """Open *path* to read through the Windows API, sharing everything."""
+        return int(
+            _winapi.CreateFile(
+                str(path),
+                _winapi.GENERIC_READ,
+                _SHARE_ALL,
+                0,
+                _winapi.OPEN_EXISTING,
+                flags,
+                0,
+            )
+        )
+
+    def _close_handle(handle: int) -> None:
+        _winapi.CloseHandle(handle)
+
+    def _reparse_tag(handle: int) -> int | None:
+        """Return the reparse tag of the open file *handle*: 0 for none, or None
+        when the file system does not give one.
+
+        ``os.fstat`` reports no tag on Windows, so the attribute and tag record
+        (``FileAttributeTagInfo``) is read from the handle. Any other failure
+        raises ``OSError``, so the file is not read.
+        """
+        info = _AttributeTagInfo()
+        query = _kernel32().GetFileInformationByHandleEx
+        if not query(
+            handle, _FILE_ATTRIBUTE_TAG_INFO, ctypes.byref(info), ctypes.sizeof(info)
+        ):
+            error = ctypes.get_last_error()
+            if error in _QUERY_NOT_SUPPORTED:
+                return None
+            raise ctypes.WinError(error)
+        if not info.attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT:
+            return 0
+        return int(info.tag)
+
+    def _file_id(handle: int) -> tuple[int, int]:
+        """Return the volume and file index of the open file *handle*."""
+        info = _ByHandleFileInformation()
+        if not _kernel32().GetFileInformationByHandle(handle, ctypes.byref(info)):
+            raise ctypes.WinError(ctypes.get_last_error())
+        return info.volume_serial, (info.index_high << 32) | info.index_low
+
+    def _open_windows_handle(path: Path) -> int:
+        """Open *path* on Windows and return a handle to read its content from.
+
+        The first open uses ``FILE_FLAG_OPEN_REPARSE_POINT``, so a reparse
+        point at *path* is opened itself. One whose tag names another file or
+        folder (a link or junction, see :func:`is_link`) raises ``ELOOP``, as
+        ``O_NOFOLLOW`` does elsewhere. A plain file is read through that
+        handle. Any other reparse point, such as a file Data Deduplication or
+        a cloud sync program keeps behind one, is opened again without the
+        flag, so its filter gives the real content, and the second handle must
+        name the same file; when no filter claims the tag (its program is
+        stopped), that open fails and the file is unreadable rather than read
+        as its empty stub. A file system that gives no tag takes the same
+        second open. The API also reports a sharing violation as such, which
+        Python's ``open`` does not.
+        """
+        first = _create_file(path, _FILE_FLAG_OPEN_REPARSE_POINT)
+        try:
+            tag = _reparse_tag(first)
+            if tag is not None and tag & _NAME_SURROGATE_TAG_BIT:
+                raise OSError(errno.ELOOP, "a link is in the file's place", str(path))
+            if tag == 0:
+                return first
+            second = _create_file(path, 0)
+            try:
+                if _file_id(second) != _file_id(first):
+                    raise OSError(
+                        errno.ELOOP, "the file changed between opens", str(path)
+                    )
+            except BaseException:
+                _close_handle(second)
+                raise
+        except BaseException:
+            _close_handle(first)
+            raise
+        _close_handle(first)
+        return second
 
 
 def _same_file(seen: os.stat_result, opened: os.stat_result) -> bool:
