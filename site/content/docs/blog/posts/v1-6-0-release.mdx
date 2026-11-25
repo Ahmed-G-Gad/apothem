@@ -43,9 +43,11 @@ and `apothem update` could also write Apothem's block over that example, and
 `apothem uninstall` could remove it. These commands copied the file to the
 backups first too. To recover such an example, copy only the example from the
 newest backup that still holds it back into the file, in place of any Apothem
-text written over it. Do not copy the whole old file back and then run an
-update: when the file holds your quoted marker pair and no Apothem block, the
-update leaves it as it is and ends unfinished (exit code 2).
+text written over it; copying the whole old file back loses what you changed
+since. If the file then holds your quoted marker pair and no Apothem block,
+install and update leave it as it is and end unfinished (exit code 2) while an
+install record lists the file. Add a word inside the example's BEGIN marker
+comment, as the warning says, then run `apothem update`.
 
 ### How to recover your files
 
@@ -64,7 +66,9 @@ only the newest 10 sets per harness, unless an install record it keeps refers
 to that set, so it can still delete them. Copy the backups first.
 
 1. Copy `~/.apothem/backups/` somewhere else before you run Apothem again.
-2. Copy the files you need from that copy back to their place by hand.
+2. Copy the files you need from that copy back to their place by hand. For
+   a code example that was written over, copy only the example, as described
+   above.
 3. Run `apothem update`.
 
 Do not use `apothem rollback --install-id ID` to recover these files. It
@@ -106,7 +110,9 @@ with the same warning.
   warning. On Windows, a junction at or inside a folder an install writes,
   such as `~/.claude` or `~/.claude/skills`, now stops the install with
   `target path crosses a link`, as a symbolic link already did. Replace such a
-  junction with the folder itself, or link `~/.config` or `~/.agents` instead.
+  junction with the folder itself, or link `~/.config` or `~/.agents` instead,
+  which Apothem follows while they lead to a folder inside your home
+  directory.
 - **Your text next to Apothem's block stays.** When
   Apothem's block in a file has lost its END marker line, uninstall leaves the
   file as it is and names it. Install and update keep your text after a
@@ -120,7 +126,8 @@ with the same warning.
   Apothem's block from your text, for example in a file with two Apothem
   blocks or a quoted marker pair that an install record lists, they leave the
   file as it is, print a warning with numbered fixes, and exit with code 2.
-  The one-line installers and update scripts then exit with code 2 too. Apply
+  The installer and update scripts then end with code 2 too (a piped
+  PowerShell run sets `$LASTEXITCODE` to 2 and keeps the window open). Apply
   a fix the warning names, then run `apothem update` again.
 - **Shared folders stay while another tool uses them.** Uninstalling a tool
   from one project no longer removes the shared memory, contexts and learning
@@ -208,8 +215,9 @@ strictly before they install it.
 - **An existing clone is checked before it changes.** The installer fetches
   the new tag, checks it, and only then checks it out. A failed check leaves
   the clone as it was. A clone with changes to tracked files stops the update
-  instead of losing them. If an update reports changes in a clone you never
-  changed, run `git -C ~/.apothem status` once, then run the update again.
+  instead of losing them. Line-ending settings in your own git attributes
+  can make a clone you never changed report changes: run `git status` once in
+  the folder the message names, then run the update again.
 - **The folder you run the installer from is ignored.** A piped
   `curl ... | bash` or `irm ... | iex` no longer picks up a source tree from
   the current folder or its parents

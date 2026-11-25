@@ -141,7 +141,12 @@ def _long_body(entries_per_section: int) -> str:
 
 def test_fit_to_limit_keeps_a_body_within_the_limit_unchanged() -> None:
     body = _long_body(3)
-    assert extract_release_notes.fit_to_limit(body, "1.2.3", limit=len(body)) == body
+    assert (
+        extract_release_notes.fit_to_limit(
+            body, "1.2.3", limit=extract_release_notes._github_length(body)
+        )
+        == body
+    )
 
 
 def test_fit_to_limit_shortens_a_long_body_and_links_the_full_notes() -> None:
@@ -188,3 +193,57 @@ def test_every_release_in_the_changelog_fits_a_github_release_page() -> None:
             extract_release_notes.extract_section(text, version), version
         )
         assert len(body) <= extract_release_notes.MAX_BODY_CHARS < 125_000
+
+
+def _titled_body(sections: tuple[str, ...], entries: int) -> str:
+    """A release body whose entries have bold titles and long bodies."""
+    parts = []
+    for name in sections:
+        parts.append(f"### {name}\n")
+        for n in range(entries):
+            parts.append(f"- **{name} title {n:03d}.** " + "y" * 300 + "\n")
+    return "\n".join(parts)
+
+
+def test_fit_to_limit_cuts_entries_to_their_titles_before_dropping_any() -> None:
+    body = _titled_body(("Added", "Fixed"), 20)
+    fitted = extract_release_notes.fit_to_limit(body, "1.2.3", limit=len(body) // 2)
+    for name in ("Added", "Fixed"):
+        for n in range(20):
+            assert f"- **{name} title {n:03d}.**" in fitted
+    assert "in the full notes." not in fitted.split("---")[0]
+
+
+def test_fit_to_limit_shortens_security_only_after_every_other_section() -> None:
+    body = _titled_body(("Fixed", "Security"), 20)
+    # Room for Security whole and the Fixed titles, not for more.
+    limit = len(body) // 2 + 1500
+    fitted = extract_release_notes.fit_to_limit(body, "1.2.3", limit=limit)
+    security = fitted.split("### Security", 1)[1]
+    assert security.count("y" * 300) == 20
+    fixed = fitted.split("### Security", 1)[0]
+    assert fixed.count("y" * 300) < 20
+
+
+def test_fit_to_limit_keeps_a_fenced_block_and_a_closing_paragraph_whole() -> None:
+    body = (
+        "### Fixed\n\n"
+        + "".join(f"- entry {n}. " + "z" * 300 + "\n" for n in range(10))
+        + "\n```sh\n### not a heading\n- not an entry\n```\n\n"
+        + "A closing paragraph about the section.\n"
+    )
+    fitted = extract_release_notes.fit_to_limit(body, "1.2.3", limit=len(body) - 600)
+    assert fitted.count("```") == 2
+    assert "### not a heading\n- not an entry\n```" in fitted
+    assert "A closing paragraph about the section." in fitted
+    assert fitted.count("### ") == 2  # the section and the fenced line
+
+
+def test_fit_to_limit_shortens_star_and_numbered_lists() -> None:
+    body = "### Fixed\n\n" + "".join(
+        f"{marker} item {n}. " + "w" * 300 + "\n"
+        for n, marker in enumerate(["*", "+", "1.", "2)"] * 5)
+    )
+    fitted = extract_release_notes.fit_to_limit(body, "1.2.3", limit=len(body) // 2)
+    assert len(fitted) <= len(body) // 2
+    assert "more entries in the full notes." in fitted
