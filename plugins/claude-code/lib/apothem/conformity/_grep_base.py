@@ -762,140 +762,36 @@ def in_checkout(directory: Path) -> bool:
     return any(has_git_entry(folder) for folder in checkout_search_folders(directory))
 
 
-# What git's own repository test (``validate_headref``) accepts in ``HEAD``:
-# ``ref:``, then only the blanks git's ``isspace`` takes (space, tab, line
-# feed, carriage return), then ``refs/``; or an object id (SHA-1, or the
-# first 40 digits of a SHA-256 one). git reads 255 bytes of ``HEAD``.
-_HEAD_SYMREF: Final[re.Pattern[bytes]] = re.compile(rb"ref:[ \t\n\r]*refs/")
-_HEAD_OBJECT_ID: Final[re.Pattern[bytes]] = re.compile(rb"[0-9a-fA-F]{40}")
-_HEAD_READ_BYTES: Final[int] = 255
-# git reads the whole ``commondir`` file; a longer one is not judged here.
-_COMMONDIR_MAX_BYTES: Final[int] = 64 * 1024
-
-
-def _read_at_most(path: Path, limit: int) -> bytes | None:
-    """Return up to *limit* + 1 bytes of the regular file *path*; None on error."""
-    try:
-        with path.open("rb") as handle:
-            return handle.read(limit + 1)
-    except OSError:
-        return None
-
-
-def _repository_verdict(git_dir: Path) -> bool | Path:
-    """Say whether git's search stops at *git_dir* as a repository.
-
-    True only when *git_dir* passes a test at least as strict as git's own
-    (``is_git_directory``): a ``HEAD`` git accepts, and the object and
-    reference stores, found through a ``commondir`` file read as git reads
-    it (the whole file, trailing carriage returns and line feeds trimmed,
-    cut at a NUL). False when it fails that test or the test cannot be sure
-    (a read error, a file too large to judge, a line break left in the
-    ``commondir`` path): git may look past *git_dir*, so the walk goes on.
-
-    A link among the parts git reads (``HEAD``, ``commondir``, the folder
-    ``commondir`` names, ``objects``, ``refs``) is returned: git would follow
-    it, so the caller refuses it as it refuses a ``.git`` link. Nothing is
-    followed: each part is looked at with ``os.lstat`` before it is read.
-    """
-    head_path = git_dir / "HEAD"
-    head_kind = path_kind(head_path)
-    if head_kind == LINK_ENTRY:
-        return head_path
-    if head_kind != FILE_ENTRY:
-        return False
-    head = _read_at_most(head_path, _HEAD_READ_BYTES)
-    if head is None:
-        return False
-    head = head[:_HEAD_READ_BYTES]
-    if not (_HEAD_SYMREF.match(head) or _HEAD_OBJECT_ID.match(head)):
-        return False
-    stores = git_dir
-    commondir = git_dir / "commondir"
-    commondir_kind = path_kind(commondir)
-    if commondir_kind == LINK_ENTRY:
-        return commondir
-    if commondir_kind is not None:
-        if commondir_kind != FILE_ENTRY:
-            return False
-        data = _read_at_most(commondir, _COMMONDIR_MAX_BYTES)
-        if not data or len(data) > _COMMONDIR_MAX_BYTES:
-            return False
-        named = data.rstrip(b"\r\n").split(b"\0", 1)[0]
-        if not named or b"\n" in named or b"\r" in named:
-            return False
-        try:
-            stores = git_dir / os.fsdecode(named)
-        except UnicodeDecodeError:
-            return False
-        stores_kind = path_kind(stores)
-        if stores_kind == LINK_ENTRY:
-            return stores
-        if stores_kind != DIR_ENTRY:
-            return False
-    for store in (stores / "objects", stores / "refs"):
-        store_kind = path_kind(store)
-        if store_kind == LINK_ENTRY:
-            return store
-        if store_kind != DIR_ENTRY:
-            return False
-    return True
-
-
 def nearest_linked_git_entry(root: Path) -> Path | None:
-    """Return the linked entry git would read its repository through, and note it.
+    """Return a ``.git`` link on git's search path from *root*, and note it.
 
-    git looks for the repository in *root* and then in each folder above it
-    (:func:`checkout_search_folders`), and in each folder it looks first at
-    the ``.git`` entry and then at the folder itself, which may be a bare
-    repository. This walk does the same and stops where git would stop:
+    git looks for the repository in *root* and in the folders above it
+    (:func:`checkout_search_folders`). This looks at the ``.git`` entry of
+    each of those folders with ``os.lstat`` and returns the first one that
+    is a link (to a folder or a file, a junction, or one that dangles), after
+    noting it in the skip log. It does not stop at a real ``.git`` entry and
+    does not judge whether a folder holds a repository: a link anywhere on
+    the path is refused, even above a repository git would use first.
 
-    - a ``.git`` link (to a folder or a file, a junction, or one that
-      dangles), or a link among the parts git reads in the repository it
-      stops at (see :func:`_repository_verdict`): the link is noted in the
-      skip log and returned;
-    - a ``.git`` folder or a folder that passes the repository test, or a
-      ``.git`` file (git uses the repository it names, or stops with an
-      error): None.
+    What this does not check: which repository git then reads. A ``.git``
+    file's ``gitdir:`` line, a ``commondir`` file, alternates,
+    ``core.worktree``, a configuration include, or a link inside the git
+    folder can all name another repository. That is safe for these checks
+    because git supplies only path names, the HEAD subject and commit times,
+    and each listed path is checked again, level by level, before anything is
+    read.
 
-    The repository test is at least as strict as git's, never looser, so the
-    walk never stops where git goes on. A ``.git`` folder git would not take
-    as a repository (an empty one, a ``HEAD`` that names nothing under
-    ``refs/``, a ``commondir`` that leads nowhere) is looked past, as git
-    does. Where the test is stricter than git, the walk goes on past a
-    repository git would use, and a ``.git`` link above it is refused though
-    git never reaches it. That false refusal is deliberate: it fails closed.
-
-    The checks run git with *discover* set (``run_git``), which leaves out
-    ``GIT_DIR`` and the other location variables, so git finds the repository
-    from *root* as this walk did. A ``.git`` file's ``gitdir:`` target is
-    taken as written: it is a path the file states, not a link.
-
-    Every check that runs git calls this before git and before
-    :func:`in_checkout`, and treats an entry as no checkout, so a run on a
-    subfolder of a project behaves like a run on the project itself.
+    Every check that runs git calls this first, never runs git when it
+    returns an entry, and runs git with ``discover=True`` (see ``run_git``),
+    so a ``GIT_DIR`` in the environment cannot send git elsewhere.
     """
     if linked_git_entry(root):
         return root / GIT_ENTRY
     for folder in checkout_search_folders(root):
         entry = folder / GIT_ENTRY
-        kind = path_kind(entry)
-        if kind == LINK_ENTRY:
+        if path_kind(entry) == LINK_ENTRY:
             note_skipped(entry)
             return entry
-        if kind == DIR_ENTRY:
-            verdict = _repository_verdict(entry)
-        elif kind is not None and git_entry_state(folder) != GIT_ENTRY_NONE:
-            return None
-        else:
-            verdict = False
-        if verdict is False:
-            verdict = _repository_verdict(folder)
-        if isinstance(verdict, Path):
-            note_skipped(verdict)
-            return verdict
-        if verdict:
-            return None
     return None
 
 

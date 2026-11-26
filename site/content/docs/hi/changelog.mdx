@@ -320,14 +320,23 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   and `naming-grep` checks a link's own name. Each report lists the links and
   special files it left out under `skipped_links`, and a validator whose
   folder is a link fails instead of passing as if the folder were not there
-  yet. The checks that run git read the `.git` folder through git itself.
-  When the `.git` entry git would use, in the root or in a folder above it,
-  or a file git reads in that repository, is a link, the three `--all`
-  validators that run git do not run it and list the link under
-  `skipped_links`, `no-global-plans-grep` reports it as a failing finding,
-  and `--all-perwrite` lists no tracked files and fails with a
-  `check_error`. A `GIT_DIR` set in the environment, as in a hook, no longer
-  points these validators' git somewhere else.
+  yet. The checks that run git read the `.git` folder through git itself;
+  see the next entry for when they do not run it.
+- **The checks that run git have a plain rule for links.** The three `--all`
+  validators that run git, and `--all-perwrite`, look at the `.git` entry of
+  the root and of every folder above it that git searches. When any of them is
+  a link, they do not run git: they list the link under `skipped_links` (by
+  its full path when it lies above the root), `no-global-plans-grep` reports
+  it as a failing finding, and `--all-perwrite` lists no tracked files and
+  fails with a `check_error` that names it. They also ignore a `GIT_DIR` set
+  in the environment, as in a hook, so git looks for the repository from the
+  root. Which repository git then reads is not checked: a `gitdir:` line,
+  `commondir`, alternates, `core.worktree`, an include, or a link inside the
+  git folder can name another one. That is safe because git supplies only file
+  names, the subject of the last commit and commit times, and the gate checks
+  each file name again, level by level, and opens only regular files inside
+  the root. A repository inside a folder whose `.git` is a link is refused
+  too, even though git would use the inner repository first.
 
 ## [1.6.0] - 2026-11-26
 

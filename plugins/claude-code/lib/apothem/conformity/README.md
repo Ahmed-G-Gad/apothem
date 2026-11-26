@@ -217,25 +217,25 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   passed, to `_second_reads`): its control test fails only while the
   validator reaches none of those files, so a path left out is not tested.
   A check in the `--all` or `--all-perwrite` set that runs git calls
-  `nearest_linked_git_entry(root)` from `_grep_base.py` first and treats a
-  returned entry as no checkout (`linked_git_message` gives the sentence
-  that names it): it never runs git, and never asks `in_checkout`, before
-  that call, and it passes `discover=True` to every `run_git` call, so a
-  `GIT_DIR` from the environment (git exports one to its hooks) cannot point
-  git somewhere the helper did not look. git follows a `.git` link in the
-  root or in a folder above it, or a link among the files of the repository
-  it stops at (`HEAD`, `commondir`, `objects`, `refs`), to another
-  repository; the helper walks the folders git searches without following
-  any link and refuses each of these. Its repository test is stricter than
-  git's, never looser: where git would stop at a repository the test
-  rejects, the walk goes on and may refuse a link above it that git never
-  reaches. That false refusal is deliberate. The callers today are
-  `_corpus.tracked_entries`, `no_global_plans_grep._git_ls_files` and
-  `no_global_plans_grep.check`, `agents_md_coverage_grep._read_history`, and
+  `nearest_linked_git_entry(root)` from `_grep_base.py` first and does not run
+  git when it returns an entry (`linked_git_message` gives the sentence that
+  names it). It never runs git, and never asks `in_checkout`, before that
+  call, and it passes `discover=True` to every `run_git` call, so a `GIT_DIR`
+  from the environment (git exports one to its hooks) cannot send git
+  elsewhere. The helper looks, with `os.lstat` only, at the `.git` entry of
+  the root and of every folder above it that git searches, and returns the
+  first one that is a link. That is the whole boundary: which repository git
+  then reads is not checked, since a `gitdir:` line, `commondir`, alternates,
+  `core.worktree`, an include, or a link inside the git folder can name
+  another one. git supplies only path names, the HEAD subject and commit
+  times, and every path git lists is checked again, level by level, before
+  anything is read. The callers today are `_corpus.tracked_entries`,
+  `no_global_plans_grep._git_ls_files` and `no_global_plans_grep.check`,
+  `agents_md_coverage_grep._read_history`, and
   `conventional_commit_grep._read_head_subject`. The `--staged` checks
-  (`production-ready-pr-grep` and `semver-stability-grep` with `--staged`)
-  run git in the current folder without this guard; they are not part of
-  `--all` or `--all-perwrite`.
+  (`production-ready-pr-grep` and `semver-stability-grep` with `--staged`) run
+  git in the current folder without this guard; they are not part of `--all`
+  or `--all-perwrite`.
 
 - **No unfinished pass.** A check that could not finish does not pass either.
   Give every `run_git` call a timeout, far above what the command takes, since

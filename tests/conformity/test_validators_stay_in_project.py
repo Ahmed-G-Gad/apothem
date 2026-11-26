@@ -46,6 +46,9 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import shutil
+import site
+import stat
 import subprocess
 import sys
 from collections.abc import Callable
@@ -615,3 +618,258 @@ def test_a_named_pipe_read_after_a_real_file_is_not_opened(tmp_path: Path) -> No
     )
 
     assert opened == []
+
+
+# ---------------------------------------------------------------------------
+# A project whose .git names a foreign repository
+# ---------------------------------------------------------------------------
+
+# The child for the foreign-repository runs: every standalone validator as
+# ``__main__`` (as ``--all`` starts each one), then the ``--all-perwrite``
+# corpus run in the same process, under one audit hook that records each file
+# opened, each folder listed and each program started.
+_ORACLE_SCRIPT = r"""
+import contextlib
+import io
+import json
+import os
+import runpy
+import sys
+from pathlib import Path
+
+events_path, root = sys.argv[1:3]
+modules = sys.argv[3:]
+log = open(events_path, "a", encoding="utf-8", buffering=1)
+current = ["-"]
+
+
+def hook(event, args):
+    if event == "subprocess.Popen":
+        started = args[0] if args[0] is not None else args[1]
+        if isinstance(started, (list, tuple)):
+            started = started[0]
+        log.write(json.dumps([current[0], event, os.fsdecode(started)]) + "\n")
+        return
+    if event not in ("open", "os.scandir", "os.listdir") or not args:
+        return
+    target = args[0]
+    if target is None or isinstance(target, int):
+        return
+    try:
+        text = os.fsdecode(os.fspath(target))
+    except TypeError:
+        return
+    log.write(json.dumps([current[0], event, os.path.abspath(text)]) + "\n")
+
+
+from apothem.conformity import gate
+
+sys.addaudithook(hook)
+for module in modules:
+    current[0] = module
+    sys.argv = [module, root]
+    with contextlib.redirect_stdout(io.StringIO()):
+        with contextlib.suppress(SystemExit):
+            runpy.run_module(
+                "apothem.conformity." + module.replace("-", "_"),
+                run_name="__main__",
+                alter_sys=True,
+            )
+current[0] = "all-perwrite"
+passed, payload = gate._run_all_perwrite(Path(root))
+current[0] = "-"
+log.write(json.dumps(["-", "perwrite", payload]) + "\n")
+log.write(json.dumps(["-", "done", ""]) + "\n")
+"""
+
+
+def _commit_all(repository: Path, *names: str) -> None:
+    """Commit *names* in *repository*, each a small text file."""
+    for name in names:
+        _write_tree(repository, {name: "# Page\n\nText.\n"})
+    env = hermetic_git_env()
+    for args in (
+        ["add", "--", *names],
+        [
+            "-c",
+            "user.email=test@apothem.invalid",
+            "-c",
+            "user.name=apothem-test",
+            "-c",
+            "commit.gpgsign=false",
+            "commit",
+            "-qm",
+            "feat: foreign repository",
+        ],
+    ):
+        subprocess.run(
+            ["git", *args],
+            cwd=str(repository),
+            env=env,
+            check=True,
+            capture_output=True,
+        )
+
+
+# The names the foreign index tracks. In the project, the first is a folder
+# link out (a junction on Windows), the second lies below a folder link out,
+# the third is missing, and README.md is the one regular file.
+_FOREIGN_NAMES = ("link-out.md", "via/page.md", "missing.md", "README.md")
+
+
+def _project_naming_a_foreign_repository(tmp_path: Path, how: str) -> Path:
+    """Return a project whose ``.git`` file names a foreign, link-free repository.
+
+    *how* is ``gitdir`` (the ``.git`` file names the foreign ``.git`` folder)
+    or ``commondir`` (it names a work-tree folder whose ``commondir`` file
+    gives the foreign ``.git`` folder as an absolute path).
+    """
+    foreign = tmp_path / "foreign"
+    foreign.mkdir()
+    _git_init(foreign)
+    _commit_all(foreign, *_FOREIGN_NAMES)
+    elsewhere = tmp_path / "elsewhere"
+    _write_tree(elsewhere, {"page.md": "# Outside\n", "link-out.md/page.md": "# Out\n"})
+    project = tmp_path / "project"
+    project.mkdir()
+    gitdir = foreign / ".git"
+    if how == "commondir":
+        gitdir = foreign / ".git" / "worktrees" / "project"
+        gitdir.mkdir(parents=True)
+        (gitdir / "HEAD").write_text("ref: refs/heads/side\n", encoding="utf-8")
+        (gitdir / "commondir").write_text(
+            str(foreign / ".git") + "\n", encoding="utf-8"
+        )
+        (gitdir / "gitdir").write_text(str(project / ".git") + "\n", encoding="utf-8")
+        shutil.copyfile(foreign / ".git" / "index", gitdir / "index")
+    (project / ".git").write_text(f"gitdir: {gitdir.as_posix()}\n", encoding="utf-8")
+    _write_tree(project, {"README.md": "# Sample\n\nText.\n"})
+    _link_folder(project / "link-out.md", elsewhere / "link-out.md")
+    _link_folder(project / "via", elsewhere)
+    return project
+
+
+@pytest.mark.parametrize("how", ["gitdir", "commondir"])
+def test_a_foreign_repository_named_by_the_git_file_reaches_no_file_outside(
+    tmp_path: Path, how: str
+) -> None:
+    """git may read another repository; the gate still reads only the project.
+
+    The ``.git`` file names a foreign repository with no link in it, so the
+    link rule lets git run, and git lists names that, in the project, are a
+    link out, a path through a junction and a missing file. Every file the
+    validators and the ``--all-perwrite`` run open, and every folder they
+    list, must be a regular file or a real folder inside the root, reached
+    through real folders, and the only program they start is git.
+    """
+    project = _project_naming_a_foreign_repository(tmp_path, how)
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    events_path = scratch / "events.jsonl"
+    env = hermetic_git_env()
+    env["PYTHONPATH"] = str(_REPO_ROOT / "src")
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            _ORACLE_SCRIPT,
+            str(events_path),
+            str(project),
+            *STANDALONE_MODULES,
+        ],
+        cwd=str(scratch),
+        env=env,
+        capture_output=True,
+        timeout=_DEADLINE_SECONDS,
+        check=False,
+    )
+    events = [
+        json.loads(line)
+        for line in events_path.read_text(encoding="utf-8").splitlines()
+        if line
+    ]
+    assert events
+    assert events[-1][1] == "done"
+    perwrite = json.loads(
+        next(path for _, event, path in events if event == "perwrite")
+    )
+    # git listed the foreign names, and only the regular file was read.
+    assert perwrite.get("check_error") is None
+    assert perwrite["files_scanned"] == 1
+    assert perwrite["files_skipped"]["link"] == 2
+    assert perwrite["files_skipped"]["missing"] == 1
+
+    # Python's own reads: the interpreter, its packages and this checkout's
+    # source. A folder that holds the project does not count.
+    runtime = [
+        Path(folder).resolve()
+        for folder in {
+            *sys.path,
+            sys.prefix,
+            sys.base_prefix,
+            sys.exec_prefix,
+            site.getusersitepackages(),
+            str(_REPO_ROOT / "src"),
+        }
+        if folder
+        and project not in Path(folder).resolve().parents
+        and Path(folder).resolve() != project
+        and Path(folder).resolve() not in project.parents
+    ]
+
+    # git's input is the null device. On Windows only os.path.abspath gives
+    # its device path, the spelling the hook records; Path.absolute does not.
+    nothing = {events_path, Path(os.path.abspath(os.devnull))}  # noqa: PTH100
+
+    def runtime_read(path: Path) -> bool:
+        return path in nothing or any(
+            path == base or base in path.parents for base in runtime
+        )
+
+    def stays_inside(event: str, path: Path) -> bool:
+        if path != project and project not in path.parents:
+            return False
+        # Each level below the root is a real folder, and the target is a
+        # regular file (open) or a real folder (a listing).
+        # A path that does not exist is fine when the levels that do are real
+        # folders: the open fails without reaching anything.
+        level = project
+        for part in path.relative_to(project).parts[:-1]:
+            level = level / part
+            try:
+                if not stat.S_ISDIR(os.lstat(level).st_mode):
+                    return False
+            except FileNotFoundError:
+                return True
+        try:
+            mode = os.lstat(path).st_mode
+        except FileNotFoundError:
+            return True
+        return stat.S_ISREG(mode) if event == "open" else stat.S_ISDIR(mode)
+
+    offenders = sorted(
+        f"{label}: {event} {path}"
+        for label, event, path in events
+        if label != "-"
+        and event in ("open", "os.scandir", "os.listdir")
+        and not runtime_read(Path(path))
+        and not stays_inside(event, Path(path))
+    )
+
+    def program(started: str) -> str:
+        # On Windows the program can arrive as one command line, its path
+        # first and in quotes when it holds a space.
+        if started.startswith('"'):
+            started = started[1:].split('"', 1)[0]
+        elif not Path(started).exists():
+            started = started.split(" ", 1)[0]
+        return Path(started).name.lower()
+
+    programs = {
+        program(path) for _, event, path in events if event == "subprocess.Popen"
+    }
+
+    assert offenders == []
+    assert programs
+    assert programs <= {"git", "git.exe"}
