@@ -702,6 +702,12 @@ def _commit_all(repository: Path, *names: str) -> None:
             "user.name=apothem-test",
             "-c",
             "commit.gpgsign=false",
+            # No maintenance in the background: it writes lock files into
+            # .git while a test copies it.
+            "-c",
+            "maintenance.auto=false",
+            "-c",
+            "gc.auto=0",
             "commit",
             "-qm",
             "feat: foreign repository",
@@ -783,7 +789,7 @@ def _project_naming_a_foreign_repository(tmp_path: Path, route: str) -> Path:
         )
     else:
         own = project / ".git"
-        shutil.copytree(foreign / ".git", own)
+        shutil.copytree(foreign / ".git", own, ignore=shutil.ignore_patterns("*.lock"))
         if route in ("objects-junction", "alternates"):
             # git writes its objects read-only; Windows will not delete those.
             for stored in (own / "objects").rglob("*"):
