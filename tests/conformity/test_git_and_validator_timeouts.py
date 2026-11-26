@@ -2923,10 +2923,14 @@ def test_a_ctrl_c_beside_a_refused_hold_is_not_swallowed(
     """
     real_signal = signal.signal
     interrupted: list[int] = []
+    refusals: list[int] = []
 
     def refuse_sigint_then_interrupt(signum: int, handler: object) -> object:
         if signum == signal.SIGINT and handler is not signal.default_int_handler:
-            raise ValueError("signal only works in main thread")
+            refusals.append(signum)
+            # A thousand refusals at most: a lost bound fails, not hangs.
+            if len(refusals) < 1000:
+                raise ValueError("signal only works in main thread")
         if signum == signal.SIGTERM and not interrupted:
             interrupted.append(signum)
             raise KeyboardInterrupt
@@ -2949,6 +2953,7 @@ def test_a_ctrl_c_beside_a_refused_hold_is_not_swallowed(
     assert interrupted, "the Ctrl+C was never raised"
     assert not ran, "the block ran: the Ctrl+C was dropped with the refusal"
     assert after == before
+    assert len(refusals) < 1000, "the refused change was tried without a bound"
 
 
 @_POSIX_ONLY
@@ -3172,12 +3177,20 @@ def test_handlers_change_with_the_signals_blocked(
         masks.append(set(signal.pthread_sigmask(signal.SIG_BLOCK, [])))
         return real_signal(signum, handler)  # type: ignore[arg-type]
 
-    before = signal.pthread_sigmask(signal.SIG_BLOCK, [])
-    with _python_interrupt_handler(), _default_terminations():
-        monkeypatch.setattr(_bounded_run, "_SET_HANDLER", watching)
-        with _bounded_run._held_signals(terminations=True):
-            during = signal.pthread_sigmask(signal.SIG_BLOCK, [])
-        monkeypatch.undo()
+    start = _blocked_now()
+    try:
+        with _python_interrupt_handler(), _default_terminations():
+            # Start with the gate's signals unblocked, whatever the worker or
+            # an earlier test left, so the checks below read this hold alone.
+            _unblock_the_gates_signals()
+            before = signal.pthread_sigmask(signal.SIG_BLOCK, [])
+            monkeypatch.setattr(_bounded_run, "_SET_HANDLER", watching)
+            with _bounded_run._held_signals(terminations=True):
+                during = signal.pthread_sigmask(signal.SIG_BLOCK, [])
+            monkeypatch.undo()
+        after = signal.pthread_sigmask(signal.SIG_BLOCK, [])
+    finally:
+        _restore_mask(start)
     # Set and put back: SIGINT, SIGTERM and SIGHUP, each twice.
     assert len(masks) == 6, f"signal.signal was called {len(masks)} times"
     held = {signal.SIGINT, signal.SIGTERM, signal.SIGHUP}
@@ -3186,7 +3199,6 @@ def test_handlers_change_with_the_signals_blocked(
         extra = mask - held - set(before)
         assert not extra, f"a change also blocked {sorted(extra)}"
     assert during == before
-    after = signal.pthread_sigmask(signal.SIG_BLOCK, [])
     assert after == before
     assert not held & set(during), f"the hold ran with {sorted(during)} blocked"
     assert not held & set(after), f"the hold left {sorted(after)} blocked"
@@ -3541,17 +3553,23 @@ def test_an_error_as_the_block_takes_hold_still_sets_every_pair(
         return None
 
     errors: list[BaseException] = []
+    start = _blocked_now()
     try:
-        assert _bounded_run._swap(
-            [(signal.SIGINT, mark), (signal.SIGTERM, mark)], errors
-        )
-        assert interrupted, "the block never raised"
-        assert [type(error) for error in errors] == [KeyboardInterrupt]
-        assert signal.getsignal(signal.SIGINT) is mark
-        assert signal.getsignal(signal.SIGTERM) is mark
-        blocked = signal.pthread_sigmask(signal.SIG_BLOCK, [])
-        assert {signal.SIGINT, signal.SIGTERM, signal.SIGHUP}.isdisjoint(blocked)
+        with _python_interrupt_handler(), _default_terminations():
+            # The gate blocks only what is not blocked yet: start with its
+            # signals unblocked, whatever the worker or an earlier test left.
+            _unblock_the_gates_signals()
+            assert _bounded_run._swap(
+                [(signal.SIGINT, mark), (signal.SIGTERM, mark)], errors
+            )
+            assert interrupted, "the block never raised"
+            assert [type(error) for error in errors] == [KeyboardInterrupt]
+            assert signal.getsignal(signal.SIGINT) is mark
+            assert signal.getsignal(signal.SIGTERM) is mark
+            blocked = signal.pthread_sigmask(signal.SIG_BLOCK, [])
+            assert _GATES_SIGNALS.isdisjoint(blocked), f"left blocked: {blocked}"
     finally:
+        _restore_mask(start)
         errors.clear()
         signal.signal(signal.SIGINT, old_int)
         signal.signal(signal.SIGTERM, old_term)
