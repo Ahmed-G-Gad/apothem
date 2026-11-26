@@ -40,7 +40,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import BinaryIO, Final
 
-from apothem.conformity._git import run_git
+from apothem.conformity._git import run_git, split_names
 from apothem.conformity._grep_base import (
     GIT_LS_FILES_TIMEOUT_SECONDS,
     GitFailedError,
@@ -163,10 +163,11 @@ def tracked_entries(root: Path) -> list[TrackedEntry]:
     """Return the index entries under *root*, each path built from its git name.
 
     Runs ``git ls-files -s -z`` in *root* through :func:`run_git`, which turns
-    off the repository's settings that start a program, gives git no input and
-    decodes its output as UTF-8 with any other byte replaced, so a file name
-    that is not UTF-8 names no file on disk and is skipped on its own instead
-    of failing the run. The call gives up after
+    off the repository's settings that start a program and gives git no input.
+    The output is read as file names, so a name keeps every byte it holds (a
+    carriage return, a byte that is not UTF-8) and names the file on disk; a
+    name that names no file there is skipped on its own instead of failing the
+    run. The call gives up after
     :data:`GIT_LS_FILES_TIMEOUT_SECONDS`. A file with a merge conflict, which
     the index lists once per stage, is kept once, and counts as a link or a
     submodule when any of its stages does. Each name is judged as git writes
@@ -190,6 +191,7 @@ def tracked_entries(root: Path) -> list[TrackedEntry]:
             ["ls-files", "-s", "-z"],
             cwd=root,
             timeout=GIT_LS_FILES_TIMEOUT_SECONDS,
+            file_names=True,
         )
     except subprocess.TimeoutExpired as exc:
         raise GitTimeoutError("git ls-files", GIT_LS_FILES_TIMEOUT_SECONDS) from exc
@@ -198,7 +200,7 @@ def tracked_entries(root: Path) -> list[TrackedEntry]:
     if completed.returncode != 0:
         raise GitFailedError("git ls-files", completed.returncode)
     modes: dict[str, str] = {}
-    for record in completed.stdout.split("\0"):
+    for record in split_names(completed.stdout):
         # Each record is "<mode> <object> <stage>\t<path>".
         details, tab, name = record.partition("\t")
         if not tab or not name:

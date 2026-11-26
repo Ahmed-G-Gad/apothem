@@ -157,6 +157,24 @@ class GitFailedError(GitCheckError):
         super().__init__(f"{command} failed with exit code {returncode}")
 
 
+class GitNameError(GitCheckError):
+    """A file name git listed cannot be given back to git as an argument.
+
+    Windows passes arguments as UTF-16, so a name that is not valid UTF-8 (one
+    from an index made on another system) reaches git as other bytes and git
+    finds no such file. The file's content was not read, which is not the same
+    as a file with nothing to report. The message reads, for example,
+    ``git cat-file cannot read a file whose name is not UTF-8 on Windows``; it
+    never repeats the name, which a checked repository shapes.
+    """
+
+    def __init__(self, command: str) -> None:
+        """Name the git *command* that could not be given the file name."""
+        super().__init__(
+            f"{command} cannot read a file whose name is not UTF-8 on Windows"
+        )
+
+
 # ---------------------------------------------------------------------------
 # Shared command-line parser
 # ---------------------------------------------------------------------------
@@ -386,6 +404,359 @@ def has_git_entry(directory: Path) -> bool:
     directory is a checkout root.
     """
     return os.path.lexists(directory / GIT_ENTRY)
+
+
+# What the ``.git`` entry of a folder is to git's search for a repository.
+GIT_ENTRY_NONE: Final[str] = "none"
+GIT_ENTRY_REPOSITORY: Final[str] = "repository"
+GIT_ENTRY_BROKEN: Final[str] = "broken"
+_GITFILE_PREFIX: Final[bytes] = b"gitdir: "
+# git refuses a ``.git`` file larger than this ("too large to be a .git file").
+_GITFILE_MAX_BYTES: Final[int] = 1 << 20
+# On Windows a path that starts with two separators is a network path
+# (``\\host\share``) or a device path (``\\?\``, ``\\.\``). One that starts
+# with ``\??\`` is an NT path, which can name a host as well
+# (``\??\UNC\host\share``); Python's path joining turns ``/??/`` and the
+# mixed forms into ``\??\``. On POSIX all of these are local paths.
+_NON_LOCAL_START: Final[re.Pattern[str]] = re.compile(r"[\\/](?:[\\/]|\?\?[\\/])")
+
+
+def _names_non_local_path(text: str) -> bool:
+    """Return True when *text* is a network, device or NT path on Windows.
+
+    Looking such a path up makes Windows connect to the named host and offer
+    the user's sign-in. Git for Windows refuses a ``gitdir:`` line in the
+    local device forms ``\\\\?\\C:\\...`` and ``\\\\.\\C:\\...`` and in the
+    NT form ``\\??\\C:\\...`` ("may refer to a non-local directory"); the
+    tests run git on those. They never run git on a line that names a real
+    share, so whether git refuses one before it connects is not tested.
+
+    Only the text is read, so these cases still reach a share:
+
+    - a ``gitdir:`` line that names a mapped network drive (``Z:\\repo``);
+    - a ``.git`` that is a symbolic link to a share, which is followed
+      before the file is read;
+    - a ``gitdir:`` line, with a drive or relative (``C:\\link\\repo``,
+      ``../link/repo``), whose path passes through a symbolic link to a
+      share;
+    - a checked folder that is itself on a share or reached through such a
+      link;
+    - Python built for MSYS2 or Cygwin, where ``os.name`` is ``"posix"``
+      and no path is refused.
+    """
+    return os.name == "nt" and _NON_LOCAL_START.match(text) is not None
+
+
+# A drive prefix such as ``C:``, which Git for Windows skips before it checks
+# a path.
+_DRIVE_PREFIX: Final[re.Pattern[str]] = re.compile(r"[A-Za-z]:")
+# Characters Git for Windows refuses anywhere in a path after the drive: a
+# colon (an NTFS stream such as ``::$INDEX_ALLOCATION``), the wildcard and
+# redirection characters, and the control characters.
+_REFUSED_WIN32_CHARACTERS: Final[re.Pattern[str]] = re.compile(r'[:<>"|?*\x01-\x1f]')
+# Device names Git for Windows refuses as a path name, in any case, alone or
+# before spaces, a dot, a colon or a separator. Git for Windows refuses
+# ``lpt`` before any digit, ``lpt0`` too, but ``com`` only before 1 to 9.
+_RESERVED_WIN32_NAMES: Final[frozenset[str]] = frozenset(
+    {"aux", "con", "conin$", "conout$", "nul", "prn"}
+    | {f"com{digit}" for digit in range(1, 10)}
+    | {f"lpt{digit}" for digit in range(0, 10)}
+)
+
+
+def _refused_by_git_for_windows(text: str) -> bool:
+    """Return True when Git for Windows refuses *text* as a path.
+
+    Git for Windows checks each path it opens (``is_valid_win32_path``). It
+    refuses a name that ends in a dot or a space, other than ``.`` and
+    ``..``, and a colon or another refused character after the drive. Windows
+    itself drops such a dot and reads such a colon as a stream, so a lookup
+    of ``../repo/.git.`` or ``../repo/.git::$INDEX_ALLOCATION`` finds the
+    repository git refuses. It also refuses a reserved device name (``aux``,
+    ``con``, ``conin$``, ``conout$``, ``nul``, ``prn``, ``com1`` to ``com9``,
+    ``lpt0`` to ``lpt9``) in any case, alone or before a dot, such as
+    ``aux.d``, which newer Windows opens as an ordinary folder. On POSIX git
+    takes every such name as written, so nothing is refused.
+    """
+    if os.name != "nt":
+        return False
+    rest = text[2:] if _DRIVE_PREFIX.match(text) else text
+    if _REFUSED_WIN32_CHARACTERS.search(rest):
+        return True
+    for name in re.split(r"[\\/]", rest):
+        if name in {".", ".."}:
+            continue
+        if name.endswith((".", " ")):
+            return True
+        if name.split(".", 1)[0].rstrip(" ").lower() in _RESERVED_WIN32_NAMES:
+            return True
+    return False
+
+
+def _decode_gitdir(raw: bytes) -> str | None:
+    """Return the path a ``gitdir:`` line names, as git reads its bytes.
+
+    Git for Windows reads the line as UTF-8 (``xutftowcsn``). A byte that
+    is not part of valid UTF-8 stands for itself: from 0xA0 up it becomes
+    the character of that number (Latin-1), and below that its two
+    lowercase hex digits, so ``caf\\x9f`` names the folder ``caf9f``. git
+    also reads an encoded surrogate (``ED A0 80`` to ``ED BF BF``) as that
+    surrogate. Two that form a pair name the one character they stand for.
+    A surrogate left alone makes git stop with an error, so None is
+    returned. On POSIX git hands the bytes to the system as they are, so
+    they are kept (``os.fsdecode``) and a name in another encoding still
+    finds its folder.
+    """
+    if os.name != "nt":
+        return os.fsdecode(raw)
+    text: list[str] = []
+    rest = raw
+    while rest:
+        try:
+            text.append(rest.decode("utf-8", "surrogatepass"))
+            break
+        except UnicodeDecodeError as error:
+            text.append(rest[: error.start].decode("utf-8", "surrogatepass"))
+            byte = rest[error.start]
+            text.append(chr(byte) if byte >= 0xA0 else f"{byte:02x}")
+            rest = rest[error.start + 1 :]
+    # A round trip through UTF-16 joins each pair and fails on a lone one.
+    try:
+        return "".join(text).encode("utf-16-le", "surrogatepass").decode("utf-16-le")
+    except UnicodeDecodeError:
+        return None
+
+
+def _holds_repository(git_dir: Path) -> bool:
+    """Return True when *git_dir* looks like a repository to git.
+
+    git asks for a ``HEAD`` and for the object and reference stores, which a
+    linked work tree's folder borrows through its ``commondir`` file. The
+    caller makes sure *git_dir* is no network, device or NT path on Windows.
+    """
+    if not (git_dir / "HEAD").is_file():
+        return False
+    if (git_dir / "commondir").is_file():
+        return True
+    return (git_dir / "objects").is_dir() and (git_dir / "refs").is_dir()
+
+
+def git_entry_state(directory: Path) -> str:
+    """Say what the ``.git`` entry of ``directory`` is to git's search.
+
+    - :data:`GIT_ENTRY_REPOSITORY`: git stops here and uses it. A ``.git``
+      folder that holds a repository, or a ``.git`` file whose ``gitdir:``
+      line names one (a linked work tree, a submodule).
+    - :data:`GIT_ENTRY_BROKEN`: git stops here with an error. A ``.git`` file
+      that names no repository, that does not start with ``gitdir:`` and
+      one space, that is larger than git reads (1 MiB), or, on Windows,
+      whose path, alone or joined to a folder with no drive, is a network,
+      device or NT path. That last path is never looked up, so Windows does
+      not connect to a host the file names. On Windows a path Git for
+      Windows refuses (a name that ends in a dot or a space, a colon after
+      the drive) is broken too, and is not looked up either.
+    - :data:`GIT_ENTRY_NONE`: git looks further up. No entry, a ``.git``
+      folder that holds no repository (an empty one, say), or a ``.git`` link
+      that leads nowhere.
+
+    A ``.git`` file is read only up to git's size limit plus one byte.
+    """
+    entry = directory / GIT_ENTRY
+    if entry.is_dir():
+        return GIT_ENTRY_REPOSITORY if _holds_repository(entry) else GIT_ENTRY_NONE
+    if not entry.is_file():
+        return GIT_ENTRY_NONE
+    try:
+        with entry.open("rb") as handle:
+            content = handle.read(_GITFILE_MAX_BYTES + 1)
+    except OSError:
+        return GIT_ENTRY_BROKEN
+    if len(content) > _GITFILE_MAX_BYTES:
+        return GIT_ENTRY_BROKEN
+    # git reads the whole file. It must start with "gitdir: ", one space.
+    # git drops only the CR and LF bytes at the end; the rest is the path as
+    # written, so a second line, a tab or a second space stays in it. git
+    # reads the path as a C string, so it ends at the first NUL byte.
+    if not content.startswith(_GITFILE_PREFIX):
+        return GIT_ENTRY_BROKEN
+    raw = content[len(_GITFILE_PREFIX) :].rstrip(b"\r\n")
+    if not raw:
+        return GIT_ENTRY_BROKEN  # git: "no path in gitfile"
+    named = _decode_gitdir(raw.split(b"\0", 1)[0])
+    if named is None:
+        return GIT_ENTRY_BROKEN
+    if _names_non_local_path(named) or _refused_by_git_for_windows(named):
+        return GIT_ENTRY_BROKEN
+    target = directory / named
+    # A folder with a root but no drive (``\\``) turns a relative line such as
+    # ``??/UNC/host/share`` into an NT path. A folder with a drive is left
+    # out: a long-path folder (``\\\\?\\C:\\...``) is local.
+    if not directory.drive and _names_non_local_path(str(target)):
+        return GIT_ENTRY_BROKEN
+    return GIT_ENTRY_REPOSITORY if _holds_repository(target) else GIT_ENTRY_BROKEN
+
+
+# git stops its search for a repository at a folder on another file system.
+# Git for Windows does not: its file status carries no device number.
+_STOPS_AT_FILE_SYSTEM: Final[bool] = os.name != "nt"
+
+
+def _device(folder: Path) -> int | None:
+    """Return the number of the file system ``folder`` is on, or None."""
+    try:
+        return folder.stat().st_dev
+    except OSError:
+        return None
+
+
+# A whole number as git reads one: an optional sign, decimal, hexadecimal
+# (0x) or octal (leading 0) digits, and an optional k, m or g for a multiple
+# of 1024.
+_GIT_INTEGER: Final[re.Pattern[str]] = re.compile(r"([-+]?)(0x[0-9a-f]+|\d+)[kmg]?")
+
+
+def _git_flag_is_set(name: str) -> bool:
+    """Return True unless git would read the environment variable as false.
+
+    git takes ``true``, ``yes``, ``on`` and any number other than zero as
+    true, and ``false``, ``no``, ``off``, zero and an empty value as false. On
+    any other value git stops with an error. That reads as true here: the
+    search for a checkout then stops nowhere git might have gone on, and the
+    git command the caller runs reports the error itself.
+    """
+    value = os.environ.get(name, "").lower()
+    if value in {"", "false", "no", "off"}:
+        return False
+    number = _GIT_INTEGER.fullmatch(value)
+    if number is None:
+        return True
+    digits = number.group(2)
+    base = 16 if digits.startswith("0x") else 8 if digits.startswith("0") else 10
+    try:
+        return int(digits, base) != 0
+    except ValueError:
+        return True
+
+
+def _git_reads_as_full_path(entry: str) -> bool:
+    """Return True when git takes *entry* as a full path.
+
+    Elsewhere than Windows that is a path that starts with ``/``. Git for
+    Windows also takes a path that starts with a separator and has no drive
+    letter, and one that starts with a drive letter and a colon.
+    """
+    if os.name != "nt":
+        return entry.startswith("/")
+    return entry[:1] in ("\\", "/") or (entry[:1].isalpha() and entry[1:2] == ":")
+
+
+def _ceiling_folders(start: Path) -> tuple[frozenset[str], frozenset[str]]:
+    """Return the folders ``GIT_CEILING_DIRECTORIES`` names, as git reads them.
+
+    *start* is the folder git would run in, as it is named: its full path
+    with links and mapped drive letters left as they are. git ignores an entry
+    that is not a full path. Up to the first empty entry it resolves each
+    entry (links, ``..``, a missing drive letter) and drops one it cannot
+    resolve; those come back first, in the platform's case form. A Windows
+    entry with no drive letter is read on the drive of *start*, which is
+    git's current folder: not on the drive this process happens to be on, and
+    not on the drive a mapped letter resolves to. After an
+    empty entry git compares each entry as it is written, with forward
+    slashes, against its own current folder; those come back second, without
+    the one slash git lets such an entry end with (an entry that ends with
+    two never matches a folder, for git as here).
+    """
+    resolved: set[str] = set()
+    as_written: set[str] = set()
+    resolve = True
+    for entry in os.environ.get("GIT_CEILING_DIRECTORIES", "").split(os.pathsep):
+        if not entry:
+            resolve = False
+        elif not _git_reads_as_full_path(entry):
+            continue
+        elif not resolve:
+            ends_with_slash = entry.endswith("/") and len(entry) > 1
+            as_written.add(entry[:-1] if ends_with_slash else entry)
+        else:
+            try:
+                real = str(Path(_on_drive_of(start, entry)).resolve(strict=True))
+            except OSError:
+                continue
+            resolved.add(os.path.normcase(_without_long_path_prefix(real)))
+    return frozenset(resolved), frozenset(as_written)
+
+
+def _on_drive_of(start: Path, entry: str) -> str:
+    r"""Return a Windows path that has no drive letter with the drive of *start*.
+
+    ``\work\projects`` names a folder on the current drive, and for git that
+    is the drive of the folder it runs in. A path that names its own drive or
+    server (``C:\work``, ``\\server\share``), and any path elsewhere than
+    Windows, comes back unchanged.
+    """
+    if os.name != "nt":
+        return entry
+    rooted = entry[:1] in ("\\", "/") and entry[1:2] not in ("\\", "/")
+    return start.drive + entry if rooted else entry
+
+
+def _without_long_path_prefix(path: str) -> str:
+    r"""Return a Windows path without its ``\\?\`` long-path prefix.
+
+    ``\\?\C:\work`` names ``C:\work`` and ``\\?\UNC\server\share`` names
+    ``\\server\share``. Git for Windows drops the prefix from a ceiling entry
+    before it compares. Elsewhere the path comes back unchanged.
+    """
+    if os.name != "nt":
+        return path
+    if path.startswith("\\\\?\\UNC\\"):
+        return "\\\\" + path[8:]
+    if path.startswith("\\\\?\\"):
+        return path[4:]
+    return path
+
+
+def checkout_search_folders(directory: Path) -> Iterator[Path]:
+    """Yield ``directory`` and the folders above it that git would search.
+
+    These are the folders git looks in for a repository when it runs in
+    ``directory``, nearest first, with links resolved as in git's own current
+    folder. The walk stops where git's search stops: below a folder that
+    ``GIT_CEILING_DIRECTORIES`` names, and, outside Windows, at a folder on
+    another file system unless ``GIT_DISCOVERY_ACROSS_FILESYSTEM`` is set.
+    """
+    start = directory.resolve()
+    # The drive of a ceiling entry with no drive letter is the drive git runs
+    # on: the folder as it is named, not as it resolves. A mapped drive letter
+    # (``subst V:``) resolves to the folder behind it on another drive.
+    resolved, as_written = _ceiling_folders(directory.absolute())
+    one_file_system = _STOPS_AT_FILE_SYSTEM and not _git_flag_is_set(
+        "GIT_DISCOVERY_ACROSS_FILESYSTEM"
+    )
+    device = _device(start) if one_file_system else None
+    yield start
+    for folder in start.parents:
+        if os.path.normcase(str(folder)) in resolved or folder.as_posix() in as_written:
+            return
+        if device is not None and _device(folder) != device:
+            return
+        yield folder
+
+
+def in_checkout(directory: Path) -> bool:
+    """Return True iff ``directory`` or a folder above it holds a ``.git`` entry.
+
+    The walk covers :func:`checkout_search_folders`, the folders git searches
+    for a repository when it runs in ``directory``, so a git command that
+    fails there failed inside a checkout and its data was not read, also when
+    ``directory`` is a subfolder of the checkout. A folder with no repository
+    of its own, mounted below one, is outside a checkout here as it is for
+    git. Differences from git remain, among them: a ``.git`` folder that
+    holds no repository counts here, while git looks past it; and ``GIT_DIR``
+    or ``GIT_WORK_TREE`` in the environment, which tell git where the
+    repository is, are not read.
+    """
+    return any(has_git_entry(folder) for folder in checkout_search_folders(directory))
 
 
 def iter_tree_files(

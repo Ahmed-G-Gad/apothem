@@ -66,10 +66,13 @@ git starts in a submodule:
 - no hooks, no pager, and no automatic maintenance;
 - no external diff or text-conversion program, and submodule changes shown as
   commit ids only, so git starts no second git inside a submodule;
-- no diff order file (`diff.orderFile`), excludes file (`core.excludesFile`)
-  or mailmap file read;
 - file contents read with `git cat-file blob`, which refuses a submodule entry
   where `git show` would show it as a commit.
+
+Three settings name a file for git to read, not a program, and that file can
+sit on a network path. The gate's command line keeps git from reading them
+too: the diff order file (`diff.orderFile`), the excludes file
+(`core.excludesFile`) and the mailmap file.
 
 It also sets `GIT_NO_LAZY_FETCH=1` and an empty `GIT_ALLOW_PROTOCOL`, so git
 never fetches a missing object of a partial clone through an address the
@@ -86,11 +89,13 @@ still make git read a path somewhere else through any setting or file that
 names one, for example `include.path` or `includeIf`, `core.worktree`, the
 `gitdir:` line of a `.git` file, or `.git/objects/info/alternates`; on
 Windows, a network path there (`\\server\share`) makes Windows connect to that
-server and sign you in. And the list covers the settings known today; a later
-git release can add a new one. Your own global and system git settings still apply, except the ones
-above, which the gate's command line overrides. This covers git only:
-`python -m` reads Python modules from the current folder first, so start the
-gate from a folder you trust.
+server and sign you in. One case is narrower: Git for Windows 2.55 refuses a
+network path in a `gitdir:` line before it connects, unless your own
+`safe.directory` setting allows that path. And the list covers the settings
+known today; a later git release can add a new one. Your own global and system
+git settings still apply, except the ones above, which the gate's command line
+overrides. This covers git only: `python -m` reads Python modules from the
+current folder first, so start the gate from a folder you trust.
 
 Exit codes: `0` clean (or advisory), `2` a strict findings-block, `3` a
 usage error: an unknown flag or validator name, a file that does not exist, or a
@@ -161,12 +166,68 @@ and reported with `passed: false` and a `check_error` that says it did not
 finish. On Linux and macOS each validator runs in a session of its own, and a
 `SIGTERM` or `SIGHUP` to the gate, such as from `timeout` or a closed terminal,
 stops the validator's programs before the gate exits with code 128 plus the
-signal's number. A `SIGKILL`, which no program can catch, ends only the gate
-there: a validator it started runs on until it finishes, and a `git` command
-that validator waits on still stops at its own limit. On Windows each validator
-runs in a job object, which also ends its programs when the gate itself ends.
-Ctrl+C prints one line and exits `130`. The limits add up: a run in which
-several validators wait takes the sum of their limits.
+signal's number. That holds too for one that arrives while the gate starts or
+stops a validator: it waits until that step is done, and the exit code stays
+128 plus its number even when a Ctrl+C follows during that step. A `SIGKILL`,
+which no program can catch, ends only the gate there: a validator it started
+runs on
+until it finishes, and a `git` command that validator waits on still stops at
+its own limit. On Windows each validator runs in a job object, which also ends
+its programs when the gate itself ends.
+Each program the gate starts there waits, suspended, until it is in the job
+object. A program it cannot resume is stopped, and the error says whether it
+is in the job object. A program that something else told to end before it was
+resumed never ran, and fails the same way, whatever its exit code, with two
+exceptions. One ended with exit code 259, the code Windows also gives a
+running program, reads as running while Windows is still ending it. One ended
+just before the resume is caught only when the gate reads its exit code within
+1 ms of the resume; a later read, for example on a busy machine or while other
+threads in the calling process are busy, takes its exit code as the program's
+own. On the machine it was
+measured on, the smallest program Windows can run lived at least 3 ms past
+its resume, and `git` 27 ms, so a program that ran is not taken for one that
+was ended. One ended just after
+the resume cannot be told apart from one that ran either. On
+every platform, in the gate's own run, a Ctrl+C that arrives during the start
+waits until the program runs (on Windows, until the gate has tried to resume
+it), so no program is left suspended or running past its limit. A second
+Ctrl+C that arrives while the gate stops a program waits until the stop is
+done. One that arrives just before the stop begins makes the gate try the
+stop again, up to three times. When those tries fail, or a Ctrl+C lands
+between two of them, the gate stops the program without holding signals
+back, again up to three times, so one more Ctrl+C does not skip the stop. It
+takes several Ctrl+C presses, each within microseconds of one of these
+points, to leave the program running. After a stop the gate waits up to half
+a second for the stopped program to end, so on Linux and macOS it does not
+linger as a defunct process, and a Ctrl+C during that wait does not replace a
+termination already under way. A handler the calling process set for another
+signal can still leave the program running (on Windows, suspended), when its
+error lands in the few microseconds after the program starts, before the gate
+records it. When the gate changes
+its own signal handlers, a signal that
+arrives mid-change does not leave a handler changed. On Linux and macOS the
+gate blocks Ctrl+C, `SIGTERM` and `SIGHUP`, and no other signal, for the few
+microseconds the change takes, so such a signal waits until the change is
+done and meets the handlers that are then in place. The gate then unblocks
+only the signals it blocked. For any other signal, on Windows, and for a
+signal that arrived just before the block, a change the signal stopped is
+made again, up to three times. When putting its handlers back fails at
+every try, the gate makes one last try for each handler left. A handler stays
+changed when an error stops that last try too, such as a `TimeoutError` from
+a timer the calling process set that fires each time, and in rare cases when
+several signals whose handlers raise arrive back to back, within
+microseconds, and skip the last try. An error that
+comes back at every try, such as a `RecursionError` near Python's recursion
+limit, ends the change within two tries and goes on. The gate puts its
+handlers back with calls no deeper than the ones that changed them, so near
+that limit it does not leave Ctrl+C ignored. A `SIGTERM` handler that the
+calling process sets during a run stays in place. On Linux and macOS, in a
+Python subinterpreter, where no signal handler may be set, the gate runs its
+programs without changing handlers; on Windows, Python cannot read a
+program's output from an isolated subinterpreter, which allows no daemon
+threads. Ctrl+C prints one line and exits
+`130`. The limits add up: a run in
+which several validators wait takes the sum of their limits.
 
 Five validators also give each `git` command they run a time limit of its own.
 The limits hold on every platform, including on Windows when `git` on `PATH`
@@ -174,6 +235,7 @@ is the launcher that Git for Windows installs, which starts the real git:
 
 ```text
 conventional-commit-grep            git log -1, git rev-parse           1 minute
+                                    git ls-files, git config            1 minute
 agents-md-coverage-grep             git rev-parse, git config           1 minute
                                     git log over the whole history      5 minutes
 no-global-plans-grep                git ls-files                        1 minute
@@ -193,25 +255,93 @@ when it cannot open or read a repository. A folder whose `.git` entry git
 cannot open counts as such a checkout, because the history the checks need may
 be there unread: an empty `.git` folder outside any other checkout, or a
 `.git` file that names a folder that no longer exists, as an unpacked worktree
-or a copied submodule leaves behind. Remove that entry, or run the gate on a full checkout. That holds for
-the stale-companion check too, although its findings are otherwise advisory,
-and the commit-subject check then also reports `inspected: 0` with
-`empty_scope_expected: false`. The stale-companion check reads the whole history
-once, and that read gets 5 minutes, so a large history is slow rather than a
-failure; a history that takes longer to read fails the check. A plain folder
-that is not inside any git checkout, a repository with no commit yet, or a
-machine without `git` still passes these checks as before. So does a partial
-clone, one made with `git clone --filter`: the gate does not let `git` fetch
-what the clone left out, and git gives no answer that tells an object the
-clone left out from one that was lost. So in a partial clone the
-stale-companion check counts any failed history read as history that is not
-available: it skips its freshness test and passes, as it does with no history. These exemptions, and the `check_error` for a checkout git refuses,
-are for the other four validators: `no-global-plans-grep` needs a checkout git
-can read, so outside one, on a machine without `git`, or in a checkout git
-refuses, it fails as before, with
-the reason on standard error: git's exit code, not git's own text. As with any
-result that does not pass, the advisory default reports it and exits `0`, and
-`--strict` exits `2`.
+or a copied submodule leaves behind. Remove that entry, or run the gate on a
+full checkout. That holds for the stale-companion check too, although its
+findings are otherwise advisory, and the commit-subject check then also
+reports `inspected: 0` with `empty_scope_expected: false`. On Windows, a `git`
+that the gate started but could not resume is a failed `git` too: the
+`check_error` gives exit code 128, and it never counts as a missing `git`. The
+stale-companion check reads the whole history once, and that read gets 5
+minutes, so a large history is slow rather than a failure; a history that
+takes longer to read fails the check. A plain folder that is not inside any
+git checkout, a repository with no commit yet, or a machine without `git`
+still passes these checks as before. So does a partial clone, one made with
+`git clone --filter`: the gate does not let `git` fetch what the clone left
+out, and git gives no answer that tells an object the clone left out from one
+that was lost. So in a partial clone the stale-companion check counts any
+failed history read as history that is not available: it skips its freshness
+test and passes, as it does with no history. These exemptions, and the
+`check_error` for a checkout git refuses, are for the other four validators:
+`no-global-plans-grep` needs a checkout git can read, so outside one, on a
+machine without `git`, or in a checkout git refuses, it fails as before, with
+the reason on standard error: git's exit code, not git's own text. As with any result that does not pass, the
+advisory default reports it and exits `0`, and `--strict` exits `2`.
+
+For the two `--staged` checks, a value git cannot read for a diff setting,
+such as `diff.renameLimit = abc`, is one such bad line: `git diff` fails, and a
+change set that was not read is not an empty one. These two checks, the
+commit-subject check and the stale-companion check look for the checkout in
+the folder they run in and in the folders above it, so the same holds in a
+subfolder of the checkout. They stop looking where git stops: at a folder
+named in `GIT_CEILING_DIRECTORIES` and, outside Windows, at a folder on
+another file system, unless `GIT_DISCOVERY_ACROSS_FILESYSTEM` is set. A
+folder with no repository of its own, mounted below one, therefore still
+passes. The commit-subject check run on a subfolder of a checkout checks the
+checkout's latest commit when the checkout tracks a file in that subfolder,
+or has one staged there. Where the checkout ignores case, as on Windows and
+macOS, that holds for a subfolder whose name was changed on disk only in upper
+or lower case too. A folder the checkout does not track, untracked or
+ignored, has no history of its own and passes, such as a new project inside a
+home-folder dotfiles repository. An empty `.git` folder above the folder it
+runs in, with no repository further up, makes git fail, and the check reports
+`git-failed`.
+
+Both `--staged` checks read the staged names from the top of the work tree,
+whatever your own `diff.relative` setting is, so a subfolder setting never
+hides a staged file.
+
+`semver-stability-grep --staged` looks for the package in the folder it runs
+in and then in the folders above it, up to the nearest folder that holds a
+repository or where git stops looking, and runs git in the folder that holds
+the package, so a run from a subfolder checks the same change set. It reads
+the version file from that folder too, so a package below the top of the
+repository is checked. When a `.git` file that git refuses lies between the
+folder it runs in and the package, git runs in the folder it runs in
+instead, stops at that file, and the check reports a `check_error`. git
+refuses a `.git` file that names no repository, that is larger than 1 MiB, or
+that does not hold `gitdir:`, one space and a path, with only line endings
+after it. On Windows the check also refuses a `.git` file that names a network,
+device or NT path (`\\host\share`, `\\?\`, `\??\`), and it does not look that
+path up itself. It also refuses a path Git for Windows refuses: a name that
+ends in a dot or a space or is a device name such as `aux.d`, `lpt0` or
+`CONIN$` (but not `com0`, which Git for Windows accepts), or a `:` after the
+drive. It reads a byte in the path that is not UTF-8 as Git for
+Windows does: from `0xA0` up as that character and below it as two hex digits,
+so `0x9F` reads `9f`. The nearest folder that holds `src/apothem/__init__.py`
+is the one checked; it does not read `GIT_WORK_TREE`. A project without the
+package has nothing to check there: it passes without running git, whatever
+state its repository is in.
+
+The gate reads each list of path names from git byte for byte, so a name that
+holds a line break, a carriage return or a byte that is not UTF-8 names the
+same file to every check. One case cannot be read: Windows cannot hand git a
+name that is not UTF-8, which only an index made on another system can hold.
+`semver-stability-grep --staged` then reports a `check_error` for the change
+set; it does not skip that file. The history read of the stale-companion check
+is the exception to the first sentence: there git prints a name with a control
+character in its quoted form, and a byte that is not UTF-8 reads as the
+replacement character, so that check cannot match a folder with such a name.
+
+The stale-companion check treats only the `AGENTS.md` at the top of the
+repository as the canon. When you run it on a subfolder that has a README of
+its own, that subfolder's `AGENTS.md` is a per-folder companion. When the
+subfolder is the top of a repository of its own, such as a submodule or a
+nested clone, its `AGENTS.md` is that repository's canon instead. A run on the
+whole repository skips some subfolders, such as test fixtures and nested
+repositories, that a run on the subfolder itself checks. A subfolder without a
+README is not checked as a folder of its own this way; run the check on a
+folder above it. A companion that was deleted in a commit and written again
+counts as new until you commit it.
 
 Six validators start at the repository root and search the whole tree for the
 files they check:
@@ -263,9 +393,11 @@ by reason:
 - `submodule`: the entry of a submodule;
 - `not_regular_file`: anything else that is not a regular file, such as a
   folder, a named pipe or a device, where a read would wait or never end;
-- `missing`: a tracked file that is not in the working tree, including a name
-  git listed in bytes that are not UTF-8, and on Windows a path longer than
-  the system allows when long paths are not turned on;
+- `missing`: a tracked file that is not in the working tree; on Windows this
+  includes a name git listed in bytes that are not UTF-8, which only an index
+  made on another system holds (Git for Windows writes such a file under
+  another name, so its content is not checked), and a path longer than the
+  system allows when long paths are not turned on;
 - `unreadable`: a file, or a folder on the way to it, that the system will not
   let the gate look at, open or read: for lack of permission, because another
   program holds the file or part of it, or because the system cannot open it,

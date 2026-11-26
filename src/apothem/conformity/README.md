@@ -149,15 +149,36 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   program for git to start (`core.fsmonitor`, a signature program, a second git
   in a submodule, a lazy-fetch transport). `run_git` in `_git.py` turns those
   settings off on git's command line, blocks fetching, and starts git only from
-  a full-path `PATH` entry. A matcher starts no program itself: no
-  `subprocess`, `os.system`, `os.popen`, `os.exec*` or `os.spawn*` call, no
-  `which`, no `git_argv` and no string naming the git program outside `_git.py`.
-  `_bounded_run.py` is the one module that starts a program: `run_git` starts
-  git through its `run_bounded`, and gate.py's validator launcher starts Python
-  through it; `test_no_conformity_module_starts_a_program_itself` checks those
-  forms, and holds `_bounded_run.py` to the rest: it names no git and finds no
-  program. It reads file contents with `git cat-file blob`, never `git show`, which would
-  show a submodule entry as a commit, and reads a path list with `-z`.
+  a full-path `PATH` entry. A matcher starts no program itself and names no
+  git program. `_bounded_run.py` is the one module that starts a program:
+  `run_git` starts git through its `run_bounded`, and gate.py's validator
+  launcher (`_run_standalone`) starts Python through it. No other code calls
+  `run_bounded`: it starts whatever it is given, with none of `run_git`'s
+  options.
+  `test_no_conformity_module_starts_a_program_itself` is a tripwire for this
+  rule, not a proof of it. It reads each module's source and fails on the forms
+  it knows, among them: a use of `subprocess` beyond its exception and result
+  types, also under an `import ... as` name or through another module; the
+  `os` functions that start a program; `which`, `find_git`, `git_argv`, and
+  `run_bounded` outside its two callers; an import of `ctypes`, `_winapi`,
+  `multiprocessing` or `pty`; `exec`, `eval` and the import-by-name calls; and
+  a string naming the git program. It holds only this folder's own `_git.py`,
+  `_bounded_run.py` and `_corpus.py`, by path, to rules of their own: in
+  `_git.py` it checks that `run_git` alone calls `run_bounded`,
+  `_bounded_run.py` must name no git and look no program up, and `_corpus.py`,
+  which opens files on Windows, may import `_winapi` and `ctypes` but call only
+  the few functions that open a file and read what it is. Code that reaches a starter some
+  way the test does not know can still pass it: source text run through
+  `runpy`, `timeit` or a profiler, an attribute fetched through `builtins`,
+  `inspect` or `operator`, a `sys.modules` lookup by a computed name. So
+  review a new matcher against the rule as well.
+  `run_git` reads file contents with `git cat-file blob`, never `git show`,
+  which would show a submodule entry as a commit. Read a path list with `-z`
+  and `file_names=True`, and split it with `split_names`: read as text, a
+  carriage return in a name becomes a line feed and a byte that is not UTF-8
+  becomes U+FFFD, and the changed name matches no file. Before a name from
+  such a list goes back to git as an argument, ask `reaches_git_unchanged`,
+  and report a name that fails it with `GitNameError`; never skip it.
   `tests/conformity/test_project_git_settings.py` plants each setting and drives
   every git-reading path, so a new one belongs in its `_drive_every_gate_git_call`.
 - **No vacuous pass.** A corpus walker's report carries `inspected` (how many
@@ -205,8 +226,12 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   such as the real git behind Git's launcher. Turn `subprocess.TimeoutExpired`
   into `GitTimeoutError`, and a git
   failure in a checkout the walker found into `GitFailedError`, both from
-  `_grep_base.py`; their messages name the command in fixed words and never
-  repeat git's own output. A corpus walker hands that message to
+  `_grep_base.py`. `in_checkout` there says whether a folder is inside a
+  checkout: it looks for a `.git` entry in the folder and in the folders above
+  it, so a failure in a subfolder counts too, and it stops where git stops
+  looking (a `GIT_CEILING_DIRECTORIES` folder, or another file system outside
+  Windows). The messages name the command in fixed words and never repeat
+  git's own output. A corpus walker hands that message to
   `finish_root_report(check_error=...)`, which stamps `check_error` and exits
   `2`, advisory or not. A timeout or a refused checkout is not an exempt state
   (a missing repository, a repository with no commit, a host without git, or a

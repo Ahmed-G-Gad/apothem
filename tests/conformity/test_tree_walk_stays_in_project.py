@@ -976,7 +976,7 @@ def test_the_plans_command_gives_its_report_for_a_linked_git(
 def test_the_coverage_history_refuses_a_linked_git(tmp_path: Path) -> None:
     root = _project_with_linked_git(tmp_path)
     start_skip_log(root)
-    assert agents_md_coverage_grep._last_commit_times(root) is None
+    assert agents_md_coverage_grep._read_history(root) is None
     assert take_skipped_paths() == [".git"]
 
 
