@@ -289,9 +289,8 @@ in `no-global-plans-grep`, whose report then carries the same `check_error`
 and fails; when git itself fails there, its message gives git's exit code,
 not git's own text. A repository whose own settings make git wait, such as
 an `include.path` that points at a named pipe, holds up each of these calls
-for that long at most. On Windows, when the `git` found first is the launcher
-in Git's `cmd` folder, the limit stops the launcher but not the git it
-started, and the gate waits for that git, so such a wait may never end. A
+for that long at most, on Windows too, where the limit also stops the git
+that Git's launcher started. A
 `--all-perwrite` run that read no file does not pass: it reports
 `files_scanned: 0` with `empty_scope_expected: false`. When the list of tracked
 files cannot be read, `check_error` gives a fixed reason: git did not start,
