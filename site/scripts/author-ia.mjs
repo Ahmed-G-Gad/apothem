@@ -17,6 +17,7 @@
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { HIDDEN_ROOT_PAGES } from '../lib/hidden-pages.mjs';
 
 // Anchor to the script's own location, not the caller's cwd, so the generator
 // resolves the docs tree identically regardless of the directory it is invoked
@@ -80,11 +81,9 @@ const rootPages = [
   'community',
   'brand',
 ];
-// Root pages that exist but are left out of the sidebar on purpose. The root
-// meta has no rest glob, so a key missing from `rootPages` is not shown. The
-// 404 page is the not-found fallback: the sitemap and llms.txt leave it out
-// too, and a "Page not found" sidebar entry would lead readers to an error.
-const HIDDEN_ROOT_PAGES = ['404'];
+// Root pages that exist but are left out of the sidebar on purpose come from
+// lib/hidden-pages.mjs, the list the docs routes read too. The root meta has
+// no rest glob, so a key missing from `rootPages` is not shown.
 const rootMeta =
   JSON.stringify({ title: 'Documentation', pages: rootPages }, null, 2) + '\n';
 
@@ -370,7 +369,10 @@ if (CHECK_ONLY) {
   const stale = metaFiles
     .filter(([rel, content]) => {
       try {
-        return readFileSync(join(DST_ROOT, rel), 'utf8').replace(/\r\n/g, '\n') !== content;
+        // Line endings and a byte-order mark are not differences: write mode
+        // reads through both (see readJson).
+        const onDisk = readFileSync(join(DST_ROOT, rel), 'utf8');
+        return onDisk.replace(/^﻿/, '').replace(/\r\n/g, '\n') !== content;
       } catch {
         return true;
       }

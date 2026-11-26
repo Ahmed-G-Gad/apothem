@@ -15,6 +15,19 @@ test('a folder holding only its index page becomes that page', () => {
   assert.deepEqual(flattenIndexOnlyFolders(root).children, [index]);
 });
 
+test('the flattened link keeps the section title and icon', () => {
+  const index = { ...item('Page title', '/docs/conformity-gate'), icon: 'page-icon' };
+  const root = {
+    name: 'Docs',
+    children: [{ type: 'folder', name: 'Section title', icon: 'section-icon', index, children: [] }],
+  };
+  assert.deepEqual(flattenIndexOnlyFolders(root).children, [
+    { type: 'page', name: 'Section title', url: '/docs/conformity-gate', icon: 'section-icon' },
+  ]);
+  const noIcon = { name: 'Docs', children: [{ type: 'folder', name: 'S', index, children: [] }] };
+  assert.equal(flattenIndexOnlyFolders(noIcon).children[0].icon, 'page-icon');
+});
+
 test('folders with pages, and folders without an index, are kept', () => {
   const index = item('Blog', '/docs/blog');
   const post = item('Post', '/docs/blog/posts/a');

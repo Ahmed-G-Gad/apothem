@@ -34,6 +34,9 @@ derive from it rather than re-declaring it.
   the page; it also holds the light and dark `--background`, `--foreground`,
   `--primary` and `--ring` variables to the `assets/design-tokens.css` steps
   they mirror (run by `npm test`).
+- **`hidden-pages.mjs`** — the root docs pages left out of the sidebar on
+  purpose (the 404 page). `scripts/author-ia.mjs` keeps them out of the root
+  `meta.json`, and `page-tree.ts` turns their previous/next footer off.
 - **`page-tree.ts`** — the sidebar page-tree clean-up the content loader in
   `source.ts` applies: a section whose only page is its overview shows as one
   plain link instead of a folder with an empty list. Its `node --test` check is
