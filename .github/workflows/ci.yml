@@ -163,6 +163,20 @@ jobs:
           src/apothem/cli src/apothem/harnesses/_shared
       - name: Ruff (format check)
         run: python -m ruff format --check .
+      - name: Check no released CHANGELOG section changed
+        # A release renames [Unreleased] to [x.y.z]. A branch cut before the
+        # release can then merge the release in with no conflict and leave
+        # its entry inside the released section; after v1.6.0 five open pull
+        # requests would have edited the 1.6.0 notes this way. HEAD^1 is the
+        # base branch commit of a pull request's merge, or the commit before a
+        # push to main. It runs in one required cell so a finding blocks the
+        # merge. A 'Changelog-Released-Edit: <version> <reason>' commit
+        # trailer allows a deliberate edit of that version's notes.
+        if: runner.os == 'Linux' && matrix.python-version == '3.12'
+        shell: bash
+        run: |
+          git fetch --quiet --no-tags --unshallow origin
+          python scripts/dev/check_changelog_released_sections.py --base HEAD^1
       - name: Mypy (type check)
         run: python -m mypy
       - name: Start node once
@@ -651,17 +665,6 @@ jobs:
         # [Unreleased] still compared from v1.0.2, so the docs site rendered a
         # literal "[1.1.0]" and readers diffed the wrong range.
         run: python scripts/dev/check_changelog_links.py
-      - name: Check no released CHANGELOG section changed
-        # A release renames [Unreleased] to [x.y.z]. A branch cut before the
-        # release adds its entry right below that heading, so merging the
-        # release in applies the entry without a conflict, inside the released
-        # section. After v1.6.0 five open pull requests would have edited the
-        # 1.6.0 notes this way. A deliberate edit passes with a
-        # 'Changelog-Released-Edit: <reason>' commit trailer.
-        if: github.event_name == 'pull_request'
-        env:
-          BASE_REF: ${{ github.base_ref }}
-        run: python scripts/dev/check_changelog_released_sections.py --base "origin/$BASE_REF"
       - name: Check the plugin version changed with the plugin
         # A pinned plugin version keeps every Claude Code user on the cached
         # copy until the string changes. After v1.1.0 the package moved to

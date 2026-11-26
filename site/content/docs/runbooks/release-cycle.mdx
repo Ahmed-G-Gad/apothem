@@ -628,14 +628,17 @@ A CHANGELOG section that survived the maintainer's review reads as
 the release-notes anchor for the announcement narrative.
 
 After the release merges, the version's section is closed. A branch cut
-before the release still has its entry right below the old `[Unreleased]`
-heading, and merging the release into that branch moves the entry into
-the released section without a conflict. Each such branch needs its entry
-moved back under `[Unreleased]` by hand after the merge. CI's
-`check_changelog_released_sections.py` step fails a pull request that
-changes any released section and names it. A deliberate correction to
-released notes passes when a commit carries the trailer
-`Changelog-Released-Edit: <reason>`.
+before the release can merge the release in without a conflict and leave
+its entry inside the released section, so move each such entry back under
+`[Unreleased]` by hand after the merge. The `quality / ubuntu-latest /
+py3.12` check runs `check_changelog_released_sections.py`, which fails a
+pull request that changes a released section and names it. CI does not run
+again on a pull request when main moves, so after a release, merge main
+into each open pull request (or re-run its checks) before it merges; the
+same check runs on every push to main and reports a section that changed
+there. A deliberate correction to released notes passes when a commit
+carries the trailer `Changelog-Released-Edit: <version> <reason>`, which
+allows that version's section only.
 
 ## 5. Install-path smoke
 

@@ -13,12 +13,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 - **CI fails a pull request that edits released release notes.** A release
   renames `[Unreleased]` in `CHANGELOG.md` to the new version. A branch cut
-  before the release added its entry right below that heading, so merging the
-  release into the branch moved the entry into the released section with no
-  conflict and no warning. The new `check_changelog_released_sections.py` step
-  compares every released section with the pull request's base branch and
-  names the section that changed. A commit trailer
-  `Changelog-Released-Edit: <reason>` allows a deliberate correction.
+  before the release could then merge the release in with no conflict and
+  leave its entry inside the released section. A new step in the required
+  `quality / ubuntu-latest / py3.12` check compares every released section
+  with the base branch and names the section that changed. A commit trailer
+  `Changelog-Released-Edit: <version> <reason>` allows a deliberate
+  correction to that version's notes only.
 
 ## [1.6.0] - 2026-11-26
 

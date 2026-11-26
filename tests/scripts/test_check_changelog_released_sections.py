@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -13,7 +15,9 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "scripts" / "dev"))
 
-import check_changelog_released_sections as check  # noqa: E402,I001
+import check_changelog_released_sections as check  # noqa: E402
+
+TRAILER_NAME = check.TRAILER
 
 
 BASE = """\
@@ -94,6 +98,31 @@ def test_a_long_diff_is_cut_short() -> None:
     assert "more diff lines" in problem
 
 
+def test_a_link_definition_line_inside_a_section_is_still_compared() -> None:
+    base = BASE.replace(
+        "- **Old fix.** Text.\n", "- **Old fix.** Text.\n\n[ref]: https://a.example\n"
+    )
+    head = base.replace("[ref]: https://a.example", "[ref]: https://b.example")
+    (problem,) = check.find_problems(base, head)
+    assert problem.startswith("[1.1.0]")
+
+
+def test_the_closing_link_block_is_left_out() -> None:
+    head = BASE.replace(
+        "[1.0.0]: https://example.com/releases/tag/v1.0.0\n",
+        "[1.0.0]: https://example.com/releases/tag/v1.0.0\n"
+        "[0.9.0]: https://example.com/releases/tag/v0.9.0\n",
+    )
+    assert check.find_problems(BASE, head) == []
+
+
+_CLEAN_ENV = {
+    k: v
+    for k, v in os.environ.items()
+    if not k.startswith("GIT_") or k in ("GIT_EXEC_PATH",)
+}
+
+
 def _git(repo: Path, *args: str) -> str:
     return subprocess.run(
         ["git", "-C", str(repo), *args],
@@ -101,17 +130,21 @@ def _git(repo: Path, *args: str) -> str:
         capture_output=True,
         text=True,
         encoding="utf-8",
+        env=_CLEAN_ENV,
     ).stdout
 
 
 @pytest.fixture
 def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    if shutil.which("git") is None:
+        pytest.skip("git is not installed")
     root = tmp_path / "repo"
     root.mkdir()
-    _git(root, "init", "-q", "-b", "main")
+    _git(root, "init", "-q")
     _git(root, "config", "user.name", "Test")
     _git(root, "config", "user.email", "test@example.com")
     _git(root, "config", "commit.gpgsign", "false")
+    _git(root, "config", "core.autocrlf", "false")
     (root / "CHANGELOG.md").write_text(BASE, encoding="utf-8", newline="\n")
     _git(root, "add", "CHANGELOG.md")
     _git(root, "commit", "-q", "-m", "base")
@@ -120,53 +153,111 @@ def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return root
 
 
-def _commit_edit(repo: Path, message: str) -> None:
+def _commit_edit(repo: Path, message: str, old: str = "- **Old fix.** Text.\n") -> None:
     path = repo / "CHANGELOG.md"
     text = path.read_text(encoding="utf-8")
     path.write_text(
-        text.replace("- **Old fix.** Text.\n", "- **Old fix.** Better text.\n"),
+        text.replace(old, old.replace("Text.", "Better text.")),
         encoding="utf-8",
         newline="\n",
     )
     _git(repo, "commit", "-q", "-am", message)
 
 
+def _run(repo: Path, base: str = "base") -> int:
+    return check.main(["--base", base, "--changelog", str(repo / "CHANGELOG.md")])
+
+
 def test_main_fails_on_a_released_edit(
     repo: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     _commit_edit(repo, "edit old notes")
-    rc = check.main(["--base", "base", "--changelog", str(repo / "CHANGELOG.md")])
-    assert rc == 1
+    assert _run(repo) == 1
     out = capsys.readouterr().out
     assert "[1.1.0]: the released section changed" in out
     assert check.TRAILER in out
 
 
-def test_main_passes_a_released_edit_with_the_trailer(
+def test_main_passes_a_released_edit_with_the_trailer_for_that_version(
     repo: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    _commit_edit(repo, f"edit old notes\n\n{check.TRAILER}: fix a wrong command")
-    rc = check.main(["--base", "base", "--changelog", str(repo / "CHANGELOG.md")])
-    assert rc == 0
-    assert "fix a wrong command" in capsys.readouterr().out
+    _commit_edit(repo, f"edit old notes\n\n{check.TRAILER}: 1.1.0 fix a wrong command")
+    assert _run(repo) == 0
+    out = capsys.readouterr().out
+    assert "allowed by" in out
+    assert "fix a wrong command" in out
+    assert "+- **Old fix.** Better text." in out
 
 
-def test_main_passes_when_nothing_released_changed(repo: Path) -> None:
-    rc = check.main(["--base", "base", "--changelog", str(repo / "CHANGELOG.md")])
-    assert rc == 0
+def test_a_trailer_for_another_version_does_not_allow_the_edit(repo: Path) -> None:
+    _commit_edit(repo, f"edit old notes\n\n{check.TRAILER}: 1.0.0 something else")
+    assert _run(repo) == 1
+
+
+def test_a_trailer_allows_only_its_own_version(repo: Path) -> None:
+    _commit_edit(repo, f"edit 1.1.0\n\n{check.TRAILER}: 1.1.0 fix")
+    _commit_edit(repo, "edit 1.0.0 too", old="- **First.** Text.\n")
+    assert _run(repo) == 1
+
+
+@pytest.mark.parametrize(
+    "trailer",
+    [
+        "Changelog-Released-Edits: 1.1.0 wrong key",
+        "Changelog-Edit: 1.1.0 wrong key",
+        f"{TRAILER_NAME}: no version given",
+    ],
+)
+def test_only_the_exact_trailer_with_a_version_counts(repo: Path, trailer: str) -> None:
+    _commit_edit(repo, f"edit old notes\n\n{trailer}")
+    assert _run(repo) == 1
+
+
+def test_a_trailer_older_than_the_base_does_not_count(repo: Path) -> None:
+    _commit_edit(repo, f"first edit\n\n{check.TRAILER}: 1.0.0 earlier fix")
+    _git(repo, "tag", "-f", "base")
+    _commit_edit(repo, "second edit", old="- **First.** Text.\n")
+    assert _run(repo) == 1
+
+
+def test_a_signature_line_is_not_read_as_a_trailer(repo: Path) -> None:
+    _git(repo, "config", "log.showSignature", "true")
+    _commit_edit(repo, "edit old notes")
+    assert _run(repo) == 1
+
+
+def test_main_passes_when_nothing_released_changed(
+    repo: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert _run(repo) == 0
+    assert "OK" in capsys.readouterr().out
 
 
 def test_main_reports_an_unknown_base(
     repo: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    rc = check.main(
-        ["--base", "no-such-ref", "--changelog", str(repo / "CHANGELOG.md")]
-    )
-    assert rc == 2
+    assert _run(repo, "no-such-ref") == 2
     assert "failed" in capsys.readouterr().err
 
 
-def test_the_repository_changelog_passes_against_itself() -> None:
+def test_main_reports_a_changelog_that_is_not_utf8(
+    repo: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    (repo / "CHANGELOG.md").write_bytes(b"## [1.1.0]\n\xff\xfe\n")
+    assert _run(repo) == 2
+    assert capsys.readouterr().err
+
+
+def test_git_location_variables_do_not_redirect_the_check(
+    repo: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("GIT_DIR", str(tmp_path / "elsewhere" / ".git"))
+    assert _run(repo) == 0
+
+
+def test_the_repository_changelog_has_released_sections() -> None:
     text = (REPO_ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+    sections = check.released_sections(text)
+    assert "1.5.0" in sections
+    assert all(lines[0].startswith(f"## [{v}]") for v, lines in sections.items())
     assert check.find_problems(text, text) == []
-    assert "1.5.0" in check.released_sections(text)
