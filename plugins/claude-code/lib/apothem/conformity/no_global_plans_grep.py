@@ -156,15 +156,16 @@ class GrepResult:
 def _git_ls_files(root: Path) -> list[str]:
     """Return the git-tracked file list under root.
 
-    Raises ``RuntimeError`` when ``git`` is unavailable or root is not
-    a git repository — both are operator errors the caller surfaces — and
+    Raises ``RuntimeError`` when ``git`` is unavailable or root is not a git
+    repository, both errors the caller surfaces, and
     :class:`~apothem.conformity._grep_base.GitTimeoutError` when git runs past
     :data:`GIT_LS_FILES_TIMEOUT_SECONDS` (the repository's own configuration
     can make git wait for ever), which the report carries as its
-    ``check_error``. git runs through :func:`run_git`, so the repository's own
-    settings cannot make it start a program. ``-z`` ends each name with NUL,
-    unquoted, and the output is read as file names, so a name comes back with
-    every byte it holds.
+    ``check_error``. A failure names git's exit code, not git's own text,
+    which can name files outside the project. git runs through
+    :func:`run_git`, so the repository's own settings cannot make it start a
+    program. ``-z`` ends each name with NUL, unquoted, and the output is read
+    as file names, so a name comes back with every byte it holds.
     """
     try:
         completed = run_git(
@@ -175,13 +176,16 @@ def _git_ls_files(root: Path) -> list[str]:
             file_names=True,
         )
     except FileNotFoundError as exc:
-        raise RuntimeError("git executable not found on PATH") from exc
+        raise RuntimeError(
+            "git not found in a full-path entry of PATH; relative and empty "
+            "entries are skipped"
+        ) from exc
     except subprocess.TimeoutExpired as exc:
         raise GitTimeoutError("git ls-files", GIT_LS_FILES_TIMEOUT_SECONDS) from exc
     except subprocess.CalledProcessError as exc:
-        stderr = (exc.stderr or "").strip()
         raise RuntimeError(
-            f"git ls-files failed under {root!s}: {stderr or 'no stderr'}"
+            f"git ls-files failed under {root!s} with exit code {exc.returncode}; "
+            "run it there to see why"
         ) from exc
     return split_names(completed.stdout)
 

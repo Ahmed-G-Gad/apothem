@@ -103,9 +103,8 @@ and reports `rollback.no_record`. [`apothem backups prune`](/docs/cli-reference/
 lowers that bound on demand, and never removes the backup the latest install
 restores from.
 
-Records written by an Apothem release before this behaviour was added do not
-list which files the install created; rolling back such a record restores the
-overwritten files only.
+An install record from an earlier release that does not mark which files the
+install created rolls back by restoring the overwritten files only.
 
 Confirmation is prompted per harness unless `--yes` is supplied. When no
 prompt is possible — `--format json` (prompt text would corrupt the single

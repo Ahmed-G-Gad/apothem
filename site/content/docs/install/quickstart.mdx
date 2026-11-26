@@ -77,11 +77,19 @@ Recommended first step — the guided setup (profile -> preview -> install):
 ```
 
 <Callout title="First run without a profile">
-  If you have no profile yet, the installer copies the example profile to
+  If you have no profile yet, the installer copies the example profile
+  (`src/apothem/schemas/profile.example.yaml` in the source tree) to
   `~/.config/apothem/profile.yaml` and carries on: it materializes your first
-  harness and verifies it in the same run. The example's identity fields are
-  placeholders, so the install prints a note. Make the profile yours in Step 2,
-  then apply it with `apothem update --harness <name>` as in Step 5.
+  harness and verifies it in the same run. The example is a sample, not a blank
+  profile. Its identity fields are placeholders, so the install prints a note,
+  and it also holds three sample rules, two sample MCP servers (`docs` at
+  `https://mcp.example.invalid/docs`, and a `filesystem` server started with
+  `npx`), per-harness overrides under `harnesses:`, and a list that leaves
+  `antigravity` and `open-claw` out of `--harness all`. A harness that takes
+  MCP servers from the profile, such as OpenCode or Qwen Code, gets both sample
+  servers in its own config. Make the profile yours in Step 2, removing what
+  you do not want, then apply it with `apothem update --harness <name>` as in
+  Step 5.
 </Callout>
 
 <Callout title="The `apothem` command">
@@ -118,7 +126,10 @@ apothem profile show --json
 The scaffold uses fake placeholder identity data and is safe to edit before you
 install any harness output. `show --json` reads it back and reports the
 validated profile with every default filled in, starting with `schema_version`.
-The command prints it on one line; it is expanded here:
+For the scaffold `profile init` writes, it prints the document below on one
+line; it is expanded here. If you kept the example profile the installer copied
+in Step 1, the output shows the example's values instead, its sample rules, MCP
+servers and per-harness overrides included.
 
 ```json
 {

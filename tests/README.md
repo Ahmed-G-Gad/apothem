@@ -24,7 +24,7 @@ The `apothem` test suite. `pytest` is the sole test framework; the configuration
 | `scripts/` | Tests for the executables under [`scripts/`](../scripts/) — the header injector, the installer invocation model, the release-notes extractor, the SBOM recipe, script-pair parity, the behavior-diff golden regenerator, and the validation tooling. |
 | `packaging/` | Release-artifact packaging tests — sdist + wheel payload contract, runtime tarball/zip build, examples validity. |
 | `commands/` | Slash-command behavior tests (e.g., `plan-spec-quick`). |
-| `property/` | Property-based tests (Hypothesis) over the invariants — frontmatter parsing, materialize round-trip, profile merge, path-safety, and operator settings entries surviving install, update, uninstall and rollback. |
+| `property/` | Property-based tests (Hypothesis) over the invariants — frontmatter parsing, materialize round-trip, profile merge, path-safety, and operator settings entries surviving install, update, uninstall and rollback. One more sits in `unit/`: `test_managed_block_properties.py` checks the managed-block merge and removal over generated documents, beside the managed-block scanner tests whose inputs it builds on. |
 | `fuzz/` | Atheris fuzz targets for the operator-file parsers (the JSONC / JSON5 reader, the hook-file merge, the profile loader, the install ledger, the frontmatter probe), their seed inputs, and `test_fuzz_seed_replay.py`, which replays every seed in the ordinary run. ClusterFuzzLite fuzzes them in CI (`.github/workflows/fuzzing.yml`); see [`fuzz/README.md`](fuzz/README.md). |
 | `conformity-scenarios/` | End-to-end multi-mandate fixture scenarios (`F-*`) driven by `verify.py` and gated in CI by `.github/workflows/conformity.yml` — not collected by the default `pytest` run (see Running). |
 | `fixtures/` | Shared cross-suite fixtures — the multi-surface-claims schema, the plans-discipline fixture, and the byte-golden `behavior-diff/` corpus — each with a paired schema/fixture test. |
@@ -39,6 +39,8 @@ pytest
 ```
 
 The configured `-n auto` parallelism is the default. On Python 3.14, the `pytest-xdist` worker capture interacts poorly with some output-capturing tests; run those with `pytest -n0 -s` to disable parallel workers and output capture when a 3.14 capture quirk surfaces.
+
+`pytest --shard=K/N`, an option `tests/conftest.py` adds, runs the K-th of N parts of the suite and deselects the rest. A hash of each test's node id picks its part, the same in every process, so the N parts cover every test once and the xdist workers of a run agree on them. The CI `coverage` check runs `--shard=1/2` and `--shard=2/2` on two runners and combines their coverage data. Write the option with `=`: given `--shard 1/2` and no test path, pytest takes `1/2` for a test path before it loads `tests/conftest.py`, and then stops at `--shard` as an unknown argument. For a narrow selection, such as one file or one test, a part can be empty, and pytest then exits 5, as it does when `-k` deselects everything. `unit/test_shard_option.py` checks the parts.
 
 The `conformity-scenarios/` subtree is **not** collected by `pytest` (it carries no `test_*.py` — only a `verify.py` runner plus `F-*` fixtures). It is gated in CI by `.github/workflows/conformity.yml`; run it locally with `python tests/conformity-scenarios/verify.py`.
 

@@ -4,7 +4,7 @@ description: "Apothem harness adapter for Antigravity (Preview)."
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**Vendor:** Antigravity
+**Vendor:** Google
 **Install name:** `antigravity`
 **Status:** Preview
 **Native config:** `~/.gemini/GEMINI.md` plus
@@ -26,7 +26,9 @@ the Antigravity CLI, App, and IDE, so all three load the plugin.
 `~/.gemini/config/plugins/apothem/rules/`,
 converted local helper definitions inside the plugin,
 `~/.gemini/config/plugins/apothem/.apothem/support/templates/`, and
-`~/.gemini/config/plugins/apothem/.apothem/support/hooks/`.
+`~/.gemini/config/plugins/apothem/.apothem/support/hooks/`. The install also
+creates the Apothem data folder, `~/.gemini/.apothem/` by default, with
+`contexts/`, `learning/`, `memory/` and `plans/` in it.
 
 The Apothem block in `~/.gemini/GEMINI.md` ends with an Apothem support files
 section that names the absolute directory each repository-style citation
@@ -74,9 +76,11 @@ Antigravity enforces a read-only limit, those helpers' descriptions drop the
 "read-only" label.
 
 **Shared user anchor.** `~/.gemini/GEMINI.md` is also the user-scope anchor for
-Gemini-family tooling. The Antigravity adapter keeps its extra Apothem material
-inside the `apothem` plugin under `~/.gemini/config/plugins/` so it does not
-claim generic Gemini CLI project directories. Because more than one
+Gemini-family tooling. The Antigravity adapter keeps its rules, skills, helper
+definitions, templates and hook files inside the `apothem` plugin under
+`~/.gemini/config/plugins/`, so it does not claim generic Gemini CLI project
+directories. The Apothem data folder sits outside the plugin, at
+`~/.gemini/.apothem/` by default. Because more than one
 tool loads `~/.gemini/GEMINI.md`, the Apothem block there is written as global
 guidance that names no single tool as its reader.
 
@@ -102,10 +106,16 @@ apothem verify --harness antigravity
 
 The verify command confirms that:
 
-1. The native context file exists at the expected path.
-2. The plugin manifest `plugin.json` exists, is non-empty, and parses as JSON.
+1. The native context file, `~/.gemini/GEMINI.md`, exists and is non-empty.
+2. Each managed target in the plugin folder is in place: the plugin manifest
+   `plugin.json` exists, is non-empty, and parses as JSON, and the plugin's
+   `skills/`, `rules/`, `agents/`, `.apothem/support/templates/` and
+   `.apothem/support/hooks/` folders exist. A missing folder fails the check.
    Verify does not check the plugin name; inspect that field yourself after
    changing it.
+
+Add `--profile PATH` to also confirm that the installed files match that
+profile.
 
 ## Updating
 
@@ -128,7 +138,9 @@ in it. The file is deleted only when nothing else remains in it. Also removes
 Apothem's keys from `plugin.json` in the plugin folder
 `~/.gemini/config/plugins/apothem/` and keeps yours, and removes the Apothem
 files in that folder's `skills/`, `rules/`, `agents/`, and `.apothem/support/`
-subfolders; other files there stay. Each file is backed up under
+subfolders; other files there stay. The `memory/`, `contexts/` and `learning/`
+stores in the data folder go too, unless another Apothem install still uses
+them. Each file is backed up under
 `~/.apothem/backups/` before it is changed or removed. The shared profile YAML
 and Apothem engine are unaffected.
 
@@ -144,6 +156,11 @@ it yourself once nothing uses the old path. An uninstall therefore removes the
 earlier folder and, from the current one, only the Apothem files described
 above. It prints each warning, and it reports a failure rather than success
 when removing the earlier folder fails.
+
+Every install, update and uninstall also backs up
+`~/.antigravity/profile.yaml` under `~/.apothem/backups/` and then removes it.
+No Apothem release writes that file, so move any file of your own there before
+you run one of these commands.
 
 Install, update and uninstall never touch `~/.gemini/antigravity/`, the data
 folder of the Antigravity App. (The CLI's is `~/.gemini/antigravity-cli/` and

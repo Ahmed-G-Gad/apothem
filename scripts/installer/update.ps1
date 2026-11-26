@@ -4,6 +4,10 @@
 #          installation) and re-materialize harness config (PowerShell
 #          parity to update.sh).
 # Usage:   pwsh -NoProfile -File scripts/installer/update.ps1
+# Contract: When the engine ends as partial (exit code 2: it left some
+#           files as they are, or it stopped after it had written some),
+#           the update still finishes, then ends with code 2 (see the
+#           end of this script).
 #
 # Trust model (tag-pinned, verified-by-default; PowerShell parity to
 # update.sh): with no APOTHEM_REF set, the updater resolves the latest
@@ -71,7 +75,27 @@
 
 #Requires -Version 5.1
 Set-StrictMode -Version Latest
+# A piped run (irm ... | iex) runs in the caller's scope: the caller's
+# $ErrorActionPreference is kept here and put back as the run ends, as the
+# native-command preference below is. Strict mode stays on in that session,
+# since PowerShell has no way to read the caller's setting.
+$SavedErrorPref = $ErrorActionPreference
 $ErrorActionPreference = 'Stop'
+# A caller's $PSNativeCommandUseErrorActionPreference = $true (PowerShell
+# 7.4+) would make any non-zero exit code of a program stop the run, the
+# engine's partial exit code 2 among them, so the run turns it off. A piped
+# run shares the caller's scope, so the caller's value is put back as the
+# run ends: by the finally block at the end, or by this trap when the run
+# stops on an error (before it takes the install lock, too). The trap's
+# own scope is a child of the run's, hence -Scope 1.
+$HadNativeErrorPref = Test-Path -LiteralPath 'Variable:PSNativeCommandUseErrorActionPreference'
+$SavedNativeErrorPref = if ($HadNativeErrorPref) { $PSNativeCommandUseErrorActionPreference } else { $null }
+$PSNativeCommandUseErrorActionPreference = $false
+trap {
+    Set-Variable -Name ErrorActionPreference -Value $SavedErrorPref -Scope 1
+    if ($HadNativeErrorPref) { Set-Variable -Name PSNativeCommandUseErrorActionPreference -Value $SavedNativeErrorPref -Scope 1 } else { Remove-Variable -Name PSNativeCommandUseErrorActionPreference -Scope 1 -ErrorAction SilentlyContinue }
+    break
+}
 
 $ApothemHome = if ($env:APOTHEM_HOME) { $env:APOTHEM_HOME } else { Join-Path $HOME '.apothem' }
 # A relative APOTHEM_HOME is resolved once, here, against the current
@@ -1789,10 +1813,22 @@ $PriorPyPath = $env:PYTHONPATH
 $PriorSafePath = $env:PYTHONSAFEPATH
 $env:PYTHONPATH = Get-SafePythonPath $EnginePyPath $PriorPyPath
 $env:PYTHONSAFEPATH = '1'
+$EngineCode = 0
 try {
     & $PY -c $EngineProgram update --harness $Harness --profile $ApothemProfile
-    if ($LASTEXITCODE -ne 0) { Write-Fail "Harness re-materialization failed for $Harness" }
-    Write-Ok "Harness $Harness updated"
+    # Exit code 2 means the engine ended as partial (mirrors install.ps1): it
+    # left some files as they are, or it stopped after it had written some,
+    # and its messages above say which. The update then finishes
+    # and the run ends with code 2 (see the end of this script). Any other
+    # non-zero code stops the run here.
+    $EngineCode = $LASTEXITCODE
+    if ($EngineCode -eq 2) {
+        Write-Warn "The engine ended as partial (exit code 2): its messages above name the files it left as they are, or the error that stopped it. Fix what they name, then run 'apothem update --harness $Harness' again."
+    } elseif ($EngineCode -ne 0) {
+        Write-Fail "Harness re-materialization failed for $Harness"
+    } else {
+        Write-Ok "Harness $Harness updated"
+    }
 }
 finally {
     $env:PYTHONPATH = $PriorPyPath
@@ -1801,8 +1837,10 @@ finally {
 
 Write-Bold "Update complete."
 } finally {
-    # The caller's git variables, and the encoding PowerShell read a
-    # program's output in, as they were before the run.
+    # The caller's git variables, the encoding PowerShell read a program's
+    # output in, and the caller's native-command and error preferences, as
+    # they were before the run (the error preference last).
+    if ($HadNativeErrorPref) { $PSNativeCommandUseErrorActionPreference = $SavedNativeErrorPref } else { Remove-Variable -Name PSNativeCommandUseErrorActionPreference -ErrorAction SilentlyContinue }
     foreach ($GitVar in @($SavedGitEnv.Keys)) {
         if ($null -eq $SavedGitEnv[$GitVar]) {
             Remove-Item -LiteralPath "Env:$GitVar" -ErrorAction SilentlyContinue
@@ -1811,6 +1849,18 @@ Write-Bold "Update complete."
         }
     }
     if ($SavedOutputEncoding) { try { [Console]::OutputEncoding = $SavedOutputEncoding } catch { $SavedOutputEncoding = $null } }
+    $ErrorActionPreference = $SavedErrorPref
+}
+
+# A partial engine run (exit code 2) ends the run with that code (mirrors
+# install.ps1). Run by path (pwsh -File, & .\update.ps1, update.bat), the
+# script exits with it. A piped run (irm ... | iex) has no $PSCommandPath,
+# and exit there would close the PowerShell session it runs in, so the run
+# leaves $LASTEXITCODE at 2 instead and the session open. Either way the
+# finally below still lets the install lock go.
+if ($EngineCode -eq 2) {
+    if ($PSCommandPath) { exit 2 }
+    $global:LASTEXITCODE = 2
 }
 } finally {
     Unlock-ApothemHome

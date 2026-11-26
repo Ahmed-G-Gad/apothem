@@ -30,13 +30,17 @@ fields the operator is expected to personalize — and validates it before
 reporting success:
 
 ```yaml
+# yaml-language-server: $schema=https://apothem.ahmedgad.com/schemas/profile.schema.json
+schema_version: 1
 identity:
-  name: "Example User"
-  email: "dev@example.invalid"
-  github: "example-user"
+  name: Example User
+  email: dev@example.invalid
+  github: example-user
 ```
 
-The command prints a personalize nudge naming these fields. If a
+The first line points editors with YAML support at the schema;
+`schema_version: 1` is the profile-schema version. The command prints a
+personalize nudge naming the identity fields. If a
 still-placeholder identity later reaches `install` or `update`, those commands
 print one advisory note and proceed — Apothem never fabricates or blocks on a
 placeholder identity.
@@ -45,6 +49,7 @@ placeholder identity.
 
 | Field | Required | Default | Notes |
 | --- | --- | --- | --- |
+| `schema_version` | No | read as `1` | Profile-schema version; `profile init` writes `1`. A version newer than the engine supports is rejected. |
 | `identity.name` | Yes | none | Non-empty operator display name. |
 | `identity.role` | No | `senior software engineer` | Shared role text. |
 | `identity.email` | No | omitted | Must be email-formatted when present. |
@@ -56,8 +61,13 @@ placeholder identity.
 | `preferences.test_framework` | No | omitted | Non-empty string when present. |
 | `rules` | No | `[]` | Unique non-empty strings; newlines normalize to LF. |
 | `seriousness` | No | `PERSONAL_USE` | One of `EXPLORING`, `PERSONAL_USE`, `SHARED`, `PUBLIC_LAUNCH`. |
+| `enforcement.*` | No | `false` each | Opt-in toggles: `sprints`, `agent_teams`, `multitasking`, `continuous_execution`, `learning_loop`. |
+| `mcp_servers` | No | `{}` | MCP servers keyed by server name. Each sets `transport` (`stdio`, `http`, `sse` or `streamable-http`): a `stdio` server needs `command`, the others need `url`. |
+| `agent_mcp_servers` | No | `{}` | Per helper, keyed by its name, the MCP servers it may call. Read by the Claude Code and Gemini CLI installs. |
 | `harnesses` | No | `{}` | Per-harness overrides keyed by supported harness ID. |
 | `exclude_harnesses` | No | `[]` | Supported harness IDs excluded from `--harness all`. |
+| `workspace.directory_name` | No | `.apothem` | Name of the shared working folder; one path component. |
+| `workspace.scope` | No | `project-local` | `project-local` (under the project root) or `user-home` (under your home directory). |
 
 ## Harness keys
 

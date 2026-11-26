@@ -67,6 +67,7 @@ from apothem.conformity import (
     semver_stability_grep,
 )
 from apothem.conformity import _git as git_helper
+from apothem.conformity._corpus import SKIP_UNSUPPORTED, TrackedEntry
 from apothem.conformity._grep_base import GitCheckError, GitNameError, in_checkout
 from tests._shared.git_env import hermetic_git_env
 
@@ -1420,15 +1421,118 @@ def _names_git_or_finds_programs(source: str) -> list[int]:
     return sorted(lines)
 
 
+# ``_corpus.py`` opens a file on Windows with ``_winapi.CreateFile`` and asks
+# kernel32 what the open file is, so it may import ``_winapi`` and ``ctypes``.
+# It is held to these names instead: a CreateProcess or any other call through
+# either module trips the guard.
+_CORPUS_WINAPI_NAMES: Final[frozenset[str]] = frozenset({"CloseHandle", "CreateFile"})
+_CORPUS_KERNEL32_NAMES: Final[frozenset[str]] = frozenset(
+    {"GetFileInformationByHandle", "GetFileInformationByHandleEx"}
+)
+_CORPUS_CTYPES_NAMES: Final[frozenset[str]] = frozenset(
+    {
+        "Structure",
+        "WinDLL",
+        "WinError",
+        "byref",
+        "c_int",
+        "c_void_p",
+        "get_last_error",
+        "sizeof",
+    }
+)
+
+
+def _corpus_program_starts(source: str) -> list[int]:
+    """Return the lines where ``_corpus.py``'s *source* may start a program.
+
+    Its plain ``import _winapi``, ``import ctypes`` and ``from ctypes import
+    wintypes`` pass; every other form :func:`_program_starts` flags still
+    counts. A ``_winapi`` name other than ``CreateFile``, ``CloseHandle`` and
+    the upper-case constants counts, as does a ``ctypes`` name outside
+    :data:`_CORPUS_CTYPES_NAMES`, a ``WinDLL`` for any library but kernel32,
+    and a ``kernel32`` function other than the two that read what a file is.
+    ``_kernel32()``, the module's own cached loader, counts as ``kernel32``.
+    An allowed import passes only alone on its line. Like the rest of the
+    guard it is a tripwire: a name bound to another name first is not
+    followed.
+    """
+    tree = ast.parse(source)
+    statements_per_line: dict[int, int] = {}
+    for node in ast.walk(tree):
+        # Simple statements only: an ``if`` around the imports spans them too.
+        if isinstance(node, ast.stmt) and not hasattr(node, "body"):
+            for line in range(node.lineno, (node.end_lineno or node.lineno) + 1):
+                statements_per_line[line] = statements_per_line.get(line, 0) + 1
+    own_imports: set[int] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.Import, ast.ImportFrom)) or (
+            statements_per_line.get(node.lineno) != 1
+        ):
+            continue
+        if (
+            isinstance(node, ast.Import)
+            and all(
+                alias.name in {"_winapi", "ctypes"} and alias.asname is None
+                for alias in node.names
+            )
+        ) or (
+            isinstance(node, ast.ImportFrom)
+            and node.module == "ctypes"
+            and all(
+                alias.name == "wintypes" and alias.asname is None
+                for alias in node.names
+            )
+        ):
+            own_imports.add(node.lineno)
+    lines = {line for line in _program_starts(source) if line not in own_imports}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
+            base, name = node.value.id, node.attr
+        elif (
+            isinstance(node, ast.Attribute)
+            and isinstance(node.value, ast.Call)
+            and isinstance(node.value.func, ast.Name)
+            and node.value.func.id == "_kernel32"
+        ):
+            base, name = "kernel32", node.attr
+        else:
+            base = name = ""
+        if base:
+            if (
+                (
+                    base == "_winapi"
+                    and not (name in _CORPUS_WINAPI_NAMES or name.isupper())
+                )
+                or (base == "ctypes" and name not in _CORPUS_CTYPES_NAMES)
+                or (base == "kernel32" and name not in _CORPUS_KERNEL32_NAMES)
+            ):
+                lines.add(node.lineno)
+        elif (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "WinDLL"
+            and not (
+                node.args
+                and isinstance(node.args[0], ast.Constant)
+                and node.args[0].value == "kernel32"
+            )
+        ):
+            lines.add(node.lineno)
+    return sorted(lines)
+
+
 def _modules_that_start_programs(package: Path) -> list[str]:
     """Return ``path:line`` for each program start below *package*.
 
-    Only the package's own ``_git.py`` and ``_bounded_run.py`` are held to
-    rules of their own, by their path: a file of the same name in a subfolder
+    Only the package's own ``_git.py``, ``_bounded_run.py`` and
+    ``_corpus.py`` are held to rules of their own, by their path: a file of the same name in a subfolder
     is checked like any other. ``_bounded_run.py`` must name no git and look
     no program up. A call to ``run_bounded`` counts everywhere but in
     ``_run_standalone`` of the package's own ``gate.py`` and in ``run_git`` of
-    its ``_git.py``, which is checked for that one rule.
+    its ``_git.py``, which is checked for that one rule. ``_corpus.py`` may
+    open and inspect files through ``_winapi`` and kernel32 (see
+    :func:`_corpus_program_starts`).
     """
     offenders: list[str] = []
     for module in sorted(package.rglob("*.py")):
@@ -1438,6 +1542,8 @@ def _modules_that_start_programs(package: Path) -> list[str]:
             lines = _names_git_or_finds_programs(source)
         elif relative == "_git.py":
             lines = _run_bounded_uses(source, inside=frozenset({"run_git"}))
+        elif relative == "_corpus.py":
+            lines = _corpus_program_starts(source)
         else:
             allowed = _RUN_BOUNDED_CALLERS.get(relative, frozenset())
             lines = _program_starts(source, run_bounded_in=allowed)
@@ -1456,6 +1562,32 @@ def test_no_conformity_module_starts_a_program_itself() -> None:
     """
     package = Path(gate.__file__).resolve().parent
     assert _modules_that_start_programs(package) == []
+
+
+def test_the_corpus_reader_may_open_files_but_start_no_program() -> None:
+    """``_corpus.py``'s Windows file reads pass; a program start beside them does not."""
+    own = (
+        "import _winapi\n"
+        "import ctypes\n"
+        "from ctypes import wintypes\n"
+        "kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)\n"
+        "kernel32.GetFileInformationByHandleEx(0, 0, None, 0)\n"
+        "_winapi.CloseHandle(_winapi.CreateFile('f', _winapi.GENERIC_READ, 0, 0,"
+        " _winapi.OPEN_EXISTING, 0, 0))\n"
+    )
+    assert _corpus_program_starts(own) == []
+    starts = {
+        "_winapi.CreateProcess(None, 'git', None, None, 0, 0, None, None, None)\n": 7,
+        "kernel32.CreateProcessW(None, 'x', None, None, 0, 0, None, None, 0, 0)\n": 7,
+        "ctypes.windll.kernel32.WinExec(b'x', 0)\n": 7,
+        "ctypes.WinDLL('shell32').ShellExecuteW(0, 0, 'x', 0, 0, 0)\n": 7,
+        "import subprocess\nsubprocess.run(['git'])\n": 8,
+        "import _winapi as w\n": 7,
+        "_kernel32().CreateProcessW(None, 'x', None, None, 0, 0, None, None, 0, 0)\n": 7,
+        "import ctypes; os.system('git')\n": 7,
+    }
+    for extra, line in starts.items():
+        assert line in _corpus_program_starts(own + extra), extra
 
 
 def test_run_bounded_is_allowed_only_in_the_gate_launcher(tmp_path: Path) -> None:
@@ -1962,26 +2094,39 @@ def test_a_name_git_lists_reaches_every_reader_whole(
 
     assert production_ready_pr_grep._staged_paths() == [name]
     assert name in no_global_plans_grep._git_ls_files(repo)
-    assert name.rpartition("/")[2] in {
-        path.name for path in gate._corpus_tracked_files(repo)
-    }
     # The index entry has no file in the work tree; the corpus run takes that
     # as it takes any tracked file that is gone from disk: it tries the name
-    # git listed, finds nothing to read, and scans every other tracked file.
+    # git listed, finds nothing to read, counts it as missing and scans every
+    # other tracked file. A name this system cannot hold (on Windows, one with
+    # a carriage return) is counted under its own reason without a read.
     tracked = gate._corpus_tracked_files(repo)
+    (listed,) = [entry for entry in tracked if entry.name == name]
+    # Outside Windows every such name is held and read; Windows cannot hold a
+    # control character in a name, so that one is counted as unsupported.
+    holds_control = any(ord(character) < 0x20 for character in name)
+    expected_skip = SKIP_UNSUPPORTED if os.name == "nt" and holds_control else None
+    assert listed.skip == expected_skip
     tried: list[Path] = []
-    read_text: Callable[..., str] = Path.read_text
+    read_entry: Callable[..., tuple[str | None, str | None]] = gate.read_entry
 
-    def recording_read_text(self: Path, *args: object, **kwargs: object) -> str:
-        tried.append(self)
-        return read_text(self, *args, **kwargs)
+    def recording_read_entry(
+        root: Path, entry: TrackedEntry
+    ) -> tuple[str | None, str | None]:
+        tried.append(entry.path)
+        return read_entry(root, entry)
 
     with monkeypatch.context() as patched:
-        patched.setattr(Path, "read_text", recording_read_text)
+        patched.setattr(gate, "read_entry", recording_read_entry)
         passed, report = gate._run_all_perwrite(repo)
-    assert (repo / name).resolve() in tried
     assert passed is True
-    assert json.loads(report)["files_scanned"] == len(tracked) - 1
+    payload = json.loads(report)
+    if listed.skip is None:
+        assert repo.joinpath(*name.split("/")) in tried
+        assert payload["files_skipped"]["missing"] == 1
+    else:
+        assert listed.path not in tried
+        assert payload["files_skipped"][listed.skip] == 1
+    assert payload["files_scanned"] == len(tracked) - 1
     if git_helper.reaches_git_unchanged(name):
         findings = semver_stability_grep.check_staged()
         assert [finding.path for finding in findings] == [name]  # g was dropped
@@ -2022,8 +2167,13 @@ def test_the_corpus_run_reads_files_with_odd_names(tmp_path: Path) -> None:
 
     tracked = gate._corpus_tracked_files(repo)
 
-    assert [path.name for path in tracked] == names
-    assert all(path.is_file() for path in tracked)
+    assert [entry.path.name for entry in tracked] == names
+    assert all(entry.skip is None and entry.path.is_file() for entry in tracked)
+    passed, report = gate._run_all_perwrite(repo)
+    payload = json.loads(report)
+    assert passed is True
+    assert payload["files_scanned"] == len(names)
+    assert not any(payload["files_skipped"].values())
 
 
 def test_file_name_output_keeps_every_byte() -> None:

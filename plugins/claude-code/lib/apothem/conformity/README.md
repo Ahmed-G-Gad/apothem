@@ -12,6 +12,7 @@
 | `_git.py` | `run_git`, the one way the gate and its validators run `git` in a checked project: with the repository's program-running settings turned off on git's command line, fetching blocked, and git found only in full-path `PATH` entries. Private to this package. |
 | `_grep_base.py` | Shared building blocks every `*_grep` matcher imports: the finding shape, the file-walk (`iter_tree_files`, which prunes nested git checkouts and the vendored, virtual-environment, cache and build-output trees), and the JSON envelope. Private to this package. |
 | `_bounded_run.py` | `run_bounded`, the one place the package starts a program (a validator for the gate, git for `run_git`), with a time limit that holds for every program it starts: a Windows job object, or a session of its own elsewhere, ended on a stop, with a bounded wait for the output after it. Standard library only. Private to this package. |
+| `_corpus.py` | The `--all-perwrite` file list and reader: lists the tracked files with `git ls-files` (with a time limit) and reads only the regular files inside the project, checking every level with `lstat` so no link, junction, named pipe or device is followed or opened, and naming the reason for every path it skips. `link-check` uses the same level check to keep a corpus run's link lookups inside the project. Private to this package. |
 | `__init__.py` | Package marker. |
 
 ## Matcher families
@@ -158,12 +159,14 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   it knows, among them: a use of `subprocess` beyond its exception and result
   types, also under an `import ... as` name or through another module; the
   `os` functions that start a program; `which`, `find_git`, `git_argv`, and
-  `run_bounded` outside its two callers; an import of `ctypes`,
+  `run_bounded` outside its two callers; an import of `ctypes`, `_winapi`,
   `multiprocessing` or `pty`; `exec`, `eval` and the import-by-name calls; and
-  a string naming the git program. It holds only this folder's own `_git.py`
-  and `_bounded_run.py`, by path, to rules of their own: in `_git.py` it checks
-  that `run_git` alone calls `run_bounded`, and `_bounded_run.py` must name no
-  git and look no program up. Code that reaches a starter some
+  a string naming the git program. It holds only this folder's own `_git.py`,
+  `_bounded_run.py` and `_corpus.py`, by path, to rules of their own: in
+  `_git.py` it checks that `run_git` alone calls `run_bounded`,
+  `_bounded_run.py` must name no git and look no program up, and `_corpus.py`,
+  which opens files on Windows, may import `_winapi` and `ctypes` but call only
+  the few functions that open a file and read what it is. Code that reaches a starter some
   way the test does not know can still pass it: source text run through
   `runpy`, `timeit` or a profiler, an attribute fetched through `builtins`,
   `inspect` or `operator`, a `sys.modules` lookup by a computed name. So
