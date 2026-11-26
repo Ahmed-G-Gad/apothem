@@ -129,6 +129,118 @@ run of any of these reports on the checkout it was pointed at and on nothing
 else. A validator that reads one fixed folder, such as `naming-grep` under
 `src/apothem/`, reads everything below that folder.
 
+`--all-perwrite` checks the files that `git ls-files` lists under the root.
+git lists each entry exactly as the repository's index holds it, and a project
+can come with an index and files someone else made, so the gate reads a listed
+path only when it is a regular file inside the root, of at most 64 MiB,
+holding UTF-8 text. It counts every other listed path under `files_skipped`,
+by reason:
+
+- `outside_project`: an entry with an empty, `.` or `..` part, such as
+  `../notes.md`, `a//b.md` or a name starting with `/`, or a part that names
+  `.git` on Windows: `.git` in any case, also with dots, spaces or a colon
+  after it, and `GIT~1`. git refuses each of these by default on every
+  system, so the run does not pass;
+- `unsupported_name`: on Windows, a name the system cannot hold as written:
+  one with a colon (as in `a:b.md`, whose `a:` reads as a drive), a backslash,
+  one of `<>"|?*` or a control character, or a part that ends in a dot or a
+  space; and a name Windows reads as something else: a device name standing
+  alone, such as `CON`, `NUL` or `COM1`, or a short name such as `GIT~2`.
+  git on Linux or macOS can track such a name, so it is counted without
+  failing the run. A hand-written entry such as `C:/x` or `..\..\x` lands
+  here on Windows too;
+- `link`: a symbolic link, or on Windows a junction, at any level below the
+  root, even one that points inside it, or an entry the index marks as a link
+  (in any stage of a merge conflict, so such a file is not read until the
+  conflict is resolved).
+  git stores a link as the path it points to, and a tracked file that a link
+  points to is checked under its own path;
+- `submodule`: the entry of a submodule;
+- `not_regular_file`: anything else that is not a regular file, such as a
+  folder, a named pipe or a device, where a read would wait or never end;
+- `missing`: a tracked file that is not in the working tree, including a name
+  git listed in bytes that are not UTF-8, and on Windows a path longer than
+  the system allows when long paths are not turned on;
+- `unreadable`: a file, or a folder on the way to it, that the system will not
+  let the gate look at, open or read: for lack of permission, because another
+  program holds the file or part of it, or because the system cannot open it,
+  such as an online-only file whose sync program is stopped. When another
+  program holds the whole file, the gate waits 0.2 seconds and tries once more:
+  on Windows, a program that has it open without sharing it; elsewhere, a write
+  lease being broken, such as a Samba oplock or an NFS delegation. The run does
+  not pass, since a finding in it would go unseen. A few cases fail the run this
+  way though nothing is wrong with the file: a lease break that takes longer
+  than 0.2 seconds, a file waiting to be deleted, and a named pipe in a project
+  on a `\\wsl$` share, where each read first waits about 10 seconds;
+- `too_large`: a file over 64 MiB whose first 64 MiB are UTF-8 text, or a
+  file that grows past 64 MiB while the gate reads it. The run does not
+  pass, for the same reason;
+- `not_utf8_text`: a file whose bytes are not UTF-8 text, such as a UTF-16
+  file with a byte-order mark. Over 64 MiB, the first 64 MiB decide, and a
+  file is binary when a quarter or more of its first 8000 bytes are NUL,
+  such as a large zero-filled image or a UTF-16 file of mostly Latin text
+  without a byte-order mark, so it does not fail the run; a few NUL bytes in
+  text do not count;
+- `exempt`: a file the checks leave out by design: one whose suffix marks it
+  as binary, such as an image or an archive, and anything under a
+  `.apothem/plans`, `tests/conformity`, `tests/fixtures`, `_vendor` or
+  `node_modules` folder at any depth inside the root. The checks for
+  `outside_project` and `unsupported_name` come first, so no exemption hides
+  them.
+
+When a run does not pass for `outside_project`, `unreadable` or `too_large`,
+`files_not_passed` names the entries behind each of those reasons, as git
+lists them, sorted, up to 10 per reason; `files_skipped` has the full count.
+A line on stderr names those reasons and their counts too, so a CI log that
+shows only stderr says why the run failed.
+
+Each file's levels are checked right before it is read, and the file opened must
+be the one that check found. A file another program swaps in between, for
+another file, a link or a named pipe, is looked up once more, and counted as
+`unreadable` if it is swapped again; on Windows a junction swapped in is
+`unreadable` at once, and a symbolic link is found as a `link` on the second
+look. The gate never waits on a named pipe or reads through a link that took the
+file's place. On Windows, a file that Data Deduplication or a cloud sync program
+keeps behind a reparse point is read through that program as usual; when the
+program is stopped, the file is `unreadable`.
+
+Three things these checks do not see. A hard link reads as an ordinary file, so
+a hard link to a file elsewhere is read; git does not create one. A folder above
+the file that another program swaps for a link between the check and the open is
+followed. And on Windows, a network file system that gives neither a file's
+reparse tag nor its file ID, but does hold symbolic links, could have a file
+swapped for a link between the check and the open without the gate seeing it.
+
+In this run the `link-check` matcher looks up a link target only inside the
+root: a relative link that leaves the root counts as external, and the search
+for a `site/content/docs` folder stops at the root. In every mode, it never
+looks up a link that names a place by itself, such as a network share
+(`\\host\share`), a drive (`C:/notes.md`) or a `file:` address. On Windows,
+looking up a share sends your sign-in to that host. On Windows it also leaves
+unchecked a `/docs/` route segment holding a colon, which Windows reads as a
+drive, and a link it finds only through a part that ends in a dot or a
+space: Windows can drop that ending (`ci.yml.` finds `ci.yml`), so the find
+proves nothing. Such a link that finds nothing is reported dead as usual.
+On every system, a `/docs/` route with a `.` or `..` segment, such as
+`/docs/../x`, counts as external and is not looked up.
+
+Each `git ls-files` call gets 60 seconds: the one this run makes, and the one
+in `no-global-plans-grep`, whose report then carries the same `check_error`
+and fails; when git itself fails there, its message gives git's exit code,
+not git's own text. A repository whose own settings make git wait, such as
+an `include.path` that points at a named pipe, holds up each of these calls
+for that long at most. On Windows, when the `git` found first is the launcher
+in Git's `cmd` folder, the limit stops the launcher but not the git it
+started, and the gate waits for that git, so such a wait may never end. A
+`--all-perwrite` run that read no file does not pass: it reports
+`files_scanned: 0` with `empty_scope_expected: false`. When the list of tracked
+files cannot be read, `check_error` gives a fixed reason: git did not start,
+`git ls-files` failed with a given exit code, or it did not finish in
+time. To see git's own message, for example when the root is not inside a git
+work tree, run `git ls-files` in the root; the report leaves it out, because it
+can name files outside the project. With `--strict`, a run that did not pass
+exits `2`.
+
 ## Gate bars
 
 | Bar | Check | Kind |
