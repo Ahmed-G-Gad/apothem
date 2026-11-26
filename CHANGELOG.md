@@ -31,6 +31,22 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **The documentation sidebar shows at full width again, with each page
+  listed once.** On every tablet and desktop page the sidebar had collapsed
+  to a strip a few pixels wide, so its links could not be read and the header
+  text overlapped. It is back at its full width. Each section's title is now
+  the link to its overview page, instead of the title followed by the same
+  page under a near-identical name, and the blog posts are no longer listed a
+  second time inside an extra "Posts" folder. The sidebar of every language
+  lists the same pages in the same order as the English one: the `backups`
+  command, the evals guide and the OpenSSF Best Practices page were missing
+  from their place in the translated sidebars. The "Page not found" page is
+  no longer listed. Two entries with the same name, "CLI reference", are now
+  "CLI overview" and "CLI reference", and the `CLAUDE.md` page title no longer
+  shows stray backtick characters. The fields at the top of each harness page and
+  each command page show one per line instead of running together, and the
+  changelog and three architecture pages no longer repeat their title as a
+  second top-level heading.
 - **The conformity gate reads every byte of a path name, and a failed
   `git diff` does not pass from a subfolder.** The gate read git's lists of
   path names as text, which turned a carriage return in a name into a line
