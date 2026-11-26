@@ -627,6 +627,16 @@ Keep-a-Changelog convention. The release commit's CHANGELOG edit:
 A CHANGELOG section that survived the maintainer's review reads as
 the release-notes anchor for the announcement narrative.
 
+After the release merges, the version's section is closed. A branch cut
+before the release still has its entry right below the old `[Unreleased]`
+heading, and merging the release into that branch moves the entry into
+the released section without a conflict. Each such branch needs its entry
+moved back under `[Unreleased]` by hand after the merge. CI's
+`check_changelog_released_sections.py` step fails a pull request that
+changes any released section and names it. A deliberate correction to
+released notes passes when a commit carries the trailer
+`Changelog-Released-Edit: <reason>`.
+
 ## 5. Install-path smoke
 
 After both stages complete, the maintainer runs the smoke. The smoke is

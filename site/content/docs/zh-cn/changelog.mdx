@@ -20,6 +20,17 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- **CI fails a pull request that edits released release notes.** A release
+  renames `[Unreleased]` in `CHANGELOG.md` to the new version. A branch cut
+  before the release added its entry right below that heading, so merging the
+  release into the branch moved the entry into the released section with no
+  conflict and no warning. The new `check_changelog_released_sections.py` step
+  compares every released section with the pull request's base branch and
+  names the section that changed. A commit trailer
+  `Changelog-Released-Edit: <reason>` allows a deliberate correction.
+
 ## [1.6.0] - 2026-11-26
 
 ### Data loss in earlier releases: recover your files
