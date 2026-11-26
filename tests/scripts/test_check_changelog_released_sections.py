@@ -117,10 +117,17 @@ def test_the_closing_link_block_is_left_out() -> None:
     assert check.find_problems(BASE, head) == []
 
 
+# The fixture's git must not read the user's own git config: a global
+# tag.gpgSign or core.editor makes `git tag` open an editor and wait forever.
 _CLEAN_ENV = {
-    k: v
-    for k, v in os.environ.items()
-    if not k.startswith("GIT_") or k in ("GIT_EXEC_PATH",)
+    **{
+        k: v
+        for k, v in os.environ.items()
+        if not k.startswith("GIT_") or k in ("GIT_EXEC_PATH",)
+    },
+    "GIT_CONFIG_GLOBAL": os.devnull,
+    "GIT_CONFIG_NOSYSTEM": "1",
+    "GIT_EDITOR": "false",
 }
 
 
