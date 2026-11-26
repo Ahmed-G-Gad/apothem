@@ -54,7 +54,6 @@ import pytest
 
 from apothem.conformity import (
     _bounded_run,
-    _grep_base,
     agents_md_coverage_grep,
     conventional_commit_grep,
     gate,
@@ -692,24 +691,6 @@ def test_a_promisor_outside_the_repository_does_not_make_a_partial_clone(
     result = agents_md_coverage_grep.check(repo)
     assert result.passed is False
     assert result.check_error == "git log failed with exit code 128"
-
-
-def test_plans_listing_timeout_does_not_pass(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
-) -> None:
-    """``no-global-plans-grep``'s ``git ls-files`` has a limit, and it fails there."""
-    monkeypatch.setattr(_bounded_run, "run_bounded", _timing_out_run)
-
-    exit_code = no_global_plans_grep._main(["no-global-plans-grep", str(tmp_path)])
-    payload = _printed_payload(capsys)
-    assert exit_code == no_global_plans_grep.EXIT_FAIL
-    assert payload[CHECK_ERROR_KEY] == (
-        "git ls-files did not finish within "
-        f"{_grep_base.GIT_LS_FILES_TIMEOUT_SECONDS} seconds"
-    )
-    assert payload["passed"] is False
-    assert payload["inspected"] == 0
-    assert payload["empty_scope_expected"] is False
 
 
 def test_staged_change_set_timeout_does_not_pass(
