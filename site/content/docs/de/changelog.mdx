@@ -23,6 +23,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- **The CI metrics job reuses the coverage shards' data instead of running the
+  test suite again.** The `ci.yml` metrics job ran the whole suite under
+  coverage on one runner in 18 to 30 minutes, and its 30-minute limit cancelled
+  some runs. The two coverage shards now measure all of `src/apothem`, and the
+  metrics job combines their data and reports the same per-package figures and
+  floors in about a minute, so the suite runs under coverage once per CI run
+  instead of twice. The `coverage` job's reports keep only the engine folders,
+  read from `[tool.coverage.run] source` in `pyproject.toml`, so the engine
+  figure and its 80% floor stay the same.
 - **CI fails a pull request that edits released release notes.** A release
   renames `[Unreleased]` in `CHANGELOG.md` to the new version. A branch cut
   before the release could then merge the release in with no conflict and
