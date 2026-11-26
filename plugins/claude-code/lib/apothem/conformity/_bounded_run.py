@@ -617,7 +617,9 @@ def _swapped(
     else set meanwhile stays. A signal can raise as that call begins, before
     it changed anything: the call is then made again, up to :data:`_TRIES`
     times in all, and when no call put every handler back, each one left
-    gets one last try, made from this frame. *held* gives the errors of
+    gets one last try, made from this frame. Several signals whose handlers
+    raise, back to back within microseconds, can still skip that last try
+    and leave a handler changed. *held* gives the errors of
     signals held back meanwhile. The gravest of those errors, the errors met
     on the way and the error the block raised then goes on (see
     :func:`_raise_gravest`).
@@ -633,16 +635,21 @@ def _swapped(
         ended = True
     finally:
         restored = False
-        tries = 0
-        while tries < _TRIES:
-            tries += 1
-            try:
-                restored = _swap(saved[::-1], late, ours=ours)
-                break
-            except BaseException as error:
-                # It landed as _swap began, or between two of its passes.
-                if not _note(late, error):
+        try:
+            tries = 0
+            while tries < _TRIES:
+                tries += 1
+                try:
+                    restored = _swap(saved[::-1], late, ours=ours)
                     break
+                except BaseException as error:
+                    # It landed as _swap began, or between two of its passes.
+                    if not _note(late, error):
+                        break
+        except BaseException as error:
+            # A second signal, as _note began or at the jump back: the last
+            # try below still runs.
+            _note(late, error)
         if not restored:
             # A last try for each handler left, from this frame, which is no
             # deeper than the change was: a Ctrl+C left on a hold's recorder
@@ -850,8 +857,11 @@ def _stop_unreturned(error: BaseException, job: _Job, *, group: bool) -> None:
     the moment between the system making the program and Popen recording its
     ID still leaves it. Outside Windows that moment is the end of the fork
     and exec call, where Python handles a signal that arrived during it, so
-    :func:`run_bounded` holds Ctrl+C back while Popen runs. A program Popen
-    already waited for is left alone, as its process ID may be in use again.
+    :func:`run_bounded` holds Ctrl+C back while Popen runs. Once Popen has
+    returned, its frames are gone: an error from a caller's signal handler
+    that runs just then, before the object is stored, finds nothing here and
+    leaves the program running (on Windows, suspended). A program Popen already waited for is left
+    alone, as its process ID may be in use again.
     """
     traceback = error.__traceback__
     while traceback is not None:
@@ -971,7 +981,9 @@ def run_bounded(
     handler the caller installed is left in place, and with it a window of
     microseconds in which such an interrupt can still leave the program
     behind. Any other error that escapes Popen after the program started
-    stops the program. A program that cannot be started raises
+    stops the program, except one a caller's handler for a signal the gate
+    does not hold raises in the microseconds after Popen returns, before the
+    program is stored. A program that cannot be started raises
     :class:`OSError`. On Windows a program that started suspended and cannot
     be resumed is stopped and raises :class:`ProgramResumeError`, an
     :class:`OSError`. One that something else had told to end before the
@@ -1019,19 +1031,28 @@ def run_bounded(
                     _fail_unresumed(process, job, command[0])
                 stdout, stderr = process.communicate(timeout=timeout)
             except BaseException as error:
-                # process is None only when Popen itself failed: nothing
-                # started, or what it started was stopped above.
+                # process is None when the hold or Popen itself failed
+                # (nothing started, or what it started was stopped above),
+                # or, rarely, when a caller's signal handler raised as Popen
+                # returned.
                 if process is not None:
                     try:
                         _stop_after_error(process, job, error, group=new_session)
                     finally:
                         # A signal that lands as that call begins skips all
                         # of it: the program, not yet reaped, is stopped and
-                        # awaited here, without the hold.
+                        # awaited here, without the hold. An error here is
+                        # ranked against the one on its way out, so a Ctrl+C
+                        # in the wait does not replace a termination.
                         if process.returncode is None:
-                            _stop(process, job, group=new_session)
-                            with contextlib.suppress(subprocess.TimeoutExpired):
-                                process.wait(timeout=_ENDING_WAIT_SECONDS)
+                            fallback: list[BaseException] = []
+                            try:
+                                _stop(process, job, group=new_session)
+                                with contextlib.suppress(subprocess.TimeoutExpired):
+                                    process.wait(timeout=_ENDING_WAIT_SECONDS)
+                            except BaseException as caught:
+                                _note(fallback, caught)
+                            _raise_gravest(fallback, sys.exc_info()[1])
                 raise
     finally:
         job.close()

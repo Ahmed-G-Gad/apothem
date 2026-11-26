@@ -1782,65 +1782,73 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `fumadocs-ui` to 16.18.4, `fumadocs-mdx` to 15.5.3) and Tailwind CSS
   (`tailwindcss` and `@tailwindcss/postcss` to 4.3.5).
 - **A stalled validator or `git` command no longer holds up the conformity
-  gate's `--all` and `--check` runs, and no longer counts as a pass.** `--all`
-  and `--check` ran each standalone validator as a program of its own with no
-  time limit, so one that never finished stopped the whole run. A project that
-  came with its `.git` folder from someone else, in an archive or a shared
-  folder, can cause that: an `include.path` in its `.git/config` that names a
-  named pipe makes `git` wait for ever. The gate now gives each standalone
-  validator 10 minutes. One still running then is stopped together with every
-  program it started, and reported with `passed: false` and a `check_error`
-  that says it did not finish. Each validator runs in a session of its own on
-  Linux and macOS, where a `SIGTERM` or `SIGHUP` to the gate stops it before
-  the gate exits, even one that arrives while the gate starts or stops it
-  (the exit code stays 128 plus the signal's number when a Ctrl+C follows
-  during that step), and in a job object on Windows, which ends its programs when the gate ends
-  too. On Windows, when Windows grants the job, each program the gate starts
-  waits, suspended, until it is in the job, so a program it starts at once,
-  such as the real `git` behind Git for Windows' launcher, is stopped with
-  it. A program the gate cannot resume is stopped, and the error says
-  whether it is in the job. A `git` that cannot be resumed, or that something
-  else told to end before it was resumed, even with exit code `0`, counts as
-  a failed `git` with exit code `128`, never as a missing one or as `git`'s
-  own answer, so the `git` checks named next fail rather than pass. A `git`
+  gate's `--all` and `--check` runs, and no longer counts as a pass.**
+  `--all` and `--check` ran each standalone validator as a program of its
+  own with no time limit, so one that never finished stopped the whole run.
+  A project that came with its `.git` folder from someone else, in an
+  archive or a shared folder, can cause that: an `include.path` in its
+  `.git/config` that names a named pipe makes `git` wait for ever. The gate
+  now gives each standalone validator 10 minutes. One still running then is
+  stopped together with every program it started, and reported with `passed:
+  false` and a `check_error` that says it did not finish. Each validator
+  runs in a session of its own on Linux and macOS, where a `SIGTERM` or
+  `SIGHUP` to the gate stops it before the gate exits, even one that arrives
+  while the gate starts or stops it (the exit code stays 128 plus the
+  signal's number when a Ctrl+C follows during that step), and in a job
+  object on Windows, which ends its programs when the gate ends too. On
+  Windows, when Windows grants the job, each program the gate starts waits,
+  suspended, until it is in the job, so a program it starts at once, such as
+  the real `git` behind Git for Windows' launcher, is stopped with it. A
+  program the gate cannot resume is stopped, and the error says whether it
+  is in the job. A `git` that cannot be resumed, or that something else told
+  to end before it was resumed, even with exit code `0`, counts as a failed
+  `git` with exit code `128`, never as a missing one or as `git`'s own
+  answer, so the `git` checks named next fail rather than pass. A `git`
   ended just after the resume cannot be told apart from one that ran, and
   its exit code counts. So does one ended just before the resume when the
-  gate reads its exit code more than 1 ms after the resume, for example on
-  a busy machine or while other threads in the calling process are busy,
-  and one ended with exit code `259`, the code Windows gives a running
-  program, while Windows is still ending it. A `git` that ran and printed
-  its answer is not taken for one that was ended when the machine or other
-  threads in the calling process are busy. On every platform, when the gate
-  itself starts the program, a Ctrl+C that arrives during the start waits
-  until the program runs (on Windows, until the gate has tried to resume
-  it), so it does not leave a program suspended or running past its time
-  limit, and a start that fails once Popen has the program's process ID
-  stops that program. A second Ctrl+C that arrives while the gate stops a
-  program waits until the stop is done. One that arrives just before the
-  stop begins makes the gate try the stop again, up to three times, and
-  then stop the program without holding signals back, again up to three
-  times, so one more Ctrl+C does not skip the stop. When the gate changes
-  its own signal handlers, a signal that arrives mid-change no longer
-  leaves a handler changed, such as Ctrl+C ignored for the rest of the
-  process. On Linux and macOS the gate blocks Ctrl+C, `SIGTERM` and
-  `SIGHUP`, and no other signal, for the few microseconds the change
-  takes, so such a signal waits and meets the handlers then in place. The
-  gate then unblocks only the signals it blocked. For any other signal, on
-  Windows, and for a signal that arrived just before the block, a change
-  the signal stopped is made again, up to three times. When putting its
-  handlers back fails at every try, the gate makes one last try for each
-  handler left. A handler stays changed only when an error stops that last
-  try too, such as a `TimeoutError` from a timer the calling process set
-  that fires each time. An error that comes back at every try, such as a
-  `RecursionError` near Python's recursion limit, ends the change within
-  two tries and goes on. The gate puts its handlers back with calls no
-  deeper than the ones that changed them, so near that limit it does not
-  leave Ctrl+C ignored. A `SIGTERM` handler that the calling process sets
-  during a run stays in place. In a Python subinterpreter, where no signal
-  handler may be set, the gate runs its programs without changing handlers.
-  After a stop the gate waits up to half a second for the stopped program to
-  end, so on Linux and macOS it does not linger as a defunct process. Ctrl+C
-  prints one line and exits `130`. The `git` commands of
+  gate reads its exit code more than 1 ms after the resume, for example on a
+  busy machine or while other threads in the calling process are busy, and
+  one ended with exit code `259`, the code Windows gives a running program,
+  while Windows is still ending it. A `git` that ran and printed its answer
+  is not taken for one that was ended when the machine or other threads in
+  the calling process are busy. On every platform, when the gate itself
+  starts the program, a Ctrl+C that arrives during the start waits until the
+  program runs (on Windows, until the gate has tried to resume it), so it
+  does not leave a program suspended or running past its time limit, and a
+  start that fails once Popen has the program's process ID stops that
+  program. A second Ctrl+C that arrives while the gate stops a program waits
+  until the stop is done. One that arrives just before the stop begins makes
+  the gate try the stop again, up to three times, and then stop the program
+  without holding signals back, again up to three times, so one more Ctrl+C
+  does not skip the stop. A handler the calling process set for another
+  signal can still leave the program running (on Windows, suspended), when
+  its error lands in the few microseconds after the program starts, before
+  the gate records it. When the gate changes its own signal handlers, a
+  signal that arrives mid-change no longer leaves a handler changed, such as
+  Ctrl+C ignored for the rest of the process. On Linux and macOS the gate
+  blocks Ctrl+C, `SIGTERM` and `SIGHUP`, and no other signal, for the few
+  microseconds the change takes, so such a signal waits and meets the
+  handlers then in place. The gate then unblocks only the signals it
+  blocked. For any other signal, on Windows, and for a signal that arrived
+  just before the block, a change the signal stopped is made again, up to
+  three times. When putting its handlers back fails at every try, the gate
+  makes one last try for each handler left. A handler stays changed when an
+  error stops that last try too, such as a `TimeoutError` from a timer the
+  calling process set that fires each time, and in rare cases when several
+  signals whose handlers raise arrive back to back, within microseconds, and
+  skip the last try. An error that comes back at every try, such as a
+  `RecursionError` near Python's recursion limit, ends the change within two
+  tries and goes on. The gate puts its handlers back with calls no deeper
+  than the ones that changed them, so near that limit it does not leave
+  Ctrl+C ignored. A `SIGTERM` handler that the calling process sets during a
+  run stays in place. On Linux and macOS, in a Python subinterpreter, where
+  no signal handler may be set, the gate runs its programs without changing
+  handlers; on Windows, Python cannot read a program's output from an
+  isolated subinterpreter, which allows no daemon threads. After a stop the
+  gate waits up to half a second for the stopped program to end, so on Linux
+  and macOS it does not linger as a defunct process, and a Ctrl+C during
+  that wait does not replace a termination already under way. Ctrl+C prints
+  one line and exits `130`. The `git` commands of
   `conventional-commit-grep`, `agents-md-coverage-grep` and the `--staged`
   checks of `production-ready-pr-grep` and `semver-stability-grep` had
   limits of 5 or 10 seconds, but a command that ran past its limit passed:
@@ -1866,12 +1874,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   available, or a machine without `git` still passes these checks.
   `no-global-plans-grep` still fails, as before, outside a checkout git can
   read or without `git`. The gate's advisory default still exits `0` on such
-  a result, and `--strict` exits `2`.
-
-## [1.5.0] - 2026-10-28
-
-### Added
-
+  a result, and `--strict` exits `2`. ## [1.5.0] - 2026-10-28 ### Added
 - **Windsurf and Cursor now run Apothem's session hooks.** For Windsurf the
   install registers two Devin Local hooks in the project's
   `.devin/config.local.json`, the local override Devin documents as gitignored

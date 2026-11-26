@@ -153,9 +153,14 @@ stop again, up to three times. When those tries fail, or a Ctrl+C lands
 between two of them, the gate stops the program without holding signals
 back, again up to three times, so one more Ctrl+C does not skip the stop. It
 takes several Ctrl+C presses, each within microseconds of one of these
-points, to leave the program running. The gate then waits up to half a
-second for that program to end, so on Linux and macOS it does not linger as a
-defunct process. When the gate changes its own signal handlers, a signal that
+points, to leave the program running. After a stop the gate waits up to half
+a second for the stopped program to end, so on Linux and macOS it does not
+linger as a defunct process, and a Ctrl+C during that wait does not replace a
+termination already under way. A handler the calling process set for another
+signal can still leave the program running (on Windows, suspended), when its
+error lands in the few microseconds after the program starts, before the gate
+records it. When the gate changes
+its own signal handlers, a signal that
 arrives mid-change does not leave a handler changed. On Linux and macOS the
 gate blocks Ctrl+C, `SIGTERM` and `SIGHUP`, and no other signal, for the few
 microseconds the change takes, so such a signal waits until the change is
@@ -164,15 +169,20 @@ only the signals it blocked. For any other signal, on Windows, and for a
 signal that arrived just before the block, a change the signal stopped is
 made again, up to three times. When putting its handlers back fails at
 every try, the gate makes one last try for each handler left. A handler stays
-changed only when an error stops that last try too, such as a `TimeoutError`
-from a timer the calling process set that fires each time. An error that
+changed when an error stops that last try too, such as a `TimeoutError` from
+a timer the calling process set that fires each time, and in rare cases when
+several signals whose handlers raise arrive back to back, within
+microseconds, and skip the last try. An error that
 comes back at every try, such as a `RecursionError` near Python's recursion
 limit, ends the change within two tries and goes on. The gate puts its
 handlers back with calls no deeper than the ones that changed them, so near
 that limit it does not leave Ctrl+C ignored. A `SIGTERM` handler that the
-calling process sets during a run stays in place. In a Python subinterpreter,
-where no signal handler may be set, the gate runs its programs without changing
-handlers. Ctrl+C prints one line and exits `130`. The limits add up: a run in
+calling process sets during a run stays in place. On Linux and macOS, in a
+Python subinterpreter, where no signal handler may be set, the gate runs its
+programs without changing handlers; on Windows, Python cannot read a
+program's output from an isolated subinterpreter, which allows no daemon
+threads. Ctrl+C prints one line and exits
+`130`. The limits add up: a run in
 which several validators wait takes the sum of their limits.
 
 Five validators also give each `git` command they run a time limit of its own.
