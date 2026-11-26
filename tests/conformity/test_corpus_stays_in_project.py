@@ -1313,6 +1313,27 @@ def _refusal(winerror: int | None) -> PermissionError:
     return exc
 
 
+def _record_corpus_sleeps(monkeypatch: pytest.MonkeyPatch) -> list[float]:
+    """Record the waits the corpus reader makes, and only those.
+
+    ``time.sleep`` is one function for the whole process: on POSIX,
+    ``subprocess`` waits for ``git ls-files`` by calling it in a loop. So the
+    corpus module's own ``time`` name is replaced, not ``time.sleep``: its
+    ``sleep`` records and returns, and any other name reads the real module.
+    """
+    corpus = importlib.import_module("apothem.conformity._corpus")
+    sleeps: list[float] = []
+
+    class _RecordingTime:
+        sleep = staticmethod(sleeps.append)
+
+        def __getattr__(self, name: str) -> object:
+            return getattr(time, name)
+
+    monkeypatch.setattr(corpus, "time", _RecordingTime())
+    return sleeps
+
+
 def _refuse_opens(
     monkeypatch: pytest.MonkeyPatch, name: str, times: int, winerror: int | None
 ) -> list[float]:
@@ -1320,7 +1341,6 @@ def _refuse_opens(
     corpus = importlib.import_module("apothem.conformity._corpus")
     real_open = _corpus_module()._open_binary
     left = [times]
-    sleeps: list[float] = []
 
     def refusing_open(self: Path, *args: object, **kwargs: object) -> object:
         if self.name == name and left[0] > 0:
@@ -1329,7 +1349,7 @@ def _refuse_opens(
         return real_open(self)
 
     monkeypatch.setattr(_corpus_module(), "_open_binary", refusing_open)
-    monkeypatch.setattr(corpus.time, "sleep", sleeps.append)
+    sleeps = _record_corpus_sleeps(monkeypatch)
     # Read the made-up winerror on every system (a real hold is tested on
     # Windows, and the errno rule for a lease below).
     monkeypatch.setattr(
@@ -1515,8 +1535,7 @@ def test_read_error_after_the_open_is_unreadable_and_not_retried(
     has locked, counts as unreadable at once."""
     corpus = importlib.import_module("apothem.conformity._corpus")
     repo = _project(tmp_path, {"locked.md": "x" * 100})
-    sleeps: list[float] = []
-    monkeypatch.setattr(corpus.time, "sleep", sleeps.append)
+    sleeps = _record_corpus_sleeps(monkeypatch)
     handles = _record_opens(monkeypatch, "locked.md", fail_read=1)
 
     payload = _run(repo)
