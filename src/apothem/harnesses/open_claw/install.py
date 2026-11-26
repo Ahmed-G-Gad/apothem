@@ -69,7 +69,9 @@ def _plan(config_path: Path, profile: dict[str, Any]) -> _Plan:
     """Decide how this pass registers the rules file, from the files on disk."""
     config = rules_file.read_config(config_path)
     body, _ = rules_file.rules_text(config_path.parent, profile)
-    fits = rules_file.fits_somewhere(body, config, config_path.parent.parent)
+    fits = rules_file.fits_somewhere(
+        body, config, config_path.parent.parent, harness_root=config_path.parent
+    )
     registration = plan_registration(
         config,
         apothem_entry=apothem_created_entry(config_path),

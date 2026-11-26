@@ -227,6 +227,22 @@ instructions file and leaves IDE-level user settings operator-owned. It writes
 one hook file, `.github/hooks/apothem.json`, and no other file in
 `.github/hooks/`.
 
+Copilot also loads two project files that other Apothem installs write a block
+into: the `AGENTS.md` file that the [Kimi Code](/docs/harnesses/kimi-code)
+install writes, and the context file that the
+[install for another command-line tool](/docs/harnesses/gemini-cli) writes:
+
+```text
+<project>/AGENTS.md
+<project>/GEMINI.md
+```
+
+So in a project with those installs, their Apothem blocks reach Copilot too.
+When either file already holds an Apothem block, installing `github-copilot`
+prints a note that names the file and the install that wrote it. The
+[harness registry](/docs/reference/harness-registry#shared-roots) lists the
+other tools that load each file.
+
 Within the Apothem repository, `.github/copilot-instructions.md` is one voice
 among that repository's assistant instruction surfaces. In a checkout of that
 repository, the conformity gate's multi-surface coherence check compares the

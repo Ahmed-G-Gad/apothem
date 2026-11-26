@@ -8,7 +8,8 @@ This document describes how to report security vulnerabilities in this project, 
 
 | Version | Supported                                      |
 | ------- | ---------------------------------------------- |
-| 1.5.x   | ✓                                              |
+| 1.6.x   | ✓                                              |
+| 1.5.x   | Critical security fixes only, until 2027-05-26 |
 | 1.4.x   | Critical security fixes only, until 2027-04-28 |
 | 1.3.x   | Critical security fixes only, until 2027-04-26 |
 | 1.2.x   | Critical security fixes only, until 2027-04-25 |
@@ -59,6 +60,7 @@ To verify a release tag locally: import the maintainer signing key, confirm the 
 
 | Tag | Tag object | How to verify it |
 | --- | --- | --- |
+| `v1.6.0` | annotated, GPG-signed | `git verify-tag v1.6.0` |
 | `v1.5.0` | annotated, GPG-signed | `git verify-tag v1.5.0` |
 | `v1.4.0` | annotated, GPG-signed | `git verify-tag v1.4.0` |
 | `v1.3.0` | annotated, GPG-signed | `git verify-tag v1.3.0` |
