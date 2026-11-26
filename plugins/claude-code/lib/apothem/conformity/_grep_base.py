@@ -106,6 +106,17 @@ INSPECTED_KEY: Final[str] = "inspected"
 # Report key emitted only when nothing was inspected: whether the validator
 # declared that an empty scope is expected (True) or not (False, a failure).
 EMPTY_SCOPE_KEY: Final[str] = "empty_scope_expected"
+# Report key emitted only when a check could not finish, for example because a
+# git command ran past its time limit or the gate stopped the validator. The
+# value says why; a report that carries it does not pass.
+CHECK_ERROR_KEY: Final[str] = "check_error"
+
+# Seconds a ``git ls-files`` run may take. Listing reads only the index, so
+# even a large repository lists in about a second; the rest is room for a slow
+# or busy machine. The checked repository's own configuration can still make
+# git wait for ever, for example through an ``include.path`` that names a
+# FIFO, and the limit ends such a run.
+GIT_LS_FILES_TIMEOUT_SECONDS: Final[int] = 60
 
 
 # ---------------------------------------------------------------------------
