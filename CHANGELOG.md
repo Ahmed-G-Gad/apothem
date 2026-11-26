@@ -9,6 +9,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- **`python -m apothem.conformity.gate --all` takes seconds, not minutes.**
+  The gate now runs its standalone validators side by side, at most eight at once, and
+  still reports them in the same order. `redundancy-grep` skips paragraph pairs
+  whose distinct-word counts rule out a match, with the same findings as before.
+  A full `gate --all .` on this repository went from about 100 seconds to about
+  12 on Windows.
+
 ## [1.6.0] - 2026-11-26
 
 ### Data loss in earlier releases: recover your files
@@ -255,13 +264,6 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   version it installs.
 
 ### Changed
-
-- **`python -m apothem.conformity.gate --all` takes seconds, not minutes.**
-  The gate now runs its standalone validators side by side, at most eight at once, and
-  still reports them in the same order. `redundancy-grep` skips paragraph pairs
-  whose distinct-word counts rule out a match, with the same findings as before.
-  A full `gate --all .` on this repository went from about 100 seconds to about
-  12 on Windows.
 
 - **The CI coverage check runs the test suite in two halves at once.** The
   `ci.yml` coverage job ran the whole suite under coverage on one runner in 14
