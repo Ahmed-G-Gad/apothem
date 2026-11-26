@@ -168,8 +168,8 @@ def _git_ls_files(root: Path) -> list[str]:
     """Return the git-tracked file list under root.
 
     Raises ``RuntimeError`` when ``git`` is unavailable, root is not a git
-    repository, or the ``.git`` entry git would use (in root or a folder
-    above it) is a link (git is then not run), all errors the caller
+    repository, or a ``.git`` entry in root or a folder above it that git
+    searches is a link (git is then not run), all errors the caller
     surfaces, and
     :class:`~apothem.conformity._grep_base.GitTimeoutError` when git runs past
     :data:`GIT_LS_FILES_TIMEOUT_SECONDS` (the repository's own configuration
@@ -210,10 +210,10 @@ def _git_ls_files(root: Path) -> list[str]:
 
 # Finding text for a .git entry that is a link or a junction.
 _LINKED_GIT_DETAIL: Final[str] = (
-    "the .git entry is a link, so git would read another repository's "
-    "index; the tracked-plans check did not run, and the project is "
-    "treated as having no checkout — replace the link with the project's "
-    "own .git folder or file"
+    "a .git entry on git's search path is a link, so the gate does not run "
+    "git; the tracked-plans check did not run, and the project is treated "
+    "as having no checkout — replace the link with a real .git folder or "
+    "file"
 )
 
 # Finding text for a plans location that is a link or a junction.

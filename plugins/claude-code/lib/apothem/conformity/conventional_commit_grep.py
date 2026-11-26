@@ -316,25 +316,17 @@ def _lists_a_file(root: Path, pathspec: str) -> bool:
 
 
 def _repository_is_above(root: Path) -> bool:
-    """Return True when git's search from *root* uses a folder above it.
+    """Return True when the work tree git uses from *root* has its top above it.
 
-    The search looks past a ``.git`` entry that holds no repository and stops
-    at the first one that holds one, or that git refuses. Only a repository
-    in a folder above *root* is a repository *root* may not belong to; a
-    ``.git`` entry git refuses fails the log, as in ``root`` itself.
+    git answers: ``git rev-parse --show-prefix`` prints *root*'s path below
+    the top of the work tree, empty at the top. Only a repository whose top
+    is above *root* is one *root* may not belong to. Nothing in a ``.git``
+    entry is read here; a git failure is left to the ``git log`` that
+    follows, which fails the same way. Raises
+    :class:`~apothem.conformity._grep_base.GitTimeoutError` past the limit.
     """
-    from apothem.conformity._grep_base import (
-        GIT_ENTRY_NONE,
-        GIT_ENTRY_REPOSITORY,
-        checkout_search_folders,
-        git_entry_state,
-    )
-
-    for index, folder in enumerate(checkout_search_folders(root)):
-        state = git_entry_state(folder)
-        if state != GIT_ENTRY_NONE:
-            return index > 0 and state == GIT_ENTRY_REPOSITORY
-    return False
+    shown = _git(root, "git rev-parse", "rev-parse", "--show-prefix", file_names=True)
+    return shown.returncode == 0 and bool(shown.stdout.removesuffix("\n"))
 
 
 def _read_head_subject(root: Path) -> tuple[str | None, str, str | None]:
@@ -359,11 +351,10 @@ def _read_head_subject(root: Path) -> tuple[str | None, str, str | None]:
     )
 
     # git finds the repository in ``root`` or a folder above it, so a run on
-    # a subfolder of a checkout reads the checkout's history. The .git entry
-    # git would use, in ``root`` or above it, is looked at first without
-    # following a link: a .git that is a link (dangling or not) is not taken
-    # as this checkout, since git would follow it, or climb to an enclosing
-    # repository when it dangles.
+    # a subfolder of a checkout reads the checkout's history. git is not run
+    # when a .git entry in ``root`` or a folder above it that git searches is
+    # a link (dangling or not); which repository git then uses is git's own
+    # answer, not checked here.
     if nearest_linked_git_entry(root) is not None or not in_checkout(root):
         return None, "not-a-git-repo", None
     try:

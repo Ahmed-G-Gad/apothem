@@ -1046,8 +1046,8 @@ def _project_git(inner: Path) -> Path:
 
 def _above_message(inner: Path) -> str:
     return (
-        f"the .git entry {_project_git(inner).as_posix()} is a link, "
-        "so git would read another repository"
+        f"the .git entry {_project_git(inner).as_posix()} on git's search path "
+        "is a link, so the gate does not run git below it"
     )
 
 
@@ -1160,10 +1160,14 @@ def test_the_discovering_git_run_drops_the_location_variables() -> None:
     assert discovering["GIT_CEILING_DIRECTORIES"] == "kept"
 
 
-def test_a_git_dir_from_a_hook_does_not_redirect_the_commit_check(
+def _plain_repository_with_a_hook_git_dir(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """git exports GIT_DIR to hooks; the check still reads the root's repository."""
+) -> Path:
+    """Return a plain repository while ``GIT_DIR`` names the other one.
+
+    git exports ``GIT_DIR`` to the hooks it runs; a check run from a hook must
+    still read the repository it finds from its root.
+    """
     other = _project_with_linked_git(tmp_path).parent / "other"
     plain = _real_repository(tmp_path / "plain")
     _write(plain / "a.txt")
@@ -1173,9 +1177,61 @@ def test_a_git_dir_from_a_hook_does_not_redirect_the_commit_check(
     _git(plain, "add", "-A")
     _git(plain, "commit", "-qm", "fix: the plain repository")
     monkeypatch.setenv("GIT_DIR", str(other / ".git"))
+    return plain
+
+
+def test_a_git_dir_from_a_hook_does_not_redirect_the_commit_check(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    plain = _plain_repository_with_a_hook_git_dir(tmp_path, monkeypatch)
     subject, status, _ = conventional_commit_grep._read_head_subject(plain)
     assert (subject or "").strip() == "fix: the plain repository"
     assert status == "ok"
+
+
+def test_a_git_dir_from_a_hook_does_not_redirect_the_corpus_listing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    plain = _plain_repository_with_a_hook_git_dir(tmp_path, monkeypatch)
+    assert [entry.name for entry in _corpus.tracked_entries(plain)] == ["a.txt"]
+
+
+def test_a_git_dir_from_a_hook_does_not_redirect_the_plans_listing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    plain = _plain_repository_with_a_hook_git_dir(tmp_path, monkeypatch)
+    assert no_global_plans_grep._git_ls_files(plain) == ["a.txt"]
+
+
+def test_a_git_dir_from_a_hook_does_not_redirect_the_coverage_history(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    plain = _plain_repository_with_a_hook_git_dir(tmp_path, monkeypatch)
+    # The other repository's history holds .plans/x.md and pkg/AGENTS.md.
+    history = agents_md_coverage_grep._read_history(plain)
+    assert history is not None
+    assert set(history.times) == {"a.txt"}
+    assert not agents_md_coverage_grep._is_partial_clone(plain)
+
+
+def test_an_entry_lstat_cannot_read_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The guard fails closed: a .git entry it cannot look at counts as a link."""
+    inner = (tmp_path / "project" / "pkg").resolve()
+    inner.mkdir(parents=True)
+    blocked = inner.parent / ".git"
+    real_lstat = os.lstat
+
+    def lstat(path: object, *args: object, **kwargs: object) -> os.stat_result:
+        if os.fspath(path) == os.fspath(blocked):  # type: ignore[arg-type]
+            raise PermissionError(13, "denied", os.fspath(blocked))
+        return real_lstat(path, *args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(os, "lstat", lstat)
+    start_skip_log(inner)
+    assert nearest_linked_git_entry(inner) == blocked
+    assert take_skipped_paths() == [blocked.as_posix()]
 
 
 def _real_repository(folder: Path, *, bare: bool = False) -> Path:
@@ -1201,13 +1257,18 @@ def test_a_repository_below_a_linked_git_is_refused(
     start_skip_log(deep)
     assert nearest_linked_git_entry(deep) == project / ".git"
     assert take_skipped_paths() == [(project / ".git").as_posix()]
-    with pytest.raises(_corpus.CorpusListError):
+    with pytest.raises(_corpus.CorpusListError) as raised:
         _corpus.tracked_entries(deep)
+    assert str(raised.value) == (
+        f"the .git entry {(project / '.git').as_posix()} on git's search path "
+        "is a link, so the gate does not run git below it"
+    )
 
 
 def test_a_real_git_folder_in_the_root_does_not_hide_a_link_above(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """The root's own .git folder does not end the search for links above it."""
     inner = _subfolder_of_linked_git(tmp_path, monkeypatch)
     (inner / ".git").mkdir()
     start_skip_log(inner)

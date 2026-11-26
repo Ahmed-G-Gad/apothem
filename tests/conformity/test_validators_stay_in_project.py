@@ -57,6 +57,7 @@ from pathlib import Path
 import pytest
 
 from apothem.conformity import agent_capability_grep
+from apothem.conformity._project_paths import is_link
 from apothem.conformity.gate import STANDALONE_MODULES
 from apothem.lib.harness_registry import HARNESS_REGISTRY
 from tests._shared.git_env import hermetic_git_env
@@ -650,6 +651,10 @@ def hook(event, args):
             started = started[0]
         log.write(json.dumps([current[0], event, os.fsdecode(started)]) + "\n")
         return
+    # On Windows the corpus run opens each file with _winapi.CreateFile,
+    # which raises only its own event: it counts as an open.
+    if event == "_winapi.CreateFile":
+        event = "open"
     if event not in ("open", "os.scandir", "os.listdir") or not args:
         return
     target = args[0]
@@ -711,29 +716,59 @@ def _commit_all(repository: Path, *names: str) -> None:
         )
 
 
-# The names the foreign index tracks. In the project, the first is a folder
-# link out (a junction on Windows), the second lies below a folder link out,
-# the third is missing, and README.md is the one regular file.
+# The names the foreign index tracks, below the root. In the project, the
+# first is a folder link out (a junction on Windows), the second lies below a
+# folder link out, the third is missing, and README.md is the one regular file.
 _FOREIGN_NAMES = ("link-out.md", "via/page.md", "missing.md", "README.md")
 
+# How the project points git at the foreign repository. None of them puts a
+# link on git's search path, so the link rule lets git run in each.
+# - gitdir: the project's .git is a file naming the foreign .git folder.
+# - commondir: it names a work-tree folder whose commondir file gives the
+#   foreign .git folder as an absolute path.
+# - subfolder-root: as gitdir, with the root a subfolder of the project, so
+#   the .git file lies above the root.
+# - objects-junction: a real .git folder whose objects folder is a link to
+#   the foreign object store.
+# - alternates: a real .git folder whose objects/info/alternates names the
+#   foreign object store.
+# - include: a real .git folder whose config includes a file outside.
+# - core-worktree: a real .git folder whose core.worktree names the foreign
+#   work tree.
+_ROUTES = (
+    "gitdir",
+    "commondir",
+    "subfolder-root",
+    "objects-junction",
+    "alternates",
+    "include",
+    "core-worktree",
+)
 
-def _project_naming_a_foreign_repository(tmp_path: Path, how: str) -> Path:
-    """Return a project whose ``.git`` file names a foreign, link-free repository.
 
-    *how* is ``gitdir`` (the ``.git`` file names the foreign ``.git`` folder)
-    or ``commondir`` (it names a work-tree folder whose ``commondir`` file
-    gives the foreign ``.git`` folder as an absolute path).
+def _project_naming_a_foreign_repository(tmp_path: Path, route: str) -> Path:
+    """Return the root of a project that sends git to a foreign repository.
+
+    The foreign repository holds no link. See :data:`_ROUTES` for *route*.
     """
+    below = "sub/" if route == "subfolder-root" else ""
     foreign = tmp_path / "foreign"
     foreign.mkdir()
     _git_init(foreign)
-    _commit_all(foreign, *_FOREIGN_NAMES)
+    _commit_all(foreign, *(below + name for name in _FOREIGN_NAMES))
     elsewhere = tmp_path / "elsewhere"
-    _write_tree(elsewhere, {"page.md": "# Outside\n", "link-out.md/page.md": "# Out\n"})
+    _write_tree(
+        elsewhere,
+        {
+            "page.md": "# Outside\n",
+            "link-out.md/page.md": "# Out\n",
+            "extra.config": "[core]\n\tquotePath = false\n",
+        },
+    )
     project = tmp_path / "project"
     project.mkdir()
     gitdir = foreign / ".git"
-    if how == "commondir":
+    if route == "commondir":
         gitdir = foreign / ".git" / "worktrees" / "project"
         gitdir.mkdir(parents=True)
         (gitdir / "HEAD").write_text("ref: refs/heads/side\n", encoding="utf-8")
@@ -742,27 +777,56 @@ def _project_naming_a_foreign_repository(tmp_path: Path, how: str) -> Path:
         )
         (gitdir / "gitdir").write_text(str(project / ".git") + "\n", encoding="utf-8")
         shutil.copyfile(foreign / ".git" / "index", gitdir / "index")
-    (project / ".git").write_text(f"gitdir: {gitdir.as_posix()}\n", encoding="utf-8")
-    _write_tree(project, {"README.md": "# Sample\n\nText.\n"})
-    _link_folder(project / "link-out.md", elsewhere / "link-out.md")
-    _link_folder(project / "via", elsewhere)
-    return project
+    if route in ("gitdir", "commondir", "subfolder-root"):
+        (project / ".git").write_text(
+            f"gitdir: {gitdir.as_posix()}\n", encoding="utf-8"
+        )
+    else:
+        own = project / ".git"
+        shutil.copytree(foreign / ".git", own)
+        if route in ("objects-junction", "alternates"):
+            # git writes its objects read-only; Windows will not delete those.
+            for stored in (own / "objects").rglob("*"):
+                if stored.is_file():
+                    stored.chmod(stat.S_IWRITE | stat.S_IREAD)
+        if route == "objects-junction":
+            shutil.rmtree(own / "objects")
+            _link_folder(own / "objects", foreign / ".git" / "objects")
+        elif route == "alternates":
+            shutil.rmtree(own / "objects")
+            (own / "objects" / "info").mkdir(parents=True)
+            (own / "objects" / "info" / "alternates").write_text(
+                str(foreign / ".git" / "objects") + "\n", encoding="utf-8"
+            )
+        elif route == "include":
+            with (own / "config").open("a", encoding="utf-8") as config:
+                config.write(
+                    f"[include]\n\tpath = {(elsewhere / 'extra.config').as_posix()}\n"
+                )
+        else:
+            with (own / "config").open("a", encoding="utf-8") as config:
+                config.write(f"[core]\n\tworktree = {foreign.as_posix()}\n")
+    root = project / below if below else project
+    _write_tree(root, {"README.md": "# Sample\n\nText.\n"})
+    _link_folder(root / "link-out.md", elsewhere / "link-out.md")
+    _link_folder(root / "via", elsewhere)
+    return root
 
 
-@pytest.mark.parametrize("how", ["gitdir", "commondir"])
-def test_a_foreign_repository_named_by_the_git_file_reaches_no_file_outside(
-    tmp_path: Path, how: str
+@pytest.mark.parametrize("route", _ROUTES)
+def test_a_foreign_repository_reaches_no_file_outside(
+    tmp_path: Path, route: str
 ) -> None:
     """git may read another repository; the gate still reads only the project.
 
-    The ``.git`` file names a foreign repository with no link in it, so the
-    link rule lets git run, and git lists names that, in the project, are a
-    link out, a path through a junction and a missing file. Every file the
-    validators and the ``--all-perwrite`` run open, and every folder they
-    list, must be a regular file or a real folder inside the root, reached
-    through real folders, and the only program they start is git.
+    No route puts a link on git's search path, so the link rule lets git run,
+    and git lists names that, in the project, are a link out, a path through
+    a junction and a missing file. Every file the validators and the
+    ``--all-perwrite`` run open, and every folder they list, must be a regular
+    file or a real folder inside the root, reached through real folders, and
+    the only program they start is git.
     """
-    project = _project_naming_a_foreign_repository(tmp_path, how)
+    root = _project_naming_a_foreign_repository(tmp_path, route)
     scratch = tmp_path / "scratch"
     scratch.mkdir()
     events_path = scratch / "events.jsonl"
@@ -775,7 +839,7 @@ def test_a_foreign_repository_named_by_the_git_file_reaches_no_file_outside(
             "-c",
             _ORACLE_SCRIPT,
             str(events_path),
-            str(project),
+            str(root),
             *STANDALONE_MODULES,
         ],
         cwd=str(scratch),
@@ -794,14 +858,25 @@ def test_a_foreign_repository_named_by_the_git_file_reaches_no_file_outside(
     perwrite = json.loads(
         next(path for _, event, path in events if event == "perwrite")
     )
-    # git listed the foreign names, and only the regular file was read.
-    assert perwrite.get("check_error") is None
-    assert perwrite["files_scanned"] == 1
-    assert perwrite["files_skipped"]["link"] == 2
-    assert perwrite["files_skipped"]["missing"] == 1
+    if route != "core-worktree":
+        # With core.worktree naming another folder, what git lists from the
+        # project is git's own business; only the reads below are checked.
+        # git listed the foreign names, and only the regular file was read.
+        assert perwrite.get("check_error") is None
+        assert perwrite["files_scanned"] == 1
+        assert perwrite["files_skipped"]["link"] == 2
+        assert perwrite["files_skipped"]["missing"] == 1
+        # The control: the hook saw the one read, so it is not blind here.
+        assert any(
+            label == "all-perwrite"
+            and event == "open"
+            and Path(path) == root / "README.md"
+            for label, event, path in events
+        )
 
     # Python's own reads: the interpreter, its packages and this checkout's
     # source. A folder that holds the project does not count.
+    project = tmp_path / "project"
     runtime = [
         Path(folder).resolve()
         for folder in {
@@ -827,26 +902,32 @@ def test_a_foreign_repository_named_by_the_git_file_reaches_no_file_outside(
             path == base or base in path.parents for base in runtime
         )
 
-    def stays_inside(event: str, path: Path) -> bool:
-        if path != project and project not in path.parents:
-            return False
-        # Each level below the root is a real folder, and the target is a
-        # regular file (open) or a real folder (a listing).
-        # A path that does not exist is fine when the levels that do are real
-        # folders: the open fails without reaching anything.
-        level = project
-        for part in path.relative_to(project).parts[:-1]:
-            level = level / part
-            try:
-                if not stat.S_ISDIR(os.lstat(level).st_mode):
-                    return False
-            except FileNotFoundError:
-                return True
+    def real(path: Path, want: Callable[[int], bool]) -> bool | None:
+        """Return whether *path* is no link and *want* its mode; None if absent."""
         try:
-            mode = os.lstat(path).st_mode
+            info = os.lstat(path)
         except FileNotFoundError:
-            return True
-        return stat.S_ISREG(mode) if event == "open" else stat.S_ISDIR(mode)
+            return None
+        return not is_link(info) and want(info.st_mode)
+
+    def stays_inside(event: str, path: Path) -> bool:
+        if path != root and root not in path.parents:
+            return False
+        # Each level below the root is a real folder, not a link of any kind
+        # (a junction lstats as a folder on Windows), and the target is a
+        # regular file (open) or a real folder (a listing). A path that does
+        # not exist is fine when the levels that do are real folders: the
+        # open fails without reaching anything.
+        level = root
+        for part in path.relative_to(root).parts[:-1]:
+            level = level / part
+            found = real(level, stat.S_ISDIR)
+            if found is None:
+                return True
+            if not found:
+                return False
+        found = real(path, stat.S_ISREG if event == "open" else stat.S_ISDIR)
+        return found is None or found
 
     offenders = sorted(
         f"{label}: {event} {path}"

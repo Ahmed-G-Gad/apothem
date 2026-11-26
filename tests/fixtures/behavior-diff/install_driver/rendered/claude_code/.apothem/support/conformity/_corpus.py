@@ -138,7 +138,7 @@ _WINDOWS_UNHELD: Final[frozenset[str]] = frozenset(
 class CorpusListError(Exception):
     """The tracked-file list cannot be read: git was not run, or did not start.
 
-    git is not run when the ``.git`` entry it would use is a link (see
+    git is not run when a ``.git`` entry on its search path is a link (see
     :func:`~apothem.conformity._grep_base.nearest_linked_git_entry`), and
     does not start when it is missing. The message is a fixed sentence, like
     those of the git-check errors in :mod:`apothem.conformity._grep_base`,
@@ -178,9 +178,9 @@ def tracked_entries(root: Path) -> list[TrackedEntry]:
     it (see :func:`name_skip`); no path is resolved and no link is followed.
 
     Raises :class:`CorpusListError` when git is not run or cannot be started
-    (the ``.git`` entry git would use, in *root* or a folder above it, is a
-    link, so git would read another repository's index; or git did not
-    start),
+    (a ``.git`` entry in *root* or a folder above it that git searches is a
+    link, see :func:`~apothem.conformity._grep_base.nearest_linked_git_entry`;
+    or git did not start),
     :class:`~apothem.conformity._grep_base.GitFailedError` when git exits
     with an error (for example, *root* is not inside a git work tree), and
     :class:`~apothem.conformity._grep_base.GitTimeoutError` when git runs

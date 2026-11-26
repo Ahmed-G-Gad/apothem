@@ -71,7 +71,6 @@ from apothem.conformity._project_paths import (
     linked_git_entry,
     note_root_spelling,
     note_skipped,
-    path_kind,
     scan_entries,
     start_skip_log,
     take_skipped_paths,
@@ -763,33 +762,47 @@ def in_checkout(directory: Path) -> bool:
 
 
 def nearest_linked_git_entry(root: Path) -> Path | None:
-    """Return a ``.git`` link on git's search path from *root*, and note it.
+    """Return a ``.git`` entry on git's search path from *root* that is a link.
 
     git looks for the repository in *root* and in the folders above it
     (:func:`checkout_search_folders`). This looks at the ``.git`` entry of
-    each of those folders with ``os.lstat`` and returns the first one that
-    is a link (to a folder or a file, a junction, or one that dangles), after
-    noting it in the skip log. It does not stop at a real ``.git`` entry and
+    each of those folders with ``os.lstat``, as the tree is at that moment,
+    and returns the first one that is a link (to a folder or a file, a
+    junction, or one that dangles), after noting it in the skip log. An entry
+    ``os.lstat`` cannot read for any reason but its absence is returned too,
+    so the check fails closed. It does not stop at a real ``.git`` entry and
     does not judge whether a folder holds a repository: a link anywhere on
-    the path is refused, even above a repository git would use first.
+    the path is refused, even above a repository git would use first. That
+    false refusal, such as for every project below a home folder whose
+    ``.git`` is a link, is the deliberate cost of a simple rule.
 
     What this does not check: which repository git then reads. A ``.git``
-    file's ``gitdir:`` line, a ``commondir`` file, alternates,
-    ``core.worktree``, a configuration include, or a link inside the git
-    folder can all name another repository. That is safe for these checks
-    because git supplies only path names, the HEAD subject and commit times,
-    and each listed path is checked again, level by level, before anything is
-    read.
+    file's ``gitdir:`` line, ``commondir``, alternates, ``core.worktree``, a
+    configuration include, or a link inside the git folder can name another
+    one, and git follows them, so git can reach a network path or wait until
+    the time limit (see :mod:`apothem.conformity._git`). The gate never reads
+    inside a ``.git`` entry itself, uses git's output only as names, modes,
+    status letters, the subject of the last commit, commit times and a few
+    settings, and never opens a path git prints without checking each level
+    inside the root.
 
-    Every check that runs git calls this first, never runs git when it
-    returns an entry, and runs git with ``discover=True`` (see ``run_git``),
-    so a ``GIT_DIR`` in the environment cannot send git elsewhere.
+    Every check in the ``--all`` and ``--all-perwrite`` set that runs git
+    calls this first, never runs git when it returns an entry, and runs git
+    with ``discover=True`` (see ``run_git``). The ``--staged`` checks do not;
+    the conformity README says so.
     """
     if linked_git_entry(root):
         return root / GIT_ENTRY
     for folder in checkout_search_folders(root):
         entry = folder / GIT_ENTRY
-        if path_kind(entry) == LINK_ENTRY:
+        try:
+            info = os.lstat(entry)
+        except (FileNotFoundError, NotADirectoryError):
+            continue
+        except (OSError, ValueError):
+            note_skipped(entry)
+            return entry
+        if is_link(info):
             note_skipped(entry)
             return entry
     return None
@@ -798,8 +811,8 @@ def nearest_linked_git_entry(root: Path) -> Path | None:
 def linked_git_label(root: Path, entry: Path) -> str:
     """Return how a report names *entry*, as the skip log names it.
 
-    Relative to *root* when it lies inside it (``.git``, ``.git/HEAD``), and
-    by its full path otherwise, such as a linked ``.git`` above the root.
+    ``.git`` for the root's own entry, and the full path of one above the
+    root.
     """
     try:
         return entry.relative_to(root).as_posix()
@@ -808,17 +821,19 @@ def linked_git_label(root: Path, entry: Path) -> str:
 
 
 def linked_git_message(root: Path, entry: Path) -> str:
-    """Return the sentence for a check that did not run git through *entry*.
+    """Return the sentence for a check that did not run git because of *entry*.
 
-    It names *entry* (see :func:`linked_git_label`) and nothing git printed;
-    the root's own ``.git`` keeps the sentence it always had.
+    It names *entry* (see :func:`linked_git_label`) and nothing git printed.
+    The root's own ``.git`` keeps the sentence it always had; an entry above
+    the root may lie above a repository git would use first, so its sentence
+    says only what the gate did.
     """
     if entry == root / GIT_ENTRY:
         return "the .git entry is a link, so git would read another repository"
-    label = linked_git_label(root, entry)
-    if entry.name == GIT_ENTRY:
-        return f"the .git entry {label} is a link, so git would read another repository"
-    return f"{label}, which git reads, is a link, so git would read another repository"
+    return (
+        f"the .git entry {linked_git_label(root, entry)} on git's search path "
+        "is a link, so the gate does not run git below it"
+    )
 
 
 def iter_tree_files(
