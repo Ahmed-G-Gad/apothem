@@ -27,7 +27,7 @@ sourceHash: "2fe3999ec76b34d3"
 
 ## 厂商契约
 
-非 Claude Code 的工具运行同一个调度器，并在脚本之后加上 `--contract <id>`，例如 `"<python>" "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`。契约（`hooks/lib/vendor_contract.py`）将厂商的事件与工具名拼写以及载荷键转换为处理器读取的 Claude 形状，将信封改写为厂商读取的形状，并丢弃厂商不会交给模型的事件。不带该标志时，不进行任何转换，输出逐字节就是 Claude 信封。该标志是调度器已文档化命令行的一部分：`dispatch.py [--contract <id>]
+非 Claude Code 的工具运行同一个调度器，并在脚本之后加上 `--contract <id>`，例如 `"<python>" -E -s "<project>/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart`。契约（`hooks/lib/vendor_contract.py`）将厂商的事件与工具名拼写以及载荷键转换为处理器读取的 Claude 形状，将信封改写为厂商读取的形状，并丢弃厂商不会交给模型的事件。不带该标志时，不进行任何转换，输出逐字节就是 Claude 信封。该标志是调度器已文档化命令行的一部分：`dispatch.py [--contract <id>]
 <Event> [<message> ...]`。
 
 | 契约 | 读取 | 输出 | 交付的事件 |

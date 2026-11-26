@@ -155,8 +155,8 @@ explicit step-by-step alternative.
 
 ### Other ways to install
 
-Apothem installs several ways — full detail (including the VS Code, Gemini CLI,
-and Codex extensions) under [Install](#install):
+Apothem installs several ways — full detail (including the VS Code and Gemini CLI
+extensions and the Codex plugin) under [Install](#install):
 
 ```text
 # 1 — Claude Code plugin (inside Claude Code)
@@ -211,8 +211,9 @@ fabricates an identity, and never blocks on a placeholder one. `install
 --harness all` also previews the files it will write — grouped by project root
 versus your home directory — and asks before writing outside the project.
 
-Lifecycle commands exit 0 on success, print a structured JSON summary with
-`--format json`, and support `--dry-run` where a write would otherwise occur.
+Lifecycle commands exit 0 on success and print a structured JSON summary with
+`--format json`. `install`, `update`, `migrate-workspace` and `backups prune`
+also take `--dry-run`, which reports what would change and changes nothing.
 Narrower scopes (`--harness claude-code`, `--harness cursor`, etc.) target a
 single harness when you need it; project-scope harnesses still require
 `--project PATH`.
@@ -224,8 +225,9 @@ carries its vendored dependencies and runs from a checkout on system Python
 3.10 or newer (see
 [the self-contained runtime](https://apothem.ahmedgad.com/docs/architecture/self-contained-runtime/)).
 Two prerequisites are shared by every path — **system Python 3.10 or newer** on
-`PATH`, with the `click` and `rich` packages importable under it; the npm-shim
-and tool-plugin paths additionally need **Node.js 18 or newer** to run `npx`.
+`PATH`, with the `click` and `rich` packages importable under it; the npm shim,
+the VS Code-family extension, the Gemini CLI and Qwen Code extensions, and the
+Codex plugin additionally need **Node.js 18 or newer** to run `npx`.
 
 Eight install channels are available. Pick by how you already work; each
 channel's own subsection below gives its prerequisites, one copy-ready command,
@@ -235,7 +237,7 @@ and a verification step.
 |---|---|---|---|
 | 1 | [Claude Code plugin](#1--claude-code-plugin) | Full harness in Claude Code | Claude Code · Python 3.10+ |
 | 2 | [npm shim (`npx`)](#2--npm-shim-npx) | Full harness, any tool | Node 18+ · Python 3.10+ |
-| 3 | [One-shot installers](#3--one-shot-installers) | Full harness + an `apothem` command | Python 3.10+ (`git` for a network install) |
+| 3 | [One-shot installers](#3--one-shot-installers) | Full harness + an `apothem` command | Python 3.10+ (`git` and `gpg` for a network install) |
 | 4 | [VS Code family extension](#4--vs-code-family-extension) | Full harness from the editor | VS Code · Node 18+ · Python 3.10+ |
 | 5 | [Gemini CLI extension](#5--gemini-cli-extension) | Bootstrap that runs the engine | Gemini CLI · Node 18+ · Python 3.10+ |
 | 6 | [Qwen Code extension](#6--qwen-code-extension) | Bootstrap that runs the engine | Qwen Code · Node 18+ · Python 3.10+ |
@@ -243,8 +245,8 @@ and a verification step.
 | 8 | [Direct engine (`python -m apothem`)](#8--direct-engine-python--m-apothem) | Full harness from a checkout | Python 3.10+ (`click`, `rich`) |
 
 The npm shim (2), the one-shot installers (3), and the direct engine (8) run
-the full install for any harness. The Gemini CLI, Qwen Code, and
-Codex extensions (5–7) install a small bootstrap that shells out to the engine
+the full install for any harness. The Gemini CLI and Qwen Code extensions and
+the Codex plugin (5–7) install a small bootstrap that shells out to the engine
 (`npx @ahmed-g-gad/apothem install`) to materialize the full harness — they are
 the entry point, not the full delivery on their own.
 
@@ -347,8 +349,11 @@ ignore the folder you run them from and its parent folders, and fetch and
 verify the release. The installer uses a local tree only when you run the
 checkout's own `scripts/installer/install.sh` (or `install.ps1`) by its path,
 from any folder (for example `sh ~/src/apothem/scripts/installer/install.sh`),
-or when `APOTHEM_SOURCE` names that tree. The engine and the `apothem` command
-never import `click`, `rich` or `apothem` modules from the current folder.
+or when `APOTHEM_SOURCE` names that tree. The installers, updaters and
+uninstallers, the `apothem` shims, the npm launcher, the hooks and the
+conformity gate's validator processes keep the current folder off Python's
+module search path. A `python -m apothem` command you type yourself does not:
+`-m` reads modules from the current folder first.
 Empty and relative entries in your own `PYTHONPATH` are not passed on to the
 engine by any launcher (the installers, updaters, uninstallers, the POSIX and
 Windows `apothem` shims, and the npm launcher). A kept entry must be a full
@@ -418,40 +423,64 @@ anyone who can change the release's files can change both. It therefore runs
 only with `APOTHEM_ALLOW_UNVERIFIED=1` also set, and warns before it
 downloads anything.
 
-**What happens to `APOTHEM_HOME`.** Unless `APOTHEM_HOME` is a git clone that
-is updated in place, the installer builds and checks the new source in a
-folder beside `APOTHEM_HOME`, and swaps it in only when every check has
-passed; if a step fails or you interrupt the run, the earlier install is put
-back unchanged. An earlier Apothem install keeps everything that is not
-part of its source tree: backups, state, plans, memory and the other data the
-engine keeps there. A folder that holds only that engine data (`backups`,
-`state`, `plans`, `memory`, `contexts`, `learning`, `providers`) is updated
-without `--yes`. If `APOTHEM_HOME` holds a folder that is not an Apothem
-install, the installer refuses to touch it unless you pass `--yes` (`-Yes` on
-PowerShell); with `--yes` it moves the whole folder, unchanged, to
-`<APOTHEM_HOME>.before-apothem-<time>` and installs fresh. `--yes` can also
-replace a git clone with a release archive, but not while the clone holds
-local work: changes, stashes, unpushed commits, or untracked files in its
-source tree. Commit and push that work, or move it elsewhere, then re-run.
-When it does replace a clone, the clone's own tree (its history and source)
-moves to `<APOTHEM_HOME>.before-apothem-<time>` instead of being deleted, and
-the installer says where. A git clone of anything other than Apothem counts as
-a folder with no Apothem install. Before it fetches into an existing clone,
-the installer stops when the clone hides changes from git (files marked
-assume-unchanged or skip-worktree), when the clone's work tree is somewhere
-other than `APOTHEM_HOME`, or when the clone's own git config names a program
-for git to run or pulls in other config (`gpg.program`, `gpg.openpgp.program`,
-`core.fsmonitor`, `core.hooksPath`, `include.*`, `includeIf.*`). The clone's
-git hooks never run during an update. If
-`APOTHEM_HOME` is a symbolic link (on Windows, a symbolic link or a junction),
-the installer refuses and asks you to point `APOTHEM_HOME` at the folder the
-link leads to; the exception is an existing clone, which is updated in place.
-On Linux and macOS, a file or folder to carry over whose name has a space or
-another special character stops the install; move it out of `APOTHEM_HOME`
-first. The installer ignores `GIT_DIR` and the other `GIT_*` variables that
-redirect git, and refuses an `APOTHEM_REPO` that starts with `-`. `--dry-run`
-fetches and checks the source in a temporary folder, applies the same refusals
-as a real run, and leaves `APOTHEM_HOME` as it is.
+**What happens to `APOTHEM_HOME`.** Unless `APOTHEM_HOME` is a git clone that is
+updated in place, the installer builds and checks the new source in a folder
+beside `APOTHEM_HOME`, and swaps it in only when every check has passed; if a
+step fails or you stop the run with Ctrl+C or a termination signal, the earlier
+install is put back unchanged. A forced kill or a power loss can leave folders
+beside `APOTHEM_HOME`; the next fetched install names them, stops before it
+changes anything, and deletes nothing. Each run of the install, update or
+uninstall script holds the lock `<APOTHEM_HOME>.lock`, and a second run stops.
+An earlier Apothem install keeps everything that is not part of its source tree:
+backups, state, plans, memory and the other data the engine keeps there. A
+folder that holds only that engine data (`backups`, `state`, `plans`, `memory`,
+`contexts`, `learning`, `providers`) is updated without `--yes`. If
+`APOTHEM_HOME` holds a folder that is not an Apothem install, the installer
+refuses to touch it unless you pass `--yes` (`-Yes` on PowerShell); with `--yes`
+it moves the whole folder, unchanged, into a new folder,
+`<APOTHEM_HOME>.before-apothem-<time>`, and installs fresh. `--yes` can also
+replace a git clone with a release archive, but not while the clone holds local
+work: changes, stashes, unpushed commits, or untracked files in its source tree.
+Commit and push that work, or move it elsewhere, then re-run. When it does
+replace a clone, the clone's own tree (its history and source) moves into a new
+folder, `<APOTHEM_HOME>.before-apothem-<time>`, under its own name instead of
+being deleted, and the installer says where. A git clone of anything other than
+Apothem counts as a folder with no Apothem install. Before it fetches into an
+existing clone, the installer stops when the clone hides changes from git (files
+marked assume-unchanged or skip-worktree), when the clone's work tree is
+somewhere other than `APOTHEM_HOME`, when the clone holds a submodule or a git
+repository that git does not track (outside the engine's own data folders, such
+as `backups`), when `.git/info/attributes` names a filter
+or diff driver (`filter=` or `diff=`), when it or a config file is not a plain
+file, when the clone borrows objects from another repository, when a
+`.gitattributes` file in the work tree is untracked, changed, names such a
+driver or has a committed copy git cannot read, when files under `src`
+(spelled in any case) are untracked, or when the clone's own git
+config (`.git/config`, and `.git/config.worktree` when the clone has one) holds
+a setting other than the ones `git clone` and `git init` write there for a full
+clone, branch settings (a branch's `remote` and `pushremote` must be `origin`),
+`user.name`, `user.email`, `maintenance.auto`, `maintenance.strategy`,
+`pull.rebase` and `pull.ff`; the
+[troubleshooting page](https://apothem.ahmedgad.com/docs/install/troubleshooting/)
+lists them. The clone's git hooks never run during an update, and the update
+removes the Python cache folders under `src` before the engine runs from the
+clone. `APOTHEM_HOME` must be a folder only you can write. If `APOTHEM_HOME`
+is a symbolic link (on Windows, a symbolic link or a junction), the installer
+refuses and asks you to point `APOTHEM_HOME` at the folder the link leads to;
+the exception is an existing clone, which is updated in place. On Linux and
+macOS, a file or folder to carry over whose name has a space or another special
+character stops the install; move it out of `APOTHEM_HOME` first. The installer
+ignores `GIT_DIR` and the other `GIT_*` variables that redirect git, point it
+at another config file (`GIT_CONFIG`, `GIT_CONFIG_GLOBAL` and
+`GIT_CONFIG_SYSTEM`; `GIT_CONFIG_NOSYSTEM` stays as you set it) or make it
+read attributes from another tree (`GIT_ATTR_SOURCE`), reads no attributes
+file outside the clone (it empties `core.attributesFile` and sets
+`GIT_ATTR_NOSYSTEM`), trusts the
+`git`, `gpg` and `cosign` that `PATH` finds and your own global git config, and
+refuses an `APOTHEM_REPO` that starts with `-`. `--dry-run` fetches and checks
+the source in a temporary folder and leaves `APOTHEM_HOME` as it is. It makes
+the same checks as a real run, except that it does not fetch into an existing
+clone, and so does not check it for changes to tracked files.
 
 **Requirements.** A system Python 3.10 or newer must be on PATH, and the
 `click` and `rich` packages must be importable under that interpreter; the
@@ -466,7 +495,7 @@ locate the source (your own checkout, when you run the script by path from
 inside it or set `APOTHEM_SOURCE`; otherwise resolve the latest signed tag and
 clone the repository at it) → verify the
 tag signature (fail-closed) → create a starter profile from the example when
-none exists → run `python -m apothem install --harness <name>` from that
+none exists → run the engine's `install --harness <name>` from that
 source → verify → place an `apothem` command on PATH → print the next-step
 banner, all in one run. Re-running is idempotent: an existing clone is fetched,
 its new tag is checked, and only then is the clone checked out to the resolved
@@ -516,8 +545,8 @@ configuration (it prompts unless `--yes` / `-Yes`); pass `--remove-source` /
 ```shell
 apothem verify --harness claude-code
 
-# or, before the shim is on PATH, from the bundled source:
-PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
+# or, before the shim is on PATH, by the shim's full path:
+~/.local/bin/apothem verify --harness claude-code
 ```
 
 ### 4 — VS Code family extension
@@ -652,7 +681,9 @@ importable; a checkout of the repository. No Node.js required.
 Run the engine straight from a clone. The entry point puts the vendored
 dependencies (`src/apothem/_vendor`) on `sys.path`, so with `click` and `rich`
 importable, `PYTHONPATH=src` is the whole setup. Without them the engine stops
-with an error that names the exact `pip` command for your interpreter:
+with an error that names the exact `pip` command for your interpreter. `python
+-m` reads modules from the current folder first, so run these commands from the
+checkout root or another folder you trust:
 
 ```shell
 git clone https://github.com/ahmed-g-gad/apothem
@@ -750,23 +781,25 @@ The seventeen adapters, their install scope (**User** = your home configuration 
 |---|---|---|
 | Antigravity | User | `~/.gemini/GEMINI.md` + `~/.gemini/config/plugins/apothem/` |
 | Claude Code | User | `~/.claude/` + `~/.claude/.apothem/support/{templates,hooks,conformity,schemas}/` |
-| CodeBuddy | Project | `<project>/.codebuddy/rules/apothem-rules.md` + `<project>/.codebuddy/agents/` + `~/.codebuddy/skills/` + `~/.config/apothem/{rules,templates}/` |
+| CodeBuddy | Project | `<project>/.codebuddy/rules/apothem-rules.md` + `<project>/.codebuddy/agents/` + `<project>/.codebuddy/settings.local.json` + `<project>/.apothem/support/hooks/` + `~/.codebuddy/skills/` + `~/.config/apothem/{rules,templates}/` |
 | Codex | User | `~/.codex/` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
-| Cursor | Project | `<project>/.cursor/rules/` + `<project>/.cursor/agents/` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
+| Cursor | Project | `<project>/.cursor/rules/` + `<project>/.cursor/agents/` + `<project>/.cursor/hooks.json` + `<project>/.apothem/support/cursor/hooks/` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
 | Gemini CLI | Project | `<project>/GEMINI.md` + `<project>/.gemini/` |
-| GitHub Copilot | Project | `<project>/.github/copilot-instructions.md` + `<project>/.github/agents/` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
+| GitHub Copilot | Project | `<project>/.github/copilot-instructions.md` + `<project>/.github/agents/` + `<project>/.github/hooks/apothem.json` + `<project>/.apothem/support/github-copilot/hooks/` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
 | Hermes | User | `~/.hermes/` |
 | Kimi Code | Project | `<project>/AGENTS.md` + `<project>/.kimi-code/skills/` + `<project>/.kimi-code/agents/` + `<project>/.kimi-code/.apothem/support/` |
-| Kiro | Project | `<project>/.kiro/steering/apothem-rules.md` + `<project>/.kiro/agents/` + `~/.kiro/skills/` + `~/.config/apothem/{rules,templates}/` |
+| Kiro | Project | `<project>/.kiro/steering/apothem-rules.md` + `<project>/.kiro/agents/` + `<project>/.kiro/hooks/apothem.json` + `<project>/.apothem/support/kiro/hooks/` + `~/.kiro/skills/` + `~/.config/apothem/{rules,templates}/` |
 | Open-Claw | User | `~/.openclaw/` + `<workspace>/apothem/AGENTS.md` in each workspace |
 | OpenCode | User | `~/.config/opencode/` |
 | Qwen Code | User | `~/.qwen/` |
 | Trae | Project | `<project>/.trae/rules/apothem-rules.md` + `<project>/.trae/agents/` + `~/.trae/skills/` + `~/.config/apothem/{rules,templates}/` |
-| Windsurf | Project | `<project>/.devin/rules/apothem-rules.md` (Devin Desktop; `.windsurf/rules/` fallback) + `<project>/.devin/agents/` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
+| Windsurf | Project | `<project>/.devin/rules/apothem-rules.md` (Devin Desktop; `.windsurf/rules/` fallback) + `<project>/.devin/agents/` + `<project>/.devin/config.local.json` + `<project>/.apothem/support/windsurf/hooks/` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
 | Zed | Project | `<project>/.rules` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
 | GLM (Z.ai) | Project | `<project>/.apothem/providers/glm.toml` |
 
-Seven of the project-scope adapters (CodeBuddy, Cursor, GitHub Copilot, Kiro, Trae, Windsurf, and Zed) also write Apothem's skills, and the rules and templates they cite, to shared folders in your home directory; no skill or rule file is added to your repository, only the one rules file (and the `.apothem/` data folder). CodeBuddy, Cursor, GitHub Copilot, Kiro, Trae and Windsurf also receive Apothem's helpers as subagent files inside the project, in `.codebuddy/agents/`, `.cursor/agents/`, `.github/agents/`, `.kiro/agents/`, `.trae/agents/` and `.devin/agents/` (Windsurf holds back the three helpers that need web tools), and Kimi Code receives them in `.kimi-code/agents/`. One copy serves every project, every install that names a folder writes the same files, and `apothem uninstall` keeps a folder while another install still uses it.
+Seven of the project-scope adapters (CodeBuddy, Cursor, GitHub Copilot, Kiro, Trae, Windsurf, and Zed) also write Apothem's skills, and the rules and templates they cite, to shared folders in your home directory, so no skill or shared rule file is copied into your repository. Inside the project each writes its own rules or instruction file and, by default, the `.apothem/` folder, plus the hook and subagent files described below for the adapters that get them.
+CodeBuddy, Cursor, GitHub Copilot, Kiro and Windsurf also get hook entries in one file inside the project (`.codebuddy/settings.local.json`, `.cursor/hooks.json`, `.github/hooks/apothem.json`, `.kiro/hooks/apothem.json` and `.devin/config.local.json`); the hook scripts those entries run sit under `.apothem/support/`.
+CodeBuddy, Cursor, GitHub Copilot, Kiro, Trae and Windsurf also receive Apothem's helpers as subagent files inside the project, in `.codebuddy/agents/`, `.cursor/agents/`, `.github/agents/`, `.kiro/agents/`, `.trae/agents/` and `.devin/agents/` (Windsurf holds back the three helpers that need web tools), and Kimi Code receives them in `.kimi-code/agents/`. One copy serves every project, every install that names a folder writes the same files, and `apothem uninstall` keeps a folder while another install still uses it.
 
 Adapters live at [`src/apothem/harnesses/`](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/harnesses). Authoring a new adapter? See the [new-harness-adapter authoring runbook](https://apothem.ahmedgad.com/docs/runbooks/new-harness-adapter-authoring/).
 
@@ -791,7 +824,7 @@ pwsh -NoProfile -File scripts/installer/update.ps1   # Windows
 # Or re-materialize a specific harness from the current source:
 npx @ahmed-g-gad/apothem update --harness all --project . --dry-run
 npx @ahmed-g-gad/apothem update --harness all --project .
-PYTHONPATH="$HOME/.apothem/src" python -m apothem update --harness cursor --project .
+apothem update --harness cursor --project .
 ```
 
 The update script checks out the latest signed release tag in the git clone
@@ -815,14 +848,28 @@ changelog names did remove those folders.
 
 ## Uninstalling
 
+Remove the harness configuration first, while the `apothem` command is still
+there. Project-scope harnesses need the project folder, so a removal of every
+harness names it (on the other install channels, run it as
+`npx @ahmed-g-gad/apothem uninstall`):
+
 ```shell
-sh scripts/installer/uninstall.sh --harness all                 # POSIX
-pwsh -NoProfile -File scripts/installer/uninstall.ps1 -Harness all   # Windows
+apothem uninstall --harness all --project .
 ```
 
-The uninstall script removes the materialized harness configuration and prompts
-before removal unless `--yes` / `-Yes` is supplied. Install and update backups
-land at `~/.apothem/backups/YYYYMMDDTHHMMSSZ/`.
+Then run the uninstall script from the checkout. It removes one harness
+(`--harness` / `-Harness`, else `APOTHEM_HARNESS`, else `claude-code`) and the
+`apothem` command the installer added. The script takes no project folder, so
+give it a user-scope harness:
+
+```shell
+sh scripts/installer/uninstall.sh --harness claude-code                    # POSIX
+pwsh -NoProfile -File scripts/installer/uninstall.ps1 -Harness claude-code   # Windows
+```
+
+`apothem uninstall` and the script ask before removing anything unless you pass
+`--yes` (`-Yes` for the PowerShell script). Install and update backups land at
+`~/.apothem/backups/YYYYMMDDTHHMMSSZ/`.
 
 To remove the bundled source tree as well, pass `--remove-source` (POSIX) or
 `-RemoveSource` (Windows); the managed clone at `APOTHEM_HOME` is removed after
@@ -875,7 +922,7 @@ Reporting a security vulnerability? See [`SECURITY.md`](https://github.com/ahmed
 | [GitHub Discussions](https://github.com/ahmed-g-gad/apothem/discussions) | Open-ended questions, workflow patterns, proposal socialization |
 | [GitHub Issues](https://github.com/ahmed-g-gad/apothem/issues) | Defects, concrete feature requests, anchored clarification questions |
 | [Security](https://github.com/ahmed-g-gad/apothem/security) | Private Vulnerability Reporting (see [`SECURITY.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)) |
-| [Project website](https://apothem.ahmedgad.com/) | Comprehensive nine-section facade — landing page, get started, documentation, reference, harnesses, architecture, pipelines, project, community |
+| [Project website](https://apothem.ahmedgad.com/) | The landing page and the documentation, grouped as Get started, Platform, Reference, Operate, Learn and Project |
 
 Full channel-routing guidance at [`SUPPORT.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SUPPORT.md).
 

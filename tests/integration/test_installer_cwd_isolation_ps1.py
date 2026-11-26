@@ -167,7 +167,9 @@ def _poison(folder: Path, marks: Path) -> Path:
 def _env(tmp_path: Path, **extra: str) -> dict[str, str]:
     """An isolated environment: own HOME and temp folder, the fixture
     repository as the remote, a stub gpg that reports a good maintainer
-    signature, and an existing profile."""
+    signature, and an existing profile. The scripts clear GIT_CONFIG_GLOBAL,
+    so the stub gpg is named in HOME/.gitconfig, where git then looks; the
+    variable names the same text, for a script that does not clear it."""
     home = tmp_path / "home"
     home.mkdir(exist_ok=True)
     temp = tmp_path / "temp"
@@ -196,13 +198,14 @@ def _env(tmp_path: Path, **extra: str) -> dict[str, str]:
             "APOTHEM_TEST_RECORD": str(tmp_path / "engine-runs.jsonl"),
             "PIP_NO_INDEX": "1",
             "PIP_CONFIG_FILE": os.devnull,
-            "GIT_CONFIG_GLOBAL": str(
-                write_stub_gpg(
-                    tmp_path / "stub-gpg", good_signature_status(MAINTAINER_FINGERPRINT)
-                )
-            ),
+            "XDG_CONFIG_HOME": str(home / ".config"),
         }
     )
+    stub_config = write_stub_gpg(
+        tmp_path / "stub-gpg", good_signature_status(MAINTAINER_FINGERPRINT)
+    )
+    (home / ".gitconfig").write_bytes(stub_config.read_bytes())
+    env["GIT_CONFIG_GLOBAL"] = str(stub_config)
     env.update(extra)
     return env
 

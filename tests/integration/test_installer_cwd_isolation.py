@@ -202,6 +202,7 @@ def _env(
     env = {k: v for k, v in hermetic_git_env().items() if not k.startswith("APOTHEM_")}
     for key in [k for k in env if k.startswith(("PIP_", "PYTHON"))]:
         del env[key]
+    env.pop("XDG_CONFIG_HOME", None)
     env.update(
         {
             "HOME": str(home),
@@ -291,12 +292,17 @@ def _piped_release_env(tmp_path: Path) -> dict[str, str]:
         APOTHEM_REF=TAG,
         APOTHEM_REPO=str(tmp_path / "fixture-repo"),
         APOTHEM_VERIFY="release",
-        GIT_CONFIG_GLOBAL=str(
-            write_stub_gpg(
-                tmp_path / "stub-gpg", good_signature_status(MAINTAINER_FINGERPRINT)
-            )
-        ),
     )
+    # The installer clears GIT_CONFIG_GLOBAL, so the stub gpg is named in the
+    # isolated HOME's own .gitconfig (GIT_CONFIG_GLOBAL names it too).
+    gitconfig = Path(env["HOME"]) / ".gitconfig"
+    shutil.copyfile(
+        write_stub_gpg(
+            tmp_path / "stub-gpg", good_signature_status(MAINTAINER_FINGERPRINT)
+        ),
+        gitconfig,
+    )
+    env["GIT_CONFIG_GLOBAL"] = str(gitconfig)
     env["PATH"] = f"{cosign_dir}{os.pathsep}{env['PATH']}"
     return env
 
@@ -1335,7 +1341,9 @@ def test_settle_python_form_stops_on_an_unknown_answer(
             id="cygpath-prints-a-network-path",
         ),
         pytest.param("#!/bin/sh\nexit 1\n", "0", "/x y", "/x y", id="posix-full"),
-        pytest.param("#!/bin/sh\nexit 1\n", "0", "rel", None, id="posix-relative"),
+        # Every caller passes a full path (abs_path), so a POSIX Python's
+        # path is printed as given; a check there could never fail.
+        pytest.param("#!/bin/sh\nexit 1\n", "0", "rel", "rel", id="posix-as-given"),
     ],
 )
 @pytest.mark.parametrize("script", _HELPER_SCRIPTS)
@@ -1348,8 +1356,8 @@ def test_native_path_refuses_anything_but_a_full_path(
     wanted: str | None,
 ) -> None:
     """native_path prints a drive or network path from cygpath for a Windows
-    Python and a "/" path unchanged for a POSIX one; empty or other output
-    returns 1, so the caller stops."""
+    Python, and returns 1, so the caller stops, on empty or other cygpath
+    output; for a POSIX Python it prints the path unchanged."""
     stub = _stub_dir(tmp_path, cygpath=cygpath)
     program = (
         f"PY_WINDOWS={py_windows}\n"

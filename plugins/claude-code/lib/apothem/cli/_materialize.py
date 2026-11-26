@@ -13,6 +13,7 @@ command modules. Patchable-helper call sites resolve through the
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, cast
@@ -22,8 +23,8 @@ from rich.console import Console
 from rich.markup import escape
 
 import apothem.cli as _pkg
-from apothem.cli._clean_slate_phase import _clean_slate_phase
-from apothem.cli._common_flags import get_console
+from apothem.cli._clean_slate_phase import _clean_slate_phase, _refuse_unsafe_home
+from apothem.cli._common_flags import get_console, get_error_console
 from apothem.cli._helpers import (
     _EXIT_EXPECTED,
     _EXIT_PARTIAL,
@@ -47,6 +48,7 @@ from apothem.cli._helpers import (
     _result_dicts,
     _warning_dicts,
     _write_profile_text_safely,
+    kept_listing,
 )
 from apothem.cli._json_formatter import emit_json
 from apothem.cli._user_level_report import (
@@ -60,6 +62,7 @@ from apothem.harnesses._shared.install_driver import (
     MaterializationResult,
     MaterializationRun,
 )
+from apothem.harnesses._shared.install_driver_blocks import LEFT_AS_IS
 from apothem.lib.clean_slate import CleanSlateResult
 from apothem.lib.install_advisories import (
     hook_review_advisories,
@@ -84,6 +87,7 @@ class _RunContext:
     quiet: bool
     verbose: bool
     con: Console
+    no_color: bool = False
 
     @property
     def is_batch(self) -> bool:
@@ -127,13 +131,18 @@ class _RunInputs:
 
 @dataclass
 class _RunTotals:
-    """What the per-harness loop has accumulated so far."""
+    """What the per-harness loop has accumulated so far.
+
+    ``left_as_is`` lists each file a real run left as it is because of its
+    Apothem markers (see :data:`LEFT_AS_IS`): the run is then partial.
+    """
 
     files_written: list[str] = field(default_factory=list)
     results: list[dict[str, object]] = field(default_factory=list)
     warnings: list[dict[str, object]] = field(default_factory=list)
     last_output_path: Path | None = None
     last_materialization: MaterializationRun | None = None
+    left_as_is: list[str] = field(default_factory=list)
 
 
 def _materialize(
@@ -167,6 +176,11 @@ def _materialize(
     The run proceeds in phases: load the profile and adapters, the opt-in
     clean-slate removal, the blast-radius disclosure, the run-wide advisories,
     one materialization per adapter, then the closing envelope or summary.
+
+    A run that left a file as it is because of its Apothem markers (two or
+    more whole blocks, or marker pairs no rule can place) is partial: the
+    envelope's ``status`` is ``partial`` and the command exits with code 2,
+    except when *payload_sink* takes the envelope (its caller then exits).
     """
     con = get_console(no_color=no_color, quiet=quiet)
     profile_path = _resolve_profile_path(profile)
@@ -180,6 +194,7 @@ def _materialize(
         quiet=quiet,
         verbose=verbose,
         con=con,
+        no_color=no_color,
     )
     first_run = (
         create_default_profile
@@ -187,6 +202,8 @@ def _materialize(
         and not profile_path.exists()
         and not profile_path.is_symlink()
     )
+    if clean and not _refuse_unsafe_home(run):
+        return
     inputs = _load_run_inputs(run, project, first_run=first_run)
     if inputs is None:
         return
@@ -212,6 +229,12 @@ def _materialize(
         clean_result=clean_result,
         payload_sink=payload_sink,
     )
+    if totals.left_as_is:
+        # verify fails for a file left as it is, so a partial run ends here,
+        # without the --clean next step below; a sink's caller takes the exit.
+        if payload_sink is None:
+            sys.exit(_EXIT_PARTIAL)
+        return
     if clean and not dry_run and fmt != "json" and not quiet:
         verify_harness = "all" if run.is_batch else harness
         con.print(
@@ -386,8 +409,12 @@ def _materialize_harness(
         return False
 
     totals.last_materialization = materialization
+    left: list[str] = []
     if materialization is not None:
         totals.files_written.extend(materialization.files_written)
+        if not run.dry_run:
+            left = _left_as_is(materialization)
+    totals.left_as_is.extend(left)
     totals.results.extend(_result_dicts(harness_id, materialization))
     totals.warnings.extend(_warning_dicts(harness_id, materialization))
     # Shared-root advisories: a path this harness writes that other
@@ -417,9 +444,29 @@ def _materialize_harness(
     totals.warnings.extend(shared_advisories)
     if run.fmt != "json":
         _print_harness_outcome(
-            run, harness_id, materialization, shared_advisories, output_path
+            run, harness_id, materialization, shared_advisories, output_path, left
         )
     return True
+
+
+def _left_as_is(materialization: MaterializationRun) -> list[str]:
+    """Return each file *materialization* left as it is because of its markers.
+
+    Its warning carries :data:`LEFT_AS_IS`: the file holds two or more whole
+    blocks, or marker pairs no rule can place, so it got no current Apothem
+    block.
+    """
+    paths = (w.path for w in materialization.warnings if w.detail.get(LEFT_AS_IS))
+    return list(dict.fromkeys(paths))
+
+
+#: The line a run prints, on standard error, for the files it left as they
+#: are because of their Apothem markers (see :func:`_left_as_is`).
+_LEFT_LINE = (
+    "{harness} {verb} left {count} file(s) as they are, without Apothem's "
+    "current block, because of their Apothem marker lines; fix those lines as "
+    "each warning says, keeping your own text, then run apothem update again"
+)
 
 
 def _fail_with_totals(
@@ -445,8 +492,14 @@ def _print_harness_outcome(
     materialization: MaterializationRun | None,
     shared_advisories: list[dict[str, object]],
     output_path: Path,
+    left: list[str],
 ) -> None:
-    """Print one harness's advisories, warnings, and result line (plain mode)."""
+    """Print one harness's advisories, warnings, and result line (plain mode).
+
+    A run that left files as they are because of their markers (*left*)
+    prints, in place of the success line, a line on standard error that
+    names them, so ``--quiet`` keeps it too.
+    """
     con = run.con
     for advisory in shared_advisories:
         con.print(f"[yellow]Note:[/] {harness_id} - {escape(str(advisory['message']))}")
@@ -459,6 +512,13 @@ def _print_harness_outcome(
         con.print(
             f"[bold yellow]DRY RUN[/] would {run.verb_present} "
             f"[cyan]{harness_id}[/] -> {escape(str(output_path))}"
+        )
+    elif left:
+        line = _LEFT_LINE.format(
+            harness=harness_id, verb=run.verb_present, count=len(left)
+        )
+        get_error_console(no_color=run.no_color).print(
+            f"[red]✗[/] {escape(kept_listing(line, left, None))}"
         )
     else:
         con.print(
@@ -499,11 +559,16 @@ def _emit_run_outcome(
     clean_result: CleanSlateResult | None,
     payload_sink: list[dict[str, object]] | None,
 ) -> None:
-    """Emit the JSON lifecycle envelope, or the plain multi-harness summary."""
+    """Emit the JSON lifecycle envelope, or the plain multi-harness summary.
+
+    A run that left a file as it is because of its markers is ``partial``.
+    A *payload_sink* takes the envelope in either format.
+    """
     solo = len(inputs.adapters) == 1
-    if run.fmt == "json":
+    status = "partial" if totals.left_as_is else "success"
+    if run.fmt == "json" or payload_sink is not None:
         payload = _lifecycle_envelope(
-            status="dry_run" if run.dry_run else "success",
+            status="dry_run" if run.dry_run else status,
             command=run.verb_present,
             action="dry_run" if run.dry_run else run.verb_past.lower(),
             harness=run.harness,
@@ -518,16 +583,23 @@ def _emit_run_outcome(
         if clean_result is not None:
             payload["clean"] = _clean_slate_dict(clean_result)
         # When a caller supplies a sink (the guided ``quickstart`` flow), hand it
-        # the success envelope instead of emitting, so the caller can fold it into
-        # one combined JSON summary rather than printing two documents.
+        # the envelope instead of emitting: under --json the caller folds it
+        # into one combined summary rather than printing two documents, and in
+        # plain mode it reads the status. Either way it ends the run itself.
         if payload_sink is not None:
             payload_sink.append(payload)
         else:
             emit_json(payload)
-    elif len(inputs.adapters) > 1 and not run.quiet:
+    if run.fmt != "json" and len(inputs.adapters) > 1 and not run.quiet:
+        left = len(totals.left_as_is)
+        mark, tail = (
+            ("[yellow]![/]", f"; {left} file(s) left as they are, named above")
+            if left
+            else ("[green]✓[/]", "")
+        )
         run.con.print(
-            f"[green]✓[/] {run.verb_past} {len(inputs.adapters)} harnesses "
-            f"({len(totals.files_written)} files written)."
+            f"{mark} {run.verb_past} {len(inputs.adapters)} harnesses "
+            f"({len(totals.files_written)} files written){tail}."
         )
 
 

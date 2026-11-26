@@ -42,15 +42,23 @@ toolchain are independently useful.
 ## How do I customize the rules without forking the repository?
 
 Add a string to the `rules:` list in `~/.config/apothem/profile.yaml` and
-re-run the install or update. Rule files under `src/apothem/rules/` edit the
-packaged source tree, which the archive installer replaces when run with
-`--yes`.
+re-run the install or update. The rule files under `src/apothem/rules/` are
+part of the installed source tree, so an edit there does not survive updating
+Apothem itself. An installer re-run that installs the release archive, as it
+does when cosign is installed, replaces a release-archive install's source
+files, edits included. A re-run that takes the git-clone path instead, as it
+does without cosign, replaces them only with `--yes` (`-Yes` on PowerShell),
+which switches the install to a clone. Updating a git clone stops on an edited
+tracked file until you commit or stash the change, and then checks out the
+release's copy of the file.
 
 ## How do I disable a rule temporarily?
 
-Either rename the file out of the `src/apothem/rules/*.md`
-pattern or move it to a sibling directory the loader does not
-scan.
+Apothem has no profile key that turns off one packaged rule. Renaming or moving
+a file under `src/apothem/rules/` changes the installed source tree, so, like
+an edit (see the answer above), it does not survive updating Apothem itself. To
+adjust behavior without touching the source tree, add your own rule to the
+`rules:` list in your profile and run `apothem update`.
 
 ## What's the difference between rules, skills, and delegated workers?
 
@@ -101,7 +109,7 @@ accounts itself; they travel the way your project's files already travel
 ## Does Apothem need pip?
 
 No — not for the engine itself. The engine is a self-contained source tree
-with vendored dependencies — it runs as `python -m apothem` from any
+with vendored dependencies — it runs from any
 checkout, the npx cache, or the plugin tree on system Python 3.10+, and
 installs none of its own code into `site-packages` (`click` and `rich` are
 the only interpreter prerequisites). The one optional exception: if `click`

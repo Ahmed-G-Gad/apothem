@@ -179,7 +179,7 @@ guillemets. Une commande `bash` ressemble à ceci, avec votre interpréteur et l
 chemin de votre projet à la place des deux chemins :
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
 ```
 
 `--contract copilot` fait lire au répartiteur l'entrée en camelCase de Copilot et

@@ -38,6 +38,7 @@ from ._oracle_norm import (
     _TS_RE,
     _ULID_RE,
     TOK_INSTALL_ID,
+    TOK_PYBIN,
     TOK_ROOT,
     TOK_SRC,
     TOK_TIMESTAMP,
@@ -184,7 +185,13 @@ DIGEST_PLACEHOLDER = "<SHA256>"
 
 
 def _mask_ledger_digests(record: dict[str, Any]) -> dict[str, Any]:
-    """Return *record* with every target's file digests replaced by a token."""
+    """Return *record* with its machine-specific values replaced by tokens.
+
+    Every target's file digests, and the interpreter the install recorded
+    (``python_bin``, the capturing machine's Python).
+    """
+    if "python_bin" in record:
+        record["python_bin"] = TOK_PYBIN
     targets = record.get("targets")
     if not isinstance(targets, list):
         return record

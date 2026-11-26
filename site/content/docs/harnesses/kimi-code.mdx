@@ -39,8 +39,10 @@ surface is operator-owned; Apothem names it but authors no entries.
 
 **Files written:** `<project>/AGENTS.md` (managed block), the skills and the
 commands (as skills) under `<project>/.kimi-code/skills/`, one
-`<project>/.kimi-code/agents/<name>.md` for each Apothem helper, and the hooks,
-rules, and templates cohorts under `<project>/.kimi-code/.apothem/support/`.
+`<project>/.kimi-code/agents/<name>.md` for each Apothem helper, the hooks,
+rules, and templates cohorts under `<project>/.kimi-code/.apothem/support/`,
+and the data folder every project install creates, `<project>/.apothem/` by
+default (`contexts/`, `learning/`, `memory/`, `plans/`).
 
 ## Subagents
 
@@ -229,8 +231,17 @@ unaffected.
 ## Conformity gate
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Run it from your project folder. On Windows, use `python` in place of
+`python3` and the full path, since Windows PowerShell and cmd do not expand
+`~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` in PowerShell, or
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` in cmd. The path is
+where the installer puts the engine, and `-E -s` keeps your `PYTHONPATH` and
+user site-packages out of the gate; [Conformity gate](/docs/conformity-gate)
+explains both and the other installs.
 
 ## Troubleshooting
 

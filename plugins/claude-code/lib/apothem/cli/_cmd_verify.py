@@ -41,6 +41,12 @@ from apothem.cli._helpers import (
     _resolve_project_root,
 )
 from apothem.cli._json_formatter import emit_json
+from apothem.cli._stray_begin_report import (
+    record_lists,
+    size_limited,
+    stray_begin_note,
+    stray_begin_paths,
+)
 from apothem.cli._user_level_report import is_project_scope, verify_hint
 from apothem.lib.install_advisories import instruction_override_advisories
 from apothem.lib.profile import ProfileValidationError
@@ -235,15 +241,6 @@ def _verify_row(
     # fidelity: a present-but-drifted install fails verify so a chosen
     # profile is confirmed faithfully installed, not merely present.
     verified = verified_struct and drift != "drift"
-    # A failed structural check on a harness that writes user-home folders says
-    # which of them is missing or not Apothem's, so the fix is not a guess.
-    hint = (
-        None
-        if verified_struct
-        else _user_level_hint(
-            harness_id, adapter, project_root, output_path, installed=installed
-        )
-    )
     row: dict[str, object] = {
         "harness": harness_id,
         "outcome": "unchanged" if verified else "error",
@@ -257,14 +254,67 @@ def _verify_row(
     }
     if drift is not None:
         row["drift"] = drift
+    notes = (
+        []
+        if verified_struct
+        else _failure_notes(
+            row,
+            harness_id,
+            adapter,
+            sweep.project_root,
+            output_path,
+            installed=installed,
+        )
+    )
+    if sweep.fmt != "json":
+        _print_verify_line(
+            sweep.con,
+            harness_id,
+            output_path,
+            verified_struct,
+            drift,
+            names_files="stray_begin" in row,
+        )
+        for note in notes:
+            sweep.con.print(f"  [yellow]Note:[/] {escape(note)}")
+    return row
+
+
+def _failure_notes(
+    row: dict[str, object],
+    harness_id: str,
+    adapter: _Adapter,
+    project_root: Path | None,
+    output_path: Path,
+    *,
+    installed: bool,
+) -> list[str]:
+    """Add why the structural check failed to *row*; return the notes to print.
+
+    Says it where the cause is one the operator can act on, so the fix is not a
+    guess: ``user_level`` names the user-home folders that are missing or not
+    Apothem's, or that Apothem cannot prove it wrote (see
+    :func:`_user_level_hint`), and ``stray_begin`` names each file that holds a
+    BEGIN marker with no END marker, two or more whole blocks, or marker pairs
+    no rule can place, such as Apothem's block inside a code block of the
+    operator's (install and update keep such a marker, leave a file with two
+    blocks as it is, and leave such a pair while an install record lists the
+    file). Each note is also appended to the row's message.
+    """
+    notes: list[str] = []
+    hint = _user_level_hint(
+        harness_id, adapter, project_root, output_path, installed=installed
+    )
     if hint is not None:
         row["user_level"] = hint
-        row["message"] = f"{row['message']}; {hint['message']}"
-    if sweep.fmt != "json":
-        _print_verify_line(sweep.con, harness_id, output_path, verified_struct, drift)
-        if hint is not None:
-            sweep.con.print(f"  [yellow]Note:[/] {escape(str(hint['message']))}")
-    return row
+        notes.append(str(hint["message"]))
+    stray, note = _stray_begin_note(harness_id, adapter, project_root)
+    if stray:
+        row["stray_begin"] = {"files": [str(path) for path in stray], "message": note}
+        notes.append(note)
+    if notes:
+        row["message"] = "; ".join([str(row["message"]), *notes])
+    return notes
 
 
 def _override_notes(sweep: _VerifySweep, harness_id: str) -> list[dict[str, object]]:
@@ -316,6 +366,33 @@ def _user_level_hint(
         return None
 
 
+def _stray_begin_note(
+    harness_id: str, adapter: _Adapter, project_root: Path | None
+) -> tuple[list[Path], str]:
+    """Return the files whose markers fail *harness_id*'s verify, and the note.
+
+    The note names each file and how to fix it (see :func:`stray_begin_note`;
+    whether an install record lists a file, see :func:`record_lists`, decides
+    whether it says that install and update leave the file as it is). No
+    files and an empty note for a harness id the registry does not know (a
+    test double), or when no file holds such a marker.
+    """
+    try:
+        entry = _pkg.get_harness_entry(harness_id)
+    except KeyError:
+        return [], ""
+    stray = stray_begin_paths(entry, adapter, project_root)
+    if not stray:
+        return [], ""
+    note = stray_begin_note(
+        stray,
+        then="run apothem update and apothem verify again",
+        listed=record_lists(entry, adapter, project_root),
+        limited=size_limited(entry),
+    )
+    return stray, note
+
+
 def _verify_message(
     verified_struct: bool, drift: str | None, *, has_profile: bool
 ) -> str:
@@ -335,8 +412,14 @@ def _print_verify_line(
     output_path: Path,
     verified_struct: bool,
     drift: str | None,
+    *,
+    names_files: bool = False,
 ) -> None:
-    """Print one harness's verify verdict (plain mode)."""
+    """Print one harness's verify verdict (plain mode).
+
+    With *names_files* the failure is printed without the adapter's output path:
+    the note under the line names the files to fix, which can be other files.
+    """
     if verified_struct and drift != "drift":
         con.print(
             f"[green]✓[/] [cyan]{harness_id}[/] is verified at "
@@ -347,6 +430,8 @@ def _print_verify_line(
             f"[red]✗[/] [cyan]{harness_id}[/] is installed but drifted "
             f"from the profile at {escape(str(output_path))}"
         )
+    elif names_files:
+        con.print(f"[red]✗[/] [cyan]{harness_id}[/] is NOT verified")
     else:
         con.print(
             f"[red]✗[/] [cyan]{harness_id}[/] is NOT verified "

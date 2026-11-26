@@ -13,6 +13,11 @@ as the ``plans_dir`` argument so no real plan suite is touched.
 
 from __future__ import annotations
 
+import json
+import os
+import shlex
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -419,3 +424,115 @@ def test_resolve_plans_dir_never_uses_harness_path(
     monkeypatch.delenv(render._PLANS_DIR_ENV, raising=False)
     resolved = render._resolve_plans_dir({"workspace": {"project_dir": "/p"}})
     assert ".claude" not in resolved.parts
+
+
+# --- the configured command: python -E -s render.py -------------------------
+
+_RENDER_SCRIPT = Path(render.__file__).resolve()
+
+
+def _project_with_suite(base: Path) -> Path:
+    """Return a project folder with a non-ASCII name and one plan suite."""
+    project = base / "projé-日本"
+    suite = project / ".apothem" / "plans" / "suite-a"
+    suite.mkdir(parents=True)
+    (suite / "PROGRESS.md").write_text(
+        "- **Active phase:** Phase 01-start\n", encoding="utf-8"
+    )
+    return project
+
+
+def _command_flags() -> list[str]:
+    """Return the interpreter flags both shipped statusline commands pass."""
+    template = json.loads(
+        (_RENDER_SCRIPT.parent / "conformity.json").read_text(encoding="utf-8")
+    )
+    posix, windows = (
+        shlex.split(template[key])[1:-1] for key in ("command", "commandWindows")
+    )
+    assert posix == windows, (posix, windows)
+    return posix
+
+
+def _run_command(project: Path, cwd: Path, env: dict[str, str]) -> str:
+    """Run render.py as the statusline command does, payload on stdin as UTF-8."""
+    payload = json.dumps(
+        {"workspace": {"project_dir": str(project)}}, ensure_ascii=False
+    )
+    completed = subprocess.run(
+        [sys.executable, *_command_flags(), str(_RENDER_SCRIPT)],
+        input=payload.encode("utf-8"),
+        cwd=cwd,
+        env=env,
+        capture_output=True,
+        check=False,
+        timeout=60,
+    )
+    assert completed.returncode == 0, completed.stderr
+    return completed.stdout.decode("ascii")
+
+
+def _clean_env() -> dict[str, str]:
+    env = dict(os.environ)
+    env.pop(render._PLANS_DIR_ENV, None)
+    return env
+
+
+def test_command_ignores_modules_planted_for_the_interpreter(tmp_path: Path) -> None:
+    """``-E -s`` keeps an empty ``PYTHONPATH`` entry and the user site out.
+
+    The empty entry stands for the current folder, where ``json.py`` and
+    ``sitecustomize.py`` are planted; the user site holds ``usercustomize.py``.
+    None of them may run, and the line still renders.
+    """
+    marks = tmp_path / "marks"
+    marks.mkdir()
+    body = (
+        "import os, pathlib\n"
+        f"pathlib.Path({str(marks)!r}, __name__ + str(os.getpid())).write_text('ran')\n"
+    )
+    work = tmp_path / "work"
+    work.mkdir()
+    for name in ("json.py", "sitecustomize.py"):
+        (work / name).write_text(body, encoding="utf-8")
+    userbase = tmp_path / "userbase"
+    probe = subprocess.run(
+        [sys.executable, "-c", "import site; print(site.getusersitepackages())"],
+        env={**os.environ, "PYTHONUSERBASE": str(userbase)},
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    user_site = Path(probe.stdout.strip().splitlines()[-1])
+    user_site.mkdir(parents=True)
+    (user_site / "usercustomize.py").write_text(body, encoding="utf-8")
+    env = _clean_env()
+    env["PYTHONPATH"] = os.pathsep + str(tmp_path / "nonexistent")
+    env["PYTHONUSERBASE"] = str(userbase)
+
+    out = _run_command(_project_with_suite(tmp_path), work, env)
+
+    assert sorted(path.name for path in marks.iterdir()) == []
+    assert "Phase 01-start" in out, out
+
+
+def test_command_reads_a_non_ascii_project_folder_from_stdin(tmp_path: Path) -> None:
+    """The payload is read as UTF-8 even though ``-E`` ignores ``PYTHONUTF8``.
+
+    Only a locale whose code page is not UTF-8 shows the difference, so the
+    test is skipped where the interpreter already reads a pipe as UTF-8.
+    """
+    probe = subprocess.run(
+        [sys.executable, "-E", "-s", "-c", "import sys; print(sys.stdin.encoding)"],
+        input=b"",
+        env=_clean_env(),
+        capture_output=True,
+        check=True,
+    )
+    if probe.stdout.decode("ascii").strip().lower().replace("-", "") == "utf8":
+        pytest.skip("this interpreter already reads a pipe as UTF-8")
+    project = _project_with_suite(tmp_path)
+
+    out = _run_command(project, tmp_path, _clean_env())
+
+    assert out.strip() == "[Phase 01-start | 0 inquiries]", out

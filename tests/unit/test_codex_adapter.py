@@ -106,10 +106,10 @@ def test_install_renders_dispatch_path_into_hooks_json(
     root_posix = tmp_path.resolve().as_posix()
     session_hook = parsed["hooks"]["SessionStart"][0]["hooks"][0]
     assert session_hook["command"] == (
-        f'python3 "{root_posix}/hooks/dispatch.py" SessionStart'
+        f'python3 -E -s "{root_posix}/hooks/dispatch.py" SessionStart'
     )
     assert session_hook["commandWindows"] == (
-        f'"{python_bin}" "{root_posix}/hooks/dispatch.py" SessionStart'
+        f'"{python_bin}" -E -s "{root_posix}/hooks/dispatch.py" SessionStart'
     )
     # The rendered command path resolves to the dispatcher of this install.
     assert (tmp_path / "hooks" / "dispatch.py").is_file()

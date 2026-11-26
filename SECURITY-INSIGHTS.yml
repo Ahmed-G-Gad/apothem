@@ -9,8 +9,8 @@
 
 header:
   schema-version: 2.2.0
-  last-updated: '2026-10-26'
-  last-reviewed: '2026-10-26'
+  last-updated: '2026-11-26'
+  last-reviewed: '2026-11-26'
   url: https://raw.githubusercontent.com/ahmed-g-gad/apothem/main/SECURITY-INSIGHTS.yml
   comment: |
     Single-repository Security Insights file: it carries both a project and a
@@ -60,8 +60,10 @@ repository:
           Automated supply-chain and code-security controls run in CI: OpenSSF
           Scorecard, CodeQL, zizmor, pip-audit, npm audit, dependency-review,
           Trivy and gitleaks scanning, a REUSE/license-compatibility audit, and
-          DCO. Dependabot security and version updates and secret scanning
-          with push protection are enabled. The GitHub Release, npm and VS Code
+          DCO. ClusterFuzzLite fuzzes the operator-file parsers on each pull
+          request that touches the engine and in a daily batch. Dependabot
+          security and version updates and secret scanning with push
+          protection are enabled. The GitHub Release, npm and VS Code
           Marketplace publishing jobs wait for a maintainer's approval in the
           release environment. Marketplace publishing can use Trusted
           Publishing (the job's GitHub OIDC token exchanged for a
