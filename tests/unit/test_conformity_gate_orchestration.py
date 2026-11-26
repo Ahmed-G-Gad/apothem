@@ -21,6 +21,7 @@ from pathlib import Path
 import pytest
 
 from apothem.conformity import gate
+from apothem.conformity._corpus import TrackedEntry
 
 
 def test_load_check_is_memoized_by_module_name() -> None:
@@ -48,8 +49,8 @@ def test_load_check_loads_each_module_once_over_a_corpus_sweep(
     # A small corpus of a few text files under a fake tracked tree.
     files = ["a.py", "b.md", "c.yaml", "d.txt"]
 
-    def _fake_corpus(_root: Path) -> list[Path]:
-        return [(tmp_path / name) for name in files]
+    def _fake_corpus(_root: Path) -> list[TrackedEntry]:
+        return [TrackedEntry(tmp_path / name, "100644") for name in files]
 
     for name in files:
         (tmp_path / name).write_text("x = 1\n", encoding="utf-8")
@@ -92,7 +93,9 @@ def test_all_perwrite_payload_carries_files_truncated_flag(
     target = tmp_path / "sample.md"
     target.write_text("no header here\n", encoding="utf-8")
 
-    monkeypatch.setattr(gate, "_corpus_tracked_files", lambda _root: [target])
+    monkeypatch.setattr(
+        gate, "_corpus_tracked_files", lambda _root: [TrackedEntry(target, "100644")]
+    )
 
     _passed, payload_json = gate._run_all_perwrite(tmp_path)
     payload = json.loads(payload_json)
@@ -113,7 +116,8 @@ def test_all_perwrite_files_truncated_true_when_over_cap(
         f.write_text("no header here\n", encoding="utf-8")
         corpus.append(f)
 
-    monkeypatch.setattr(gate, "_corpus_tracked_files", lambda _root: corpus)
+    entries = [TrackedEntry(path, "100644") for path in corpus]
+    monkeypatch.setattr(gate, "_corpus_tracked_files", lambda _root: entries)
 
     _passed, payload_json = gate._run_all_perwrite(tmp_path)
     payload = json.loads(payload_json)
