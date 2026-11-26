@@ -144,7 +144,20 @@ function excerpt(body) {
 		}
 		lines.push(trimmed);
 	}
-	return lines.join(' ').slice(0, 180);
+	return cutAtWord(lines.join(' '), 180);
+}
+
+// Shorten text to `limit` characters on a word boundary and mark the cut. A
+// cut inside a code span would leave one backtick with no partner, which the
+// page shows as a literal character, so an unclosed span at the end is
+// dropped.
+function cutAtWord(text, limit) {
+	if (text.length <= limit) return text;
+	let cut = text.slice(0, limit);
+	const space = cut.lastIndexOf(' ');
+	if (space > 0) cut = cut.slice(0, space);
+	if ((cut.match(/`/g) || []).length % 2 === 1) cut = cut.slice(0, cut.lastIndexOf('`'));
+	return `${cut.trimEnd()} …`;
 }
 
 function displayName(path, frontmatter) {
@@ -885,9 +898,7 @@ function pipelineNavPages(commands) {
 // The first sentence of a description, cut on a word boundary when long.
 function firstSentence(text, limit = 160) {
 	const sentence = text.split(/(?<=[.!?])\s+(?=[A-Z/`])/)[0].trim();
-	if (sentence.length <= limit) return sentence;
-	const cut = sentence.slice(0, limit);
-	return `${cut.slice(0, cut.lastIndexOf(' '))} …`;
+	return cutAtWord(sentence, limit);
 }
 
 // The pipeline overview's index of every command, in nav order.
