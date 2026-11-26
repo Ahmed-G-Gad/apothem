@@ -110,6 +110,7 @@ from apothem.conformity._grep_base import (
     EXIT_USAGE,
     INSPECTED_KEY,
     STDIN_FLAG,
+    GitCheckError,
     make_parser,
     read_path_arguments,
 )
@@ -1492,7 +1493,7 @@ def _run_all_perwrite(root: Path) -> tuple[bool, str]:
     check_error: str | None = None
     try:
         entries = _corpus_tracked_files(root)
-    except CorpusListError as exc:
+    except (CorpusListError, GitCheckError) as exc:
         entries, check_error = [], str(exc)
     # matcher -> {"finding_count": int, "file_count": int, "files": [rel, ...]}
     blocking: dict[str, dict[str, object]] = {}
