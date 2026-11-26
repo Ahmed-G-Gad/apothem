@@ -38,6 +38,7 @@ from apothem.conformity import (
     agents_md_coverage_grep,
     conventional_commit_grep,
     dynamism_grep,
+    gate,
     gate_evidence_grep,
     harden_runner_grep,
     naming_grep,
@@ -984,6 +985,17 @@ def test_the_commit_subject_refuses_a_linked_git(tmp_path: Path) -> None:
     start_skip_log(root)
     assert conventional_commit_grep._read_head_subject(root) == (None, "not-a-git-repo")
     assert take_skipped_paths() == [".git"]
+
+
+def test_the_perwrite_run_refuses_a_linked_git(tmp_path: Path) -> None:
+    # The other repository tracks .plans/x.md and pkg/AGENTS.md; a run that
+    # listed them through the link would scan them.
+    root = _project_with_linked_git(tmp_path)
+    passed, payload_json = gate._run_all_perwrite(root)
+    payload = json.loads(payload_json)
+    assert not passed
+    assert payload["check_error"] == _LINKED_GIT_MESSAGE
+    assert payload["files_scanned"] == 0
 
 
 @_WINDOWS_ONLY

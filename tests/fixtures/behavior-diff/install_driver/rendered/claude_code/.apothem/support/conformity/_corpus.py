@@ -42,6 +42,11 @@ from typing import BinaryIO, Final
 
 from apothem.conformity._git import run_git
 from apothem.conformity._grep_base import GIT_LS_FILES_TIMEOUT_SECONDS
+from apothem.conformity._project_paths import (
+    NAME_SURROGATE_TAG_BIT,
+    is_link,
+    linked_git_entry,
+)
 
 # The largest file the corpus run reads, in bytes. It is well above any text a
 # project tracks, lockfiles and notebooks included; a larger tracked file is
@@ -124,11 +129,6 @@ _WINDOWS_UNHELD: Final[frozenset[str]] = frozenset(
     ':\\<>"|?*' + "".join(chr(code) for code in range(1, 32))
 )
 
-# Windows sets this bit in the tag of a reparse point that names another file or
-# folder: a symbolic link, a junction or a WSL link. ``os.lstat`` reports a
-# junction as a plain folder, so the tag is what shows it is a link.
-_NAME_SURROGATE_TAG_BIT: Final[int] = 0x20000000
-
 
 class CorpusListError(Exception):
     """The tracked-file list cannot be read; the message says why.
@@ -167,10 +167,16 @@ def tracked_entries(root: Path) -> list[TrackedEntry]:
     submodule when any of its stages does. Each name is judged as git writes
     it (see :func:`name_skip`); no path is resolved and no link is followed.
 
-    Raises :class:`CorpusListError` when the list cannot be read: git cannot be
-    started, git exits with an error (for example, *root* is not inside a git
-    work tree), or git runs past the time limit.
+    Raises :class:`CorpusListError` when the list cannot be read: *root*'s
+    ``.git`` entry is a link (git would read another repository's index, so
+    git is not run), git cannot be started, git exits with an error (for
+    example, *root* is not inside a git work tree), or git runs past the time
+    limit.
     """
+    if linked_git_entry(root):
+        raise CorpusListError(
+            "the .git entry is a link, so git would read another repository"
+        )
     try:
         completed = run_git(
             ["ls-files", "-s", "-z"],
@@ -256,13 +262,6 @@ def _windows_cannot_hold(part: str) -> bool:
         return True
     digits = bare[4:]
     return bare.startswith("git~") and digits.isascii() and digits.isdigit()
-
-
-def is_link(info: os.stat_result) -> bool:
-    """Return True when *info*, from ``os.lstat``, describes a link of any kind."""
-    if stat.S_ISLNK(info.st_mode):
-        return True
-    return bool(getattr(info, "st_reparse_tag", 0) & _NAME_SURROGATE_TAG_BIT)
 
 
 def leaves_root(root: Path, path: Path) -> bool:
@@ -499,7 +498,7 @@ if sys.platform == "win32":
         first = _create_file(path, _FILE_FLAG_OPEN_REPARSE_POINT)
         try:
             tag = _reparse_tag(first)
-            if tag is not None and tag & _NAME_SURROGATE_TAG_BIT:
+            if tag is not None and tag & NAME_SURROGATE_TAG_BIT:
                 raise OSError(errno.ELOOP, "a link is in the file's place", str(path))
             if tag == 0:
                 return first

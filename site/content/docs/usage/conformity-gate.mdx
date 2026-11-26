@@ -150,8 +150,8 @@ entry. When it is a link, none of them runs git, and each lists `.git` under
 `skipped_links`. `conventional-commit-grep` then fails as it does outside a
 checkout, `no-global-plans-grep` reports the link as a finding and fails,
 and the companion coverage check skips its freshness test, as it does with
-no history. `--all-perwrite` does not look yet: it still lists the tracked
-files through such a link.
+no history. `--all-perwrite` does not list the tracked files either: it
+fails with a `check_error` that names the link.
 
 Six validators start at the repository root and search the whole tree for the
 files they check:

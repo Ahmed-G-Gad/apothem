@@ -109,8 +109,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   folder is a link fails instead of passing as if the folder were not there
   yet. The checks that run git read the `.git` folder through git itself.
   When the root's `.git` entry is a link, the three `--all` validators that
-  run git do not run it and list `.git` under `skipped_links`, and
-  `no-global-plans-grep` reports the link as a failing finding.
+  run git do not run it and list `.git` under `skipped_links`,
+  `no-global-plans-grep` reports the link as a failing finding, and
+  `--all-perwrite` lists no tracked files and fails with a `check_error`.
 
 ## [1.6.0] - 2026-11-26
 
