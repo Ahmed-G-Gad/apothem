@@ -51,10 +51,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   from their place in the translated sidebars. The "Page not found" page is
   no longer listed. Two entries with the same name, "CLI reference", are now
   "CLI overview" and "CLI reference", and the `CLAUDE.md` page title no longer
-  shows stray backtick characters. The fields at the top of each harness page and
-  each command page show one per line instead of running together, and the
+  shows stray backtick characters. A section with a single page, such as
+  "Conformity gate", is one link rather than a folder that opens onto nothing.
+  The fields at the top of each harness page, each command page and the
+  positioning page show one per line instead of running together, and the
   changelog and three architecture pages no longer repeat their title as a
-  second top-level heading.
+  second top-level heading. Backtick and asterisk characters no longer show as
+  literal text in four command-page summaries, the quick start's "The apothem
+  command" box, a few bold phrases in the Japanese, Korean and Simplified
+  Chinese pages, and the cut-off descriptions in the rules, commands and
+  helpers tables.
 - **The conformity gate reads every byte of a path name, and a failed
   `git diff` does not pass from a subfolder.** The gate read git's lists of
   path names as text, which turned a carriage return in a name into a line
