@@ -1886,7 +1886,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   available, or a machine without `git` still passes these checks.
   `no-global-plans-grep` still fails, as before, outside a checkout git can
   read or without `git`. The gate's advisory default still exits `0` on such
-  a result, and `--strict` exits `2`. ## [1.5.0] - 2026-10-28 ### Added
+  a result, and `--strict` exits `2`.
+
+## [1.5.0] - 2026-10-28
+
+### Added
+
 - **Windsurf and Cursor now run Apothem's session hooks.** For Windsurf the
   install registers two Devin Local hooks in the project's
   `.devin/config.local.json`, the local override Devin documents as gitignored
