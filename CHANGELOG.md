@@ -11,6 +11,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- **CI checks the docs sidebar of every language and the built pages.** A
+  new step runs `npm run ia:check`, which fails when a sidebar list, English
+  or translated, differs from the English page order the site's list script
+  writes. Another runs `npm run check:built-docs` after the docs build, which
+  fails when a sidebar section cannot be opened and closed from a button with
+  its state exposed, or a page shows a literal `**` outside code.
 - **The CI metrics job reuses the coverage shards' data instead of running the
   test suite again.** The `ci.yml` metrics job ran the whole suite under
   coverage on one runner in 18 to 30 minutes, and its 30-minute limit cancelled
@@ -32,27 +38,31 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 ### Fixed
 
 - **The documentation sidebar shows at full width again, with each page
-  listed once.** On every tablet and desktop page the sidebar had collapsed
-  to a strip a few pixels wide, so its links could not be read and the header
-  text overlapped. It is back at its full width. Each section's title is now
-  the link to its overview page, instead of the title followed by the same
-  page under a near-identical name, and the blog posts are no longer listed a
-  second time inside an extra "Posts" folder. The sidebar of every language
-  lists the same pages in the same order as the English one: the `backups`
-  command, the evals guide and the OpenSSF Best Practices page were missing
-  from their place in the translated sidebars. The "Page not found" page is
-  no longer listed. Two entries with the same name, "CLI reference", are now
-  "CLI overview" and "CLI reference", and the `CLAUDE.md` page title no longer
-  shows stray backtick characters. A section with a single page, such as
-  "Conformity gate", is one link rather than a folder that opens onto nothing.
-  The fields at the top of each harness page, each command page and the
-  positioning page show one per line instead of running together, and the
+  listed once, in every language.** On every tablet and desktop page the
+  sidebar had collapsed to a strip a few pixels wide, so its links could not
+  be read and the header text overlapped. It is back at its full width. Each
+  section's title is now the link to its overview page, instead of the title
+  followed by the same page under a near-identical name, and a separate button
+  beside it opens and closes the section from the keyboard and tells a screen
+  reader whether it is open. A section with a single page, such as
+  "Conformity gate", is one link. The blog posts are no longer listed a second
+  time inside an extra "Posts" folder, and the "Page not found" page is no
+  longer listed. The sidebar of every language lists the same pages in the
+  same order as the English one: the `backups` command, the evals guide and
+  the OpenSSF Best Practices page were missing from their place in the
+  translated sidebars. Two entries with the same name, "CLI reference", are
+  now "CLI overview" and "CLI reference", and the `CLAUDE.md` page title no
+  longer shows stray backtick characters.
+- **Docs page text shows as written.** The fields at the top of each harness
+  page, each command page and the positioning page, the plan-integrity
+  criteria on the cross-cutting mandates page and the sign-off fields of the
+  deployment checklist show one per line instead of running together. The
   changelog and three architecture pages no longer repeat their title as a
   second top-level heading. Backtick and asterisk characters no longer show as
   literal text in four command-page summaries, the quick start's "The apothem
-  command" box, a few bold phrases in the Japanese, Korean and Simplified
-  Chinese pages, and the cut-off descriptions in the rules, commands and
-  helpers tables.
+  command" box, bold phrases in the Japanese, Korean and Simplified Chinese
+  pages, and the cut-off descriptions in the rules, commands and helpers
+  tables.
 - **The conformity gate reads every byte of a path name, and a failed
   `git diff` does not pass from a subfolder.** The gate read git's lists of
   path names as text, which turned a carriage return in a name into a line
