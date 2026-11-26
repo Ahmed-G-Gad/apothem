@@ -34,6 +34,10 @@ derive from it rather than re-declaring it.
   the page; it also holds the light and dark `--background`, `--foreground`,
   `--primary` and `--ring` variables to the `assets/design-tokens.css` steps
   they mirror (run by `npm test`).
+- **`sidebar-width.test.mjs`** — holds the docs sidebar width that
+  `app/global.css` sets through the `nav` landmark wrapper equal to the width
+  Fumadocs sets, and checks the wrapper still has the shape that rule matches
+  (run by `npm test`).
 - **`hreflang.ts`** — builds the per-page `alternates` (hreflang) set from a
   locale-agnostic path, emitting the `en` self-link, `x-default`, and one
   alternate per routed locale that carries a version of the page.
