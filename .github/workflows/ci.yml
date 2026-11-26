@@ -184,6 +184,10 @@ jobs:
             && [ "$BEFORE" != 0000000000000000000000000000000000000000 ]; then
             base=$BEFORE
           fi
+          if ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+            echo "::notice::$base is not in the clone (a force push?); comparing with HEAD^1"
+            base=HEAD^1
+          fi
           python scripts/dev/check_changelog_released_sections.py --base "$base"
       - name: Mypy (type check)
         run: python -m mypy
