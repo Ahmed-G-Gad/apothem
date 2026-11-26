@@ -983,7 +983,11 @@ def test_the_coverage_history_refuses_a_linked_git(tmp_path: Path) -> None:
 def test_the_commit_subject_refuses_a_linked_git(tmp_path: Path) -> None:
     root = _project_with_linked_git(tmp_path)
     start_skip_log(root)
-    assert conventional_commit_grep._read_head_subject(root) == (None, "not-a-git-repo")
+    assert conventional_commit_grep._read_head_subject(root) == (
+        None,
+        "not-a-git-repo",
+        None,
+    )
     assert take_skipped_paths() == [".git"]
 
 

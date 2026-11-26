@@ -679,7 +679,7 @@ measured line plus branch value rounded down. Raise a floor when coverage
 rises; never lower one to make a change pass. To check locally:
 
 ```bash
-python -m pytest --cov=src/apothem --cov-report=json:coverage.json
+python -m pytest --cov=src/apothem --cov-fail-under=0 --cov-report=json:coverage.json
 python scripts/dev/collect_metrics.py --coverage-json coverage.json --check-floors \
   --skip-hooks --skip-coldstart --harness zed
 ```
@@ -687,7 +687,8 @@ python scripts/dev/collect_metrics.py --coverage-json coverage.json --check-floo
 ### The metrics artifact
 
 The CI `metrics` job runs `scripts/dev/collect_metrics.py` on every push and
-pull request and uploads `metrics.json` (`schema_version: 1`). Every value
+pull request once both coverage shards pass, using the coverage data they
+measured, and uploads `metrics.json` (`schema_version: 1`). Every value
 that is `null` carries its reason under `nulls`.
 
 | Key | What it measures |

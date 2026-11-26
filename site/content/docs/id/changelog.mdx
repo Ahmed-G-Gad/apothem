@@ -21,8 +21,55 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Changed
+
+- **The CI metrics job reuses the coverage shards' data instead of running the
+  test suite again.** The `ci.yml` metrics job ran the whole suite under
+  coverage on one runner in 18 to 30 minutes, and its 30-minute limit cancelled
+  some runs. The two coverage shards now measure all of `src/apothem`, and the
+  metrics job combines their data and reports the same per-package figures and
+  floors in about a minute, so the suite runs under coverage once per CI run
+  instead of twice. The `coverage` job's reports keep only the engine folders,
+  read from `[tool.coverage.run] source` in `pyproject.toml`, so the engine
+  figure and its 80% floor stay the same.
+- **CI fails a pull request that edits released release notes.** A release
+  renames `[Unreleased]` in `CHANGELOG.md` to the new version. A branch cut
+  before the release could then merge the release in with no conflict and
+  leave its entry inside the released section. A new step in the required
+  `quality / ubuntu-latest / py3.12` check compares every released section
+  with the base branch and names the section that changed. A commit trailer
+  `Changelog-Released-Edit: <version> <reason>` allows a deliberate
+  correction to that version's notes only.
+
 ### Security
 
+- **`apothem doctor --project` reads project hook files more carefully.**
+  Doctor now reads each hook command from the keys the tool itself reads (an
+  `args` list only for Claude Code, the one tool that runs one) and takes at
+  most 100 commands from one file. It reads no hook file larger than 4 MB or
+  that is not a regular file, and no project hook file reached through a link.
+  When the tool runs hooks from such a file (including a settings file the
+  hooks are merged into), a `hook.unchecked` line names it; for a link, the
+  line also names the link on the path. An update keeps the file as it is, so
+  the fix says to shrink or replace the file, or to check where the link leads
+  and replace it, or remove only the link itself and run the `update` command
+  the fix ends with. A link, or a Python file the install did not write, in the
+  hook script's folder gets a fix that says to remove it (for a link, only the
+  link itself), since an update keeps it too. A hook script the install
+  recorded outside the project is not started, and its line says so. Doctor
+  follows no link to the files a hook command runs, and a command whose known
+  paths cannot be looked up is reported as `hook.unchecked`. A missing hook
+  script's fix now runs `update` to put the scripts back, and the last line
+  says "some hook commands" of a harness that also started others that passed.
+  For a recorded interpreter inside the project, the fix runs `apothem update`
+  from a folder outside the project, with an Apothem that runs under a Python
+  outside the project, which records that Python instead. Before that, you
+  deactivate the project's virtual environment if it is active; for npx,
+  `APOTHEM_PYTHON` picks the Python. The update runs outside the project
+  because `python -m apothem`, run in the project folder, would start a folder
+  named `apothem` committed there. A ledger doctor cannot open, or an
+  error while it checks the hook files, is now named as such instead of
+  stopping the check.
 - **The conformity gate's `--all-perwrite` reads only regular files inside the
   project it checks.** It lists the tracked files with `git ls-files`, and git
   lists each entry exactly as the repository's index holds it. A project that
@@ -61,9 +108,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   link points to is still checked under its own path. Each `git ls-files` call,
   in `--all-perwrite` and in `no-global-plans-grep`, now stops after 60 seconds,
   so a repository setting that makes git wait, such as an `include.path` that
-  points at a named pipe, holds up each call for that long at most; on Windows,
-  when `git` is the launcher in Git's `cmd` folder, the git it starts can keep
-  running past the limit, and the wait for it may never end;
+  points at a named pipe, holds up each call for that long at most;
   `no-global-plans-grep` reports its timeout as `check_error` and, when git
   fails, gives git's exit code instead of git's own text. A `--all-perwrite` run
   that read no file reports `passed: false` with `empty_scope_expected: false`,
@@ -82,6 +127,43 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `--all-perwrite`, `link-check` also looks up nothing outside the project: a
   link that leaves it counts as external, and the search for a
   `site/content/docs` folder stops at the project folder.
+- **A stalled validator or `git` command no longer holds up the conformity
+  gate's `--all` and `--check` runs, and no longer counts as a pass.** `--all`
+  and `--check` ran each standalone validator as a program of its own with no
+  time limit, so one that never finished stopped the whole run. A project that
+  came with its `.git` folder from someone else, in an archive or a shared
+  folder, can cause that: an `include.path` in its `.git/config` that names a
+  named pipe makes `git` wait for ever. The gate now gives each standalone
+  validator 10 minutes. One still running then is stopped together with every
+  program it started, and reported with `passed: false` and a `check_error`
+  that says it did not finish. Each validator runs in a session of its own on
+  Linux and macOS, where a `SIGTERM` or `SIGHUP` to the gate stops it before
+  the gate exits, and in a job object on Windows, which ends its programs when
+  the gate ends too. Ctrl+C prints one line and exits `130`. The `git`
+  commands of `conventional-commit-grep`, `agents-md-coverage-grep` and the
+  `--staged` checks of `production-ready-pr-grep` and `semver-stability-grep`
+  had limits of 5 or 10 seconds, but a command that ran past its limit passed:
+  the commit-subject check took it for a folder without history, the companion
+  check skipped its freshness test, and the `--staged` checks read an empty
+  change set or skipped the file. On Windows, where `git` on `PATH` is usually
+  the launcher Git installs, the limit did not even end the wait. Each of
+  these commands now has 1 minute, far more than it takes, the limit holds on
+  every platform, and a command past it reports `passed: false` with a
+  `check_error` that names the command. So does a `git` that refuses a
+  checkout it found, such as one another user owns or one with a bad
+  configuration line, which used to count as a repository with no commit. This
+  can turn a run that passed red: a folder whose `.git` entry git cannot open,
+  such as an empty `.git` folder outside any other checkout or a `.git` file
+  that names a folder that no longer exists, now fails these checks, because
+  the history they need may be there unread. `agents-md-coverage-grep` exits
+  `2` for either although its findings are otherwise advisory, and its read of
+  the whole history now gets 5 minutes, so a large history is slow rather than
+  a failure. A plain folder that is not inside any git checkout, a repository
+  with no commit yet, a partial clone, where any failed history read counts as
+  history that is not available, or a machine without `git` still passes these
+  checks. `no-global-plans-grep` still fails, as before, outside a checkout
+  git can read or without `git`. The gate's advisory default still exits `0`
+  on such a result, and `--strict` exits `2`.
 
 - **The conformity gate's `--all` validators open and list only real files
   inside the project they check.** A project that came from someone else, in

@@ -41,7 +41,11 @@ from pathlib import Path
 from typing import BinaryIO, Final
 
 from apothem.conformity._git import run_git
-from apothem.conformity._grep_base import GIT_LS_FILES_TIMEOUT_SECONDS
+from apothem.conformity._grep_base import (
+    GIT_LS_FILES_TIMEOUT_SECONDS,
+    GitFailedError,
+    GitTimeoutError,
+)
 from apothem.conformity._project_paths import (
     NAME_SURROGATE_TAG_BIT,
     is_link,
@@ -131,11 +135,12 @@ _WINDOWS_UNHELD: Final[frozenset[str]] = frozenset(
 
 
 class CorpusListError(Exception):
-    """The tracked-file list cannot be read; the message says why.
+    """git cannot be started to list the tracked files.
 
-    The message is a fixed sentence with git's exit code at most. git's own
-    error text is left out, because it can quote the repository's settings and
-    name files outside the project.
+    The message is a fixed sentence, like those of the git-check errors in
+    :mod:`apothem.conformity._grep_base`: git's own error text is left out,
+    because it can quote the repository's settings and name files outside the
+    project.
     """
 
 
@@ -167,11 +172,14 @@ def tracked_entries(root: Path) -> list[TrackedEntry]:
     submodule when any of its stages does. Each name is judged as git writes
     it (see :func:`name_skip`); no path is resolved and no link is followed.
 
-    Raises :class:`CorpusListError` when the list cannot be read: *root*'s
-    ``.git`` entry is a link (git would read another repository's index, so
-    git is not run), git cannot be started, git exits with an error (for
-    example, *root* is not inside a git work tree), or git runs past the time
-    limit.
+    Raises :class:`CorpusListError` when git is not run or cannot be started
+    (*root*'s ``.git`` entry is a link, so git would read another
+    repository's index, or git did not start),
+    :class:`~apothem.conformity._grep_base.GitFailedError` when git exits
+    with an error (for example, *root* is not inside a git work tree), and
+    :class:`~apothem.conformity._grep_base.GitTimeoutError` when git runs
+    past the time limit: the same errors, in the same words, as the
+    standalone validators' own git commands.
     """
     if linked_git_entry(root):
         raise CorpusListError(
@@ -184,15 +192,11 @@ def tracked_entries(root: Path) -> list[TrackedEntry]:
             timeout=GIT_LS_FILES_TIMEOUT_SECONDS,
         )
     except subprocess.TimeoutExpired as exc:
-        raise CorpusListError(
-            f"git ls-files did not finish within {GIT_LS_FILES_TIMEOUT_SECONDS} seconds"
-        ) from exc
+        raise GitTimeoutError("git ls-files", GIT_LS_FILES_TIMEOUT_SECONDS) from exc
     except OSError as exc:
         raise CorpusListError("git did not start") from exc
     if completed.returncode != 0:
-        raise CorpusListError(
-            f"git ls-files failed with exit code {completed.returncode}"
-        )
+        raise GitFailedError("git ls-files", completed.returncode)
     modes: dict[str, str] = {}
     for record in completed.stdout.split("\0"):
         # Each record is "<mode> <object> <stage>\t<path>".
