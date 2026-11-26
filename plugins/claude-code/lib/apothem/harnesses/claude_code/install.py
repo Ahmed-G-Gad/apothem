@@ -162,11 +162,13 @@ def install(
     ]
     if dry_run:
         return run.extend(anchor)
-    return install_driver.finalize_install(
-        run.extend(anchor),
-        root=harness_root,
-        missing_before=missing,
-    )
+    # The record keeps the interpreter this pass wrote into hook commands.
+    with install_driver.content_tokens(PYTHON_BIN=python_bin):
+        return install_driver.finalize_install(
+            run.extend(anchor),
+            root=harness_root,
+            missing_before=missing,
+        )
 
 
 def plan(output_path: Path) -> list[dict[str, str]]:

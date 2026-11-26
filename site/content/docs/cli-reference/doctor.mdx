@@ -70,35 +70,94 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   stdin, a scratch working directory, and `PYTHONPATH` removed). Nothing is
   written. A missing interpreter, a missing script, or a crash at import time
   fails the check. When a hook has a separate command line for each system,
-  doctor starts the one the tool runs on this machine: the `powershell` line
-  on Windows and the `bash` line on macOS and Linux. Doctor starts the program
-  itself, without a shell, so on Windows it leaves out the `&` that a line
-  written for PowerShell starts with. A hook registered outside a JSON file is
-  not started and is not counted in `N started`. The install record is found
-  under any spelling of that folder, such as another letter case on Windows.
-  When the install ledger has no record for that folder, the check is not
-  run: the report shows `not checked`, its last line names the harnesses whose
-  hook commands were not checked instead of `All checks passed`, and the JSON
-  output carries a `hook.unchecked` check.
+  doctor starts the one the tool runs on this machine: a `powershell` or
+  `commandWindows` line on Windows and a `bash` line on macOS and Linux, for a
+  tool that reads that key. A tool that reads `command` alone gets its
+  `command` line started. Doctor reads only the keys the tool itself reads,
+  and an `args` list only for a tool that runs its command with one, so a line
+  or list kept under another key is neither started nor counted. Doctor starts
+  the program itself, without a shell, so on Windows it leaves out the `&`
+  that a line written for PowerShell starts with. A hook registered outside a
+  JSON file is not started and is not counted in `N started`. The install
+  record is found under any spelling of that folder, such as another letter
+  case on Windows. When the install ledger has no record for that folder, the
+  check is not run: the report shows `not checked`, its last line names the
+  harnesses whose hook commands were not checked instead of
+  `All checks passed` (it says "some hook commands" for a harness that also
+  started others that passed), and the JSON output carries a `hook.unchecked`
+  check.
 - **Project hook files.** Anyone who can commit to a project can change its
   files, so for a project-scope harness doctor starts a hook command only when
-  everything it runs is known. It reads the install record of the project
-  that `--project` names, takes hook commands only from the places the tool
-  reads them, and starts a command only when its interpreter is the one that
-  install recorded (unless it is inside the project, where others can change
-  it) or the Python that Apothem itself runs under, the options
-  before the script run no code (such as `-E` and `-s`), the script is the
-  hook script that install wrote, in a folder whose files still match the
-  SHA-256 checksums the install recorded and that holds no other Python file
-  and no link, and the arguments after it are the ones Apothem writes. Doctor
-  then starts those known paths rather than the text it read, and it looks up
-  no other path a hook command names. A recorded interpreter or hook script
-  that is gone fails the check without anything being started. Doctor starts
-  no other project hook command, and reports each one, with the reason, as
-  `hook.unchecked` (info, not a failure, marked `!` in the plain output).
-  Hooks installed by an earlier release, which recorded no interpreter or no
-  checksums, stay unchecked until you run `update` with the same options you
-  installed with.
+  everything it runs is known. It reads the install record of the project that
+  `--project` names, takes hook commands only from the places the tool reads
+  them (at most 100 from one file; past that, one `hook.unchecked` line names
+  the file and the rest are not started), and starts a command only when its
+  interpreter is the one that install recorded (unless it is inside the
+  project, where others can change it) or the Python that Apothem itself runs
+  under, the options before the script run no code (such as `-E` and `-s`),
+  the script is the hook script that install wrote, in a folder whose files
+  still match the SHA-256 checksums the install recorded and that holds no
+  other Python file and no link, and the arguments after it are the ones
+  Apothem writes. Doctor then starts those known paths rather than the text it
+  read, and it looks up no other path a hook command names. A recorded
+  interpreter or hook script that is gone fails the check without anything
+  being started; for a missing hook script the fix runs `update` to put the
+  scripts back. Doctor starts no other project hook command, and reports each
+  one, with the reason, as `hook.unchecked` (info, not a failure, marked `!`
+  in the plain output). The same goes for a command whose known paths doctor
+  cannot look up, such as one in a folder you cannot open. A recorded
+  interpreter inside the project is not started, since others can change it,
+  unless doctor itself runs under it: the fix runs `update` from a folder
+  outside the project, with an Apothem that runs under a Python outside the
+  project, which records that Python instead. An Apothem installed into the
+  project's own environment cannot do this; use one installed outside it.
+  If the project's virtual environment is active, deactivate it first: while
+  it is active, its Python comes first on your `PATH`, and the npx command
+  would run under it and record it again. To pick the Python the npx command
+  runs under, set `APOTHEM_PYTHON` to its path. A path that is not a working
+  Python 3.10 or later is skipped without a message and `PATH` is searched
+  instead, so run doctor again to check that the line is gone. The update
+  runs from outside the project because `python -m apothem`, run in the
+  project folder, would start a folder named `apothem` committed there
+  instead of Apothem. Hooks installed by an earlier release, which recorded no
+  interpreter or no checksums, stay unchecked until you run `update` with the
+  same options you installed with.
+- **Hook files the check does not read.** The hook check reads no hook file
+  larger than 4 MB and nothing but a regular file (a pipe or a device, say).
+  Each such file gets one `hook.unchecked` line that names it, whether it
+  holds only hooks or is a settings file the hooks are merged into, and
+  whether it is in a project or under your home folder. An update keeps a
+  file too large or not regular as it is, so its fix says to shrink the file
+  below 4 MB or replace it with a regular file, then run doctor again. A file
+  the tool runs no hook from gets no line: the settings file of a tool whose
+  hooks Apothem keeps only in its support folder, or a copy kept under
+  `.apothem/support`.
+  A file under your home folder is read through a link, since it is yours.
+  In a project, the check reads no hook file it reaches through a link, such
+  as a settings folder replaced by a link to a folder outside the project.
+  Each such file gets a `hook.unchecked` line, whether it holds only hooks or
+  is a settings file the hooks are merged into. The line names the file and
+  the link, which may be the file itself or one of its folders. The fix says
+  to check where the link leads: replace a link you made with a real copy of
+  the folder or file it leads to and check the hook commands in it, or remove
+  a link you did not make and run the `update` command the fix ends with.
+  Either way, only the link itself is removed, not the folder or file it leads
+  to. A hook command whose hook script is reached through a link is not
+  started; its line names the script and the link, which may be the script
+  itself or one of its folders, and its fix is the same except that there are
+  no hook commands to check. A hook script the install recorded outside the
+  project is not started either, and its line says so. A link, or a Python
+  file the install did not write, inside the hook script's folder also leaves
+  the command unstarted. An update keeps either one, so the fix says to
+  remove the entry the line names (for a link, only the link itself; move
+  your own scripts elsewhere), then run doctor again. If the link took the
+  place of a folder the install wrote, the next run reports that folder as
+  missing, and running `update` puts it back. A project folder the
+  check cannot open gets a line too, and its fix says to give your account
+  permission to open it. On Windows, which has no way to open a file while
+  refusing a link, the link check is made just before the file is opened. A
+  hook script larger than 4 MB counts as changed since the install, since
+  none that Apothem writes is that large.
 
 Every failed check names a fix. A fix that runs `update` ends with the
 command, after a colon. For a project-scope harness the command names
@@ -119,7 +178,8 @@ and `profile_error` when the profile is invalid) and adds:
 - `harnesses[].status` — `ok`, `not_installed`, `needs_project`,
   `verify_failed`, `hook_failed`, or `error`; plus `verified` and `hooks`
   (`{"probed": N, "failed": [...]}`, or `null` when the checked folder has no
-  install record or the install ledger cannot be read).
+  install record, the install ledger cannot be read, or doctor could not
+  finish checking the hook commands; a `hook.unchecked` check says why).
 - `checks` — one record per check: `code` (for example `harness.verify_failed`,
   `harness.stray_begin`, `hook.start_failed`, `hook.unchecked`,
   `ledger.unreadable`, or a `profile.*` code), `status`
