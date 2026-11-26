@@ -567,8 +567,13 @@ function changelogBody() {
 	const raw = readFileSync(CHANGELOG_SOURCE, 'utf8');
 	// Drop the leading license-header comment so the page prose never carries
 	// a bare license token (the REUSE lint treats a literal tag in body text
-	// as a stray license declaration).
-	return raw.replace(/^\s*<!--[\s\S]*?-->\s*/, '').trim();
+	// as a stray license declaration). Drop the H1 too, as for the roadmap: the
+	// page title comes from the MDX frontmatter, and a second H1 in the body
+	// left the page with two top-level headings.
+	return raw
+		.replace(/^\s*<!--[\s\S]*?-->\s*/, '')
+		.replace(/^# [^\n]*\n/, '')
+		.trim();
 }
 
 function injectChangelog(target) {
