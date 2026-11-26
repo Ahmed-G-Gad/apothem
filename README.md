@@ -155,8 +155,8 @@ explicit step-by-step alternative.
 
 ### Other ways to install
 
-Apothem installs several ways — full detail (including the VS Code, Gemini CLI,
-and Codex extensions) under [Install](#install):
+Apothem installs several ways — full detail (including the VS Code and Gemini CLI
+extensions and the Codex plugin) under [Install](#install):
 
 ```text
 # 1 — Claude Code plugin (inside Claude Code)
@@ -211,8 +211,9 @@ fabricates an identity, and never blocks on a placeholder one. `install
 --harness all` also previews the files it will write — grouped by project root
 versus your home directory — and asks before writing outside the project.
 
-Lifecycle commands exit 0 on success, print a structured JSON summary with
-`--format json`, and support `--dry-run` where a write would otherwise occur.
+Lifecycle commands exit 0 on success and print a structured JSON summary with
+`--format json`. `install`, `update`, `migrate-workspace` and `backups prune`
+also take `--dry-run`, which reports what would change and changes nothing.
 Narrower scopes (`--harness claude-code`, `--harness cursor`, etc.) target a
 single harness when you need it; project-scope harnesses still require
 `--project PATH`.
@@ -224,8 +225,9 @@ carries its vendored dependencies and runs from a checkout on system Python
 3.10 or newer (see
 [the self-contained runtime](https://apothem.ahmedgad.com/docs/architecture/self-contained-runtime/)).
 Two prerequisites are shared by every path — **system Python 3.10 or newer** on
-`PATH`, with the `click` and `rich` packages importable under it; the npm-shim
-and tool-plugin paths additionally need **Node.js 18 or newer** to run `npx`.
+`PATH`, with the `click` and `rich` packages importable under it; the npm shim,
+the VS Code-family extension, the Gemini CLI and Qwen Code extensions, and the
+Codex plugin additionally need **Node.js 18 or newer** to run `npx`.
 
 Eight install channels are available. Pick by how you already work; each
 channel's own subsection below gives its prerequisites, one copy-ready command,
@@ -235,7 +237,7 @@ and a verification step.
 |---|---|---|---|
 | 1 | [Claude Code plugin](#1--claude-code-plugin) | Full harness in Claude Code | Claude Code · Python 3.10+ |
 | 2 | [npm shim (`npx`)](#2--npm-shim-npx) | Full harness, any tool | Node 18+ · Python 3.10+ |
-| 3 | [One-shot installers](#3--one-shot-installers) | Full harness + an `apothem` command | Python 3.10+ (`git` for a network install) |
+| 3 | [One-shot installers](#3--one-shot-installers) | Full harness + an `apothem` command | Python 3.10+ (`git` and `gpg` for a network install) |
 | 4 | [VS Code family extension](#4--vs-code-family-extension) | Full harness from the editor | VS Code · Node 18+ · Python 3.10+ |
 | 5 | [Gemini CLI extension](#5--gemini-cli-extension) | Bootstrap that runs the engine | Gemini CLI · Node 18+ · Python 3.10+ |
 | 6 | [Qwen Code extension](#6--qwen-code-extension) | Bootstrap that runs the engine | Qwen Code · Node 18+ · Python 3.10+ |
@@ -243,8 +245,8 @@ and a verification step.
 | 8 | [Direct engine (`python -m apothem`)](#8--direct-engine-python--m-apothem) | Full harness from a checkout | Python 3.10+ (`click`, `rich`) |
 
 The npm shim (2), the one-shot installers (3), and the direct engine (8) run
-the full install for any harness. The Gemini CLI, Qwen Code, and
-Codex extensions (5–7) install a small bootstrap that shells out to the engine
+the full install for any harness. The Gemini CLI and Qwen Code extensions and
+the Codex plugin (5–7) install a small bootstrap that shells out to the engine
 (`npx @ahmed-g-gad/apothem install`) to materialize the full harness — they are
 the entry point, not the full delivery on their own.
 
@@ -779,23 +781,25 @@ The seventeen adapters, their install scope (**User** = your home configuration 
 |---|---|---|
 | Antigravity | User | `~/.gemini/GEMINI.md` + `~/.gemini/config/plugins/apothem/` |
 | Claude Code | User | `~/.claude/` + `~/.claude/.apothem/support/{templates,hooks,conformity,schemas}/` |
-| CodeBuddy | Project | `<project>/.codebuddy/rules/apothem-rules.md` + `<project>/.codebuddy/agents/` + `~/.codebuddy/skills/` + `~/.config/apothem/{rules,templates}/` |
+| CodeBuddy | Project | `<project>/.codebuddy/rules/apothem-rules.md` + `<project>/.codebuddy/agents/` + `<project>/.codebuddy/settings.local.json` + `<project>/.apothem/support/hooks/` + `~/.codebuddy/skills/` + `~/.config/apothem/{rules,templates}/` |
 | Codex | User | `~/.codex/` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
-| Cursor | Project | `<project>/.cursor/rules/` + `<project>/.cursor/agents/` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
+| Cursor | Project | `<project>/.cursor/rules/` + `<project>/.cursor/agents/` + `<project>/.cursor/hooks.json` + `<project>/.apothem/support/cursor/hooks/` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
 | Gemini CLI | Project | `<project>/GEMINI.md` + `<project>/.gemini/` |
-| GitHub Copilot | Project | `<project>/.github/copilot-instructions.md` + `<project>/.github/agents/` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
+| GitHub Copilot | Project | `<project>/.github/copilot-instructions.md` + `<project>/.github/agents/` + `<project>/.github/hooks/apothem.json` + `<project>/.apothem/support/github-copilot/hooks/` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
 | Hermes | User | `~/.hermes/` |
 | Kimi Code | Project | `<project>/AGENTS.md` + `<project>/.kimi-code/skills/` + `<project>/.kimi-code/agents/` + `<project>/.kimi-code/.apothem/support/` |
-| Kiro | Project | `<project>/.kiro/steering/apothem-rules.md` + `<project>/.kiro/agents/` + `~/.kiro/skills/` + `~/.config/apothem/{rules,templates}/` |
+| Kiro | Project | `<project>/.kiro/steering/apothem-rules.md` + `<project>/.kiro/agents/` + `<project>/.kiro/hooks/apothem.json` + `<project>/.apothem/support/kiro/hooks/` + `~/.kiro/skills/` + `~/.config/apothem/{rules,templates}/` |
 | Open-Claw | User | `~/.openclaw/` + `<workspace>/apothem/AGENTS.md` in each workspace |
 | OpenCode | User | `~/.config/opencode/` |
 | Qwen Code | User | `~/.qwen/` |
 | Trae | Project | `<project>/.trae/rules/apothem-rules.md` + `<project>/.trae/agents/` + `~/.trae/skills/` + `~/.config/apothem/{rules,templates}/` |
-| Windsurf | Project | `<project>/.devin/rules/apothem-rules.md` (Devin Desktop; `.windsurf/rules/` fallback) + `<project>/.devin/agents/` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
+| Windsurf | Project | `<project>/.devin/rules/apothem-rules.md` (Devin Desktop; `.windsurf/rules/` fallback) + `<project>/.devin/agents/` + `<project>/.devin/config.local.json` + `<project>/.apothem/support/windsurf/hooks/` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
 | Zed | Project | `<project>/.rules` + `~/.agents/skills/` + `~/.config/apothem/{rules,templates}/` |
 | GLM (Z.ai) | Project | `<project>/.apothem/providers/glm.toml` |
 
-Seven of the project-scope adapters (CodeBuddy, Cursor, GitHub Copilot, Kiro, Trae, Windsurf, and Zed) also write Apothem's skills, and the rules and templates they cite, to shared folders in your home directory; no skill or rule file is added to your repository, only the one rules file (and the `.apothem/` data folder). CodeBuddy, Cursor, GitHub Copilot, Kiro, Trae and Windsurf also receive Apothem's helpers as subagent files inside the project, in `.codebuddy/agents/`, `.cursor/agents/`, `.github/agents/`, `.kiro/agents/`, `.trae/agents/` and `.devin/agents/` (Windsurf holds back the three helpers that need web tools), and Kimi Code receives them in `.kimi-code/agents/`. One copy serves every project, every install that names a folder writes the same files, and `apothem uninstall` keeps a folder while another install still uses it.
+Seven of the project-scope adapters (CodeBuddy, Cursor, GitHub Copilot, Kiro, Trae, Windsurf, and Zed) also write Apothem's skills, and the rules and templates they cite, to shared folders in your home directory, so no skill or shared rule file is copied into your repository. Inside the project each writes its own rules or instruction file and, by default, the `.apothem/` folder, plus the hook and subagent files described below for the adapters that get them.
+CodeBuddy, Cursor, GitHub Copilot, Kiro and Windsurf also get hook entries in one file inside the project (`.codebuddy/settings.local.json`, `.cursor/hooks.json`, `.github/hooks/apothem.json`, `.kiro/hooks/apothem.json` and `.devin/config.local.json`); the hook scripts those entries run sit under `.apothem/support/`.
+CodeBuddy, Cursor, GitHub Copilot, Kiro, Trae and Windsurf also receive Apothem's helpers as subagent files inside the project, in `.codebuddy/agents/`, `.cursor/agents/`, `.github/agents/`, `.kiro/agents/`, `.trae/agents/` and `.devin/agents/` (Windsurf holds back the three helpers that need web tools), and Kimi Code receives them in `.kimi-code/agents/`. One copy serves every project, every install that names a folder writes the same files, and `apothem uninstall` keeps a folder while another install still uses it.
 
 Adapters live at [`src/apothem/harnesses/`](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/harnesses). Authoring a new adapter? See the [new-harness-adapter authoring runbook](https://apothem.ahmedgad.com/docs/runbooks/new-harness-adapter-authoring/).
 
@@ -844,14 +848,28 @@ changelog names did remove those folders.
 
 ## Uninstalling
 
+Remove the harness configuration first, while the `apothem` command is still
+there. Project-scope harnesses need the project folder, so a removal of every
+harness names it (on the other install channels, run it as
+`npx @ahmed-g-gad/apothem uninstall`):
+
 ```shell
-sh scripts/installer/uninstall.sh --harness all                 # POSIX
-pwsh -NoProfile -File scripts/installer/uninstall.ps1 -Harness all   # Windows
+apothem uninstall --harness all --project .
 ```
 
-The uninstall script removes the materialized harness configuration and prompts
-before removal unless `--yes` / `-Yes` is supplied. Install and update backups
-land at `~/.apothem/backups/YYYYMMDDTHHMMSSZ/`.
+Then run the uninstall script from the checkout. It removes one harness
+(`--harness` / `-Harness`, else `APOTHEM_HARNESS`, else `claude-code`) and the
+`apothem` command the installer added. The script takes no project folder, so
+give it a user-scope harness:
+
+```shell
+sh scripts/installer/uninstall.sh --harness claude-code                    # POSIX
+pwsh -NoProfile -File scripts/installer/uninstall.ps1 -Harness claude-code   # Windows
+```
+
+`apothem uninstall` and the script ask before removing anything unless you pass
+`--yes` (`-Yes` for the PowerShell script). Install and update backups land at
+`~/.apothem/backups/YYYYMMDDTHHMMSSZ/`.
 
 To remove the bundled source tree as well, pass `--remove-source` (POSIX) or
 `-RemoveSource` (Windows); the managed clone at `APOTHEM_HOME` is removed after
@@ -904,7 +922,7 @@ Reporting a security vulnerability? See [`SECURITY.md`](https://github.com/ahmed
 | [GitHub Discussions](https://github.com/ahmed-g-gad/apothem/discussions) | Open-ended questions, workflow patterns, proposal socialization |
 | [GitHub Issues](https://github.com/ahmed-g-gad/apothem/issues) | Defects, concrete feature requests, anchored clarification questions |
 | [Security](https://github.com/ahmed-g-gad/apothem/security) | Private Vulnerability Reporting (see [`SECURITY.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)) |
-| [Project website](https://apothem.ahmedgad.com/) | Comprehensive nine-section facade — landing page, get started, documentation, reference, harnesses, architecture, pipelines, project, community |
+| [Project website](https://apothem.ahmedgad.com/) | The landing page and the documentation, grouped as Get started, Platform, Reference, Operate, Learn and Project |
 
 Full channel-routing guidance at [`SUPPORT.md`](https://github.com/ahmed-g-gad/apothem/blob/main/SUPPORT.md).
 

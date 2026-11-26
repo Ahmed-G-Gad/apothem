@@ -26,7 +26,9 @@ Related commands:
 Exit codes:
   0  Adapter installed successfully
   1  Expected validation, profile, harness, project, or adapter error
-  2  Partial batch materialization after at least one write
+  2  Partial: a batch stopped after at least one write, or a file Apothem
+     keeps its block in was left as it is because of its Apothem marker
+     lines (fix them as the warning says, then run apothem update again)
   64 Usage error: unknown option or command, or a missing or invalid value
 """
 
@@ -47,9 +49,12 @@ Exit codes:
      (non-interactive or JSON mode without --yes), or every removal failed
      before removing anything
   2  Partial removal or an unfinished uninstall — files were removed before
-     a failure, Apothem's files stay behind a link, an earlier release's
-     files differ from this release's, or the install has no record (for
-     the last two, run apothem update, then uninstall again)
+     a failure, Apothem's files stay behind a link, a file holds two
+     different blocks between Apothem's markers or marker lines Apothem
+     cannot tell from your text, an earlier release's files differ from this
+     release's, or the install has no record (for the last two, first fix
+     each file a warning names for an Apothem marker, then run apothem
+     update, then uninstall again)
   64 Usage error: unknown option or command, or a missing or invalid value
 """
 
@@ -86,7 +91,9 @@ Related commands:
 Exit codes:
   0  Adapter updated successfully
   1  Expected validation, profile, harness, project, or adapter error
-  2  Partial batch materialization after at least one write
+  2  Partial: a batch stopped after at least one write, or a file Apothem
+     keeps its block in was left as it is because of its Apothem marker
+     lines (fix them as the warning says, then run apothem update again)
   64 Usage error: unknown option or command, or a missing or invalid value
 """
 
@@ -170,8 +177,8 @@ Related commands:
 Exit codes:
   0  All checks passed (also when no harness is installed yet)
   1  An installed harness does not verify, a registered hook command cannot
-     start, an adapter could not be loaded or probed, or the shared profile
-     is present but failed schema validation
+     start, an install ledger cannot be read, an adapter could not be loaded
+     or probed, or the shared profile is present but failed schema validation
   64 Usage error: unknown option or command, or a missing or invalid value
 """
 
@@ -328,7 +335,9 @@ Related commands:
 Exit codes:
   0  Guided run completed
   1  Expected validation, profile, harness, project, or adapter error
-  2  Partial batch materialization after at least one write
+  2  Partial: a batch stopped after at least one write, or a file Apothem
+     keeps its block in was left as it is because of its Apothem marker
+     lines (fix them as the warning says, then run apothem update again)
   64 Usage error: unknown option or command, or a missing or invalid value
 """
 
