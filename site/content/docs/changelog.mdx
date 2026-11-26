@@ -19,6 +19,38 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Security
+
+- **The conformity gate's `--all` validators open and list only real files
+  inside the project they check.** A project that came from someone else, in
+  an archive or a shared folder, can hold symbolic links and, on Windows,
+  junctions that lead out of it. The shared tree walk entered junctions,
+  returned linked files and looked up the target of each symbolic link, so
+  `dynamism-grep` read a linked page outside the project, and a junction back
+  to a folder above it made the walk go round the tree until the path grew too
+  long. Most validators that look in fixed places, such as
+  `.github/workflows/`, `.apothem/plans/`, `src/apothem/rules/` or
+  `pyproject.toml`, read through links of either kind, and many opened
+  whatever sat at the path, so a named pipe there made the gate wait forever
+  and a link to `/dev/zero` made a read that never ended. Every `--all`
+  validator now opens and lists only regular files and real folders that it
+  reaches through real folders below the root, and never follows a link. A
+  link, a named pipe, a device, a socket, or on Windows a name ending in a dot
+  or a space, counts as missing. A few checks still use a link without
+  entering it: for a fixed file that is a symbolic link, such as a
+  `CLAUDE.md` that points at another file, the gate reads the link's text and
+  opens the named file only when it is a regular file inside the project (a
+  linked `.gitattributes` still counts as missing, because git does not read
+  it); `no-global-plans-grep` reports a plans folder or an `.apothem` folder
+  that is a link, by name; `no-toplevel-docs-grep` reports a root `docs` link;
+  and `naming-grep` checks a link's own name. Each report lists the links and
+  special files it left out under `skipped_links`, and a validator whose
+  folder is a link fails instead of passing as if the folder were not there
+  yet. The checks that run git read the `.git` folder through git itself.
+  When the root's `.git` entry is a link, the three `--all` validators that
+  run git do not run it and list `.git` under `skipped_links`, and
+  `no-global-plans-grep` reports the link as a failing finding.
+
 ## [1.6.0] - 2026-11-26
 
 ### Data loss in earlier releases: recover your files
@@ -2102,35 +2134,6 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   reached it. The same updates move Fumadocs (`fumadocs-core` and
   `fumadocs-ui` to 16.19.3, `fumadocs-mdx` to 15.6.2) and Tailwind CSS
   (`tailwindcss` and `@tailwindcss/postcss` to 4.3.5).
-- **The conformity gate's `--all` validators open and list only real files
-  inside the project they check.** A project that came from someone else, in
-  an archive or a shared folder, can hold symbolic links and, on Windows,
-  junctions that lead out of it. The shared tree walk entered junctions,
-  returned linked files and looked up the target of each symbolic link, so
-  `dynamism-grep` read a linked page outside the project, and a junction back
-  to a folder above it made the walk go round the tree until the path grew too
-  long. Most validators that look in fixed places, such as
-  `.github/workflows/`, `.apothem/plans/`, `src/apothem/rules/` or
-  `pyproject.toml`, read through links of either kind, and many opened
-  whatever sat at the path, so a named pipe there made the gate wait forever
-  and a link to `/dev/zero` made a read that never ended. Every `--all`
-  validator now opens and lists only regular files and real folders that it
-  reaches through real folders below the root, and never follows a link. A
-  link, a named pipe, a device, a socket, or on Windows a name ending in a dot
-  or a space, counts as missing. A few checks still use a link without
-  entering it: for a fixed file that is a symbolic link, such as a
-  `CLAUDE.md` that points at another file, the gate reads the link's text and
-  opens the named file only when it is a regular file inside the project (a
-  linked `.gitattributes` still counts as missing, because git does not read
-  it); `no-global-plans-grep` reports a plans folder or an `.apothem` folder
-  that is a link, by name; `no-toplevel-docs-grep` reports a root `docs` link;
-  and `naming-grep` checks a link's own name. Each report lists the links and
-  special files it left out under `skipped_links`, and a validator whose
-  folder is a link fails instead of passing as if the folder were not there
-  yet. The checks that run git read the `.git` folder through git itself.
-  When the root's `.git` entry is a link, the three `--all` validators that
-  run git do not run it and list `.git` under `skipped_links`, and
-  `no-global-plans-grep` reports the link as a failing finding.
 
 ## [1.5.0] - 2026-10-28
 
