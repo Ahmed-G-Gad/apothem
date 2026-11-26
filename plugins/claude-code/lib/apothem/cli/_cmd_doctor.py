@@ -4,9 +4,12 @@
 
 doctor judges what is installed, not what could be. An uninstalled harness is
 informational. An installed harness must pass its adapter's ``verify``, and
-every hook command its install registered must start with a no-op payload
-(see :mod:`apothem.cli._doctor_hooks`). A present profile must validate. Any
-failed check exits 1; a machine with one healthy harness exits 0.
+every hook command its install registered that doctor can trust must start
+with a no-op payload; a hook command it cannot trust, or whose install it
+finds no record of, is reported as not checked, with the reason (see
+:mod:`apothem.cli._doctor_hooks`). A
+present profile must validate. Any failed check exits 1; a machine with one
+healthy harness exits 0.
 """
 
 from __future__ import annotations
@@ -30,7 +33,8 @@ from apothem.cli._common_flags import (
     get_console,
     resolve_format,
 )
-from apothem.cli._doctor_hooks import probe_hooks, registered_hooks
+from apothem.cli._doctor_hook_text import RegisteredHooks
+from apothem.cli._doctor_hooks import LedgerOpenError, probe_hooks, registered_hooks
 from apothem.cli._epilogs import _EP_DOCTOR
 from apothem.cli._helpers import (
     _EXIT_EXPECTED,
@@ -104,21 +108,60 @@ def _update_fix(
     *,
     lead: str = "Run",
     then: str = "then run doctor again",
+    same_prefix: bool = True,
 ) -> str:
     """Return the fix that runs :func:`_update_command`: *lead*, then *then*.
 
     The command ends the fix, after a colon, with no quotes or punctuation of
     its own around it, so a quoted root ends where the line does. A root the
-    quotes cannot carry ends the fix in its place, named as it is.
+    quotes cannot carry ends the fix in its place, named as it is. With
+    *same_prefix*, the fix says to run it as the install was run.
     """
-    prefix = "with the same command prefix you installed with"
+    prefix = " with the same command prefix you installed with" if same_prefix else ""
     command = _update_command(harness, project)
     if command is None:
         return (
-            f"{lead} update --harness {harness} {prefix} and this folder as "
+            f"{lead} update --harness {harness}{prefix} and this folder as "
             f"--project, {then}: {project}"
         )
-    return f"{lead} this command {prefix}, {then}: {command}"
+    return f"{lead} this command{prefix}, {then}: {command}"
+
+
+def _unchecked_fix(
+    name: str, project: Path | None, hooks: RegisteredHooks, reason: str
+) -> str:
+    """Return the fix for the ``hook.unchecked`` line that says *reason*."""
+    # A file too large or not a regular file, or a link or stray file in the
+    # hook folder, keeps its own fix: an update keeps such a file as it is.
+    if reason in hooks.fixes:
+        return hooks.fixes[reason]
+    # A link the operator did not make is removed, then the update runs.
+    if reason in hooks.update_leads:
+        return _update_fix(name, project, lead=hooks.update_leads[reason])
+    # Run under the same Python, an update would record that Python inside the
+    # project again, and doctor starts no such one unless it runs under it.
+    # The update runs from a folder outside the project, which the command
+    # names by its absolute root: a `python -m apothem` run in the project
+    # folder would import an `apothem` package committed there, whatever
+    # prefix started it. An active project environment puts its Python first
+    # on PATH, where the npx shim finds it unless APOTHEM_PYTHON names one.
+    if reason in hooks.run_with:
+        return _update_fix(
+            name,
+            project,
+            lead="If the project's virtual environment is active, "
+            "deactivate it. Then from a folder outside the project, "
+            "with an Apothem that runs under a Python outside the "
+            "project (not one installed into the project's own "
+            "environment; for npx, set APOTHEM_PYTHON to that "
+            "Python), run",
+            same_prefix=False,
+        )
+    return _update_fix(
+        name,
+        project,
+        lead="Check the hook command or file named here. If Apothem installed it, run",
+    )
 
 
 def _probe_harness(
@@ -277,9 +320,36 @@ def _probe_registered_hooks(
         hooks = registered_hooks(
             entry.package_key, root=install_root, project=project is not None
         )
-    except (LedgerError, OSError) as exc:
+    except LedgerError as exc:
         row.update(status="error", hooks=None)
         checks.append(_ledger_unreadable(entry, project, exc))
+        return
+    except LedgerOpenError as exc:
+        row.update(status="error", hooks=None)
+        cause = exc.__cause__
+        checks.append(
+            _ledger_unreadable(
+                entry, project, cause if isinstance(cause, Exception) else exc
+            )
+        )
+        return
+    except OSError as exc:
+        # Not the ledger: a lookup failed while doctor checked the hook
+        # commands (a path, the project root or the interpreter), so they go
+        # unchecked rather than blamed on the ledger.
+        row["hooks"] = None
+        checks.append(
+            _check(
+                "hook.unchecked",
+                "info",
+                f"{name}: doctor could not finish checking the hook commands "
+                f"({exc}), so they were not checked.",
+                harness=name,
+                fix=f"Make {exc.filename} readable, then run doctor again."
+                if exc.filename
+                else "Fix the error named here, then run doctor again.",
+            )
+        )
         return
     if hooks is None:
         row["hooks"] = None
@@ -301,12 +371,7 @@ def _probe_registered_hooks(
                 "info",
                 f"{name}: {reason}.",
                 harness=name,
-                fix=_update_fix(
-                    name,
-                    project,
-                    lead="Check the hook command or file named here. If Apothem "
-                    "installed it, run",
-                ),
+                fix=_unchecked_fix(name, project, hooks, reason),
             )
         )
     probes = [*hooks.unstartable, *probe_hooks(hooks.argvs)]
@@ -323,7 +388,13 @@ def _probe_registered_hooks(
                 f"{name}: a registered hook command cannot start: {probe.command} "
                 f"({probe.detail}).",
                 harness=name,
-                fix="Check that the interpreter in the hook command exists and "
+                fix=_update_fix(
+                    name,
+                    project,
+                    then="to put the hook scripts back, then run doctor again",
+                )
+                if probe.detail == "the hook script does not exist"
+                else "Check that the interpreter in the hook command exists and "
                 f"runs, then {fix[0].lower()}{fix[1:]}",
             )
         )
@@ -503,9 +574,21 @@ def _print_summary(
         )
     )
     if unchecked:
+        # "some" where the harness also started hook commands that passed.
+        started: set[str] = set()
+        for row in harness_rows:
+            hooks = row.get("hooks")
+            if isinstance(hooks, dict) and hooks.get("probed"):
+                started.add(str(row["name"]))
+        named = ", ".join(
+            f"some hook commands of {harness}"
+            if harness in started
+            else f"the hook commands of {harness}"
+            for harness in unchecked
+        )
         con.print(
-            f"[yellow]No check failed[/] ({installed_count} installed), but the "
-            f"hook commands of {', '.join(unchecked)} were not checked."
+            f"[yellow]No check failed[/] ({installed_count} installed), but "
+            f"{named} were not checked."
         )
     elif installed_count:
         con.print(f"[green]All checks passed[/] ({installed_count} installed).")
