@@ -34,6 +34,10 @@ derive from it rather than re-declaring it.
   the page; it also holds the light and dark `--background`, `--foreground`,
   `--primary` and `--ring` variables to the `assets/design-tokens.css` steps
   they mirror (run by `npm test`).
+- **`page-tree.ts`** — the sidebar page-tree clean-up the content loader in
+  `source.ts` applies: a section whose only page is its overview shows as one
+  plain link instead of a folder with an empty list. Its `node --test` check is
+  `page-tree.test.mjs` (run by `npm test`).
 - **`sidebar-width.test.mjs`** — holds the docs sidebar width that
   `app/global.css` sets through the `nav` landmark wrapper equal to the width
   Fumadocs sets, and checks the wrapper still has the shape that rule matches
