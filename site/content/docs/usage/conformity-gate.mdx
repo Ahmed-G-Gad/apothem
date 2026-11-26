@@ -164,7 +164,8 @@ stale-companion check counts any failed history read as history that is not
 available: it skips its freshness test and passes, as it does with no history. These exemptions, and the `check_error` for a checkout git refuses,
 are for the other four validators: `no-global-plans-grep` needs a checkout git
 can read, so outside one, on a machine without `git`, or in a checkout git
-refuses, it fails as before, with git's reason on standard error. As with any
+refuses, it fails as before, with
+the reason on standard error: git's exit code, not git's own text. As with any
 result that does not pass, the advisory default reports it and exits `0`, and
 `--strict` exits `2`.
 
