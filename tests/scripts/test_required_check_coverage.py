@@ -137,8 +137,15 @@ def test_the_coverage_check_combines_every_shard_and_enforces_the_floor() -> Non
     run = step["run"]
     combine = re.search(r"python -m coverage combine (.*)", run)
     assert combine, run
-    assert combine.group(1).split() == [f".coverage.shard-{k}" for k in parts]
-    assert re.search(r"^python -m coverage report$", run, re.MULTILINE), run
+    assert combine.group(1).split() == [
+        f"coverage-data/.coverage.shard-{k}" for k in parts
+    ]
+    # The shards measure all of src/apothem; the report keeps the engine
+    # files (tests/scripts/test_metrics_reuses_shard_coverage.py pins the
+    # list) and nothing else on the line.
+    assert re.search(
+        r'^python -m coverage report --include="\$\{engine\}"$', run, re.MULTILINE
+    ), run
     assert "--fail-under" not in run
     assert "|| true" not in run
     assert "continue-on-error" not in job
