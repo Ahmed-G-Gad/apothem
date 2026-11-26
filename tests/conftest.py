@@ -667,9 +667,10 @@ _SHARD_ADDED = "_apothem_shard_added"
 def pytest_addoption(parser: pytest.Parser) -> None:
     """Add ``--shard=K/N``.
 
-    A conftest that star-imports this file, the documented way to carry the
-    isolation, registers this hook a second time, and the second call adds
-    nothing. The mark that says so is on the parser, not in this module: pytest
+    A conftest that star-imports this file (advised against, though it still
+    carries the isolation through ``__all__``) registers this hook a second
+    time, and the parser mark keeps the second call from adding ``--shard``
+    twice. The mark is on the parser, not in this module: pytest
     can import this file and the star import as two separate modules. A
     ``--shard`` that another plugin added first is not marked, so ``addoption``
     still fails with pytest's "already added" error, instead of the shard hook

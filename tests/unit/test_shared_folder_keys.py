@@ -39,7 +39,7 @@ from apothem.harnesses._shared import (
     install_driver_outcome,
 )
 from apothem.harnesses._shared.install_driver_shared import holder_index, path_key
-from apothem.lib import install_ledger
+from apothem.lib import home_write_guard, install_ledger
 from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
 from apothem.lib.propagation import user_home
 
@@ -1420,4 +1420,22 @@ def test_an_ending_that_fails_any_other_way_is_a_warning_too(
 
     assert [warning.outcome for warning in warnings] == ["warning"]
     assert "unexpected" in warnings[0].message
+    assert install_ledger.current_install_record("codex", root=other) is not None
+
+
+def test_a_refused_ending_is_raised_not_a_warning(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A refusal of the real-home guard must reach the test, so ending an
+    # other-spelling record never turns one into a warning.
+    other = tmp_path / "other" / ".codex"
+    _install_record(other, "created")
+
+    def refused(entry: LedgerRecord) -> None:
+        raise home_write_guard.RealHomeWriteError("refused")
+
+    monkeypatch.setattr(install_ledger, "append_record", refused)
+
+    with pytest.raises(home_write_guard.RealHomeWriteError, match="refused"):
+        install_driver_outcome.end_other_spellings("codex", [str(other)])
     assert install_ledger.current_install_record("codex", root=other) is not None

@@ -248,8 +248,9 @@ def end_other_spellings(
     The roots are the harness's other spellings of the folder a finished
     uninstall cleaned; it removed what their records list, so none of them
     holds the shared folders afterwards. The uninstall stands when one cannot
-    be recorded, whatever the error: that one returns a warning naming the
-    ledger and the spelling whose install stays active instead.
+    be recorded: that one returns a warning naming the ledger and the
+    spelling whose install stays active instead. A refusal of the real-home
+    guard (see :mod:`apothem.lib.home_write_guard`) is raised as it is.
     """
     warnings: list[MaterializationResult] = []
     for other in same:
@@ -266,6 +267,8 @@ def end_other_spellings(
                     install_id=current.install_id,
                 )
             )
+        except home_write_guard.RealHomeWriteError:
+            raise  # a refusal during a test is never a warning
         except Exception as exc:  # the finished uninstall stands either way
             ledger = install_ledger.ledger_path(harness_name)
             message = (
