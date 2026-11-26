@@ -18,12 +18,14 @@ link definitions at the end of the file is left out, since
 that are not plain ``x.y.z`` versions (a pre-release, for example) are not
 protected.
 
-In CI the base is ``HEAD^1``: for a pull request, the base branch commit
-GitHub merged the pull request into; for a push to main, the commit before
-it. A deliberate edit of released notes passes when a commit in
-``<base>..HEAD`` carries the trailer
+In CI the base of a pull request is ``HEAD^1``, the base branch commit
+GitHub merged the pull request into; the base of a push to main is the tip
+before the push. A deliberate edit of released notes passes when a commit
+in ``<base>..HEAD`` carries the trailer
 ``Changelog-Released-Edit: <version> <reason>``; it allows that version's
-section only, and the check still prints what changed.
+section only, and the check still prints what changed. Git reads trailers
+from a message's last paragraph, so a squash merge keeps the trailer only
+when the squash message ends with it, beside ``Signed-off-by``.
 
 Exit codes: ``0`` when clean or allowed, ``1`` on any finding, ``2`` when the
 base or the file cannot be read.
@@ -130,7 +132,9 @@ def _git(*args: str) -> str:
 
 def allowed_versions(base: str) -> dict[str, str]:
     """Map each version a ``base..HEAD`` trailer allows to its reason."""
-    out = _git("log", f"{base}..HEAD", f"--format=%(trailers:key={TRAILER},valueonly)")
+    out = _git(
+        "log", f"{base}..HEAD", f"--format=%(trailers:key={TRAILER},valueonly,unfold)"
+    )
     allowed: dict[str, str] = {}
     for line in out.splitlines():
         match = _ALLOWED.match(line.strip())
@@ -181,7 +185,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  {report}")
         print(
             f"  To change released notes on purpose, add the trailer "
-            f"'{TRAILER}: <version> <reason>' to a commit."
+            f"'{TRAILER}: <version> <reason>' to a commit, and keep it in the "
+            f"last paragraph of the squash message (beside Signed-off-by)."
         )
         return 1
     if not changed:

@@ -633,12 +633,16 @@ its entry inside the released section, so move each such entry back under
 `[Unreleased]` by hand after the merge. The `quality / ubuntu-latest /
 py3.12` check runs `check_changelog_released_sections.py`, which fails a
 pull request that changes a released section and names it. CI does not run
-again on a pull request when main moves, so after a release, merge main
-into each open pull request (or re-run its checks) before it merges; the
-same check runs on every push to main and reports a section that changed
-there. A deliberate correction to released notes passes when a commit
-carries the trailer `Changelog-Released-Edit: <version> <reason>`, which
-allows that version's section only.
+again on a pull request when main moves, and re-running its checks tests
+the same old merge, so after a release, merge main into each open pull
+request (or close and reopen it) before it merges. The same check runs on
+each push to main, against the tip before the push, and reports a section
+that changed there; a push run that a newer push cancels checks nothing. A
+deliberate correction to released notes passes when a commit carries the
+trailer `Changelog-Released-Edit: <version> <reason>`, which allows that
+version's section only. Git reads trailers from a message's last
+paragraph, so when that pull request is squash-merged, end the squash
+message with the trailer, beside `Signed-off-by`.
 
 ## 5. Install-path smoke
 

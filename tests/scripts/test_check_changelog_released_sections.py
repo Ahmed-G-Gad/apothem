@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import io
 import os
 import shutil
 import subprocess
@@ -220,10 +221,51 @@ def test_a_trailer_older_than_the_base_does_not_count(repo: Path) -> None:
     assert _run(repo) == 1
 
 
-def test_a_signature_line_is_not_read_as_a_trailer(repo: Path) -> None:
-    _git(repo, "config", "log.showSignature", "true")
+def test_a_wrapped_trailer_allows_only_its_first_version(repo: Path) -> None:
+    _commit_edit(
+        repo,
+        f"edit old notes\n\n{check.TRAILER}: 1.0.0 the command shown for the "
+        "upgrade from\n 1.1.0 was wrong",
+    )
+    assert check.allowed_versions("base") == {
+        "1.0.0": "the command shown for the upgrade from 1.1.0 was wrong"
+    }
+    assert _run(repo) == 1
+
+
+def test_git_is_asked_not_to_show_signatures(
+    repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[list[str]] = []
+    real_run = subprocess.run
+
+    def recording_run(argv: list[str], **kwargs: object) -> object:
+        calls.append(list(argv))
+        return real_run(argv, **kwargs)  # type: ignore[call-overload]
+
+    monkeypatch.setattr(check.subprocess, "run", recording_run)
     _commit_edit(repo, "edit old notes")
     assert _run(repo) == 1
+    # The test's own git calls start with a bare "git"; the script's use the
+    # full path shutil.which found.
+    script_calls = [argv for argv in calls if argv[0] != "git"]
+    assert script_calls
+    assert all(argv[1:3] == ["-c", "log.showSignature=false"] for argv in script_calls)
+
+
+def test_a_finding_prints_on_a_console_that_cannot_show_it(
+    repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _commit_edit(repo, "edit old notes", old="- **Old fix.** Text.\n")
+    path = repo / "CHANGELOG.md"
+    text = path.read_text(encoding="utf-8")
+    path.write_text(text.replace("Better text.", "Better text ✓."), "utf-8")
+    raw = io.BytesIO()
+    stream = io.TextIOWrapper(raw, encoding="cp1256", errors="strict")
+    monkeypatch.setattr(sys, "stdout", stream)
+    assert _run(repo) == 1
+    stream.flush()
+    assert b"the released section changed" in raw.getvalue()
 
 
 def test_main_passes_when_nothing_released_changed(
