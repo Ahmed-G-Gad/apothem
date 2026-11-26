@@ -49,6 +49,13 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Final
 
+from apothem.conformity._grep_base import (
+    finish_root_report,
+    is_project_dir,
+    iter_tree_files,
+    parse_root_args,
+)
+
 GREP_NAME: Final[str] = "redundancy-grep"
 RULE_ANCHOR: Final[str] = (
     "rules/operational-mandates.md §CM-7 coherent-product non-redundancy"
@@ -308,9 +315,9 @@ def _walk_corpus(root: Path) -> list[Path]:
     files: list[Path] = []
     for sub in CORPUS_SUBTREES:
         base = root / sub
-        if not base.exists():
+        if not is_project_dir(root, base):
             continue
-        files.extend(sorted(base.rglob("*.md")))
+        files.extend(sorted(iter_tree_files(base, (".md",), prune=False)))
     return files
 
 
@@ -448,10 +455,6 @@ def check_corpus(root: Path, threshold: float = DEFAULT_THRESHOLD) -> GrepResult
 
 
 def _main(argv: list[str]) -> int:
-    # Imported here, not at module top: ``check_corpus()`` stays stdlib-only;
-    # only the command-line entry needs the shared parser and report stamp.
-    from apothem.conformity._grep_base import finish_root_report, parse_root_args
-
     def _configure(parser: argparse.ArgumentParser) -> None:
         parser.add_argument(
             "--threshold",

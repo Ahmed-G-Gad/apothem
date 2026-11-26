@@ -61,6 +61,12 @@ from typing import Any, Final
 
 import yaml
 
+from apothem.conformity._grep_base import (
+    finish_root_report,
+    parse_root_args,
+    project_file_target,
+)
+
 GREP_NAME: Final[str] = "registry-capability-consistency-grep"
 RULE_ANCHOR: Final[str] = (
     "rules/agent-capability-discipline.md — registry capability cells backed by evidence"
@@ -153,8 +159,11 @@ def _manifest_path(root: Path) -> Path:
 def _load_manifest(root: Path) -> dict[str, Any]:
     """Load the propagation manifest. Missing / unparseable → empty mapping."""
     path = _manifest_path(root)
+    source = project_file_target(root, path)
+    if source is None:
+        return {}
     try:
-        raw = path.read_text(encoding="utf-8")
+        raw = source.read_text(encoding="utf-8")
     except OSError:
         return {}
     try:
@@ -192,8 +201,11 @@ def _materializer_authors_mcp(root: Path, package_key: str) -> bool:
     materializer and authors no MCP surface.
     """
     path = root / "src" / "apothem" / "harnesses" / package_key / _MATERIALIZER_FILENAME
+    source = project_file_target(root, path)
+    if source is None:
+        return False
     try:
-        text = path.read_text(encoding="utf-8")
+        text = source.read_text(encoding="utf-8")
     except OSError:
         return False
     if _MATERIALIZER_FUNCTION not in text:
@@ -358,10 +370,6 @@ def _classify_cell(
 
 
 def _main(argv: list[str]) -> int:
-    # Imported here, not at module top: ``check()`` stays stdlib-only; only
-    # the command-line entry needs the shared parser and report stamp.
-    from apothem.conformity._grep_base import finish_root_report, parse_root_args
-
     root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     result = check(root)
     return finish_root_report(
