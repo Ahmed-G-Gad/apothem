@@ -38,6 +38,16 @@ vendored, virtual-environment, cache and build-output trees in
 :data:`PRUNED_SEGMENTS`. Files below a nested checkout belong to another
 repository, so a root-level finding on one is a false positive, and a walk that
 descends into ``node_modules`` or a built site costs minutes.
+
+Project files only. A project can arrive with its files from someone else, in
+an archive or a shared folder, so every validator reads and lists only what
+the project itself holds: regular files and real folders below its root. The
+walk lists each folder with ``os.scandir`` and never follows a link, and the
+helpers in ``_project_paths`` (re-exported here: :func:`is_project_file`,
+:func:`is_project_dir`, :func:`project_file_target`,
+:func:`list_real_entries`, :func:`child_folder_files`) treat a symbolic link,
+a Windows junction, a named pipe, a device or a socket as if it were not
+there. A root report lists what they left out under ``skipped_links``.
 """
 
 from __future__ import annotations
@@ -52,6 +62,37 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Final, NoReturn, Protocol
 
+from apothem.conformity._project_paths import (
+    DIR_ENTRY,
+    FILE_ENTRY,
+    LINK_ENTRY,
+    SKIPPED_FOLDER_ENTRY,
+    as_opened,
+    linked_git_entry,
+    note_root_spelling,
+    note_skipped,
+    path_kind,
+    scan_entries,
+    start_skip_log,
+    take_skipped_paths,
+)
+from apothem.conformity._project_paths import (
+    NAME_SURROGATE_TAG_BIT as NAME_SURROGATE_TAG_BIT,
+)
+from apothem.conformity._project_paths import (
+    child_folder_files as child_folder_files,
+)
+from apothem.conformity._project_paths import is_link as is_link
+from apothem.conformity._project_paths import is_project_dir as is_project_dir
+from apothem.conformity._project_paths import is_project_file as is_project_file
+from apothem.conformity._project_paths import (
+    list_real_entries as list_real_entries,
+)
+from apothem.conformity._project_paths import no_files as no_files
+from apothem.conformity._project_paths import (
+    project_file_target as project_file_target,
+)
+
 EXIT_PASS: Final[int] = 0
 EXIT_FAIL: Final[int] = 2
 # A command-line usage error (unknown flag, missing file or root): distinct
@@ -59,6 +100,9 @@ EXIT_FAIL: Final[int] = 2
 EXIT_USAGE: Final[int] = 3
 STDIN_FLAG: Final[str] = "--stdin"
 
+# Report key emitted only when the run left out links or special files: their
+# paths relative to the root (see ``_project_paths``).
+SKIPPED_KEY: Final[str] = "skipped_links"
 # Report key every root-based validator emits: how many targets it inspected.
 INSPECTED_KEY: Final[str] = "inspected"
 # Report key emitted only when nothing was inspected: whether the validator
@@ -249,6 +293,13 @@ def parse_root_args(
     if not root.is_dir():
         parser.error(f"root is not an existing directory: {root}")
     args.root = root.resolve()
+    start_skip_log(args.root)
+    # The root as typed, made absolute but not resolved: an absolute link may
+    # be written through this spelling.
+    # ``..`` is not collapsed by name: through a link it can name another
+    # folder, so such a spelling is not recorded at all.
+    typed = root if root.is_absolute() else Path.cwd() / root
+    note_root_spelling(typed if ".." not in typed.parts else args.root, args.root)
     return args
 
 
@@ -278,12 +329,24 @@ def finish_root_report(
     run the same way, advisory or not: a check that could not finish has not
     earned a pass either. Otherwise the return is :data:`EXIT_PASS` for a pass
     or an advisory validator, and :data:`EXIT_FAIL` for a failing blocking one.
+    When the run left out links or special files, the payload lists them under
+    ``skipped_links`` (relative to the root, or by full path for an entry
+    outside it, such as a linked ``.git`` above the root), so a link never hides a file
+    without a trace. A run that inspected nothing while it left a link out
+    does not pass, even when an empty scope is expected: a fixed folder that
+    is a link must not pass as a folder that is not there yet.
     """
     payload = json.loads(report_json)
     payload[INSPECTED_KEY] = inspected
-    vacuous = inspected == 0 and not empty_scope_expected
+    skipped = take_skipped_paths()
+    if skipped:
+        payload[SKIPPED_KEY] = skipped
+    # A scope that is empty because a link was in the way is not the empty
+    # scope a validator expects: the files may be there, behind the link.
+    scope_expected = empty_scope_expected and not skipped
+    vacuous = inspected == 0 and not scope_expected
     if inspected == 0:
-        payload[EMPTY_SCOPE_KEY] = empty_scope_expected
+        payload[EMPTY_SCOPE_KEY] = scope_expected
     if check_error is not None:
         payload[CHECK_ERROR_KEY] = check_error
     unearned = vacuous or check_error is not None
@@ -699,47 +762,245 @@ def in_checkout(directory: Path) -> bool:
     return any(has_git_entry(folder) for folder in checkout_search_folders(directory))
 
 
+# What git's own repository test (``validate_headref``) accepts in ``HEAD``:
+# ``ref:``, then only the blanks git's ``isspace`` takes (space, tab, line
+# feed, carriage return), then ``refs/``; or an object id (SHA-1, or the
+# first 40 digits of a SHA-256 one). git reads 255 bytes of ``HEAD``.
+_HEAD_SYMREF: Final[re.Pattern[bytes]] = re.compile(rb"ref:[ \t\n\r]*refs/")
+_HEAD_OBJECT_ID: Final[re.Pattern[bytes]] = re.compile(rb"[0-9a-fA-F]{40}")
+_HEAD_READ_BYTES: Final[int] = 255
+# git reads the whole ``commondir`` file; a longer one is not judged here.
+_COMMONDIR_MAX_BYTES: Final[int] = 64 * 1024
+
+
+def _read_at_most(path: Path, limit: int) -> bytes | None:
+    """Return up to *limit* + 1 bytes of the regular file *path*; None on error."""
+    try:
+        with path.open("rb") as handle:
+            return handle.read(limit + 1)
+    except OSError:
+        return None
+
+
+def _repository_verdict(git_dir: Path) -> bool | Path:
+    """Say whether git's search stops at *git_dir* as a repository.
+
+    True only when *git_dir* passes a test at least as strict as git's own
+    (``is_git_directory``): a ``HEAD`` git accepts, and the object and
+    reference stores, found through a ``commondir`` file read as git reads
+    it (the whole file, trailing carriage returns and line feeds trimmed,
+    cut at a NUL). False when it fails that test or the test cannot be sure
+    (a read error, a file too large to judge, a line break left in the
+    ``commondir`` path): git may look past *git_dir*, so the walk goes on.
+
+    A link among the parts git reads (``HEAD``, ``commondir``, the folder
+    ``commondir`` names, ``objects``, ``refs``) is returned: git would follow
+    it, so the caller refuses it as it refuses a ``.git`` link. Nothing is
+    followed: each part is looked at with ``os.lstat`` before it is read.
+    """
+    head_path = git_dir / "HEAD"
+    head_kind = path_kind(head_path)
+    if head_kind == LINK_ENTRY:
+        return head_path
+    if head_kind != FILE_ENTRY:
+        return False
+    head = _read_at_most(head_path, _HEAD_READ_BYTES)
+    if head is None:
+        return False
+    head = head[:_HEAD_READ_BYTES]
+    if not (_HEAD_SYMREF.match(head) or _HEAD_OBJECT_ID.match(head)):
+        return False
+    stores = git_dir
+    commondir = git_dir / "commondir"
+    commondir_kind = path_kind(commondir)
+    if commondir_kind == LINK_ENTRY:
+        return commondir
+    if commondir_kind is not None:
+        if commondir_kind != FILE_ENTRY:
+            return False
+        data = _read_at_most(commondir, _COMMONDIR_MAX_BYTES)
+        if not data or len(data) > _COMMONDIR_MAX_BYTES:
+            return False
+        named = data.rstrip(b"\r\n").split(b"\0", 1)[0]
+        if not named or b"\n" in named or b"\r" in named:
+            return False
+        try:
+            stores = git_dir / os.fsdecode(named)
+        except UnicodeDecodeError:
+            return False
+        stores_kind = path_kind(stores)
+        if stores_kind == LINK_ENTRY:
+            return stores
+        if stores_kind != DIR_ENTRY:
+            return False
+    for store in (stores / "objects", stores / "refs"):
+        store_kind = path_kind(store)
+        if store_kind == LINK_ENTRY:
+            return store
+        if store_kind != DIR_ENTRY:
+            return False
+    return True
+
+
+def nearest_linked_git_entry(root: Path) -> Path | None:
+    """Return the linked entry git would read its repository through, and note it.
+
+    git looks for the repository in *root* and then in each folder above it
+    (:func:`checkout_search_folders`), and in each folder it looks first at
+    the ``.git`` entry and then at the folder itself, which may be a bare
+    repository. This walk does the same and stops where git would stop:
+
+    - a ``.git`` link (to a folder or a file, a junction, or one that
+      dangles), or a link among the parts git reads in the repository it
+      stops at (see :func:`_repository_verdict`): the link is noted in the
+      skip log and returned;
+    - a ``.git`` folder or a folder that passes the repository test, or a
+      ``.git`` file (git uses the repository it names, or stops with an
+      error): None.
+
+    The repository test is at least as strict as git's, never looser, so the
+    walk never stops where git goes on. A ``.git`` folder git would not take
+    as a repository (an empty one, a ``HEAD`` that names nothing under
+    ``refs/``, a ``commondir`` that leads nowhere) is looked past, as git
+    does. Where the test is stricter than git, the walk goes on past a
+    repository git would use, and a ``.git`` link above it is refused though
+    git never reaches it. That false refusal is deliberate: it fails closed.
+
+    The checks run git with *discover* set (``run_git``), which leaves out
+    ``GIT_DIR`` and the other location variables, so git finds the repository
+    from *root* as this walk did. A ``.git`` file's ``gitdir:`` target is
+    taken as written: it is a path the file states, not a link.
+
+    Every check that runs git calls this before git and before
+    :func:`in_checkout`, and treats an entry as no checkout, so a run on a
+    subfolder of a project behaves like a run on the project itself.
+    """
+    if linked_git_entry(root):
+        return root / GIT_ENTRY
+    for folder in checkout_search_folders(root):
+        entry = folder / GIT_ENTRY
+        kind = path_kind(entry)
+        if kind == LINK_ENTRY:
+            note_skipped(entry)
+            return entry
+        if kind == DIR_ENTRY:
+            verdict = _repository_verdict(entry)
+        elif kind is not None and git_entry_state(folder) != GIT_ENTRY_NONE:
+            return None
+        else:
+            verdict = False
+        if verdict is False:
+            verdict = _repository_verdict(folder)
+        if isinstance(verdict, Path):
+            note_skipped(verdict)
+            return verdict
+        if verdict:
+            return None
+    return None
+
+
+def linked_git_label(root: Path, entry: Path) -> str:
+    """Return how a report names *entry*, as the skip log names it.
+
+    Relative to *root* when it lies inside it (``.git``, ``.git/HEAD``), and
+    by its full path otherwise, such as a linked ``.git`` above the root.
+    """
+    try:
+        return entry.relative_to(root).as_posix()
+    except ValueError:
+        return entry.as_posix()
+
+
+def linked_git_message(root: Path, entry: Path) -> str:
+    """Return the sentence for a check that did not run git through *entry*.
+
+    It names *entry* (see :func:`linked_git_label`) and nothing git printed;
+    the root's own ``.git`` keeps the sentence it always had.
+    """
+    if entry == root / GIT_ENTRY:
+        return "the .git entry is a link, so git would read another repository"
+    label = linked_git_label(root, entry)
+    if entry.name == GIT_ENTRY:
+        return f"the .git entry {label} is a link, so git would read another repository"
+    return f"{label}, which git reads, is a link, so git would read another repository"
+
+
 def iter_tree_files(
     root: Path,
     suffixes: Iterable[str] = (),
     *,
     names: Iterable[str] = (),
     extra_prune: Iterable[str] = (),
+    prune: bool = True,
+    include_links: bool = False,
 ) -> Iterator[Path]:
-    """Yield the matching files below ``root``, skipping pruned subtrees.
+    """Yield the matching regular files below ``root``, skipping pruned subtrees.
 
     Pre-conditions: ``root`` is an existing directory. ``suffixes`` are file
     name endings (``".md"``) and ``names`` exact file names (``"README.md"``);
     a file matching either is yielded, and with both empty every file is.
     Matching follows the host's file-name case rules, as ``Path.rglob`` does.
     ``extra_prune`` adds directory names to :data:`PRUNED_SEGMENTS`.
-    Post-conditions: yields existing regular files as ``root``-prefixed paths,
+    ``prune=False`` drops the default pruning, so nested checkouts and the
+    names in :data:`PRUNED_SEGMENTS` are walked too (``extra_prune`` still
+    applies): the files a former ``Path.rglob`` caller saw, minus links.
+    ``include_links=True`` yields each link by its own name, never entering
+    it, for a caller that checks names and reads nothing.
+    Post-conditions: yields regular files as ``root``-prefixed paths,
     directory by directory in name order, so a run is deterministic. The walk
     never enters a nested checkout (a directory below ``root`` that holds a
     ``.git`` file or directory; ``root`` itself is never nested, even when its
-    ``.git`` is a file), a directory named in the pruned set, or a symbolic
-    link to a directory. A directory it cannot read is skipped.
+    ``.git`` is a file), a directory named in the pruned set, or a link to a
+    folder (a symbolic link or a Windows junction), and never yields a link, a
+    named pipe, a device or a socket; each one it leaves out is noted in the
+    skip log (see ``_project_paths``). A link that points inside ``root`` is
+    skipped too; what it points to is yielded under its own path when the
+    walk reaches it. A directory it cannot read is skipped.
     """
-    pruned = PRUNED_SEGMENTS.union(extra_prune)
+    pruned = PRUNED_SEGMENTS.union(extra_prune) if prune else frozenset(extra_prune)
     wanted_suffixes = tuple(os.path.normcase(suffix) for suffix in suffixes)
     wanted_names = frozenset(os.path.normcase(name) for name in names)
     match_all = not wanted_suffixes and not wanted_names
-    for position, (dirpath, dirnames, filenames) in enumerate(os.walk(root)):
-        # Position 0 is the root itself; its own ``.git`` marks the checkout
-        # being inspected, not a nested one.
-        if position and (GIT_ENTRY in dirnames or GIT_ENTRY in filenames):
-            dirnames.clear()
+
+    def wanted(name: str) -> bool:
+        folded = os.path.normcase(name)
+        return match_all or folded in wanted_names or folded.endswith(wanted_suffixes)
+
+    # Depth first, files before folders, each in name order: the order a
+    # top-down os.walk with sorted folder names gives. Each folder is listed
+    # with os.scandir and every entry is classified without following it.
+    stack: list[tuple[Path, bool]] = [(root, True)]
+    while stack:
+        folder, is_root = stack.pop()
+        entries = scan_entries(folder)
+        # The root's own ``.git`` marks the checkout being inspected; one
+        # below it marks a nested checkout, which is skipped whole.
+        if prune and not is_root and any(path.name == GIT_ENTRY for path, _ in entries):
             continue
-        dirnames[:] = sorted(name for name in dirnames if name not in pruned)
-        for filename in sorted(filenames):
-            folded = os.path.normcase(filename)
-            if not (
-                match_all or folded in wanted_names or folded.endswith(wanted_suffixes)
-            ):
+        files: list[Path] = []
+        folders: list[Path] = []
+        for path, kind in sorted(entries, key=lambda entry: entry[0].name):
+            if path.name in pruned and kind in (DIR_ENTRY, LINK_ENTRY):
+                if kind == LINK_ENTRY:
+                    note_skipped(path)
                 continue
-            candidate = Path(dirpath, filename)
-            if candidate.is_file():
-                yield candidate
+            if kind == DIR_ENTRY:
+                folders.append(path)
+            elif kind == FILE_ENTRY:
+                if wanted(path.name):
+                    files.append(path)
+            elif kind == LINK_ENTRY and include_links and wanted(path.name):
+                # A caller that checks names only gets the link by its own
+                # name; the walk still never enters it.
+                files.append(path)
+            elif kind in (LINK_ENTRY, SKIPPED_FOLDER_ENTRY) or wanted(
+                as_opened(path.name)
+            ):
+                # A link may hide a folder or a file; a pipe, device or socket
+                # with a wanted name would make the read wait or never end.
+                note_skipped(path)
+        yield from files
+        stack.extend((path, False) for path in reversed(folders))
 
 
 # ---------------------------------------------------------------------------

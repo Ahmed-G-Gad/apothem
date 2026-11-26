@@ -69,7 +69,18 @@ from apothem.conformity._grep_base import (
     GitTimeoutError,
     finish_root_report,
     has_git_entry,
+    linked_git_label,
+    linked_git_message,
+    nearest_linked_git_entry,
     parse_root_args,
+)
+from apothem.conformity._project_paths import (
+    DIR_ENTRY,
+    LINK_ENTRY,
+    SKIPPED_FOLDER_ENTRY,
+    note_skipped,
+    path_kind,
+    scan_entries,
 )
 
 GREP_NAME: Final[str] = "no-global-plans-grep"
@@ -156,23 +167,30 @@ class GrepResult:
 def _git_ls_files(root: Path) -> list[str]:
     """Return the git-tracked file list under root.
 
-    Raises ``RuntimeError`` when ``git`` is unavailable or root is not a git
-    repository, both errors the caller surfaces, and
+    Raises ``RuntimeError`` when ``git`` is unavailable, root is not a git
+    repository, or the ``.git`` entry git would use (in root or a folder
+    above it) is a link (git is then not run), all errors the caller
+    surfaces, and
     :class:`~apothem.conformity._grep_base.GitTimeoutError` when git runs past
     :data:`GIT_LS_FILES_TIMEOUT_SECONDS` (the repository's own configuration
     can make git wait for ever), which the report carries as its
     ``check_error``. A failure names git's exit code, not git's own text,
-    which can name files outside the project. git runs through
+    which can name files outside the project; a linked entry is named by its
+    own path (see :func:`linked_git_message`). git runs through
     :func:`run_git`, so the repository's own settings cannot make it start a
     program. ``-z`` ends each name with NUL, unquoted, and the output is read
     as file names, so a name comes back with every byte it holds.
     """
+    linked = nearest_linked_git_entry(root)
+    if linked is not None:
+        raise RuntimeError(linked_git_message(root, linked))
     try:
         completed = run_git(
             ["ls-files", "-z"],
             cwd=root,
             check=True,
             timeout=GIT_LS_FILES_TIMEOUT_SECONDS,
+            discover=True,
             file_names=True,
         )
     except FileNotFoundError as exc:
@@ -188,6 +206,34 @@ def _git_ls_files(root: Path) -> list[str]:
             "run it there to see why"
         ) from exc
     return split_names(completed.stdout)
+
+
+# Finding text for a .git entry that is a link or a junction.
+_LINKED_GIT_DETAIL: Final[str] = (
+    "the .git entry is a link, so git would read another repository's "
+    "index; the tracked-plans check did not run, and the project is "
+    "treated as having no checkout — replace the link with the project's "
+    "own .git folder or file"
+)
+
+# Finding text for a plans location that is a link or a junction.
+_LINKED_PLANS_DETAIL: Final[str] = (
+    "a plans location is a link: its plans tree lives wherever the link "
+    "leads, and the gate does not follow links; the sole "
+    "canonical plans tree is a real folder at <root>/.apothem/plans inside "
+    "the project per the suite-locality invariant — replace the link with a "
+    "real folder there, or remove it"
+)
+
+# Finding text for an Apothem working folder (.apothem) that is a link.
+_LINKED_APOTHEM_DETAIL: Final[str] = (
+    "the Apothem working folder, which holds the plans tree, is a link: what "
+    "it holds lives wherever the link leads, and the "
+    "gate does not follow links; the sole canonical plans tree is a real "
+    "folder at <root>/.apothem/plans inside the project per the "
+    "suite-locality invariant — replace the link with a real folder, or "
+    "remove it"
+)
 
 
 def _sweep_stray_plans_dirs(
@@ -218,20 +264,34 @@ def _sweep_stray_plans_dirs(
     ``tracked_plans_dirs`` to avoid double-reporting. The sweep's unique value is
     the *untracked* stray. Returns an empty list when the filesystem is
     unreadable (the git-index check still carries the verdict).
+
+    Links. The sweep never enters a link or a Windows junction, so it never
+    lists a tree outside the project. A link named ``.plans`` or ``.apothem``,
+    and a ``plans`` link inside an ``.apothem`` folder, the canonical one
+    included, is reported by name: its plans tree lives wherever the link
+    leads, not in the real folder the invariant names. The canonical location
+    is compared by name, never resolved, so no link is followed to decide it.
     """
     findings: list[Finding] = []
     try:
         resolved_root = root.resolve()
     except (OSError, RuntimeError):
         return findings
-    canonical_new = (resolved_root / ".apothem" / "plans").resolve()
-    canonical = {canonical_new}
+    canonical = resolved_root / ".apothem" / "plans"
 
-    def _record_stray(entry: Path, rel: str) -> None:
+    def _record_stray(entry: Path, rel: str, *, link: bool = False) -> None:
         """Append a stray finding for a plans directory unless it is canonical
-        or already covered by the git-index check."""
-        already_tracked = rel in tracked_plans_dirs
-        if entry.resolve() in canonical or already_tracked:
+        or already covered by the git-index check. A *link* at a plans
+        location is reported wherever it is, the canonical one included."""
+        if rel in tracked_plans_dirs or (not link and entry == canonical):
+            return
+        if link:
+            detail = (
+                _LINKED_APOTHEM_DETAIL
+                if entry.name == ".apothem"
+                else _LINKED_PLANS_DETAIL
+            )
+            findings.append(Finding(path=f"{rel}/", detail=detail))
             return
         findings.append(
             Finding(
@@ -250,21 +310,28 @@ def _sweep_stray_plans_dirs(
     stack: list[Path] = [resolved_root]
     while stack:
         current = stack.pop()
-        try:
-            entries = list(current.iterdir())
-        except (OSError, PermissionError):
-            continue
-        for entry in entries:
-            try:
-                is_dir = entry.is_dir()
-            except OSError:
-                continue
-            if not is_dir:
-                continue
+        # Every entry is classified without following it; a link is never
+        # entered, but one at a plans location is reported by name.
+        for entry, kind in scan_entries(current):
             name = entry.name
             if name in _SWEEP_SKIP_DIRS:
                 continue
             rel = entry.relative_to(resolved_root).as_posix()
+            if kind == LINK_ENTRY:
+                if name in (".plans", ".apothem"):
+                    _record_stray(entry, rel, link=True)
+                else:
+                    # Not searched, so a plans tree behind it would go
+                    # unseen: the report names it under skipped_links.
+                    note_skipped(entry)
+                continue
+            if kind == SKIPPED_FOLDER_ENTRY:
+                # Not searched (Win32 would reopen another entry), so a
+                # plans tree inside it would go unseen: name it.
+                note_skipped(entry)
+                continue
+            if kind != DIR_ENTRY:
+                continue
             if name == ".plans":
                 _record_stray(entry, rel)
                 # Do not descend into a .plans/ tree (it is suite content, not a
@@ -276,11 +343,13 @@ def _sweep_stray_plans_dirs(
                 # the ``plans`` child for stray-suite detection; descend no
                 # further into the data children.
                 plans_child = entry / "plans"
-                try:
-                    if plans_child.is_dir():
-                        _record_stray(plans_child, f"{rel}/plans")
-                except OSError:
-                    pass
+                child_kind = path_kind(plans_child)
+                if child_kind in (DIR_ENTRY, LINK_ENTRY):
+                    _record_stray(
+                        plans_child,
+                        f"{rel}/plans",
+                        link=child_kind == LINK_ENTRY,
+                    )
                 continue
             if has_git_entry(entry):
                 # A nested git checkout (a worktree, a submodule, a nested
@@ -329,8 +398,18 @@ def check(root: Path) -> GrepResult:
     ``<root>/.apothem/plans`` (a stray suite the index check is blind to).
     Either check's finding fails the validator.
     """
-    tracked = _git_ls_files(root)
     findings: list[Finding] = []
+    linked = nearest_linked_git_entry(root)
+    if linked is not None:
+        # git would read another repository's index; the sweep still runs.
+        # The finding names the entry as the skip log does: ``.git`` at the
+        # root, its full path above it.
+        tracked: list[str] = []
+        findings.append(
+            Finding(path=linked_git_label(root, linked), detail=_LINKED_GIT_DETAIL)
+        )
+    else:
+        tracked = _git_ls_files(root)
     for path in tracked:
         if _PLANS_PATH_RE.search(path):
             findings.append(

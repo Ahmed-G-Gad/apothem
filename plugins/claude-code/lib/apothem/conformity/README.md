@@ -14,6 +14,7 @@
 | `_bounded_run.py` | `run_bounded`, the one place the package starts a program (a validator for the gate, git for `run_git`), with a time limit that holds for every program it starts: a Windows job object, or a session of its own elsewhere, ended on a stop, with a bounded wait for the output after it. Standard library only. Private to this package. |
 | `_corpus.py` | The `--all-perwrite` file list and reader: lists the tracked files with `git ls-files` (with a time limit) and reads only the regular files inside the project, checking every level with `lstat` so no link, junction, named pipe or device is followed or opened, and naming the reason for every path it skips. `link-check` uses the same level check to keep a corpus run's link lookups inside the project. Private to this package. |
 | `__init__.py` | Package marker. |
+| `_project_paths.py` | The link-aware helpers every validator reads project files through: a walk entry, a fixed path or a folder listing is looked at without following a link, a link to a regular file inside the project counts for a fixed file, and every link or special file left out is noted for the report's `skipped_links`. Private to this package. |
 
 ## Matcher families
 
@@ -185,6 +186,57 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   nothing fails unless the walker declares `empty_scope_expected` (a plan-suite
   walker on a checkout without the gitignored plans tree, a workflow walker
   where no workflow directory exists yet).
+- **Project files only, never through a link.** The project being checked can
+  come with files someone else made, so a validator opens and lists only
+  regular files and real folders that it reaches through real folders below
+  the root. It never follows a symbolic link or a Windows junction, and never
+  opens a named pipe, a device or a socket; each counts as missing. Use the
+  helpers in `_project_paths.py`, re-exported by `_grep_base.py`:
+  `iter_tree_files` for a walk (`prune=False` where every file below a fixed
+  folder counts, as `rglob` did), `project_file_target` to read a fixed file
+  (it also accepts a link to a regular file inside the project, such as
+  `CLAUDE.md`), `is_project_dir` before listing or globbing a fixed folder,
+  `is_project_file` to filter a listing, `list_real_entries` in place of
+  `iterdir`, `child_folder_files` in place of a `*/NAME` glob, and `path_kind`
+  or `scan_entries` for a check that reports a name, such as a plans folder or
+  a `docs` entry that is a link. Plain `is_file`, `is_dir` and `exists` follow
+  links, `glob`, `rglob` and `iterdir` list a linked folder and return links,
+  `os.walk` looks up the target of each symbolic link it lists, and on Python
+  3.12 a `*/NAME` glob lists every child folder, a linked one too, so keep
+  each glob to one level of a folder you checked. On Windows a name ending in
+  a dot or a space is a special entry: Win32 drops that ending when a path is
+  opened by name, so the reopened path could be a junction beside it. A
+  check that reads no content, such as `naming-grep`, walks with
+  `include_links=True` to see each link by its own name. The helpers note
+  every link and special file they leave out, and `finish_root_report` lists
+  them under `skipped_links`; a run that inspected nothing while it left a
+  link out does not pass, even when an empty scope is expected.
+  `tests/conformity/test_validators_stay_in_project.py` runs every `--all`
+  validator against a project made of links. Add each file a new validator
+  reads to its `_project_files` (or, for a file read only after another one
+  passed, to `_second_reads`): its control test fails only while the
+  validator reaches none of those files, so a path left out is not tested.
+  A check in the `--all` or `--all-perwrite` set that runs git calls
+  `nearest_linked_git_entry(root)` from `_grep_base.py` first and treats a
+  returned entry as no checkout (`linked_git_message` gives the sentence
+  that names it): it never runs git, and never asks `in_checkout`, before
+  that call, and it passes `discover=True` to every `run_git` call, so a
+  `GIT_DIR` from the environment (git exports one to its hooks) cannot point
+  git somewhere the helper did not look. git follows a `.git` link in the
+  root or in a folder above it, or a link among the files of the repository
+  it stops at (`HEAD`, `commondir`, `objects`, `refs`), to another
+  repository; the helper walks the folders git searches without following
+  any link and refuses each of these. Its repository test is stricter than
+  git's, never looser: where git would stop at a repository the test
+  rejects, the walk goes on and may refuse a link above it that git never
+  reaches. That false refusal is deliberate. The callers today are
+  `_corpus.tracked_entries`, `no_global_plans_grep._git_ls_files` and
+  `no_global_plans_grep.check`, `agents_md_coverage_grep._read_history`, and
+  `conventional_commit_grep._read_head_subject`. The `--staged` checks
+  (`production-ready-pr-grep` and `semver-stability-grep` with `--staged`)
+  run git in the current folder without this guard; they are not part of
+  `--all` or `--all-perwrite`.
+
 - **No unfinished pass.** A check that could not finish does not pass either.
   Give every `run_git` call a timeout, far above what the command takes, since
   a timeout fails the check: the validators give each command 60 seconds and a

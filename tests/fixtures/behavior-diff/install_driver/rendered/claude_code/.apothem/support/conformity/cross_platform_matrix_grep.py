@@ -39,6 +39,14 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Final
 
+from apothem.conformity._grep_base import (
+    finish_root_report,
+    is_project_dir,
+    is_project_file,
+    parse_root_args,
+    project_file_target,
+)
+
 REQUIRED_OS: Final[tuple[str, ...]] = (
     "ubuntu-latest",
     "macos-latest",
@@ -76,8 +84,11 @@ def _required_python(root: Path) -> tuple[str, ...]:
     required axis.
     """
     pyproject = root / "pyproject.toml"
+    source = project_file_target(root, pyproject)
+    if source is None:
+        return _FALLBACK_PYTHON
     try:
-        text = pyproject.read_text(encoding="utf-8")
+        text = source.read_text(encoding="utf-8")
     except OSError:
         return _FALLBACK_PYTHON
     found = _CLASSIFIER_RE.findall(text)
@@ -153,13 +164,16 @@ class GrepResult:
 def _find_workflow(root: Path) -> Path | None:
     """Locate the canonical CI-matrix workflow, if present."""
     workflows = root / WORKFLOW_DIR
-    if not workflows.is_dir():
+    if not is_project_dir(root, workflows):
         return None
     # Prefer the exact canonical name; fall back to the glob match.
     canonical = workflows / "ci-matrix.yml"
-    if canonical.exists():
-        return canonical
-    candidates = sorted(workflows.glob(WORKFLOW_GLOB))
+    source = project_file_target(root, canonical)
+    if source is not None:
+        return source
+    candidates = sorted(
+        p for p in workflows.glob(WORKFLOW_GLOB) if is_project_file(root, p)
+    )
     return candidates[0] if candidates else None
 
 
@@ -388,10 +402,6 @@ def check(root: Path) -> GrepResult:
 
 
 def _main(argv: list[str]) -> int:
-    # Imported here, not at module top: ``check()`` stays stdlib-only; only
-    # the command-line entry needs the shared parser and report stamp.
-    from apothem.conformity._grep_base import finish_root_report, parse_root_args
-
     root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     result = check(root)
     return finish_root_report(
