@@ -573,6 +573,12 @@ jobs:
       - name: Unit-test the site build helpers
         working-directory: site
         run: npm test
+      - name: Check the sidebar order of every language
+        # Each language's sidebar lists must follow the English page order;
+        # author-ia.mjs --check fails when one drifts (a page missing from a
+        # language's sidebar, or appended out of place).
+        working-directory: site
+        run: npm run ia:check
       - name: Build docs
         working-directory: site
         run: npm run build

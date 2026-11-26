@@ -1,7 +1,6 @@
 {
   "title": "أمثلة",
   "pages": [
-    "index",
     "custom-rule",
     "minimal-hook",
     "authoring-a-harness-adapter",

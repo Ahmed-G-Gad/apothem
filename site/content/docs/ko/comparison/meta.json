@@ -1,7 +1,6 @@
 {
   "title": "비교",
   "pages": [
-    "index",
     "vs-other-harness-frameworks",
     "vs-raw-claude-code",
     "vs-raw-cursor",

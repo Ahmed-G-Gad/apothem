@@ -872,7 +872,9 @@ function pipelineNavPages(commands) {
 	for (const name of sorted) if (/-(audit|review)$/.test(name)) take(name);
 	take('fortress');
 	for (const name of sorted) take(name);
-	return ['index', ...ordered, '...'];
+	// No `index` entry: the folder title links to the overview page, as in every
+	// other section (see author-ia.mjs), rather than repeating it as a child.
+	return [...ordered, '...'];
 }
 
 // The first sentence of a description, cut on a word boundary when long.

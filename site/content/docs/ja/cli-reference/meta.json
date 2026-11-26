@@ -1,12 +1,12 @@
 {
   "title": "CLI リファレンス",
   "pages": [
-    "index",
     "quickstart",
     "install",
     "uninstall",
     "update",
     "rollback",
+    "backups",
     "verify",
     "status",
     "diff",

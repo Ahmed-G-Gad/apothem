@@ -1,7 +1,6 @@
 {
   "title": "아키텍처",
   "pages": [
-    "index",
     "source-layout",
     "shared-profile-schema",
     "harness-adapter-abstraction",

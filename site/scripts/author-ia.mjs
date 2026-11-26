@@ -14,7 +14,7 @@
 // accounted for in the curated lists and exits non-zero on drift, leaving the
 // tree untouched. The `ia` / `ia:check` npm scripts wrap the two modes.
 
-import { readdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -25,8 +25,17 @@ const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const SITE_ROOT = join(SCRIPT_DIR, '..');
 const DST_ROOT = join(SITE_ROOT, 'content', 'docs');
 
+// A section's `index` page is left out of the written `pages` list on purpose.
+// Fumadocs then makes the folder title itself the link to the overview page.
+// Listing `index` as well showed every section twice: the folder title
+// ("Blog", "Reference") followed by its overview page as a first child with the
+// same or a near-same name. The curated lists below keep `index` so the drift
+// guard still accounts for it.
 function meta(title, pages) {
-  return JSON.stringify({ title, pages: [...pages, '...'] }, null, 2) + '\n';
+  return (
+    JSON.stringify({ title, pages: [...pages.filter((p) => p !== 'index'), '...'] }, null, 2) +
+    '\n'
+  );
 }
 
 function write(rel, content) {
@@ -70,8 +79,12 @@ const rootPages = [
   'changelog',
   'community',
   'brand',
-  '404',
 ];
+// Root pages that exist but are left out of the sidebar on purpose. The root
+// meta has no rest glob, so a key missing from `rootPages` is not shown. The
+// 404 page is the not-found fallback: the sitemap and llms.txt leave it out
+// too, and a "Page not found" sidebar entry would lead readers to an error.
+const HIDDEN_ROOT_PAGES = ['404'];
 const rootMeta =
   JSON.stringify({ title: 'Documentation', pages: rootPages }, null, 2) + '\n';
 
@@ -157,9 +170,12 @@ const sections = {
   community: ['Community', [
     'index', 'roadmap', 'discussions', 'code-of-conduct',
   ]],
+  // The posts are listed flat under Blog; `!posts` keeps the rest glob from
+  // also appending the `posts` folder, which showed every post a second time
+  // inside an extra "Posts" folder.
   blog: ['Blog', [
     'index', 'posts/v1-6-0-release', 'posts/multi-harness-adapter-design',
-    'posts/cross-harness-convention-convergence',
+    'posts/cross-harness-convention-convergence', '!posts',
   ]],
   'conformity-gate': ['Conformity gate', ['index']],
 };
@@ -225,7 +241,10 @@ function assertNoDrift(sectionMap, rootKeyList) {
   const drift = [];
   // Root level: every root singleton + non-locale section directory MUST be
   // named in the root meta. Group separators (`---Label---`) are not pages.
-  const curatedRoot = new Set(rootKeyList.filter((p) => !/^---.*---$/.test(p)));
+  const curatedRoot = new Set([
+    ...rootKeyList.filter((p) => !/^---.*---$/.test(p)),
+    ...HIDDEN_ROOT_PAGES,
+  ]);
   for (const key of liveRootKeys()) {
     if (!curatedRoot.has(key)) drift.push(key);
   }
@@ -249,9 +268,79 @@ function assertNoDrift(sectionMap, rootKeyList) {
 
 assertNoDrift(sections, rootPages);
 
+// --- Locale metas: the English order, the locale's own labels. ---
+// Each routed locale carries its own meta.json per section, with a translated
+// `title` and translated `---Label---` group separators. The page order must
+// still be the English one: a page added to an English list but not to a
+// locale list is either missing from that locale's sidebar or appended
+// unordered at its tail by the rest glob. So the locale `pages` array is
+// derived from the English one here, and only the labels are kept from the
+// locale file. A group separator keeps the locale label at the same ordinal
+// position; a locale with fewer separators falls back to the English label.
+const SEPARATOR_RE = /^---.*---$/;
+
+function readJson(rel) {
+  try {
+    return JSON.parse(readFileSync(join(DST_ROOT, rel), 'utf8'));
+  } catch {
+    return undefined;
+  }
+}
+
+function localePages(englishPages, current) {
+  const localeSeparators = (current?.pages ?? []).filter((p) => SEPARATOR_RE.test(p));
+  let ordinal = 0;
+  return englishPages.map((p) => {
+    if (!SEPARATOR_RE.test(p)) return p;
+    const label = localeSeparators[ordinal] ?? p;
+    ordinal += 1;
+    return label;
+  });
+}
+
+function localeMetaFiles() {
+  const out = [];
+  for (const entry of readdirSync(DST_ROOT, { withFileTypes: true })) {
+    if (!entry.isDirectory() || !LOCALE_DIR_RE.test(entry.name)) continue;
+    const loc = entry.name;
+    const root = readJson(join(loc, 'meta.json'));
+    out.push([
+      join(loc, 'meta.json'),
+      JSON.stringify(
+        { title: root?.title ?? 'Documentation', pages: localePages(rootPages, root) },
+        null,
+        2,
+      ) + '\n',
+    ]);
+    for (const [dir, [title, pages]] of Object.entries(sections)) {
+      const rel = join(loc, dir, 'meta.json');
+      const current = readJson(rel);
+      out.push([rel, meta(current?.title ?? title, pages)]);
+    }
+  }
+  return out;
+}
+
 const CHECK_ONLY = process.argv.includes('--check');
+const localeMetas = localeMetaFiles();
 
 if (CHECK_ONLY) {
+  const stale = localeMetas
+    .filter(([rel, content]) => {
+      try {
+        return readFileSync(join(DST_ROOT, rel), 'utf8').replace(/\r\n/g, '\n') !== content;
+      } catch {
+        return true;
+      }
+    })
+    .map(([rel]) => rel.replace(/\\/g, '/'));
+  if (stale.length > 0) {
+    console.error(
+      `author-ia --check: ${stale.length} locale meta.json file(s) do not follow ` +
+        `the English page order — run \`node scripts/author-ia.mjs\`:\n  ${stale.sort().join('\n  ')}`,
+    );
+    process.exit(1);
+  }
   console.log(
     'author-ia --check: curated IA is in sync with the live docs tree (no drift).',
   );
@@ -260,5 +349,11 @@ if (CHECK_ONLY) {
   for (const [dir, [title, pages]] of Object.entries(sections)) {
     write(join(dir, 'meta.json'), meta(title, pages));
   }
-  console.log(`Authored ${Object.keys(sections).length + 1} meta.json files.`);
+  for (const [rel, content] of localeMetas) {
+    mkdirSync(dirname(join(DST_ROOT, rel)), { recursive: true });
+    write(rel, content);
+  }
+  console.log(
+    `Authored ${Object.keys(sections).length + 1} English and ${localeMetas.length} locale meta.json files.`,
+  );
 }

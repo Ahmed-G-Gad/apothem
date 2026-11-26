@@ -1,7 +1,6 @@
 {
   "title": "रनबुक",
   "pages": [
-    "index",
     "release-cycle",
     "deployment-checklist",
     "release-recovery",

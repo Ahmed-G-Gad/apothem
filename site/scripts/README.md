@@ -31,10 +31,15 @@ Run any of them from `site/`.
   cannot leak its translated pages into the English artifacts.
 - **`author-ia.mjs`** — authors the Fumadocs `meta.json` information-architecture
   files (section ordering), except `pipeline/meta.json`, which
-  `update-reference-inventory.mjs` generates. Carries `assertNoDrift`, which
-  fails if a live doc page is missing from a curated list. Run `node scripts/author-ia.mjs` to
-  regenerate the metas, or `--check` (the `ia:check` npm script) to run the drift
-  guard read-only without rewriting — the check-only mode is the CI-safe form.
+  `update-reference-inventory.mjs` generates. It writes the English metas and
+  every locale's metas: a locale meta keeps its translated `title` and group
+  labels and takes its page order from the English list, so each locale
+  sidebar lists the same pages in the same order. Carries `assertNoDrift`, which
+  fails if a live doc page is missing from a curated list; the 404 page is the
+  one root page left out of the sidebar on purpose. Run `node scripts/author-ia.mjs` to
+  regenerate the metas, or `--check` (the `ia:check` npm script, run by CI) to
+  run the drift guards read-only without rewriting; the check also fails when a
+  locale meta no longer follows the English order.
 - **`check-search-index-sizes.mjs`** — guards the per-locale static search-index
   sizes in the built output. Re-derives `ROUTED_LOCALES` from `lib/i18n.ts` via
   `assertLocaleParity()` and fails on drift. Runs after a build

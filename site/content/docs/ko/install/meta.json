@@ -1,7 +1,6 @@
 {
   "title": "설치",
   "pages": [
-    "index",
     "quickstart",
     "concepts",
     "harness-setup",
