@@ -31,6 +31,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   instead of twice. The `coverage` job's reports keep only the engine folders,
   read from `[tool.coverage.run] source` in `pyproject.toml`, so the engine
   figure and its 80% floor stay the same.
+- **CI fails a pull request that edits released release notes.** A release
+  renames `[Unreleased]` in `CHANGELOG.md` to the new version. A branch cut
+  before the release could then merge the release in with no conflict and
+  leave its entry inside the released section. A new step in the required
+  `quality / ubuntu-latest / py3.12` check compares every released section
+  with the base branch and names the section that changed. A commit trailer
+  `Changelog-Released-Edit: <version> <reason>` allows a deliberate
+  correction to that version's notes only.
 
 ### Security
 
