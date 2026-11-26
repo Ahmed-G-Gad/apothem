@@ -24,7 +24,9 @@ skills.
 `~/.codex/hooks/`, `~/.codex/agents/*.toml`,
 `~/.agents/skills/*/SKILL.md`, `~/.agents/skills/*/agents/openai.yaml` for
 user-invoked skills, and support files under
-`~/.config/apothem/{rules,templates}/`.
+`~/.config/apothem/{rules,templates}/`. The install also creates the Apothem
+data folder, `~/.codex/.apothem/` by default, with `contexts/`, `learning/`,
+`memory/` and `plans/` in it.
 
 **Hook interpreter.** Before it writes anything, the install resolves a CPython
 3.10+ interpreter. On Windows, each hook's `commandWindows` entry in

@@ -12,6 +12,7 @@
 | `_git.py` | `run_git`, the one way the gate and its validators run `git` in a checked project: with the repository's program-running settings turned off on git's command line, fetching blocked, and git found only in full-path `PATH` entries. Private to this package. |
 | `_grep_base.py` | Shared building blocks every `*_grep` matcher imports: the finding shape, the file-walk (`iter_tree_files`, which prunes nested git checkouts and the vendored, virtual-environment, cache and build-output trees), and the JSON envelope. Private to this package. |
 | `_bounded_run.py` | `run_bounded`, the one place the package starts a program (a validator for the gate, git for `run_git`), with a time limit that holds for every program it starts: a Windows job object, or a session of its own elsewhere, ended on a stop, with a bounded wait for the output after it. Standard library only. Private to this package. |
+| `_corpus.py` | The `--all-perwrite` file list and reader: lists the tracked files with `git ls-files` (with a time limit) and reads only the regular files inside the project, checking every level with `lstat` so no link, junction, named pipe or device is followed or opened, and naming the reason for every path it skips. `link-check` uses the same level check to keep a corpus run's link lookups inside the project. Private to this package. |
 | `__init__.py` | Package marker. |
 
 ## Matcher families

@@ -4,7 +4,7 @@ description: "Apothem harness adapter for Hermes (Preview)."
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**Vendor:** Hermes
+**Vendor:** Nous Research
 **Install name:** `hermes`
 **Status:** Preview
 **Native config:** `~/.hermes/config.yaml`
@@ -20,7 +20,9 @@ configuration file and installs Apothem support cohorts under the harness root.
 
 **Files written:** `~/.hermes/config.yaml`, the profile document
 `~/.hermes/apothem/rules/00-apothem-profile.md`, and support files under
-`~/.hermes/.apothem/support/`
+`~/.hermes/.apothem/support/`. The install also creates the Apothem data
+folder, `~/.hermes/.apothem/` by default, with `contexts/`, `learning/`,
+`memory/` and `plans/` in it.
 
 Every install and update deletes every file in `~/.hermes/apothem/rules/` that
 Apothem did not put there, after saving it in a backup set under
@@ -99,10 +101,10 @@ then `~/.hermes/skills/`, then `skills.create_dir`, then the folders listed unde
 comes last. The Hermes docs reviewed do not state which copy Hermes loads when
 two locations hold a skill of the same name; Apothem reads the order as earlier
 locations winning, so expect a skill of the same name that you keep in an earlier
-location to take precedence over the Apothem copy. Apothem writes only to
-`config.yaml` and under `~/.hermes/.apothem/support/`, never into those earlier
-locations, so install, update, and uninstall do not replace a skill you keep
-there.
+location to take precedence over the Apothem copy. The Hermes install never
+writes into those earlier locations: inside `~/.hermes/` it writes only
+`config.yaml`, `apothem/rules/` and `.apothem/`, so install, update, and
+uninstall do not replace a skill you keep there.
 
 `apothem update` keeps keys you add to `config.yaml`, including
 `skills.config` and your own `skills.external_dirs` entries. The adapter writes

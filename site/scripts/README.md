@@ -42,7 +42,11 @@ Run any of them from `site/`.
 - **`export-to-dist.mjs`** — the `postbuild` step: renames Next's `out/` static
   export to `dist/`, the served tree the Pages publish pipeline deploys, baking
   the correct per-locale `lang`/`dir` into each locale's HTML, then writes the
-  trailing-slash redirect stubs.
+  moved-page and trailing-slash redirect stubs.
+- **`moved-page-redirects.mjs`** — writes a redirect stub at the URL of each
+  removed docs page listed in `MOVED_PAGES`, in English and every locale, to
+  the page that replaces it. Covered by `moved-page-redirects.test.mjs` under
+  `npm test`.
 - **`github-slugger-table.mjs`** — writes `../scripts/dev/github-slugger-removed.txt`,
   the code points github-slugger removes from a heading, read from the installed
   package. Every heading id on the site comes from github-slugger, and the Python

@@ -23,14 +23,15 @@ assert that the SemVer recognition shape, the latest-tag filter, the
 verification-bypass environment variable name, and the source-precedence order
 agree, and that the pairs say the same thing where it matters: the tag gate
 (signature, key pin, and the signed tag object naming its release), the
-cosign check of the tag's commit, the checksum-mode caveat and its gate, and
-what a swap into APOTHEM_HOME does with what is there. PowerShell writes ``-``
-where the POSIX scripts write an em dash, and ``-Yes`` where they write
+cosign check of the tag's commit, the checksum-mode caveat and its gate,
+what a swap into APOTHEM_HOME does with what is there, and how a script
+finishes an engine run that ends as partial (exit code 2). PowerShell writes
+``-`` where the POSIX scripts write an em dash, and ``-Yes`` where they write
 ``--yes``, so the compared phrases stop short of those. The release-tag shape,
-the latest-tag filter and the tag-gate messages are guarded for both the
-install and the update pair; the other checks cover the install pair. A
-future edit to one script that does not mirror its sibling trips a finding
-here instead of shipping a silent divergence.
+the latest-tag filter, the tag-gate messages and the partial-run line are
+guarded for both the install and the update pair; the other checks cover the
+install pair. A future edit to one script that does not mirror its sibling
+trips a finding here instead of shipping a silent divergence.
 """
 
 from __future__ import annotations
@@ -5272,3 +5273,30 @@ def test_the_ps1_scripts_write_the_windows_home_access_warnings(name: str) -> No
         assert not [t for t in HOME_ACCESS_WINDOWS_TEXTS if t in SCRIPTS[sh_name]], (
             sh_name
         )
+
+
+#: The line each installer and updater prints when the engine ends as partial
+#: (exit code 2), up to the harness name the script fills in.
+PARTIAL_RUN_LINE = (
+    "The engine ended as partial (exit code 2): its messages above name the "
+    "files it left as they are, or the error that stopped it. Fix what they "
+    "name, then run 'apothem update --harness "
+)
+
+
+@pytest.mark.parametrize("name", sorted(SCRIPTS))
+def test_every_script_finishes_a_partial_engine_run_the_same_way(name: str) -> None:
+    """Each installer and updater prints the same line when the engine exits
+    with code 2 and ends with that code. A PowerShell script exits with it
+    only when it runs from its file: a piped run (irm ... | iex) has no
+    $PSCommandPath, and exit there would close the session, so it sets
+    $LASTEXITCODE instead."""
+    script = SCRIPTS[name]
+    assert PARTIAL_RUN_LINE in script, f"{name} lacks the partial-run line"
+    if name.endswith(".ps1"):
+        assert "if ($EngineCode -eq 2) {" in script, name
+        assert "if ($PSCommandPath) { exit 2 }" in script, name
+        assert "$global:LASTEXITCODE = 2" in script, name
+    else:
+        assert "|| ENGINE_CODE=$?" in script, name
+        assert 'exit "$ENGINE_CODE"' in script, name
