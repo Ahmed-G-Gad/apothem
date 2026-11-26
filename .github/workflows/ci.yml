@@ -163,6 +163,32 @@ jobs:
           src/apothem/cli src/apothem/harnesses/_shared
       - name: Ruff (format check)
         run: python -m ruff format --check .
+      - name: Check no released CHANGELOG section changed
+        # A release renames [Unreleased] to [x.y.z]. A branch cut before the
+        # release can then merge the release in with no conflict and leave
+        # its entry inside the released section; after v1.6.0 five open pull
+        # requests would have edited the 1.6.0 notes this way. A pull request
+        # is compared with HEAD^1, the base branch commit GitHub merged it
+        # into; a push to main with the tip before the push, so every pushed
+        # commit is covered. It runs in one required cell so a finding blocks
+        # the merge. A 'Changelog-Released-Edit: <version> <reason>' commit
+        # trailer allows a deliberate edit of that version's notes.
+        if: runner.os == 'Linux' && matrix.python-version == '3.12'
+        shell: bash
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          git fetch --quiet --no-tags --unshallow origin
+          base=HEAD^1
+          if [ "$GITHUB_EVENT_NAME" = push ] && [ -n "$BEFORE" ] \
+            && [ "$BEFORE" != 0000000000000000000000000000000000000000 ]; then
+            base=$BEFORE
+          fi
+          if ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+            echo "::notice::$base is not in the clone (a force push?); comparing with HEAD^1"
+            base=HEAD^1
+          fi
+          python scripts/dev/check_changelog_released_sections.py --base "$base"
       - name: Mypy (type check)
         run: python -m mypy
       - name: Start node once

@@ -473,7 +473,7 @@ def _drive_every_gate_git_call(repo: Path, monkeypatch: pytest.MonkeyPatch) -> N
     not an error: what counts is that no planted program ran.
     """
     gate._run_all_perwrite(repo)
-    with contextlib.suppress(RuntimeError):
+    with contextlib.suppress(RuntimeError, GitCheckError):
         no_global_plans_grep._git_ls_files(repo)
     conventional_commit_grep._read_head_subject(repo)
     with contextlib.suppress(GitCheckError):

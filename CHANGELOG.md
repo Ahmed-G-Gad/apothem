@@ -20,6 +20,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   instead of twice. The `coverage` job's reports keep only the engine folders,
   read from `[tool.coverage.run] source` in `pyproject.toml`, so the engine
   figure and its 80% floor stay the same.
+- **CI fails a pull request that edits released release notes.** A release
+  renames `[Unreleased]` in `CHANGELOG.md` to the new version. A branch cut
+  before the release could then merge the release in with no conflict and
+  leave its entry inside the released section. A new step in the required
+  `quality / ubuntu-latest / py3.12` check compares every released section
+  with the base branch and names the section that changed. A commit trailer
+  `Changelog-Released-Edit: <version> <reason>` allows a deliberate
+  correction to that version's notes only.
 
 ### Fixed
 
@@ -141,6 +149,33 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Security
 
+- **`apothem doctor --project` reads project hook files more carefully.**
+  Doctor now reads each hook command from the keys the tool itself reads (an
+  `args` list only for Claude Code, the one tool that runs one) and takes at
+  most 100 commands from one file. It reads no hook file larger than 4 MB or
+  that is not a regular file, and no project hook file reached through a link.
+  When the tool runs hooks from such a file (including a settings file the
+  hooks are merged into), a `hook.unchecked` line names it; for a link, the
+  line also names the link on the path. An update keeps the file as it is, so
+  the fix says to shrink or replace the file, or to check where the link leads
+  and replace it, or remove only the link itself and run the `update` command
+  the fix ends with. A link, or a Python file the install did not write, in the
+  hook script's folder gets a fix that says to remove it (for a link, only the
+  link itself), since an update keeps it too. A hook script the install
+  recorded outside the project is not started, and its line says so. Doctor
+  follows no link to the files a hook command runs, and a command whose known
+  paths cannot be looked up is reported as `hook.unchecked`. A missing hook
+  script's fix now runs `update` to put the scripts back, and the last line
+  says "some hook commands" of a harness that also started others that passed.
+  For a recorded interpreter inside the project, the fix runs `apothem update`
+  from a folder outside the project, with an Apothem that runs under a Python
+  outside the project, which records that Python instead. Before that, you
+  deactivate the project's virtual environment if it is active; for npx,
+  `APOTHEM_PYTHON` picks the Python. The update runs outside the project
+  because `python -m apothem`, run in the project folder, would start a folder
+  named `apothem` committed there. A ledger doctor cannot open, or an
+  error while it checks the hook files, is now named as such instead of
+  stopping the check.
 - **The conformity gate's `--all-perwrite` reads only regular files inside the
   project it checks.** It lists the tracked files with `git ls-files`, and git
   lists each entry exactly as the repository's index holds it. A project that
