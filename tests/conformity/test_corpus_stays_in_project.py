@@ -43,7 +43,8 @@ from typing import IO, Any, TypeVar, cast
 
 import pytest
 
-from apothem.conformity import gate, link_check, no_global_plans_grep
+from apothem.conformity import _bounded_run, gate, link_check, no_global_plans_grep
+from apothem.conformity._grep_base import GitTimeoutError
 from tests._shared.git_env import hermetic_git_env
 
 _T = TypeVar("_T")
@@ -483,7 +484,8 @@ def test_tracked_link_to_a_device_is_not_read(tmp_path: Path) -> None:
 def _timing_out_run(
     *args: object, **kwargs: object
 ) -> subprocess.CompletedProcess[str]:
-    """Stand in for ``subprocess.run``: every git call runs past its timeout."""
+    """Stand in for ``_bounded_run.run_bounded``, which starts every git the
+    checks run: each call runs past its timeout."""
     timeout = kwargs.get("timeout")
     raise subprocess.TimeoutExpired(
         cmd="git", timeout=timeout if isinstance(timeout, (int, float)) else 0
@@ -496,13 +498,18 @@ def test_both_ls_files_calls_carry_a_timeout(
     """The corpus listing and the plans check each give git a time limit."""
     repo = _project(tmp_path)
     timeouts: list[object] = []
-    real_run = subprocess.run
+    real_run = _bounded_run.run_bounded
 
-    def recording_run(*args: object, **kwargs: object) -> object:
-        timeouts.append(kwargs.get("timeout"))
-        return real_run(*args, **kwargs)  # type: ignore[call-overload]
+    def recording_run(
+        argv: list[str],
+        *,
+        timeout: float | None,
+        **kwargs: Any,  # noqa: ANN401
+    ) -> subprocess.CompletedProcess[str]:
+        timeouts.append(timeout)
+        return real_run(argv, timeout=timeout, **kwargs)
 
-    monkeypatch.setattr(subprocess, "run", recording_run)
+    monkeypatch.setattr(_bounded_run, "run_bounded", recording_run)
     gate._corpus_tracked_files(repo)
     no_global_plans_grep._git_ls_files(repo)
 
@@ -516,7 +523,7 @@ def test_corpus_listing_timeout_does_not_pass(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A listing that runs past its timeout reports the reason and no pass."""
-    monkeypatch.setattr(subprocess, "run", _timing_out_run)
+    monkeypatch.setattr(_bounded_run, "run_bounded", _timing_out_run)
 
     payload = _run(tmp_path)
     assert payload["passed"] is False
@@ -530,9 +537,9 @@ def test_plans_check_reports_a_listing_timeout(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The plans check turns a listing timeout into its error, not a crash."""
-    monkeypatch.setattr(subprocess, "run", _timing_out_run)
+    monkeypatch.setattr(_bounded_run, "run_bounded", _timing_out_run)
 
-    with pytest.raises(RuntimeError, match="did not finish"):
+    with pytest.raises(GitTimeoutError, match="did not finish"):
         no_global_plans_grep._git_ls_files(tmp_path)
 
 
@@ -543,7 +550,7 @@ def test_plans_check_reports_a_listing_timeout_as_a_check_error(
 ) -> None:
     """The plans check's report carries the timeout as ``check_error``, the key
     the corpus run uses for a check that did not finish, and fails."""
-    monkeypatch.setattr(subprocess, "run", _timing_out_run)
+    monkeypatch.setattr(_bounded_run, "run_bounded", _timing_out_run)
 
     code = no_global_plans_grep._main(["no-global-plans-grep", str(tmp_path)])
     report = json.loads(capsys.readouterr().out)
@@ -601,7 +608,7 @@ def test_plans_check_listing_that_waits_on_its_configuration_ends(
     )
 
     def list_files() -> None:
-        with pytest.raises(RuntimeError, match="did not finish"):
+        with pytest.raises(GitTimeoutError, match="did not finish"):
             no_global_plans_grep._git_ls_files(repo)
 
     _run_guarded(list_files, release=lambda: _release_fifo(fifo))
