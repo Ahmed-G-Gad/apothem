@@ -351,16 +351,16 @@ def _read_head_subject(root: Path) -> tuple[str | None, str, str | None]:
         GitFailedError,
         GitTimeoutError,
         in_checkout,
+        nearest_linked_git_entry,
     )
 
     # git finds the repository in ``root`` or a folder above it, so a run on
-    # a subfolder of a checkout reads the checkout's history. The root's own
-    # .git entry is looked at first without following a link: a .git that
-    # is a link (dangling or not) is not taken as this checkout, since git
-    # would follow it, or climb to an enclosing repository when it dangles.
-    from apothem.conformity._project_paths import linked_git_entry
-
-    if linked_git_entry(root) or not in_checkout(root):
+    # a subfolder of a checkout reads the checkout's history. The .git entry
+    # git would use, in ``root`` or above it, is looked at first without
+    # following a link: a .git that is a link (dangling or not) is not taken
+    # as this checkout, since git would follow it, or climb to an enclosing
+    # repository when it dangles.
+    if nearest_linked_git_entry(root) is not None or not in_checkout(root):
         return None, "not-a-git-repo", None
     try:
         if _repository_is_above(root) and not _tracks_a_file_in(root):

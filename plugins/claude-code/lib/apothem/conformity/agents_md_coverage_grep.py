@@ -96,10 +96,10 @@ from apothem.conformity._grep_base import (
     in_checkout,
     is_project_file,
     iter_tree_files,
+    nearest_linked_git_entry,
     parse_root_args,
     project_file_target,
 )
-from apothem.conformity._project_paths import linked_git_entry
 
 GREP_NAME: Final[str] = "agents-md-coverage-grep"
 RULE_ANCHOR: Final[str] = "rules/agents-md-convention.md"
@@ -373,8 +373,10 @@ def _read_history(root: Path) -> _History | None:
     is a subtree of the repository. git runs through :func:`run_git`, which
     turns off the repository's program-running settings (a signature check,
     say) and prints non-ASCII path names as they are, decoded as UTF-8.
-    Returns None when git history is unavailable (no repository, no commit
-    yet, git absent, or a partial clone whose read failed, whatever the cause)
+    Returns None when git history is unavailable (no repository, a ``.git``
+    entry that is a link in *root* or a folder above it, so git is not run,
+    no commit yet, git absent, or a partial clone whose read failed, whatever
+    the cause)
     so the caller degrades to a presence-only sweep. Raises
     :class:`~apothem.conformity._grep_base.GitTimeoutError` when a git command
     runs past its limit, and
@@ -383,7 +385,7 @@ def _read_history(root: Path) -> _History | None:
     after it found the history in a full clone: in both cases the history is
     there but was not read.
     """
-    if linked_git_entry(root):
+    if nearest_linked_git_entry(root) is not None:
         return None
     try:
         head = run_git(

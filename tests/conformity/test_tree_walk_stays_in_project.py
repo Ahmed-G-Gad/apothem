@@ -29,10 +29,13 @@ import json
 import os
 import subprocess
 from pathlib import Path
+from typing import NoReturn
 
 import pytest
 
 from apothem.conformity import (
+    _bounded_run,
+    _corpus,
     _grep_base,
     _project_paths,
     agents_md_coverage_grep,
@@ -54,6 +57,7 @@ from apothem.conformity._grep_base import (
     is_project_file,
     iter_tree_files,
     list_real_entries,
+    nearest_linked_git_entry,
     no_files,
     project_file_target,
 )
@@ -1000,6 +1004,246 @@ def test_the_perwrite_run_refuses_a_linked_git(tmp_path: Path) -> None:
     assert not passed
     assert payload["check_error"] == _LINKED_GIT_MESSAGE
     assert payload["files_scanned"] == 0
+
+
+# git looks for the repository in the folders above the root too, so a run on
+# a subfolder of a project whose .git is a link would read the other
+# repository's index and history through it. ``pkg`` holds a file the other
+# repository tracks, so a check that ran git there would find it.
+
+_SUBFOLDERS = pytest.mark.parametrize("below", ["pkg", "pkg/deep/er"])
+
+
+def _no_git(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make any program start fail the test, git through ``run_git`` or not."""
+
+    def no_program(*args: object, **kwargs: object) -> NoReturn:
+        raise AssertionError(f"a program started: {args!r}")
+
+    monkeypatch.setattr(_bounded_run, "_POPEN", no_program)
+    monkeypatch.setattr(subprocess, "Popen", no_program)
+
+
+def _subfolder_of_linked_git(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, below: str = "pkg"
+) -> Path:
+    """Return a folder below :func:`_project_with_linked_git`; no program may start."""
+    root = _project_with_linked_git(tmp_path)
+    inner = root / below
+    _write(inner / "AGENTS.md")
+    _no_git(monkeypatch)
+    return inner
+
+
+def _project_git(inner: Path) -> Path:
+    """Return the linked ``.git`` of the ``project`` folder *inner* lies in."""
+    project = next(p for p in (inner, *inner.parents) if p.name == "project")
+    return project / ".git"
+
+
+def _above_message(inner: Path) -> str:
+    return (
+        f"the .git entry {_project_git(inner).as_posix()} is a link, "
+        "so git would read another repository"
+    )
+
+
+@_SUBFOLDERS
+def test_the_plans_listing_refuses_a_linked_git_above_the_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, below: str
+) -> None:
+    inner = _subfolder_of_linked_git(tmp_path, monkeypatch, below)
+    start_skip_log(inner)
+    with pytest.raises(RuntimeError) as raised:
+        no_global_plans_grep._git_ls_files(inner)
+    assert str(raised.value) == _above_message(inner)
+    assert take_skipped_paths() == [_project_git(inner).as_posix()]
+
+
+@_SUBFOLDERS
+def test_the_plans_check_reports_a_linked_git_above_the_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, below: str
+) -> None:
+    inner = _subfolder_of_linked_git(tmp_path, monkeypatch, below)
+    (inner / ".plans").mkdir()
+    start_skip_log(inner)
+    result = no_global_plans_grep.check(inner)
+    linked = _project_git(inner).as_posix()
+    assert take_skipped_paths() == [linked]
+    assert result.tracked_count == 0
+    # The finding names the entry as the skip log does, and the sweep ran.
+    assert sorted(f.path for f in result.findings) == sorted([linked, ".plans/"])
+    assert not result.passed
+
+
+def test_the_plans_command_reports_a_linked_git_above_the_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    inner = _subfolder_of_linked_git(tmp_path, monkeypatch)
+    code = no_global_plans_grep._main(["no-global-plans-grep", str(inner)])
+    payload = json.loads(capsys.readouterr().out)
+    assert code != 0
+    assert payload["skipped_links"] == [_project_git(inner).as_posix()]
+    assert payload["passed"] is False
+
+
+@_SUBFOLDERS
+def test_the_coverage_history_refuses_a_linked_git_above_the_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, below: str
+) -> None:
+    inner = _subfolder_of_linked_git(tmp_path, monkeypatch, below)
+    start_skip_log(inner)
+    assert agents_md_coverage_grep._read_history(inner) is None
+    assert take_skipped_paths() == [_project_git(inner).as_posix()]
+
+
+@_SUBFOLDERS
+def test_the_commit_subject_refuses_a_linked_git_above_the_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, below: str
+) -> None:
+    inner = _subfolder_of_linked_git(tmp_path, monkeypatch, below)
+    start_skip_log(inner)
+    assert conventional_commit_grep._read_head_subject(inner) == (
+        None,
+        "not-a-git-repo",
+        None,
+    )
+    assert take_skipped_paths() == [_project_git(inner).as_posix()]
+
+
+@_SUBFOLDERS
+def test_the_corpus_listing_refuses_a_linked_git_above_the_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, below: str
+) -> None:
+    inner = _subfolder_of_linked_git(tmp_path, monkeypatch, below)
+    start_skip_log(inner)
+    with pytest.raises(_corpus.CorpusListError) as raised:
+        _corpus.tracked_entries(inner)
+    assert str(raised.value) == _above_message(inner)
+    assert take_skipped_paths() == [_project_git(inner).as_posix()]
+
+
+def test_the_perwrite_run_refuses_a_linked_git_above_the_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    inner = _subfolder_of_linked_git(tmp_path, monkeypatch)
+    passed, payload_json = gate._run_all_perwrite(inner)
+    payload = json.loads(payload_json)
+    assert not passed
+    assert payload["check_error"] == _above_message(inner)
+    assert payload["files_scanned"] == 0
+
+
+def _not_a_repository_git_folder(folder: Path, kind: str) -> None:
+    """Give *folder* a ``.git`` entry git looks past, or a file git stops at."""
+    entry = folder / ".git"
+    if kind == "file":
+        entry.write_text("not a gitdir line\n", encoding="utf-8")
+        return
+    entry.mkdir()
+    if kind == "empty":
+        return
+    (entry / "objects").mkdir()
+    (entry / "refs").mkdir()
+    head = {"bad-head": "garbage\n", "head-outside-refs": "ref: heads/main\n"}
+    if kind in head:
+        (entry / "HEAD").write_text(head[kind], encoding="utf-8")
+        return
+    # "missing-commondir": a HEAD and a commondir that names no folder.
+    (entry / "objects").rmdir()
+    (entry / "refs").rmdir()
+    (entry / "HEAD").write_text("ref: refs/heads/main\n", encoding="utf-8")
+    (entry / "commondir").write_text("nowhere\n", encoding="utf-8")
+
+
+@pytest.mark.parametrize(
+    ("kind", "level", "refused"),
+    [
+        ("empty", ".", True),
+        ("empty", "..", True),
+        ("bad-head", ".", True),
+        ("head-outside-refs", ".", True),
+        ("missing-commondir", ".", True),
+        # git stops at a .git file whatever it holds, and so does the guard.
+        ("file", ".", False),
+    ],
+)
+def test_the_guard_looks_past_what_git_looks_past(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    kind: str,
+    level: str,
+    refused: bool,
+) -> None:
+    """A ``.git`` git does not take as a repository does not hide a link above it."""
+    inner = _subfolder_of_linked_git(tmp_path, monkeypatch, "pkg/deep")
+    _not_a_repository_git_folder((inner / level).resolve(), kind)
+    start_skip_log(inner)
+    found = nearest_linked_git_entry(inner)
+    assert (found == _project_git(inner)) is refused
+    assert take_skipped_paths() == ([_project_git(inner).as_posix()] if refused else [])
+
+
+def _real_repository(folder: Path, *, bare: bool = False) -> Path:
+    folder.mkdir(parents=True, exist_ok=True)
+    _git(folder, "init", "-q", *(["--bare"] if bare else []))
+    return folder
+
+
+def test_a_real_repository_between_the_root_and_a_linked_git_stops_the_guard(
+    tmp_path: Path,
+) -> None:
+    """git uses the nearest repository and never reaches the link above it."""
+    root = _project_with_linked_git(tmp_path)
+    deep = _real_repository(root / "sub") / "deep"
+    deep.mkdir()
+    start_skip_log(deep)
+    assert nearest_linked_git_entry(deep) is None
+    assert take_skipped_paths() == []
+
+
+def test_a_bare_repository_between_the_root_and_a_linked_git_stops_the_guard(
+    tmp_path: Path,
+) -> None:
+    """git takes a folder that is a bare repository as the repository."""
+    root = _project_with_linked_git(tmp_path)
+    bare = _real_repository(root / "bare.git", bare=True)
+    start_skip_log(bare / "refs")
+    assert nearest_linked_git_entry(bare / "refs") is None
+    assert take_skipped_paths() == []
+
+
+def test_a_subfolder_of_a_plain_checkout_is_not_refused(tmp_path: Path) -> None:
+    deep = _real_repository(tmp_path / "plain") / "a" / "b"
+    deep.mkdir(parents=True)
+    start_skip_log(deep)
+    assert nearest_linked_git_entry(deep) is None
+    assert take_skipped_paths() == []
+
+
+def test_a_dangling_linked_git_above_the_root_is_refused(tmp_path: Path) -> None:
+    gone = tmp_path / "gone"
+    gone.mkdir()
+    root = (tmp_path / "project").resolve()
+    inner = root / "pkg"
+    inner.mkdir(parents=True)
+    _link_folder(root / ".git", gone)
+    gone.rmdir()
+    start_skip_log(inner)
+    assert nearest_linked_git_entry(inner) == root / ".git"
+    assert take_skipped_paths() == [(root / ".git").as_posix()]
+
+
+def test_a_root_reached_through_a_link_is_judged_where_it_lies(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The walk climbs from the resolved root, where git runs."""
+    inner = _subfolder_of_linked_git(tmp_path, monkeypatch)
+    door = tmp_path / "door"
+    _link_folder(door, inner)
+    start_skip_log(door)
+    assert nearest_linked_git_entry(door) == _project_git(inner)
+    assert take_skipped_paths() == [_project_git(inner).as_posix()]
 
 
 @_WINDOWS_ONLY

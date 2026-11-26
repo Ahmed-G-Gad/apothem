@@ -216,6 +216,16 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   reads to its `_project_files` (or, for a file read only after another one
   passed, to `_second_reads`): its control test fails only while the
   validator reaches none of those files, so a path left out is not tested.
+  A check that runs git calls `nearest_linked_git_entry(root)` from
+  `_grep_base.py` first and treats a returned entry as no checkout
+  (`linked_git_message` gives the sentence that names it): it never runs
+  git, and never asks `in_checkout`, before that call. git follows a `.git`
+  link in the root or in a folder above it to another repository, and the
+  helper walks the folders git searches, stopping where git stops, without
+  following any link. The callers today are
+  `_corpus.tracked_entries`, `no_global_plans_grep._git_ls_files` and
+  `no_global_plans_grep.check`, `agents_md_coverage_grep._read_history`, and
+  `conventional_commit_grep._read_head_subject`.
 
 - **No unfinished pass.** A check that could not finish does not pass either.
   Give every `run_git` call a timeout, far above what the command takes, since

@@ -574,8 +574,9 @@ def linked_git_entry(root: Path) -> bool:
     """Return True, and note it, when *root*'s ``.git`` entry is a link.
 
     git follows such a link to another repository, or climbs past it to an
-    enclosing one when it dangles, so every check that runs git in *root*
-    asks this first and treats a linked ``.git`` as no checkout.
+    enclosing one when it dangles. A check that runs git calls
+    ``nearest_linked_git_entry`` in ``_grep_base``, which asks this for
+    *root* and then looks at the ``.git`` entries above it.
     """
     entry = root / ".git"
     if path_kind(entry) == LINK_ENTRY:

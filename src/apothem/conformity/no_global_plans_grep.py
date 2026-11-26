@@ -69,13 +69,14 @@ from apothem.conformity._grep_base import (
     GitTimeoutError,
     finish_root_report,
     has_git_entry,
+    linked_git_message,
+    nearest_linked_git_entry,
     parse_root_args,
 )
 from apothem.conformity._project_paths import (
     DIR_ENTRY,
     LINK_ENTRY,
     SKIPPED_FOLDER_ENTRY,
-    linked_git_entry,
     note_skipped,
     path_kind,
     scan_entries,
@@ -166,8 +167,9 @@ def _git_ls_files(root: Path) -> list[str]:
     """Return the git-tracked file list under root.
 
     Raises ``RuntimeError`` when ``git`` is unavailable, root is not a git
-    repository, or root's ``.git`` entry is a link (git is then not run),
-    all errors the caller surfaces, and
+    repository, or the ``.git`` entry git would use (in root or a folder
+    above it) is a link (git is then not run), all errors the caller
+    surfaces, and
     :class:`~apothem.conformity._grep_base.GitTimeoutError` when git runs past
     :data:`GIT_LS_FILES_TIMEOUT_SECONDS` (the repository's own configuration
     can make git wait for ever), which the report carries as its
@@ -177,10 +179,9 @@ def _git_ls_files(root: Path) -> list[str]:
     program. ``-z`` ends each name with NUL, unquoted, and the output is read
     as file names, so a name comes back with every byte it holds.
     """
-    if linked_git_entry(root):
-        raise RuntimeError(
-            "the .git entry is a link, so git would read another repository"
-        )
+    linked = nearest_linked_git_entry(root)
+    if linked is not None:
+        raise RuntimeError(linked_git_message(root, linked))
     try:
         completed = run_git(
             ["ls-files", "-z"],
@@ -395,10 +396,14 @@ def check(root: Path) -> GrepResult:
     Either check's finding fails the validator.
     """
     findings: list[Finding] = []
-    if linked_git_entry(root):
+    linked = nearest_linked_git_entry(root)
+    if linked is not None:
         # git would read another repository's index; the sweep still runs.
+        # The finding names the entry as the skip log does: ``.git`` at the
+        # root, its full path above it.
         tracked: list[str] = []
-        findings.append(Finding(path=".git", detail=_LINKED_GIT_DETAIL))
+        shown = ".git" if linked == root / ".git" else linked.as_posix()
+        findings.append(Finding(path=shown, detail=_LINKED_GIT_DETAIL))
     else:
         tracked = _git_ls_files(root)
     for path in tracked:

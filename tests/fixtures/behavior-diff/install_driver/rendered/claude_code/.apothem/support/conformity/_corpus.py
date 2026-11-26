@@ -45,11 +45,12 @@ from apothem.conformity._grep_base import (
     GIT_LS_FILES_TIMEOUT_SECONDS,
     GitFailedError,
     GitTimeoutError,
+    linked_git_message,
+    nearest_linked_git_entry,
 )
 from apothem.conformity._project_paths import (
     NAME_SURROGATE_TAG_BIT,
     is_link,
-    linked_git_entry,
 )
 
 # The largest file the corpus run reads, in bytes. It is well above any text a
@@ -135,12 +136,14 @@ _WINDOWS_UNHELD: Final[frozenset[str]] = frozenset(
 
 
 class CorpusListError(Exception):
-    """git cannot be started to list the tracked files.
+    """The tracked-file list cannot be read: git was not run, or did not start.
 
-    The message is a fixed sentence, like those of the git-check errors in
-    :mod:`apothem.conformity._grep_base`: git's own error text is left out,
-    because it can quote the repository's settings and name files outside the
-    project.
+    git is not run when the ``.git`` entry it would use is a link (see
+    :func:`~apothem.conformity._grep_base.nearest_linked_git_entry`), and
+    does not start when it is missing. The message is a fixed sentence, like
+    those of the git-check errors in :mod:`apothem.conformity._grep_base`:
+    git's own error text is left out, because it can quote the repository's
+    settings and name files outside the project.
     """
 
 
@@ -174,18 +177,18 @@ def tracked_entries(root: Path) -> list[TrackedEntry]:
     it (see :func:`name_skip`); no path is resolved and no link is followed.
 
     Raises :class:`CorpusListError` when git is not run or cannot be started
-    (*root*'s ``.git`` entry is a link, so git would read another
-    repository's index, or git did not start),
+    (the ``.git`` entry git would use, in *root* or a folder above it, is a
+    link, so git would read another repository's index; or git did not
+    start),
     :class:`~apothem.conformity._grep_base.GitFailedError` when git exits
     with an error (for example, *root* is not inside a git work tree), and
     :class:`~apothem.conformity._grep_base.GitTimeoutError` when git runs
     past the time limit: the same errors, in the same words, as the
     standalone validators' own git commands.
     """
-    if linked_git_entry(root):
-        raise CorpusListError(
-            "the .git entry is a link, so git would read another repository"
-        )
+    linked = nearest_linked_git_entry(root)
+    if linked is not None:
+        raise CorpusListError(linked_git_message(root, linked))
     try:
         completed = run_git(
             ["ls-files", "-s", "-z"],
