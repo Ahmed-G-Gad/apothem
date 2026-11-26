@@ -38,8 +38,12 @@ Run any of them from `site/`.
   fails if a live doc page is missing from a curated list; the 404 page is the
   one root page left out of the sidebar on purpose. Run `node scripts/author-ia.mjs` to
   regenerate the metas, or `--check` (the `ia:check` npm script, run by CI) to
-  run the drift guards read-only without rewriting; the check also fails when a
-  locale meta no longer follows the English order.
+  run the drift guards read-only without rewriting; the check also fails when
+  any meta it owns, English or locale, differs from what it would write. The
+  locale folders come from `ROUTED_LOCALES` in `lib/i18n.ts`. A locale meta that
+  does not parse, or whose number of sidebar group labels differs from the
+  English list, stops the run with the file named, so translated labels are
+  never overwritten with English.
 - **`check-search-index-sizes.mjs`** — guards the per-locale static search-index
   sizes in the built output. Re-derives `ROUTED_LOCALES` from `lib/i18n.ts` via
   `assertLocaleParity()` and fails on drift. Runs after a build

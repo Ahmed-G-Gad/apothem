@@ -15,7 +15,7 @@
 // tree untouched. The `ia` / `ia:check` npm scripts wrap the two modes.
 
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 // Anchor to the script's own location, not the caller's cwd, so the generator
@@ -220,16 +220,28 @@ function livePageKeys(dir) {
 // Top-level keys the root meta must account for: every root-level `.md`/`.mdx`
 // singleton plus every non-locale subdirectory under content/docs/. Routed
 // locale subtrees (`es`, `zh-cn`, …) are their own content roots, not sections
-// of the English IA, so they are matched by the kebab locale-segment pattern
-// and excluded — mirroring the locale-dir heuristic the sibling
-// update-reference-inventory.mjs uses.
-const LOCALE_DIR_RE = /^[a-z]{2}(-[a-z]{2})?$/i;
+// of the English IA. Their names come from ROUTED_LOCALES in lib/i18n.ts, the
+// site's one locale list, so an English section with a two-letter name is never
+// mistaken for a locale.
+function routedLocaleDirs() {
+  const src = readFileSync(join(SITE_ROOT, 'lib', 'i18n.ts'), 'utf8');
+  const match = src.match(/export const ROUTED_LOCALES[^=]*=\s*\[([^\]]*)\]/);
+  if (!match) {
+    throw new Error('author-ia: could not read ROUTED_LOCALES from lib/i18n.ts');
+  }
+  const defaultMatch = src.match(/export const DEFAULT_LOCALE\s*=\s*'([^']+)'/);
+  const defaultLocale = defaultMatch ? defaultMatch[1] : 'en';
+  return [...match[1].matchAll(/'([^']+)'/g)]
+    .map((m) => m[1])
+    .filter((locale) => locale !== defaultLocale);
+}
+const LOCALE_DIRS = routedLocaleDirs();
 
 function liveRootKeys() {
   const keys = [];
   for (const entry of readdirSync(DST_ROOT, { withFileTypes: true })) {
     if (entry.isDirectory()) {
-      if (!LOCALE_DIR_RE.test(entry.name)) keys.push(entry.name);
+      if (!LOCALE_DIRS.includes(entry.name)) keys.push(entry.name);
     } else if (/\.mdx?$/i.test(entry.name)) {
       keys.push(entry.name.replace(/\.mdx?$/i, ''));
     }
@@ -275,20 +287,45 @@ assertNoDrift(sections, rootPages);
 // locale list is either missing from that locale's sidebar or appended
 // unordered at its tail by the rest glob. So the locale `pages` array is
 // derived from the English one here, and only the labels are kept from the
-// locale file. A group separator keeps the locale label at the same ordinal
-// position; a locale with fewer separators falls back to the English label.
+// locale file.
 const SEPARATOR_RE = /^---.*---$/;
 
+// A missing file is normal (a new section or locale); a file that is there but
+// does not parse is an error. Falling back to English for it would silently
+// overwrite the locale's translated labels.
 function readJson(rel) {
+  let text;
   try {
-    return JSON.parse(readFileSync(join(DST_ROOT, rel), 'utf8'));
-  } catch {
-    return undefined;
+    text = readFileSync(join(DST_ROOT, rel), 'utf8');
+  } catch (error) {
+    if (error.code === 'ENOENT') return undefined;
+    throw error;
+  }
+  try {
+    return JSON.parse(text.replace(/^﻿/, ''));
+  } catch (error) {
+    throw new Error(`author-ia: ${posix(rel)} is not valid JSON: ${error.message}`);
   }
 }
 
-function localePages(englishPages, current) {
+function posix(rel) {
+  return rel.split(sep).join('/');
+}
+
+// The locale's group labels are matched to the English groups by position. A
+// locale file whose number of groups differs from the English list (an English
+// group was added, removed or split) would put every later label over the
+// wrong group, so that is an error: the new label needs a translator.
+function localePages(englishPages, current, rel) {
+  const englishCount = englishPages.filter((p) => SEPARATOR_RE.test(p)).length;
   const localeSeparators = (current?.pages ?? []).filter((p) => SEPARATOR_RE.test(p));
+  if (current && localeSeparators.length !== englishCount) {
+    throw new Error(
+      `author-ia: ${posix(rel)} has ${localeSeparators.length} sidebar ` +
+        `group label(s) and the English list has ${englishCount}. Edit its ` +
+        `---Label--- entries to match the English groups, translated, then rerun.`,
+    );
+  }
   let ordinal = 0;
   return englishPages.map((p) => {
     if (!SEPARATOR_RE.test(p)) return p;
@@ -298,16 +335,21 @@ function localePages(englishPages, current) {
   });
 }
 
-function localeMetaFiles() {
-  const out = [];
-  for (const entry of readdirSync(DST_ROOT, { withFileTypes: true })) {
-    if (!entry.isDirectory() || !LOCALE_DIR_RE.test(entry.name)) continue;
-    const loc = entry.name;
-    const root = readJson(join(loc, 'meta.json'));
+// Every meta.json this script owns, as [path, content] pairs: the English
+// root and section metas, then each locale's. Write mode writes them all and
+// --check compares them all, so a hand edit to any of them is caught.
+function authoredMetaFiles() {
+  const out = [['meta.json', rootMeta]];
+  for (const [dir, [title, pages]] of Object.entries(sections)) {
+    out.push([join(dir, 'meta.json'), meta(title, pages)]);
+  }
+  for (const loc of LOCALE_DIRS) {
+    const rootRel = join(loc, 'meta.json');
+    const root = readJson(rootRel);
     out.push([
-      join(loc, 'meta.json'),
+      rootRel,
       JSON.stringify(
-        { title: root?.title ?? 'Documentation', pages: localePages(rootPages, root) },
+        { title: root?.title ?? 'Documentation', pages: localePages(rootPages, root, rootRel) },
         null,
         2,
       ) + '\n',
@@ -322,10 +364,10 @@ function localeMetaFiles() {
 }
 
 const CHECK_ONLY = process.argv.includes('--check');
-const localeMetas = localeMetaFiles();
+const metaFiles = authoredMetaFiles();
 
 if (CHECK_ONLY) {
-  const stale = localeMetas
+  const stale = metaFiles
     .filter(([rel, content]) => {
       try {
         return readFileSync(join(DST_ROOT, rel), 'utf8').replace(/\r\n/g, '\n') !== content;
@@ -333,11 +375,12 @@ if (CHECK_ONLY) {
         return true;
       }
     })
-    .map(([rel]) => rel.replace(/\\/g, '/'));
+    .map(([rel]) => posix(rel));
   if (stale.length > 0) {
     console.error(
-      `author-ia --check: ${stale.length} locale meta.json file(s) do not follow ` +
-        `the English page order — run \`node scripts/author-ia.mjs\`:\n  ${stale.sort().join('\n  ')}`,
+      `author-ia --check: ${stale.length} meta.json file(s) differ from the ` +
+        `sidebar lists in scripts/author-ia.mjs (every language follows the English ` +
+        `order) — run \`node scripts/author-ia.mjs\`:\n  ${stale.sort().join('\n  ')}`,
     );
     process.exit(1);
   }
@@ -345,15 +388,12 @@ if (CHECK_ONLY) {
     'author-ia --check: curated IA is in sync with the live docs tree (no drift).',
   );
 } else {
-  write('meta.json', rootMeta);
-  for (const [dir, [title, pages]] of Object.entries(sections)) {
-    write(join(dir, 'meta.json'), meta(title, pages));
-  }
-  for (const [rel, content] of localeMetas) {
+  for (const [rel, content] of metaFiles) {
     mkdirSync(dirname(join(DST_ROOT, rel)), { recursive: true });
     write(rel, content);
   }
+  const localeCount = metaFiles.length - Object.keys(sections).length - 1;
   console.log(
-    `Authored ${Object.keys(sections).length + 1} English and ${localeMetas.length} locale meta.json files.`,
+    `Authored ${Object.keys(sections).length + 1} English and ${localeCount} locale meta.json files.`,
   );
 }
