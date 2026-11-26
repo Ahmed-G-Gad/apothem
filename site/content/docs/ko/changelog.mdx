@@ -39,6 +39,38 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   with the base branch and names the section that changed. A commit trailer
   `Changelog-Released-Edit: <version> <reason>` allows a deliberate
   correction to that version's notes only.
+- **The `ui-design` skill is rewritten around a banded rule catalog and a
+  written build record.** The skill now reads the project before it asks
+  anything. It then sets a scope (component, page, or app screen) and a genre,
+  and these decide which steps and checks run. Every rule sits in one of four
+  bands. The baseline never bends, and a habit rule bends only by a waiver with
+  a reason. A polish finding closes by a fix or an acknowledgement, and
+  bookkeeping never changes the verdict. Each build writes a record at the top
+  of its stylesheet and an entry in the `design-log.md` build log, so a later
+  session reads past decisions instead of guessing them. Page work starts from
+  an inventory of the real material and the visitor's job, which set the page's
+  sections and their order. A named page shape records each build, so the next
+  one can rotate instead of repeating it. The `design-critic` reviewer checks
+  the opening screen before the rest is built, and the whole page before
+  delivery. `DESIGN.md` is now an optional locked system: the skill writes it
+  only when you ask or a multi-page redesign needs it, and `design-log.md` sits
+  beside it. Once it exists, its tokens win over any new direction. The skill
+  keeps its working state, the project-scan and brand caches, the
+  before-records of a redesign and the review captures, in
+  `.apothem/ui-design/`, which stays out of version control. The skill asks
+  before it adds that folder to `.gitignore`. The skill may now start the
+  reviewer in a fresh context, and the tool that starts it is now one of the
+  skill's pre-approved tools. No fetch tool is pre-approved. Every fetch, such
+  as a brand's homepage, an archive photo or a platform's logo, goes through
+  the host's fetch tool. The skill names the address first, and the fetch runs
+  only after you approve it. With no fetch tool that meets the skill's safety
+  checks, or when you decline, the skill asks you for the brand's color values
+  and font names. A fetch uses HTTPS only. When the host does not say its fetch
+  tool refuses private and reserved addresses, the skill names that risk with
+  the address and fetches only on an explicit yes. A development server, a
+  project script or a browser check runs only when the host offers the tool
+  and you approve the folder and the exact command. Otherwise the skill lists
+  the screens it needs and continues from the source.
 
 ### Security
 
