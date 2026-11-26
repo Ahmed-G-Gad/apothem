@@ -17,6 +17,7 @@
     "test": "node --test --experimental-strip-types lib/i18n.test.mjs lib/search-index-core.test.mjs lib/code-theme.test.mjs lib/translation-source.test.mjs lib/theme-tokens.test.mjs lib/locale-links.test.mjs lib/sidebar-width.test.mjs lib/page-tree.test.mjs scripts/trailing-slash-redirects.test.mjs scripts/moved-page-redirects.test.mjs scripts/github-slugger-table.test.mjs",
     "translations": "node scripts/translation-sources.mjs",
     "check:search-index": "node scripts/check-search-index-sizes.mjs",
+    "check:built-docs": "node scripts/check-built-docs.mjs",
     "ia": "node scripts/author-ia.mjs",
     "ia:check": "node scripts/author-ia.mjs --check",
     "postinstall": "fumadocs-mdx"

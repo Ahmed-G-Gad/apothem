@@ -582,6 +582,12 @@ jobs:
       - name: Build docs
         working-directory: site
         run: npm run build
+      - name: Check the built docs sidebar and page text
+        # Every sidebar section must open and close from a button that carries
+        # aria-expanded, and no page may show literal ** outside code (bold
+        # that Markdown could not close). Both only show in the built pages.
+        working-directory: site
+        run: npm run check:built-docs
       - name: Check the links in the built docs
         # A body link on a translated page is pointed at the language's own copy of
         # its target while the page renders, so only the built HTML shows it:

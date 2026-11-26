@@ -23,7 +23,8 @@ pages, blog posts, and static assets.
   under `app/[lang]/` (the localized landing card and per-locale docs), and the
   search endpoint under `app/api/search/`.
 - `components/` holds the landing-page and shared UI components, including
-  `localized-link.tsx`, the MDX link component of the per-locale docs route.
+  `localized-link.tsx`, the MDX link component of the per-locale docs route, and
+  `sidebar-folder.tsx`, the sidebar section with its own open/close button.
 - `lib/` is the internal source of truth for cross-cutting concerns: the i18n
   cohort/locale table (`i18n.ts`), the hreflang alternate builder
   (`hreflang.ts`), the body-link localizer (`locale-links.ts`), and the
