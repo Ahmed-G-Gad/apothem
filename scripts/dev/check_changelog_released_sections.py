@@ -118,7 +118,14 @@ def _git(*args: str) -> str:
         raise RuntimeError("git is not on PATH")
     env = {k: v for k, v in os.environ.items() if k not in _GIT_LOCATION}
     result = subprocess.run(  # noqa: S603 - fixed git argv, no shell
-        [git, "-c", "log.showSignature=false", *args],
+        [
+            git,
+            "-c",
+            "log.showSignature=false",
+            "-c",
+            "i18n.logOutputEncoding=UTF-8",
+            *args,
+        ],
         cwd=REPO_ROOT,
         env=env,
         capture_output=True,

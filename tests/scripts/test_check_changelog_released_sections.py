@@ -153,6 +153,10 @@ def repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     _git(root, "config", "user.email", "test@example.com")
     _git(root, "config", "commit.gpgsign", "false")
     _git(root, "config", "core.autocrlf", "false")
+    # HOME and XDG_CONFIG_HOME still name the user's default ignore and
+    # attributes files; point both at nothing.
+    _git(root, "config", "core.excludesFile", os.devnull)
+    _git(root, "config", "core.attributesFile", os.devnull)
     (root / "CHANGELOG.md").write_text(BASE, encoding="utf-8", newline="\n")
     _git(root, "add", "CHANGELOG.md")
     _git(root, "commit", "-q", "-m", "base")
@@ -240,6 +244,13 @@ def test_a_wrapped_trailer_allows_only_its_first_version(repo: Path) -> None:
     assert _run(repo) == 1
 
 
+def test_a_trailer_reads_the_same_under_another_log_encoding(repo: Path) -> None:
+    _git(repo, "config", "i18n.logOutputEncoding", "ISO-8859-1")
+    _commit_edit(repo, f"edit old notes\n\n{check.TRAILER}: 1.1.0 café fix")
+    assert check.allowed_versions("base") == {"1.1.0": "café fix"}
+    assert _run(repo) == 0
+
+
 def test_git_is_asked_not_to_show_signatures(
     repo: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -257,7 +268,11 @@ def test_git_is_asked_not_to_show_signatures(
     # full path shutil.which found.
     script_calls = [argv for argv in calls if argv[0] != "git"]
     assert script_calls
-    assert all(argv[1:3] == ["-c", "log.showSignature=false"] for argv in script_calls)
+    assert all(
+        argv[1:5]
+        == ["-c", "log.showSignature=false", "-c", "i18n.logOutputEncoding=UTF-8"]
+        for argv in script_calls
+    )
 
 
 def test_a_finding_prints_on_a_console_that_cannot_show_it(
