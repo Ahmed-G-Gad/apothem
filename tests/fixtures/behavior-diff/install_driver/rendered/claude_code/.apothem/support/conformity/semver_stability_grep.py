@@ -278,13 +278,19 @@ def compare_surfaces(
     return findings
 
 
-def current_version() -> str | None:
-    """Read the staged or on-disk apothem.__version__ value."""
-    if not INIT_PATH.exists():
+def _version_in(folder: Path) -> str | None:
+    """Read ``apothem.__version__`` from the package below *folder*, or None."""
+    init = folder / INIT_PATH
+    if not init.exists():
         return None
-    text = INIT_PATH.read_text(encoding="utf-8")
+    text = init.read_text(encoding="utf-8")
     m = re.search(r'__version__\s*=\s*"([^"]+)"', text)
     return m.group(1) if m else None
+
+
+def current_version() -> str | None:
+    """Read the on-disk apothem.__version__ value below the current folder."""
+    return _version_in(Path())
 
 
 def is_v0(version: str) -> bool:
@@ -333,12 +339,18 @@ def check_hook(file_path: str, staged_content: str) -> list[Finding]:
 
 
 def _git(
-    label: str, *args: str, check: bool = False
+    label: str,
+    *args: str,
+    check: bool = False,
+    file_names: bool = False,
+    cwd: Path | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    """Run ``git <args>`` in the current folder within ``GIT_TIMEOUT_SECONDS``.
+    """Run ``git <args>`` within ``GIT_TIMEOUT_SECONDS``.
 
-    git runs through :func:`~apothem.conformity._git.run_git`, which turns off
-    the repository's program-running settings. Raises
+    git runs in *cwd*, or in the current folder when it is None, through
+    :func:`~apothem.conformity._git.run_git`, which turns off
+    the repository's program-running settings; *file_names* reads a ``-z``
+    list with every byte of each name kept. Raises
     :class:`~apothem.conformity._grep_base.GitTimeoutError`, naming the
     command as *label*, past the limit; :class:`OSError` when git cannot be
     started; and, with *check*, :class:`subprocess.CalledProcessError` on a
@@ -350,13 +362,78 @@ def _git(
     from apothem.conformity._grep_base import GitTimeoutError
 
     try:
-        return run_git(list(args), timeout=GIT_TIMEOUT_SECONDS, check=check)
+        return run_git(
+            list(args),
+            cwd=cwd,
+            timeout=GIT_TIMEOUT_SECONDS,
+            check=check,
+            file_names=file_names,
+        )
     except subprocess.TimeoutExpired as exc:
         raise GitTimeoutError(label, GIT_TIMEOUT_SECONDS) from exc
 
 
+def _package_folder_above() -> tuple[Path, bool] | None:
+    """Find the nearest folder above the current one that holds the package.
+
+    The search runs without git, over the folders git itself would search for
+    the repository (see
+    :func:`~apothem.conformity._grep_base.checkout_search_folders`), with
+    links resolved. It ends where git's search ends, at the first folder
+    whose ``.git`` entry is a repository git would use: a ``.git`` folder
+    that holds one, or a ``.git`` file that names one (a linked work tree, a
+    submodule). An entry git looks past does not end it: an empty ``.git``
+    folder, a ``.git`` link that leads nowhere.
+
+    Returns None when no folder up to there holds ``src/apothem/__init__.py``
+    (or the current folder is gone). Then the project has no package to
+    check, whatever state its repository is in, and no git command is needed
+    to say so. Otherwise returns the folder and whether a ``.git`` file that
+    git refuses (one that names no repository, is malformed or too large, or
+    names a network or device path on Windows) lies between it and the
+    current folder. git stops with an error at such a file, so the caller
+    must not read the package's
+    change set as if the run had started in the package's folder.
+    """
+    from apothem.conformity._grep_base import (
+        GIT_ENTRY_BROKEN,
+        GIT_ENTRY_REPOSITORY,
+        checkout_search_folders,
+        git_entry_state,
+    )
+
+    try:
+        start = Path.cwd()
+    except OSError:
+        return None
+    below_broken_entry = False
+    for folder in checkout_search_folders(start):
+        if (folder / INIT_PATH).exists():
+            return folder, below_broken_entry
+        state = git_entry_state(folder)
+        if state == GIT_ENTRY_REPOSITORY:
+            return None
+        if state == GIT_ENTRY_BROKEN:
+            below_broken_entry = True
+    return None
+
+
 def check_staged() -> list[Finding]:
     """Per-change-set check across the staged diff.
+
+    The package is looked for below the current folder first. When it is not
+    there, it is looked for in the folders above, up to the nearest folder
+    that holds a repository. The search also stops where git's own search
+    stops: below a folder ``GIT_CEILING_DIRECTORIES`` names, and, outside
+    Windows, at a file-system boundary. git then runs in the nearest folder
+    that holds the package, so a run from a subfolder of the checkout checks
+    the same change set as a run from that folder. A project with no package
+    there has nothing to check: the list of findings is empty and no git
+    command runs. Where a ``.git`` file that git refuses (see
+    :func:`_package_folder_above`) lies between the current folder and the
+    package, git runs in the current folder, stops
+    at that file, and the failure is reported. ``GIT_WORK_TREE`` in the
+    environment is not read by the search.
 
     git runs through :func:`~apothem.conformity._git.run_git`, which turns off
     the repository's program-running settings. File contents are read with
@@ -369,25 +446,51 @@ def check_staged() -> list[Finding]:
     staged list, or a staged or committed file, is not read within
     ``GIT_TIMEOUT_SECONDS``, and
     :class:`~apothem.conformity._grep_base.GitFailedError` when git fails to
-    list the change set in a folder that holds a ``.git`` entry: a change set
-    that was not read is not a clean one. Outside a checkout, or without git,
+    list the change set inside a checkout (a ``.git`` entry in the package's
+    folder or one above it): a change set that was not read is not a clean
+    one. Raises :class:`~apothem.conformity._grep_base.GitNameError` when a
+    staged file's name cannot be given back to git to read its content (a
+    name that is not UTF-8, on Windows). Outside a checkout, or without git,
     there is no change set and the list of findings is empty.
     """
+    from apothem.conformity._git import reaches_git_unchanged, split_names
     from apothem.conformity._grep_base import (
         GitFailedError,
+        GitNameError,
         GitTimeoutError,
-        has_git_entry,
+        in_checkout,
     )
 
-    def blob(spec: str, *, check: bool) -> str:
-        return _git("git cat-file", "cat-file", "blob", spec, check=check).stdout
-
     version = current_version()
+    # The folder git runs in: None is the current folder, where the package
+    # usually is. Otherwise the folder above that holds it, so git reads
+    # ``src/apothem`` from there exactly as in a run from that folder.
+    home: Path | None = None
+    if version is None:
+        found = _package_folder_above()
+        if found is None:
+            return []
+        package_folder, below_broken_entry = found
+        version = _version_in(package_folder)
+        # Below a ``.git`` file that names no repository, git runs where the
+        # check was started and reports that file itself.
+        home = None if below_broken_entry else package_folder
     if not version or is_v0(version):
         return []
 
+    def blob(spec: str, *, check: bool) -> str:
+        return _git(
+            "git cat-file", "cat-file", "blob", spec, check=check, cwd=home
+        ).stdout
+
     # Get list of staged Python files under src/apothem/. -z ends each name
-    # with NUL, unquoted, so no character in a name can split or hide it.
+    # with NUL, unquoted, and the list is read as file names, so each name
+    # comes back with every byte it holds. ``run_git`` turns
+    # ``diff.relative`` off, so git prints each name from the top of the work
+    # tree even when the user's setting is on, which is how
+    # ``cat-file blob :<name>`` reads it. ``--`` marks the package as a path:
+    # without it git stops with "ambiguous argument" in a work tree where the
+    # folder is gone.
     try:
         result = _git(
             "git diff --cached",
@@ -396,18 +499,21 @@ def check_staged() -> list[Finding]:
             "--name-only",
             "-z",
             "--diff-filter=AMR",
+            "--",
             PUBLIC_PACKAGE,
+            file_names=True,
+            cwd=home,
         )
     except FileNotFoundError:
         return []
     if result.returncode != 0:
         # Outside a checkout there is no change set; in one, git refused it.
-        if has_git_entry(Path.cwd()):
+        if in_checkout(home or Path.cwd()):
             raise GitFailedError("git diff --cached", result.returncode)
         return []
     files = [
         f
-        for f in result.stdout.split("\0")
+        for f in split_names(result.stdout)
         if f.endswith(".py")
         and not PRIVATE_PATTERN.search(f)
         and not CONFORMITY_INTERNAL.search(f)
@@ -415,6 +521,11 @@ def check_staged() -> list[Finding]:
 
     findings: list[Finding] = []
     for fp in files:
+        # The name goes back to git as an argument. One that cannot arrive
+        # unchanged would read as a missing file and be skipped below, which
+        # would pass a change that was never compared.
+        if not reaches_git_unchanged(fp):
+            raise GitNameError("git cat-file")
         # A GitTimeoutError goes on to the caller: skipping the file would
         # pass a change that was never compared.
         try:
@@ -432,8 +543,10 @@ def check_staged() -> list[Finding]:
 
     if findings:
         # Cross-reference: did the staged change include a MAJOR bump?
-        # git names a path with forward slashes on every platform.
-        init_spec = INIT_PATH.as_posix()
+        # git names a path with forward slashes on every platform. The
+        # leading ``./`` makes git read the path from the folder it runs in,
+        # the package's folder, which can sit below the top of the work tree.
+        init_spec = f"./{INIT_PATH.as_posix()}"
         try:
             staged_init = blob(f":{init_spec}", check=True)
             prior_init = blob(f"HEAD:{init_spec}", check=False)

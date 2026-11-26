@@ -62,7 +62,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Final
 
-from apothem.conformity._git import run_git
+from apothem.conformity._git import run_git, split_names
 from apothem.conformity._grep_base import (
     GIT_LS_FILES_TIMEOUT_SECONDS,
     GitCheckError,
@@ -164,15 +164,16 @@ def _git_ls_files(root: Path) -> list[str]:
     ``check_error``. A failure names git's exit code, not git's own text,
     which can name files outside the project. git runs through
     :func:`run_git`, so the repository's own settings cannot make it start a
-    program.
+    program. ``-z`` ends each name with NUL, unquoted, and the output is read
+    as file names, so a name comes back with every byte it holds.
     """
     try:
-        # -z: names end with NUL, unquoted, whatever characters they hold.
         completed = run_git(
             ["ls-files", "-z"],
             cwd=root,
             check=True,
             timeout=GIT_LS_FILES_TIMEOUT_SECONDS,
+            file_names=True,
         )
     except FileNotFoundError as exc:
         raise RuntimeError(
@@ -186,7 +187,7 @@ def _git_ls_files(root: Path) -> list[str]:
             f"git ls-files failed under {root!s} with exit code {exc.returncode}; "
             "run it there to see why"
         ) from exc
-    return [name for name in completed.stdout.split("\0") if name]
+    return split_names(completed.stdout)
 
 
 def _sweep_stray_plans_dirs(

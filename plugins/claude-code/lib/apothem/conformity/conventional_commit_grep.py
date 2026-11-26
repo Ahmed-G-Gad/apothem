@@ -16,14 +16,23 @@ specific drift classes that fail.
 Scope. Corpus-level standalone validator. Reads HEAD only. Merge commit
 subjects (``Merge branch ...`` / ``Merge pull request ...``) pass
 through — the merger does not author the merged content's subject form.
-Shallow-clone or no-git contexts (no ``.git/``, empty repo) exit 0 with
-an informational status so the validator never blocks a fresh clone or
-a non-git working tree. Two other outcomes are not such a context: a git
-command that runs past ``GIT_TIMEOUT_SECONDS`` (the repository's own
-configuration can make git wait for ever) gives status ``git-timeout``, and a
-git that refuses the repository (another owner, a bad configuration line, an
-include it cannot read) gives ``git-failed``. In both the repository is there
-but its HEAD subject was never read, so the check does not pass.
+Shallow-clone or no-git contexts (an empty repository, or a folder outside
+any checkout) exit 0 with an informational status, so the validator never
+blocks a fresh clone. A folder is outside any checkout when no ``.git`` entry
+of any kind lies in it or in a folder above it that git's own search reaches.
+A repository in a folder above it counts when it tracks a file in the folder
+(``git ls-files``), and its HEAD subject is then checked. When it tracks
+nothing there, as for a new project inside a home-folder dotfiles repository,
+the folder is outside any checkout too. A ``.git`` entry that git cannot open,
+such as an empty ``.git`` folder or a ``.git`` file that names no repository,
+also counts: when git then finds no repository it can use, it fails, and so
+does the check, with ``git-failed``. Two outcomes are not an
+exempt context: a git command that runs past ``GIT_TIMEOUT_SECONDS`` (the
+repository's own configuration can make git wait for ever) gives status
+``git-timeout``, and a git that refuses the repository (another owner, a bad
+configuration line, an include it cannot read, a ``.git`` entry it cannot
+open) gives ``git-failed``. In both no HEAD subject was read, so the check
+does not pass.
 
 Exit semantics. Exits 0 when HEAD is conformant (or informationally
 exempt). Exits 2 on any drift class, and on ``git-timeout`` or
@@ -221,12 +230,15 @@ class GrepResult:
         return json.dumps(payload, indent=2)
 
 
-def _git(root: Path, label: str, *args: str) -> subprocess.CompletedProcess[str]:
+def _git(
+    root: Path, label: str, *args: str, file_names: bool = False
+) -> subprocess.CompletedProcess[str]:
     """Run ``git <args>`` in *root* within ``GIT_TIMEOUT_SECONDS``.
 
     git runs through :func:`~apothem.conformity._git.run_git`, which turns off
     the repository's program-running settings and keeps the limit for every
-    program git starts. Raises
+    program git starts. *file_names* keeps every byte of the output, as
+    ``run_git`` does for a path name. Raises
     :class:`~apothem.conformity._grep_base.GitTimeoutError`, naming the
     command as *label*, past the limit and :class:`OSError` when git cannot be
     started.
@@ -237,9 +249,88 @@ def _git(root: Path, label: str, *args: str) -> subprocess.CompletedProcess[str]
     from apothem.conformity._grep_base import GitTimeoutError
 
     try:
-        return run_git(list(args), cwd=root, timeout=GIT_TIMEOUT_SECONDS)
+        return run_git(
+            list(args), cwd=root, timeout=GIT_TIMEOUT_SECONDS, file_names=file_names
+        )
     except subprocess.TimeoutExpired as exc:
         raise GitTimeoutError(label, GIT_TIMEOUT_SECONDS) from exc
+
+
+def _checked(
+    completed: subprocess.CompletedProcess[str], label: str, *ok: int
+) -> subprocess.CompletedProcess[str]:
+    """Return *completed*, or raise when its exit code is not 0 or in *ok*."""
+    from apothem.conformity._grep_base import GitFailedError
+
+    if completed.returncode != 0 and completed.returncode not in ok:
+        raise GitFailedError(label, completed.returncode)
+    return completed
+
+
+def _tracks_a_file_in(root: Path) -> bool:
+    """Return True when git's repository tracks a file in *root* or below it.
+
+    The index counts, so a staged file is tracked. When the repository
+    ignores case (``core.ignorecase``, as on Windows and macOS), the folder's
+    path below the top is matched without regard to case. A tracked folder
+    renamed on disk only in case then still counts: git status shows no
+    change there, but ``git ls-files -- .`` matches by case and lists
+    nothing. The setting and the folder's path are read only then, so a
+    tracked folder costs one git start. Raises
+    :class:`~apothem.conformity._grep_base.GitFailedError` when a git command
+    fails.
+    """
+    if _lists_a_file(root, "."):
+        return True
+    case = _checked(
+        _git(root, "git config", "config", "--type=bool", "--get", "core.ignorecase"),
+        "git config",
+        1,  # The setting is not there: git then matches by case.
+    )
+    if case.returncode != 0 or case.stdout.strip() != "true":
+        return False
+    shown = _checked(
+        _git(root, "git rev-parse", "rev-parse", "--show-prefix", file_names=True),
+        "git rev-parse",
+    )
+    # The path below the top, with a trailing "/", as git spells it from the
+    # folder on disk. ``top`` reads it from the top, where ``icase`` covers
+    # every part of it. ``literal`` is a guard only: git compares the path as
+    # plain text first, and the trailing "/" keeps a "*" or "[" in a name
+    # from matching another folder, so it changes no result today.
+    prefix = shown.stdout.removesuffix("\n")
+    return bool(prefix) and _lists_a_file(root, f":(top,icase,literal){prefix}")
+
+
+def _lists_a_file(root: Path, pathspec: str) -> bool:
+    """Return True when ``git ls-files`` in *root* lists a file for *pathspec*."""
+    tracked = _checked(
+        _git(root, "git ls-files", "ls-files", "-z", "--", pathspec),
+        "git ls-files",
+    )
+    return bool(tracked.stdout)
+
+
+def _repository_is_above(root: Path) -> bool:
+    """Return True when git's search from *root* uses a folder above it.
+
+    The search looks past a ``.git`` entry that holds no repository and stops
+    at the first one that holds one, or that git refuses. Only a repository
+    in a folder above *root* is a repository *root* may not belong to; a
+    ``.git`` entry git refuses fails the log, as in ``root`` itself.
+    """
+    from apothem.conformity._grep_base import (
+        GIT_ENTRY_NONE,
+        GIT_ENTRY_REPOSITORY,
+        checkout_search_folders,
+        git_entry_state,
+    )
+
+    for index, folder in enumerate(checkout_search_folders(root)):
+        state = git_entry_state(folder)
+        if state != GIT_ENTRY_NONE:
+            return index > 0 and state == GIT_ENTRY_REPOSITORY
+    return False
 
 
 def _read_head_subject(root: Path) -> tuple[str | None, str, str | None]:
@@ -259,11 +350,22 @@ def _read_head_subject(root: Path) -> tuple[str | None, str, str | None]:
         GitCheckError,
         GitFailedError,
         GitTimeoutError,
+        in_checkout,
     )
 
-    if not (root / ".git").exists():
+    # git finds the repository in ``root`` or a folder above it, so a run on
+    # a subfolder of a checkout reads the checkout's history.
+    if not in_checkout(root):
         return None, "not-a-git-repo", None
     try:
+        if _repository_is_above(root) and not _tracks_a_file_in(root):
+            # git uses a repository in a folder above ``root`` (an empty
+            # ``.git`` folder in ``root``, say from a ``git init`` that
+            # stopped, is one git looks past). Its history belongs to ``root``
+            # only when it tracks a file there. A new project inside a
+            # home-folder dotfiles repository is not part of it, so it stays
+            # exempt.
+            return None, "not-a-git-repo", None
         completed = _git(root, "git log", "log", "-1", "--pretty=%B")
         if completed.returncode != 0:
             # A branch with no commit yet and a repository git refused both
@@ -390,12 +492,18 @@ def _classify_drift(subject: str) -> list[Drift]:
 def check_repo(root: Path) -> GrepResult:
     """Inspect ``root``'s HEAD commit; return a structured result.
 
-    Pre-conditions: ``root`` is the working-tree directory.
-    Post-conditions: ``result.passed`` is True iff HEAD is conformant
-    or the repo state is informationally exempt (no .git, no commits).
-    A git command past ``GIT_TIMEOUT_SECONDS`` gives status ``git-timeout``,
-    and a git that refused the repository gives ``git-failed``: both have
-    ``passed`` False and a ``check_error`` that names the command.
+    Pre-conditions: ``root`` is a folder; git reads the repository it is in,
+    which can be in a folder above it.
+    Post-conditions: ``result.passed`` is True iff HEAD is conformant or the
+    repository state is informationally exempt: no ``.git`` entry in ``root``
+    or above it (as far as git's own search goes), a repository above
+    ``root`` that tracks no file in it, or no commits yet. A ``.git`` entry
+    git cannot open (an empty ``.git`` folder, say) is not exempt: when git
+    finds no repository it can use, it fails and the status is
+    ``git-failed``. A git command
+    past ``GIT_TIMEOUT_SECONDS`` gives status ``git-timeout``, and a git that
+    refused the repository gives ``git-failed``: both have ``passed`` False
+    and a ``check_error`` that names the command.
     """
     subject, status, check_error = _read_head_subject(root)
     if check_error is not None:
