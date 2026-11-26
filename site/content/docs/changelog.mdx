@@ -320,10 +320,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   folder is a link fails instead of passing as if the folder were not there
   yet. The checks that run git read the `.git` folder through git itself.
   When the `.git` entry git would use, in the root or in a folder above it,
-  is a link, the three `--all` validators that run git do not run it and list
-  that entry under `skipped_links`,
-  `no-global-plans-grep` reports the link as a failing finding, and
-  `--all-perwrite` lists no tracked files and fails with a `check_error`.
+  or a file git reads in that repository, is a link, the three `--all`
+  validators that run git do not run it and list the link under
+  `skipped_links`, `no-global-plans-grep` reports it as a failing finding,
+  and `--all-perwrite` lists no tracked files and fails with a
+  `check_error`. A `GIT_DIR` set in the environment, as in a hook, no longer
+  points these validators' git somewhere else.
 
 ## [1.6.0] - 2026-11-26
 

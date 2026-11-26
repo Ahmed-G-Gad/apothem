@@ -250,7 +250,11 @@ def _git(
 
     try:
         return run_git(
-            list(args), cwd=root, timeout=GIT_TIMEOUT_SECONDS, file_names=file_names
+            list(args),
+            cwd=root,
+            timeout=GIT_TIMEOUT_SECONDS,
+            file_names=file_names,
+            discover=True,
         )
     except subprocess.TimeoutExpired as exc:
         raise GitTimeoutError(label, GIT_TIMEOUT_SECONDS) from exc

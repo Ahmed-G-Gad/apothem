@@ -326,6 +326,7 @@ def _is_partial_clone(root: Path) -> bool:
             ],
             cwd=root,
             timeout=GIT_TIMEOUT_SECONDS,
+            discover=True,
         )
     except subprocess.TimeoutExpired as exc:
         raise GitTimeoutError("git config", GIT_TIMEOUT_SECONDS) from exc
@@ -392,6 +393,7 @@ def _read_history(root: Path) -> _History | None:
             ["rev-parse", "--show-prefix", "--verify", "--quiet", "HEAD"],
             cwd=root,
             timeout=GIT_TIMEOUT_SECONDS,
+            discover=True,
         )
     except subprocess.TimeoutExpired as exc:
         raise GitTimeoutError("git rev-parse", GIT_TIMEOUT_SECONDS) from exc
@@ -416,6 +418,7 @@ def _read_history(root: Path) -> _History | None:
             ],
             cwd=root,
             timeout=GIT_HISTORY_TIMEOUT_SECONDS,
+            discover=True,
         )
     except subprocess.TimeoutExpired as exc:
         raise GitTimeoutError("git log", GIT_HISTORY_TIMEOUT_SECONDS) from exc

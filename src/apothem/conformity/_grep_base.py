@@ -330,7 +330,8 @@ def finish_root_report(
     earned a pass either. Otherwise the return is :data:`EXIT_PASS` for a pass
     or an advisory validator, and :data:`EXIT_FAIL` for a failing blocking one.
     When the run left out links or special files, the payload lists them under
-    ``skipped_links`` (relative to the root), so a link never hides a file
+    ``skipped_links`` (relative to the root, or by full path for an entry
+    outside it, such as a linked ``.git`` above the root), so a link never hides a file
     without a trace. A run that inspected nothing while it left a link out
     does not pass, even when an empty scope is expected: a fixed folder that
     is a link must not pass as a folder that is not there yet.
@@ -761,74 +762,114 @@ def in_checkout(directory: Path) -> bool:
     return any(has_git_entry(folder) for folder in checkout_search_folders(directory))
 
 
-# What git's own repository test reads in ``HEAD``: a reference under
-# ``refs/`` or an object id (SHA-1 or SHA-256, whose first 40 digits match).
-_HEAD_SYMREF: Final[re.Pattern[bytes]] = re.compile(rb"ref:\s*refs/")
+# What git's own repository test (``validate_headref``) accepts in ``HEAD``:
+# ``ref:``, then only the blanks git's ``isspace`` takes (space, tab, line
+# feed, carriage return), then ``refs/``; or an object id (SHA-1, or the
+# first 40 digits of a SHA-256 one). git reads 255 bytes of ``HEAD``.
+_HEAD_SYMREF: Final[re.Pattern[bytes]] = re.compile(rb"ref:[ \t\n\r]*refs/")
 _HEAD_OBJECT_ID: Final[re.Pattern[bytes]] = re.compile(rb"[0-9a-fA-F]{40}")
-# The bytes of ``HEAD`` and ``commondir`` read; both are one short line.
-_GIT_LINE_MAX_BYTES: Final[int] = 4096
+_HEAD_READ_BYTES: Final[int] = 255
+# git reads the whole ``commondir`` file; a longer one is not judged here.
+_COMMONDIR_MAX_BYTES: Final[int] = 64 * 1024
 
 
-def _read_git_line(path: Path) -> bytes | None:
-    """Return the start of the regular file *path*; None when it is anything else."""
-    if path_kind(path) != FILE_ENTRY:
-        return None
+def _read_at_most(path: Path, limit: int) -> bytes | None:
+    """Return up to *limit* + 1 bytes of the regular file *path*; None on error."""
     try:
         with path.open("rb") as handle:
-            return handle.read(_GIT_LINE_MAX_BYTES)
+            return handle.read(limit + 1)
     except OSError:
         return None
 
 
-def _git_stops_at(git_dir: Path) -> bool:
-    """Return True only when git's own test would take *git_dir* as a repository.
+def _repository_verdict(git_dir: Path) -> bool | Path:
+    """Say whether git's search stops at *git_dir* as a repository.
 
-    git's test (``is_git_directory``) wants a ``HEAD`` that names a reference
-    under ``refs/`` or an object id, and the object and reference stores,
-    found through a ``commondir`` file when there is one. A folder that fails
-    it is looked past, so this test is at least as strict as git's: whatever
-    it is unsure of (a ``HEAD`` that is a link, a ``commondir`` that cannot be
-    read) counts as no repository, and the walk goes on. Nothing is followed:
-    ``HEAD`` and ``commondir`` are read only when they are regular files.
+    True only when *git_dir* passes a test at least as strict as git's own
+    (``is_git_directory``): a ``HEAD`` git accepts, and the object and
+    reference stores, found through a ``commondir`` file read as git reads
+    it (the whole file, trailing carriage returns and line feeds trimmed,
+    cut at a NUL). False when it fails that test or the test cannot be sure
+    (a read error, a file too large to judge, a line break left in the
+    ``commondir`` path): git may look past *git_dir*, so the walk goes on.
+
+    A link among the parts git reads (``HEAD``, ``commondir``, the folder
+    ``commondir`` names, ``objects``, ``refs``) is returned: git would follow
+    it, so the caller refuses it as it refuses a ``.git`` link. Nothing is
+    followed: each part is looked at with ``os.lstat`` before it is read.
     """
-    head = _read_git_line(git_dir / "HEAD")
-    if head is None or not (_HEAD_SYMREF.match(head) or _HEAD_OBJECT_ID.match(head)):
+    head_path = git_dir / "HEAD"
+    head_kind = path_kind(head_path)
+    if head_kind == LINK_ENTRY:
+        return head_path
+    if head_kind != FILE_ENTRY:
+        return False
+    head = _read_at_most(head_path, _HEAD_READ_BYTES)
+    if head is None:
+        return False
+    head = head[:_HEAD_READ_BYTES]
+    if not (_HEAD_SYMREF.match(head) or _HEAD_OBJECT_ID.match(head)):
         return False
     stores = git_dir
-    if path_kind(git_dir / "commondir") is not None:
-        line = _read_git_line(git_dir / "commondir")
-        if line is None:
+    commondir = git_dir / "commondir"
+    commondir_kind = path_kind(commondir)
+    if commondir_kind == LINK_ENTRY:
+        return commondir
+    if commondir_kind is not None:
+        if commondir_kind != FILE_ENTRY:
             return False
-        named = line.split(b"\n", 1)[0].rstrip(b"\r")
-        if not named or b"\0" in named:
+        data = _read_at_most(commondir, _COMMONDIR_MAX_BYTES)
+        if not data or len(data) > _COMMONDIR_MAX_BYTES:
             return False
-        stores = git_dir / os.fsdecode(named)
-    return (
-        path_kind(stores / "objects") == DIR_ENTRY
-        and path_kind(stores / "refs") == DIR_ENTRY
-    )
+        named = data.rstrip(b"\r\n").split(b"\0", 1)[0]
+        if not named or b"\n" in named or b"\r" in named:
+            return False
+        try:
+            stores = git_dir / os.fsdecode(named)
+        except UnicodeDecodeError:
+            return False
+        stores_kind = path_kind(stores)
+        if stores_kind == LINK_ENTRY:
+            return stores
+        if stores_kind != DIR_ENTRY:
+            return False
+    for store in (stores / "objects", stores / "refs"):
+        store_kind = path_kind(store)
+        if store_kind == LINK_ENTRY:
+            return store
+        if store_kind != DIR_ENTRY:
+            return False
+    return True
 
 
 def nearest_linked_git_entry(root: Path) -> Path | None:
-    """Return the ``.git`` entry git would use when it is a link, and note it.
+    """Return the linked entry git would read its repository through, and note it.
 
     git looks for the repository in *root* and then in each folder above it
     (:func:`checkout_search_folders`), and in each folder it looks first at
     the ``.git`` entry and then at the folder itself, which may be a bare
-    repository. This walk does the same and stops where git stops:
+    repository. This walk does the same and stops where git would stop:
 
     - a ``.git`` link (to a folder or a file, a junction, or one that
-      dangles): the entry is noted in the skip log and returned;
-    - a ``.git`` folder that holds a repository, a ``.git`` file (git uses
-      the repository it names, or stops with an error), or a folder that is
-      a bare repository: None.
+      dangles), or a link among the parts git reads in the repository it
+      stops at (see :func:`_repository_verdict`): the link is noted in the
+      skip log and returned;
+    - a ``.git`` folder or a folder that passes the repository test, or a
+      ``.git`` file (git uses the repository it names, or stops with an
+      error): None.
 
-    A ``.git`` folder that holds no repository is looked past, as git does,
-    so an empty one in *root* does not hide a linked one above it. Whether a
-    folder holds a repository is judged at least as strictly as git judges
-    it (:func:`_git_stops_at`), so the walk never stops where git goes on;
-    where it is stricter it may go on and refuse a link git never reaches.
-    No link is followed: each entry is looked at with ``os.lstat`` first.
+    The repository test is at least as strict as git's, never looser, so the
+    walk never stops where git goes on. A ``.git`` folder git would not take
+    as a repository (an empty one, a ``HEAD`` that names nothing under
+    ``refs/``, a ``commondir`` that leads nowhere) is looked past, as git
+    does. Where the test is stricter than git, the walk goes on past a
+    repository git would use, and a ``.git`` link above it is refused though
+    git never reaches it. That false refusal is deliberate: it fails closed.
+
+    The checks run git with *discover* set (``run_git``), which leaves out
+    ``GIT_DIR`` and the other location variables, so git finds the repository
+    from *root* as this walk did. A ``.git`` file's ``gitdir:`` target is
+    taken as written: it is a path the file states, not a link.
 
     Every check that runs git calls this before git and before
     :func:`in_checkout`, and treats an entry as no checkout, so a run on a
@@ -843,24 +884,45 @@ def nearest_linked_git_entry(root: Path) -> Path | None:
             note_skipped(entry)
             return entry
         if kind == DIR_ENTRY:
-            if _git_stops_at(entry):
-                return None
+            verdict = _repository_verdict(entry)
         elif kind is not None and git_entry_state(folder) != GIT_ENTRY_NONE:
             return None
-        if _git_stops_at(folder):
+        else:
+            verdict = False
+        if verdict is False:
+            verdict = _repository_verdict(folder)
+        if isinstance(verdict, Path):
+            note_skipped(verdict)
+            return verdict
+        if verdict:
             return None
     return None
 
 
-def linked_git_message(root: Path, entry: Path) -> str:
-    """Return the fixed sentence for a check that did not run git through *entry*.
+def linked_git_label(root: Path, entry: Path) -> str:
+    """Return how a report names *entry*, as the skip log names it.
 
-    The root's own ``.git`` is named as such; an entry above the root is named
-    by its full path, as the skip log names it.
+    Relative to *root* when it lies inside it (``.git``, ``.git/HEAD``), and
+    by its full path otherwise, such as a linked ``.git`` above the root.
+    """
+    try:
+        return entry.relative_to(root).as_posix()
+    except ValueError:
+        return entry.as_posix()
+
+
+def linked_git_message(root: Path, entry: Path) -> str:
+    """Return the sentence for a check that did not run git through *entry*.
+
+    It names *entry* (see :func:`linked_git_label`) and nothing git printed;
+    the root's own ``.git`` keeps the sentence it always had.
     """
     if entry == root / GIT_ENTRY:
         return "the .git entry is a link, so git would read another repository"
-    return f"the .git entry {entry.as_posix()} is a link, so git would read another repository"
+    label = linked_git_label(root, entry)
+    if entry.name == GIT_ENTRY:
+        return f"the .git entry {label} is a link, so git would read another repository"
+    return f"{label}, which git reads, is a link, so git would read another repository"
 
 
 def iter_tree_files(

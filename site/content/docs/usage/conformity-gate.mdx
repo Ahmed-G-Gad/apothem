@@ -150,17 +150,23 @@ that passes when its folder is missing, such as the workflow validators, does
 not pass when that folder is a link: the files may be behind it, so the run
 fails like one that checked nothing. A hard link is a regular file and is read
 like one, and the checks that run git read the `.git` folder through git
-itself. The three validators that run git first look for the `.git` entry
-git would use: the root's own, or, for a root inside a project, the first one
-in the folders above it. A `.git` folder that holds no repository is looked
-past, as git does. When that entry is a link, none of them runs git, and each
-lists it under `skipped_links` (as `.git` at the root, by its full path above
-it). `conventional-commit-grep` then reports `not-a-git-repo`, as it does
-outside a checkout, but it does not pass: the link was left out, so its empty
-result is not the one it expects. `no-global-plans-grep` reports the link as
-a finding and fails, and the companion coverage check skips its freshness
-test, as it does with no history. `--all-perwrite` does not list the tracked
-files either: it fails with a `check_error` that names the link.
+itself. The three validators that run git first look for the `.git` entry git
+would use: the root's own, or, for a root inside a project, the first one in
+the folders above it. A `.git` folder that holds no repository is looked past,
+as git does, and a link among the files of the repository git would use
+(`HEAD`, `objects`, `refs`, `commondir`) counts as a link too. When unsure
+whether git would stop at a folder, these checks look further up, so they can
+refuse a link git would never reach; they never run git through one. They also
+ignore a `GIT_DIR` set in the environment, as a hook has, and let git find the
+repository from the root. When they find a link, none of them runs git, and
+each lists the link under `skipped_links` (relative to the root inside it, by
+its full path above it). `conventional-commit-grep` then reports
+`not-a-git-repo`, as it does outside a checkout, but it does not pass: the
+link was left out, so its empty result is not the one it expects.
+`no-global-plans-grep` reports the link as a finding and fails, and the
+companion coverage check skips its freshness test, as it does with no history.
+`--all-perwrite` does not list the tracked files either: it fails with a
+`check_error` that names the link.
 
 Each standalone validator runs as a program of its own, and the gate gives it
 10 minutes, in `--all` and in `--check`. The slowest one takes about a minute on

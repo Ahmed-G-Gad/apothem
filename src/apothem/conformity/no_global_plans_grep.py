@@ -69,6 +69,7 @@ from apothem.conformity._grep_base import (
     GitTimeoutError,
     finish_root_report,
     has_git_entry,
+    linked_git_label,
     linked_git_message,
     nearest_linked_git_entry,
     parse_root_args,
@@ -174,7 +175,8 @@ def _git_ls_files(root: Path) -> list[str]:
     :data:`GIT_LS_FILES_TIMEOUT_SECONDS` (the repository's own configuration
     can make git wait for ever), which the report carries as its
     ``check_error``. A failure names git's exit code, not git's own text,
-    which can name files outside the project. git runs through
+    which can name files outside the project; a linked entry is named by its
+    own path (see :func:`linked_git_message`). git runs through
     :func:`run_git`, so the repository's own settings cannot make it start a
     program. ``-z`` ends each name with NUL, unquoted, and the output is read
     as file names, so a name comes back with every byte it holds.
@@ -188,6 +190,7 @@ def _git_ls_files(root: Path) -> list[str]:
             cwd=root,
             check=True,
             timeout=GIT_LS_FILES_TIMEOUT_SECONDS,
+            discover=True,
             file_names=True,
         )
     except FileNotFoundError as exc:
@@ -402,8 +405,9 @@ def check(root: Path) -> GrepResult:
         # The finding names the entry as the skip log does: ``.git`` at the
         # root, its full path above it.
         tracked: list[str] = []
-        shown = ".git" if linked == root / ".git" else linked.as_posix()
-        findings.append(Finding(path=shown, detail=_LINKED_GIT_DETAIL))
+        findings.append(
+            Finding(path=linked_git_label(root, linked), detail=_LINKED_GIT_DETAIL)
+        )
     else:
         tracked = _git_ls_files(root)
     for path in tracked:

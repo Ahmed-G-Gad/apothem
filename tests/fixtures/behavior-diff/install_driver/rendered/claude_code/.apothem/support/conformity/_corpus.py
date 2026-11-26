@@ -141,9 +141,10 @@ class CorpusListError(Exception):
     git is not run when the ``.git`` entry it would use is a link (see
     :func:`~apothem.conformity._grep_base.nearest_linked_git_entry`), and
     does not start when it is missing. The message is a fixed sentence, like
-    those of the git-check errors in :mod:`apothem.conformity._grep_base`:
-    git's own error text is left out, because it can quote the repository's
-    settings and name files outside the project.
+    those of the git-check errors in :mod:`apothem.conformity._grep_base`,
+    except that a linked entry is named by its own path (by its full path when
+    it lies above the root). git's own error text is left out, because it can
+    quote the repository's settings and name files outside the project.
     """
 
 
@@ -194,6 +195,7 @@ def tracked_entries(root: Path) -> list[TrackedEntry]:
             ["ls-files", "-s", "-z"],
             cwd=root,
             timeout=GIT_LS_FILES_TIMEOUT_SECONDS,
+            discover=True,
             file_names=True,
         )
     except subprocess.TimeoutExpired as exc:
