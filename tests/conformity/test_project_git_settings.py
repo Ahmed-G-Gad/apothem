@@ -61,6 +61,7 @@ from apothem.conformity import (
     production_ready_pr_grep,
     semver_stability_grep,
 )
+from apothem.conformity._grep_base import GitCheckError
 from tests._shared.git_env import hermetic_git_env
 
 _IDENT = (
@@ -458,17 +459,25 @@ def _planted_repo(tmp_path: Path, scenario: _Scenario) -> tuple[Path, _Programs]
 
 
 def _drive_every_gate_git_call(repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    """Run each git-reading path of the gate and its validators against *repo*."""
+    """Run each git-reading path of the gate and its validators against *repo*.
+
+    A path whose git fails or runs past its limit raises ``GitCheckError``,
+    its report of an unread history or change set; that is an outcome here,
+    not an error: what counts is that no planted program ran.
+    """
     gate._run_all_perwrite(repo)
-    with contextlib.suppress(RuntimeError):
+    with contextlib.suppress(RuntimeError, GitCheckError):
         no_global_plans_grep._git_ls_files(repo)
     conventional_commit_grep._read_head_subject(repo)
-    agents_md_coverage_grep._last_commit_times(repo)
+    with contextlib.suppress(GitCheckError):
+        agents_md_coverage_grep._last_commit_times(repo)
     # The two change-set checks read the repository the process runs in.
     monkeypatch.chdir(repo)
-    production_ready_pr_grep._staged_paths()
+    with contextlib.suppress(GitCheckError):
+        production_ready_pr_grep._staged_paths()
     monkeypatch.setattr(semver_stability_grep, "current_version", lambda: "1.2.3")
-    semver_stability_grep.check_staged()
+    with contextlib.suppress(GitCheckError):
+        semver_stability_grep.check_staged()
 
 
 @pytest.mark.usefixtures("hermetic_git")
@@ -722,12 +731,18 @@ def _dotted(node: ast.expr, imported: dict[str, str]) -> str:
     return ""
 
 
-def _program_starts(source: str, *, allowed: frozenset[str] = frozenset()) -> list[int]:
+def _program_starts(
+    source: str,
+    *,
+    allowed: frozenset[str] = frozenset(),
+    allowed_starts: frozenset[str] = frozenset(),
+) -> list[int]:
     """Return the lines where *source* starts or finds a program, or names git.
 
     Every process-starting call counts, whatever its arguments, and so does any
     ``which``, any use of ``git_argv``, and any string naming the git program.
-    Calls inside a function named in *allowed* are skipped.
+    Calls inside a function named in *allowed* are skipped, and so are the
+    process-starting calls named in *allowed_starts*; the rest still counts.
     """
     tree = ast.parse(source)
     imported: dict[str, str] = {}
@@ -745,9 +760,11 @@ def _program_starts(source: str, *, allowed: frozenset[str] = frozenset()) -> li
             continue
         if isinstance(node, ast.Call):
             target = _dotted(node.func, imported)
+            starts_one = target in _PROCESS_FUNCTIONS or target.startswith(
+                _PROCESS_PREFIXES
+            )
             if (
-                target in _PROCESS_FUNCTIONS
-                or target.startswith(_PROCESS_PREFIXES)
+                (starts_one and target not in allowed_starts)
                 or target == "which"
                 or target.endswith(".which")
             ):
@@ -810,25 +827,60 @@ def test_the_program_guard_passes_run_git_and_exception_types() -> None:
 
 
 def test_no_conformity_module_starts_a_program_itself() -> None:
-    """Only ``_git.py`` starts git; every other module calls ``run_git``.
+    """Only ``_git.py`` names git; every other module calls ``run_git``.
 
-    The one other program start is gate.py's validator launcher
-    (``_run_standalone``), which starts Python, not git.
+    ``_bounded_run.py`` is the one module that starts a program:
+    ``run_git`` starts git through ``run_bounded``, and gate.py's validator
+    launcher (``_run_standalone``) starts Python through it, so neither git
+    nor any other program starts anywhere else. The rest of the guard still
+    holds in ``_bounded_run.py``: it names no git and finds no program.
     """
     package = Path(gate.__file__).resolve().parent
     offenders: list[str] = []
     for module in sorted(package.rglob("*.py")):
-        if module.name == "_git.py":
+        relative = module.relative_to(package).as_posix()
+        if relative == "_git.py":
             continue
-        allowed = (
-            frozenset({"_run_standalone"}) if module.name == "gate.py" else frozenset()
-        )
         source = module.read_text(encoding="utf-8")
-        offenders.extend(
-            f"{module.relative_to(package).as_posix()}:{line}"
-            for line in _program_starts(source, allowed=allowed)
+        allowed_starts = (
+            frozenset({"subprocess.Popen"})
+            if relative == "_bounded_run.py"
+            else frozenset()
         )
+        lines = _program_starts(source, allowed_starts=allowed_starts)
+        offenders.extend(f"{relative}:{line}" for line in lines)
     assert offenders == []
+
+
+_POPEN = frozenset({"subprocess.Popen"})
+
+
+def test_the_guard_still_finds_git_named_where_programs_may_start() -> None:
+    """With ``Popen`` allowed, a string naming git and every other start count."""
+    source = 'import subprocess\nsubprocess.Popen(["git", "log"])\n'
+    assert _program_starts(source, allowed_starts=_POPEN) == [2]
+    assert (
+        _program_starts(
+            "import subprocess\nsubprocess.Popen(argv)\n", allowed_starts=_POPEN
+        )
+        == []
+    )
+    assert _program_starts(
+        'import shutil\nshutil.which("x")\n', allowed_starts=_POPEN
+    ) == [2]
+    assert _program_starts(
+        'import os\nos.system("git log")\n', allowed_starts=_POPEN
+    ) == [2]
+
+
+def test_only_the_shared_runner_and_git_helper_start_programs() -> None:
+    """``_bounded_run.py`` starts programs and ``_git.py`` only names git."""
+    package = Path(gate.__file__).resolve().parent
+    runner = (package / "_bounded_run.py").read_text(encoding="utf-8")
+    helper = (package / "_git.py").read_text(encoding="utf-8")
+    assert _program_starts(runner) != []
+    assert "subprocess.run(" not in helper
+    assert "_bounded_run.run_bounded(" in helper
 
 
 def _dated_commit(repo: Path, message: str, when: int) -> None:

@@ -64,8 +64,9 @@ from typing import Final
 
 from apothem.conformity._git import run_git
 from apothem.conformity._grep_base import (
-    CHECK_ERROR_KEY,
     GIT_LS_FILES_TIMEOUT_SECONDS,
+    GitCheckError,
+    GitTimeoutError,
     finish_root_report,
     has_git_entry,
     parse_root_args,
@@ -152,16 +153,12 @@ class GrepResult:
         return json.dumps(payload, indent=2)
 
 
-class _ListingTimeoutError(RuntimeError):
-    """``git ls-files`` ran past its time limit, so the check did not finish."""
-
-
 def _git_ls_files(root: Path) -> list[str]:
     """Return the git-tracked file list under root.
 
     Raises ``RuntimeError`` when ``git`` is unavailable or root is not a git
     repository, both errors the caller surfaces, and
-    :class:`_ListingTimeoutError` when git runs past
+    :class:`~apothem.conformity._grep_base.GitTimeoutError` when git runs past
     :data:`GIT_LS_FILES_TIMEOUT_SECONDS` (the repository's own configuration
     can make git wait for ever), which the report carries as its
     ``check_error``. A failure names git's exit code, not git's own text,
@@ -183,9 +180,7 @@ def _git_ls_files(root: Path) -> list[str]:
             "entries are skipped"
         ) from exc
     except subprocess.TimeoutExpired as exc:
-        raise _ListingTimeoutError(
-            f"git ls-files did not finish within {GIT_LS_FILES_TIMEOUT_SECONDS} seconds"
-        ) from exc
+        raise GitTimeoutError("git ls-files", GIT_LS_FILES_TIMEOUT_SECONDS) from exc
     except subprocess.CalledProcessError as exc:
         raise RuntimeError(
             f"git ls-files failed under {root!s} with exit code {exc.returncode}; "
@@ -359,25 +354,19 @@ def check(root: Path) -> GrepResult:
     )
 
 
-def _report_check_error(root: Path, reason: str) -> int:
-    """Print the report of a check that did not finish; return its exit code.
-
-    The report carries *reason* as ``check_error`` and, having inspected
-    nothing, ``passed: false`` with ``empty_scope_expected: false``, the shape
-    the corpus run uses for the same state.
-    """
-    result = GrepResult(grep=GREP_NAME, root=str(root), tracked_count=0, passed=False)
-    payload = json.loads(result.to_json())
-    payload[CHECK_ERROR_KEY] = reason
-    return finish_root_report(json.dumps(payload), passed=False, inspected=0)
-
-
 def _main(argv: list[str]) -> int:
     root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     try:
         result = check(root)
-    except _ListingTimeoutError as exc:
-        return _report_check_error(root, str(exc))
+    except GitCheckError as exc:
+        # The listing did not finish, so nothing was inspected and the
+        # report, carrying the reason as ``check_error``, does not pass.
+        unfinished = GrepResult(
+            grep=GREP_NAME, root=str(root), tracked_count=0, passed=False
+        )
+        return finish_root_report(
+            unfinished.to_json(), passed=False, inspected=0, check_error=str(exc)
+        )
     except RuntimeError as exc:
         sys.stderr.write(f"{GREP_NAME}: {exc}\n")
         return EXIT_FAIL

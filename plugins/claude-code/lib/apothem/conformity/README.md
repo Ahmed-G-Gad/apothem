@@ -11,6 +11,7 @@
 | `gate.py` | The conformity-gate orchestrator — dispatches every matcher against a Write/Edit input and aggregates the verdicts. |
 | `_git.py` | `run_git`, the one way the gate and its validators run `git` in a checked project: with the repository's program-running settings turned off on git's command line, fetching blocked, and git found only in full-path `PATH` entries. Private to this package. |
 | `_grep_base.py` | Shared building blocks every `*_grep` matcher imports: the finding shape, the file-walk (`iter_tree_files`, which prunes nested git checkouts and the vendored, virtual-environment, cache and build-output trees), and the JSON envelope. Private to this package. |
+| `_bounded_run.py` | `run_bounded`, the one place the package starts a program (a validator for the gate, git for `run_git`), with a time limit that holds for every program it starts: a Windows job object, or a session of its own elsewhere, ended on a stop, with a bounded wait for the output after it. Standard library only. Private to this package. |
 | `_corpus.py` | The `--all-perwrite` file list and reader: lists the tracked files with `git ls-files` (with a time limit) and reads only the regular files inside the project, checking every level with `lstat` so no link, junction, named pipe or device is followed or opened, and naming the reason for every path it skips. `link-check` uses the same level check to keep a corpus run's link lookups inside the project. Private to this package. |
 | `__init__.py` | Package marker. |
 
@@ -149,10 +150,12 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   settings off on git's command line, blocks fetching, and starts git only from
   a full-path `PATH` entry. A matcher starts no program itself: no
   `subprocess`, `os.system`, `os.popen`, `os.exec*` or `os.spawn*` call, no
-  `which`, no `git_argv` and no string naming the git program outside `_git.py`
-  (gate.py's validator launcher, which starts Python, is the one exception);
-  `test_no_conformity_module_starts_a_program_itself` checks those forms. It
-  reads file contents with `git cat-file blob`, never `git show`, which would
+  `which`, no `git_argv` and no string naming the git program outside `_git.py`.
+  `_bounded_run.py` is the one module that starts a program: `run_git` starts
+  git through its `run_bounded`, and gate.py's validator launcher starts Python
+  through it; `test_no_conformity_module_starts_a_program_itself` checks those
+  forms, and holds `_bounded_run.py` to the rest: it names no git and finds no
+  program. It reads file contents with `git cat-file blob`, never `git show`, which would
   show a submodule entry as a commit, and reads a path list with `-z`.
   `tests/conformity/test_project_git_settings.py` plants each setting and drives
   every git-reading path, so a new one belongs in its `_drive_every_gate_git_call`.
@@ -161,6 +164,25 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   nothing fails unless the walker declares `empty_scope_expected` (a plan-suite
   walker on a checkout without the gitignored plans tree, a workflow walker
   where no workflow directory exists yet).
+- **No unfinished pass.** A check that could not finish does not pass either.
+  Give every `run_git` call a timeout, far above what the command takes, since
+  a timeout fails the check: the validators give each command 60 seconds and a
+  read of the whole history 300. `run_git` runs git through `run_bounded`,
+  so the limit holds for every program git starts; `subprocess.run` would stop
+  only git and, on Windows, then wait for every program that holds the output,
+  such as the real git behind Git's launcher. Turn `subprocess.TimeoutExpired`
+  into `GitTimeoutError`, and a git
+  failure in a checkout the walker found into `GitFailedError`, both from
+  `_grep_base.py`; their messages name the command in fixed words and never
+  repeat git's own output. A corpus walker hands that message to
+  `finish_root_report(check_error=...)`, which stamps `check_error` and exits
+  `2`, advisory or not. A timeout or a refused checkout is not an exempt state
+  (a missing repository, a repository with no commit, a host without git, or a
+  partial clone, where `run_git` does not let git fetch what the clone left
+  out and any failed history read counts as unavailable): the data is there but was not read, and a checked repository's own
+  configuration can make git wait for ever or refuse to read it. The gate gives
+  each standalone validator `STANDALONE_TIMEOUT_SECONDS` and reports one it had
+  to stop with a `check_error` of its own.
 - **Two layouts, one import surface.** `gate.py` runs from the package
   (`src/apothem/conformity/`) and from a harness install
   (`<harness>/.apothem/support/conformity/`, the PreToolUse hook). Its

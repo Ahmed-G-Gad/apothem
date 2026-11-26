@@ -86,6 +86,9 @@ class _FailingResult:
     # validator reads its own count field, so the stub carries all of them.
     files_inspected: ClassVar[int] = 1
     folders_inspected: ClassVar[int] = 1
+    # It also finished: a check that could not finish fails even when
+    # advisory, which is a different contract from findings.
+    check_error: ClassVar[str | None] = None
 
     def to_json(self) -> str:
         return json.dumps(
