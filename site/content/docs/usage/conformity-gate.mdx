@@ -153,12 +153,13 @@ entry is a link or a special file; the folder itself is listed under
 that passes when its folder is missing, such as the workflow validators, does
 not pass when that folder is a link: the files may be behind it, so the run
 fails like one that checked nothing. A hard link is a regular file and is read
-like one. The `--all` validators look at each level when they reach it and
-then open the file by name, so a second user who can write to the project
-while the gate runs can swap a checked file or folder for a link or a named
-pipe before it is opened, or make a read wait until the time limit; the gate
-does not guard against that. `--all-perwrite` opens the last level without
-following it, but its folders can still be swapped. In `--all` and
+like one. The `--all` validators and `--all-perwrite` look at each level when
+they reach it, then open the file one level at a time from the root, each
+folder inside the one opened before it, never through a link. So when someone
+who can write to the project swaps a checked file, or a folder above it, for
+a link or a named pipe while the gate runs, the gate does not read through
+the link and does not wait on the pipe: the file counts as missing and the
+swapped entry is listed under `skipped_links`. In `--all` and
 `--all-perwrite`, the gate itself opens only regular files inside the root,
 checking each folder on the way with `lstat`, including every path git lists,
 and never reads inside a `.git` entry. Before they run git, the three `--all`
@@ -485,12 +486,16 @@ file's place. On Windows, a file that Data Deduplication or a cloud sync program
 keeps behind a reparse point is read through that program as usual; when the
 program is stopped, the file is `unreadable`.
 
-Three things these checks do not see. A hard link reads as an ordinary file, so
-a hard link to a file elsewhere is read; git does not create one. A folder above
-the file that another program swaps for a link between the check and the open is
-followed. And on Windows, a network file system that gives neither a file's
-reparse tag nor its file ID, but does hold symbolic links, could have a file
-swapped for a link between the check and the open without the gate seeing it.
+The file is opened from the root one level at a time, and no level is opened
+through a link, so a folder above the file that another program swaps for a
+link between the check and the open is not followed either: the file counts as
+a `link`.
+
+Two things these checks do not see. A hard link reads as an ordinary file, so
+a hard link to a file elsewhere is read; git does not create one. And on
+Windows, a network file system that gives neither a file's reparse tag nor its
+file ID, but does hold symbolic links, could have a file swapped for a link
+between the check and the open without the gate seeing it.
 
 In this run the `link-check` matcher looks up a link target only inside the
 root: a relative link that leaves the root counts as external, and the search

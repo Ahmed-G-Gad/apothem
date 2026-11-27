@@ -12,9 +12,10 @@
 | `_git.py` | `run_git`, the one way the gate and its validators run `git` in a checked project: with the repository's program-running settings turned off on git's command line, fetching blocked, and git found only in full-path `PATH` entries. Private to this package. |
 | `_grep_base.py` | Shared building blocks every `*_grep` matcher imports: the finding shape, the file-walk (`iter_tree_files`, which prunes nested git checkouts and the vendored, virtual-environment, cache and build-output trees), and the JSON envelope. Private to this package. |
 | `_bounded_run.py` | `run_bounded`, the one place the package starts a program (a validator for the gate, git for `run_git`), with a time limit that holds for every program it starts: a Windows job object, or a session of its own elsewhere, ended on a stop, with a bounded wait for the output after it. Standard library only. Private to this package. |
-| `_corpus.py` | The `--all-perwrite` file list and reader: lists the tracked files with `git ls-files` (with a time limit) and reads only the regular files inside the project, checking every level with `lstat` so no link, junction, named pipe or device is followed or opened, and naming the reason for every path it skips. `link-check` uses the same level check to keep a corpus run's link lookups inside the project. Private to this package. |
+| `_corpus.py` | The `--all-perwrite` file list and reader: lists the tracked files with `git ls-files` (with a time limit) and reads only the regular files inside the project, checking every level with `lstat` and reading through `_safe_open`, so no link, junction, named pipe or device is followed or opened, and naming the reason for every path it skips. `link-check` uses the same level check to keep a corpus run's link lookups inside the project. Private to this package. |
 | `__init__.py` | Package marker. |
 | `_project_paths.py` | The link-aware helpers every validator reads project files through: a walk entry, a fixed path or a folder listing is looked at without following a link, a link to a regular file inside the project counts for a fixed file, and every link or special file left out is noted for the report's `skipped_links`. Private to this package. |
+| `_safe_open.py` | The guarded open every project read goes through (`read_project_text`, `read_project_bytes`, `open_project_file`): the root, then each folder inside the one opened before it, then the file, none of them through a link (`openat` with `O_NOFOLLOW` on POSIX, `NtCreateFile` with `FILE_OPEN_REPARSE_POINT` on Windows), so a file or folder swapped for a link or a named pipe after its check is refused and noted under `skipped_links`, never followed or waited on. Keeps the folders it opened in a small cache while a skip log runs. Private to this package. |
 
 ## Matcher families
 
@@ -171,11 +172,12 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   `run_bounded` outside its two callers; an import of `ctypes`, `_winapi`,
   `multiprocessing` or `pty`; `exec`, `eval` and the import-by-name calls; and
   a string naming the git program. It holds only this folder's own `_git.py`,
-  `_bounded_run.py` and `_corpus.py`, by path, to rules of their own: in
+  `_bounded_run.py` and `_safe_open.py`, by path, to rules of their own: in
   `_git.py` it checks that `run_git` alone calls `run_bounded`,
-  `_bounded_run.py` must name no git and look no program up, and `_corpus.py`,
-  which opens files on Windows, may import `_winapi` and `ctypes` but call only
-  the few functions that open a file and read what it is. Code that reaches a starter some
+  `_bounded_run.py` must name no git and look no program up, and
+  `_safe_open.py`, which opens files on Windows, may import `ctypes` and
+  `msvcrt` but call only the few kernel32 and ntdll functions that open a
+  file and read what it is, and `msvcrt.open_osfhandle`. Code that reaches a starter some
   way the test does not know can still pass it: source text run through
   `runpy`, `timeit` or a profiler, an attribute fetched through `builtins`,
   `inspect` or `operator`, a `sys.modules` lookup by a computed name. So
@@ -222,11 +224,21 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   file; `finish_root_report` lists them under `skipped_links`. A run that
   inspected nothing while it left a link out does not pass, even when an
   empty scope is expected. The folders skipped as nested checkouts go under
-  `skipped_checkouts` instead, which never changes a verdict. The helpers look at each level and the caller
-  then opens the file by name, so a writer racing the gate can swap a checked
-  entry for a link or a named pipe before the open, or make a read wait until
-  the time limit; only the `--all-perwrite` corpus opens without following the
-  last level (`_corpus._open_binary`).
+  `skipped_checkouts` instead, which never changes a verdict. The helpers look
+  at each level; the read itself goes through `_safe_open`
+  (`read_project_text(root, path)`, with `root` passed to every helper that
+  reads, keyword-only), never `read_text` or `open` by name. It opens the
+  root, then each level inside the folder opened before it, without
+  following a link at any level, so a writer racing the gate that swaps a
+  checked file or folder for a link or a named pipe after the check gets a
+  refusal (`ProjectFileRefusedError`, noted under `skipped_links`), not a
+  read through the link or a wait on the pipe. A caller that counts a link as
+  missing catches `REFUSED_OR_GONE` and counts the swapped file as missing
+  too. `tests/conformity/test_reads_close_the_race.py` swaps a path right
+  after each kind of check answers, and the audit oracle below fails a
+  project read that skips the guarded open. A hard link still reads as an
+  ordinary file, and a file system that gives no inode or file ID cannot
+  show a swap to another regular file.
   `tests/conformity/test_validators_stay_in_project.py` runs every `--all`
   validator against a project made of links. Add each file a new validator
   reads to its `_project_files` (or, for a file read only after another one

@@ -96,13 +96,14 @@ Eintrag ein Link oder eine Sonderdatei ist; der Ordner selbst steht unter
 sein Ordner fehlt, etwa die Workflow-Validatoren, besteht nicht, wenn dieser
 Ordner ein Link ist: Die Dateien könnten dahinter liegen, daher scheitert der
 Lauf wie einer, der nichts geprüft hat. Ein harter Link ist eine reguläre Datei
-und wird wie eine gelesen. Die `--all`-Validatoren betrachten jede Ebene, wenn
-sie sie erreichen, und öffnen die Datei dann über ihren Namen. Ein zweiter
-Benutzer, der während des Gate-Laufs in das Projekt schreiben kann, kann daher
-eine geprüfte Datei oder einen geprüften Ordner vor dem Öffnen gegen einen Link
-oder eine Named Pipe tauschen oder einen Lesevorgang bis zum Zeitlimit warten
-lassen; davor schützt das Gate nicht. `--all-perwrite` öffnet die letzte Ebene,
-ohne ihr zu folgen, seine Ordner können aber weiterhin getauscht werden. In
+und wird wie eine gelesen. Die `--all`-Validatoren und `--all-perwrite`
+betrachten jede Ebene, wenn sie sie erreichen, und öffnen die Datei dann Ebene
+für Ebene vom Stammverzeichnis aus, jeden Ordner innerhalb des zuvor geöffneten,
+nie über einen Link. Tauscht also jemand, der in das Projekt schreiben kann,
+während des Gate-Laufs eine geprüfte Datei oder einen Ordner darüber gegen einen
+Link oder eine Named Pipe, liest das Gate nicht über den Link und wartet nicht
+auf die Pipe: Die Datei gilt als fehlend, und der getauschte Eintrag wird unter
+`skipped_links` aufgeführt. In
 `--all` und `--all-perwrite` öffnet das Gate selbst nur reguläre Dateien
 innerhalb des Stammverzeichnisses, prüft jeden Ordner auf dem Weg mit `lstat`,
 auch jeden Pfad, den git auflistet, und liest nie innerhalb eines

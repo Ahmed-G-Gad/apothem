@@ -495,10 +495,20 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   error), where before it read as empty. Every folder a walk or the
   stray-plans check skips as a nested checkout is now listed under a new
   `skipped_checkouts` key, whatever its `.git` entry names, since one
-  `gitdir:` line can hide any folder; the list never changes the verdict. The `--all` validators still check each level
-  and then open a file by name, so someone writing to the project while the
-  gate runs can swap a checked entry for a link or a named pipe, or make a
-  read wait until the time limit; the usage page now says so.
+  `gitdir:` line can hide any folder; the list never changes the verdict.
+- **A file swapped for a link or a named pipe while the gate checks it is not
+  read through.** The `--all` validators checked each level of a path and
+  then opened the file by name, so someone writing to the project while the
+  gate ran could swap a checked file, or a folder above it, for a link out of
+  the project or for a named pipe: the read took the outside file's content
+  or waited until the time limit. `--all-perwrite` already refused a link in
+  the file's own place, but opened a file through a folder above it swapped
+  for a link. Every project read now opens the file one level at a time
+  from the root, each folder inside the one opened before it, and no level
+  through a link: a swapped file counts as missing, its entry is listed
+  under `skipped_links`, and the read never waits on a pipe. The `.git` file
+  a nested checkout holds is read the same way. A hard link still reads as
+  an ordinary file.
 
 ## [1.6.0] - 2026-11-26
 

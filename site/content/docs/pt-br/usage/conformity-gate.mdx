@@ -92,13 +92,14 @@ especial; a própria pasta é listada em `skipped_checkouts`, descrito abaixo.
 Um validador que passa quando sua pasta está ausente, como os
 validadores de workflows, não passa quando essa pasta é um link: os arquivos
 podem estar atrás dele, então a execução falha como uma que não verificou nada.
-Um link físico é um arquivo comum e é lido como tal. Os validadores do `--all`
-olham cada nível quando o alcançam e depois abrem o arquivo pelo nome, então um
-segundo usuário que possa escrever no projeto enquanto o gate roda pode trocar
-um arquivo ou uma pasta já verificados por um link ou um pipe nomeado antes da
-abertura, ou fazer uma leitura esperar até o limite de tempo; o gate não protege
-contra isso. O `--all-perwrite` abre o último nível sem segui-lo, mas suas
-pastas ainda podem ser trocadas. No `--all` e no `--all-perwrite`, o próprio
+Um link físico é um arquivo comum e é lido como tal. Os validadores do `--all` e
+o `--all-perwrite` olham cada nível quando o alcançam e depois abrem o arquivo
+nível por nível a partir da raiz, cada pasta dentro da que foi aberta antes,
+nunca através de um link. Então, quando alguém que pode escrever no projeto
+troca um arquivo já verificado, ou uma pasta acima dele, por um link ou um pipe
+nomeado enquanto o gate roda, o gate não lê através do link nem espera no pipe:
+o arquivo conta como ausente e a entrada trocada é listada em `skipped_links`.
+No `--all` e no `--all-perwrite`, o próprio
 gate abre apenas arquivos comuns dentro da raiz, verifica cada pasta no caminho
 com `lstat`, incluindo cada caminho que o git lista, e nunca lê dentro de uma
 entrada `.git`. Antes de executar o git, os três validadores do `--all` que

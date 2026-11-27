@@ -96,13 +96,14 @@ est un lien ou un fichier spécial ; le dossier lui-même est listé sous
 manque, comme les validateurs de workflows, ne réussit pas quand ce dossier est
 un lien : les fichiers peuvent se trouver derrière, donc l'exécution échoue
 comme une exécution qui n'a rien vérifié. Un lien physique est un fichier
-ordinaire et se lit comme tel. Les validateurs `--all` examinent chaque niveau
-quand ils l'atteignent, puis ouvrent le fichier par son nom : un second
-utilisateur qui peut écrire dans le projet pendant que le gate tourne peut donc
-remplacer un fichier ou un dossier déjà vérifié par un lien ou un tube nommé
-avant son ouverture, ou faire attendre une lecture jusqu'à la limite de temps ;
-le gate ne protège pas contre cela. `--all-perwrite` ouvre le dernier niveau
-sans le suivre, mais ses dossiers peuvent toujours être remplacés. Dans `--all`
+ordinaire et se lit comme tel. Les validateurs `--all` et `--all-perwrite`
+examinent chaque niveau quand ils l'atteignent, puis ouvrent le fichier niveau
+par niveau depuis la racine, chaque dossier à l'intérieur de celui ouvert avant
+lui, jamais à travers un lien. Ainsi, quand quelqu'un qui peut écrire dans le
+projet remplace un fichier déjà vérifié, ou un dossier au-dessus de lui, par un
+lien ou un tube nommé pendant que le gate tourne, le gate ne lit pas à travers
+le lien et n'attend pas sur le tube : le fichier compte comme absent et l'entrée
+remplacée figure dans `skipped_links`. Dans `--all`
 et `--all-perwrite`, le gate lui-même n'ouvre que des fichiers ordinaires dans
 la racine, vérifie chaque dossier du chemin avec `lstat`, y compris chaque
 chemin que git liste, et ne lit jamais à l'intérieur d'une entrée `.git`. Avant
