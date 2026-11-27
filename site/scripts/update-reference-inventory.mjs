@@ -27,6 +27,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { cutAtWord } from './cut-at-word.mjs';
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const SITE_ROOT = join(SCRIPT_DIR, '..');
@@ -145,19 +146,6 @@ function excerpt(body) {
 		lines.push(trimmed);
 	}
 	return cutAtWord(lines.join(' '), 180);
-}
-
-// Shorten text to `limit` characters on a word boundary and mark the cut. A
-// cut inside a code span would leave one backtick with no partner, which the
-// page shows as a literal character, so an unclosed span at the end is
-// dropped.
-function cutAtWord(text, limit) {
-	if (text.length <= limit) return text;
-	let cut = text.slice(0, limit);
-	const space = cut.lastIndexOf(' ');
-	if (space > 0) cut = cut.slice(0, space);
-	if ((cut.match(/`/g) || []).length % 2 === 1) cut = cut.slice(0, cut.lastIndexOf('`'));
-	return `${cut.trimEnd()} …`;
 }
 
 function displayName(path, frontmatter) {
