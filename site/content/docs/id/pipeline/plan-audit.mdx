@@ -2,12 +2,12 @@
 title: "/plan-audit"
 description: "/plan-audit — Penjaga lingkar-tertutup pipeline /plan — membungkus spec → generate → review dan secara aktif memperbaiki temuan sampai suite menjadi keseluruhan yang ditinjau tanpa temuan."
 machineTranslated: true
-sourceHash: "ad784374d4fb602c"
+sourceHash: "1f5196367610e634"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**Peran:** Penjaga
-**Posisi pipeline:** membungkus / ortogonal (pra-eksekusi)
+- **Peran:** Penjaga
+- **Posisi pipeline:** membungkus / ortogonal (pra-eksekusi)
 
 Penjaga lingkar-tertutup pipeline `/plan`. Sementara `/plan-review` melaporkan dan menyempurnakan suite yang dihasilkan, `/plan-audit` membungkus siklus hulu (`/plan-spec → /plan-generate → /plan-review`) dan menggiring suite menuju keseluruhan yang ditinjau tanpa temuan — menjalankan hanya tahap hulu yang hilang, mengaudit hasilnya, memperbaiki di tempat temuan yang dapat diselesaikan secara mekanis, memunculkan percabangan penilaian melalui kanal inquiry terstruktur, dan mengulang sampai suite bersih atau penarikan-mundur berbatas terpicu. Ia tidak pernah menjalankan pekerjaan implementasi fase; ia meninggalkan suite siap untuk `/plan-execute`.
 

@@ -20,9 +20,13 @@ And a validator that checks a name, not content, still sees a link by that
 name (:func:`scan_entries`).
 
 Skip log. While a validator runs from the command line, every link and special
-file these helpers leave out is noted, so the report can list it
-(:func:`start_skip_log`, :func:`take_skipped_paths`): a link never hides a
-file or a tree without a trace.
+file these helpers leave out is noted, and so is every folder they could not
+list, so the report can list it (:func:`start_skip_log`,
+:func:`take_skipped_paths`): a link or an unreadable folder never hides a
+file or a tree without a trace. A second log holds every folder a walk left
+out as a nested checkout (:func:`note_checkout`,
+:func:`take_skipped_checkouts`); it is for information and never changes a
+verdict.
 """
 
 from __future__ import annotations
@@ -105,6 +109,8 @@ _skipped: dict[str, Path] = {}
 # Links the run read through (a fixed file that names a project file):
 # a walk that passes one by is not leaving anything out.
 _used: set[str] = set()
+# Folders a walk left out as a nested checkout, keyed like ``_skipped``.
+_checkouts: dict[str, Path] = {}
 
 
 def start_skip_log(root: Path) -> None:
@@ -118,12 +124,20 @@ def start_skip_log(root: Path) -> None:
     _skip_root = root
     _skipped.clear()
     _used.clear()
+    _checkouts.clear()
 
 
 def note_skipped(path: Path) -> None:
-    """Note that *path*, a link or a special file, was left out."""
+    """Note that *path* was left out: a link, a special file, or a folder
+    that could not be listed."""
     if _skip_root is not None and os.fspath(path) not in _used:
         _skipped.setdefault(os.fspath(path), path)
+
+
+def note_checkout(folder: Path) -> None:
+    """Note that a walk left out *folder* as a nested checkout."""
+    if _skip_root is not None:
+        _checkouts.setdefault(os.fspath(folder), folder)
 
 
 def _note_used(path: Path) -> None:
@@ -145,13 +159,8 @@ def note_root_spelling(typed: Path, resolved: Path) -> None:
         _root_spellings[typed] = resolved
 
 
-def take_skipped_paths() -> list[str]:
-    """Return the noted paths, relative to the root and sorted, and stop the log."""
-    global _skip_root
-    root, noted = _skip_root, list(_skipped.values())
-    _skip_root = None
-    _skipped.clear()
-    _used.clear()
+def _shown(root: Path | None, noted: list[Path]) -> list[str]:
+    """Return *noted* relative to *root* (or in full outside it), sorted once."""
     if root is None:
         return []
     shown: list[str] = []
@@ -161,6 +170,28 @@ def take_skipped_paths() -> list[str]:
         except ValueError:
             shown.append(path.as_posix())
     return sorted(set(shown))
+
+
+def take_skipped_checkouts() -> list[str]:
+    """Return the folders left out as nested checkouts, and clear that log.
+
+    The paths are relative to the root and sorted. The skip log itself keeps
+    running: call this before :func:`take_skipped_paths`, which stops it.
+    """
+    noted = list(_checkouts.values())
+    _checkouts.clear()
+    return _shown(_skip_root, noted)
+
+
+def take_skipped_paths() -> list[str]:
+    """Return the noted paths, relative to the root and sorted, and stop the log."""
+    global _skip_root
+    root, noted = _skip_root, list(_skipped.values())
+    _skip_root = None
+    _skipped.clear()
+    _used.clear()
+    _checkouts.clear()
+    return _shown(root, noted)
 
 
 # ---------------------------------------------------------------------------
@@ -218,18 +249,65 @@ def path_kind(path: Path) -> EntryKind | None:
     return OTHER_ENTRY
 
 
+# The Windows errors that say a listed folder is not there: the file (2) or
+# the path (3) is not found, or the name is not a folder (267).
+_NOT_THERE_WINERRORS: Final[frozenset[int]] = frozenset({2, 3, 267})
+# Windows without long paths turned on fails a folder path of this length or
+# more with "path not found" (3), not "name too long" (206): a folder name
+# may be at most 260 characters less the 12 a file name inside it needs.
+_LONG_FOLDER_PATH: Final[int] = 260 - 12
+
+
+def _too_long_for_win32(folder: Path) -> bool:
+    r"""Return True when *folder*, on Windows, may be past the old path limit.
+
+    A path with the ``\\?\`` prefix has no such limit. Elsewhere than
+    Windows nothing is too long here.
+    """
+    if os.name != "nt":
+        return False
+    full = os.fspath(folder.absolute())
+    return not full.startswith("\\\\?\\") and len(full) >= _LONG_FOLDER_PATH
+
+
+def _listing_absent(exc: OSError, folder: Path) -> bool:
+    """Return True when *exc*, from listing *folder*, means there is no folder.
+
+    A folder that is gone, or a name that is not a folder, hides nothing. On
+    Windows a path too long (206) and other failures also raise
+    :class:`FileNotFoundError`; only the codes in
+    :data:`_NOT_THERE_WINERRORS` mean nothing is there to list. A Windows
+    host without long paths turned on reports a folder past the old path
+    limit as "path not found" (3) even when its parent just listed it, so a
+    3 on such a folder (:func:`_too_long_for_win32`) is not read as absence.
+    """
+    if isinstance(exc, NotADirectoryError):
+        return True
+    if not isinstance(exc, FileNotFoundError):
+        return False
+    code = getattr(exc, "winerror", None)
+    if code == 3 and _too_long_for_win32(folder):
+        return False
+    return code is None or code in _NOT_THERE_WINERRORS
+
+
 def scan_entries(folder: Path) -> list[tuple[Path, EntryKind]]:
     """Return every entry of *folder* with what it is, links included.
 
     Pre-conditions: the caller already trusts *folder* (see
-    :func:`list_real_entries`). Post-conditions: no link is followed and
-    nothing is noted; a folder that cannot be listed gives an empty list. For
-    a validator that checks names, such as a stray plans folder that is a link.
+    :func:`list_real_entries`). Post-conditions: no link is followed and no
+    entry is noted; a folder that cannot be listed gives an empty list. When
+    it is there but cannot be listed (no access, a path too long, an I/O
+    error), *folder* itself is noted in the skip log, so the files it may
+    hold are not left out without a trace (:func:`_listing_absent`). For a
+    validator that checks names, such as a stray plans folder that is a link.
     """
     try:
         with os.scandir(folder) as listing:
             entries = list(listing)
-    except OSError:
+    except OSError as exc:
+        if not _listing_absent(exc, folder):
+            note_skipped(folder)
         return []
     found: list[tuple[Path, EntryKind]] = []
     for entry in entries:
@@ -267,7 +345,7 @@ def list_real_entries(
     None, is a caller that looks at every file name, so each one is noted;
     a caller that wants folders only passes :func:`no_files`. The order is
     the host's listing order; callers sort. A folder that cannot be listed
-    gives an empty list.
+    gives an empty list, and is noted when it is there (:func:`scan_entries`).
     """
     kept: list[Path] = []
     for path, kind in scan_entries(folder):

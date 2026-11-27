@@ -427,6 +427,76 @@ def test_a_held_install_lock_fails_the_uninstall_cleanly(
     assert any("install lock" in error.message for error in run.errors)
 
 
+def test_an_error_while_closing_the_earlier_spelling_reports_the_removals(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The shared pass has removed the files when the install recorded under
+    # the other spelling is closed. An error there is a stopped uninstall
+    # that removed files (exit 2), and that install stays recorded. The folder
+    # then holds no evidence of an install, so a later run of the command
+    # reports the harness as not installed and leaves that install recorded.
+    from apothem.harnesses.opencode import uninstall as opencode_uninstall
+
+    adapter = OpenCodeAdapter()
+    spelling = home / ".config" / "opencode"
+    spelling.mkdir(parents=True)
+    # The operator's own $schema, written before the install, is theirs.
+    operator = {"$schema": "https://opencode.ai/config.json", "theme": "dark"}
+    (spelling / "opencode.json").write_text(json.dumps(operator), encoding="utf-8")
+    adapter.install({})
+    outside = _move_config_out_of_the_home(home, tmp_path)
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(outside))
+    adapter.install({})
+
+    def full(*args: object, **kwargs: object) -> object:
+        raise OSError("ledger full")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(opencode_uninstall, "_finish_same_folder_install", full)
+        result = CliRunner().invoke(
+            main, ["uninstall", "--harness", "opencode", "--yes", "--format", "json"]
+        )
+
+    envelope = json.loads(result.output)
+    assert result.exit_code == 2, result.output
+    assert envelope["status"] == "partial"
+    message = envelope["results"][0]["message"]
+    assert message.startswith("MaterializationError: uninstall stopped: ledger full")
+    assert install_ledger.active_install_records("opencode", root=spelling)
+    assert not adapter.is_installed()
+    again = CliRunner().invoke(
+        main, ["uninstall", "--harness", "opencode", "--yes", "--format", "json"]
+    )
+    assert again.exit_code == 0, again.output
+    rows = json.loads(again.output)["results"]
+    assert [row["outcome"] for row in rows] == ["skipped"], again.output
+    assert install_ledger.active_install_records("opencode", root=spelling)
+    config = json.loads((outside / "opencode" / "opencode.json").read_text("utf-8"))
+    assert config["$schema"] == operator["$schema"]
+    # The documented recovery: an install at the folder, then an uninstall,
+    # closes that install. The default profile is behind the link, so the
+    # install takes a profile made outside it.
+    refused = CliRunner().invoke(main, ["install", "--harness", "opencode"])
+    assert refused.exit_code != 0, refused.output
+    assert "crosses a link" in " ".join(refused.output.split()), refused.output
+    profile = tmp_path / "profile.yaml"
+    made = CliRunner().invoke(main, ["profile", "init", "--profile", str(profile)])
+    assert made.exit_code == 0, made.output
+    installed = CliRunner().invoke(
+        main, ["install", "--harness", "opencode", "--profile", str(profile)]
+    )
+    assert installed.exit_code == 0, installed.output
+    there = outside / "opencode"
+    assert install_ledger.active_install_records("opencode", root=spelling)
+    assert install_ledger.active_install_records("opencode", root=there)
+    closed = CliRunner().invoke(
+        main, ["uninstall", "--harness", "opencode", "--yes", "--format", "json"]
+    )
+    assert closed.exit_code == 0, closed.output
+    assert install_ledger.active_install_records("opencode", root=spelling) == []
+    assert install_ledger.active_install_records("opencode", root=there) == []
+
+
 # -- the relocated entries of a record that owned nothing ---------------------
 
 
@@ -496,6 +566,26 @@ def test_a_link_loop_on_the_way_up_is_refused(
     verify = runner.invoke(main, ["verify", "--harness", "opencode"])
     assert verify.exit_code in (0, 1), verify.output
     assert "Traceback" not in verify.output
+
+
+def test_opencode_reads_as_not_installed_through_a_config_link_loop(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Python 3.10-3.12 raise RuntimeError resolving a link loop; reading
+    # whether OpenCode is installed does not raise on it.
+    _link(home / ".config", home / "dotfiles" / "config")
+    real_resolve = Path.resolve
+    config = str(home / ".config")
+
+    def resolve(self: Path, strict: bool = False) -> Path:
+        if str(self).startswith(config):
+            raise RuntimeError(f"Symlink loop from {self!r}")
+        return real_resolve(self, strict=strict)
+
+    monkeypatch.setattr(Path, "resolve", resolve)
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(home / "dotfiles" / "config"))
+
+    assert OpenCodeAdapter().is_installed() is False
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="a real link loop needs POSIX")

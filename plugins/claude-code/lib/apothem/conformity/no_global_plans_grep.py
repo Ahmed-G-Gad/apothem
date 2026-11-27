@@ -68,10 +68,12 @@ from apothem.conformity._grep_base import (
     GitCheckError,
     GitTimeoutError,
     finish_root_report,
-    has_git_entry,
+    git_entry_unreadable,
+    is_git_entry,
     linked_git_label,
     linked_git_message,
     nearest_linked_git_entry,
+    nested_checkout,
     parse_root_args,
 )
 from apothem.conformity._project_paths import (
@@ -168,8 +170,8 @@ def _git_ls_files(root: Path) -> list[str]:
     """Return the git-tracked file list under root.
 
     Raises ``RuntimeError`` when ``git`` is unavailable, root is not a git
-    repository, or the ``.git`` entry git would use (in root or a folder
-    above it) is a link (git is then not run), all errors the caller
+    repository, or a ``.git`` entry in root or a folder above it that git
+    searches is a link (git is then not run), all errors the caller
     surfaces, and
     :class:`~apothem.conformity._grep_base.GitTimeoutError` when git runs past
     :data:`GIT_LS_FILES_TIMEOUT_SECONDS` (the repository's own configuration
@@ -210,10 +212,17 @@ def _git_ls_files(root: Path) -> list[str]:
 
 # Finding text for a .git entry that is a link or a junction.
 _LINKED_GIT_DETAIL: Final[str] = (
-    "the .git entry is a link, so git would read another repository's "
-    "index; the tracked-plans check did not run, and the project is "
-    "treated as having no checkout — replace the link with the project's "
-    "own .git folder or file"
+    "a .git entry on git's search path is a link, so the gate does not run "
+    "git; the tracked-plans check did not run, and the project is treated "
+    "as having no checkout — replace the link with a real .git folder or "
+    "file"
+)
+# Finding text for a .git entry on git's search path that os.lstat could
+# not look at (a path too long, a share that cannot be reached, no access).
+_UNREADABLE_GIT_DETAIL: Final[str] = (
+    "a .git entry on git's search path could not be looked at, so the gate "
+    "does not run git; the tracked-plans check did not run, and the project "
+    "is treated as having no checkout"
 )
 
 # Finding text for a plans location that is a link or a junction.
@@ -252,9 +261,9 @@ def _sweep_stray_plans_dirs(
     The walk prunes the vendored / generated / VCS / cache trees in
     ``_SWEEP_SKIP_DIRS`` so a plans directory inside one of those (upstream or
     machine state, never an apothem plan suite) is not flagged, and it does not
-    enter a nested git checkout (a directory holding a ``.git`` file or
-    directory below the root: a worktree, a submodule, a nested clone), which
-    owns its own plans tree. It descends into
+    enter a nested git checkout (a directory below the root whose ``.git``
+    file or directory holds or names a repository: a worktree, a submodule, a
+    nested clone), which owns its own plans tree. It descends into
     ``.apothem`` directories (they hold operator memory/learning/contexts data
     alongside plans) but never descends into a plans tree itself or into the
     ``.apothem`` data children — only the ``plans`` child of an ``.apothem``
@@ -312,9 +321,18 @@ def _sweep_stray_plans_dirs(
         current = stack.pop()
         # Every entry is classified without following it; a link is never
         # entered, but one at a plans location is reported by name.
-        for entry, kind in scan_entries(current):
+        entries = scan_entries(current)
+        # A nested git checkout (a worktree, a submodule, a nested clone) is
+        # another repository with its own plans tree, not a stray suite of
+        # this project. A ``.git`` that is a link or a special file marks one
+        # too, but the folder is then left out because of it, so the report
+        # names that entry as the folder lists it (:func:`nested_checkout`).
+        if current != resolved_root and nested_checkout(current, entries):
+            continue
+        listed = frozenset(entry.name for entry, _ in entries)
+        for entry, kind in entries:
             name = entry.name
-            if name in _SWEEP_SKIP_DIRS:
+            if name in _SWEEP_SKIP_DIRS or is_git_entry(entry, listed):
                 continue
             rel = entry.relative_to(resolved_root).as_posix()
             if kind == LINK_ENTRY:
@@ -350,11 +368,6 @@ def _sweep_stray_plans_dirs(
                         f"{rel}/plans",
                         link=child_kind == LINK_ENTRY,
                     )
-                continue
-            if has_git_entry(entry):
-                # A nested git checkout (a worktree, a submodule, a nested
-                # clone) is another repository with its own plans tree, not a
-                # stray suite of this project.
                 continue
             stack.append(entry)
     return findings
@@ -401,13 +414,17 @@ def check(root: Path) -> GrepResult:
     findings: list[Finding] = []
     linked = nearest_linked_git_entry(root)
     if linked is not None:
-        # git would read another repository's index; the sweep still runs.
+        # A .git entry on git's search path is a link, or could not be
+        # looked at, so git is not run; the sweep still runs.
         # The finding names the entry as the skip log does: ``.git`` at the
         # root, its full path above it.
         tracked: list[str] = []
-        findings.append(
-            Finding(path=linked_git_label(root, linked), detail=_LINKED_GIT_DETAIL)
+        detail = (
+            _UNREADABLE_GIT_DETAIL
+            if git_entry_unreadable(linked)
+            else _LINKED_GIT_DETAIL
         )
+        findings.append(Finding(path=linked_git_label(root, linked), detail=detail))
     else:
         tracked = _git_ls_files(root)
     for path in tracked:

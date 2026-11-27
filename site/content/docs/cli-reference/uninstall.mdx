@@ -326,62 +326,116 @@ folder that holds the same files, then follow the steps for such an install
 above: copy any file you edited, fix any file a warning names for an Apothem
 marker, run `apothem update`, then uninstall again.
 
-When a removal step reports an error (an installed file whose path leads out
-of your home folder, say), the command prints `✗ <harness> uninstall did not
-finish: <reason>` instead of `Uninstalled`, once per reason with the number of
-paths it applies to. When a link in a folder of your home leads those paths
-out of it (`target escapes the allowed materialization root`), the line also
-names the link and the folder it leads to, and says to replace the link with
-a real folder; paths behind two links give two lines. The link still gets its
-warning that it was left in place. The install stays recorded, so running the
-command again removes what the first run left. The retention notes are not
-printed, because the folders they describe were not released. In JSON output
-the harness gets a `results` row with `"outcome": "error"` and `"operation":
-"uninstall"`, followed by one row for each failed step. When the reasons name
-one link, that row carries it in `detail.symlink` and the folder it leads to
-in `detail.leads_to`. A step's row lists the files it kept as `files` and the
-files Apothem wrote that it could not remove as `stuck`. The envelope's
-`status` is `"partial"` and the exit code `2` when the uninstall removed
-files before the step failed, or when another harness was removed; otherwise
-`status` is `"error"` and the exit code `1`. The top-level `error` stays
-`null`: the
-reasons are in `results`. An uninstall that stops with an exception (a backup
-that cannot be written, say) prints `✗ <harness> uninstall stopped after
-removing files:` (or `failed:` when it removed nothing) with the message, and
-gets a `results` row with its message, followed by one row for each step that
-failed before it. It exits `2` with `status` `"partial"` when it removed files
-first, otherwise `1`. A refused uninstall (a link that leads the folder out of
-your home directory, say) removes nothing and exits `1`.
+When a removal step reports an error (an installed file whose path leads
+out of your home folder, say), the command prints `✗ <harness> uninstall
+did not finish: <reason>` instead of `Uninstalled`, once per reason with the
+number of paths it applies to. When a link in a folder of your home leads
+those paths out of it (`target escapes the allowed materialization root`),
+the line also names the link and the folder it leads to, and says to replace
+the link with a real folder; paths behind two links give two lines. The link
+still gets its warning that it was left in place. The install stays recorded,
+so running the command again removes what the first run left. The retention
+notes are not printed, because the folders they describe were not released.
+In JSON output the harness gets a `results` row with `"outcome": "error"` and
+`"operation": "uninstall"`, followed by one row for each failed step. When the
+reasons name one link, that row carries it in `detail.symlink` and the folder
+it leads to in `detail.leads_to`. A step's row lists the files it kept as
+`files` and the files Apothem wrote that it could not remove as `stuck`. The
+envelope's `status` is `"partial"` and the exit code `2` when the uninstall
+removed files before the step failed, or when another harness was removed;
+otherwise `status` is `"error"` and the exit code `1`. The top-level `error`
+stays `null`: the reasons are in `results`. An uninstall that stops with an
+exception (a backup that cannot be written, say) prints `✗ <harness> uninstall
+stopped after removing files:` when it had removed files, or taken Apothem's
+entries or block out of a file such as `openclaw.json`, before it stopped (or
+`failed:` when it had changed nothing), with the message, and gets a `results`
+row with its message, followed by one row for each step that failed before it.
+When a step had failed before it stopped, or it had found what leaves an
+uninstall unfinished (Apothem's own files behind a link, files of an install
+an earlier release recorded that differ from what this release writes, the
+files of an install with no record, a file that holds two different blocks
+between Apothem's markers, or a file with marker lines Apothem cannot tell from
+your text), a `✗ <harness> uninstall did not finish:` line follows for each
+reason, as above, and the same text is added to the end of the row's
+message. For an install with no record, the `Note:` line follows them, with
+its check of the `--project` folder for a project-scope harness, and the row's
+`detail` has `"kept_reason": "no-record"`, as described in
+[What an uninstall removes](#what-an-uninstall-removes). When those reasons
+and the steps that failed before it name one link, the row carries it in
+`detail.symlink` and the folder it leads to in `detail.leads_to`. It exits `2`
+with `status` `"partial"` when it had removed or changed files first, found
+Apothem's own files behind a link, kept files of an earlier release's install
+or of an install with no record, or left a file that holds two different
+blocks between Apothem's markers or marker lines Apothem cannot tell from your
+text, or when another harness was removed, otherwise `1`. An unexpected error
+(an exception, such as a backup that cannot be written) inside the first step
+of an Open-Claw, Antigravity or Kimi Code uninstall reports nothing that step
+did (see [An uninstall that did not finish](#an-uninstall-that-did-not-finish)):
+the uninstall prints `failed:` and exits `1` (`2` when another harness was
+removed), whatever the step had changed. When Open-Claw's rules-file step
+reports an error instead (a rules file it cannot rewrite, or an
+`openclaw.json` with comments), that is a failed step, as above: the uninstall
+prints `did not finish:`, records itself unfinished with that step's backups,
+and exits `2` when that step had changed a file or found Apothem's rules file
+behind a link, or when another harness was removed, otherwise `1`. `Ctrl+C`
+prints `Aborted!` and exits `1`, whatever the uninstall had removed by then. A
+refused uninstall (a link that leads the folder out of your home directory,
+say) removes nothing and exits `1`; its row names that link in
+`detail.symlink` and the folder it leads to in `detail.leads_to`, and a row
+for the refused step follows it.
 
 ### An uninstall that did not finish
 
 When an uninstall does not finish, it appends an `uninstall-incomplete` record
 to the install ledger instead of an `uninstall` record. That happens when a
-step failed, when it stopped with an exception, when Apothem's own files stay
-behind a link, when a file holds two different blocks between Apothem's
-markers or marker lines Apothem cannot tell from your text (see below), when
-files of an install an earlier release recorded differ from what this release
-writes, and when the install has no record. The
-last four exit `2` with `status` `"partial"` even when nothing was removed,
-including a second run before you fix what they name. The last two finish only after
-`apothem update` (see
-[What an uninstall removes](#what-an-uninstall-removes)). The
-install stays recorded, so `apothem status`, `verify` and
+step failed, when Apothem's own files stay behind a link, when a file holds
+two different blocks between Apothem's markers or marker lines Apothem cannot
+tell from your text (see below), when files of an install an earlier release
+recorded differ from what this release writes, and when the install has no
+record. The last four exit `2` with `status` `"partial"` even when nothing was
+removed, including a second run before you fix what they name. The last two
+finish only after `apothem update` (see
+[What an uninstall removes](#what-an-uninstall-removes)). An uninstall that an
+exception or `Ctrl+C` stops appends, by the step it stopped in:
+
+- in the first step of Open-Claw, which takes Apothem's block out of each
+  workspace's rules file, or of Antigravity and Kimi Code, which removes what
+  an older layout left: nothing, even for the files that step had changed by
+  then, whose backups stay under `~/.apothem/backups/` with no record to keep
+  them from `backups prune`;
+- in the step that takes Apothem's entries out of the settings file of a tool
+  configured through one settings file, such as Open-Claw, OpenCode or Qwen
+  Code: the record only when Open-Claw's first step had taken Apothem's block
+  out of a rules file or backed one up, and nothing otherwise, also when that
+  step found Apothem's rules file behind a link;
+- in the step that removes what the install record lists, the last step of
+  every uninstall but OpenCode's: the record, also when it changed nothing;
+- in the step OpenCode's uninstall takes after it, which closes an install
+  recorded under another spelling of its folder (when `XDG_CONFIG_HOME`
+  names the folder a `~/.config` link leads to, say): nothing more, so that
+  install stays recorded. A later run does not close it yet: with Apothem's
+  files at the folder gone, OpenCode reads as not installed there, so
+  `uninstall` skips it, and `status`, `verify` and `rollback` do not see that
+  install either. To close it, install OpenCode at the folder again, then
+  uninstall it: `apothem install --harness opencode --profile PATH` with a
+  profile outside the linked folder (`apothem profile init --profile PATH`
+  makes one), then `apothem uninstall --harness opencode`.
+
+When nothing is appended, the ledger stays as it was. The install stays
+recorded either way. Except in that last case, `apothem status`, `verify` and
 `rollback` still see it, and the harness reads as installed while something
 the install wrote is still there as it wrote it (see below), so running
 `uninstall` again finishes the job. An install with no record has none to
 keep: only its files on disk make the harness read as installed, and
-`rollback` has nothing to roll back.
-An `install`, `update`, `rollback` or finished `uninstall` of that
-harness at that location replaces the state, and so does removing the
-remaining files by hand: with none of Apothem's files left as it wrote them
-and nothing left in its `.apothem` folder, the harness reads as not
-installed, whatever else is in the folder. The first
-command that checks whether the harness is installed (`status`, `verify`,
-`uninstall`) then appends an `uninstall` record that closes the install. After
-an uninstall that finished, though, no record lists the files an install
-wrote, so there only an install, an update or an uninstall that finishes
-replaces the state.
+`rollback` has nothing to roll back. An `install`, `update`, `rollback` or
+finished `uninstall` of that harness at that location replaces the state, and
+so does removing the remaining files by hand: with none of Apothem's files
+left as it wrote them and nothing left in its `.apothem` folder, the harness
+reads as not installed, whatever else is in the folder. The first command that
+checks whether the harness is installed (`status`, `verify`, `uninstall`) then
+appends an `uninstall` record that closes the install. After an uninstall that
+finished, though, no record lists the files an install wrote, so there only an
+install, an update or an uninstall that finishes replaces the state.
 `backups prune` keeps the record, and the backups it references, while the
 install it belongs to is kept. After an uninstall that finished, it keeps the
 record together with that uninstall's record, so running the uninstall again
@@ -650,8 +704,8 @@ apothem uninstall --harness cursor --project A --yes     # removes it: no instal
 | Code | Meaning |
 |---|---|
 | 0 | Adapter uninstalled, or was not installed |
-| 1 | Harness not found, confirmation declined or unavailable (non-interactive or JSON mode without `--yes`), or nothing was removed because each installed harness failed before removing anything |
-| 2 | Partial removal — an uninstall failed or stopped after removing files, at least one harness was removed and another failed, an uninstall left Apothem's own files in place because a link leads to them, a file holds two different blocks between Apothem's markers or marker lines Apothem cannot tell from your text, files of an install an earlier release recorded differ from what this release writes, or an install has no record to show which files Apothem wrote |
+| 1 | Harness not found, confirmation declined or unavailable (non-interactive or JSON mode without `--yes`), nothing was removed because each installed harness failed before removing or changing anything, named no link that keeps Apothem's own files in place, kept no files of an earlier release's install or of an install with no record and left no file that holds two different blocks between Apothem's markers or marker lines Apothem cannot tell from your text (an unexpected error, an exception, inside the first step of an Open-Claw, Antigravity or Kimi Code uninstall counts as such a failure, whatever that step had changed), or the command was interrupted (`Ctrl+C`, which prints `Aborted!`), whatever it had removed by then |
+| 2 | Partial removal — an uninstall failed or stopped after removing files or taking Apothem's entries out of one (except an unexpected error inside such a first step, see `1`), at least one harness was removed and another failed, an uninstall left Apothem's own files in place because a link leads to them, a file holds two different blocks between Apothem's markers or marker lines Apothem cannot tell from your text, files of an install an earlier release recorded differ from what this release writes, or an install has no record to show which files Apothem wrote |
 | 64 | Usage error: an unknown option or command, or a missing or invalid option value. Under `--json` the error is a JSON envelope with code `cli.usage`. |
 
 ## See also

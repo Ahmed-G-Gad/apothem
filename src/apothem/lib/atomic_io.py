@@ -34,6 +34,8 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import BinaryIO
 
+from apothem.lib import home_write_guard
+
 # Default ceiling for advisory-lock acquisition. A hung holder must not wedge
 # every future acquirer forever; acquisition raises TimeoutError past this.
 DEFAULT_LOCK_TIMEOUT = 30.0
@@ -63,7 +65,12 @@ def write_bytes_atomically(path: Path, data: bytes) -> None:
     file before the replace, so an operator-chosen mode (e.g. a 0o644 shared
     read) survives the rewrite. The copy is POSIX-effective; on Windows only
     the read-only bit is representable, which is harmless.
+
+    While a pytest test runs, a *path* in a protected folder of the account's
+    real home is refused before anything is written (see
+    :mod:`apothem.lib.home_write_guard`).
     """
+    home_write_guard.refuse_real_home_write(path, operation="write")
     path.parent.mkdir(parents=True, exist_ok=True)
     handle, tmp_name = tempfile.mkstemp(
         prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
@@ -128,8 +135,11 @@ def append_line_durably(path: Path, line: str) -> None:
     the new record never lands on the same line as a torn one; a tail that
     cannot be settled refuses the append (its error propagates, nothing is
     written). The fd is binary (``O_BINARY`` where the platform has it), so
-    the bytes written are the record's own and the count is exact.
+    the bytes written are the record's own and the count is exact. While a
+    pytest test runs, a *path* in a protected folder of the account's real home
+    is refused first (see :mod:`apothem.lib.home_write_guard`).
     """
+    home_write_guard.refuse_real_home_write(path, operation="append to")
     path.parent.mkdir(parents=True, exist_ok=True)
     record = line if line.endswith("\n") else f"{line}\n"
     _settle_torn_tail(path)
@@ -276,8 +286,11 @@ def advisory_lock(
 
     Wrap read-modify-write windows (store updates, the operator-owned JSON/YAML
     merge, per-(harness, root) install passes) in this to serialize concurrent
-    writers.
+    writers. While a pytest test runs, a lock file in a protected folder of the
+    account's real home is refused before it is created (see
+    :mod:`apothem.lib.home_write_guard`).
     """
+    home_write_guard.refuse_real_home_write(path, operation="create the lock file")
     path.parent.mkdir(parents=True, exist_ok=True)
     # Owner-only (0o600): the lock file is per-user coordination state; a new
     # file must not be created world-readable.

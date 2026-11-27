@@ -90,7 +90,7 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 **사전 요건:** Node.js 18+(`npx`용)와 `PATH`에 있는 시스템 Python 3.10+. 심은
 인터프리터를 찾아 모든 CLI 명령을 번들된 엔진으로 전달합니다 — 시스템에 영구적으로
 배치되는 것은 없습니다. 심은 `python3`, `python`, `py -3`을 이 순서대로 시도합니다.
-**`APOTHEM_PYTHON`**을 인터프리터 경로로 설정하면 그 인터프리터를 먼저 시도하며,
+<strong><code>APOTHEM_PYTHON</code></strong>을 인터프리터 경로로 설정하면 그 인터프리터를 먼저 시도하며,
 Python이 설치되어 있지만 `PATH`에 없을 때, 또는 여러 버전이 설치되어 있고 그중 특정
 버전을 원할 때 필요한 설정입니다. 지정한 인터프리터도 여전히 Python 3.10+ 검사를
 통과해야 합니다. 통과하지 못하면 심은 대신 `python3`, `python`, `py -3`을 이

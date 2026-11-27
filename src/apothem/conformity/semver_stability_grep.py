@@ -450,8 +450,15 @@ def check_staged() -> list[Finding]:
     folder or one above it): a change set that was not read is not a clean
     one. Raises :class:`~apothem.conformity._grep_base.GitNameError` when a
     staged file's name cannot be given back to git to read its content (a
-    name that is not UTF-8, on Windows). Outside a checkout, or without git,
-    there is no change set and the list of findings is empty.
+    name that is not UTF-8, on Windows). Raises
+    :class:`~apothem.conformity._grep_base.GitEntryLinkedError`, without
+    running git, when a ``.git`` entry in the folder git runs in or one above
+    it that git searches is a link, and
+    :class:`~apothem.conformity._grep_base.GitEntryUnreadableError` when one
+    could not be looked at (see
+    :func:`~apothem.conformity._grep_base.refuse_linked_git`). Outside a
+    checkout, or without git, there is no change set and the list of findings
+    is empty.
     """
     from apothem.conformity._git import reaches_git_unchanged, split_names
     from apothem.conformity._grep_base import (
@@ -459,6 +466,7 @@ def check_staged() -> list[Finding]:
         GitNameError,
         GitTimeoutError,
         in_checkout,
+        refuse_linked_git,
     )
 
     version = current_version()
@@ -490,7 +498,9 @@ def check_staged() -> list[Finding]:
     # tree even when the user's setting is on, which is how
     # ``cat-file blob :<name>`` reads it. ``--`` marks the package as a path:
     # without it git stops with "ambiguous argument" in a work tree where the
-    # folder is gone.
+    # folder is gone. Before any git runs, a ``.git`` link on git's search
+    # path from the folder it runs in refuses the check.
+    refuse_linked_git(home or Path.cwd())
     try:
         result = _git(
             "git diff --cached",

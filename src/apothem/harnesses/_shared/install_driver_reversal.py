@@ -30,13 +30,22 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
+from apothem.lib import home_write_guard
 from apothem.lib.data_home import DataHome, resolve_install_data_home
 from apothem.lib.install_ledger import LedgerRecord, LedgerTarget
-from apothem.lib.propagation import resolve_target
+from apothem.lib.propagation import resolve_target, user_home
 
 from . import install_driver_homelink
-from .install_driver_backup import backup_existing, write_bytes_safely
-from .install_driver_datahome import _data_home_for, _remove_data_home
+from .install_driver_backup import (
+    backup_existing,
+    refuse_bookkeeping_in_real_home,
+    write_bytes_safely,
+)
+from .install_driver_datahome import (
+    _data_home_for,
+    _remove_data_home,
+    refuse_data_home_removal,
+)
 from .install_driver_keys import made_dirs
 from .install_driver_pathsafety import (
     _allowed_write_root,
@@ -385,6 +394,8 @@ def _restore_missing(
                 source=source,
                 allowed_root=allowed_root,
             )
+        except home_write_guard.RealHomeWriteError:
+            raise  # a refusal is not a file that could not be written
         except OSError:
             failed.append(str(destination))
             continue
@@ -449,6 +460,28 @@ def _in_the_way(target: Path, backup: Path) -> str | None:
     return None
 
 
+def _home_folders(gate: UserLevelGate) -> list[Path]:
+    """Return the folders in the home a rollback may tidy last, as they are now.
+
+    That is each user-level folder below the home (``~/.agents/skills``) and
+    each folder above it there (``~/.agents``, ``~/.config``): after the
+    reversals, ``UserLevelGate.tidy`` clears staging folders out of the first
+    and removes any of them once empty. Only folders that exist count: the
+    rollback creates none of these except for a target its record names.
+    """
+    home = user_home()
+    folders: set[Path] = set()
+    for base in gate.bases.values():
+        try:
+            parts = base.relative_to(home).parts
+        except ValueError:  # not below the home: tidy changes nothing there
+            continue
+        folders.update(
+            home.joinpath(*parts[:depth]) for depth in range(1, len(parts) + 1)
+        )
+    return sorted(folder for folder in folders if folder.is_dir())
+
+
 @locked_for_harness
 @backup_session()
 def rollback_install(
@@ -477,8 +510,20 @@ def rollback_install(
     after ``~/a`` became a link to a folder outside the home): the one result
     is a ``rollback_refused`` error naming the link (see
     :func:`~.install_driver_homelink.link_leaving_home_refusal`).
-    The rollback holds the user-level lock (see ``shared_scope``).
+    The rollback holds the user-level lock (see ``shared_scope``). A project
+    root that is the account home is refused first while a pytest test runs
+    (see :func:`apothem.lib.home_write_guard.refuse_project_root_at_home`).
+    So is a record that names a path in a protected folder of the real home,
+    before anything changes, even a path the rollback would leave in place,
+    and so is a user-level folder in a protected folder that the rollback may
+    tidy last, or one above it in the home (see :func:`_home_folders`), and
+    a backup root or ledger in a protected folder: no rollback stops partway
+    with its reversals unrecorded.
     """
+    if project_root is not None:
+        home_write_guard.refuse_project_root_at_home(
+            project_root, operation="roll back"
+        )
     if harness_root is not None:
         refusal = install_driver_homelink.link_leaving_home_refusal(
             harness_root, operation="rollback_refused"
@@ -498,6 +543,22 @@ def rollback_install(
     blocked = gate.ledger_blocked(target.path for target in record.targets)
     if blocked is not None:
         return [blocked]
+    created = {Path(path) for path in record.created_dirs}
+    # The stores live where the reversed install wrote them, as its record says.
+    home = _data_home_for(record, root=root)
+    stores = DataHome.from_root(home)
+    seeded = bool(created & {stores.memory, stores.contexts, stores.learning})
+    home_write_guard.refuse_real_home_write(
+        *(target.path for target in record.targets),
+        *created,
+        *_home_folders(gate),
+        operation="roll back",
+    )
+    refuse_bookkeeping_in_real_home(harness_name, operation="roll back")
+    if seeded:
+        refuse_data_home_removal(
+            harness_name, root=root, allowed_root=allowed_root, home=home
+        )
     results: list[MaterializationResult] = []
     for recorded in reversed(record.targets):
         result: MaterializationResult | None = None
@@ -544,11 +605,7 @@ def rollback_install(
                 )
         if result is not None:
             results.append(result)
-    created = {Path(path) for path in record.created_dirs}
-    # The stores live where the reversed install wrote them, as its record says.
-    home = _data_home_for(record, root=root)
-    stores = DataHome.from_root(home)
-    if created & {stores.memory, stores.contexts, stores.learning}:
+    if seeded:
         removal = _remove_data_home(
             harness_name, root=root, home=home, allowed_root=allowed_root
         )

@@ -9,7 +9,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from apothem.lib import atomic_io, install_ledger
+from apothem.lib import atomic_io, home_write_guard, install_ledger
 from apothem.lib.data_home import resolve_install_data_home
 from apothem.lib.install_ledger import LedgerRecord
 from apothem.lib.propagation import (
@@ -236,6 +236,8 @@ def _materialize_data_surfaces(
         memory_path = MemoryStore(home).ensure_initialized()
         contexts_path = ContextStore(home).ensure_initialized()
         learning_path = LearningStore(home).ensure_initialized()
+    except home_write_guard.RealHomeWriteError:
+        raise
     except OSError as exc:
         return [
             _result(
@@ -314,9 +316,15 @@ def run_install(
     exception from it stops the install with nothing written. An install
     moves its record to the spelling it writes under there, so an install
     that is refused changes nothing.
+
+    A project root that is the account home is refused before anything is
+    written while a pytest test runs (see
+    :func:`apothem.lib.home_write_guard.refuse_project_root_at_home`).
     """
     from apothem.harnesses._shared import install_driver
 
+    if project_root is not None and not dry_run:
+        home_write_guard.refuse_project_root_at_home(project_root, operation="install")
     rules = install_driver.load_rules(harness_name)
     profile_body = _projected_profile_body(harness_name, profile)
     root = _root_for(harness_root, project_root)
@@ -358,6 +366,7 @@ def run_install(
             ),
         )
     if harness_root is not None:
+        home_write_guard.refuse_real_home_write(harness_root, operation="install into")
         harness_root.mkdir(parents=True, exist_ok=True)
     ignore = make_ignore(rules.exclude, rules.per_directory_filters)
     write_root = _allowed_write_root(harness_root, project_root)

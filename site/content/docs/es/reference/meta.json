@@ -1,7 +1,6 @@
 {
   "title": "Referencia",
   "pages": [
-    "index",
     "cli",
     "profile-fields",
     "harness-registry",

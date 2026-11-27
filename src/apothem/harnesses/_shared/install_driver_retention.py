@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
-from apothem.lib import install_ledger
+from apothem.lib import home_write_guard, install_ledger
 from apothem.lib.harness_materializer import extract_managed_block, whole_blocks
 from apothem.lib.install_ledger import LedgerRecord
 
@@ -368,6 +368,10 @@ def prune_history(
     pruned = tuple(stamp for stamp in older if stamp not in referenced)
     failed: list[str] = []
     if not dry_run:
+        if pruned:
+            home_write_guard.refuse_real_home_write(
+                install_driver.BACKUP_ROOT, operation="prune backup sets in", tree=True
+            )
         for stamp in pruned:
             stamp_dir = install_driver.BACKUP_ROOT / stamp
             shutil.rmtree(stamp_dir / harness_name, onerror=_handle_rm_error)

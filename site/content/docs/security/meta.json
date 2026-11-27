@@ -1,7 +1,6 @@
 {
   "title": "Security",
   "pages": [
-    "index",
     "openssf-scorecard-target",
     "openssf-best-practices",
     "branch-protection-ruleset",

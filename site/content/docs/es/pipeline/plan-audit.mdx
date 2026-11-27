@@ -2,12 +2,12 @@
 title: "/plan-audit"
 description: "/plan-audit — Guardián de bucle cerrado de la canalización /plan — envuelve spec → generate → review y remedia activamente los hallazgos hasta que la suite es un todo revisado y con cero hallazgos."
 machineTranslated: true
-sourceHash: "ad784374d4fb602c"
+sourceHash: "1f5196367610e634"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**Rol:** Guardián
-**Posición en la canalización:** envolvente / ortogonal (previa a la ejecución)
+- **Rol:** Guardián
+- **Posición en la canalización:** envolvente / ortogonal (previa a la ejecución)
 
 Guardián de bucle cerrado de la canalización `/plan`. Mientras `/plan-review` reporta y refina una suite generada, `/plan-audit` envuelve el ciclo aguas arriba (`/plan-spec → /plan-generate → /plan-review`) y lleva la suite a un todo revisado y con cero hallazgos: ejecuta solo las etapas aguas arriba que faltan, audita el resultado, corrige en el lugar los hallazgos resolubles mecánicamente, expone las bifurcaciones de criterio a través del canal de inquiry estructurada y repite el bucle hasta que la suite está limpia o se dispara un repliegue acotado. Nunca ejecuta trabajo de implementación de fase; deja la suite lista para `/plan-execute`.
 

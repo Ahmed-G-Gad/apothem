@@ -7,6 +7,7 @@ import { notFound } from 'next/navigation';
 import { getMDXComponents } from '@/mdx-components';
 import { buildAlternates } from '@/lib/hreflang';
 import { DEFAULT_LOCALE } from '@/lib/i18n';
+import { isHiddenFromSidebar } from '@/lib/page-tree';
 import type { Metadata } from 'next';
 
 // English docs route. The source loader is now i18n-aware, so pages are
@@ -23,7 +24,11 @@ export default async function Page(props: {
   const MDXContent = page.data.body;
 
   return (
-    <LandmarkDocsPage toc={page.data.toc} full={page.data.full}>
+    <LandmarkDocsPage
+      toc={page.data.toc}
+      full={page.data.full}
+      footer={{ enabled: !isHiddenFromSidebar(page.slugs) }}
+    >
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
       <DocsBody>

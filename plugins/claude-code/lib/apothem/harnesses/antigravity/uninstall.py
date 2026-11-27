@@ -7,6 +7,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from apothem.harnesses._shared import install_driver
+from apothem.harnesses._shared.install_driver_backup import (
+    refuse_bookkeeping_in_real_home,
+)
 
 _HARNESS_NAME: str = "antigravity"
 
@@ -38,6 +41,8 @@ def uninstall(output_path: Path) -> install_driver.MaterializationRun:
     below a stale path is left in place too, with a warning.
     """
     harness_root = output_path.parent
+    # Before the sweep: a refusal at the record would leave it unrecorded.
+    refuse_bookkeeping_in_real_home(_HARNESS_NAME, operation="uninstall")
     legacy = install_driver.sweep_stale(
         install_driver.load_rules(_HARNESS_NAME).stale_sweep,
         harness_root,

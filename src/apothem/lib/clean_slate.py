@@ -38,6 +38,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
+from apothem.lib import home_write_guard
 from apothem.lib.links import is_link
 
 __all__ = [
@@ -361,6 +362,10 @@ def _backup_targets(
             is removed when this is raised.
     """
     backup_dir = backup_root / f"clean-slate-{_timestamp(clock)}"
+    # Outside the ``try``: a refusal is not a failed backup.
+    home_write_guard.refuse_real_home_write(
+        backup_dir, operation="write the clean-slate backup into"
+    )
     try:
         backup_dir.mkdir(parents=True, exist_ok=True)
         for src in present:
@@ -433,8 +438,10 @@ def _remove_path(path: Path) -> None:
     """Remove a single target, whether a link, directory, or file.
 
     A link, a Windows junction included, is removed as a link: what it leads
-    to is left in place.
+    to is left in place. While a pytest test runs, a target in the account's
+    real home is refused (see :mod:`apothem.lib.home_write_guard`).
     """
+    home_write_guard.refuse_real_home_write(path, operation="remove", tree=True)
     if is_link(path):
         path.unlink(missing_ok=True)
     elif path.is_dir():
@@ -502,6 +509,10 @@ def run_clean_slate(
         CleanSlateError: When the run is non-interactive without ``assume_yes``.
         BackupError: When the pre-removal backup cannot be written.
         RemovalError: When a target cannot be removed after the backup.
+        RealHomeWriteError: While a pytest test runs, for a backup folder or
+            a target in the account's real home (see
+            :mod:`apothem.lib.home_write_guard`); it is raised as it is, not
+            as a :class:`RemovalError`.
     """
     emit: EchoFn = echo if echo is not None else (lambda _message: None)
     tick: Clock = clock if clock is not None else _utcnow
@@ -577,6 +588,8 @@ def run_clean_slate(
             continue
         try:
             _remove_path(target)
+        except home_write_guard.RealHomeWriteError:
+            raise  # a refusal is not a removal that stopped partway
         except OSError as exc:
             raise RemovalError(
                 f"could not remove {target}: {exc}", backup_dir=backup_dir

@@ -195,8 +195,8 @@ def test_subfolder_of_a_checkout_reads_the_checkout_head(
 def test_tracked_subfolder_skips_the_case_reads(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # A subfolder git lists files for needs no case setting or path read:
-    # the check starts only ls-files before the log, whatever the host.
+    # A subfolder git lists files for needs no case setting read: the check
+    # asks git for the work tree's top, then ls-files, then the log.
     if not _git_available():
         pytest.skip("git not available")
     _init_git_repo(tmp_path, "Added a feature without a conventional prefix")
@@ -223,7 +223,7 @@ def test_tracked_subfolder_skips_the_case_reads(
     result = _MOD.check_repo(sub)
     assert result.status == "ok", result.to_json()
     assert not result.passed
-    assert labels == ["git ls-files", "git log"]
+    assert labels == ["git rev-parse", "git ls-files", "git log"]
 
 
 @pytest.mark.parametrize("spelling", ["pkg", "Pkg"], ids=["disk case", "index case"])
@@ -352,8 +352,10 @@ def test_git_timeout_does_not_pass(tmp_path: Path, monkeypatch) -> None:
     result = _MOD.check_repo(tmp_path)
     assert not result.passed
     assert result.status == "git-timeout"
+    # The first git command, which asks git where the work tree's top is,
+    # is the one that runs past the limit.
     assert result.check_error == (
-        f"git log did not finish within {_MOD.GIT_TIMEOUT_SECONDS} seconds"
+        f"git rev-parse did not finish within {_MOD.GIT_TIMEOUT_SECONDS} seconds"
     )
 
 

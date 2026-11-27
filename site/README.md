@@ -23,7 +23,10 @@ pages, blog posts, and static assets.
   under `app/[lang]/` (the localized landing card and per-locale docs), and the
   search endpoint under `app/api/search/`.
 - `components/` holds the landing-page and shared UI components, including
-  `localized-link.tsx`, the MDX link component of the per-locale docs route.
+  `localized-link.tsx`, the MDX link component of the per-locale docs route, and
+  `sidebar-folder.tsx`, the sidebar section with its own open/close button
+  (server-rendered open and closed by `sidebar-folder.test.mjs` under
+  `npm test`).
 - `lib/` is the internal source of truth for cross-cutting concerns: the i18n
   cohort/locale table (`i18n.ts`), the hreflang alternate builder
   (`hreflang.ts`), the body-link localizer (`locale-links.ts`), and the
@@ -67,8 +70,11 @@ publish pipeline deploys.
   Python interpreter on `PATH`.
 
 The `predev` and `prebuild` steps run `scripts/update-reference-inventory.mjs`,
-so a clean build regenerates the source-generated reference pages. Regenerate
-the `llms.txt` / `llms-full.txt` summaries with
+so a clean build regenerates the source-generated reference pages. The
+generator imports Markdown packages from `node_modules`, so run `npm ci` in
+this folder (or `npm ci --prefix site` from the repository root) before
+running it directly; without them it stops before writing any page and names
+that command. Regenerate the `llms.txt` / `llms-full.txt` summaries with
 `node scripts/build-llms-txt.mjs` when the documentation set changes.
 
 ## Working in this folder
@@ -82,10 +88,10 @@ expression for MDX content pages).
 - **Source-generated reference pages are not edited by hand.** When a documented
   public surface in the Python package changes (a CLI command or flag, a harness
   adapter, a profile field, an installer flag), refresh the matching reference
-  page by re-running `node scripts/update-reference-inventory.mjs` and committing
-  the regenerated output in the same change-set. The CI docs-reference-sync drift
-  gate enforces this — a dirty `git status` on a reference page after a build
-  signals a missed regeneration.
+  page by re-running `node scripts/update-reference-inventory.mjs` (after
+  `npm ci` here) and committing the regenerated output in the same change-set.
+  The CI docs-reference-sync drift gate enforces this — a dirty `git status` on
+  a reference page after a build signals a missed regeneration.
 - **A link on a translated page keeps the reader in their language.** Write a
   docs link once, as `/docs/<page>` or `/docs/<page>#<id>`, the same in every
   language. The per-locale docs route (`components/localized-link.tsx`, with

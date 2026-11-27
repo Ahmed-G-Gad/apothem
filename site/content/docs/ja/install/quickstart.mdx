@@ -61,7 +61,7 @@ Recommended first step — the guided setup (profile -> preview -> install):
   ステップ 2 でプロファイルを自分のものにし、ステップ 5 と同様に `apothem update --harness <name>` で適用してください。
 </Callout>
 
-<Callout title="`apothem` コマンド">
+<Callout title="apothem コマンド">
   インストーラーは `apothem` シムを `$HOME/.local/bin`（POSIX）または `%LOCALAPPDATA%\Microsoft\WindowsApps`（Windows）に書き込み、`PATH` は決して編集しません。
   そのディレクトリが `PATH` 上にあれば、エンジンを `apothem <command>` として直接実行します。
   まだ `PATH` 上にない場合、バナーはシムを必要としない自己完結型のフォールバック — `PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>` — を出力します。各コマンドの前に、バナーが出力した正確なプレフィックスを付けてください。

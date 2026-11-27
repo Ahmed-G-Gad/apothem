@@ -38,6 +38,7 @@ from apothem.cli._helpers import (
     _write_profile_text_safely,
 )
 from apothem.cli._json_formatter import emit_json
+from apothem.lib import home_write_guard
 from apothem.lib.profile import (
     PROFILE_NOT_FOUND_FIX,
     ProfileValidationError,
@@ -153,6 +154,8 @@ def profile_init(
             error=exc.to_dict(),
         )
         return
+    except home_write_guard.RealHomeWriteError:
+        raise  # a refusal during a test, not a permissions problem
     except OSError as exc:
         _emit_expected_error(
             command="profile init",

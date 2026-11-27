@@ -1,7 +1,6 @@
 {
   "title": "Comandos de la canalización",
   "pages": [
-    "index",
     "plan",
     "plan-spec",
     "plan-generate",

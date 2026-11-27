@@ -9,6 +9,7 @@ import { getMDXComponents } from '@/mdx-components';
 import { buildAlternates } from '@/lib/hreflang';
 import { ROUTED_NON_DEFAULT_LOCALES, DEFAULT_LOCALE } from '@/lib/i18n';
 import { translationState } from '@/lib/translation-status';
+import { isHiddenFromSidebar } from '@/lib/page-tree';
 import { StaleTranslationNotice } from '@/components/stale-translation-notice';
 import type { Metadata } from 'next';
 
@@ -36,7 +37,11 @@ export default async function Page(props: {
   const english = state === 'fallback' ? { lang: DEFAULT_LOCALE, dir: 'ltr' as const } : {};
 
   return (
-    <LandmarkDocsPage toc={page.data.toc} full={page.data.full}>
+    <LandmarkDocsPage
+      toc={page.data.toc}
+      full={page.data.full}
+      footer={{ enabled: !isHiddenFromSidebar(page.slugs) }}
+    >
       <DocsTitle {...english}>{page.data.title}</DocsTitle>
       {state === 'stale' ? (
         <StaleTranslationNotice englishUrl={page.url.replace(`/${lang}/`, '/')} />

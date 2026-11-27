@@ -1,7 +1,6 @@
 {
   "title": "ランブック",
   "pages": [
-    "index",
     "release-cycle",
     "deployment-checklist",
     "release-recovery",

@@ -22,7 +22,10 @@ What it does, in order:
 4. Adds a supported ``MAJOR.MINOR.x`` row to the SECURITY.md table when the
    bump opens a new minor.
 5. Regenerates the derived trees (Claude Code plugin package, behavior-diff
-   goldens, docs reference and changelog pages) unless ``--no-regen``.
+   goldens, docs reference and changelog pages) unless ``--no-regen``. The
+   docs generator imports Markdown packages from ``site/node_modules``, so
+   the bump stops before writing anything when that folder is missing and
+   names the fix, ``npm ci --prefix site``.
 
 Re-running with the current version is safe: it re-aligns any stragglers and
 changes nothing else. Stdlib only, so it runs before any dependency install.
@@ -106,7 +109,16 @@ _JSON_VERSION = re.compile(r'("version"\s*:\s*")([^"]*)(")')
 
 
 class BumpError(RuntimeError):
-    """An anchor could not be rewritten as declared."""
+    """An anchor could not be rewritten as declared, or regeneration cannot run."""
+
+
+def check_regen_ready(root: Path) -> None:
+    """Raise BumpError when the docs generator's packages are not installed."""
+    if not (root / "site" / "node_modules").is_dir():
+        raise BumpError(
+            "site/node_modules is missing, and the docs reference generator "
+            "needs it; run `npm ci --prefix site` first, or pass --no-regen"
+        )
 
 
 def anchor_files() -> list[str]:
@@ -396,6 +408,8 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     try:
+        if not (args.no_regen or args.dry_run):
+            check_regen_ready(root)
         old = current_version(root)
         if new < _parse(old):
             print(

@@ -4,8 +4,8 @@ description: "/plan-audit — Closed-loop guardian of the /plan pipeline — wra
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**Role:** Guardian
-**Pipeline position:** wrapping / orthogonal (pre-execute)
+- **Role:** Guardian
+- **Pipeline position:** wrapping / orthogonal (pre-execute)
 
 Closed-loop guardian of the `/plan` pipeline. Where `/plan-review` reports and refines a generated suite, `/plan-audit` wraps the upstream cycle (`/plan-spec → /plan-generate → /plan-review`) and drives the suite to a reviewed, zero-finding whole — running only the missing upstream stages, auditing the result, fixing mechanically resolvable findings in place, surfacing judgment forks through the structured-inquiry channel, and looping until the suite is clean or a bounded retreat fires. It never executes phase implementation work; it leaves the suite ready for `/plan-execute`.
 

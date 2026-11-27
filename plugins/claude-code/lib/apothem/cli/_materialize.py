@@ -63,6 +63,7 @@ from apothem.harnesses._shared.install_driver import (
     MaterializationRun,
 )
 from apothem.harnesses._shared.install_driver_blocks import LEFT_AS_IS
+from apothem.lib import home_write_guard
 from apothem.lib.clean_slate import CleanSlateResult
 from apothem.lib.install_advisories import (
     hook_review_advisories,
@@ -635,6 +636,8 @@ def _first_run_profile(
         }
     try:
         _write_profile_text_safely(profile_path, text, operation="install_profile_init")
+    except home_write_guard.RealHomeWriteError:
+        raise  # a refusal during a test, not a permissions problem
     except OSError as exc:
         raise _CliUserError(
             code="profile.write_failed",

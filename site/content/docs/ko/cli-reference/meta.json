@@ -1,12 +1,12 @@
 {
   "title": "CLI 참조",
   "pages": [
-    "index",
     "quickstart",
     "install",
     "uninstall",
     "update",
     "rollback",
+    "backups",
     "verify",
     "status",
     "diff",

@@ -222,3 +222,22 @@ def test_rejects_a_bad_date(tmp_path: Path) -> None:
         )
         == 2
     )
+
+
+def test_regen_stops_before_writing_without_site_packages(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = _scratch_repo(tmp_path)
+    before = {
+        rel: (root / rel).read_bytes()
+        for rel in bump_version.anchor_files()
+        if (root / rel).is_file()
+    }
+    assert not (root / "site" / "node_modules").exists()
+    assert bump_version.main([NEW, "--root", str(root), "--date", DATE]) == 1
+    assert "npm ci --prefix site" in capsys.readouterr().err
+    assert {rel: (root / rel).read_bytes() for rel in before} == before
+    with pytest.raises(bump_version.BumpError, match="npm ci --prefix site"):
+        bump_version.check_regen_ready(root)
+    (root / "site" / "node_modules").mkdir()
+    bump_version.check_regen_ready(root)

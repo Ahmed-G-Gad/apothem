@@ -13,6 +13,7 @@ import {
   type SidebarProps,
 } from 'fumadocs-ui/layouts/docs/slots/sidebar';
 import { cn } from '@/lib/utils';
+import { DisclosureFolder } from '@/components/sidebar-folder';
 
 /**
  * Landmark-bearing replacements for two Fumadocs docs-layout slots.
@@ -54,7 +55,11 @@ function MainContainer({ className, ...props }: ComponentProps<'article'>) {
   );
 }
 
-function NavSidebar(props: SidebarProps) {
+// Section folders use DisclosureFolder, which keeps the section title as the
+// overview link and gives the open/close chevron its own button (see
+// components/sidebar-folder.tsx).
+function NavSidebar({ components, ...rest }: SidebarProps) {
+  const props = { ...rest, components: { Folder: DisclosureFolder, ...components } };
   return (
     <nav aria-label="Documentation" className="contents">
       <Sidebar {...props} />

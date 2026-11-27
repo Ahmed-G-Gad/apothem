@@ -1,7 +1,6 @@
 {
   "title": "Comandos do pipeline",
   "pages": [
-    "index",
     "plan",
     "plan-spec",
     "plan-generate",

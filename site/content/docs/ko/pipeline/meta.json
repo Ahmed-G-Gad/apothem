@@ -1,7 +1,6 @@
 {
   "title": "파이프라인 명령",
   "pages": [
-    "index",
     "plan",
     "plan-spec",
     "plan-generate",

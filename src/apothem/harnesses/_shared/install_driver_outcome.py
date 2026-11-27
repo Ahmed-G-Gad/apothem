@@ -3,19 +3,24 @@
 """What an uninstall pass left behind, whether it finished, and its ledger record.
 
 After the removals, :func:`left_behind` names each path the pass kept (files
-of the operator's, links, a BEGIN marker left alone), :func:`left_unfinished`
-tells whether what stays leaves the uninstall unfinished, and
-:func:`record_uninstall` appends the record that says which: ``uninstall`` or
-``uninstall-incomplete``. A finished uninstall also ends the harness's install
-under each other spelling of the same folder (:func:`end_other_spellings`).
+of the operator's, links, a BEGIN marker left alone), or
+:func:`left_before_a_stop` what a pass that stopped kept,
+:func:`left_unfinished` tells whether what stays leaves the uninstall
+unfinished, and :func:`record_uninstall` appends the record that says which:
+``uninstall`` or ``uninstall-incomplete``. A finished uninstall also ends the
+harness's install under each other spelling of the same folder
+(:func:`end_other_spellings`). An uninstall that a refusal of the real-home
+guard stops is recorded unfinished only when it had already changed a file
+(:func:`record_before_refusal`).
 """
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+import contextlib
+from collections.abc import Callable, Iterable
 from pathlib import Path
 
-from apothem.lib import install_ledger
+from apothem.lib import home_write_guard, install_ledger
 from apothem.lib.install_ledger import LedgerRecord
 
 from .install_driver_blocks import ANOTHER_BLOCK, UNCLEAR_BLOCK, stray_begin_warnings
@@ -83,6 +88,28 @@ def left_behind(
         *links_on_the_way(recorded, floor, known=[*prior, *results, *kept]),
         *stray_begin_warnings([*prior, *results]),
     ]
+
+
+def left_before_a_stop(
+    results: list[MaterializationResult],
+    *,
+    prior: tuple[MaterializationResult, ...] = (),
+) -> list[MaterializationResult]:
+    """Return what a pass that stopped kept, as :func:`left_behind` names it.
+
+    The files its removals kept, the links they left in place and each file
+    *results* or the caller's *prior* results rewrote that still holds a
+    BEGIN marker with no END after it (see :func:`stray_begin_warnings`).
+    The links an install record or the folders it created lead to are not
+    looked for. A check that cannot read a path adds nothing, so the error
+    that stopped the pass is still the one raised.
+    """
+    kept = kept_file_warnings(results)
+    with contextlib.suppress(OSError):
+        kept += kept_link_warnings(results)
+    with contextlib.suppress(OSError):
+        kept += stray_begin_warnings([*prior, *results])
+    return kept
 
 
 def links_on_the_way(
@@ -203,6 +230,8 @@ def record_uninstall(
     warnings: list[MaterializationResult] = []
     try:
         install_ledger.append_record(entry)
+    except home_write_guard.RealHomeWriteError:
+        raise
     except (OSError, install_ledger.LedgerError) as exc:
         latest = _latest_record(harness_name, root)
         if finished and (latest is None or latest.kind != "uninstall"):
@@ -221,8 +250,9 @@ def end_other_spellings(
     The roots are the harness's other spellings of the folder a finished
     uninstall cleaned; it removed what their records list, so none of them
     holds the shared folders afterwards. The uninstall stands when one cannot
-    be recorded, whatever the error: that one returns a warning naming the
-    ledger and the spelling whose install stays active instead.
+    be recorded: that one returns a warning naming the ledger and the
+    spelling whose install stays active instead. A refusal of the real-home
+    guard (see :mod:`apothem.lib.home_write_guard`) is raised as it is.
     """
     warnings: list[MaterializationResult] = []
     for other in same:
@@ -239,6 +269,8 @@ def end_other_spellings(
                     install_id=current.install_id,
                 )
             )
+        except home_write_guard.RealHomeWriteError:
+            raise  # a refusal during a test is never a warning
         except Exception as exc:  # the finished uninstall stands either way
             ledger = install_ledger.ledger_path(harness_name)
             message = (
@@ -249,3 +281,20 @@ def end_other_spellings(
             )
             warnings.append(_result("warning", "record_uninstall", ledger, message))
     return warnings
+
+
+def record_before_refusal(
+    record_pass: Callable[..., list[MaterializationResult]],
+    record: LedgerRecord | None,
+    done: list[MaterializationResult],
+) -> None:
+    """Record an unfinished uninstall when *done* changed or backed up a file.
+
+    Called while a refusal of the real-home guard is raised, with
+    *record_pass* the uninstall's :func:`record_uninstall` bound to its harness
+    and root. A refusal before any removal records nothing. A second refusal,
+    or any error writing the record, is dropped so the first one propagates.
+    """
+    if any(result.changed or result.backup_path is not None for result in done):
+        with contextlib.suppress(OSError, install_ledger.LedgerError):
+            record_pass(record, done, finished=False)
