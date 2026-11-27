@@ -2,7 +2,7 @@
 title: "自包含运行时"
 description: "Apothem 的引擎如何从任意检出运行——vendored 依赖、PYTHONPATH=src 调用模型，以及插件树引导。"
 machineTranslated: true
-sourceHash: "df04c51efc417e4a"
+sourceHash: "dc1f19f84eb15409"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,20 +27,22 @@ Apothem 有意不在 `pyproject.toml` 中声明任何控制台脚本——控制
 
 | 表面 | 调用方式 | 上下文 |
 | ------- | ---------- | ------- |
-| 引擎 CLI | `python -m apothem <command>` | 一棵将 `src/` 置于 `PYTHONPATH` 上的源码树（检出、npx 缓存、插件树） |
+| 引擎 CLI | `apothem <command>`；在检出中为 `PYTHONPATH=src python -m apothem <command>` | 安装器的 `apothem` 垫片和 npm 启动器从包的源码树运行它，并让当前文件夹不进入 `sys.path`；`-m` 形式用于你信任的检出 |
 | 钩子运行时 | `<resolved CPython> -E -s "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Claude Code 的物化形态：位于工具根目录共享 `.apothem/support/` 树下的副本，按绝对路径调用 |
 
-- `python -m apothem` 运行 `src/apothem/__main__.py`，后者将 `src/apothem/_vendor` 放到 `sys.path` 上，检查 `click` 和 `rich` 是否可导入，然后调用 `apothem.cli:main`——即 Click 命令组。
-- 物化后的 `settings.json` / `hooks.json` 中的钩子条目按绝对脚本路径调用分派器（对于 Claude Code，还会调用位于 `<harness-root>/.apothem/support/conformity/gate.py` 的合规闸门）。两者都是独立的标准库脚本，会自行引导各自的 `sys.path`，而闸门的 schema 夹具就放在它旁边的 `<harness-root>/.apothem/support/schemas/` 中，因此钩子在**宿主上没有可导入的 `apothem` 包**的情况下也能运行。模板携带一个 `${HARNESS_ROOT}` 令牌，`apothem install` 会将其渲染为正斜杠形式的真实工具根路径。
+- 引擎的入口点 `src/apothem/__main__.py` 将 `src/apothem/_vendor` 放到 `sys.path` 上，检查 `click` 和 `rich` 是否可导入，然后调用 `apothem.cli:main`——即 Click 命令组。`python -m apothem` 直接运行它。`apothem` 垫片和 npm 启动器则通过 `runpy` 从一个 `-c` 程序运行它，该程序先把当前文件夹从 `sys.path` 中移除。
+- 物化后的 `settings.json` / `hooks.json` 中的钩子条目按绝对脚本路径调用分派器（对于 Claude Code，还会调用位于 `<harness-root>/.apothem/support/conformity/gate.py` 的合规闸门），并以 `-E -s` 启动 Python，使任何 `PYTHON*` 变量和用户 site-packages 都不会影响钩子。两者都是独立的标准库脚本，会自行引导各自的 `sys.path`，而闸门的 schema 夹具就放在它旁边的 `<harness-root>/.apothem/support/schemas/` 中，因此钩子在<strong>宿主上没有可导入的 `apothem` 包</strong>的情况下也能运行。模板携带一个 `${HARNESS_ROOT}` 令牌，`apothem install` 会将其渲染为正斜杠形式的真实工具根路径。
 - 在源码检出中，模块形式 `python -m apothem.hooks.dispatch` 和 `python -m apothem.conformity.gate` 运行相同的代码，供开发使用。
 
-将检出的 `src/` 目录前置到 `PYTHONPATH`，即可使包目录可导入：
+在检出中，将检出的 `src/` 目录前置到 `PYTHONPATH`，即可使包目录可导入：
 
 ```bash
 PYTHONPATH=src python -m apothem <command>    # from the checkout root
 ```
 
-当 `apothem` 启动器不在 PATH 上时，`install.sh` 会在安装完成时打印这一形式：vendored 目录排在 `src/` 之前，并以其所解析到的 CPython 代替 `python`。`install.ps1` 以 PowerShell 形式打印同样的两项设置：一条 `$env:PYTHONPATH` 赋值，它用 `;` 连接 vendored 目录与 `src/` 目录，随后是 `& '<CPython>' -m apothem <command>`。
+`-m` 会先从当前文件夹读取模块，因此只应在检出根目录或其他你信任的文件夹中运行这一形式。
+
+安装器从不打印 `-m` 命令。当安装完成时 `apothem` 命令不在 `PATH` 上，`install.sh` 和 `install.ps1` 会打印它们所放置的 `apothem` 垫片的完整路径。当无法放置垫片时，它们会改为打印一条自包含命令。`install.sh` 打印 `PYTHONSAFEPATH=1 PYTHONPATH='<vendor>:<src>' '<CPython>' -c '<program>'`，后面跟着命令。`install.ps1` 打印一个 PowerShell 代码块，它为一次 `& '<CPython>' -c "<program>"` 运行设置 `PYTHONSAFEPATH` 和 `PYTHONPATH`（用 `;` 连接 vendored 目录与 `src/` 目录），随后将两者恢复原值。该程序把当前文件夹从 `sys.path` 中移除并运行 `apothem` 包；`PYTHONSAFEPATH=1` 则让 Python 3.11 及更高版本从一开始就不添加该文件夹。
 
 ## 插件树引导
 
@@ -48,7 +50,7 @@ Claude Code 插件将引擎打包在 `<plugin_root>/lib/apothem` 下，而不依
 
 ## 安装器在磁盘上放置了什么
 
-脚本安装器在 `~/.apothem`（可用 `APOTHEM_HOME` 覆盖）放置一份源码树的 git 克隆，并从中运行引擎——除了可选的 `click` / `rich` 前置条件安装提议之外，不会向 `site-packages` 安装任何 Python 包。该克隆是完整的仓库，包括运行时从不导入的测试套件和文档站点，这出于两个有意的原因：引擎**物化其集合**——规则、技能、命令和模板——直接从该树物化到每个工具中，因此该树是实时的权威来源，而不仅仅是一个运行时；并且 `.git` 目录保留在原处，使 `apothem update` 在现有克隆中检出发布标签，而不是重新下载。
+脚本安装器在 `~/.apothem`（可用 `APOTHEM_HOME` 覆盖）放置一份源码树的 git 克隆，并从中运行引擎——除了可选的 `click` / `rich` 前置条件安装提议之外，不会向 `site-packages` 安装任何 Python 包。该克隆是完整的仓库，包括运行时从不导入的测试套件和文档站点，这出于两个有意的原因：引擎<strong>物化其集合</strong>——规则、技能、命令和模板——直接从该树物化到每个工具中，因此该树是实时的权威来源，而不仅仅是一个运行时；并且 `.git` 目录保留在原处，使 `apothem update` 在现有克隆中检出发布标签，而不是重新下载。
 
 这种从源码运行的布局与 `nvm`、`pyenv` 和 `oh-my-zsh` 等工具所用的模式相同——几兆字节的源码加历史记录，可用卸载器一步移除（没有需要回退的系统状态）。更精简的占用——省略 `tests/` 和 `site/` 的浅检出或稀疏检出——是可行的，但会舍弃原地进行、经签名验证、基于 `git` 的更新路径；当前布局优先考虑简单、可验证的更新，而非最小磁盘占用。
 
@@ -58,4 +60,4 @@ Claude Code 插件将引擎打包在 `<plugin_root>/lib/apothem` 下，而不依
 
 ## 推荐的下一步
 
-在检出的 `src/` 目录位于 `PYTHONPATH` 上的情况下，**运行 `python -m apothem --help`**，以确认自包含 CLI 路径能在你的宿主上解析。
+在 Apothem 检出的根目录中<strong>运行 `PYTHONPATH=src python -m apothem --help`</strong>，以确认自包含 CLI 路径能在你的宿主上解析。

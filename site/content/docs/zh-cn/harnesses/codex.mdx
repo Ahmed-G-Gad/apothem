@@ -2,7 +2,7 @@
 title: "Codex"
 description: "适用于 Codex（测试版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "ca4ad5f675a665ea"
+sourceHash: "3aff73a78f7a248b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,7 @@ apothem install --harness codex
 
 适配器安装 Codex 原生指令和钩子，将 Apothem 智能体转换为 Codex TOML 智能体，并将可复用的命令提示词封装为 Codex 技能。
 
-**写入的文件：** `~/.codex/AGENTS.md`、`~/.codex/hooks.json`、`~/.codex/hooks/`、`~/.codex/agents/*.toml`、`~/.agents/skills/*/SKILL.md`、针对由用户调用的技能的 `~/.agents/skills/*/agents/openai.yaml`，以及 `~/.config/apothem/{rules,templates}/` 下的支持文件。
+**写入的文件：** `~/.codex/AGENTS.md`、`~/.codex/hooks.json`、`~/.codex/hooks/`、`~/.codex/agents/*.toml`、`~/.agents/skills/*/SKILL.md`、针对由用户调用的技能的 `~/.agents/skills/*/agents/openai.yaml`，以及 `~/.config/apothem/{rules,templates}/` 下的支持文件。安装还会创建 Apothem 数据文件夹（默认为 `~/.codex/.apothem/`），其中包含 `contexts/`、`learning/`、`memory/` 和 `plans/`。
 
 **钩子解释器。** 安装在写入任何内容之前，会先解析一个 CPython 3.10+ 解释器。在 Windows 上，`hooks.json` 中每个钩子的 `commandWindows` 条目会运行该解释器的绝对路径，而不是 `py -3` 启动器；POSIX 的 `command` 条目仍保留 `python3`。解释器移动或被移除之后，请重新运行 `apothem update --harness codex`。如果找不到 CPython 3.10+，安装会在写入任何文件之前停止。
 
@@ -38,9 +38,17 @@ apothem install --harness codex
 
 ## 兼容性说明
 
-`~/.agents/skills/` 是一个由 Codex 拥有的共享根目录：其他九个受支持的工具也会加载它（[工具注册表](/docs/reference/harness-registry)列出了这些工具），因此 Codex 安装写入其中的 Apothem 技能也会出现在这些工具中。其中四个工具在你安装它们时也会自行写入该文件夹（注册表将它们列为共同安装者），写入的文件与 Codex 安装写入的相同，因此在没有 Codex 安装的机器上，这些技能也同样存在。`~/.config/apothem/` 中的规则和模板也是如此，另有七个项目级适配器也会写入它们。该文件夹始终位于你的用户主目录中，无论 `CODEX_HOME` 是什么：Codex 读取 `$HOME/.agents/skills`，因此不同于 `~/.codex` 的 `CODEX_HOME` 会移动 Codex 文件，但不会移动技能。每个使用该文件夹的 Apothem 安装都会向其中写入相同的文件，并且安装会记录哪些安装在使用它，因此安装的顺序无关紧要。Codex 卸载只有在没有其他 Apothem 安装仍在使用这些技能时才会移除它们；否则会保留它们，并说明是哪些安装在使用（参见[卸载](#卸载)）。登记的所有者是厂商为该路径编写文档的那个工具。放置这些文件的安装是仍在使用它们的那一个，安装说明会指出它。并非由 Apothem 写入、但与某个 Apothem 技能同名的技能文件夹会保持原样，并附带一条指出它的警告。安装时会打印一条注明这些工具的提示。`~/.codex/agents/` 是第二个共享根目录：另一个受支持的工具将该文件夹列为兼容位置（注册表指出了它），而其文档没有说明它是否读取 `Codex` 安装写入其中的 TOML 文件。
+`~/.agents/skills/` 是一个由 Codex 拥有的共享根目录：其他九个受支持的工具也会加载它（[工具注册表](/docs/reference/harness-registry)列出了这些工具），因此 Codex 安装写入其中的 Apothem 技能也会出现在这些工具中。其中四个工具在你安装它们时也会自行写入该文件夹（注册表将它们列为共同安装者），写入的文件与 Codex 安装写入的相同，因此在没有 Codex 安装的机器上，这些技能也同样存在。`~/.config/apothem/` 中的规则和模板也是如此，另有七个项目级适配器也会写入它们。该文件夹始终位于你的用户主目录中，无论 `CODEX_HOME` 是什么：Codex 读取 `$HOME/.agents/skills`，因此不同于 `~/.codex` 的 `CODEX_HOME` 会移动 Codex 文件，但不会移动技能。每个使用该文件夹的 Apothem 安装都会向其中写入相同的文件，并且安装会记录哪些安装在使用它，因此安装的顺序无关紧要。Codex 卸载只有在没有其他 Apothem 安装仍在使用这些技能时才会移除它们；否则会保留它们，并说明是哪些安装在使用（参见[卸载](#卸载)）。登记的所有者是厂商为该路径编写文档的那个工具。放置这些文件的安装是仍在使用它们的那一个，安装说明会指出它。并非由 Apothem 写入、但与某个 Apothem 技能同名的技能文件夹会保持原样，并附带一条指出它的警告。安装时会打印一条注明这些工具的提示。`~/.codex/agents/` 是第二个共享根目录：另一个受支持的工具将该文件夹列为兼容位置（注册表指出了它），而其文档没有说明它是否读取 `Codex` 安装写入其中的 TOML 文件。当 `CODEX_HOME` 设置为另一个文件夹时，安装会改为把智能体写到该文件夹下，而该工具的文档并未列出这个位置（它们只指出 `~/.codex/agents/`），因此安装说明不会列出该文件夹。如果较早的安装在 `~/.codex/agents/` 中留下了 Apothem 智能体，说明会指出这一点，因为本次安装既不会更新也不会移除它们。
 
-Codex 将 `~/.codex/rules/` 保留给 `.rules` 执行策略。Apothem 不在那里放置 Markdown 行为规则；它将这些规则保存在 `~/.config/apothem/` 中，并从 `AGENTS.md` 和已安装的技能中引用它们。
+Apothem 以与 Codex 相同的方式读取 `CODEX_HOME`。它按写入的原样使用该值：开头的 `~` 不会被展开，相对值指向你运行命令所在文件夹之下的某个文件夹。空的 `CODEX_HOME` 视为未设置。当 `CODEX_HOME` 指向一个不存在的文件夹时，Codex 会报错停止；安装会创建该文件夹，因此安装运行之后 Codex 即可启动。
+
+当 `~/.config` 是指向你主目录内部的链接（dotfile 管理器就是这样做的）时，位于 `~/.config` 之下的 `CODEX_HOME` 可以正常工作；在 Windows 上，联接点也算作链接。如果 `~/.config` 链接指向你主目录之外，那么无论 `CODEX_HOME` 在哪里，每次 Codex 安装都会在写入任何文件之前停止，因为安装还会把共享的规则和模板写入 `~/.config/apothem/`。把 `CODEX_HOME` 设为该链接指向的文件夹也无济于事；请改为让该链接指向你主目录内的某个文件夹。如果 `CODEX_HOME` 写成位于你主目录内的路径、但有链接把它引向主目录之外（例如 `~/work/codex`，而 `~/work` 链接到另一个驱动器），那么无论该链接位于 `CODEX_HOME` 之上的哪一层，安装、卸载和 `apothem rollback` 都会停止。写成位于你主目录之外路径的 `CODEX_HOME` 会被跟随。安装在 `CODEX_HOME` 内写入的路径上若有链接，同样会使其停止，并给出 `target path crosses a link`；当该链接指向存放 `CODEX_HOME` 的文件夹之外时，则给出 `target escapes the allowed materialization root`。
+
+`CODEX_HOME` 不一定来自你的 shell 配置文件。项目的 `.envrc` 或你 source 的脚本也可以设置它。当它指向你主目录之外的文件夹时，安装、更新、卸载和 `apothem rollback` 会更改该文件夹中的文件，因为它指向的就是那个文件夹。指向你主目录之外的 `~/.config` 链接仍会使安装停止。在设置了 `CODEX_HOME` 的项目文件夹中运行 Apothem 之前，请先检查它。
+
+Codex 将 `~/.codex/rules/` 保留给 `.rules` 执行策略。Apothem 不在那里放置 Markdown 行为规则；它将这些规则保存在 `~/.config/apothem/` 中，并从 `AGENTS.md` 和已安装的技能中引用它们。较早的版本（[更新日志](/docs/changelog)列出了这些版本）会在每次安装和更新时，先把整个 `~/.codex/rules/` 文件夹复制到 `~/.apothem/backups/<timestamp>/codex/.codex/rules/`，然后将其连同你的 `.rules` 文件一起删除。当前版本绝不会删除保存该副本的备份组，但较早版本的保留策略可能已经删除了更早的备份组。请在再次运行 Apothem 之前把 `~/.apothem/backups/` 复制到别处，手动把 `.rules` 文件复制回 `~/.codex/rules/`，然后运行 `apothem update`。`apothem rollback --install-id` 会撤销整个较早的安装，因此它不是恢复这些文件的方法。
+
+Codex 从其主文件夹（`~/.codex`，或 `CODEX_HOME` 指向的文件夹）加载一个指令文件：当 `AGENTS.override.md` 有内容时加载它，否则才加载 `AGENTS.md`。Apothem 区块写入 `AGENTS.md`，因此该文件夹中有内容的 `AGENTS.override.md` 会使 Codex 不加载该区块，除非该覆盖文件是指向 `AGENTS.md` 的符号链接。一旦安装重写了 `AGENTS.md`，硬链接或副本就是一个独立的文件，因此会收到说明。出现这种情况时，`apothem install`、`apothem update` 和 `apothem verify` 会打印一条指出该文件的说明。空的 `AGENTS.override.md` 会被跳过，因此不会收到说明。要加载该区块，请清空或移除该覆盖文件，或把其内容移到 `AGENTS.md` 中 Apothem 区块之外的位置。
 
 ## Codex 插件
 
@@ -63,6 +71,8 @@ verify 命令确认：
 1. 原生配置存在于预期路径。
 2. 每个受管目标都存在；受管文件非空，并且 JSON 或 YAML 配置可以解析。添加 `--profile PATH` 还可以确认已安装的文件与该配置档案相符。
 3. 适配器专属的验证例程报告成功。
+
+当 Apothem 区块位于 `AGENTS.md` 中，且 Codex 主文件夹中它的旁边有一个有内容的 `AGENTS.override.md` 时，verify 还会打印一条指出该覆盖文件的说明，因为 Codex 会加载该文件而不是该区块。该说明不会使检查失败；当区块未安装时，verify 不会给出说明。
 
 ## 更新
 

@@ -2,7 +2,7 @@
 title: "install"
 description: "apothem install 命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "16be1a92f6de53b3"
+sourceHash: "5ba6f0eafa4b1b6f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,7 +17,7 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
                  [--format plain|json] [--json] [--no-color]
 ```
 
-加载并校验共享配置档案，选择一个具名适配器或覆盖整个注册表的 `all` 集合，校验物化计划，然后写入工具原生配置以及支持集合。项目作用域的适配器需要 `--project PATH`。
+加载并校验共享配置档案，选择一个具名适配器或覆盖整个注册表的 `all` 集合，校验物化计划，然后写入工具原生配置以及支持集合。项目作用域的适配器需要 `--project PATH`。该文件夹会在跟随其链接并展开 `~` 之后读取，安装记录也以这种形式命名它。以该文件夹的另一种拼写方式记录的安装（例如 Python 代码或较早版本保留的链接），会在安装通过其检查后迁移到这种拼写方式（参见 [`uninstall`](/docs/cli-reference/uninstall)）。
 
 连续式别名 `apothem installing`（也接受 `apothem Installing`）解析到同一个处理程序。
 
@@ -32,7 +32,9 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 
 `install --harness all` 会扇出到混合的作用域：项目作用域的适配器写入所提供的 `--project` 根目录之下，而用户作用域的适配器写入你的主目录之下——也就是该根目录之外。在安装写入任何文件之前，该命令会打印具体的目标，并按两个标题分组：位于项目根目录内的目标，以及位于你主目录下的目标。第三个标题列出项目作用域的适配器在 `--project` 之外写入的、你主目录中的共享文件夹：技能文件夹和 `~/.config/apothem/`（见[主目录中的文件夹](#主目录中的文件夹)）。唯一的例外是 `--clean`：其清空重来步骤早于此预览运行，它会写入备份并删除先前的目标，具体见下文。
 
-当所选内容写入项目根目录之外时，无论是写入以主目录为根的适配器的文件夹，还是写入共享文件夹，交互式确认都会把守以主目录为根的写入。`--yes`、非交互式 shell（无 TTY）、`--dry-run` 和 `--format json` 各自都会在不提示的情况下继续。只有 `--dry-run` 不写入任何内容；`--format json` 会跳过预览和确认提示，但仍会执行写入。拒绝主目录提示会在安装写入之前中止。使用 `--clean` 时，清理步骤会先运行，并且有自己针对每个目标的确认：它会在 `~/.apothem/backups` 下写入备份，并删除它所确认的目标。拒绝安装提示后，这些删除操作和备份仍然保留。
+当所选内容写入项目根目录之外时，无论是写入以主目录为根的适配器的文件夹，还是写入共享文件夹，交互式确认都会把守以主目录为根的写入。`--yes`、非交互式 shell（无 TTY）、`--dry-run` 和 `--format json` 各自都会在不提示的情况下继续。只有 `--dry-run` 不写入任何内容；`--format json` 会跳过预览和确认提示，但仍会执行写入。拒绝主目录提示会在安装写入之前中止。使用 `--clean` 时，清理步骤会先运行，并且有自己针对每个目标的确认：它会在 `~/.apothem/backups` 下写入备份，并删除它所确认的目标。拒绝安装提示后，这些删除操作和备份仍然保留。这些目标是提示中列出的、你主目录中的工具文件夹，其中包括 `~/.agents` 和 `~/.config/apothem`。本身就是链接（包括 Windows 联接点）的目标只会失去该链接，而目标内部的链接会被移除且不会被进入。当 `~/.config` 是一个通向你主目录之外的链接时，清空重来步骤会在备份或移除任何内容之前以 `Clean-slate removal was refused` 停止，因为移除 `~/.config/apothem` 会删除该链接另一端的文件夹。该错误会指出这个链接：将它替换为真实的文件夹，或让它指向你主目录内的文件夹。当你的主目录不是完整路径、是某个驱动器或文件系统的根、是指向这样的根的链接或联接点，或者要经由形成循环的链接才能到达时，该步骤同样会在更改任何内容之前、并在创建起始配置档案之前停止。
+
+清空重来步骤会随 `~/.config/apothem` 一起移除默认配置档案 `~/.config/apothem/profile.yaml`，并在之后将其写回。它未移除的配置档案（例如你通过 `--profile PATH` 从另一个文件夹传入的配置档案）根本不会被写入。写回遵循与其他所有配置档案写入相同的规则：当某个链接会把它引出你的主目录时，写回会被拒绝。当配置档案无法写回时，该命令以退出码 1 退出，错误会指出保存它的备份副本。当链接拒绝了写入时，错误码为 `clean_slate.profile_restore_refused`；当写入本身失败时，错误码为 `clean_slate.profile_restore_failed`。当移除中途停止时（例如遇到另一个程序正占用的文件），会先写回配置档案。该命令随后以退出码 1 退出，错误码为 `clean_slate.removal_failed`，错误会指出备份文件夹。如果配置档案无法写回，错误则改为上述两个配置档案错误码之一。
 
 ## 主目录中的文件夹
 
@@ -50,14 +52,22 @@ all seven                               ->  ~/.config/apothem/rules/ and templat
 - 每个指定某个文件夹的安装都写入相同的文件。第二次安装会发现它们并报告 `unchanged`，而且安装的顺序无关紧要。
 - 主目录中的文件夹会先于项目中的任何内容写入。如果在那里的写入失败，该适配器的安装会带着该错误停止，而项目保持不变。该错误会指出挡路的路径，例如位于文件夹应在之处的一个名为 `~/.agents` 的文件。
 - 每个技能文件夹都会先写入其旁边一个隐藏的 `.<name>.apothem-staging` 文件夹，完成后再重命名到位，因此失败或中断的写入绝不会以最终名称留下一个写了一半的技能文件夹。再次运行安装即可完成；它会替换遗留的暂存文件夹。
-- 位于这些文件夹之一或其上层的符号链接（例如 dotfile 管理器为 `~/.config` 或 `~/.agents` 创建的链接），在它通向你主目录之内的某处时会被跟随。离开你主目录的链接会使安装以 `target escapes the allowed materialization root` 停止，技能文件夹内部的链接也是如此。
+- 位于这些文件夹之一或其上层的链接（例如 dotfile 管理器为 `~/.config` 或 `~/.agents` 创建的链接），在它通向你主目录之内的某处时会被跟随。在 Windows 上，联接点也算作链接。离开你主目录的链接会使安装以 `target escapes the allowed materialization root` 停止，随后给出该链接、它所指向的文件夹以及修复方法：将该链接替换为真实的文件夹。本身就是链接的技能文件夹绝不会被穿过写入：安装会跳过它并给出警告，或者当 Apothem 之前在那里写入过该技能时停止。Apothem 所写入的技能文件夹内部的链接，会在安装下一次写入该技能时被替换为文件夹。
+- 位于 `~/.config` 之下的工具文件夹（例如 OpenCode 的 `~/.config/opencode/` 或位于那里的 `CODEX_HOME`），同样会跟随 `~/.config` 处通向你主目录之内某处的链接。`~/.config` 处离开你主目录的链接会使安装在写入任何文件之前停止，安装在工具文件夹内写入的路径上的链接也是如此。首次运行时，同样位于 `~/.config` 之下的起始配置档案也不会穿过离开你主目录的链接写入：运行会以 `Apothem could not create the starter profile` 停止，与 `apothem quickstart`、`apothem profile init`、`apothem profile set` 和 `apothem profile edit` 的行为相同。若要将配置档案保存在你主目录之外，请先用 `apothem profile init --profile PATH` 在那里创建它（PATH 写成它在主目录之外的实际路径），并向每个命令传入相同的 `--profile PATH`。这只能越过配置档案这一步：写入 `~/.config` 之下的安装仍会在该链接处停止。对于 OpenCode，还需设置 `XDG_CONFIG_HOME`（参见 [OpenCode](/docs/harnesses/opencode)）。安装总会写入 `~/.config/apothem/` 的工具，则需要该链接改为指向你主目录之内；其工具页面会说明这一点。
+- 本身就是链接的主文件夹（例如通过联接点移到另一个驱动器的 Windows 用户配置文件夹）会被跟随：每次写入都停留在它所指向的文件夹之内。
 - 安装不会向你的仓库添加任何技能或规则文件。项目得到的是该适配器的规则文件，以及每次项目安装都会创建的 `.apothem/` 数据文件夹。
 - 与某个 Apothem 技能同名、但并非由 Apothem 写入的技能文件夹会被跳过。安装会打印一条 `Warning:` 行，而 `--format json` 信封会携带一个带有 `"outcome": "warning"` 和 `"operation": "skill_conflict"` 的 `warnings` 条目，指出该文件夹。将该文件夹重命名或移走，然后运行 [`update`](/docs/cli-reference/update)。
+- 这条规则涵盖上表中的每个共享技能文件夹：`~/.agents/skills/`、`~/.codebuddy/skills/`、`~/.kiro/skills/` 和 `~/.trae/skills/`。当安装记录的安装文件夹（一个项目，或一个 `CODEX_HOME`）处于有效状态时，该记录表明那里的技能文件夹属于 Apothem：有效即该文件夹存在，并且仍保存着该次安装在其中记录的某个文件，且内容为 Apothem 的内容。Apothem 拥有的文件只要还在就算数。属于你的文件（例如 Apothem 向其中添加了块的指令文件）只有在仍保存着该块时才算数；对于没有块的文件，则是在仍保存着 Apothem 所记录的内容时才算数。因此，一个重新克隆、只保留其自身文件副本的项目不算有效。安装在 `.apothem/support/` 下写入的支持文件算数；`.apothem/` 下的数据存储（memory、contexts、plans）不算数，经由安装文件夹内的链接到达的文件也不算数。
+- 其他任何记录——其安装文件夹已不存在、不含任何 Apothem 文件，或无法读取（某个不响应的驱动器或网络共享、权限错误）——只有在技能文件夹恰好保存着该次安装所记录的文件、且未经更改、没有添加任何文件、内部没有链接时，才表明该文件夹属于 Apothem。已经保存着当前版本所写内容的文件夹会原样保留，因此由较早版本写入、未经编辑的文件夹，只要仍与当前版本所写内容一致，就不受影响。
+- 共享文件夹本身绝不算作安装文件夹的文件，因此一个安装在主文件夹的项目，并不会仅仅因为 `~/.agents/skills/` 或 `~/.config/apothem/` 存在就算作有效。
+- 因此，当只有这样的记录列出某个技能文件夹时，安装会在三种情况下跳过它并保持不动：你在那里放了自己的技能；你编辑过它（更改、添加或移除了文件）；或者一个未记录其文件的较早版本写入了它，而当前版本写入的内容不同。当只有同一文件夹中较早的一次安装列出它时也是如此：跳过该文件夹的安装不会列出它，而除非它恰好保存着那次较早安装所记录的文件，否则它仍未得到证明。安装、更新和试运行的警告会给出原因和两种后续做法，措辞与 [`verify`](/docs/cli-reference/verify) 相同，后者会将该工具报告为未通过验证并指出这些文件夹。要保留你的技能，就把它留在那里。要使用 Apothem 的版本，请将该文件夹移出技能文件夹，然后为该工具运行 [`update`](/docs/cli-reference/update)（对于项目范围工具，带上 `--project`）。
 - 每一次这样的安装、更新和试运行都会打印一条 `Note:`，指出它在 `--project` 之外写入的文件夹。在 JSON 信封中，它是一个带有 `"operation": "user_level_write"` 和 `paths` 列表的 `warnings` 条目。
 
 ## 能力说明
 
-每个适配器只投射其工具原生支持的能力；没有原生表面的能力会被报告，而不是被无声地丢弃。在纯文本模式下，这表现为每个工具一条分组说明（例如 `Note: <harness> - 9 capabilities not projected; pass --verbose for detail`）；在 `--verbose` 下，每项能力都会打印自己的理由行。在纯文本模式下，任何其他适配器警告同样会打印在单独的 `Warning:` 行上，例如 Zed 的那条警告，它会指出被新的 `.rules` 遮蔽的指令文件。无论详细程度如何，`--format json` 信封始终携带完整的 `warnings` 数组。
+每个适配器只投射其工具原生支持的能力；没有原生表面的能力会被报告，而不是被无声地丢弃。在纯文本模式下，这表现为每个工具一条分组说明（例如 `Note: <harness> - 9 capabilities not projected; pass --verbose for detail`）；在 `--verbose` 下，每项能力都会打印自己的理由行。在纯文本模式下，任何其他适配器警告同样会打印在单独的 `Warning:` 行上，例如 Zed 的那条警告，它会指出被新的 `.rules` 遮蔽的指令文件；又如指出某个文件含有 Apothem BEGIN 标记、其后却没有 END 的那条警告：安装会保留该标记之后的文本，并在其之外另行写入 Apothem 的块，因此该警告会指出该标记所在的行，给出带编号的步骤来修改该行以及除开启 Apothem 块的那一行之外的其他每个 BEGIN 标记行（包括你在代码中引用的 BEGIN 标记），并说明不要改为补回 END 标记，因为那样会留下两个 Apothem 块（参见[故障排除](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)）。针对在 Apothem 标记之间含有两个或更多完整块的文件的警告也是如此，它会按行号指明每个块（参见[文件在 Apothem 的标记之间含有两个块](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)）；针对 Apothem 无法将其块与你的文本区分开的文件的警告同样如此，它会指明每个标记对以及如何修复（参见[Apothem 无法将其块与你的文本区分开](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)）：安装会将这样的文件原样保留（对于标记对，是在某条安装记录列出该文件期间；参见 [`update`](/docs/cli-reference/update)）。将这样的文件原样保留的安装会以部分结果结束，因为该工具无法从该文件获得当前的 Apothem 块：它会在标准错误上打印一行指出该文件的 `✗` 行来代替 `✓` 行（因此 `--quiet` 仍会保留它），`--format json` 信封的 `status` 为 `"partial"`，该文件的警告带有 `"detail": {"left_as_is": "1"}`，退出码为 `2`。在你修复警告所指出的标记行之前，每次安装和更新都会这样结束。不带 `--quiet` 时，这样一次使用 `--harness all` 的安装会以一行摘要结束，该行以 `!` 而非 `✓` 开头，并统计原样保留的文件数：
+`! Installed <n> harnesses (<m> files written); <k> file(s) left as they are, named above.`
+使用 `--clean` 时，这样的安装不会打印其下一步 `apothem verify`，因为在你修复该文件之前它都会失败。在试运行中，针对原样保留的文件的警告会说明 Apothem "would leave the file as it is"，而该运行仍以 `status` `"dry_run"` 和退出码 `0` 结束。配置档案中某条开启代码块却从不关闭的规则，不会遮蔽安装所写块的 END 标记：安装会在块的末尾关闭该代码块。较早版本根据这样的规则写入的块没有这样的关闭行。你自己的、在 Apothem 块上方开启且从不关闭的代码块则是另一种情况：块中的一个关闭行会关闭它，从而使该块被读作代码。安装在写入这样的块时就会立即发出警告，警告会指出需要在 BEGIN 标记上方关闭的代码块（参见[Apothem 无法将其块与你的文本区分开](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)）。试运行会在写入任何内容之前读取该文件，因此它不会显示该块一旦写入就会被读作代码。无论详细程度如何，`--format json` 信封始终携带完整的 `warnings` 数组。
 
 安装和更新还会以 `Note:` 行的形式打印建议性提示。建议性提示绝不会改变安装所写入的内容。当一次安装写入一个共享根目录（一个其他工具也会加载的路径，例如技能文件夹 `~/.agents/skills/`）时，该说明会指出那些工具，并将仅在某个条件下才加载该路径的工具放在括号中，例如 `Open-Claw (only under its default state
 directory)`。一次写入其他安装也会写入的文件夹的安装（`holder` 角色）会说明，该文件夹会一直保留，直到使用它的最后一个 Apothem 安装被卸载为止，并指出当前使用它的安装。当一次安装的目标工具已经从另一次安装的共享根目录加载 Apothem 内容时，该说明会指出放置它的那次安装：在注册所有者仍使用该文件夹时为注册所有者，否则为使用它的最早的安装。在 `--format json` 信封中，每条建议性提示都是一个带有 `"outcome": "advisory"` 和 `"operation": "shared_root"` 的 `warnings` 条目；其 `role` 为 `owner`、`holder` 或 `reader`，`holders` 列出使用该文件夹的安装，`owner_of_record` 指出记录在案的所有者。
@@ -65,6 +75,8 @@ directory)`。一次写入其他安装也会写入的文件夹的安装（`holde
 注册钩子的安装还会打印有关钩子文件的说明。`hook_review` 建议性提示会指出工具在运行这些钩子之前所需的步骤（重启并审查，或信任该工作区），或者指出一个由仓库提交、且写有本机解释器的钩子文件所带来的风险。对于同样会运行 Claude Code 设置文件（例如 Apothem 为 Claude Code 所做的安装写入的那些文件）中钩子的工具，会出现 `hook_import` 建议性提示，它会指出该工具自身用于关闭这种导入的开关，以及该开关还会停止什么。每条都是一个 `warnings` 条目，带有 `"outcome": "advisory"`、`harness`、钩子文件的 `path` 和一个 `message`。
 
 钩子命令会将项目路径和解释器路径放在双引号内，`sh`、Git Bash 和 PowerShell 都能读取这种形式。包含 `$`、反引号、双引号或反斜杠的路径会使该命令运行另一个文件，因此安装（以及 `--dry-run`）会以一个指出该路径的错误停止，并且不写入任何内容；请移动或重命名项目后再次运行。路径中的空格或撇号没有问题。
+
+有些工具只从某个文件夹中的固定列表里加载第一个有文本的文件，因此排在 Apothem 所写文件之前的你自己的文件，会使该工具无法加载 Apothem 块。例如，[一个受支持的工具](/docs/harnesses/codex#compatibility-notes)会读取一个有文本的 `AGENTS.override.md`，而不是 Apothem 在该工具主文件夹中其旁边写入的 `AGENTS.md`。安装和更新（包括试运行）随后会打印一条指出该文件的说明。空的覆盖文件会被跳过，指向 `AGENTS.md` 的符号链接也会被跳过；硬链接或副本会得到该说明，因为重写 `AGENTS.md` 的安装会使其成为一个独立的文件。OpenCode 1 的工作方式不同：`opencode.jsonc` 中的 `instructions` 列表（即使为空）会替换 Apothem 写入同一文件夹中 `opencode.json` 的列表。该处的 `config.json`、`opencode.json` 或 `opencode.jsonc` 若无法读取或解析、顶层不是对象、`instructions` 值不是文本列表，或者带有一个指向无法读取文件的 `{file:path}`，都会使它无法加载任何配置，使用这些名称之一的文件夹也是如此。安装和更新也会为每个这样的文件打印一条 `instruction_override` 说明，但它们连作为 JSON5 都无法解析的 `opencode.json` 除外，对此它们会以 `config.unparseable` 错误拒绝（[OpenCode 说明](/docs/harnesses/opencode#compatibility-notes)）。该说明是一个 `warnings` 条目，带有 `"outcome": "advisory"` 和 `"operation": "instruction_override"`、`harness`、该说明所涉文件的 `path`、安装写入的 `target`，以及一个 `message`。
 
 配置档案中的 MCP 服务器会得到三条建议性提示，每条都会指出相应的配置档案字段：
 
@@ -124,6 +136,8 @@ directory)`。一次写入其他安装也会写入的文件夹的安装（`holde
 }
 ```
 
+因其 Apothem 标记行而将某个文件原样保留的安装，其 `status` 为 `"partial"`，并以退出码 `2` 退出（参见[能力说明](#能力说明)）。
+
 对于 `--dry-run`，不会写入任何内容，`results` 会列出安装将要写入的每个路径，每个路径都带有它将得到的结果（`created`、`updated` 或 `unchanged`），对于你也会编辑的文件，还会在 `detail.diff` 中带有统一差异——与 [`apothem diff`](/docs/cli-reference/diff) 所显示的计划相同：
 
 ```json
@@ -147,6 +161,8 @@ directory)`。一次写入其他安装也会写入的文件夹的安装（`holde
   "error": null
 }
 ```
+
+在链接处被拒绝的结果会在 `detail.symlink` 中指明该链接，在 `detail.leads_to` 中指明它所指向的路径。因某个链接将工具文件夹引出你的主目录而被拒绝的结果，还会在 `detail.fix` 中携带修复方法。
 
 当提供 `--clean` 时，信封还会额外携带一个描述移除阶段的 `clean` 对象——逐目标的处置列表、本次运行是否为预览，以及带时间戳的备份目录（试运行中为 `null`）：
 
@@ -204,7 +220,7 @@ apothem Installing --harness claude-code   # capitalized variant
 |---|---|
 | 0 | 适配器安装成功，或试运行已顺利完成规划 |
 | 1 | 预期内的校验、配置档案、工具、项目或适配器错误 |
-| 2 | 在至少一次写入之后发生的部分批量物化 |
+| 2 | 部分结果：某个批次在至少一次写入之后停止，或者安装因 Apothem 标记行而将 Apothem 保存其块的某个文件原样保留（参见[能力说明](#能力说明)）；`status` 为 `"partial"` |
 | 64 | 用法错误：未知的选项或命令，或缺失或无效的选项值。在 `--json` 下，该错误是一个代码为 `cli.usage` 的 JSON 信封。 |
 
 ## 另请参阅

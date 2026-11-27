@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "适用于 Open-Claw（预览版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "4c7b4673820f1fa6"
+sourceHash: "057bb9c3bebcd657"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,32 +17,101 @@ sourceHash: "4c7b4673820f1fa6"
 apothem install --harness open-claw
 ```
 
-适配器写入 OpenClaw 的用户全局配置文件，将共享配置档案投射为一份配置档案文档，并在工具根目录下安装 Apothem 支持集合。OpenClaw 的原生配置是 JSON；物化器渲染一个键 `skills.load.extraDirs`，而已存在的文件会保留其其他键。
+适配器写入 OpenClaw 的用户全局配置文件，将共享配置档案投射为一份配置档案文档，在每个 OpenClaw 工作区中写入一个 Apothem 规则文件，并在工具根目录下安装 Apothem 支持集合。OpenClaw 的原生配置是 JSON；物化器渲染两个条目：`skills.load.extraDirs` 和 `bootstrap-extra-files` 钩子条目，而已存在的文件会保留其其他键。
 
-**写入的文件：** `~/.openclaw/openclaw.json`、配置档案文档 `~/.openclaw/apothem/rules/00-apothem-profile.md`，以及 `~/.openclaw/.apothem/support/` 下的支持文件
+**写入的文件：** `~/.openclaw/openclaw.json`、配置档案文档 `~/.openclaw/apothem/rules/00-apothem-profile.md`、每个工作区中的规则文件 `<workspace>/apothem/AGENTS.md`，以及 Apothem 的数据文件夹 `~/.openclaw/.apothem/`（其中包含它的上下文、学习和记忆存储，以及 `~/.openclaw/.apothem/support/` 下的支持文件）
+
+每次安装和更新都会删除 `~/.openclaw/apothem/rules/` 中每一个不是由 Apothem 放入的文件，删除前会先将其保存到 `~/.apothem/backups/` 下的一个备份集中。一旦该工具有了 10 个更新的备份集，这个备份就会被删除，因此请将你自己的文件保存在别处。
 
 配置档案文档以一个 Apothem 支持文件小节结尾，该小节写明每条仓库式引用（`rules/<name>.md`、`templates/...`、`hooks/...`）所解析到的、位于 `~/.openclaw/.apothem/support/` 下的绝对目录。
 
 ## 配置档案到原生配置的映射
 
-适配器编写一个配置键。它将 `~/.openclaw/.apothem/support/skills` 添加到 `skills.load.extraDirs`，即 OpenClaw 读取的额外技能目录列表，OpenClaw 正是通过它找到已安装的技能。该条目排在你已列出的所有条目之后，你的其他键保持原样。配置档案中的身份、偏好和规则进入配置档案文档。共享的命令、技能、规则、模板和钩子提示词作为支持材料安装在 `~/.openclaw/.apothem/support/` 下。
+适配器编写两个配置条目：
+
+- 它将 `~/.openclaw/.apothem/support/skills` 添加到 `skills.load.extraDirs`，即 OpenClaw 读取的额外技能目录列表，OpenClaw 正是通过它找到已安装的技能。该条目排在你已列出的所有条目之后。
+- 它将 `apothem/AGENTS.md` 添加到 `hooks.internal.entries.bootstrap-extra-files` 条目的路径列表中，OpenClaw 正是通过它加载 Apothem 规则文件（参见[每个工作区中的规则](#每个工作区中的规则)）。
+
+你的其他键保持原样，并且 Apothem 从不写入 `hooks.internal.enabled`。配置档案中的身份、偏好和规则进入配置档案文档以及每个工作区的规则文件。共享的命令、技能、辅助定义、规则、模板和钩子提示词作为支持材料安装在 `~/.openclaw/.apothem/support/` 下。
 
 ## 兼容性说明
 
-预览版适配器。OpenClaw 通过 `skills.load.extraDirs` 加载 Apothem 技能，但不会自行加载支持树的其余部分或配置档案文档：它的任何工作区指令文件或配置都不指向那里，因此安装之后，OpenClaw 运行时不带有 Apothem 的规则或 MCP 服务器。
+预览版适配器。OpenClaw 通过 `skills.load.extraDirs` 加载 Apothem 技能，并通过每个工作区中的规则文件加载 Apothem 规则。它不会从 Apothem 加载 MCP 服务器。
 
-**名称冲突。** OpenClaw 从以下来源读取技能，按优先级从高到低排列，当同一技能名称出现在多个位置时，优先级最高的来源胜出：工作区的 `skills/` 文件夹、工作区的 `.agents/skills/` 文件夹、`~/.agents/skills`（仅限默认状态目录）、状态目录的 `skills/` 文件夹（默认为 `~/.openclaw/skills`）、workshop 技能、捆绑技能和 custodian 技能，最后是 `skills.load.extraDirs` 下列出的文件夹以及插件技能。Apothem 目录是一个 `extraDirs` 条目，因此你保存在任何更早来源中的同名技能才是 OpenClaw 使用的那一个，而该技能的 Apothem 副本会闲置在磁盘上。Apothem 只写入 `openclaw.json` 以及 `~/.openclaw/.apothem/support/` 之下，绝不写入那些更早的文件夹，因此安装、更新和卸载都不会替换你保存在那里的技能。
+### 每个工作区中的规则
 
-`agents.defaults.skills` 是技能名称白名单；Apothem 不编辑它，因此如果你保留了一个白名单，请检查它是否写明了你想要的 Apothem 技能。
-`apothem update` 会保留你添加到 `openclaw.json` 中的键。MCP 服务器位于 OpenClaw 配置的 `mcp.servers` 块中，你通过 `openclaw mcp add` 及相关子命令进行管理；适配器不在那里写入任何条目。（OpenClaw 的行为依据其[技能](https://docs.openclaw.ai/tools/skills)、[技能配置](https://docs.openclaw.ai/tools/skills-config)和[配置扩展](https://docs.openclaw.ai/gateway/config-extensions)文档（读取于 2026-10-24），以及其 [MCP CLI](https://docs.openclaw.ai/cli/mcp) 文档（读取于 2026-10-02）。）
+OpenClaw 会将工作区中的六个文件放入其系统提示词：`AGENTS.md`、`SOUL.md`、`IDENTITY.md`、`USER.md`、`BOOTSTRAP.md` 和 `MEMORY.md`。它自带的 `bootstrap-extra-files` 钩子会再添加一些使用上述某个名称的文件，其路径相对于每个会话的工作区读取。Apothem 在每个工作区中写入 `apothem/AGENTS.md`，并在该钩子的条目中列出这个路径：
 
-**`openclaw.json` 中的注释。** OpenClaw 以 JSON5 格式读取其配置，而 Apothem 会将该文件重写为纯 JSON。当该文件带有注释或其他 JSON5 语法且缺少该条目时，Apothem 会保持该文件不变，安装会停止，并显示一条写明该键的消息。请自行将以下条目合并到你的文件中，或将该文件转换为纯 JSON，然后再次运行安装：
+```json
+{
+  "hooks": {
+    "internal": {
+      "entries": {
+        "bootstrap-extra-files": {
+          "enabled": true,
+          "paths": ["apothem/AGENTS.md"]
+        }
+      }
+    }
+  }
+}
+```
+
+该文件包含配置档案的受管块，以及一个指向 `~/.openclaw/.apothem/support/` 下规则索引的指针，通过该索引可以到达整套规则。由于该文件名为 `AGENTS.md`，OpenClaw 也会在 cron 会话以及由另一个会话启动的辅助会话中加载它，而这些会话只会获得六个文件中的一部分。Apothem 从不编辑工作区自己的 `AGENTS.md`：OpenClaw 根据模板创建它，并由在该工作区中工作的助手编辑它。名为 `apothem` 的文件夹不算作初始设置工作，因此 OpenClaw 尚未设置的工作区仍会获得其首次运行文件。
+
+Apothem 会将该文件写入你主目录中存在的每个工作区：`agents.defaults.workspace`（否则为 `OPENCLAW_WORKSPACE_DIR`，再否则为 `~/.openclaw/workspace`），以及每个 `agents.entries` 条目的 `workspace`（或较旧的 `agents.list` 中每一项的工作区，当 `agents.entries` 不存在时 OpenClaw 仍会读取它）。拥有默认工作区的条目在没有自己的 `workspace` 时直接使用默认工作区：即标记为 `default: true` 的条目（除非 `agents.ownership` 为 `"explicit"`），否则为唯一的条目。其他没有自己 `workspace` 的条目使用 `<agents.defaults.workspace>/<id>`，否则使用 `~/.openclaw/workspace-<id>`，其中 id 按 OpenClaw 在文件夹名称中的写法拼写：小写，并且字母、数字、`_` 和 `-` 以外的字符都变为 `-`（因此 `Bob Smith` 使用 `workspace-bob-smith`）。
+
+- 尚不存在的工作区会被跳过，不显示任何消息：一旦 OpenClaw 创建了它，`apothem verify --harness open-claw` 就会失败，直到你运行 `apothem update --harness open-claw`。
+- 以下情况会被跳过，每种情况显示一条警告：位于你主目录之外的工作区、通过链接（符号链接或 Windows 联接点）到达的工作区、是文件的路径、`apothem/AGENTS.md` 是文件夹的工作区，以及 `apothem` 文件夹本身是另一个工作区的工作区（其 `AGENTS.md` 将是那个工作区自己的文件）。Apothem 从不通过链接写入或删除：位于后来变成链接的工作区中的规则文件会留在原处，并显示一条警告，要求你手动删除其中的 Apothem 块。
+- 当某个工作区离开配置，或某个文件不再符合要求（参见下文的大小限制）时，下一次安装或更新会从它在那里写入的文件中移除 Apothem 块。当该文件及其 `apothem` 文件夹中没有剩下其他内容时，它们会被删除；你在块之外添加的文本会保留。
+
+如果你的配置中已有 `bootstrap-extra-files` 条目，Apothem 会将其路径添加到该钩子读取的列表中：`paths`、`patterns` 和 `files` 中第一个非空的那个。它从不另起一个会遮蔽你的列表的第二个列表。
+
+**Apothem 何时不动钩子。** 在以下情况下，安装会写入规则文件，但不更改钩子设置，并打印一条警告：
+
+- `hooks.internal.enabled` 为 `false`：你关闭了内部钩子。
+- `bootstrap-extra-files` 条目带有 `enabled: false`。
+- `hooks.internal.enabled` 为 `true`，并且 `hooks.internal.entries` 下没有指名任何钩子（且 `hooks.internal.load.extraDirs` 为空）。此时 OpenClaw 会加载每个符合条件的钩子，而指名第一个钩子会关闭其他钩子。请指名你使用的钩子，然后运行更新。你通过 OpenClaw 安装的钩子包列在 OpenClaw 自己的状态数据库中，Apothem 不读取该数据库，因此即使安装了这样的钩子包，Apothem 也以同样方式处理这种情况。
+- `openclaw.json` 含有注释或其他 JSON5 语法（参见 [`openclaw.json` 中的注释](#兼容性说明)）。
+
+当规则文件在任何工作区中都无法同时满足两项大小限制时，安装不写入任何文件，也不向钩子条目添加路径。
+
+**大小限制。** OpenClaw 每个文件最多注入 20,000 个字符，总计最多 60,000 个字符（`agents.defaults.bootstrapMaxChars` 和 `bootstrapTotalMaxChars`；`agents.entries` 条目可以设置自己的值，这些值对其工作区优先）。OpenClaw 以 UTF-16 单元计数字符，因此一个表情符号算作两个，Apothem 也以同样方式计数，包括行尾（一个 Windows 换行算作两个）。使用默认配置档案时，规则文件为几千个字符。
+
+规则文件在六个工作区文件以及 `bootstrap-extra-files` 条目的其他文件之后加载。在某个工作区中，如果它会超过单文件限制，或超出总量剩余的空间，OpenClaw 会截断或跳过它，规则就会残缺不全地到达：因此 Apothem 不会在那里写入它，会在警告中说明原因，并移除早先安装留下的副本。当多个条目共享一个工作区时，以最小的限制为准。（OpenClaw 的行为依据其[钩子配置](https://docs.openclaw.ai/automation/hooks/configuration)、[自带钩子](https://docs.openclaw.ai/automation/hooks/bundled-hooks)和[工作区与引导](https://docs.openclaw.ai/gateway/config-agents/workspace-and-bootstrap)文档，读取于 2026-11-09。）
+
+Apothem 块丢失了 END 标记的规则文件会在其 BEGIN 标记下方保留旧的 Apothem 文本，而更新会在其旁边写入 Apothem 的块，因此这些旧文本会计入单文件限制。当一个超出限制的规则文件含有一个不开启完整块的 BEGIN 标记（其 END 标记已丢失，或该标记是你自己的）时，警告会写明该文件，并按行号写明每个这样的标记。然后它会写明修复该文件所要更改的每一个标记行，与该文件的其他警告给出的行相同，例如 “change line 3 by adding a word inside its comment”（两行时为 “change lines 3 and 9 by adding a word inside each comment”，其中可能包括你在代码块中引用的 BEGIN 标记）。当文件在一个没有任何行关闭的代码块内结束时，它会先要求你添加该代码块的结束行，例如 “add a line of 3 backticks below line 12”。如果 Markdown 查看器对该代码块的解读可能与 Apothem 不同（其上方的某一行可能开启一个 HTML 块，或者某个列表项的文本在其上方从左边距继续，随后跟着一个缩进行），警告不会写明要更改的行：它会说明 Apothem 无法给出步骤，并像该文件的其他警告那样写明开启该代码块的行（参见[按编号修复](/docs/install/troubleshooting#follow-a-numbered-fix)）。它会要求你手动删除标记下方的旧文本，同时保留你自己的文本，或者缩短配置档案的自定义规则，或者提高限制。
+
+### 技能
+
+**名称冲突。** OpenClaw 从以下来源读取技能，按优先级从高到低排列，当同一技能名称出现在多个位置时，优先级最高的来源胜出：工作区的 `skills/` 文件夹、工作区的 `.agents/skills/` 文件夹、`~/.agents/skills`（仅限默认状态目录）、状态目录的 `skills/` 文件夹（默认为 `~/.openclaw/skills`）、workshop 技能、捆绑技能和 custodian 技能，然后是 `skills.load.extraDirs` 下列出的文件夹以及插件技能。在单独的执行工作区（即其自身工作区以外的某个文件夹）中运行的会话，还会在上述所有来源之后读取该文件夹的 `skills/` 和 `.agents/skills/` 文件夹，因此 Apothem 技能优先于保存在那里的同名技能。Apothem 目录是一个 `extraDirs` 条目，因此你保存在任何更早来源中的同名技能才是 OpenClaw 使用的那一个，而该技能的 Apothem 副本会闲置在磁盘上。Apothem 只写入 `openclaw.json`、`~/.openclaw/apothem/rules/`、`~/.openclaw/.apothem/` 以及每个工作区的 `apothem/AGENTS.md`，绝不写入那些更早的文件夹，因此安装、更新和卸载都不会替换你保存在那里的技能。
+
+`agents.defaults.skills` 是技能名称白名单，而 `agents.entries.<id>.skills` 列表会为其所属的条目替换它。Apothem 两个列表都不编辑，因此如果你保留了其中之一，请检查它是否写明了你想要的 Apothem 技能。
+`apothem update` 会保留你添加到 `openclaw.json` 中的键。MCP 服务器位于 OpenClaw 配置的 `mcp.servers` 块中，你通过 `openclaw mcp add` 及相关子命令进行管理；适配器不在那里写入任何条目。（OpenClaw 的行为依据其[技能](https://docs.openclaw.ai/tools/skills)、[技能配置](https://docs.openclaw.ai/tools/skills-config)、[配置扩展](https://docs.openclaw.ai/gateway/config-extensions)和 [MCP CLI](https://docs.openclaw.ai/cli/mcp) 文档，读取于 2026-11-03。）
+
+**`openclaw.json` 中的注释。** OpenClaw 以 JSON5 格式读取其配置，而 Apothem 会将该文件重写为纯 JSON。当该文件带有注释或其他 JSON5 语法时，Apothem 从不重写它：
+
+- 如果缺少 `skills.load.extraDirs` 条目，安装会停止，并显示一条消息，说明该文件带有注释或 JSON5 语法。
+- 如果只缺少钩子条目，安装和更新会继续进行，写入工作区规则文件，并打印一条警告，说明要添加什么（如果你的 `bootstrap-extra-files` 条目已在使用某个列表，该路径会进入那个列表）。在你添加它之前，`apothem verify` 会失败。
+- 在你添加注释之前 Apothem 写入的条目会原样保留，更新也会继续进行。当大小限制或你的钩子设置要求将 Apothem 的路径从钩子条目中移除时，警告会要求你手动移除它；不再符合要求的规则文件仍会被移除。
+
+请自行将以下条目合并到你的文件中，或将该文件转换为纯 JSON，然后再次运行安装：
 
 ```json
 {
   "skills": {
     "load": {
       "extraDirs": ["~/.openclaw/.apothem/support/skills"]
+    }
+  },
+  "hooks": {
+    "internal": {
+      "entries": {
+        "bootstrap-extra-files": {
+          "enabled": true,
+          "paths": ["apothem/AGENTS.md"]
+        }
+      }
     }
   }
 }
@@ -61,7 +130,9 @@ verify 命令确认：
 1. 原生配置存在于预期路径。
 2. 每个受管目标都存在；受管文件非空，并且 JSON 或 YAML 配置可以解析。添加 `--profile PATH` 还可以确认已安装的文件与该配置档案相符。
 3. 原生配置中的 `skills.load.extraDirs` 列出了 `~/.openclaw/.apothem/support/skills`。没有该条目时，OpenClaw 不会加载已安装的技能；`apothem update` 会将其重新添加。
-4. 适配器专属的验证例程报告成功。
+4. `bootstrap-extra-files` 条目在该钩子读取的列表中列出了 `apothem/AGENTS.md`，除非你自己的设置使 Apothem 无法注册它（参见[每个工作区中的规则](#每个工作区中的规则)）。
+5. Apothem 找到的每个工作区都含有带受管块的 `apothem/AGENTS.md`。安装之后创建的工作区在 `apothem update` 写入该文件之前无法通过此项检查。安装时报告该文件超出大小限制的工作区，在你缩短配置档案的自定义规则或提高限制并运行更新之前，也无法通过此项检查；链接、主目录之外的路径以及不存在的工作区不受检查。`apothem status` 会报告块已被编辑的规则文件。
+6. Apothem 在其中保留块的任何文件（配置档案文档和每个规则文件，包括位于安装已不再使用的工作区中的规则文件）都不含不开启完整块的 BEGIN 标记、不含 Apothem 标记之间的两个或更多完整块，也不含 Apothem 无法与你的文本区分开的标记对。更新会保留这样的标记，或者让这样的文件保持原样，因此在你按 `Note:` 行所说手动修复该文件之前，检查会一直失败。规则文件只有在符合单文件限制时才会被写入，而你在所更改的标记行下方保留的旧 Apothem 文本会计入该限制，因此该说明会写道，下一次更新会写入 Apothem 的块 “if the file then fits OpenClaw's per-file limit (bootstrapMaxChars)”；如果不符合，更新会在其大小警告中写明该文件（参见[文件含有 Apothem BEGIN 标记但没有 END 标记](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)、[文件在 Apothem 的标记之间含有两个块](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)和 [Apothem 无法将其块与你的文本区分开](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)）。
 
 ## 更新
 
@@ -69,7 +140,8 @@ verify 命令确认：
 apothem update --harness open-claw
 ```
 
-根据当前的共享配置档案状态重新派生配置档案文档，并刷新支持文件；`openclaw.json` 保留其已有的键，并且无论你更新多少次，`skills.load.extraDirs` 中的 Apothem 条目都只列出一次。在编辑 `~/.config/apothem/profile.yaml` 或升级已安装的 Apothem 包之后运行。
+根据当前的共享配置档案状态重新派生配置档案文档和每个工作区的规则文件，并刷新支持文件；`openclaw.json` 保留其已有的键，并且无论你更新多少次，`skills.load.extraDirs` 和钩子条目中的 Apothem 条目都只列出一次。每次更新都会将 Apothem 的路径写在钩子条目列表的末尾，因此如果你在它之后放了条目，它会移到末尾。你在规则文件受管块之外添加的文本会保留。位于安装已不再使用的工作区中的规则文件会失去其块。当这在文件中留下一个没有 END 标记的 BEGIN 标记（你自己的某一行，或某个丢失了 END 标记的旧块的残余）时，更新会写明该文件和该标记所在的行，并附带一个编号步骤，更改该行使其不再被读作标记；在你更改之前，`apothem verify` 会失败。此后，该标记下方的任何旧 Apothem 文本由你手动删除。如果这样的文件在 Apothem 的标记之间含有两个不同的块，更新会让该文件保持原样，并按行号写明每个块，或写明 Apothem 的块及其周围的标记行。请按照警告中的某个编号修复操作，这些修复会就地更改 BEGIN 标记行：保留 Apothem 的块时，下一次安装、更新或卸载会将其移除；更改了每一个 BEGIN 标记行时，Apothem 在那里就找不到属于自己的块。如果 Apothem 无法将该文件中的块与你的文本区分开（例如该块位于你的某个代码块内），更新同样会让该文件保持原样，其警告会写明每个标记对以及如何修复；你修复之后，下一次安装、更新或卸载会移除 Apothem 的块（参见 [Apothem 无法将其块与你的文本区分开](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)）。在此之前，`apothem verify` 会失败并写明该文件（参见[验证](#验证)）。
+在编辑 `~/.config/apothem/profile.yaml` 或升级已安装的 Apothem 包之后运行。
 
 ## 卸载
 
@@ -77,7 +149,16 @@ apothem update --harness open-claw
 apothem uninstall --harness open-claw
 ```
 
-移除适配器添加的内容：它在 `skills.load.extraDirs` 中的条目、配置档案文档和支持树。你自己在 `openclaw.json` 中的键会保留，包括你自己的 `extraDirs` 条目，只有当该文件由 Apothem 创建且其中没有你的任何内容时，才会删除该文件。共享配置档案 YAML 和 Apothem 引擎不受影响。
+移除适配器添加的内容：它在 `skills.load.extraDirs` 中的条目、它在钩子条目中的路径（以及当该条目由 Apothem 创建时的条目本身）、每个工作区的 `apothem/AGENTS.md` 中的受管块（当文件和文件夹中没有剩下其他内容时，它们会被删除）、配置档案文档和支持树。你自己在 `openclaw.json` 中的键会保留，包括你自己的 `extraDirs` 条目和钩子设置，工作区自己的文件保持原样，只有当 `openclaw.json` 由 Apothem 创建且其中没有你的任何内容时，才会删除该文件。
+
+有些残留需要你亲自处理：
+
+- **含有注释或其他 JSON5 语法的 `openclaw.json` 中的 Apothem 条目。** 卸载会在更改任何内容之前停止，并以一条写明要移除的条目的错误退出。
+- **通过链接到达、仍含有 Apothem 块的规则文件。** 卸载会移除其他所有内容，将该文件留在原处，并将卸载报告为未完成（退出码 2），同时写明该链接。报告还会说明 OpenClaw 是否仍会加载该文件：只要 `openclaw.json` 在 OpenClaw 使用的某个工作区中写明了它，它就仍会被加载，原因是 Apothem 无法更改 `openclaw.json`，或者你自己的某个模式匹配到了它。
+- <strong>Apothem 无法重写的规则文件</strong>（位于你无法写入的文件夹中，或者是 Windows 上的只读文件）。卸载会报告一个写明该文件的错误，清理其他工作区中的规则文件，并在更改 `openclaw.json` 或支持文件之前停止。
+- <strong>Apothem 无法将其块与你的文本区分开的规则文件</strong>（例如该块位于你的某个代码块内）。卸载会移除其他所有内容，让该文件保持原样，并将卸载报告为未完成（退出码 2）。其警告会写明每个标记对并给出编号修复：在再次运行卸载之前，请按照与实际情况相符的那一个修复。
+
+在上述每种情况下，Apothem 都会将卸载记录为未完成并保留其安装记录，即使你之后在块旁边添加了自己的文本。请移除写明的条目，或移除 Apothem 块（或该文件），或修复该文件，然后再次运行卸载以完成它。Apothem 块丢失了 END 行的规则文件同样会保持原样，并显示一条写明它的警告，但卸载仍会完成；请手动删除该块的剩余部分。在安装保留期间，每次安装和更新都会写明位于安装已不再使用的工作区中的这类文件，直到你删除该块的剩余部分。卸载完成后，只有当之后的某次安装写入其工作区时，Apothem 才会再次写明该文件。在安装使用的工作区中，安装或更新会保留这类规则文件的文本，在其之外另行写入 Apothem 的块，并写明该文件。共享配置档案 YAML 和 Apothem 引擎不受影响。
 
 ## 合规闸门
 
@@ -92,10 +173,11 @@ python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 | 症状 | 修复方法 |
 |---------|-----|
 | 找不到配置文件 | 重新运行 `apothem install --harness open-claw` |
-| 验证失败 | 运行 `apothem update --harness open-claw`，然后再次验证 |
-| 意外的配置内容 | Apothem 在 `openclaw.json` 中只编写 `skills.load.extraDirs` 条目，并保留其中已有的键，因此配置档案内容不会落到那里。配置档案内容落在 `~/.openclaw/apothem/rules/00-apothem-profile.md` 中：请检查 `~/.config/apothem/profile.yaml` 或 `--profile PATH`，然后重新运行 [更新](#更新) 下的命令 |
-| 安装停止，并显示一条关于 `openclaw.json` 中的注释或 JSON5 语法的消息 | Apothem 不会重写一个需要从中删除注释的文件。请自行添加 [兼容性说明](#兼容性说明) 下所示的 `skills.load.extraDirs` 条目，或将该文件转换为纯 JSON，然后再次运行安装 |
-| 某个 Apothem 技能没有出现在 OpenClaw 中 | 工作区、`~/.agents/skills` 或 `~/.openclaw/skills` 中的同名技能优先于 Apothem 副本（参见[兼容性说明](#兼容性说明)）。另外请运行 `apothem verify --harness open-claw`，并检查你保留的任何 `agents.defaults.skills` 白名单是否写明了该技能 |
+| 验证失败 | 运行 `apothem update --harness open-claw`，然后再次验证。如果 `Note:` 行写明某个含有需要修复的 Apothem 标记的文件（例如某个规则文件），更新不会清除它：请按该说明手动修复该文件，然后再次验证（参见[验证](#验证)第 6 项） |
+| 意外的配置内容 | Apothem 在 `openclaw.json` 中只编写它在 `skills.load.extraDirs` 中的条目以及它在 `bootstrap-extra-files` 钩子条目中的路径（创建该条目时另加 `enabled: true`），并保留其中已有的键，因此配置档案内容不会落到那里。配置档案内容落在 `~/.openclaw/apothem/rules/00-apothem-profile.md` 以及每个工作区的 `apothem/AGENTS.md` 中：请检查 `~/.config/apothem/profile.yaml` 或 `--profile PATH`，然后重新运行 [更新](#更新) 下的命令 |
+| 安装停止，并显示一条关于 `openclaw.json` 中的注释或 JSON5 语法的消息，或警告其中含有 JSON5 语法 | Apothem 不会重写一个需要从中删除注释的文件。请自行添加 [兼容性说明](#兼容性说明) 下所示的两个条目（`skills.load.extraDirs` 条目和 `bootstrap-extra-files` 钩子条目），或将该文件转换为纯 JSON，然后再次运行安装 |
+| OpenClaw 不遵循 Apothem 规则 | 运行 `apothem verify --harness open-claw` 并检查安装警告：安装时不存在的工作区、已关闭的内部钩子或开放的钩子发现，都会导致规则未被加载（参见[每个工作区中的规则](#每个工作区中的规则)）。然后运行 `apothem update --harness open-claw` |
+| 某个 Apothem 技能没有出现在 OpenClaw 中 | 工作区、`~/.agents/skills`、`~/.openclaw/skills` 中，或 OpenClaw 的 workshop 技能或捆绑技能中的同名技能优先于 Apothem 副本（参见[兼容性说明](#兼容性说明)）。另外请运行 `apothem verify --harness open-claw`，并检查你保留的任何 `agents.defaults.skills` 或 `agents.entries.<id>.skills` 白名单是否写明了该技能 |
 
 ## 配置开关
 

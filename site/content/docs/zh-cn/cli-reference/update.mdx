@@ -2,7 +2,7 @@
 title: "update"
 description: "apothem update 命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "0f47915f4f7819de"
+sourceHash: "7e96f7b81b7e328d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,9 +17,15 @@ apothem update --harness NAME|all [--profile PATH] [--dry-run]
                 [--format plain|json] [--json] [--no-color]
 ```
 
-`update` 会从当前的共享配置档案重新物化工具输出。它使用与 `install` 相同的配置档案校验、`--harness all` 选择、项目作用域检查、试运行行为以及 JSON 信封。
+`update` 会从当前的共享配置档案重新物化工具输出。它使用与 `install` 相同的配置档案校验、`--harness all` 选择、项目作用域检查、试运行行为以及 JSON 信封，并打印相同的提示，包括当你的某个文件使工具无法加载 Apothem 写入的内容时给出的 `instruction_override` 说明（见 [`install`](/docs/cli-reference/install)）。与 `install` 一样，它会记录解析后的 `--project` 文件夹，并把以该文件夹的另一种写法记录的安装移到它名下。对于含有一个 BEGIN 标记、其后却没有 END 标记的文件，它也会发出警告：该标记之后的文本保持原样，Apothem 的块与之分开写入，因此警告会指出该标记所在的行，给出一个修改该行的编号步骤，并说明不要改为补回 END 标记，因为那样会留下两个 Apothem 块（参见[故障排除](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)）。在 Apothem 的标记之间含有两个或更多完整块的文件会保持原样，并附带一条按行号指出每个块的警告（参见[文件在 Apothem 的标记之间含有两个块](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)）。Apothem 无法区分其块与你的文本的文件（例如它的块位于你的某个代码块之内），只要有安装记录列出该文件，就会保持原样（无法读取的安装台账也算作一条记录；在该文件夹的另一种写法下做出的记录——例如经由链接访问的主目录——同样算数，与卸载时一样，前提是你当前运行所用的写法下仍有其自身的安装，且该工具写入[你主目录中的共享文件夹](/docs/cli-reference/install#folders-in-your-home-directory)），并附带一条警告，指出其中的每个标记对以及修复方法（参见 [Apothem 无法区分其块与你的文本](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)）。当旁边还有一个不开启任何标记对的 BEGIN 标记时（例如 Apothem 的块在丢失 END 标记后留下的部分），同样如此：警告会首先指出该 BEGIN 标记，且警告中的每个编号修复步骤都会修改它。在没有安装记录时，你在代码中引用的标记对属于你的文本，更新会在其后添加它的块（无论是否存在这样的 BEGIN 标记），除非该标记对所含的恰好是更新要写入的块：此时它会保持文件原样，并给出该警告。一个代码之外的 BEGIN 标记、其 END 标记却位于代码之中，且其后还有另一个标记对的文件，无论有无记录，都会保持原样并给出该警告。你配置档案中某条打开代码块却从不关闭的规则，不会对更新写入的块造成这种情况：更新会在块的末尾关闭该代码块。较早版本根据这类规则写入的块没有这样的关闭行，因此可能造成这种情况。你的某个代码块在 Apothem 的块上方打开且从不关闭，则是另一种情况：块中的一行关闭行会关闭它，于是该块被当作代码读取；写入这种块的更新会立即发出警告，并指出需要在 BEGIN 标记上方关闭的代码块。试运行在写入任何内容之前读取文件，因此它不会显示该块在写入后会被当作代码读取。在试运行中，针对保持原样的文件的警告会说 Apothem“would leave the file as it is”（将保持该文件原样）。
 
-对于将技能写入你主目录的项目作用域适配器（见 [`install`](/docs/cli-reference/install#folders-in-your-home-directory)），`update` 也会使这些文件夹保持最新，并打印指出它们的同一条 `Note:`。在开始写入技能之前安装的适配器，会在其下一次更新时得到这些技能。并非由 Apothem 写入的技能文件夹会被跳过并伴有一条警告，与 [`install`](/docs/cli-reference/install#folders-in-your-home-directory) 相同。先前写入过共享技能文件夹的安装，会在其下一次更新时被重写为每个安装共享的形式；每个被更改的文件夹都会先备份。
+因其标记行（两个或更多完整块，或 Apothem 无法定位的标记对）而保持文件原样的更新，会像安装一样以 partial 结束：工具无法从该文件获得当前的 Apothem 块，因此它会在标准错误上打印一行指出该文件的 `✗` 行来代替 `✓` 行，`--format json` 信封的 `status` 为 `"partial"`，该文件的警告带有 `"detail": {"left_as_is": "1"}`，退出码为 `2`。在你修复警告指出的标记行之前，每次更新都会这样结束；你在代码块中的标记示例同样会使这样的文件无法更新，直到你修改其 BEGIN 标记行。不带 `--quiet` 时，这样一次使用 `--harness all` 的更新会以一行以 `!` 而非 `✓` 开头的摘要结束，并统计保持原样的文件数：
+`! Updated <n> harnesses (<m> files written); <k> file(s) left as they are, named above.`
+试运行仍以 `status` `"dry_run"` 和退出码 `0` 结束。
+
+在 Apothem 写入的每个文件夹中（技能文件夹、`.apothem/support/` 下的支持文件），`update` 会比较它写入的每个条目。文件条目不同时会被重写。文件夹条目（一个技能、一个命令的技能文件夹，或支持文件中的某个文件夹，如 `hooks/lib/`）只要其中任何内容与本版本写入的内容不同，就会被整体替换：更新会先把它备份到 `~/.apothem/backups/` 之下，因此你在其中添加的文件，或你编辑过的 Apothem 文件，之后会从中消失。请从备份集中复制这样的文件，或在更新前将其移出。直接位于 Apothem 写入的文件夹中的你自己的文件（例如 `.apothem/support/hooks/mine.py`），以及 Apothem 文件夹旁边你自己的文件夹，都不会被触动。
+
+对于将技能写入你主目录的项目作用域适配器（见 [`install`](/docs/cli-reference/install#folders-in-your-home-directory)），`update` 也会使这些文件夹保持最新，并打印指出它们的同一条 `Note:`。在开始写入技能之前安装的适配器，会在其下一次更新时得到这些技能。并非由 Apothem 写入、或 Apothem 无法证明由其写入的技能文件夹会被跳过，并伴有一条给出修复方法的警告，与 [`install`](/docs/cli-reference/install#folders-in-your-home-directory) 相同。先前写入过共享技能文件夹的安装，会在其下一次更新时被重写为每个安装共享的形式；每个被更改的文件夹都会先备份。
 
 连续式别名 `apothem updating`（也接受写作 `apothem Updating`）解析到同一个处理程序。
 
@@ -57,7 +63,7 @@ apothem update --harness NAME|all [--profile PATH] [--dry-run]
 }
 ```
 
-`--dry-run` 返回 `status: "dry_run"` 和 `files_written: []`。
+`--dry-run` 返回 `status: "dry_run"` 和 `files_written: []`。因其 Apothem 标记行而保持某个文件原样的更新返回 `status: "partial"`，并以代码 `2` 退出。
 
 ## 示例
 
@@ -75,7 +81,7 @@ apothem updating --harness claude-code   # lowercase variant
 |---|---|
 | 0 | 适配器更新成功，或试运行已顺利完成规划 |
 | 1 | 预期内的校验、配置档案、工具、项目或适配器错误 |
-| 2 | 在至少一次写入之后发生的部分批量物化 |
+| 2 | 部分完成：批处理在至少一次写入之后停止，或更新因 Apothem 标记行而保持某个存放 Apothem 块的文件原样；`status` 为 `"partial"` |
 | 64 | 用法错误：未知的选项或命令，或缺失或无效的选项值。在 `--json` 下，该错误是一个代码为 `cli.usage` 的 JSON 信封。 |
 
 ## 另请参阅

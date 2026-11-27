@@ -2,7 +2,7 @@
 title: "入门：从零到一个可用的工具"
 description: "从一台空白机器到一份已物化、已验证的工具配置的端到端演练。"
 machineTranslated: true
-sourceHash: "daa3b8225766a994"
+sourceHash: "47bada9b8a6906cd"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,7 +27,7 @@ sourceHash: "daa3b8225766a994"
 - `PATH` 上的 Python 3.10 或更高版本。使用 `python3 --version` 检查。
 - 引擎从你的解释器中导入的两个运行时库：`click` 和 `rich`。技术栈的其余部分（`pyyaml`、`jsonschema`）已内置（vendored）到源码树中，因此只需要这两个库可以被导入。如果缺少 `click` 或 `rich`，安装程序会停止并打印安装命令。单行命令会把脚本通过管道交给 bash，因此无法提示；请设置 `APOTHEM_AUTO_INSTALL_DEPS=1`（例如 `curl -fsSL https://apothem.ahmedgad.com/install.sh | APOTHEM_AUTO_INSTALL_DEPS=1 bash`），或者先安装这两个包。
 
-Apothem 以捆绑的源码树形式发布，而不是以已发布的软件包形式发布——没有 `pip install` 步骤。安装器会克隆该源码树，并直接从中运行引擎。
+Apothem 以捆绑的源码树形式发布，而不是以已发布的软件包形式发布——没有 `pip install` 步骤。安装器会从经过验证的发布归档或 git 克隆放置该源码树，并直接从中运行引擎。
 
 ## 第 1 步——安装 Apothem
 
@@ -40,8 +40,8 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 安装器执行以下步骤：
 
 1. **前置条件检查。** 安装程序会找到真正的 Python 3.10+ 解释器，并确认两个运行时库（`click` 和 `rich`）可以被导入。如果缺少其中之一，它会指出缺失的库并停止，同时打印安装命令；设置 `APOTHEM_AUTO_INSTALL_DEPS=1` 可以不经提示直接安装，因为通过管道运行时无法提示。
-2. **源码放置。** 随附的源码树会被克隆到 `~/.apothem`（可通过 `APOTHEM_HOME` 环境变量覆盖）。重新运行时会在已有的克隆中检出发布标签，而不是重复复制。
-3. **配置档案引导。** 如果你还没有配置档案，安装程序会将示例配置档案复制到 `~/.config/apothem/profile.yaml`，并在同一次运行中据此安装并验证 Claude Code，同时警告身份字段是占位内容。
+2. **源码放置。** 随附的源码树会被放置到 `~/.apothem`（可通过 `APOTHEM_HOME` 环境变量覆盖）：安装了 cosign 时为经过验证的发布归档，否则为 git 克隆。新的源码在替换任何内容之前会先经过检查，检查失败时你现有的安装保持原样。重新运行时会更新已有的源码树而不是重复复制，并保留引擎存放在那里的数据，例如其备份。对已跟踪文件有更改的 git 克隆会使更新停止，直到你提交或贮藏（stash）这些更改。位于 `~/.apothem` 的符号链接会被拒绝，除非它通向一个已有的克隆；存放着 Apothem 安装之外内容的文件夹会保持不动，除非你传入 `--yes`。
+3. **配置档案引导。** 如果你还没有配置档案，安装程序会将示例配置档案复制到 `~/.config/apothem/profile.yaml`，并在同一次运行中据此安装并验证 Claude Code，同时警告身份字段是占位内容。该示例还包含示例规则、两个示例 MCP 服务器以及按工具的覆盖项；在第 2 步中，你会移除不需要的内容。
 
 你可以通过环境变量来引导安装。你最可能用到的几个：
 
@@ -61,7 +61,7 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | \
 apothem install --harness cursor --project /path/to/project
 ```
 
-其他可识别的变量包括 `APOTHEM_REPO` 和 `APOTHEM_REF`（克隆哪个远程仓库，以及检出哪个 git ref：未设置时会解析并验证最新的已签名发布标签；设置为某个标签可将其固定，设置为 `main` 则跟随会持续变动的分支（分支不是已签名的标签，因此还需要 `APOTHEM_ALLOW_UNVERIFIED=1`））、`APOTHEM_ALLOW_UNVERIFIED=1`（将标签签名验证失败降级为警告，并允许 `main` 这类非标签 ref）、`APOTHEM_SOURCE`（使用现有的本地检出，而不是克隆），以及 `APOTHEM_SKIP_VERIFY=1`（跳过安装后的验证；我们希望运行该验证，因此请保持它未设置）。
+其他可识别的变量包括 `APOTHEM_REPO` 和 `APOTHEM_REF`（克隆哪个远程仓库，以及检出哪个 git ref：未设置时会解析并验证最新的发布；设置为某个标签可将其固定，设置为 `main` 则跟随会持续变动的分支（分支不是已签名的标签，因此还需要 `APOTHEM_ALLOW_UNVERIFIED=1`））、`APOTHEM_ALLOW_UNVERIFIED=1`（将标签签名验证失败降级为警告，允许 `main` 这类非标签 ref，并允许不验证发布的 `APOTHEM_VERIFY=checksum`）、`APOTHEM_SOURCE`（使用现有的本地检出，而不是克隆），以及 `APOTHEM_SKIP_VERIFY=1`（跳过安装后的验证；我们希望运行该验证，因此请保持它未设置）。
 
 当安装器完成一次完整运行时，它会打印一个横幅，展示如何调用引擎。它会在你的 `PATH` 上放置一个 `apothem` 垫片（POSIX：`$HOME/.local/bin`；Windows：`%LOCALAPPDATA%\Microsoft\WindowsApps`），因此一旦该目录加入 `PATH`，你就可以直接运行引擎：
 
@@ -69,13 +69,13 @@ apothem install --harness cursor --project /path/to/project
 apothem <command>
 ```
 
-如果垫片无法放置——或者其所在目录尚未加入 `PATH`——横幅会打印一个无需垫片的自包含回退方式：
+如果其所在目录尚未加入 `PATH`，横幅会打印垫片的完整路径（默认为 `~/.local/bin/apothem`，或位于 `APOTHEM_BIN_DIR` 所指定的文件夹中）：
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>
+~/.local/bin/apothem <command>
 ```
 
-本教程的其余部分都写作 `apothem <command>`；如果你使用的是回退形式，请在命令前加上你的安装器横幅所打印的确切前缀。
+如果垫片无法放置，横幅会打印一条启动引擎的命令，该命令会将当前文件夹排除在 `sys.path` 之外。本教程的其余部分都写作 `apothem <command>`；如果你使用的是其中一种形式，请改用你的安装器横幅所打印的内容。
 
 ## 第 2 步——将配置档案改成你自己的
 
@@ -115,6 +115,8 @@ apothem profile show --json
 ```bash
 apothem update --harness claude-code
 ```
+
+如果安装器没有安装 Claude Code（例如，你将 `APOTHEM_HARNESS` 设置为了另一个工具），现在安装它：
 
 ```bash
 apothem install --harness claude-code

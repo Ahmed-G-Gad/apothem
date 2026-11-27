@@ -70,7 +70,7 @@ apothem profile edit [--profile PATH] [--quiet|-q] [--verbose|-v]
 
 ### 位于链接之后的配置档案
 
-写在你主目录内的配置档案路径（例如默认的 `~/.config/apothem/profile.yaml`）不会通过一个指向主目录之外的链接写入。这个链接可以是配置档案上方的某个文件夹，例如 `~/.config`（在 Windows 上，目录联接（junction）也算链接），也可以是配置档案文件本身，例如位于另一个驱动器上的 dotfiles 文件。此时 `profile init`、`profile set` 和 `profile edit` 会在写入或打开任何内容之前停止。尚无配置档案时，消息为 `Apothem could not create the starter profile`。在已有配置档案的情况下，`profile set`、`profile edit` 和 `profile init --force` 会以 `Apothem could not write the profile` 停止；不带 `--force` 的 `profile init` 会先以 `profile file already exists` 停止，这一点在任何位置都一样。`profile show` 以及只读取配置档案的命令仍会读取它。停留在主目录之内的链接（dotfile 管理器通常这样创建）会被跟随。若要把配置档案放在主目录之外，请用 `--profile PATH` 传入配置档案在那里的实际路径，包括配置档案文件链接所指向的路径：你在主目录之外写出的路径，会写入其链接所指向的任何位置。如果那里还没有配置档案，请先用 `apothem profile init --profile PATH` 创建它。
+写在你主目录内的配置档案路径（例如默认的 `~/.config/apothem/profile.yaml`）不会通过一个指向主目录之外的链接写入。这个链接可以是配置档案上方的某个文件夹，例如 `~/.config`（在 Windows 上，联接点（junction）也算链接），也可以是配置档案文件本身，例如位于另一个驱动器上的 dotfiles 文件。此时 `profile init`、`profile set` 和 `profile edit` 会在写入或打开任何内容之前停止。尚无配置档案时，消息为 `Apothem could not create the starter profile`。在已有配置档案的情况下，`profile set`、`profile edit` 和 `profile init --force` 会以 `Apothem could not write the profile` 停止；不带 `--force` 的 `profile init` 会先以 `profile file already exists` 停止，这一点在任何位置都一样。`profile show` 以及只读取配置档案的命令仍会读取它。停留在主目录之内的链接（dotfile 管理器通常这样创建）会被跟随。若要把配置档案放在主目录之外，请用 `--profile PATH` 传入配置档案在那里的实际路径，包括配置档案文件链接所指向的路径：你在主目录之外写出的路径，会写入其链接所指向的任何位置。如果那里还没有配置档案，请先用 `apothem profile init --profile PATH` 创建它。
 
 ## 校验错误
 

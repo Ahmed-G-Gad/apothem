@@ -2,7 +2,7 @@
 title: "doctor"
 description: "apothem doctor 命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "9336c060509b05e7"
+sourceHash: "78a7cea770c98762"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,11 +18,14 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
 ## 检查内容
 
 - **共享配置档案。** 存在的配置档案会依据打包的模式进行校验；格式错误的配置档案会以其诊断代码判定为失败。缺失的配置档案会被报告，而不判定为失败（`install` 会创建一个）。
-- **仅限已安装的工具。** 未安装的工具被报告为 `not_installed`，且不算失败，因此一台只有一个健康工具的机器也会通过。当 `--project` 指明项目范围工具的根目录时，这些工具会被检查；没有它时，它们被报告为 `needs_project`。
-- **验证。** 每个已安装的工具都必须通过与 [`verify`](/docs/cli-reference/verify) 相同的检查。
-- **钩子运行时。** 对于每个已通过验证的工具，doctor 会读取其最近一次安装所写入的文件，找到 Apothem 在其中注册的钩子命令，并以一个空操作载荷将每个解释器和钩子脚本各启动一次（已注册的参数加上 `--help`、stdin 上的 `{}`、一个临时工作目录，并移除 `PYTHONPATH`）。不会写入任何内容。缺失的解释器、缺失的脚本或导入时崩溃都会使该检查失败。
+- **仅限已安装的工具。** 未安装的工具被报告为 `not_installed`，且不算失败，因此一台只有一个健康工具的机器也会通过。当 `--project` 指明项目范围工具的根目录时，这些工具会被检查；没有它时，它们被报告为 `needs_project`。当安装台账无法读取时，一个带有 Apothem 无法与你的文本区分开的标记行的文件会被视为一次安装，因此这样的工具会被检查，而不是被报告为 `not_installed`。doctor 在它为启动工具钩子而读取台账的地方（见下文的<strong>钩子运行时</strong>），会以一项 `ledger.unreadable` 检查指明它无法读取的台账：针对已通过验证的工具，以及失败检查指明了带有 Apothem 标记的文件的工具（`harness.stray_begin`）。其修复方法说明：将损坏的台账移到一旁并运行 `update`；或者，对于 doctor 无法打开的台账（例如另一个程序正占用着它），使该文件可读。因其他原因验证失败的工具会得到 `harness.verify_failed` 检查，而没有钩子检查，因此也没有 `ledger.unreadable` 检查。
+- **验证。** 每个已安装的工具都必须通过与 [`verify`](/docs/cli-reference/verify) 相同的检查。当一个文件含有 Apothem 的 BEGIN 标记却没有 END 标记时，失败的检查是 `harness.stray_begin`，其修复方法会指明每个这样的文件及该标记所在的行，给出带编号的步骤来修改该行以及除开启 Apothem 块的那一行之外的其他每个 BEGIN 标记行（在每条注释内加一个词），并说明不要改为补回 END 标记——一旦某次安装或更新在别处写入了 Apothem 的块，那样会留下两个 Apothem 块：仅靠一次更新无法清除它（参见[故障排除](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)）。一个在 Apothem 标记之间含有两个或更多完整块的文件，或者其标记对无法被 Apothem 与你的文本区分开的文件（例如它的块位于你的某个代码块之内），会使同一项检查失败：其消息说明该文件含有 "Apothem markers to fix by hand"，其修复方法会按行号指明每个块（参见[文件在 Apothem 的标记之间含有两个块](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)），或者指明每个标记对、其各行的内容以及如何修复，并同时指明每个不开启任何标记对的 BEGIN 标记（参见[Apothem 无法将其块与你的文本区分开](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)）。对于 OpenClaw 规则文件，修复方法与验证说明一样指出：如果该文件届时符合 OpenClaw 的单文件大小上限，下一次更新就会写入 Apothem 的块，而你保留的旧 Apothem 文本也会计入该上限。
+- **钩子运行时。** 对于每个已通过验证的工具，以及每个因这种标记而失败的工具，doctor 会读取它所检查的那次安装写入的文件：即位于工具自身文件夹中的安装（doctor 运行处所设置的 `CODEX_HOME` 就是该文件夹），或者对于项目范围工具，位于 `--project` 文件夹中的安装。其他文件夹中的安装（例如 doctor 未指向的某个 `CODEX_HOME`，或你此后已删除的项目）不会被拿来代替。doctor 在其中的 JSON 文件里找到 Apothem 注册的钩子命令，并以一个空操作载荷将每个解释器和钩子脚本各启动一次（已注册的参数加上 `--help`、stdin 上的 `{}`、一个临时工作目录，并移除 `PYTHONPATH`）。不会写入任何内容。缺失的解释器、缺失的脚本或导入时崩溃都会使该检查失败。当一个钩子为每个系统各有一条单独的命令行时，doctor 启动该工具在本机上运行的那一条：对于读取相应键的工具，在 Windows 上是 `powershell` 或 `commandWindows` 行，在 macOS 和 Linux 上是 `bash` 行。只读取 `command` 的工具会启动其 `command` 行。doctor 只读取工具本身读取的键，并且只对以 `args` 列表运行其命令的工具读取该列表，因此保存在其他键下的行或列表既不会被启动，也不会被计数。doctor 直接启动程序本身而不经过 shell，因此在 Windows 上，它会去掉为 PowerShell 编写的行开头的 `&`。在 JSON 文件之外注册的钩子不会被启动，也不计入 `N started`。安装记录可以在该文件夹的任何拼写方式下找到，例如 Windows 上的另一种大小写。当安装台账中没有该文件夹的记录时，该检查不会运行：报告显示 `not checked`，其最后一行会指明钩子命令未被检查的工具，而不是 `All checks passed`（对于同时启动了其他已通过的钩子命令的工具，它会写作 "some hook commands"），JSON 输出则带有一项 `hook.unchecked` 检查。
+- **项目钩子文件。** 任何能向项目提交的人都能更改其文件，因此对于项目范围工具，doctor 只在它所运行的一切都已知时才启动钩子命令。它读取 `--project` 所指项目的安装记录，只从工具读取钩子命令的位置获取钩子命令（单个文件最多 100 条；超出部分由一行 `hook.unchecked` 指明该文件，其余命令不会启动），并且只在以下条件都满足时才启动命令：其解释器是该次安装所记录的解释器（除非它位于项目内部，那里的内容可被他人更改）或 Apothem 自身运行所用的 Python；脚本之前的选项不运行任何代码（例如 `-E` 和 `-s`）；脚本是该次安装写入的钩子脚本，位于一个文件仍与该次安装所记录的 SHA-256 校验和一致、且不含其他 Python 文件和链接的文件夹中；脚本之后的参数是 Apothem 写入的那些参数。doctor 随后启动这些已知路径，而不是它读到的文本，并且不会查找钩子命令所指的任何其他路径。已记录的解释器或钩子脚本若已不存在，检查会失败且不启动任何内容；对于缺失的钩子脚本，修复方法会运行 `update` 来放回这些脚本。doctor 不会启动其他任何项目钩子命令，并将每一条连同原因报告为 `hook.unchecked`（信息，而非失败，在 plain 输出中标记为 `!`）。对于 doctor 无法查找其已知路径的命令（例如位于你无法打开的文件夹中的命令）也是如此。位于项目内部的已记录解释器不会被启动，因为他人可以更改它，除非 doctor 本身就运行在它之下：修复方法会从项目之外的文件夹运行 `update`，并使用一个运行在项目之外的 Python 下的 Apothem，从而改为记录那个 Python。安装到项目自身环境中的 Apothem 做不到这一点；请使用安装在其外的 Apothem。如果项目的虚拟环境处于激活状态，请先将其停用：激活期间，它的 Python 在你的 `PATH` 上排在最前，npx 命令会在它之下运行并再次记录它。要选择 npx 命令运行所用的 Python，请将 `APOTHEM_PYTHON` 设置为其路径。不是可用的 Python 3.10 或更高版本的路径会被无提示地跳过，转而搜索 `PATH`，因此请再次运行 doctor，确认该行已消失。更新要从项目之外运行，是因为在项目文件夹中运行的 `python -m apothem` 会启动提交在那里的名为 `apothem` 的文件夹，而不是 Apothem。由较早版本安装的钩子没有记录解释器或校验和，它们在你以安装时相同的选项运行 `update` 之前会一直保持未检查状态。
+- **检查不读取的钩子文件。** 钩子检查不读取大于 4 MB 的钩子文件，也只读取普通文件（不读取管道或设备等）。每个这样的文件都会得到一行指明它的 `hook.unchecked`，无论它只含钩子还是钩子被合并进去的设置文件，也无论它位于项目中还是你的主文件夹下。更新会原样保留过大或非普通的文件，因此其修复方法会说明将该文件缩小到 4 MB 以下或用普通文件替换它，然后再次运行 doctor。工具不会从中运行任何钩子的文件不会得到这样的行：Apothem 只在其支持文件夹中保存钩子的工具的设置文件，或保存在 `.apothem/support` 下的副本。
+  你主文件夹下的文件会通过链接读取，因为它属于你。在项目中，检查不会读取通过链接到达的钩子文件，例如被替换为指向项目外文件夹的链接的设置文件夹。每个这样的文件都会得到一行 `hook.unchecked`，无论它只含钩子还是钩子被合并进去的设置文件。该行会指明该文件和该链接，链接可能是文件本身，也可能是它的某个上级文件夹。修复方法会说明检查该链接指向何处：将你自己创建的链接替换为它所指向的文件夹或文件的真实副本，并检查其中的钩子命令；或者移除不是你创建的链接，然后运行修复方法末尾给出的 `update` 命令。无论哪种方式，都只移除链接本身，而不移除它所指向的文件夹或文件。钩子脚本经由链接到达的钩子命令不会被启动；其行会指明该脚本和该链接（链接可能是脚本本身，也可能是它的某个上级文件夹），其修复方法相同，只是没有需要检查的钩子命令。该次安装记录在项目之外的钩子脚本也不会被启动，其行会说明这一点。钩子脚本文件夹中的链接，或该次安装未写入的 Python 文件，也会使该命令不被启动。更新会保留这两者，因此修复方法会说明移除该行所指的条目（对于链接，只移除链接本身；请把你自己的脚本移到别处），然后再次运行 doctor。如果该链接取代了该次安装写入的文件夹，下一次运行会报告该文件夹缺失，运行 `update` 即可将其放回。检查无法打开的项目文件夹也会得到一行，其修复方法会说明为你的账户授予打开它的权限。在 Windows 上，由于无法在拒绝链接的同时打开文件，链接检查会在打开文件之前进行。大于 4 MB 的钩子脚本会被视为自安装以来已被更改，因为 Apothem 写入的脚本都没有那么大。
 
-每项失败的检查都会给出一个修复方法。没有任何检查失败时退出码为 0，否则为 1。
+每项失败的检查都会给出一个修复方法。运行 `update` 的修复方法会在冒号之后以该命令结尾。对于项目范围工具，该命令会指明 `--project`，并按 shell 的要求为文件夹加上引号，与 [`uninstall`](/docs/cli-reference/uninstall) 为其步骤加引号的方式相同。当这些引号无法容纳该文件夹时，修复方法会用文字说明 `--project`，并以原样的文件夹结尾。没有任何检查失败时退出码为 0，否则为 1。
 
 ## JSON 输出
 
@@ -30,8 +33,8 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
 
 - `profile_error_code`——配置档案无效时的配置档案诊断代码。
 - `project`——解析后的 `--project` 根目录，或 `null`。
-- `harnesses[].status`——`ok`、`not_installed`、`needs_project`、`verify_failed`、`hook_failed` 或 `error`；外加 `verified` 和 `hooks`（`{"probed": N, "failed": [...]}`，当不存在安装记录时为 `null`）。
-- `checks`——每项检查一条记录：`code`（例如 `harness.verify_failed`、`hook.start_failed`、`ledger.unreadable` 或某个 `profile.*` 代码）、`status`（`pass`、`fail` 或 `info`）、`harness`、`message` 和 `fix`。
+- `harnesses[].status`——`ok`、`not_installed`、`needs_project`、`verify_failed`、`hook_failed` 或 `error`；外加 `verified` 和 `hooks`（`{"probed": N, "failed": [...]}`，当所检查的文件夹没有安装记录、安装台账无法读取，或 doctor 未能完成钩子命令的检查时为 `null`；会有一项 `hook.unchecked` 检查说明原因）。
+- `checks`——每项检查一条记录：`code`（例如 `harness.verify_failed`、`harness.stray_begin`、`hook.start_failed`、`hook.unchecked`、`ledger.unreadable` 或某个 `profile.*` 代码）、`status`（`pass`、`fail` 或 `info`）、`harness`、`message` 和 `fix`。
 
 ```json
 {
@@ -76,7 +79,7 @@ apothem doctor --json
 | 代码 | 含义 |
 |---|---|
 | 0 | 所有检查均通过（尚未安装任何工具时也是如此） |
-| 1 | 某个已安装的工具未通过验证、某个已注册的钩子命令无法启动、某个适配器无法加载或探测，或者存在的配置档案未通过模式校验 |
+| 1 | 某个已安装的工具未通过验证、某个已注册的钩子命令无法启动、某个安装台账无法读取、某个适配器无法加载或探测，或者存在的配置档案未通过模式校验 |
 | 64 | 用法错误：未知的选项或命令，或者缺失或无效的选项值。在 `--json` 下，该错误是一个代码为 `cli.usage` 的 JSON 信封。 |
 
 ## 另请参阅
