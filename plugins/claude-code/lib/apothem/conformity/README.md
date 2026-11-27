@@ -234,7 +234,8 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   refusal (`ProjectFileRefusedError`, noted under `skipped_links`), not a
   read through the link or a wait on the pipe. A caller that counts a link as
   missing catches `REFUSED_OR_GONE` and counts the swapped file as missing
-  too. `tests/conformity/test_reads_close_the_race.py` swaps a path right
+  too, then catches any other `OSError` and reports the file as unreadable.
+  `tests/conformity/test_reads_close_the_race.py` swaps a path right
   after each kind of check answers, and the audit oracle below fails a
   project read that skips the guarded open, or that opens a folder below
   the run's root as the root of a read. A hard link still reads as an

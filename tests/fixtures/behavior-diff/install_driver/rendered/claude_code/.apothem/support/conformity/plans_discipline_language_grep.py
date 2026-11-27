@@ -139,7 +139,9 @@ def _read_project_file(root: Path, path: Path) -> str | None:
 
     A link to a regular file in the project is read at that file (see
     ``project_file_target``). A file that a link or a special file replaced
-    since it was looked at, or that is gone, counts as absent too.
+    since it was looked at, or that is gone, counts as absent too. Any other
+    ``OSError`` (a file that is there but cannot be read) is raised for the
+    caller to report as unreadable.
     """
     source = project_file_target(root, path)
     if source is None:
@@ -209,23 +211,47 @@ def _verdict_for_surface(
 
 def check(root: Path) -> GrepResult:
     """Sweep the four required surfaces under root for the directive."""
-    fixture_text = _read_fixture(root)
+    fixture_error: OSError | None = None
+    try:
+        fixture_text = _read_fixture(root)
+    except OSError as exc:
+        fixture_text, fixture_error = None, exc
     fixture_present = fixture_text is not None
     verdicts: list[SurfaceVerdict] = []
     findings: list[Finding] = []
     if not fixture_present:
+        why = (
+            "byte-exact fixture absent at canonical path, or a link to something other than a regular file in the project; "
+            if fixture_error is None
+            else f"byte-exact fixture unreadable: {fixture_error}; "
+        )
         findings.append(
             Finding(
                 surface=FIXTURE_PATH,
-                detail=(
-                    "byte-exact fixture absent at canonical path, or a link to something other than a regular file in the project; "
-                    "byte-exact admission disabled for every surface"
-                ),
+                detail=why + "byte-exact admission disabled for every surface",
                 coverage=0.0,
             )
         )
     for surface_path in REQUIRED_SURFACES:
-        body = _read_project_file(root, root / surface_path)
+        try:
+            body = _read_project_file(root, root / surface_path)
+        except OSError as exc:
+            verdicts.append(
+                SurfaceVerdict(
+                    surface=surface_path,
+                    mode="unreadable",
+                    coverage=0.0,
+                    admitted=False,
+                )
+            )
+            findings.append(
+                Finding(
+                    surface=surface_path,
+                    detail=f"surface file unreadable: {exc}",
+                    coverage=0.0,
+                )
+            )
+            continue
         if body is None:
             verdicts.append(
                 SurfaceVerdict(

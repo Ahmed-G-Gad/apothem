@@ -251,6 +251,15 @@ def _check_npm_workflow(workflow: Path, text: str) -> list[Finding]:
     return findings
 
 
+def _unreadable(workflow: Path, exc: OSError) -> Finding:
+    """Return the finding for a listed workflow that cannot be read."""
+    return Finding(
+        workflow=workflow.name,
+        drift_class="workflow-unreadable",
+        detail=f"unreadable workflow: {exc}",
+    )
+
+
 def check(root: Path) -> GrepResult:
     """Walk release workflows under root; aggregate trusted-publishing drift."""
     workflows_dir = root / ".github" / "workflows"
@@ -287,10 +296,14 @@ def check(root: Path) -> GrepResult:
         )
     # A workflow that a link or a special file replaced since it was listed,
     # or that is gone, is not inspected, as the listing would have left it out.
+    # One that is there but cannot be read is a finding.
     for workflow in pypi_workflows:
         try:
             text = read_project_text(root, workflow)
         except REFUSED_OR_GONE:
+            continue
+        except OSError as exc:
+            findings.append(_unreadable(workflow, exc))
             continue
         inspected.append(workflow.name)
         findings.extend(_check_pypi_workflow(workflow, text))
@@ -298,6 +311,9 @@ def check(root: Path) -> GrepResult:
         try:
             text = read_project_text(root, workflow)
         except REFUSED_OR_GONE:
+            continue
+        except OSError as exc:
+            findings.append(_unreadable(workflow, exc))
             continue
         inspected.append(workflow.name)
         findings.extend(_check_npm_workflow(workflow, text))

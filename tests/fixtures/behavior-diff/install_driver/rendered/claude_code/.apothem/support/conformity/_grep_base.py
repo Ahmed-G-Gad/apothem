@@ -1024,18 +1024,18 @@ def nested_checkout(
     """Return True when a walk skips *folder*, listed as *entries*, as a checkout.
 
     *folder* is below *root*, the folder the walk started from, and was built
-    from it; a ``.git`` file is read from *root* down, one level at a time. Its ``.git`` entry, as listed (see
-    :func:`is_git_entry`), decides. A link (dangling or not) or a special
-    file marks a checkout for git too, but the folder is then left out
-    because of that entry, so the entry is noted in the skip log. A ``.git``
-    folder or file is a checkout only when it holds or names a repository
-    (:func:`git_entry_state`): a plain ``.git`` file or an empty ``.git``
-    folder is not one to git, so it does not hide its folder, and the walk
-    goes on into it (never into the ``.git`` entry itself). Every folder this
-    returns True for is noted in the checkout log (:func:`note_checkout`),
-    which the report lists under ``skipped_checkouts`` and which never changes
-    a verdict: one ``gitdir:`` line can make git, and so the walk, skip any
-    folder.
+    from it; a ``.git`` file is read from *root* down, one level at a time.
+    Its ``.git`` entry, as listed (see :func:`is_git_entry`), decides. A link
+    (dangling or not) or a special file marks a checkout for git too, but the
+    folder is then left out because of that entry, so the entry is noted in
+    the skip log. A ``.git`` folder or file is a checkout only when it holds
+    or names a repository (:func:`git_entry_state`): a plain ``.git`` file or
+    an empty ``.git`` folder is not one to git, so it does not hide its
+    folder, and the walk goes on into it (never into the ``.git`` entry
+    itself). Every folder this returns True for is noted in the checkout log
+    (:func:`note_checkout`), which the report lists under
+    ``skipped_checkouts`` and which never changes a verdict: one ``gitdir:``
+    line can make git, and so the walk, skip any folder.
     """
     listed = frozenset(path.name for path, _ in entries)
     git_entries = [(path, kind) for path, kind in entries if is_git_entry(path, listed)]
