@@ -2,7 +2,14 @@
 
 'use client';
 
-import { useId, type ReactNode } from 'react';
+import {
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type AnimationEvent,
+  type ReactNode,
+} from 'react';
 import { usePathname } from 'fumadocs-core/framework';
 import type { Folder } from 'fumadocs-core/page-tree';
 import {
@@ -34,8 +41,8 @@ import { cn } from '@/lib/utils';
  * pages", `aria-labelledby`), all in the reader's language, so a screen reader
  * tells it apart from the link (strings: `SIDEBAR_TOGGLE_HINT` in
  * `lib/i18n.ts`). The list stays in the page while closed, hidden with the
- * `hidden` attribute, so the button's `aria-controls` always points at an
- * element that exists. A folder without an overview page keeps Fumadocs'
+ * `hidden` attribute once its close animation ends, so the button's
+ * `aria-controls` always points at an element that exists. A folder without an overview page keeps Fumadocs'
  * own trigger, which is already a button. The classes and offsets mirror
  * Fumadocs' docs-layout sidebar (`layouts/docs/slots/sidebar.js`) so the
  * sidebar looks the same.
@@ -109,8 +116,32 @@ function FolderHeader({ item, listId }: { item: Folder; listId: string }) {
 
 // Radix removes a closed list from the page and drops the button's
 // `aria-controls` while it is closed. Here the list stays mounted
-// (`forceMount`, which also stops Radix hiding it, so the closed state sets
-// `hidden`) under an id of our own, and the button always names that id.
+// (`forceMount`, which also stops Radix hiding it) under an id of our own, and
+// the button always names that id. A closing list keeps showing until its
+// collapse animation ends and only then gets `hidden`, so the close animates
+// the same way the open does. When no animation runs (none is set, or the
+// stylesheet drops it for reduced motion), `hidden` is set at once. A list
+// that starts closed is `hidden` in the server HTML.
+export function useHiddenAfterClose(open: boolean) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [settled, setSettled] = useState(!open);
+  if (open && settled) setSettled(false);
+
+  useLayoutEffect(() => {
+    // `ref` sits on the list's only child; the list is its parent.
+    const node = ref.current?.parentElement;
+    if (open || settled || !node) return;
+    const name = getComputedStyle(node).animationName;
+    if (!name || name === 'none') setSettled(true);
+  }, [open, settled]);
+
+  const onAnimationEnd = (event: AnimationEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget && !open) setSettled(true);
+  };
+
+  return { ref, hidden: !open && settled, onAnimationEnd };
+}
+
 function FolderList({
   id,
   depth,
@@ -121,18 +152,22 @@ function FolderList({
   children: ReactNode;
 }) {
   const open = useFolder()?.open ?? true;
+  const { ref, hidden, onAnimationEnd } = useHiddenAfterClose(open);
   return (
     <SidebarFolderContent
       id={id}
       forceMount
-      hidden={!open}
+      hidden={hidden}
+      onAnimationEnd={onAnimationEnd}
       className={cn(
         'relative',
         depth === 1 &&
           "before:content-[''] before:absolute before:w-px before:inset-y-1 before:bg-fd-border before:inset-s-2.5",
       )}
     >
-      <div className="flex flex-col gap-0.5 pt-0.5">{children}</div>
+      <div ref={ref} className="flex flex-col gap-0.5 pt-0.5">
+        {children}
+      </div>
     </SidebarFolderContent>
   );
 }
