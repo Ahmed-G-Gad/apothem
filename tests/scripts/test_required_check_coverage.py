@@ -93,7 +93,8 @@ def _cells(matrix: dict) -> list[dict]:
     any other: an entry that sets a matrix key to a value that key's list
     lacks (a new Python version) adds a cell of its own, and an entry that
     sets no matrix key and no key an earlier entry set is merged into every
-    cell. GitHub's full rule, under which an entry merges into the cells it
+    cell, including cells an earlier include added (GitHub merges it only
+    into the original combinations). GitHub's full rule, under which an entry merges into the cells it
     would not overwrite, is not modelled, so a new include shape must extend
     this function before the tests can trust its context names.
     """
