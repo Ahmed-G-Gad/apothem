@@ -28,10 +28,11 @@ follows a link.
 
 A refusal raises :class:`ProjectFileRefusedError` (``ELOOP``) and notes the level
 that was refused in the skip log, so the report lists it under
-``skipped_links``. While a skip log runs (one command-line run of a
-validator), the folders opened stay open in a small cache, so the next file in
-the same folder costs one open; the cache holds handles, never verdicts, and
-is released when the log stops.
+``skipped_links``. Each read opens its levels afresh and closes each folder
+once the level below it is open, so no folder stays open between reads:
+another program may rename or delete a project folder while the gate runs,
+and a folder swapped for a link after an earlier read is refused and noted
+like any other.
 
 What it does not cover. A hard link reads as an ordinary file, and a file
 system that gives no inode or file ID cannot show a swap to another regular
@@ -44,21 +45,10 @@ import errno
 import os
 import stat
 import sys
-import threading
-from collections import OrderedDict
 from pathlib import Path
 from typing import BinaryIO, Final, NoReturn
 
-from apothem.conformity._project_paths import (
-    NAME_SURROGATE_TAG_BIT,
-    note_skipped,
-    on_skip_log_bounds,
-    skip_log_running,
-)
-
-# How many folders one run keeps open at most: enough for the folders a
-# validator reads in turn, few enough to leave the process its file handles.
-FOLDER_CACHE_LIMIT: Final[int] = 64
+from apothem.conformity._project_paths import NAME_SURROGATE_TAG_BIT, note_skipped
 
 
 class ProjectFileRefusedError(OSError):
@@ -114,74 +104,6 @@ def _parts_inside(root: Path, path: Path) -> tuple[str, ...]:
 
 
 # ---------------------------------------------------------------------------
-# The folder cache
-# ---------------------------------------------------------------------------
-
-_cache: OrderedDict[tuple[str, tuple[str, ...]], int] = OrderedDict()
-# One open at a time: a handle the cache closes is never in use elsewhere.
-_lock = threading.RLock()
-
-
-def clear_folder_cache() -> None:
-    """Close every folder the cache holds."""
-    with _lock:
-        while _cache:
-            _, handle = _cache.popitem(last=False)
-            _close_handle(handle)
-
-
-on_skip_log_bounds(clear_folder_cache)
-
-
-def _trim_cache() -> None:
-    while len(_cache) > FOLDER_CACHE_LIMIT:
-        _, handle = _cache.popitem(last=False)
-        _close_handle(handle)
-
-
-def _folder_handle(root: Path, folders: tuple[str, ...], transient: list[int]) -> int:
-    """Return a handle to ``root/<folders>``, opened level by level.
-
-    While a skip log runs, the deepest folder already open is taken from the
-    cache and every folder opened is kept there; otherwise each one is added to
-    *transient* for the caller to close.
-    """
-    caching = skip_log_running()
-    key = os.fspath(root)
-    handle: int | None = None
-    depth = len(folders)
-    if caching:
-        while depth >= 0:
-            cached = _cache.get((key, folders[:depth]))
-            if cached is not None:
-                _cache.move_to_end((key, folders[:depth]))
-                handle = cached
-                break
-            depth -= 1
-    if handle is None:
-        depth = 0
-        handle = _open_root(root)
-        _keep(handle, (key, ()), caching, transient)
-    for level in range(depth, len(folders)):
-        shown = root.joinpath(*folders[: level + 1])
-        handle = _open_level(handle, folders[level], folder=True, shown=shown)
-        _keep(handle, (key, folders[: level + 1]), caching, transient)
-    return handle
-
-
-def _keep(
-    handle: int,
-    key: tuple[str, tuple[str, ...]],
-    caching: bool,
-    transient: list[int],
-) -> None:
-    if caching:
-        _cache[key] = handle
-    else:
-        transient.append(handle)
-
-
-# ---------------------------------------------------------------------------
 # The public reads
 # ---------------------------------------------------------------------------
 
@@ -196,18 +118,20 @@ def open_project_file(root: Path, path: Path) -> BinaryIO:
     opened, raises :class:`ProjectFileRefusedError` and is noted in the skip log; a
     missing level raises ``FileNotFoundError``, a file on the way
     ``NotADirectoryError``, and a folder in the file's place
-    ``IsADirectoryError``. Nothing outside *root* is opened.
+    ``IsADirectoryError``. Nothing outside *root* is opened, and no folder
+    stays open once the file is.
     """
     parts = _parts_inside(root, path)
-    with _lock:
-        transient: list[int] = []
-        try:
-            parent = _folder_handle(root, parts[:-1], transient)
-            handle = _open_level(parent, parts[-1], folder=False, shown=path)
-        finally:
-            for folder in reversed(transient):
-                _close_handle(folder)
-            _trim_cache()
+    parent = _open_root(root)
+    try:
+        for depth in range(1, len(parts)):
+            shown = root.joinpath(*parts[:depth])
+            child = _open_level(parent, parts[depth - 1], folder=True, shown=shown)
+            done, parent = parent, child
+            _close_handle(done)
+        handle = _open_level(parent, parts[-1], folder=False, shown=path)
+    finally:
+        _close_handle(parent)
     return _as_binary_file(handle, path)
 
 

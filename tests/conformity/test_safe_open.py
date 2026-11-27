@@ -10,8 +10,8 @@ link or junction, a file, a missing name, a named pipe, a file link) at each
 level of a four-level path and check what the open does; they check that a
 reparse point that is not a link (a cloud placeholder, a deduplicated file) is
 read through its filter on Windows, that the text read matches
-``Path.read_text``, and that the folder cache holds handles only during one
-run and never more than its limit.
+``Path.read_text``, and that no folder stays open between reads, so a folder
+swapped for a link after one read is refused at the next.
 """
 
 from __future__ import annotations
@@ -45,10 +45,9 @@ _WINDOWS_ONLY = pytest.mark.skipif(sys.platform != "win32", reason="Windows open
 
 @pytest.fixture(autouse=True)
 def _no_skip_log() -> Iterator[None]:
-    """Leave no skip log or open folder behind for the next test."""
+    """Leave no skip log behind for the next test."""
     yield
     _project_paths.take_skipped_paths()
-    _safe_open.clear_folder_cache()
 
 
 def _tree(base: Path, content: bytes) -> Path:
@@ -342,7 +341,7 @@ def test_a_reparse_point_that_is_not_a_link_is_read_through_its_filter(
 
 
 # ---------------------------------------------------------------------------
-# Handles and the folder cache
+# Handles: no folder stays open
 # ---------------------------------------------------------------------------
 
 
@@ -386,12 +385,13 @@ def test_without_a_skip_log_every_folder_is_closed(
     # The root and three folders, twice; the file closes with its file object.
     assert opened == ["<root>", "a", "b", "c", "f.txt"] * 2
     assert len(closed) == 8
-    assert len(_safe_open._cache) == 0
 
 
-def test_a_run_reuses_open_folders_and_releases_them_at_its_end(
+def test_a_run_keeps_no_folder_open_between_reads(
     project: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """While a skip log runs too, each read opens its folders afresh and
+    closes every one of them."""
     (project / "a" / "b" / "c" / "g.txt").write_bytes(b"g\n")
     opened, closed = _count_handles(monkeypatch)
     _project_paths.start_skip_log(project)
@@ -399,47 +399,46 @@ def test_a_run_reuses_open_folders_and_releases_them_at_its_end(
     read_project_bytes(project, _target(project))
     read_project_bytes(project, project / "a" / "b" / "c" / "g.txt")
 
-    assert opened == ["<root>", "a", "b", "c", "f.txt", "g.txt"]
-    assert closed == []
-    _project_paths.take_skipped_paths()
-    assert len(closed) == 4
-    assert len(_safe_open._cache) == 0
+    assert opened == [
+        "<root>",
+        "a",
+        "b",
+        "c",
+        "f.txt",
+        "<root>",
+        "a",
+        "b",
+        "c",
+        "g.txt",
+    ]
+    assert len(closed) == 8
 
 
-def test_the_cache_never_holds_more_than_its_limit(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+def test_a_folder_swapped_for_a_link_after_a_read_is_refused_and_noted(
+    project: Path,
 ) -> None:
-    monkeypatch.setattr(_safe_open, "FOLDER_CACHE_LIMIT", 3)
-    for index in range(6):
-        folder = tmp_path / f"d{index}" / "inner"
-        folder.mkdir(parents=True)
-        (folder / "f.txt").write_bytes(b"x")
-    _project_paths.start_skip_log(tmp_path)
-
-    for index in range(6):
-        read_project_bytes(tmp_path, tmp_path / f"d{index}" / "inner" / "f.txt")
-        assert len(_safe_open._cache) <= 3
-    # The limit was reached: the cache was in use.
-    assert len(_safe_open._cache) == 3
-
-
-def test_a_cached_folder_swapped_for_a_link_is_not_followed(project: Path) -> None:
-    """The cache holds the folder that was opened, never a verdict on a name:
-    a folder renamed and replaced by a link since is still the folder read.
-    Windows does not let a folder with open folders below it be renamed at
-    all while the run holds them."""
+    """A folder read once may be renamed afterwards, Windows too, and a link
+    in its place is refused and noted at the next read."""
     _project_paths.start_skip_log(project)
     assert read_project_bytes(project, _target(project)) == _INSIDE
-    if os.name == "nt":
-        with pytest.raises(PermissionError):
-            (project / "a").rename(project / "a-moved")
-        return
     (project / "a").rename(project / "a-moved")
     _link_folder(project / "a", project.parent / "outside" / "a")
 
-    data = read_project_bytes(project, _target(project))
+    with pytest.raises(ProjectFileRefusedError):
+        read_project_bytes(project, _target(project))
 
-    assert data == _INSIDE
+    assert _project_paths.take_skipped_paths() == ["a"]
+
+
+def test_a_folder_recreated_after_a_read_is_read_afresh(project: Path) -> None:
+    """A tool that deletes a folder and makes it again between two reads
+    leaves the second read the new folder's file, not a missing one."""
+    _project_paths.start_skip_log(project)
+    assert read_project_bytes(project, _target(project)) == _INSIDE
+    _remove_level(project / "a")
+    _tree(project, b"again\n")
+
+    assert read_project_bytes(project, _target(project)) == b"again\n"
 
 
 def test_an_open_file_is_a_readable_binary_file(project: Path) -> None:
