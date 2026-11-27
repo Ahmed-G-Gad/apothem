@@ -32,6 +32,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
+from apothem.lib import home_write_guard
 from apothem.lib.contexts import ContextStore
 from apothem.lib.data_home import (
     _APOTHEM_SUBTREE,
@@ -292,6 +293,9 @@ def migrate_workspace(
         outcome.notes.append("no legacy layout detected — nothing to migrate")
         return outcome
 
+    home_write_guard.refuse_real_home_write(
+        base / _APOTHEM_SUBTREE, legacy_plans, operation="migrate", tree=True
+    )
     shared = resolve_shared_data_home(base=base, directory_name=directory_name).ensure()
     backup_root = _ensure_backup_root(base)
     outcome.backup_root = backup_root

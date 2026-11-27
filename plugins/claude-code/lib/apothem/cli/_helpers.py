@@ -48,6 +48,7 @@ from apothem.harnesses._shared.install_driver_homelink import (
     link_leaving_home_refusal,
     link_refusal_reason_and_fix,
 )
+from apothem.lib import home_write_guard
 from apothem.lib.harness_registry import (
     SUPPORTED_HARNESS_IDS,
     HarnessRegistryEntry,
@@ -488,11 +489,16 @@ def _refuse_profile_outside_home(profile_path: Path) -> None:
     that is itself a link out of the home (a dotfiles file on another drive)
     is refused the same way. Every profile write is checked: creating the
     starter profile, ``profile set`` and ``profile init --force`` over an
-    existing one, and opening it in the editor.
+    existing one, and opening it in the editor. While a pytest test runs, a
+    profile in the account's real home is refused first (see
+    :mod:`apothem.lib.home_write_guard`).
 
     Raises:
         _CliUserError: When a link leads *profile_path* out of the home.
+        RealHomeWriteError: While a pytest test runs, for a profile in the
+            account's real home.
     """
+    home_write_guard.refuse_real_home_write(profile_path, operation="write the profile")
     refusal = link_leaving_home_refusal(profile_path, operation="profile_write")
     if refusal is None:
         return

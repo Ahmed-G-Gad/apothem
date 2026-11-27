@@ -23,6 +23,7 @@ from typing import Final
 
 from jsonschema import Draft202012Validator
 
+from apothem.lib import home_write_guard
 from apothem.lib.atomic_io import advisory_lock, write_bytes_atomically
 from apothem.lib.data_home import DataHome
 from apothem.lib.schema_errors import format_schema_errors
@@ -331,6 +332,9 @@ class ContextStore:
         """
         data = fragment.to_dict()
         validate_fragment(data)
+        home_write_guard.refuse_real_home_write(
+            self.data_home.contexts, operation="create"
+        )
         self.data_home.contexts.mkdir(parents=True, exist_ok=True)
         # Serialize the RMW window so concurrent writers cannot lose a fragment.
         with advisory_lock(self._lock_path):
@@ -348,6 +352,9 @@ class ContextStore:
         Raises:
             ContextError: When no fragment with *fragment_id* is stored.
         """
+        home_write_guard.refuse_real_home_write(
+            self.data_home.contexts, operation="create"
+        )
         self.data_home.contexts.mkdir(parents=True, exist_ok=True)
         with advisory_lock(self._lock_path):
             entries = self._read_raw()

@@ -30,7 +30,11 @@ from click.testing import CliRunner, Result
 
 from apothem.cli import main
 from apothem.cli._user_level_report import LedgerView
-from apothem.harnesses._shared import install_driver_materialize, wrapper_factories
+from apothem.harnesses._shared import (
+    install_driver_lifecycle,
+    install_driver_materialize,
+    wrapper_factories,
+)
 from apothem.harnesses._shared.install_driver_keys import same_folder_roots
 from apothem.harnesses._shared.install_driver_shared import holder_index, path_key
 from apothem.harnesses._shared.install_driver_types import MaterializationError, _result
@@ -670,6 +674,53 @@ def test_an_uninstall_that_matches_no_record_and_removes_nothing(
     words = " ".join(text.output.split())
     assert "Uninstalled cursor" not in words
     assert "Note: cursor - no install record matched" in words
+
+
+@pytest.mark.parametrize("fmt", ["text", "quiet", "json"])
+def test_a_stopped_uninstall_that_matches_no_record_still_says_so(
+    tmp_path: Path,
+    profile: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
+    fmt: str,
+) -> None:
+    # The pass removes files and then stops. Its next step is apothem
+    # update, so the Note with the check of the --project folder comes
+    # with it, as after an uninstall that ran all its steps.
+    folder = tmp_path / "X"
+    folder.mkdir()
+    _install_cli(folder, tmp_path)
+    install_ledger.ledger_path("cursor").unlink()
+
+    def broken(*args: object, **kwargs: object) -> list[object]:
+        raise OSError("listing failed")
+
+    monkeypatch.setattr(install_driver_lifecycle, "left_behind", broken)
+    args = ["uninstall", "--harness", "cursor", "--project", str(folder), "--yes"]
+    extra = {"text": [], "quiet": ["-q"], "json": ["--format", "json"]}[fmt]
+    result = _cli(*args, *extra)
+
+    assert result.exit_code == 2, result.output
+    note = "Note: cursor - no install record matched"
+    check = "is the folder you installed into"
+    if fmt == "json":
+        rows = json.loads(result.output)["results"]
+        assert rows[0]["detail"] == {"kept_reason": "no-record"}, rows
+        message = rows[0]["message"]
+        assert message.startswith(
+            "MaterializationError: uninstall stopped: listing failed; "
+        ), message
+        quoted = shell_quoted(str(folder))
+        named = f"--project {quoted}" if quoted else f"the --project folder {folder}"
+        assert "; no install record matched" in message
+        assert f"before you run apothem update, check that {named} {check}" in message
+    else:
+        # Under --quiet the Note goes to the error stream, with the failure.
+        shown = result.stderr if fmt == "quiet" else result.stdout
+        words = " ".join(shown.split())
+        assert note in words, result.output
+        assert check in words, result.output
+        failed = " ".join(result.stderr.split())
+        assert "cursor uninstall stopped after removing files" in failed
 
 
 def _unlink_folder_link(link: Path) -> None:

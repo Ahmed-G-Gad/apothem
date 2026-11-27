@@ -522,6 +522,27 @@ def test_uninstall_refuses_before_it_asks(
     assert (outside / "b" / "codex" / "AGENTS.md").is_file()
 
 
+def test_a_refused_uninstall_says_the_refusal_once_and_names_the_link(
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The refused step is the error's own message: the plain output says it
+    # once, and the harness row names the link and where it leads, followed
+    # by the refused step's row.
+    outside = _codex_installed_then_linked_out(home, tmp_path, monkeypatch)
+    args = ["uninstall", "--harness", "codex", "--yes"]
+
+    plain = CliRunner().invoke(main, [*args, "--no-color"])
+    as_json = CliRunner().invoke(main, [*args, "--format", "json"])
+
+    assert plain.exit_code == 1, plain.output
+    assert "did not finish" not in plain.output
+    row, step = json.loads(as_json.output)["results"]
+    assert row["message"].count("target path crosses a link") == 1, row
+    assert Path(row["detail"]["symlink"]) == home / "a"
+    assert Path(row["detail"]["leads_to"]) == outside.resolve()
+    assert step["operation"] == "uninstall_refused"
+
+
 def test_the_refusal_names_the_link_and_where_it_leads(
     home: Path, tmp_path: Path
 ) -> None:

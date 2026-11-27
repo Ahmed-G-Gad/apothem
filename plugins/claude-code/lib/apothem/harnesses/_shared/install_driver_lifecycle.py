@@ -10,9 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
-import yaml
-
-from apothem.lib import install_ledger
+from apothem.lib import home_write_guard, install_ledger
 from apothem.lib.harness_materializer import (
     defuse_sentinels,
     extract_managed_block,
@@ -23,11 +21,11 @@ from apothem.lib.propagation import (
     resolve_target,
 )
 
+from .install_driver_backup import refuse_bookkeeping_in_real_home
 from .install_driver_blocks import (
     install_may_be_open,
     stray_begin_at,
     stray_begin_files,
-    stray_begin_warnings,
     whole_blocks_at,
 )
 from .install_driver_datahome import (
@@ -36,6 +34,7 @@ from .install_driver_datahome import (
 )
 from .install_driver_evidence import (
     _entry_proves_install,
+    _native_config_parses,
     _unfinished_here,
     listed_in_record,
 )
@@ -50,8 +49,10 @@ from .install_driver_layout import _load_rules
 from .install_driver_merge import render_content_tokens
 from .install_driver_outcome import (
     last_uninstall_finished,
+    left_before_a_stop,
     left_behind,
     left_unfinished,
+    record_before_refusal,
     record_uninstall,
 )
 from .install_driver_pathsafety import (
@@ -80,35 +81,7 @@ from .install_driver_types import (
     resolve_source,
     skills_sharing_command_target,
 )
-from .install_driver_written import kept_file_warnings, remove_written
-
-
-def _native_config_parses(target: Path) -> bool:
-    """Return True unless *target* is a structurally invalid JSON/YAML file.
-
-    Only ``.json``/``.yaml``/``.yml`` targets are parsed; other suffixes (e.g.
-    Markdown anchors) pass trivially. A ``.json`` target may be JSONC or JSON5
-    (OpenCode and OpenClaw read those dialects, and install leaves such a file
-    in place when it has nothing to change). A present-but-corrupt config reads
-    as not-installed.
-    """
-    from apothem.lib import lenient_json
-
-    suffix = target.suffix.lower()
-    if suffix not in {".json", ".yaml", ".yml"}:
-        return True
-    try:
-        text = target.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
-        return False
-    try:
-        if suffix == ".json":
-            lenient_json.loads(text)
-        else:
-            yaml.safe_load(text)
-    except (lenient_json.LenientJSONError, yaml.YAMLError):
-        return False
-    return True
+from .install_driver_written import remove_written
 
 
 def verify_install(
@@ -404,16 +377,45 @@ def run_uninstall(
     another spelling of the root's folder are this install too (see
     :func:`one_install`): what they list goes, and they end.
 
-    Returns every :class:`MaterializationResult`. A ``kind="uninstall"``
-    record is appended only when no removal errored and nothing Apothem wrote
-    stays behind a link; otherwise, and when the pass raises, an
-    ``uninstall-incomplete`` record is (see :func:`record_uninstall`): the
-    install stays active, so verify, status, rollback and a second uninstall
-    keep operating against it. Either record references every backup the
-    uninstall took, including those in *prior_results* (removals the caller
-    made just before, such as a native config stripped of Apothem's keys),
-    and an error there also makes the uninstall unfinished.
+    Returns every removal's :class:`MaterializationResult` so callers can
+    surface path-escape, backup, and write failures instead of reporting an
+    unconditional success. A ``kind="uninstall"`` record is appended only when
+    no removal errored and nothing Apothem wrote stays behind a link;
+    otherwise, and when the pass raises, an ``uninstall-incomplete`` record is
+    appended instead (see :func:`record_uninstall`): the install stays
+    active, so verify, status, rollback and a second uninstall keep operating
+    against it. A pass stopped by an error or Ctrl-C appends that record
+    even when it had changed nothing (a refusal, below, does not). A
+    native-config uninstall stopped at its settings-file step, before this
+    pass, appends one only when the step before it changed or backed up a
+    file, and one whose first step reports an error appends one in any case
+    (see :func:`~.wrapper_factories.make_native_config_uninstall`); the
+    install stays active either way. Either record references every backup
+    the uninstall took, including those in *prior_results*: removals the
+    caller made just before this pass, such as a native config stripped of
+    Apothem's keys. An error in *prior_results* also makes the uninstall
+    unfinished. An ordinary error that stops the pass is raised as a
+    :class:`MaterializationError`, with the error as its cause, whose ``run``
+    holds *prior_results*, this pass's results and what its removals kept
+    (see :func:`~.install_driver_outcome.left_before_a_stop`): the CLI then
+    reports what the caller's steps and this pass did before it stopped, a
+    file behind a link that a step before it found included.
+
+    A refusal of the real-home guard (see :mod:`apothem.lib.home_write_guard`)
+    is raised as it is: it changed nothing in the protected folder. When the
+    pass, or the caller just before it, had already removed files elsewhere,
+    an ``uninstall-incomplete`` record is appended first, so their backups
+    stay referenced; a refusal before any removal records nothing, and a
+    failure to write that record does not replace the refusal (see
+    :func:`~.install_driver_outcome.record_before_refusal`). A project root
+    that is the account home is refused before the pass starts, and so is a
+    backup root or ledger in a protected folder.
     """
+    if project_root is not None:
+        home_write_guard.refuse_project_root_at_home(
+            project_root, operation="uninstall"
+        )
+    refuse_bookkeeping_in_real_home(harness_name, operation="uninstall")
     root = _root_for(harness_root, project_root)
     root_floor = _allowed_write_root(harness_root, project_root)
     active: list[LedgerRecord] = []
@@ -449,16 +451,20 @@ def run_uninstall(
             # finished uninstall stands, as its record says.
             with contextlib.suppress(Exception):
                 apply_retention(harness_name)
+    except home_write_guard.RealHomeWriteError:
+        # A refusal during a test: recorded only for what was already removed.
+        record_before_refusal(record_pass, record, [*prior_results, *results])
+        raise
     except BaseException as exc:
         results += record_pass(record, [*prior_results, *results], finished=False)
         if not isinstance(exc, Exception):
             raise
-        # Hand the caller what this pass removed before it stopped, so the CLI
-        # can report the uninstall as partial instead of a bare failure, with
-        # each file it rewrote that still holds a BEGIN marker alone named.
-        done = [*prior_results, *results]
-        kept_now = [*kept_file_warnings(results), *stray_begin_warnings(done)]
-        run = MaterializationRun(harness_name, False, (*results, *kept_now))
+        # Hand the caller what this pass, and the caller's steps before it,
+        # removed or found before it stopped, so the CLI can report the
+        # uninstall as partial instead of a bare failure.
+        kept_now = left_before_a_stop(results, prior=prior_results)
+        done = (*prior_results, *results, *kept_now)
+        run = MaterializationRun(harness_name, False, done)
         raise MaterializationError(f"uninstall stopped: {exc}", run) from exc
     return [*results, *kept]
 

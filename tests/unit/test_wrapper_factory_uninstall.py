@@ -7,18 +7,25 @@ must derive the project root from the adapter's declared ``relative_target``
 component count, not a hardcoded ``parents[N]`` magic index, so a manifest
 target-depth change can never silently derive the wrong root. Also covers
 what every uninstall shim does with an ``error`` result: it raises, so the CLI
-does not report a refused uninstall as done.
+does not report a refused uninstall as done. A native-config uninstall that
+stops at its native-config step, after its first step removed a file or only
+found Apothem's rules file behind a link, or in the shared pass after both
+steps, exits as partial and names that link. One that stops at that step
+before any change fails with the same stopped-uninstall error whether or
+not its first step found something to report.
 """
 
 from __future__ import annotations
 
+import json
+import sys
 from pathlib import Path
 
 import pytest
-from click.testing import CliRunner
+from click.testing import CliRunner, Result
 
 from apothem.cli import main
-from apothem.harnesses._shared import install_driver
+from apothem.harnesses._shared import install_driver, install_driver_written
 from apothem.harnesses._shared.install_driver import MaterializationResult
 from apothem.harnesses._shared.wrapper_factories import (
     make_native_config_uninstall,
@@ -28,7 +35,10 @@ from apothem.harnesses._shared.wrapper_factories import (
 from apothem.harnesses.antigravity.uninstall import uninstall as antigravity_uninstall
 from apothem.harnesses.claude_code.uninstall import uninstall as claude_code_uninstall
 from apothem.harnesses.kimi_code.uninstall import uninstall as kimi_code_uninstall
+from apothem.harnesses.open_claw import OpenClawAdapter
 from apothem.harnesses.opencode import OpenCodeAdapter
+from apothem.lib import install_ledger
+from apothem.lib.harness_materializer import APOTHEM_BLOCK_END
 
 
 def _record_project_root(monkeypatch: pytest.MonkeyPatch) -> list[Path | None]:
@@ -228,3 +238,312 @@ def test_a_refused_uninstall_is_not_reported_as_done(
     assert result.exit_code != 0
     assert "Uninstalled" not in result.output
     assert "uninstall did not finish" in result.output
+
+
+def _deny_the_native_config(monkeypatch: pytest.MonkeyPatch, config: Path) -> None:
+    """Make the native-config step raise, as for a file the system keeps locked."""
+
+    def denied(*_args: object, **_kwargs: object) -> None:
+        raise PermissionError(13, "denied", str(config))
+
+    monkeypatch.setattr(install_driver, "surgically_remove_materialized_config", denied)
+
+
+def _uninstall_open_claw() -> tuple[int, str]:
+    result = CliRunner().invoke(
+        main, ["uninstall", "--harness", "open-claw", "--yes", "--no-color"]
+    )
+    return result.exit_code, result.stderr
+
+
+def test_a_native_uninstall_stopped_after_its_first_step_exits_partial(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An error at ``openclaw.json`` after the rules file went is a partial uninstall.
+
+    The first step took Apothem's rules file out of the workspace, so the CLI
+    exits 2 and says the uninstall stopped after removing files, and the
+    unfinished uninstall it records names that file's backup.
+    """
+    workspace = Path.home() / ".openclaw" / "workspace"
+    workspace.mkdir(parents=True)
+    (workspace / "AGENTS.md").write_text("# My agent\n", encoding="utf-8")
+    OpenClawAdapter().install({})
+    rules = workspace / "apothem" / "AGENTS.md"
+    written = rules.read_bytes()
+    config = Path.home() / ".openclaw" / "openclaw.json"
+    before = config.read_bytes()
+    _deny_the_native_config(monkeypatch, config)
+
+    code, stderr = _uninstall_open_claw()
+
+    assert code == 2, stderr
+    assert "open-claw uninstall stopped after removing files" in stderr
+    assert "denied" in stderr
+    assert not rules.exists()
+    assert config.read_bytes() == before
+    records = install_ledger.read_records("open_claw")
+    assert [record.kind for record in records] == ["install", "uninstall-incomplete"]
+    backups = {target.path: target.backup_ref for target in records[-1].targets}
+    assert backups[str(rules)] is not None
+    assert Path(backups[str(rules)]).read_bytes() == written
+    assert all(ref is not None and Path(ref).exists() for ref in backups.values())
+
+
+def test_ctrl_c_after_the_first_step_is_recorded_and_exits_through_click(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Ctrl-C at ``openclaw.json`` after the rules file went is recorded unfinished.
+
+    The CLI does not report the interrupt as a stopped uninstall: Click ends
+    the command with ``Aborted!`` and exit 1, as for any interrupt, although
+    the first step removed the rules file. The ledger says what happened: the
+    unfinished uninstall it records names that file's backup.
+    """
+    workspace = Path.home() / ".openclaw" / "workspace"
+    workspace.mkdir(parents=True)
+    (workspace / "AGENTS.md").write_text("# My agent\n", encoding="utf-8")
+    OpenClawAdapter().install({})
+    rules = workspace / "apothem" / "AGENTS.md"
+    written = rules.read_bytes()
+
+    def interrupted(*_args: object, **_kwargs: object) -> None:
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(
+        install_driver, "surgically_remove_materialized_config", interrupted
+    )
+
+    code, stderr = _uninstall_open_claw()
+
+    assert code == 1, stderr
+    assert stderr.strip() == "Aborted!"
+    assert not rules.exists()
+    records = install_ledger.read_records("open_claw")
+    assert [record.kind for record in records] == ["install", "uninstall-incomplete"]
+    backups = {target.path: target.backup_ref for target in records[-1].targets}
+    assert Path(str(backups[str(rules)])).read_bytes() == written
+
+
+@pytest.mark.parametrize("endless", [False, True])
+def test_a_native_uninstall_stopped_before_any_change_still_fails(
+    monkeypatch: pytest.MonkeyPatch, endless: bool
+) -> None:
+    """With nothing changed, the same error fails the uninstall (exit 1).
+
+    There is no rules file to take out, or the only one lost its END marker,
+    so the first step leaves it as it is, with a warning. Either way nothing
+    is recorded, and the error is raised as a stopped uninstall, as one in
+    the shared pass is: the row names the same error with or without that
+    warning, and the warning is reported.
+    """
+    workspace = Path.home() / ".openclaw" / "workspace"
+    rules = workspace / "apothem" / "AGENTS.md"
+    if endless:
+        workspace.mkdir(parents=True)
+        (workspace / "AGENTS.md").write_text("# My agent\n", encoding="utf-8")
+    OpenClawAdapter().install({})
+    if endless:
+        rules.write_bytes(rules.read_bytes().replace(APOTHEM_BLOCK_END.encode(), b""))
+    config = Path.home() / ".openclaw" / "openclaw.json"
+    _deny_the_native_config(monkeypatch, config)
+
+    code, stderr = _uninstall_open_claw()
+    result = _uninstall_open_claw_as("json")
+
+    envelope = json.loads(result.stdout)
+    stopped = "uninstall stopped: [Errno 13] denied"
+    assert code == 1, stderr
+    assert f"✗ open-claw uninstall failed: {stopped}" in " ".join(stderr.split())
+    assert result.exit_code == 1, result.output
+    assert envelope["results"][0]["message"].startswith(
+        f"MaterializationError: {stopped}"
+    )
+    reported = [warning["path"] for warning in envelope["warnings"]]
+    assert reported == ([str(rules)] if endless else [])
+    records = install_ledger.read_records("open_claw")
+    assert [record.kind for record in records] == ["install"]
+
+
+def _link_folder(link: Path, target: Path) -> None:
+    """Create a folder link, a junction on Windows; skip where none can be made."""
+    try:
+        if sys.platform == "win32":
+            import _winapi
+
+            _winapi.CreateJunction(str(target), str(link))
+        else:
+            link.symlink_to(target, target_is_directory=True)
+    except (OSError, NotImplementedError, AttributeError) as exc:
+        pytest.skip(f"cannot create a folder link here: {exc}")
+
+
+def _install_with_a_linked_workspace(*, alone: bool = False) -> Path:
+    """Install open-claw into two workspaces; link the second one's rules folder.
+
+    Returns the link: the second workspace's ``apothem`` folder, moved aside
+    and linked back, so the uninstall cannot take the rules file out of it.
+    With *alone*, that workspace is the only one.
+    """
+    home = Path.home()
+    names = ("ws-b",) if alone else ("ws-a", "ws-b")
+    for name in names:
+        (home / name).mkdir()
+        (home / name / "AGENTS.md").write_text("# My agent\n", encoding="utf-8")
+    config = home / ".openclaw" / "openclaw.json"
+    config.parent.mkdir()
+    workspaces: dict[str, object] = {"defaults": {"workspace": "~/ws-b"}}
+    if not alone:
+        workspaces = {
+            "defaults": {"workspace": "~/ws-a"},
+            "entries": {"b": {"workspace": "~/ws-b"}},
+        }
+    config.write_text(json.dumps({"agents": workspaces}), encoding="utf-8")
+    OpenClawAdapter().install({})
+    link = home / "ws-b" / "apothem"
+    moved = home / "ws-b" / "apothem-real"
+    link.rename(moved)
+    _link_folder(link, moved)
+    return link
+
+
+def _uninstall_open_claw_as(output_format: str) -> Result:
+    """Run the open-claw uninstall with plain or JSON output."""
+    args = ["uninstall", "--harness", "open-claw", "--yes", "--no-color"]
+    return CliRunner().invoke(main, [*args, "--format", output_format])
+
+
+def _assert_the_link_is_named(
+    result: Result, link: Path, output_format: str, *, loaded: bool = True
+) -> None:
+    """Check that the uninstall named *link*, where it leads and its fix.
+
+    In JSON output the harness's ``results`` row ends its message with the
+    link's line and names the link and the folder it leads to in ``detail``.
+    In plain output that line follows ``✗ open-claw uninstall did not
+    finish:`` on standard error. The line says OpenClaw still loads the rules
+    file behind the link when *loaded*: ``openclaw.json`` still names it.
+    """
+    loads = ", and open-claw still loads them" if loaded else ""
+    line = (
+        f"1 installed path(s) stay because they are reached through the link {link}"
+        f"{loads}; replace the link with a real folder that holds the same files, "
+        "then run the command again"
+    )
+    if output_format == "json":
+        row = json.loads(result.stdout)["results"][0]
+        assert row["detail"] == {
+            "symlink": str(link),
+            "leads_to": str(link.parent / "apothem-real"),
+        }
+        assert " ".join(str(row["message"]).split()).endswith(f"; {line}")
+    else:
+        flat = " ".join(result.stderr.split())
+        assert f"✗ open-claw uninstall did not finish: {line}" in flat
+
+
+@pytest.mark.parametrize("output_format", ["plain", "json"])
+def test_a_stopped_native_uninstall_names_the_rules_file_behind_a_link(
+    monkeypatch: pytest.MonkeyPatch, output_format: str
+) -> None:
+    """A stopped uninstall still reports Apothem's rules file behind a link.
+
+    The first workspace's rules file goes, the second one's is reached
+    through a link, and the ``openclaw.json`` step then stops. The report
+    names the link, where it leads and its fix, as an uninstall that finished
+    its steps does, so the operator does not learn of it only from the next
+    run.
+    """
+    link = _install_with_a_linked_workspace()
+    _deny_the_native_config(monkeypatch, Path.home() / ".openclaw" / "openclaw.json")
+
+    result = _uninstall_open_claw_as(output_format)
+
+    assert result.exit_code == 2, result.output
+    assert (link / "AGENTS.md").is_file()
+    if output_format == "plain":
+        assert "open-claw uninstall stopped after removing files" in result.stderr
+    _assert_the_link_is_named(result, link, output_format)
+
+
+@pytest.mark.parametrize("output_format", ["plain", "json"])
+def test_a_native_uninstall_stopped_before_any_removal_names_the_link(
+    monkeypatch: pytest.MonkeyPatch, output_format: str
+) -> None:
+    """The link is named when the first step found it and removed nothing.
+
+    The only workspace's rules folder is a link, so the first step changes
+    nothing and only finds Apothem's file behind the link; the
+    ``openclaw.json`` step then stops. The report names the link, and the CLI
+    exits 2, as for an uninstall that ran all its steps and left Apothem's
+    files behind a link. Nothing changed, so nothing is recorded.
+    """
+    link = _install_with_a_linked_workspace(alone=True)
+    config = Path.home() / ".openclaw" / "openclaw.json"
+    before = config.read_bytes()
+    _deny_the_native_config(monkeypatch, config)
+
+    result = _uninstall_open_claw_as(output_format)
+
+    assert result.exit_code == 2, result.output
+    assert config.read_bytes() == before
+    assert (link / "AGENTS.md").is_file()
+    records = install_ledger.read_records("open_claw")
+    assert [record.kind for record in records] == ["install"]
+    if output_format == "plain":
+        flat = " ".join(result.stderr.split())
+        assert "✗ open-claw uninstall failed: uninstall stopped: [Errno 13]" in flat
+    else:
+        assert json.loads(result.stdout)["status"] == "partial"
+    _assert_the_link_is_named(result, link, output_format)
+
+
+def _fail_the_support_tree_backups(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Make each backup of a file in the support tree fail, as on a full disk.
+
+    The workspace rules files and ``openclaw.json`` are backed up through
+    other code, so the first two steps finish and the shared pass stops.
+    """
+    real = install_driver_written.backup_existing
+
+    def full(target: Path, **kwargs: object) -> object:
+        if ".apothem" in target.parts:
+            raise OSError("backup disk full")
+        return real(target, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(install_driver_written, "backup_existing", full)
+
+
+@pytest.mark.parametrize("output_format", ["plain", "json"])
+def test_an_uninstall_stopped_in_the_shared_pass_reports_the_steps_before_it(
+    monkeypatch: pytest.MonkeyPatch, output_format: str
+) -> None:
+    """A stop in the shared pass keeps what the two steps before it did.
+
+    The first step took the first workspace's rules file out and found the
+    second one's behind a link, and the native step took Apothem's entries out
+    of ``openclaw.json``; then a backup in the support tree fails. The CLI
+    exits 2 and says the uninstall stopped after removing files, and it names
+    the link, as a stop at the native step does. OpenClaw no longer loads the
+    file behind the link: ``openclaw.json`` no longer names it.
+    """
+    link = _install_with_a_linked_workspace()
+    config = Path.home() / ".openclaw" / "openclaw.json"
+    before = config.read_bytes()
+    _fail_the_support_tree_backups(monkeypatch)
+
+    result = _uninstall_open_claw_as(output_format)
+
+    assert result.exit_code == 2, result.output
+    assert not (Path.home() / "ws-a" / "apothem" / "AGENTS.md").exists()
+    assert config.read_bytes() != before
+    assert (link / "AGENTS.md").is_file()
+    records = install_ledger.read_records("open_claw")
+    assert [record.kind for record in records] == ["install", "uninstall-incomplete"]
+    if output_format == "plain":
+        flat = " ".join(result.stderr.split())
+        stopped = "uninstall stopped after removing files: uninstall stopped: backup"
+        assert f"✗ open-claw {stopped} disk full" in flat
+    else:
+        assert json.loads(result.stdout)["status"] == "partial"
+    _assert_the_link_is_named(result, link, output_format, loaded=False)

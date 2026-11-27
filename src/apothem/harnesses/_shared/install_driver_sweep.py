@@ -14,6 +14,8 @@ import contextlib
 import shutil
 from pathlib import Path
 
+from apothem.lib import home_write_guard
+
 from .install_driver_backup import backup_existing
 from .install_driver_pathsafety import (
     KEPT_LINKS,
@@ -123,7 +125,7 @@ def stale_blocker(
     if _is_link(stale):
         return _link_kept(stale)
     refused = _validate_target_path(
-        stale, allowed_root=allowed_root, operation="sweep_stale"
+        stale, allowed_root=allowed_root, operation="sweep_stale", mutating=False
     )
     through = _unsafe_symlink(stale, allowed_root) if refused is not None else None
     if through is not None:
@@ -322,12 +324,31 @@ def sweep_stale(
     targets) is left in place, with no backup: it is the live folder under
     another name. A stale path that is itself a link is left in place with a
     warning.
+
+    While pytest runs, every stale path that would go is checked against the
+    real-home guard before the first one goes, so a refusal changes nothing.
+    What keeps each stale path in place is decided before the first removal
+    too, in every run. The sweep never removes a link, so an earlier removal
+    cannot change a later path's outcome, and a later path that an earlier
+    removal took away is reported absent.
     """
     results: list[MaterializationResult] = []
     boundary = _write_boundary(allowed_root, root)
-    for legacy in stale_sweep:
-        stale = root / legacy
-        blocker = stale_blocker(stale, protect, boundary)
+    planned = [
+        (root / legacy, stale_blocker(root / legacy, protect, boundary))
+        for legacy in stale_sweep
+    ]
+    # The shared blocker also serves the preview, so it does not refuse.
+    home_write_guard.refuse_real_home_write(
+        *(
+            stale
+            for stale, blocker in planned
+            if blocker is None and (stale.is_dir() or stale.is_file())
+        ),
+        operation="remove the stale path",
+        tree=True,
+    )
+    for stale, blocker in planned:
         if blocker is not None:
             results.append(blocker)
             continue

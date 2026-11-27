@@ -8,6 +8,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from apothem.harnesses._shared.install_driver import (
+    MaterializationError,
     MaterializationResult,
     MaterializationRun,
 )
@@ -50,9 +51,21 @@ def uninstall(output_path: Path) -> MaterializationRun:
     file OpenClaw would no longer load (see :func:`rules_file.still_loaded`)
     gets ``loaded: "0"`` on its warning, and the report drops "still loads".
     While openclaw.json exists but cannot be read as JSON5, nothing shows what
-    OpenClaw loads, so the warnings keep the default wording.
+    OpenClaw loads, so the warnings keep the default wording. An uninstall
+    that stops with a :class:`MaterializationError` has the warnings in the
+    run it carries marked the same way, against openclaw.json as the stop
+    left it.
     """
-    run = _remove(output_path)
+    try:
+        run = _remove(output_path)
+    except MaterializationError as exc:
+        exc.run = _marked(exc.run, output_path)
+        raise
+    return _marked(run, output_path)
+
+
+def _marked(run: MaterializationRun, output_path: Path) -> MaterializationRun:
+    """Return *run* with each rules file OpenClaw no longer loads marked so."""
     config = rules_file.read_config(output_path)
     if config is None and output_path.exists():
         return run
