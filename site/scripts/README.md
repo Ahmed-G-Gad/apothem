@@ -30,10 +30,12 @@ Run any of them from `site/`.
   whole inline nodes at the cut, so no code span, emphasis, bold,
   strikethrough or link is left open (a link the cut lands in keeps its label
   as plain text). It steps back to an earlier word boundary rather than end a
-  cell inside an open parenthesis, unless the source never closes it. Each cut
-  is parsed again and checked before it is used; when no cut passes, the shown
-  text is cut at a word boundary and written as escaped plain text ending in
-  " …", never longer than the limit. The Markdown packages it imports are
+  cell inside an open parenthesis; it cuts inside one only when every earlier
+  word boundary is inside it too (the excerpt opens with the parenthesis).
+  Each cut is parsed again and checked before it is used; when no cut passes,
+  the shown text is cut at a word boundary and written as escaped plain text
+  ending in " …", within the limit counted in characters shown (at least one
+  character is kept, so a limit under 3 can be passed). The Markdown packages it imports are
   declared in `package.json`, so `npm ci` installs them; the generator stops
   with that fix named when they are missing.
   Covered by `cut-at-word.test.mjs` under `npm test`, which also cuts every

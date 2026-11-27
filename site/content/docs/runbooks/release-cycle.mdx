@@ -78,6 +78,7 @@ not edit them by hand. One command moves all of them:
 git checkout main
 git pull --ff-only origin main
 git checkout -b release/vX.Y.Z
+npm ci --prefix site
 python scripts/release/bump_version.py X.Y.Z
 ```
 
@@ -141,9 +142,11 @@ It then regenerates the derived trees: the Claude Code plugin package, the
 behavior-diff goldens, and the docs reference and changelog pages. Pass
 `--dry-run` to list the changes first, `--date
 YYYY-MM-DD` to set the release date (default: today in UTC), or `--no-regen`
-to skip the regeneration. The script refuses a malformed version or a
-downgrade, and re-running it with the current version only re-aligns stray
-anchors.
+to skip the regeneration. The docs pages are built with Markdown packages
+from `site/node_modules`, so the script stops before it changes any file
+when that folder is missing; `npm ci --prefix site` installs it. The script
+refuses a malformed version or a downgrade, and re-running it with the
+current version only re-aligns stray anchors.
 
 Review the diff, then commit, push the branch and open the pull request:
 

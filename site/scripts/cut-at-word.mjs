@@ -29,9 +29,9 @@
 //
 // A parenthesis is plain text, not markup, but a table cell that ends inside
 // an open "(" reads as broken, so the cut steps back to an earlier word
-// boundary where every "(" in the text is closed. Only when no boundary
-// allows that (the source opens a parenthesis it never closes, for example)
-// may the cut end inside one.
+// boundary where every "(" in the text is closed. Only when every earlier
+// boundary is inside the parenthesis too (the excerpt opens with it) may the
+// cut end inside one.
 //
 // When no cut keeps the markup whole, the shown text itself is cut at the last
 // word boundary that fits and written out as escaped plain text, so the result
