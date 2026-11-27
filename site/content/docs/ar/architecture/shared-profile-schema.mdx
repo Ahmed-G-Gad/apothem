@@ -2,7 +2,7 @@
 title: "مخطّط الملف التعريفي المشترك"
 description: "مخطّط الملف التعريفي المشترك بصيغة YAML لـ Apothem."
 machineTranslated: true
-sourceHash: "574a594762c4f468"
+sourceHash: "cdd83bde9f17392d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,13 +30,16 @@ identity:
 يُتوقَّع من المُشغِّل أن يُخصِّصها — ويتحقّق منها قبل الإبلاغ عن النجاح:
 
 ```yaml
+# yaml-language-server: $schema=https://apothem.ahmedgad.com/schemas/profile.schema.json
+schema_version: 1
 identity:
-  name: "Example User"
-  email: "dev@example.invalid"
-  github: "example-user"
+  name: Example User
+  email: dev@example.invalid
+  github: example-user
 ```
 
-يطبع الأمر دفعةً تخصيصيّة تُسمّي هذه الحقول. وإذا وصلت لاحقًا هويّة لا تزال نائبة
+يوجّه السطر الأول المحرّرات التي تدعم <bdi>YAML</bdi> إلى المخطّط؛ و<bdi>`schema_version: 1`</bdi>
+هو إصدار مخطّط ملف التعريف. يطبع الأمر دفعةً تخصيصيّة تُسمّي حقول الهويّة. وإذا وصلت لاحقًا هويّة لا تزال نائبة
 إلى <bdi>`install`</bdi> أو <bdi>`update`</bdi>، طبع هذان الأمران ملاحظةً
 إرشاديّةً واحدة وتابعا — لا يختلق <bdi>Apothem</bdi> أبدًا هويّة نائبة ولا يتوقّف
 بسببها.
@@ -45,6 +48,7 @@ identity:
 
 | الحقل | مطلوب | الافتراضي | ملاحظات |
 | --- | --- | --- | --- |
+| <bdi>`schema_version`</bdi> | لا | يُقرأ على أنه <bdi>`1`</bdi> | إصدار مخطّط ملف التعريف؛ يكتب <bdi>`profile init`</bdi> القيمة <bdi>`1`</bdi>. يُرفَض الإصدار الأحدث ممّا يدعمه المحرّك. |
 | <bdi>`identity.name`</bdi> | نعم | لا شيء | اسم عرض غير فارغ للمُشغِّل. |
 | <bdi>`identity.role`</bdi> | لا | <bdi>`senior software engineer`</bdi> | نصّ الدور المشترك. |
 | <bdi>`identity.email`</bdi> | لا | محذوف | يجب أن يكون بصيغة بريد إلكتروني عند وجوده. |
@@ -56,8 +60,13 @@ identity:
 | <bdi>`preferences.test_framework`</bdi> | لا | محذوف | سلسلة غير فارغة عند وجودها. |
 | <bdi>`rules`</bdi> | لا | <bdi>`[]`</bdi> | سلاسل فريدة غير فارغة؛ تُطبَّع الأسطر الجديدة إلى <bdi>LF</bdi>. |
 | <bdi>`seriousness`</bdi> | لا | <bdi>`PERSONAL_USE`</bdi> | أحد <bdi>`EXPLORING`</bdi> أو <bdi>`PERSONAL_USE`</bdi> أو <bdi>`SHARED`</bdi> أو <bdi>`PUBLIC_LAUNCH`</bdi>. |
+| <bdi>`enforcement.*`</bdi> | لا | <bdi>`false`</bdi> لكلٍّ منها | مفاتيح تفعيل اختياريّة: <bdi>`sprints`</bdi> و<bdi>`agent_teams`</bdi> و<bdi>`multitasking`</bdi> و<bdi>`continuous_execution`</bdi> و<bdi>`learning_loop`</bdi>. |
+| <bdi>`mcp_servers`</bdi> | لا | <bdi>`{}`</bdi> | خوادم <bdi>MCP</bdi> مُفهرسة باسم الخادم. يضبط كلٌّ منها <bdi>`transport`</bdi> (<bdi>`stdio`</bdi> أو <bdi>`http`</bdi> أو <bdi>`sse`</bdi> أو <bdi>`streamable-http`</bdi>): يحتاج خادم <bdi>`stdio`</bdi> إلى <bdi>`command`</bdi>، ويحتاج الباقي إلى <bdi>`url`</bdi>. |
+| <bdi>`agent_mcp_servers`</bdi> | لا | <bdi>`{}`</bdi> | لكل مساعد، مُفهرسًا باسمه، خوادم <bdi>MCP</bdi> التي يجوز له استدعاؤها. تقرؤه عمليّتا تثبيت <bdi>Claude Code</bdi> و<bdi>Gemini CLI</bdi>. |
 | <bdi>`harnesses`</bdi> | لا | <bdi>`{}`</bdi> | تجاوزات خاصّة بكل إطار عمل مُفهرسة بمعرّف إطار العمل المدعوم. |
 | <bdi>`exclude_harnesses`</bdi> | لا | <bdi>`[]`</bdi> | معرّفات أطر العمل المدعومة المُستبعَدة من <bdi>`--harness all`</bdi>. |
+| <bdi>`workspace.directory_name`</bdi> | لا | <bdi>`.apothem`</bdi> | اسم مجلد العمل المشترك؛ مكوّن مسار واحد. |
+| <bdi>`workspace.scope`</bdi> | لا | <bdi>`project-local`</bdi> | <bdi>`project-local`</bdi> (تحت جذر المشروع) أو <bdi>`user-home`</bdi> (تحت دليلك المنزلي). |
 
 ## مفاتيح أطر العمل
 

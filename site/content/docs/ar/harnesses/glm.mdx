@@ -2,7 +2,7 @@
 title: "GLM (Z.ai)"
 description: "محوّل إطار عمل Apothem لـ GLM (Z.ai) بوصفه واجهة خلفية للنماذج قابلة للضبط."
 machineTranslated: true
-sourceHash: "026e29a055db8a67"
+sourceHash: "fcd06518f021542b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,7 +33,9 @@ apothem install --harness glm --project /path/to/project
 يكتب المحوّل ملف مزوّد واحدًا بنطاق المشروع يُسجِّل نقاط نهاية الواجهة الخلفية لـ
 <bdi>GLM</bdi> وعناصر نائبة يضبطها المُشغِّل.
 
-**الملفات المكتوبة:** <bdi>`<project>/.apothem/providers/glm.toml`</bdi>
+**الملفات المكتوبة:** <bdi>`<project>/.apothem/providers/glm.toml`</bdi>، إضافةً إلى
+مجلّد البيانات الذي ينشئه كل تثبيت على مستوى المشروع، وهو <bdi>`.apothem/`</bdi> افتراضيًا
+(<bdi>`contexts/`</bdi>، و<bdi>`learning/`</bdi>، و<bdi>`memory/`</bdi>، و<bdi>`plans/`</bdi>).
 
 ## تعيين الملف التعريفي إلى الإعداد الأصلي
 
@@ -74,8 +76,10 @@ apothem install --harness glm --project /path/to/project
 ## ملاحظات التوافق
 
 لا تكشف الواجهة الخلفية <bdi>GLM</bdi> أي سطح للقواعد أو الأوامر أو المهارات أو
-الخطّافات، لذا لا يكتب المحوّل سوى ملف مزوّد الواجهة الخلفية ولا شيء غيره. ولم
-يفحص <bdi>Apothem</bdi> ما إذا كانت <bdi>ZCode</bdi> تكشف أسطحًا كهذه.
+الخطّافات، لذا يكتب المحوّل ملف مزوّد الواجهة الخلفية ولا يكتب شيئًا من تلك. ولم
+يفحص <bdi>Apothem</bdi> ما إذا كانت <bdi>ZCode</bdi> تكشف أسطحًا كهذه. وكما في كل تثبيت على
+مستوى المشروع، ينشئ تثبيت <bdi>GLM</bdi> أيضًا مجلّد بيانات <bdi>Apothem</bdi>، وهو
+<bdi>`<project>/.apothem/`</bdi> افتراضيًا.
 يبقى مفتاح <bdi>Z.ai</bdi> الخاص بك واختياراتك لمُعرِّفات النماذج ملكًا للمُشغِّل.
 اصطلاحات سطح المورّد التي يعتمد عليها المحوّل مُثبَّتة في
 <bdi>`src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md`</bdi>، ملتقَطة بوصفها لقطة
@@ -126,8 +130,17 @@ apothem uninstall --harness glm --project /path/to/project
 ## بوابة المطابقة
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+شغّله من مجلّد مشروعك. وعلى <bdi>Windows</bdi>، استخدم <bdi>`python`</bdi> بدلًا من
+<bdi>`python3`</bdi> واستخدم المسار الكامل، لأن <bdi>Windows PowerShell</bdi> و<bdi>cmd</bdi> لا يوسّعان
+<bdi>`~`</bdi>:
+<bdi>`$HOME\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>PowerShell</bdi>، أو
+<bdi>`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>cmd</bdi>. والمسار هو
+الموضع الذي يضع فيه المُثبِّت المحرّك، ويُبقي <bdi>`-E -s`</bdi> متغيّر <bdi>`PYTHONPATH`</bdi> وحزم
+<bdi>site-packages</bdi> الخاصة بالمستخدم خارج البوابة؛ ويشرح [بوابة المطابقة](/docs/conformity-gate)
+كليهما والتثبيتات الأخرى.
 
 ## استكشاف الأخطاء وإصلاحها
 

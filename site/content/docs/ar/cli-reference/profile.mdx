@@ -2,7 +2,7 @@
 title: "profile"
 description: "مرجع واجهة سطر الأوامر لمجموعة أوامر apothem profile."
 machineTranslated: true
-sourceHash: "012b17d6a7a7bc49"
+sourceHash: "93fe295d7fa540f1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -88,7 +88,29 @@ apothem profile edit [--profile PATH] [--quiet|-q] [--verbose|-v]
 
 ### <bdi>`profile edit`</bdi>
 
-يفتح الملف التعريفي المشترك في محرّر النظام.
+يفتح الملف التعريفي المشترك في محرّر النظام. وعندما لا يوجد ملف تعريفي في المسار بعد،
+يكتب <bdi>`edit`</bdi> أولًا الملف التعريفي المبدئي هناك، وهو السقالة نفسها التي يكتبها
+<bdi>`profile init`</bdi>، ثم يفتحه.
+
+### الملفات التعريفية خلف رابط
+
+لا يُكتَب مسار ملف تعريفي مكتوب داخل دليلك المنزلي، مثل المسار الافتراضي
+<bdi>`~/.config/apothem/profile.yaml`</bdi>، عبر رابط يقود إلى خارج دليلك المنزلي. وقد
+يكون ذلك الرابط مجلدًا فوق الملف التعريفي، مثل <bdi>`~/.config`</bdi> (وعلى <bdi>Windows</bdi>
+تُعَدّ نقطة الوصل <bdi>junction</bdi> رابطًا)، أو الملف التعريفي نفسه، مثل ملف من ملفات
+الإعداد الشخصيّة على محرّك أقراص آخر. عندئذٍ تتوقّف <bdi>`profile init`</bdi> و<bdi>`profile set`</bdi>
+و<bdi>`profile edit`</bdi> قبل أن تكتب أو تفتح أي شيء. ومن دون ملف تعريفي بعد تكون الرسالة
+<bdi>`Apothem could not create the starter profile`</bdi>. وفوق ملف تعريفي موجود، تتوقّف
+<bdi>`profile set`</bdi> و<bdi>`profile edit`</bdi> و<bdi>`profile init
+--force`</bdi> مع
+<bdi>`Apothem could not write the profile`</bdi>؛ أمّا <bdi>`profile init`</bdi> من دون
+<bdi>`--force`</bdi> فتتوقّف أولًا مع <bdi>`profile file already exists`</bdi>، كما تفعل في أي
+مكان. ولا تزال <bdi>`profile show`</bdi> والأوامر التي تقرأ الملف التعريفي فقط تقرؤه. ويُتَّبَع
+الرابط الذي يبقى داخل دليلك المنزلي، كما تصنعه أدوات إدارة ملفات الإعداد الشخصيّة. ولإبقاء
+الملف التعريفي خارج دليلك المنزلي، مرِّر <bdi>`--profile PATH`</bdi> مع مسار الملف التعريفي
+نفسه هناك، بما في ذلك المسار الذي يقود إليه رابط الملف التعريفي: فالمسار الذي تكتبه خارج دليلك
+المنزلي يُكتَب أينما قادت روابطه. ومن دون ملف تعريفي هناك بعد، أنشئه أولًا باستخدام
+<bdi>`apothem profile init --profile PATH`</bdi>.
 
 ## أخطاء التحقّق
 

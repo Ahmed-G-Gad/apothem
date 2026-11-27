@@ -2,7 +2,7 @@
 title: "تجريد محول إطار العمل"
 description: "بروتوكول HarnessAdapter — كيف تترجم محولات Apothem الملف التعريفي المشترك."
 machineTranslated: true
-sourceHash: "da20d21cbe60d343"
+sourceHash: "20a51a9c0e55e94a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -72,6 +72,8 @@ flowchart TD
 from pathlib import Path
 from typing import Protocol
 
+from apothem.harnesses._shared.install_driver_types import MaterializationRun
+
 class HarnessAdapter(Protocol):
     name: str
     output_path: Path
@@ -82,7 +84,7 @@ class HarnessAdapter(Protocol):
     def update(self, profile: dict[str, object]) -> object:
         ...
 
-    def uninstall(self) -> None:
+    def uninstall(self) -> MaterializationRun | None:
         ...
 
     def is_installed(self) -> bool:
@@ -91,6 +93,10 @@ class HarnessAdapter(Protocol):
     def verify(self) -> bool:
         ...
 ```
+
+تُعيد المحوِّلات المشحونة كائن <bdi>`MaterializationRun`</bdi> من <bdi>`uninstall`</bdi>،
+وتُبلِّغ <bdi>CLI</bdi> عن تحذيراته وأخطائه؛ ويجوز للمحوِّل الذي ليس لديه ما يُبلِّغ عنه
+أن يُعيد <bdi>`None`</bdi>.
 
 يجوز لمحوِّلات نطاق-المشروع أن تقبل إضافةً <bdi>`project: Path | None`</bdi> على
 توابع دورة-الحياة وأن تكشف <bdi>`resolve_output_path(project)`</bdi>. لا تمرّر

@@ -2,7 +2,7 @@
 title: "سجلّ أُطُر العمل"
 description: "مرجع تقني لسجلّ محوّلات أُطُر العمل المُضمَّنة في Apothem."
 machineTranslated: true
-sourceHash: "242f7f2bf421b85e"
+sourceHash: "2f51bca3eb9467c5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -16,7 +16,7 @@ sourceHash: "242f7f2bf421b85e"
 
 | إطار العمل | اسم التثبيت | النطاق | الصيغة | الأهداف | <bdi>MCP</bdi> | تثبيت الاصطلاح |
 | --- | --- | --- | --- | --- | --- | --- |
-| <bdi>Antigravity</bdi> | <bdi>`antigravity`</bdi> | المستخدم | <bdi>markdown</bdi> | <bdi>`~/.gemini/GEMINI.md`</bdi>؛ <bdi>`~/.gemini/antigravity-cli/plugins/apothem/`</bdi> | بانتظار الاكتشاف | <bdi>`src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md`</bdi> |
+| <bdi>Antigravity</bdi> | <bdi>`antigravity`</bdi> | المستخدم | <bdi>markdown</bdi> | <bdi>`~/.gemini/GEMINI.md`</bdi>؛ <bdi>`~/.gemini/config/plugins/apothem/`</bdi> | بانتظار الاكتشاف | <bdi>`src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md`</bdi> |
 | <bdi>Claude Code</bdi> | <bdi>`claude-code`</bdi> | المستخدم | <bdi>json</bdi> | <bdi>`~/.claude/settings.json`</bdi>؛ <bdi>`~/.claude/CLAUDE.md`</bdi>؛ <bdi>`agents`</bdi> و<bdi>`rules`</bdi> و<bdi>`skills`</bdi> و<bdi>`statuslines`</bdi> و<bdi>`output-styles`</bdi> الأصلية؛ <bdi>`~/.claude/.apothem/support/`</bdi> | بانتظار الاكتشاف | <bdi>`src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md`</bdi> |
 | <bdi>CodeBuddy</bdi> | <bdi>`codebuddy`</bdi> | المشروع | <bdi>markdown</bdi> | <bdi>`<project>/.codebuddy/rules/apothem-rules.md`</bdi>؛ <bdi>`<project>/.codebuddy/agents/`</bdi>؛ <bdi>`<project>/.codebuddy/settings.local.json`</bdi>؛ <bdi>`<project>/.apothem/support/hooks/`</bdi>؛ <bdi>`~/.codebuddy/skills/`</bdi>؛ <bdi>`~/.config/apothem/{rules,templates}/`</bdi> | بانتظار الاكتشاف | <bdi>`src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md`</bdi> |
 | <bdi>Codex</bdi> | <bdi>`codex`</bdi> | المستخدم | <bdi>markdown</bdi> | <bdi>`~/.codex/AGENTS.md`</bdi>؛ <bdi>`hooks.json`</bdi>؛ <bdi>`hooks/`</bdi>؛ <bdi>`agents/*.toml`</bdi>؛ <bdi>`~/.agents/skills/`</bdi>؛ <bdi>`~/.config/apothem/`</bdi> | بانتظار الاكتشاف | <bdi>`src/apothem/harnesses/codex/STANDARD-CONVENTION-PIN.md`</bdi> |
@@ -27,7 +27,7 @@ sourceHash: "242f7f2bf421b85e"
 | <bdi>Hermes</bdi> | <bdi>`hermes`</bdi> | المستخدم | <bdi>yaml</bdi> | <bdi>`~/.hermes/config.yaml`</bdi>؛ <bdi>`~/.hermes/.apothem/support/`</bdi> | أصلي | <bdi>`src/apothem/harnesses/hermes/STANDARD-CONVENTION-PIN.md`</bdi> |
 | <bdi>Kimi Code</bdi> | <bdi>`kimi-code`</bdi> | المشروع | <bdi>markdown</bdi> | <bdi>`<project>/AGENTS.md`</bdi>؛ <bdi>`<project>/.kimi-code/skills/`</bdi>؛ <bdi>`<project>/.kimi-code/agents/`</bdi>؛ <bdi>`<project>/.kimi-code/.apothem/support/`</bdi> | بانتظار الاكتشاف | <bdi>`src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md`</bdi> |
 | <bdi>Kiro</bdi> | <bdi>`kiro`</bdi> | المشروع | <bdi>markdown</bdi> | <bdi>`<project>/.kiro/steering/apothem-rules.md`</bdi>؛ <bdi>`<project>/.kiro/agents/`</bdi>؛ <bdi>`<project>/.kiro/hooks/apothem.json`</bdi>؛ <bdi>`<project>/.apothem/support/kiro/hooks/`</bdi>؛ <bdi>`~/.kiro/skills/`</bdi>؛ <bdi>`~/.config/apothem/{rules,templates}/`</bdi> | بانتظار الاكتشاف | <bdi>`src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md`</bdi> |
-| <bdi>Open-Claw</bdi> | <bdi>`open-claw`</bdi> | المستخدم | <bdi>json</bdi> | <bdi>`~/.openclaw/openclaw.json`</bdi>؛ <bdi>`~/.openclaw/.apothem/support/`</bdi> | غير مدعوم | <bdi>`src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md`</bdi> |
+| <bdi>Open-Claw</bdi> | <bdi>`open-claw`</bdi> | المستخدم | <bdi>json</bdi> | <bdi>`~/.openclaw/openclaw.json`</bdi>؛ <bdi>`~/.openclaw/.apothem/support/`</bdi>؛ <bdi>`<workspace>/apothem/AGENTS.md`</bdi> (يُحمِّله الخطّاف <bdi>`bootstrap-extra-files`</bdi>؛ وليس في قائمة أهداف السجلّ، لذا يستبعده الجدول المولَّد أدناه) | غير مدعوم | <bdi>`src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md`</bdi> |
 | <bdi>OpenCode</bdi> | <bdi>`opencode`</bdi> | المستخدم | <bdi>json</bdi> | <bdi>`~/.config/opencode/opencode.json`</bdi>؛ <bdi>`commands`</bdi> و<bdi>`skills`</bdi> و<bdi>`agents`</bdi> الأصلية؛ <bdi>`~/.config/opencode/.apothem/support/`</bdi> | أصلي | <bdi>`src/apothem/harnesses/opencode/STANDARD-CONVENTION-PIN.md`</bdi> |
 | <bdi>Qwen Code</bdi> | <bdi>`qwen-code`</bdi> | المستخدم | <bdi>json</bdi> | <bdi>`~/.qwen/settings.json`</bdi>؛ <bdi>`~/.qwen/QWEN.md`</bdi>؛ <bdi>`commands`</bdi> و<bdi>`skills`</bdi> و<bdi>`agents`</bdi> الأصلية؛ <bdi>`~/.qwen/.apothem/support/`</bdi> | أصلي | <bdi>`src/apothem/harnesses/qwen_code/STANDARD-CONVENTION-PIN.md`</bdi> |
 | <bdi>Trae</bdi> | <bdi>`trae`</bdi> | المشروع | <bdi>markdown</bdi> | <bdi>`<project>/.trae/rules/apothem-rules.md`</bdi>؛ <bdi>`<project>/.trae/agents/`</bdi>؛ <bdi>`~/.trae/skills/`</bdi>؛ <bdi>`~/.config/apothem/{rules,templates}/`</bdi> | بانتظار الاكتشاف | <bdi>`src/apothem/harnesses/trae/STANDARD-CONVENTION-PIN.md`</bdi> |
@@ -108,7 +108,7 @@ sourceHash: "242f7f2bf421b85e"
 | <bdi>`~/.claude/agents/`</bdi> | <bdi>Claude Code</bdi> | لا أحد | <bdi>Cursor</bdi> |
 | <bdi>`~/.codex/agents/`</bdi> | <bdi>Codex</bdi> | لا أحد | <bdi>Cursor</bdi> |
 | <bdi>`~/.claude/CLAUDE.md`</bdi> | <bdi>Claude Code</bdi> | لا أحد | <bdi>OpenCode</bdi>، <bdi>Windsurf</bdi> |
-| <bdi>`<project>/AGENTS.md`</bdi> | <bdi>Kimi Code</bdi> | لا أحد | <bdi>Antigravity</bdi>، <bdi>CodeBuddy</bdi>، <bdi>Codex</bdi>، <bdi>Cursor</bdi>، <bdi>GitHub Copilot</bdi>، <bdi>Hermes</bdi>، <bdi>Kiro</bdi>، <bdi>OpenCode</bdi>، <bdi>Windsurf</bdi>، <bdi>Zed</bdi> |
+| <bdi>`<project>/AGENTS.md`</bdi> | <bdi>Kimi Code</bdi> | لا أحد | <bdi>Antigravity</bdi>، <bdi>Claude Code</bdi>، <bdi>CodeBuddy</bdi>، <bdi>Codex</bdi>، <bdi>Cursor</bdi>، <bdi>GitHub Copilot</bdi>، <bdi>Hermes</bdi>، <bdi>Kiro</bdi>، <bdi>OpenCode</bdi>، <bdi>Windsurf</bdi>، <bdi>Zed</bdi> |
 | <bdi>`<project>/GEMINI.md`</bdi> | <bdi>Gemini CLI</bdi> | لا أحد | <bdi>Antigravity</bdi>، <bdi>GitHub Copilot</bdi>، <bdi>Zed</bdi> |
 | <bdi>`~/.gemini/GEMINI.md`</bdi> | <bdi>Antigravity</bdi> | لا أحد | <bdi>Gemini CLI</bdi> |
 | <bdi>`<project>/.github/copilot-instructions.md`</bdi> | <bdi>GitHub Copilot</bdi> | لا أحد | <bdi>Zed</bdi> |
@@ -132,7 +132,18 @@ sourceHash: "242f7f2bf421b85e"
 أول ملف موجود من <bdi>`AGENTS.override.md`</bdi> ثم <bdi>`AGENTS.md`</bdi>، لذا لا يُحمِّل
 <bdi>`<project>/AGENTS.md`</bdi> إلا عندما لا يحتوي المشروع على <bdi>`AGENTS.override.md`</bdi> بجانب ذلك
 الملف. ولا يستخدم <bdi>`CodeBuddy`</bdi> الملف <bdi>`<project>/AGENTS.md`</bdi> بوصفه ذاكرة المشروع إلا
-عندما لا يحتوي المشروع على <bdi>`CODEBUDDY.md`</bdi>. ولا يُحمِّل <bdi>`Zed`</bdi> إلا أول ملف تعليمات
+عندما لا يحتوي المشروع على <bdi>`CODEBUDDY.md`</bdi>. ويقرأ <bdi>`Claude Code`</bdi> الملف <bdi>`AGENTS.md`</bdi> في
+الإصدارات التي تسمّيها [صفحة الذاكرة](https://code.claude.com/docs/en/memory#agents-md) الخاصة به، وتذكر
+ملاحظة التثبيت أوّلها. وتحت إعداده الافتراضي <strong><bdi>Project instructions</bdi></strong> يُحمِّل
+كل <bdi>`AGENTS.md`</bdi> و<bdi>`.claude/AGENTS.md`</bdi> في مجلّد العمل والمجلّدات التي فوقه حين تبدأ
+الجلسة، لكن فقط حين لا يحمل أيٌّ من تلك المجلّدات <bdi>`CLAUDE.md`</bdi> أو <bdi>`.claude/CLAUDE.md`</bdi>
+أو <bdi>`CLAUDE.local.md`</bdi>. ويُحمِّل <bdi>`AGENTS.md`</bdi> الخاص بمجلّد أسفل مجلّد العمل، مثل مشروع
+فُتح من مجلّد أب، حين تفتح أداة <bdi>Read</bdi> الخاصة به ملفًا هناك ولا يحمل ذلك المجلّد أيًّا من تلك
+الملفات الثلاثة كذلك. ولا يُحتسَب <bdi>`~/.claude/CLAUDE.md`</bdi>، لذا تظلّ كتلة <bdi>Apothem</bdi>
+هناك تُحمَّل إلى جانب <bdi>`<project>/AGENTS.md`</bdi>. ويُحمِّل الإعداد
+<bdi>`claude-md-and-agents-md`</bdi> كلا نوعَي الملفات، ولا يُحمِّل <bdi>`claude-md`</bdi>
+و<bdi>`managed-only`</bdi> أي <bdi>`AGENTS.md`</bdi>. وبعض الجلسات لا تقرأ أي <bdi>`AGENTS.md`</bdi>
+تحت أي إعداد؛ وتسردها صفحة الذاكرة. ولا يُحمِّل <bdi>`Zed`</bdi> إلا أول ملف تعليمات
 للمشروع في قائمته: <bdi>`.rules`</bdi>، و<bdi>`.cursorrules`</bdi>، و<bdi>`.windsurfrules`</bdi>،
 و<bdi>`.clinerules`</bdi>، و<bdi>`.github/copilot-instructions.md`</bdi>، و<bdi>`AGENT.md`</bdi>،
 و<bdi>`AGENTS.md`</bdi>، و<bdi>`CLAUDE.md`</bdi>، ثم <bdi>`GEMINI.md`</bdi>. لذا لا يُحمِّل
@@ -200,8 +211,51 @@ sourceHash: "242f7f2bf421b85e"
 | --- | --- |
 | <bdi>`python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD`</bdi> | يؤكّد أن لكل محوّل تثبيتَ اصطلاحٍ لا يتجاوز عمره 90 يومًا، ويستشهد بعنوان <bdi>URL</bdi> واحد على الأقل للمورّد، ولا يحمل هدف اكتشاف متأخّرًا عن موعده. ويُشغِّله <bdi>CI</bdi> على كل طلب سحب، وأسبوعيًا، وقبل الإصدار. |
 | <bdi>`python scripts/dev/check_vendor_urls.py`</bdi> | يجلب كل عنوان <bdi>URL</bdi> للمورّد تستشهد به تثبيتات الاصطلاح وقوالب أُطُر العمل، ويُخفِق عند صفحة منقولة أو ميتة، بما في ذلك اسم مضيف لم يعد يُحَلّ أو شهادة يُخفِق التحقّق منها؛ أمّا انتهاء المهلة، أو الاتصال المرفوض أو المُعاد ضبطه، أو خطأ الخادم <bdi>5xx</bdi>، فيُبلَّغ عنه بوصفه تعذّر وصول ولا يُفشِله. واسم المضيف الذي لا يُحَلّ إلا إلى عنوان نائب لا يمكن أن يملكه أي خادم، وهو عنوان قد تُعيده خوادم الأسماء لدى أحد المورّدين للمنطقة التي يُشغَّل منها الفحص، لا يُرسَل إليه أي طلب: يُبلَّغ عنه بوصفه غير قابل للتوجيه، ولا يُفشِل الفحص، وتحتاج صفحاته إلى فحص يدوي. ويُشغِّله مراقب الاصطلاحات الأسبوعي، ويُصدر تحذيرًا بشأن كل مضيف من هذا النوع في كل تشغيل، ويسرد صفحاته في التذكرة (<bdi>issue</bdi>) التي يفتحها. |
-| <bdi>`python -m apothem.conformity.gate --all .`</bdi> | يُشغِّل فحوص المطابقة للوثائق والتنفيذ. |
+| <bdi>`python scripts/dev/check_vendor_releases.py`</bdi> | يسأل كل قناة إصدار في <bdi>`scripts/dev/vendor-release-channels.json`</bdi> عن إصدارها الحالي: وسم التوزيع (<bdi>dist-tag</bdi>) لحزمة <bdi>npm</bdi>، أو أحدث إصدار لمستودع <bdi>GitHub</bdi> (أو، لقناة ذات نمط وسم، أحدث إصدار مستقرّ لها بوسم مطابق بين أحدث 100 إصدار)، أو مشروع <bdi>PyPI</bdi>. ولعنوان مُثبِّت، يسأل إلى أين يُعيد العنوان التوجيه. ويقارن الجواب بما رُوجع آخر مرة. ويُفشِله إصدار رئيسي جديد، أو إصدار يتجاوز مُحفِّزًا يسمّيه الملف، أو عنوان مُثبِّت يُعيد التوجيه إلى مكان آخر، أو حزمة أو وسم توزيع أو إصدار أو عنوان لم يعد موجودًا، وكذلك نمط وسم لا يطابقه أي إصدار مستقرّ بين أحدث 100 إصدار. أما الإصدار الفرعي أو التصحيحي الأحدث فيُبلَّغ عنه ولا يُفشِله، ما لم يسمِّ مستوى <bdi>`watch`</bdi> الخاص بالقناة ذلك المستوى. والسجلّ الذي لا يُجيب، أو الذي ينقطع جوابه في منتصفه، يُبلَّغ عنه بوصفه تعذّر وصول ولا يُفشِله كذلك. ولكل محاولة طلب 30 ثانية إجمالًا، وبعد 20 دقيقة لا يسأل الفحص أي قناة أخرى، فيكتب تقريره دائمًا. وقبل أي طلب يتحقّق من أن لكل مجلّد إطار عمل مُدخَلًا وأن عبارة الدليل لكل قناة موجودة في تثبيت الاصطلاح الخاص بها، ويخرج بالرمز 1 حين لا يكون أحدها كذلك؛ ويقول التقرير والتذكرة (<bdi>issue</bdi>) حينئذٍ ما الخطأ. ويُشغِّله مراقب الاصطلاحات الأسبوعي برمز قراءة فقط، ويسرد كل قناة في ملخّص التشغيل، ويفتح تذكرة حين يُخفِق. ويطبع <bdi>`--list`</bdi> القنوات دون سؤال أي سجلّ. |
+| <bdi>`python3 -E -s src/apothem/conformity/gate.py --all .`</bdi> | يُشغِّل فحوص المطابقة للوثائق والتنفيذ. |
 | <bdi>`python -m pytest`</bdi> | يُشغِّل اختبارات تجهيزات السجلّ واختبارات عقود المحوّلات. |
+
+## قنوات الإصدار
+
+يحمل <bdi>`scripts/dev/vendor-release-channels.json`</bdi> مُدخَلًا واحدًا لكل مجلّد إطار عمل.
+ويسرد إطار العمل المُراقَب قنوات إصداره. وتُسجّل كل قناة الإصدار الذي رُوجع آخر مرة، مع
+التاريخ. وهو الإصدار الذي يسمّيه تثبيت الاصطلاح الخاص بها، أو، حيث لا يسمّي التثبيت أي إصدار،
+الإصدار الذي قدّمه السجلّ حين سُجّلت القناة. وقد يحمل السجلّ أيضًا إصدارًا رئيسيًا فقط. وتقتبس
+كل قناة عبارة التثبيت التي تسمّيها. والرقم الأول في الإصدار هو إصداره الرئيسي، بما في ذلك 0،
+لذا فإن خط <bdi>0.x</bdi> ينتقل من <bdi>0.26</bdi> إلى <bdi>0.27</bdi> يُبلِغ عن إصدار فرعي
+أحدث ولا يُخفِق. والقناة ذات الإصدارات التقويمية، مثل أرقام سنة.شهر.إصدار في
+<bdi>OpenClaw</bdi>، تُبلِغ عن كل إصدار أحدث دون أن تُخفِق، ولا تأخذ مستوى <bdi>`watch`</bdi>.
+و<bdi>Codex</bdi> و<bdi>Gemini CLI</bdi> و<bdi>Hermes</bdi> و<bdi>Qwen Code</bdi> و<bdi>GLM</bdi>
+على خطوط <bdi>0.x</bdi>، لذا يُسرَد الإصدار الجديد لأيٍّ منها في ملخّص التشغيل ولا يفتح تذكرة
+حتى يبلغ <bdi>1.0</bdi>، ما لم تضبط قناته مستوى <bdi>`watch`</bdi>.
+
+لـ <bdi>OpenCode</bdi> أربع قنوات. تحمل <bdi>`opencode-ai`</bdi> الإصدار <bdi>OpenCode 1</bdi>،
+وتحمل <bdi>`@opencode/cli`</bdi> الإصدار <bdi>OpenCode 2</bdi>. وتُظهر إصدارات <bdi>GitHub</bdi>
+الخاصة بـ <bdi>`anomalyco/opencode`</bdi> خطًّا رئيسيًا جديدًا أيًّا كانت حزمة <bdi>npm</bdi> التي
+يُشحن بها. وتسأل القناة الرابعة <bdi>`opencode.ai/install`</bdi> إلى أين يُعيد التوجيه. ففي
+<bdi>2026-11-03</bdi> كان يُعيد التوجيه إلى نص مُثبِّت <bdi>OpenCode 1</bdi>. وذلك النص يثبّت
+الإصدار الذي يسمّيه وسم التوزيع <bdi>`latest`</bdi> الخاص بـ <bdi>`opencode-ai`</bdi> حين يكون
+إصدارًا من <bdi>OpenCode 1</bdi>، ولا يثبّت <bdi>OpenCode 2</bdi> أبدًا. وقرار <bdi>OpenCode</bdi>
+المؤرَّخ <bdi>2026-11-03</bdi> ينتقل إلى كتابة صيغ <bdi>OpenCode 2</bdi> الخاصة به حيث يعمل
+<bdi>OpenCode 2</bdi> حين تظهر إحدى إشارتين: أن يُعلن <bdi>OpenCode 2</bdi> موعدًا لإزالة ترجمته
+لصيغ <bdi>OpenCode 1</bdi>، أو أن ينتقل <bdi>`opencode.ai/install`</bdi> أو <bdi>`opencode-ai`</bdi>
+إلى <bdi>OpenCode 2</bdi>. ويراقب الفحص الإشارة الثانية. وتحمل قناة <bdi>`opencode-ai`</bdi> وقناة
+المُثبِّت كلٌّ منهما مُحفِّزًا: يُخفِق الفحص حين يتجاوز إصدار <bdi>`latest`</bdi> الخاص بـ
+<bdi>`opencode-ai`</bdi> الإصدار الرئيسي 1، أو حين يكفّ <bdi>`opencode.ai/install`</bdi> عن إعادة
+التوجيه إلى نص <bdi>OpenCode 1</bdi>. والتغيير داخل ذلك النص لا يغيّر إعادة التوجيه، لذا لا يراه
+الفحص. ولا يُجيب أي سجلّ عن الإشارة الأولى، لذا تبقى فحصًا يدويًا، موعده
+<bdi>2027-02-01</bdi> مع المراجعة التالية لتثبيت اصطلاح <bdi>OpenCode</bdi>.
+
+لا تُراقَب <bdi>Antigravity</bdi> و<bdi>Cursor</bdi> و<bdi>Kiro</bdi> و<bdi>Trae</bdi>
+و<bdi>Windsurf</bdi>. فكلٌّ منها تطبيق سطح مكتب، أو أداة سطر أوامر تُثبَّت بنص برمجي، ولا يسمّي
+تثبيت الاصطلاح الخاص بها أي قناة إصدار يستطيع نص برمجي الاستعلام عنها من دون بيانات اعتماد.
+ويذكر الملف السبب لكلٍّ منها.
+
+بعد أن تُعيد فحص تثبيت اصطلاح مقابل إصدار جديد أو هدف إعادة توجيه جديد، حدّث حقول
+<bdi>`reviewed`</bdi> و<bdi>`reviewed_on`</bdi> و<bdi>`reviewed_from`</bdi> لتلك القناة. والمُحفِّز
+على قناة إصدار يُفشِل الفحص كل أسبوع حتى تُزيله أو تغيّره. أما المُحفِّز على عنوان مُثبِّت فيتوقّف
+حين يُسجّل <bdi>`reviewed`</bdi> الهدف الجديد، لذا لا تُسجّل ذلك الهدف إلا بعد إتمام الإجراء الذي
+يطلبه المُحفِّز.
 
 ## مرجع محوّلات أُطُر العمل المُولَّد
 

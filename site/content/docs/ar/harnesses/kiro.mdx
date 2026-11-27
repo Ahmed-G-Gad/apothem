@@ -2,7 +2,7 @@
 title: "Kiro"
 description: "محوّل إطار عمل Apothem لـ Kiro (إتاحة عامة)."
 machineTranslated: true
-sourceHash: "91ec41080bf29036"
+sourceHash: "8edb56102e3e27a7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -167,6 +167,10 @@ apothem install --harness kiro --project /path/to/project
 "/path/to/python" -E -s "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
 ```
 
+يجعل <bdi>`-E -s`</bdi> بايثون يتجاهل <bdi>`PYTHONPATH`</bdi> ومتغيّرات <bdi>`PYTHON*`</bdi> الأخرى
+ويتخطّى حزم <bdi>site-packages</bdi> الخاصة بالمستخدم، فلا يمكن لأي ملف في المشروع أن يُحمَّل
+في الخطّاف.
+
 يجعل <bdi>`--contract kiro`</bdi> المُوزِّعَ يطبع السياق نصًّا عاديًا، وهو ما يضيفه <bdi>Kiro</bdi>
 إلى السياق للحدث <bdi>`SessionStart`</bdi>. ولا يوثّق <bdi>Kiro</bdi> أي صدفة لإجراءات الأوامر على
 <bdi>Windows</bdi>. والأمر مكتوب لـ <bdi>sh</bdi> و<bdi>cmd.exe</bdi>، مع مسار مُفسِّر بشرطات مائلة أمامية
@@ -226,6 +230,14 @@ apothem install --harness kiro --project /path/to/project
 و<bdi>`structure.md`</bdi>). مواصفات <bdi>Kiro</bdi> (<bdi>`.kiro/specs/`</bdi>)
 يملكها المُشغِّل؛ ولا يكتبها <bdi>Apothem</bdi>. ويكتب ملف خطّافات واحدًا،
 <bdi>`.kiro/hooks/apothem.json`</bdi>، ولا يكتب أي ملف آخر في <bdi>`.kiro/hooks/`</bdi>.
+
+ويقرأ <bdi>Kiro</bdi> أيضًا ملف <bdi>`AGENTS.md`</bdi> في جذر مساحة العمل، ويكتب تثبيت
+[<bdi>Kimi Code</bdi>](/docs/harnesses/kimi-code) كتلة لـ <bdi>Apothem</bdi> في ملف
+<bdi>`AGENTS.md`</bdi> الخاص بالمشروع، لذا ففي مشروع فيه التثبيتان تصل تلك الكتلة إلى <bdi>Kiro</bdi>
+أيضًا. وحين يحوي الملف الكتلة بالفعل، يطبع تثبيت <bdi>`kiro`</bdi> ملاحظة تسمّيه وتسمّي
+التثبيت الذي كتبه. ويسرد
+[سجلّ أُطُر العمل](/docs/reference/harness-registry#shared-roots) الأدوات
+الأخرى التي تُحمِّل الملف.
 
 يوثّق <bdi>Kiro</bdi> المجلّد <bdi>`~/.kiro/skills/`</bdi> للمهارات العامة ولا يذكر
 <bdi>`~/.agents/skills/`</bdi>، لذا يكتب التثبيت مجلّد <bdi>Kiro</bdi> لا المجلّد المشترك بين
@@ -303,8 +315,17 @@ apothem uninstall --harness kiro --project /path/to/project
 ## بوابة المطابقة
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+شغّله من مجلّد مشروعك. وعلى <bdi>Windows</bdi>، استخدم <bdi>`python`</bdi> بدلًا من
+<bdi>`python3`</bdi> واستخدم المسار الكامل، لأن <bdi>Windows PowerShell</bdi> و<bdi>cmd</bdi> لا يوسّعان
+<bdi>`~`</bdi>:
+<bdi>`$HOME\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>PowerShell</bdi>، أو
+<bdi>`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>cmd</bdi>. والمسار هو
+الموضع الذي يضع فيه المُثبِّت المحرّك، ويُبقي <bdi>`-E -s`</bdi> متغيّر <bdi>`PYTHONPATH`</bdi> وحزم
+<bdi>site-packages</bdi> الخاصة بالمستخدم خارج البوابة؛ ويشرح [بوابة المطابقة](/docs/conformity-gate)
+كليهما والتثبيتات الأخرى.
 
 ## استكشاف الأخطاء وإصلاحها
 

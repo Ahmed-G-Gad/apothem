@@ -2,7 +2,7 @@
 title: "المساهمة في Apothem — دليل المطوّر"
 description: "صُن منظومة Apothem ووسّعها بتأليف القواعد والأوامر والمساعِدات والمهارات والخطّافات وفق المخططات المرجعية ومتطلّبات البيانات الأمامية وإجراءات التحقّق."
 machineTranslated: true
-sourceHash: "82cbd13f4a28f8cb"
+sourceHash: "a2dea5f7e64b7fbc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -59,7 +59,9 @@ sourceHash: "82cbd13f4a28f8cb"
 
 يتحقّق برنامج تشغيل التثبيت المشترك من كل مصدر وكل هدف قبل أول كتابة. ويرفض مصادر
 البيان المفقودة، واجتياز مسار الهدف، ومسارات الهدف الواقعة خارج الجذر المختار، وعبور
-الروابط الرمزية. وتُنفِّذ عمليات التشغيل التجريبي التحقّق نفسه وتُعيد نتائج مُهيكَلة
+الروابط الرمزية؛ وتُفحَص وصلة <bdi>Windows</bdi> (<bdi>junction</bdi>) بوصفها رابطًا رمزيًا. والاستثناءات هي الروابط التي
+تنشئها أدوات إدارة ملفات الإعداد النقطية (<bdi>dotfiles</bdi>) عند <bdi>`~/.config`</bdi>، أو عند مجلّد مشترك للمهارات أو القواعد أو القوالب أو فوقه،
+وهي تُتَّبَع ما دامت داخل الدليل المنزلي. وتُنفِّذ عمليات التشغيل التجريبي التحقّق نفسه وتُعيد نتائج مُهيكَلة
 <bdi>`skipped`</bdi> أو <bdi>`unchanged`</bdi> دون إنشاء ملفات.
 
 ## التنقيح وبيانات الأمثلة
@@ -121,7 +123,7 @@ sourceHash: "82cbd13f4a28f8cb"
 - **الأوامر:** <bdi>`{name}.md`</bdi>
 - **المساعِدات:** <bdi>`{name}.md`</bdi>
 - **المهارات:** داخل المجلّد <bdi>`src/apothem/skills/{name}/SKILL.md`</bdi> (بحالة الأحرف نفسها تمامًا: <bdi>`SKILL.md`</bdi>)
-- **الخطّافات:** داخل المجلّد <bdi>`src/apothem/hooks/`</bdi>. جميع معالجات الأحداث مكتوبة بلغة <bdi>Python</bdi>. يستخدم كل أمر خطّاف في قالب <bdi>`settings.json`</bdi> الخاص بـ <bdi>Claude Code</bdi> صيغة <bdi>exec</bdi>: إذ إن <bdi>`command`</bdi> هو العنصر النائب للمفسِّر <bdi>`${PYTHON_BIN}`</bdi>، ويُحلّ وقت التثبيت، و<bdi>`args`</bdi> يحمل مسار النص البرمجي ووسائطه. ويشغّل ذلك القالب الأمرين <bdi>`${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]`</bdi> و<bdi>`${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook`</bdi> بالمسار المطلق، فلا تحتاج النسخة المثبّتة إلى حزمة <bdi>`apothem`</bdi> قابلة للاستيراد. أمّا إضافة <bdi>Claude Code</bdi> فتسجّل الخطّافات بدلًا من ذلك في <bdi>`src/apothem/hooks/hooks.json`</bdi>، بوصفها أوامر صدفة تشغّل <bdi>`hooks/lib/bootstrap.sh`</bdi> عبر <bdi>`bash`</bdi>؛ ويحدّد ذلك الملف الهيكلي موضع <bdi>Python</bdi> ويشغّل <bdi>`dispatch.py`</bdi>، فتبقى المعالجات بلغة <bdi>Python</bdi>. سجّل أي خطّاف جديد في <bdi>`hooks.json`</bdi> وفي قالب <bdi>`settings.json`</bdi> الخاص بـ <bdi>Claude Code</bdi>. ويوجّه <bdi>`dispatch.py`</bdi> الحدث <bdi>`SessionStart`</bdi> إلى <bdi>`session_start_bootstrap.main()`</bdi>، وكل حدث آخر مُدرَج في القائمة البيضاء إلى <bdi>`emit_hook_context.main()`</bdi>. وملفات الصدفة الهيكلية الوحيدة المسموح بها تحت <bdi>`src/apothem/hooks/`</bdi> أو <bdi>`scripts/`</bdi> هي الملفات الستة لتحديد الموقع والتمهيد (<bdi>`find-python.{ps1,sh}`</bdi>، و<bdi>`find-pwsh.{ps1,sh}`</bdi>، و<bdi>`bootstrap.{ps1,sh}`</bdi>)؛ وأي ملف <bdi>`.ps1`</bdi> / <bdi>`.sh`</bdi> آخر يُخفق في فحص النظافة <bdi>`scripts/dev/validate_hooks.py`</bdi>.
+- **الخطّافات:** داخل المجلّد <bdi>`src/apothem/hooks/`</bdi>. جميع معالجات الأحداث مكتوبة بلغة <bdi>Python</bdi>. يستخدم كل أمر خطّاف في قالب <bdi>`settings.json`</bdi> الخاص بـ <bdi>Claude Code</bdi> صيغة <bdi>exec</bdi>: إذ إن <bdi>`command`</bdi> هو العنصر النائب للمفسِّر <bdi>`${PYTHON_BIN}`</bdi>، ويُحلّ وقت التثبيت، و<bdi>`args`</bdi> يحمل <bdi>`-E`</bdi> و<bdi>`-s`</bdi> ومسار النص البرمجي ووسائطه. وتُبقي الرايتان <bdi>`PYTHONPATH`</bdi> ومتغيّرات <bdi>`PYTHON*`</bdi> الأخرى وحِزَم <bdi>site-packages</bdi> الخاصّة بالمستخدم خارج كل خطّاف؛ فأبقِهما على أي خطّاف تضيفه. ويشغّل ذلك القالب الأمرين <bdi>`${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]`</bdi> و<bdi>`${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook`</bdi> بالمسار المطلق، فلا تحتاج النسخة المثبّتة إلى حزمة <bdi>`apothem`</bdi> قابلة للاستيراد. أمّا إضافة <bdi>Claude Code</bdi> فتسجّل الخطّافات بدلًا من ذلك في <bdi>`src/apothem/hooks/hooks.json`</bdi>، بوصفها أوامر صدفة تشغّل <bdi>`hooks/lib/bootstrap.sh`</bdi> عبر <bdi>`bash`</bdi>؛ ويحدّد ذلك الملف الهيكلي موضع <bdi>Python</bdi> ويشغّل <bdi>`dispatch.py`</bdi>، فتبقى المعالجات بلغة <bdi>Python</bdi>. سجّل أي خطّاف جديد في <bdi>`hooks.json`</bdi> وفي قالب <bdi>`settings.json`</bdi> الخاص بـ <bdi>Claude Code</bdi>. ويوجّه <bdi>`dispatch.py`</bdi> الحدث <bdi>`SessionStart`</bdi> إلى <bdi>`session_start_bootstrap.main()`</bdi>، وكل حدث آخر مُدرَج في القائمة البيضاء إلى <bdi>`emit_hook_context.main()`</bdi>. وملفات الصدفة الهيكلية الوحيدة المسموح بها تحت <bdi>`src/apothem/hooks/`</bdi> أو <bdi>`scripts/`</bdi> هي الملفات الستة لتحديد الموقع والتمهيد (<bdi>`find-python.{ps1,sh}`</bdi>، و<bdi>`find-pwsh.{ps1,sh}`</bdi>، و<bdi>`bootstrap.{ps1,sh}`</bdi>)؛ وأي ملف <bdi>`.ps1`</bdi> / <bdi>`.sh`</bdi> آخر يُخفق في فحص النظافة <bdi>`scripts/dev/validate_hooks.py`</bdi>.
 
 ### الإحالات المتبادلة
 
@@ -619,12 +621,164 @@ Or: § Plans Discipline.
 ```bash
 python -m pytest                      # unit, integration, property, conformity, scripts
 python -m pytest tests/property       # Hypothesis properties (profile loader, frontmatter, merge)
+python -m pytest tests/fuzz           # replay each fuzz target's seed inputs (no Atheris needed)
 ```
+
+تعمل أهداف الاختبار العشوائي (<bdi>fuzz</bdi>) في <bdi>`tests/fuzz/`</bdi> تحت <bdi>Atheris</bdi> في <bdi>CI</bdi>. ولتشغيل أحدها على
+جهازك (<bdi>Linux</bdi> أو <bdi>macOS</bdi>، و<bdi>Python 3.11</bdi> أو أحدث)، ثبّت <bdi>Atheris</bdi>، وضع
+النسخة المسحوبة على المسار، ووجّه الهدف إلى نسخة من مدخلاته الأوّلية:
+
+```bash
+python -m pip install atheris
+export PYTHONPATH="$PWD/src:$PWD/src/apothem/_vendor"
+mkdir -p /tmp/corpus && cp tests/fuzz/seeds/lenient-json/*.txt /tmp/corpus/
+python tests/fuzz/fuzz_lenient_json.py -max_total_time=60 /tmp/corpus
+```
+
+يسرد <bdi>`tests/fuzz/README.md`</bdi> الأهداف وما ينبغي فعله حين يجد أحدها انهيارًا.
 
 مجموعة الاختبارات محكمة العزل: تنجح والنسخة المسحوبة تحت <bdi>`$TMPDIR`</bdi>، ومع
 <bdi>`python`</bdi> على <bdi>`PATH`</bdi> يفتقر إلى المتطلّبات المسبقة لواجهة سطر الأوامر، لأن
 اختبارات التكامل تُشغِّل المُفسِّر نفسه الذي يُشغِّل <bdi>pytest</bdi>، وتستبدل برموزٍ مساراتِ
 المجلّدات المؤقّتة والمصدر المتداخلة بدءًا بالأطول.
+
+### الاختبارات لا تكتب أبدًا في دليلك المنزلي الحقيقي
+
+يجب ألّا يُشغِّل سكربت استكشافي أو مساعد آلي مُثبِّتات <bdi>Apothem</bdi>
+أو محوّلاته على دليلك المنزلي الحقيقي أبدًا. شغّل السلوك داخل اختبار تحت
+<bdi>`tests/`</bdi>، حيث يوجّه <bdi>`tests/conftest.py`</bdi> الدليل المنزلي، وسجلّ التثبيت،
+وجذر النسخ الاحتياطية إلى مجلّدات مؤقّتة.
+
+ويرفض <bdi>Apothem</bdi> أيضًا هذه الكتابات بنفسه أثناء تشغيل <bdi>pytest</bdi>، فلا يستطيع ملف اختبار
+منسوخ خارج <bdi>`tests/`</bdi> ومُشغَّل دون <bdi>`tests/conftest.py`</bdi> أن يصل إلى
+الدليل المنزلي الحقيقي عبر <bdi>Apothem</bdi>. فما دام <bdi>`PYTEST_CURRENT_TEST`</bdi> مضبوطًا وغير فارغ
+(اختبار)، أو كان <bdi>`PYTEST_VERSION`</bdi> يحمل إصدار <bdi>pytest</bdi> الجاري تشغيله (الجلسة
+كلّها، بما فيها الجمع وخطّافات الجلسة)، فإن أي كتابة أو إزالة أو نسخ أو
+إعادة تسمية أو ملف قفل في <bdi>`~/.apothem`</bdi> الخاص بالحساب، أو <bdi>`~/.config/apothem`</bdi>، أو مجلّد
+أداة يسمّيه سجلّ أُطُر العمل في الدليل المنزلي (<bdi>`~/.claude`</bdi>، و<bdi>`~/.qwen`</bdi>،
+و<bdi>`~/.config/opencode`</bdi> وبقيّتها)، أو ملف خارج تلك المجلّدات يغيّره
+بيان الانتشار (<bdi>`~/.antigravity/profile.yaml`</bdi> الذي كتبه إصدار
+سابق) يتوقّف قبل أن يتغيّر أي شيء، مع خطأ كهذا:
+
+```text
+RealHomeWriteError: Apothem refused to create the lock file
+C:\Users\you\.apothem\state\codex\<id>.install.lock: it is inside or holds
+C:\Users\you\.apothem, a protected path in this account's real home, while a
+pytest test is running (PYTEST_CURRENT_TEST is set:
+test_probe.py::test_install (call)). Nothing in C:\Users\you\.apothem was
+changed. ...
+```
+
+لا يُحتسَب <bdi>`PYTEST_VERSION`</bdi> بأي قيمة أخرى، مثل إصدار مثبَّت كـ <bdi>`8.2`</bdi> تُصدِّره
+صدفة أو مهمة <bdi>CI</bdi>، ولا يُحتسَب كذلك <bdi>`PYTEST_CURRENT_TEST`</bdi> الفارغ. وخارج أي اختبار
+يقول الخطأ <bdi>`PYTEST_VERSION holds
+the version of the pytest imported in this process, <version>, outside any
+test`</bdi> بدلًا من الاختبار؛ فهو لا يدّعي أن جلسة <bdi>pytest</bdi> تعمل،
+إذ يمكن لعملية أن تستورد <bdi>pytest</bdi> دون أن تُشغِّل جلسة. أمّا <bdi>`PYTEST_VERSION`</bdi> الذي
+تُصدِّره صدفة أو مهمة <bdi>CI</bdi> بالإصدار الدقيق لـ <bdi>pytest</bdi> المُثبَّت فيُحتسَب
+بالقدر نفسه، خارج <bdi>pytest</bdi> أيضًا، وفي عملية لم تستورد
+<bdi>pytest</bdi> يقول الخطأ عندئذ <bdi>`PYTEST_VERSION holds the installed pytest's
+version, <version>, though no pytest runs in this process`</bdi>.
+
+ويُرفَض بالطريقة نفسها التثبيتُ أو التحديث أو إلغاء التثبيت أو الاسترجاع على نطاق المشروع الذي يكون جذر مشروعه
+هو الدليل المنزلي للحساب نفسه، قبل أن يكتب أي شيء: وإلا لوقعت ملفات مشروعه
+مباشرةً في الدليل المنزلي. ويبقى مجلّد المشروع الواقع
+داخل الدليل المنزلي مسموحًا. ويُرفَض أيضًا دليل البيانات الواقع مباشرةً في الدليل المنزلي،
+أيًّا كان الاسم الذي يمنحه إيّاه الملف التعريفي (<bdi>`workspace.scope: user-home`</bdi> مع
+<bdi>`directory_name`</bdi> خاص به)، قبل إنشائه وقبل إزالة مخازنه. ودليل البيانات الذي هو رابط
+(وصلة <bdi>junction</bdi> على <bdi>Windows</bdi>) إلى مجلّد واقع مباشرةً
+في الدليل المنزلي يُرفَض بالطريقة نفسها، وكذلك الدليل الذي يؤدّي إلى الدليل المنزلي
+نفسه، مباشرةً أو عبر سلسلة من الروابط، والذي ستقع مخازنه مباشرةً
+في الدليل المنزلي.
+
+تُحتسَب هذه الصيغ لكتابة المجلّد المحمي: رابط أو وصلة إليه، ومجلّد
+استُبدل به رابط أثناء الاختبار. وعلى <bdi>Windows</bdi> تُحتسَب أيضًا حالة الأحرف، والأسماء
+القصيرة (<bdi>8.3</bdi>)، والبادئات <bdi>`\\?\`</bdi> و<bdi>`\\.\`</bdi> و<bdi>`\??\`</bdi>، ومشاركة الإدارة عبر الاسترجاع الحلقي
+مثل <bdi>`\\localhost\C$`</bdi> أو <bdi>`\\--1.ipv6-literal.net\C$`</bdi>، والمشاركة التي يُوصَل إليها بأحد
+عناوين الجهاز نفسه أو عبر محرّك أقراص مُعيَّن، وتدفّق البيانات
+البديل (<bdi>`.apothem:name`</bdi>)، وكذلك مسار الجهاز الواقع خلف إحدى
+تلك البادئات (<bdi>`GLOBALROOT\Device\HarddiskVolume2`</bdi> أو <bdi>`Volume{GUID}`</bdi>).
+وعلى <bdi>macOS</bdi> يُتجاهَل كذلك اختلاف حالة الأحرف وتطبيع <bdi>Unicode</bdi>، ويُقرَأ
+<bdi>`/System/Volumes/Data/<path>`</bdi> بوصفه <bdi>`/<path>`</bdi>. وقواعد السلاسل النصية هذه وحدها لا تُجري
+أي اتصال بالشبكة: إذ يُفحَص مسار المشاركة، أو المسار على محرّك أقراص مُعيَّن، بسؤال
+مضيف المشاركة. ويسرد <bdi>`tests/README.md`</bdi> الصيغ التي لا يراها الفحص،
+مثل الرابط الصلب إلى ملف في مجلّد محمي، وتركيب الربط (<bdi>bind mount</bdi>) للدليل
+المنزلي، والتركيب غير الحسّاس لحالة الأحرف على <bdi>Linux</bdi>.
+
+تُطلِق واجهة سطر الأوامر الخطأ كما هو، في إلغاء التثبيت أيضًا. وتفحص بعض المراحل
+مساراتها قبل التغيير الأول، فيترك الرفض هناك كل شيء
+كما كان. ويفحص المسح للملفات القديمة كل مسار قديم. ويفحص الاسترجاع كل
+مسار يسمّيه سجلّ تثبيته (حتى ما سيتركه في مكانه)، ومخازن البيانات
+التي سيُزيلها، والمجلّدات على مستوى المستخدم في الدليل المنزلي التي سيرتّبها
+أخيرًا. ويفحص الاسترجاع وإلغاء التثبيت جذر النسخ الاحتياطية والسجلّ، ويفحص
+إلغاء تثبيت <bdi>OpenClaw</bdi> أيضًا <bdi>`openclaw.json`</bdi> وكل ملف قواعد
+لمساحة عمل. ولا يُسجِّل إلغاء التثبيت المرفوض إلغاءَ تثبيت غير مكتمل في السجلّ إلا
+حين يكون قد غيّر بالفعل ملفات خارج المجلّدات المحمية، في خطوة
+تسبق الإزالة المشتركة أيضًا (الخطوة الأولى من إلغاء تثبيت الإعداد الأصلي،
+مثلًا)، لتبقى النسخ الاحتياطية لتلك الملفات مُشارًا إليها. وتمتصّ بعض الجهات المستدعية الداخلية
+الخطأ عمدًا (سطر سجلّ بأفضل جهد، مثلًا)، لذا يُسجَّل كل
+رفض أيضًا، ويُفشِل <bdi>`tests/conftest.py`</bdi> الاختبار الذي سُجِّل بعده
+رفض، حتى حين يكون الاختبار موسومًا بـ <bdi>`xfail`</bdi>. والرفض المُسجَّل خارج أي
+اختبار أثناء جمع <bdi>pytest</bdi> لعقدة يُفشِل جمع تلك العقدة. وأي رفض آخر
+مُسجَّل خارج أي اختبار، عند بدء الجلسة، أو بين تقريرَي جمع،
+أو بعد الجمع، أو بين اختبارين، أو بعد آخر اختبار، أو في الملخّص أو في
+<bdi>`pytest_unconfigure`</bdi>، يُبلَّغ عنه حين تنتهي الجلسة، مُسمًّى بموضع
+حدوثه، ويُفشِل التشغيل، وكذلك حين يُنهي خطّاف بعدها التشغيل بـ
+<bdi>`pytest.exit(returncode=0)`</bdi> أو <bdi>`sys.exit(0)`</bdi> (أو، على أي نظام، برمز يقتطعه
+نظام <bdi>POSIX</bdi> إلى 0 أو 5، مثل 256)، وكذلك بعد أن يُنهي خطّاف آخر
+ختام الجلسة بـ <bdi>`sys.exit`</bdi> أو باستثناء، وكذلك حين يُسجِّله عامل
+تشغيل متوازٍ (<bdi>`-n`</bdi>)، قبل أن يسلّم حالات رفضه إلى العملية
+الرئيسية أو بعد ذلك. ويكتب عامل التشغيل كل رفض، فور حصوله عليه، في ملف تقرؤه
+العملية الرئيسية، لذا فالرفض الذي حصل عليه قبل أن ينهار أو يُوقَف قبل
+ذلك التسليم، أو قبل أن يوقفه خطّاف ختام الجلسة هناك، يظل يُفشِل
+التشغيل. وتبقى ثلاث حالات لا تظهر إلا على <bdi>`stderr`</bdi> وتترك رمز الخروج كما
+هو: رفض مُسجَّل بعد <bdi>`yield`</bdi> في مُغلِّف <bdi>`tryfirst`</bdi> لـ <bdi>`pytest_unconfigure`</bdi>
+سجّله <bdi>pytest</bdi> بعد الحارس، ورفض مُسجَّل في عملية تنظيف مُسجَّلة عبر
+<bdi>`config.add_cleanup`</bdi> (كلٌّ منهما ما لم يُنهِ <bdi>`sys.exit`</bdi> ناجح التشغيلَ بعدها، أو
+أنهى أحدُها ختام الجلسة قبله)، ورفض يُسجِّله عامل تشغيل لكنه لا
+يسلّمه ولا يكتبه في ذلك الملف، لأن عامل التشغيل انتهى أو أُوقِف
+أولًا (سجّله خطّاف ختام الجلسة ثم أسقط عامل التشغيل، مثلًا) أو
+لأن ذلك الملف تعذّر إنشاؤه أو الكتابة فيه (حين تفشل آخر كتابة لعامل التشغيل
+فيه في منتصفها، يبقى الجزء الذي وصل إلى الملف، وتُفشِل العملية الرئيسية
+التشغيل بسببه، كما تفعل حين تترك تلك الكتابة الملف فارغًا، ما لم
+تكن النسخة المكتوبة بجوار التسليم قد تركته فارغًا بالفعل وأخذت العملية الرئيسية
+مُخرَج عامل التشغيل). وفي تلك الحالة الأخيرة لا يحوي المُخرَج إلا
+حالات الرفض التي سلّمها عامل التشغيل: فالرفض الذي يجده بعد التسليم، والذي تترك كتابته
+الملف فارغًا مجدّدًا، لا يظهر إلا على <bdi>`stderr`</bdi> الخاص بعامل التشغيل، ولا يظهر في أي مكان
+حين ينهار عامل التشغيل أثناء تلك الكتابة؛ ويظل التشغيل يفشل بسبب حالات الرفض
+التي سلّمها. وفي نهاية التشغيل تطلب العملية الرئيسية من
+كل عامل تشغيل أن يخرج؛ ويُقاطَع عامل التشغيل الذي لا يزال يُشغِّل شيفرة <bdi>Python</bdi> بعد 5 ثوانٍ
+(على <bdi>Windows</bdi>، لا يُقاطَع العامل العالق في انتظار أو في استدعاء آخر)، ويُوقَف أي
+عامل تشغيل لا يزال يعمل بعد 10 ثوانٍ. ولا يستطيع الحارس تغيير
+رمز الخروج لتشغيل ينتهي عبر <bdi>`os._exit`</bdi> في العملية الرئيسية (في خطّاف،
+أو عملية تنظيف، أو معالِج <bdi>`atexit`</bdi>)، أو عبر مُغلِّف <bdi>`tryfirst`</bdi> لـ <bdi>`pytest_cmdline_main`</bdi>
+سجّله <bdi>pytest</bdi> بعد الحارس، أو عبر خطّاف
+<bdi>`pytest_cmdline_main`</bdi> يعود قبل أن تعمل أي جلسة؛ ومع <bdi>`os._exit`</bdi>
+قد يضيع تقرير الحارس الطرفي أيضًا، وفي الحالتين الأولى والأخيرة
+لا يظهر الرفض الذي لم يُبلِّغ عنه الحارس بعد إلا بوصفه سطره على <bdi>`stderr`</bdi>. ويُحفَظ
+السجلّ لكل عملية على حدة: فالرفض الذي تمتصّه عملية <bdi>Apothem</bdi> فرعية لا يظهر
+إلا سطرًا على <bdi>`stderr`</bdi> الخاص بالعملية الفرعية، ولا يُفشَل الاختبار بسببه.
+
+الدليل المنزلي هو الذي يسجّله نظام التشغيل للحساب، لا <bdi>`HOME`</bdi>
+ولا <bdi>`USERPROFILE`</bdi>. وتظل القراءات والتشغيلات التجريبية والمعاينات تعمل؛ أمّا فحص الحالة
+الوحيد الذي يُسجِّل إلغاء تثبيت مكتملًا في السجلّ فهو كتابة، لذا
+يُرفَض بهدوء ويُبلَّغ عنه. والاختبار الذي يجب أن يُشغِّل تثبيتًا حقيقيًا عمدًا
+يبدأ <bdi>Apothem</bdi> دون <bdi>`PYTEST_CURRENT_TEST`</bdi> و<bdi>`PYTEST_VERSION`</bdi> في بيئة
+العملية الفرعية.
+
+لا يشمل الرفض المجلّدات التي يُبعِدها <bdi>`CODEX_HOME`</bdi> أو <bdi>`CLAUDE_CONFIG_DIR`</bdi>
+أو <bdi>`XDG_CONFIG_HOME`</bdi> عن أسمائها الافتراضية، خارج
+الدليل المنزلي أو داخله (يضع <bdi>`XDG_CONFIG_HOME=~/xdg`</bdi> مجلّد <bdi>OpenCode</bdi> في
+<bdi>`~/xdg/opencode`</bdi>)، ولا مجلّد حالة الخطّافات، ولا البرامج غير المكتوبة بلغة <bdi>Python</bdi>،
+مثل مُثبِّتات الصدفة. ويجري الفحص قبل الكتابة، بالمسار، لذا لا يُرى
+المجلّد الذي يُستبدَل به رابط بين الخطوتين. وحين لا يملك النظام
+سجلًّا للدليل المنزلي للحساب (مستخدم حاوية بلا مُدخَل <bdi>`passwd`</bdi>)، لا يكون
+الدليل المنزلي للحساب محميًا إطلاقًا. والنسخة المسحوبة الواقعة داخل مجلّد
+محمي (تحت <bdi>`~/.claude`</bdi>، مثلًا) تُرفَض كتابات <bdi>Apothem</bdi> فيها أثناء الاختبارات.
+ولا يفعل الرفض شيئًا خارج <bdi>pytest</bdi>، أي حين لا تحمل البيئة
+<bdi>`PYTEST_CURRENT_TEST`</bdi> غير فارغ ولا إصدار <bdi>pytest</bdi> المُثبَّت
+في <bdi>`PYTEST_VERSION`</bdi>، ولهذا تظل القاعدة أعلاه سارية.
+ويسرد <bdi>`tests/README.md`</bdi> كل الثغرات.
 
 ### التغطية لكل حزمة
 
@@ -644,7 +798,7 @@ python -m pytest tests/property       # Hypothesis properties (profile loader, f
 تخفضه أبدًا لتمرير تغيير. للتحقّق محليًا:
 
 ```bash
-python -m pytest --cov=src/apothem --cov-report=json:coverage.json
+python -m pytest --cov=src/apothem --cov-fail-under=0 --cov-report=json:coverage.json
 python scripts/dev/collect_metrics.py --coverage-json coverage.json --check-floors \
   --skip-hooks --skip-coldstart --harness zed
 ```
@@ -652,7 +806,8 @@ python scripts/dev/collect_metrics.py --coverage-json coverage.json --check-floo
 ### مُنتَج المقاييس
 
 تُشغِّل مهمة <bdi>`metrics`</bdi> في <bdi>CI</bdi> النص البرمجي <bdi>`scripts/dev/collect_metrics.py`</bdi> عند كل دفع
-وكل طلب سحب، وترفع <bdi>`metrics.json`</bdi> (<bdi>`schema_version: 1`</bdi>). وكل قيمة
+وكل طلب سحب بعد نجاح جزأَي التغطية كليهما، مستخدمةً بيانات التغطية التي
+قاساها، وترفع <bdi>`metrics.json`</bdi> (<bdi>`schema_version: 1`</bdi>). وكل قيمة
 تساوي <bdi>`null`</bdi> تحمل سببها تحت <bdi>`nulls`</bdi>.
 
 | المفتاح | ما يقيسه |
@@ -669,13 +824,25 @@ python scripts/dev/collect_metrics.py --coverage-json coverage.json --check-floo
 
 ```text
 antigravity     ~/.gemini/{GEMINI,AGENTS}.md, ~/.gemini/config/{GEMINI,AGENTS}.md,
-                ~/.gemini/config/rules/*.md with trigger: always_on, project
-                GEMINI.md and AGENTS.md. The plugin rules/ folder is not a
-                documented launch surface.
+                ~/.gemini/config/rules/*.md with trigger: always_on, and in the
+                project GEMINI.md, AGENTS.md, .agents/{GEMINI,AGENTS}.md and
+                .agents/rules/*.md with trigger: always_on, plus, for each
+                plugin in ~/.gemini/config/plugins/ with a plugin.json not
+                marked disabled: true, its rules/AGENTS.md (else
+                rules/GEMINI.md) and its rules/*.md with trigger: always_on.
+                A rule file counts only when its first line opens the
+                frontmatter. Each file counted up to 24,000 bytes. @ includes
+                are not expanded, the user's own plugin on/off choice is not
+                read, and the 20,000-token budget across always-on rules is
+                not modeled.
 claude-code     ~/.claude/CLAUDE.md and ~/.claude/rules/**/*.md without paths:
-                frontmatter, plus the project equivalents.
-codebuddy       .codebuddy/rules/**/*.md (project and home) unless
-                alwaysApply: false, plus CODEBUDDY.md.
+                frontmatter, plus the project equivalents and CLAUDE.local.md;
+                the project AGENTS.md and .claude/AGENTS.md only when the
+                project has no CLAUDE.md, .claude/CLAUDE.md or CLAUDE.local.md.
+codebuddy       .codebuddy/rules/**/*.md (project and home) unless enabled:
+                false or alwaysApply: false, ~/.codebuddy/CODEBUDDY.md, the
+                project CODEBUDDY.local.md, and the first of CODEBUDDY.md and
+                .codebuddy/CODEBUDDY.md, else AGENTS.md.
 codex           The first non-empty of ~/.codex/AGENTS.override.md and
                 ~/.codex/AGENTS.md, plus the first of AGENTS.override.md,
                 AGENTS.md and the project_doc_fallback_filenames names that
@@ -684,16 +851,26 @@ codex           The first non-empty of ~/.codex/AGENTS.override.md and
 cursor          .cursor/rules/**/*.mdc with alwaysApply: true, and AGENTS.md.
 gemini-cli      ~/.gemini/GEMINI.md and the project GEMINI.md.
 github-copilot  .github/copilot-instructions.md and the project AGENTS.md.
-hermes          ~/.hermes/SOUL.md, plus the first of these kinds in the project
-                with a non-empty file (Hermes loads one): .hermes.md or
-                HERMES.md (the first of the two that exists is the only
-                candidate), AGENTS.override.md or AGENTS.md, CLAUDE.md, then
-                .cursorrules with .cursor/rules/*.mdc. The support tree and
-                apothem/rules/ are not launch surfaces.
-kimi-code       ~/.kimi-code/AGENTS.md, project AGENTS.md and .kimi-code/AGENTS.md.
+hermes          ~/.hermes/SOUL.md when it holds text, plus the first of these
+                kinds in the project with a non-empty file (Hermes loads one):
+                .hermes.md or HERMES.md (the first of the two that exists is
+                the only candidate), AGENTS.override.md or AGENTS.md,
+                CLAUDE.md, then .cursorrules with .cursor/rules/*.mdc. The
+                support tree and apothem/rules/ are not launch surfaces.
+kimi-code       ~/.kimi-code/AGENTS.md, the first non-empty of
+                ~/.agents/AGENTS.md and ~/.agents/agents.md, and the project
+                .kimi-code/AGENTS.md and AGENTS.md; blank files load nothing.
+                Kimi also reads AGENTS.md in each folder from the git root
+                down; the scratch project has no .git, so only its root is
+                read.
 kiro            .kiro/steering/**/*.md with inclusion: always or no inclusion
                 key, and the project AGENTS.md.
-open-claw       Workspace bootstrap files ~/.openclaw/workspace/*.md.
+open-claw       The non-blank bootstrap files in ~/.openclaw/workspace/, in
+                order: AGENTS.md, SOUL.md, IDENTITY.md, USER.md, BOOTSTRAP.md,
+                MEMORY.md; each up to 20,000 characters (USER.md 4,000),
+                60,000 in all. Approximate: OpenClaw's own trimming,
+                head-and-tail truncation, missing-file markers and per-session
+                filtering are not modeled.
 opencode        ~/.config/opencode/AGENTS.md, the project AGENTS.md, and every
                 file the instructions globs in opencode.json match.
 qwen-code       The context files named by context.fileName in

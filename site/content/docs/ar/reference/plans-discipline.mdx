@@ -2,7 +2,7 @@
 title: "انضباط الخطط — ذاكرة عمل عابرة محلية للمشروع"
 description: "إدارة ذاكرة عمل عابرة محلية للمشروع في \u2066.apothem/plans/\u2069 (تُرقَّى شجرة \u2066.plans/\u2069 القديمة عبر apothem migrate-workspace) مع مخطط الواجهة الأمامية وانتقالات دورة الحياة والترقية إلى سجلات قرار معمارية والفرض عبر الخطافات والمُتحقِّقات."
 machineTranslated: true
-sourceHash: "175d0e7730335ebd"
+sourceHash: "78ba9223bd5803ab"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -137,12 +137,12 @@ promotes-to: <ADR path or null>
 يجب على كل مشروع يتبنى هذه المنظومة إضافة الكتلة التالية إلى <bdi>`.gitignore`</bdi> الخاص به:
 
 ```text
-# دليل عمل Apothem (حالة مشتركة محلية للمشروع: الخطط، والذاكرة،
-# والتعلّم، والسياقات؛ مستثنى عبر gitignore — لا يُودَع أبدًا). الموطن الكنسي
-# الوحيد للخطط هو `.apothem/plans/`.
-# انظر: <repo-url>/blob/main/site/content/docs/reference/plans-discipline.mdx
-# استثنِ محتويات هذا الدليل (لا الدليل نفسه) كي يأخذ نفي
-# `.keep` أدناه مفعوله.
+# Apothem working directory (project-local shared state: plans, memory,
+# learning, contexts; gitignored — never committed). The sole canonical plans
+# home is `.apothem/plans/`.
+# See: <repo-url>/blob/main/site/content/docs/reference/plans-discipline.mdx
+# Ignore the CONTENTS of this directory (not the directory) so the
+# `.keep` negation below can take effect.
 .apothem/*
 !.apothem/.keep
 ```
@@ -155,7 +155,7 @@ promotes-to: <ADR path or null>
 
 يجب أن ينجو هذا الانضباط من كل جلسة مستقبلية. أسطح الفرض التالية إلزامية ومُشفَّرة في المنظومة المنشورة:
 
-1. **<bdi>`AGENTS.md`</bdi> وأسطح التعليمات المرآتية** — كتلة سلوك إلزامي عُليا تنص على: *«تُكتَب آثار التخطيط إلى <bdi>`<project-root>/.apothem/plans/`</bdi> — الموطن الكنسي الوحيد للخطط (تُرقَّى شجرة <bdi>`<project-root>/.plans/`</bdi> القديمة عبر <bdi>`apothem migrate-workspace`</bdi>) — ولا تُكتَب أبدًا إلى أي دليل تهيئة إطار عمل (مثل <bdi>`~/.codex/`</bdi> أو <bdi>`~/.claude/`</bdi>) ولا إلى موقع عام أبدًا. هذه القاعدة غير قابلة للتفاوض؛ استشهِد بـ§3 من مواصفة المشروع في كل قرار ذي صلة.»* تكتشف هذه الكتلةَ المُتحقِّقُ <bdi>`plans-discipline-language`</bdi>.
+1. **<bdi>`AGENTS.md`</bdi> وأسطح التعليمات المرآتية** — كتلة سلوك إلزامي عُليا تنص على: *«تُكتَب آثار التخطيط إلى <bdi>`<project-root>/.apothem/plans/`</bdi> — الموطن الكنسي الوحيد للخطط. ولم تعد شجرة <bdi>`<project-root>/.plans/`</bdi> القديمة كنسية؛ ويُرقِّي المُشغِّلون أي شجرة قائمة منها عبر <bdi>`apothem migrate-workspace`</bdi>. ولا تُكتَب أبدًا إلى أي دليل تهيئة إطار عمل (مثل <bdi>`~/.codex/`</bdi> أو <bdi>`~/.claude/`</bdi>) ولا إلى موقع عام أبدًا. هذه القاعدة غير قابلة للتفاوض؛ ويُورِد §2 من <bdi>`site/content/docs/reference/plans-discipline.mdx`</bdi> نصّها كاملًا.»* تكتشف هذه الكتلةَ المُتحقِّقُ <bdi>`plans-discipline-language`</bdi>.
 2. **ملف تعليمات داخل المستودع لكل إطار عمل** — يعكس التوجيه نفسه بالصياغة الملائمة لسطح تعليمات إطار العمل ذلك (§4 *انضباط الخطط*)؛ ويكتشفه المُتحقِّق نفسه على كل سطح إطار عمل مُسجَّل.
 3. **نمط الإخراج الافتراضي** — حين تنتج استجابةٌ محتوًى بشكل خطة (استراتيجية متعددة الخطوات، تفكيك، جولة تصميم، يوميات تنقيح أخطاء)، يوجِّه النمطُ الأثرَ إلى كتابة <bdi>`.apothem/plans/`</bdi> محلية للمشروع بدل الطباعة-والإهمال السطري. ويوعِز النمط صراحةً: *«إن تعذَّر اكتشاف جذر المشروع، فتوقّف باستعلام منظم يسأل المُشغِّل أين يُخطِّط.»*
 4. **كل مُوجِّه عامل مُفوَّض** — يحمل مقطع *<bdi>Output Surface</bdi>* الذي يسمّي <bdi>`.apothem/plans/`</bdi> وجهةً لأي أثر تخطيط، ومقطع *<bdi>Anti-Pattern</bdi>* الذي يسمّي أدلة الخطط المحلية لإطار العمل ممنوعةً.

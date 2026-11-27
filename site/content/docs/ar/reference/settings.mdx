@@ -1,13 +1,13 @@
 ---
 title: "الإعدادات"
-description: "إعداد إطار العمل Claude Code في settings.json، ويشمل أذونات الأدوات، وتوصيل الخطّافات، ومتغيّرات البيئة، وقوالب سطر الحالة."
+description: "إعداد إطار العمل Claude Code في settings.json، ويشمل أذونات الأدوات وتوصيل الخطّافات."
 machineTranslated: true
-sourceHash: "986e09594ded6bad"
+sourceHash: "ece5596a2a8b8bc1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-يحمل <bdi>`settings.json`</bdi> إعداد إطار العمل <bdi>Claude Code</bdi>: توصيل الخطّافات،
-وأذونات الأدوات، ومتغيّرات البيئة، وإعدادات سطر الحالة.
+يحمل <bdi>`settings.json`</bdi> إعداد إطار العمل <bdi>Claude Code</bdi> الذي يدمجه <bdi>Apothem</bdi>
+في ملفك: أذونات الأدوات وتوصيل الخطّافات.
 
 يوجد المرجع المعتمد الكامل في
 [<bdi>settings-reference.md</bdi>](/docs/reference/settings-reference). تُلخِّص هذه الصفحة العقد
@@ -17,10 +17,14 @@ sourceHash: "986e09594ded6bad"
 
 | القسم | الغرض |
 |---------|---------|
+| <bdi>`$schema`</bdi> | عنوان <bdi>URL</bdi> للمخطط تستخدمه المحرّرات لفحص الملف |
 | <bdi>`permissions`</bdi> | قوائم السماح والحظر للأدوات لكل مُطابِق |
 | <bdi>`hooks`</bdi> | جدول أوامر الخطّافات مُفهرَسًا بالأحداث (التوصيل المرجعي) |
-| <bdi>`env`</bdi> | متغيّرات البيئة لكل جلسة |
-| <bdi>`statusLine`</bdi> | قالب سطر الحالة الذي يعرضه المضيف |
+
+لا يضبط قالب <bdi>Apothem</bdi> أي مفتاح آخر، لذا تبقى مفاتيح مثل <bdi>`env`</bdi> و<bdi>`statusLine`</bdi>
+ملكًا لك. يُنسَخ عارض سطر الحالة إلى <bdi>`~/.claude/statuslines/`</bdi>
+لكنه لا يُوصَّل؛ وتعرض [صفحة <bdi>Claude Code</bdi>](/docs/harnesses/claude-code) مُدخَل
+<bdi>`statusLine`</bdi> الذي تضيفه بنفسك.
 
 ## ثابت القالب الواحد
 

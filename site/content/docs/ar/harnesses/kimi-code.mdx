@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "محوّل إطار عمل Apothem لـ Kimi Code (إتاحة عامة)."
 machineTranslated: true
-sourceHash: "88671d55a3315922"
+sourceHash: "0ae31afd4f1fbbbd"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,7 +26,8 @@ apothem install --harness kimi-code --project /path/to/project
 <bdi>Apothem</bdi> في <bdi>`<project>/.kimi-code/.apothem/support/`</bdi>.
 يقرأ ملفَّ <bdi>`AGENTS.md`</bdi> الخاص بالمشروع كثيرٌ من أدوات البرمجة إلى جانب
 <bdi>Kimi Code</bdi>، لذا تُكتَب الكتلة بوصفها إرشادات على نطاق المشروع لا تُسمّي
-أداة واحدة بعينها قارئًا لها. ولا تُحمِّله بعض تلك الأدوات إلا في بعض المشاريع، مثلًا
+أداة واحدة بعينها قارئًا لها. ولا تُحمِّله بعض تلك الأدوات إلا في بعض المشاريع أو الإصدارات أو
+الإعدادات، مثلًا
 عندما لا يكون في المشروع ملف تعليمات خاص بها، وتُسمّي ملاحظة التثبيت كل أداة من
 هذا النوع مع شرطها (ويسردها
 [سجلّ أُطُر العمل](/docs/reference/harness-registry#shared-roots)).
@@ -41,7 +42,9 @@ apothem install --harness kimi-code --project /path/to/project
 **الملفات المكتوبة:** <bdi>`<project>/AGENTS.md`</bdi> (كتلة مُدارة)، والمهارات
 والأوامر (بوصفها مهارات) تحت <bdi>`<project>/.kimi-code/skills/`</bdi>، وملف
 <bdi>`<project>/.kimi-code/agents/<name>.md`</bdi> واحد لكل مساعِد من مساعِدات <bdi>Apothem</bdi>، وحزم
-الخطّافات، والقواعد، والقوالب تحت <bdi>`<project>/.kimi-code/.apothem/support/`</bdi>.
+الخطّافات، والقواعد، والقوالب تحت <bdi>`<project>/.kimi-code/.apothem/support/`</bdi>،
+ومجلّد البيانات الذي ينشئه كل تثبيت على مستوى المشروع، وهو <bdi>`<project>/.apothem/`</bdi>
+افتراضيًا (<bdi>`contexts/`</bdi>، و<bdi>`learning/`</bdi>، و<bdi>`memory/`</bdi>، و<bdi>`plans/`</bdi>).
 
 ## العوامل الفرعية
 
@@ -203,7 +206,9 @@ apothem update --harness kimi-code --project /path/to/project
 تكون كل مهارة موجودة مرة واحدة. والتحديث فوق تثبيت من قبل انتقال المساعِدات
 إلى <bdi>`.kimi-code/agents/`</bdi> يُزيل الدليل القديم
 <bdi>`<project>/.kimi-code/.apothem/support/agents/`</bdi> بالطريقة نفسها. وتُحفَظ أولًا نسخة
-بطابع زمني من كل دليل مُزال تحت <bdi>`~/.apothem/backups/`</bdi>.
+بطابع زمني من كل دليل مُزال تحت <bdi>`~/.apothem/backups/`</bdi>. وأي ملف خاص بك في هذين
+الدليلين القديمين يُزال معهما؛ وتُحذَف نسخته الاحتياطية بمجرّد وجود 10 مجموعات نسخ
+احتياطية أحدث لإطار العمل، لذا احتفظ بملفاتك في مكان آخر.
 
 ## إلغاء التثبيت
 
@@ -226,8 +231,17 @@ apothem uninstall --harness kimi-code --project /path/to/project
 ## بوابة المطابقة
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+شغّله من مجلّد مشروعك. وعلى <bdi>Windows</bdi>، استخدم <bdi>`python`</bdi> بدلًا من
+<bdi>`python3`</bdi> واستخدم المسار الكامل، لأن <bdi>Windows PowerShell</bdi> و<bdi>cmd</bdi> لا يوسّعان
+<bdi>`~`</bdi>:
+<bdi>`$HOME\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>PowerShell</bdi>، أو
+<bdi>`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>cmd</bdi>. والمسار هو
+الموضع الذي يضع فيه المُثبِّت المحرّك، ويُبقي <bdi>`-E -s`</bdi> متغيّر <bdi>`PYTHONPATH`</bdi> وحزم
+<bdi>site-packages</bdi> الخاصة بالمستخدم خارج البوابة؛ ويشرح [بوابة المطابقة](/docs/conformity-gate)
+كليهما والتثبيتات الأخرى.
 
 ## استكشاف الأخطاء وإصلاحها
 

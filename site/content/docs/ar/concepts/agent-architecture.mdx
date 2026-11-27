@@ -2,7 +2,7 @@
 title: "بنية العامل"
 description: "كيف يُسقِط Apothem حزمة قدرات عاملة واحدة عبر سبعة عشر إطار عمل ذات أسطح خطافات وصيغ قواعد متباينة."
 machineTranslated: true
-sourceHash: "f7b510f076abbabd"
+sourceHash: "be0f8df513fb3c8f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -38,7 +38,7 @@ sourceHash: "f7b510f076abbabd"
 | <bdi>hermes</bdi> | مادة دعم فقط | <bdi>`config.yaml`</bdi> بالإضافة إلى دليل مهارات خارجي | الصنف <bdi>II-B</bdi> | <bdi>`config.yaml`</bdi> |
 | <bdi>kimi-code</bdi> | مادة دعم فقط | <bdi>`AGENTS.md`</bdi> بالإضافة إلى قواعد دعم تحت <bdi>`.kimi-code/.apothem/support/`</bdi> | الصنف <bdi>I</bdi> | لا يوجد |
 | <bdi>kiro</bdi> | <bdi>SessionStart</bdi> أصلي في <bdi>`.kiro/hooks/apothem.json`</bdi>؛ لا خطاف لأحداث الأدوات (يتجاهل المورّد مخرجاتها) | ملف التوجيه <bdi>`.kiro/steering/apothem-rules.md`</bdi> | الصنف <bdi>I</bdi> | لا يوجد |
-| <bdi>open-claw</bdi> | مادة دعم فقط | <bdi>`openclaw.json`</bdi> بالإضافة إلى دليل مهارات إضافي | الصنف <bdi>II-B</bdi> | <bdi>`openclaw.json`</bdi> |
+| <bdi>open-claw</bdi> | مادة دعم فقط | <bdi>`openclaw.json`</bdi> بالإضافة إلى دليل مهارات إضافي، وملف قواعد لمساحة العمل <bdi>`apothem/AGENTS.md`</bdi> يحمّله الخطّاف <bdi>`bootstrap-extra-files`</bdi> | الصنف <bdi>II-B</bdi> | <bdi>`openclaw.json`</bdi> |
 | <bdi>opencode</bdi> | مادة دعم فقط | <bdi>JSON</bdi> مُجسَّد من الملف التعريفي بالإضافة إلى الأوامر والمهارات والعوامل الأصلية | الصنف <bdi>II-B</bdi> | <bdi>`opencode.json`</bdi> |
 | <bdi>qwen-code</bdi> | <bdi>PreToolUse</bdi> / <bdi>Stop</bdi> / <bdi>SessionStart</bdi> أصلي | <bdi>`QWEN.md`</bdi> بالإضافة إلى الأوامر والمهارات والعوامل الأصلية | الصنف <bdi>II-B</bdi> | <bdi>`settings.json`</bdi> / <bdi>`QWEN.md`</bdi> |
 | <bdi>trae</bdi> | لا يوجد | ملف قواعد المشروع <bdi>`.trae/rules/apothem-rules.md`</bdi> | الصنف <bdi>I</bdi> | لا يوجد |
@@ -50,7 +50,7 @@ sourceHash: "f7b510f076abbabd"
 
 - **<bdi>claude-code</bdi>** هو المحوّل ذو السطح الأصلي الأوسع. يحمل خطافات <bdi>PreToolUse</bdi> و<bdi>PostToolUse</bdi> و<bdi>Stop</bdi> و<bdi>SessionStart</bdi> الأصلية، ويشحن قوالب إعدادات المورّد. ويكتب كتلة واحدة مُدارة محدودة بعلامات حارسة داخل <bdi>`CLAUDE.md`</bdi>، ويُبقي نثر المُشغِّل خارج العلامات الحارسة دون تغيير.
 - **<bdi>codex</bdi>** يثبّت خطافات دورة الحياة الأصلية عبر <bdi>`hooks.json`</bdi>، ويحوّل العوامل إلى <bdi>TOML</bdi>، ويغلّف موجّهات الأوامر كمهارات <bdi>Codex</bdi>، ويترك <bdi>`config.toml`</bdi> ملكًا للمشغّل.
-- **<bdi>antigravity</bdi>** يُبقي <bdi>`~/.gemini/GEMINI.md`</bdi> مرساةَ السياق العامة، ويثبّت إضافة <bdi>Apothem</bdi> تحت <bdi>`~/.gemini/antigravity-cli/plugins/apothem/`</bdi>. تُحفَظ ملفات الخطافات كمادة دعم إلى أن يتولّى المحوّل ترجمة مخطط خطافات <bdi>Antigravity</bdi>.
+- **<bdi>antigravity</bdi>** يُبقي <bdi>`~/.gemini/GEMINI.md`</bdi> مرساةَ السياق العامة، ويثبّت إضافة <bdi>Apothem</bdi> تحت <bdi>`~/.gemini/config/plugins/apothem/`</bdi>. تُحفَظ ملفات الخطافات كمادة دعم إلى أن يتولّى المحوّل ترجمة مخطط خطافات <bdi>Antigravity</bdi>.
 - **<bdi>cursor</bdi>** يفعّل القواعد عبر ملف <bdi>`.mdc`</bdi> واحد يحمل واجهة <bdi>MDC</bdi> الأمامية للمورّد (<bdi>`description`</bdi>، <bdi>`globs`</bdi>، <bdi>`alwaysApply`</bdi>)؛ ولا يكتب المحوّل ملف <bdi>`.cursorrules`</bdi> المفرد.
 - **<bdi>windsurf</bdi>** يستخدم <bdi>`.devin/rules/`</bdi>؛ ولا يكتب المحوّل ملف <bdi>`.windsurfrules`</bdi> المفرد.
 - **<bdi>hermes</bdi>** و<bdi>**open-claw**</bdi> يُجسِّدان ملفات تهيئة أصلية، ويوصّلان أدلة مهارات دعم <bdi>Apothem</bdi> عبر إعداد دليل المهارات الموثَّق لدى كل إطار عمل. وتبقى الحزم المشتركة غير المدعومة تحت أشجار دعم يملكها <bdi>Apothem</bdi>.
@@ -119,7 +119,7 @@ src/apothem/{rules,commands,skills,agents,output-styles,hooks,conformity,statusl
 | المحور | المدى المرصود عبر أُطُر العمل السبعة عشر |
 |------|---------------------------------------------|
 | سطح الخطافات | متعدد الأحداث أصلي (<bdi>claude-code</bdi>، <bdi>codex</bdi>، <bdi>qwen-code</bdi>) ← أصلي على الأحداث التي يسلّمها المورّد إلى النموذج (<bdi>codebuddy</bdi>: <bdi>SessionStart</bdi> و<bdi>PostToolUse</bdi>؛ <bdi>cursor</bdi>: <bdi>sessionStart</bdi>؛ <bdi>github-copilot</bdi>: <bdi>sessionStart</bdi> و<bdi>postToolUse</bdi>؛ <bdi>kiro</bdi>: <bdi>SessionStart</bdi>؛ <bdi>windsurf</bdi>: <bdi>SessionStart</bdi> و<bdi>PostToolUse</bdi>) ← مادة خطافات دعم فقط (<bdi>antigravity</bdi>، <bdi>gemini-cli</bdi>، <bdi>hermes</bdi>، <bdi>kimi-code</bdi>، <bdi>open-claw</bdi>، <bdi>opencode</bdi>) ← لا خطاف يسجّله المحوّل (<bdi>glm</bdi>، <bdi>trae</bdi>، <bdi>zed</bdi>) |
-| صيغة تفعيل القواعد | <bdi>`.md`</bdi> مسطّح (<bdi>claude-code</bdi>) ← قواعد الإضافة (<bdi>antigravity</bdi>) ← مساحة عمل <bdi>`.mdc`</bdi> (<bdi>cursor</bdi>) ← قواعد الدليل (<bdi>codebuddy</bdi>، <bdi>trae</bdi>، <bdi>windsurf</bdi>) ← ملف التوجيه (<bdi>kiro</bdi>) ← ملف مسطّح في جذر المشروع (<bdi>zed</bdi>) ← ملف مُضمَّن واحد (<bdi>codex</bdi>، <bdi>gemini-cli</bdi>، <bdi>github-copilot</bdi>، <bdi>kimi-code</bdi>) ← مادة دعم مُشار إليها من التهيئة (<bdi>hermes</bdi>، <bdi>open-claw</bdi>، <bdi>opencode</bdi>، <bdi>qwen-code</bdi>) ← تهيئة مورّد خلفية (<bdi>glm</bdi>) |
+| صيغة تفعيل القواعد | <bdi>`.md`</bdi> مسطّح (<bdi>claude-code</bdi>) ← قواعد الإضافة (<bdi>antigravity</bdi>) ← مساحة عمل <bdi>`.mdc`</bdi> (<bdi>cursor</bdi>) ← قواعد الدليل (<bdi>codebuddy</bdi>، <bdi>trae</bdi>، <bdi>windsurf</bdi>) ← ملف التوجيه (<bdi>kiro</bdi>) ← ملف مسطّح في جذر المشروع (<bdi>zed</bdi>) ← ملف مُضمَّن واحد (<bdi>codex</bdi>، <bdi>gemini-cli</bdi>، <bdi>github-copilot</bdi>، <bdi>kimi-code</bdi>) ← ملف قواعد لمساحة العمل يحمّله خطّاف (<bdi>open-claw</bdi>) ← مادة دعم مُشار إليها من التهيئة (<bdi>hermes</bdi>، <bdi>opencode</bdi>، <bdi>qwen-code</bdi>) ← تهيئة مورّد خلفية (<bdi>glm</bdi>) |
 | صنف المحوّل | الصنف <bdi>I</bdi> انتشار خام ← الصنف <bdi>II-A</bdi> خام + إعدادات المورّد ← الصنف <bdi>II-B</bdi> سطح واحد مُجسَّد من الملف التعريفي |
 
 

@@ -2,7 +2,7 @@
 title: "Zed"
 description: "محوّل إطار عمل Apothem لـ Zed (إصدار عام)."
 machineTranslated: true
-sourceHash: "2536a5b3796fa036"
+sourceHash: "aa756b204fdf4f52"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -62,8 +62,8 @@ GEMINI.md
 - يختار <bdi>`--project`</bdi> ملف التعليمات الذي يُكتَب والمشروعَ الذي ينتمي إليه
   التثبيت. ولا يغيّر المكان الذي تذهب إليه المهارات.
 - لا يضيف التثبيت أي ملف مهارة أو قاعدة إلى مستودعك. ويحصل المشروع على ملف
-  التعليمات، إضافةً إلى مجلّد البيانات <bdi>`.apothem/`</bdi> الذي يُنشئه كل تثبيت على
-  مستوى المشروع.
+  التعليمات، إضافةً إلى مجلّد البيانات الذي يُنشئه كل تثبيت على
+  مستوى المشروع، وهو <bdi>`.apothem/`</bdi> افتراضيًا.
 - تُكتَب المجلّدات المنزلية أولًا. فإن فشل ذلك، مثلًا لأن مجلّدًا في المسار رابطٌ
   يخرج من دليلك المنزلي (أما الرابط الذي يبقى داخله فيُتَّبَع) أو لا يمكن الكتابة فيه،
   يتوقّف التثبيت مع الخطأ قبل أن يتغيّر أي شيء في المشروع.
@@ -163,8 +163,17 @@ apothem uninstall --harness zed --project /path/to/project
 ## بوابة المطابقة
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+شغّله من مجلّد مشروعك. وعلى <bdi>Windows</bdi>، استخدم <bdi>`python`</bdi> بدلًا من
+<bdi>`python3`</bdi> والمسار الكامل، لأن <bdi>Windows PowerShell</bdi> و<bdi>cmd</bdi> لا يوسّعان
+<bdi>`~`</bdi>:
+<bdi>`$HOME\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>PowerShell</bdi>، أو
+<bdi>`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>cmd</bdi>. هذا المسار هو
+الموضع الذي يضع فيه المُثبِّت المحرّك، ويُبقي <bdi>`-E -s`</bdi> متغيّر <bdi>`PYTHONPATH`</bdi> لديك وحِزَم
+<bdi>site-packages</bdi> الخاصّة بالمستخدم خارج البوابة؛ وتشرح صفحة [بوابة المطابقة](/docs/conformity-gate)
+كليهما وطرق التثبيت الأخرى.
 
 ## استكشاف الأخطاء وإصلاحها
 

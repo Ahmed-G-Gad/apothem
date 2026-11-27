@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "محوّل إطار عمل Apothem لـ Cursor (إتاحة عامة)."
 machineTranslated: true
-sourceHash: "817b5e32ce317949"
+sourceHash: "0aa24ff454d74139"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -183,6 +183,10 @@ apothem.conformity.gate`</bdi>، لا يُعَدّ أبدًا خطّافًا ل�
 "/path/to/python" -E -s "/path/to/project/.apothem/support/cursor/hooks/dispatch.py" --contract cursor sessionStart
 ```
 
+يجعل <bdi>`-E -s`</bdi> بايثون يتجاهل <bdi>`PYTHONPATH`</bdi> ومتغيّرات <bdi>`PYTHON*`</bdi> الأخرى
+ويتخطّى حزم <bdi>site-packages</bdi> الخاصة بالمستخدم، فلا يمكن لأي ملف في المشروع أن يُحمَّل
+في الخطّاف.
+
 على مضيف <bdi>Windows</bdi> يبدأ الأمر بـ <bdi>`& `</bdi>، مُعامِل الاستدعاء في <bdi>PowerShell</bdi>، لأن
 تطبيق سطح المكتب في <bdi>Cursor</bdi> يُشغِّل أوامر الخطّافات عبر <bdi>PowerShell</bdi>، حيث لا يُعَدّ
 السطر الذي يبدأ بمسار برنامج مقتبس استدعاءً. وتقرأ <bdi>`sh`</bdi> العلامة <bdi>`&`</bdi> في البداية
@@ -240,8 +244,8 @@ section of src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md. */}
 
 ## ملاحظات التوافق
 
-يدعم <bdi>Cursor 0.45+</bdi> التعليمات على مستوى المشروع عبر
-<bdi>`.cursor/rules/`</bdi>. يكتب المحوّل افتراضيًا إلى دليل
+يقرأ <bdi>Cursor</bdi> التعليمات على مستوى المشروع من <bdi>`.cursor/rules/`</bdi>، وفقًا
+لـ [وثائق قواعد <bdi>Cursor</bdi>](https://cursor.com/docs/rules). يكتب المحوّل افتراضيًا إلى دليل
 <bdi>`.cursor/rules/`</bdi> بنطاق المشروع؛ ولا يملك <bdi>Cursor</bdi> مسارًا موثّقًا
 قائمًا على الملفات للقواعد العامّة على مستوى المستخدم كي يديره هذا المحوّل.
 
@@ -340,8 +344,17 @@ apothem uninstall --harness cursor --project /path/to/project
 ## بوابة المطابقة
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+شغّله من مجلّد مشروعك. وعلى <bdi>Windows</bdi>، استخدم <bdi>`python`</bdi> بدلًا من
+<bdi>`python3`</bdi> واستخدم المسار الكامل، لأن <bdi>Windows PowerShell</bdi> و<bdi>cmd</bdi> لا يوسّعان
+<bdi>`~`</bdi>:
+<bdi>`$HOME\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>PowerShell</bdi>، أو
+<bdi>`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>cmd</bdi>. والمسار هو
+الموضع الذي يضع فيه المُثبِّت المحرّك، ويُبقي <bdi>`-E -s`</bdi> متغيّر <bdi>`PYTHONPATH`</bdi> وحزم
+<bdi>site-packages</bdi> الخاصة بالمستخدم خارج البوابة؛ ويشرح [بوابة المطابقة](/docs/conformity-gate)
+كليهما والتثبيتات الأخرى.
 
 ## استكشاف الأخطاء وإصلاحها
 

@@ -2,7 +2,7 @@
 title: "بوابة المطابقة"
 description: "بوابة المطابقة في Apothem — الجزء الميكانيكي من بوابة ما قبل الإصدار ذات الخمسة عشر شريطًا (M1-M15) التي يجب أن يجتازها كل مُخرَج يُصدَر."
 machineTranslated: true
-sourceHash: "3327d1105c04f8e3"
+sourceHash: "4abccec00243f36d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,16 +30,18 @@ sourceHash: "3327d1105c04f8e3"
 
 ## سُلّم الخطورة
 
-لا تملك البوابة سلّمًا من المستويات حرج ومهمّ واستشاري، ولا عتبة من نتيجتين. ومن دون <bdi>`--strict`</bdi> (أو <bdi>`APOTHEM_CONFORMITY_STRICT=1`</bdi>) تُبلغ البوابة عن النتائج وتخرج برمز <bdi>`0`</bdi>. ومع <bdi>`--strict`</bdi> يخرج فحص الملف الواحد أو فحص الخطّاف برمز <bdi>`2`</bdi> عند فشل أي مُطابِق، ويخرج تشغيل المدوّنة (<bdi>`--all`</bdi> أو <bdi>`--all-perwrite`</bdi>) برمز <bdi>`2`</bdi> عند فشل أداة تحقّق حاجبة أو مُطابِق حاجب؛ أما النتائج الاستشارية فيُبلَّغ عنها فقط. ولا يمرّر خطّاف <bdi>Write/Edit</bdi> المثبَّت <bdi>`--strict`</bdi>، فيُبلغ عن النتائج وتمضي الكتابة ما لم يُضبط <bdi>`APOTHEM_CONFORMITY_STRICT=1`</bdi> في بيئته.
+لا تملك البوابة سلّمًا من المستويات حرج ومهمّ واستشاري، ولا عتبة من نتيجتين. ومن دون <bdi>`--strict`</bdi> (أو <bdi>`APOTHEM_CONFORMITY_STRICT=1`</bdi>) تُبلغ البوابة عن النتائج وتخرج برمز <bdi>`0`</bdi>. ومع <bdi>`--strict`</bdi> يخرج فحص الملف الواحد أو فحص الخطّاف برمز <bdi>`2`</bdi> عند فشل أي مُطابِق، ويخرج تشغيل المدوّنة (<bdi>`--all`</bdi> أو <bdi>`--all-perwrite`</bdi>) برمز <bdi>`2`</bdi> عند فشل أداة تحقّق حاجبة أو مُطابِق حاجب؛ أما النتائج الاستشارية فيُبلَّغ عنها فقط. وتشغيل <bdi>`--all-perwrite`</bdi> الذي لم يقرأ أي ملف، أو صادف مُدخل فهرس يخرج من المشروع، أو صادف ملفًا تعذّرت عليه قراءته أو ملفًا نصيًا يتجاوز حدّ حجمه، يُبلغ عن <bdi>`passed: false`</bdi>، مع <bdi>`check_error`</bdi> حين تتعذّر قراءة قائمة الملفات المتتبَّعة (مثلًا في مجلّد خارج شجرة عمل <bdi>git</bdi>)، ولذا يخرج مع <bdi>`--strict`</bdi> برمز <bdi>`2`</bdi> أيضًا. ولا يمرّر خطّاف <bdi>Write/Edit</bdi> المثبَّت <bdi>`--strict`</bdi>، فيُبلغ عن النتائج وتمضي الكتابة ما لم يُضبط <bdi>`APOTHEM_CONFORMITY_STRICT=1`</bdi> في بيئته.
+
+وفي تشغيلات <bdi>`--all`</bdi> و<bdi>`--check`</bdi>، لا تجتاز أداة التحقّق المستقلّة التي لم تتمكّن من الإنهاء أيضًا. فالتي لا تزال تعمل بعد 10 دقائق تُوقَف، والتي يتجاوز أمر <bdi>`git`</bdi> الخاص بها حدّه الزمني، أو يُخفق في نسخة مسحوبة وجدتها، تُبلغ عن ذلك؛ وتحمل كلتا النتيجتين <bdi>`passed: false`</bdi> و<bdi>`check_error`</bdi> يذكر السبب، ولذا تخرج مع <bdi>`--strict`</bdi> برمز <bdi>`2`</bdi> أيضًا. ويسرد [تشغيل بوابة المطابقة](/docs/usage/conformity-gate) هذه الحدود.
 
 ## أدوات التحقّق
 
 يقع الجزء الميكانيكي في [<bdi>`src/apothem/conformity/`</bdi>](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/conformity)، ويُنسِّقه [<bdi>`src/apothem/conformity/gate.py`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/gate.py).
 تعمل كل أداة تحقّق بإحدى ثلاث طرق:
 
-- **<bdi>per-write</bdi>**: على كل كتابة معلّقة (<bdi>`--hook`</bdi>)، أو على كل ملف متتبَّع مع <bdi>`--all-perwrite`</bdi>.
+- **<bdi>per-write</bdi>**: على كل كتابة معلّقة (<bdi>`--hook`</bdi>)، أو على كل ملف متتبَّع مع <bdi>`--all-perwrite`</bdi>، الذي لا يقرأ إلا الملفات العادية داخل المشروع ويعدّ المسارات التي يتخطّاها (الروابط، والأنابيب المسمّاة، والأجهزة، والمُدخلات التي تخرج من المشروع).
 - **<bdi>standalone</bdi>**: عبر المستودع كله مع <bdi>`--all`</bdi>، أو واحدة تلو الأخرى مع <bdi>`--check <name>`</bdi>.
-- **<bdi>change-set</bdi>**: على فرق مُجهَّز للإيداع، وتُشغَّل مباشرةً بالصيغة <bdi>`python -m apothem.conformity.semver_stability_grep --staged`</bdi>، لا عبر البوابة.
+- **<bdi>change-set</bdi>**: على فرق مُجهَّز للإيداع، وتُشغَّل مباشرةً من جذر النسخة المسحوبة بالصيغة <bdi>`PYTHONPATH=src python -m apothem.conformity.semver_stability_grep --staged`</bdi>، لا عبر البوابة.
 
 الجدول أدناه مُولَّد من وحدات أدوات التحقّق.
 
@@ -113,34 +115,62 @@ The conformity package ships 54 validators: 22 per-write, 31 standalone and 1 ch
 <bdi>`~/.claude/.apothem/support/conformity/gate.py`</bdi> قبل كل عملية
 <bdi>Write/Edit</bdi>. ولا تفحص البوابة حينئذٍ إلا عمليات الكتابة الواقعة ضمن نطاق خطّافها،
 وتمرّ الكتابة الواقعة خارج النطاق بصمت؛ ويسرد [تشغيل بوابة المطابقة](/docs/usage/conformity-gate)
-هذا النطاق. ومن نسخة مسحوبة من المصدر، تُشغِّل صيغة الوحدة الشيفرةَ نفسها؛
-فابدأ كل أمر <bdi>`python`</bdi> أدناه بالبادئة <bdi>`PYTHONPATH=src`</bdi>. والبوابة
-استشارية افتراضيًا: تُبلِغ عن النتائج وتخرج بالرمز <bdi>`0`</bdi>. أضِف <bdi>`--strict`</bdi>
-لتخرج بالرمز <bdi>`2`</bdi> عند نتيجة حاجبة. ويخرج الأمر بالرمز <bdi>`3`</bdi> عند اسم
+هذا النطاق.
+
+شغّل البوابة عبر مسار السكربت الخاص بها مع <bdi>`-E -s`</bdi>، كما تفعل الأمثلة أدناه،
+لا بالصيغة <bdi>`python -m apothem.conformity.gate`</bdi>. فقد يحمل المشروع الذي تفحصه
+ملفًا يحمل اسمًا مثل إحدى وحدات البوابة، ويجب ألّا تحمّله <bdi>Python</bdi>. إذ يضع <bdi>`-m`</bdi>
+المجلّد الحالي أولًا في مسار البحث عن الوحدات في <bdi>Python</bdi>؛ أما التشغيل عبر السكربت
+فيضع مجلّد السكربت نفسه هناك بدلًا منه. وهذا وحده لا يكفي: فالمُدخل الفارغ
+أو النسبي في <bdi>`PYTHONPATH`</bdi> يشير أيضًا إلى المجلّد الحالي. ويجعل <bdi>`-E`</bdi>
+<bdi>Python</bdi> تتجاهل <bdi>`PYTHONPATH`</bdi> ومتغيّرات <bdi>`PYTHON*`</bdi> الأخرى، ويُسقِط <bdi>`-s`</bdi>
+حزم <bdi>site-packages</bdi> الخاصة بمستخدمك. ولا تحتاج البوابة إلى شيء من أيٍّ منهما. وهذه
+الخيارات تُبقي ملفات المشروع خارج شيفرة <bdi>Python</bdi> الخاصة بالبوابة فقط؛
+أما <bdi>`git`</bdi> الذي تشغّله البوابة فيُتناوَل أدناه. وبعد
+التثبيت عبر السكربت يكون السكربت هو <bdi>`~/.apothem/src/apothem/conformity/gate.py`</bdi> (وعلى
+<bdi>Windows</bdi>، <bdi>`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`</bdi>، ويُشغَّل بـ
+<bdi>`python`</bdi> بدلًا من <bdi>`python3`</bdi>)؛ وفي النسخة المسحوبة يكون
+<bdi>`src/apothem/conformity/gate.py`</bdi>. وتبدأ البوابة كل أداة تحقّق مستقلّة في
+عملية خاصة بها، أيضًا مع <bdi>`-E -s`</bdi> ومع إبقاء المجلّد الحالي خارج
+مسار البحث. والبوابة استشارية افتراضيًا: تُبلِغ عن النتائج وتخرج بالرمز
+<bdi>`0`</bdi>. أضِف <bdi>`--strict`</bdi> لتخرج بالرمز <bdi>`2`</bdi> عند نتيجة حاجبة. ويخرج الأمر بالرمز <bdi>`3`</bdi> عند اسم
 أداة تحقّق غير معروف.
 
+تشغّل <bdi>`--all`</bdi> و<bdi>`--all-perwrite`</bdi> وثلاث أدوات تحقّق مستقلّة وفحوص
+مجموعة التغييرات <bdi>`--staged`</bdi> الأمرَ <bdi>`git`</bdi> في المشروع الذي تفحصه. ولا يبدأ كلٌّ منها <bdi>git</bdi> إلا من
+مُدخل بمسار كامل في <bdi>`PATH`</bdi> لديك، مع تعطيل كل إعداد في
+<bdi>`.git/config`</bdi> لذلك المستودع معروفٍ بأنه يبدأ برنامجًا، ومع حجب جلب أي
+كائن مفقود، ولذا فإن المشروع الذي جاء بمجلّد <bdi>`.git`</bdi> الخاص به من شخص آخر
+لا يستطيع جعلها تبدأ برنامجًا عبر تلك الإعدادات.
+ويسرد [تشغيل بوابة المطابقة](/docs/usage/conformity-gate) هذه الإعدادات
+والحدّين الباقيين: لا يزال <bdi>git</bdi> قادرًا على قراءة مسار يسمّيه المستودع
+في أي إعداد أو ملف (<bdi>`include.path`</bdi>، و<bdi>`core.worktree`</bdi>، وسطر
+<bdi>`gitdir:`</bdi> في ملف <bdi>`.git`</bdi>، وغيرها)، وقد يضيف إصدار لاحق من <bdi>git</bdi> إعدادًا جديدًا.
+
 ```shell
+gate=~/.apothem/src/apothem/conformity/gate.py   # or src/apothem/conformity/gate.py
+
 # Every standalone validator across the repository:
-python -m apothem.conformity.gate --all .
+python3 -E -s "$gate" --all .
 
 # The same sweep, failing on a blocking finding (the CI form):
-python -m apothem.conformity.gate --all --strict .
+python3 -E -s "$gate" --all --strict .
 
 # Every per-write validator against every tracked file:
-python -m apothem.conformity.gate --all-perwrite .
+python3 -E -s "$gate" --all-perwrite .
 
 # One validator by name (names come from --list):
-python -m apothem.conformity.gate --check naming-grep .
+python3 -E -s "$gate" --check naming-grep .
 
 # List every registered validator as JSON:
-python -m apothem.conformity.gate --list
+python3 -E -s "$gate" --list
 
 # Single-file dispatch (mimics the PreToolUse hook):
 echo '{"tool_input": {"file_path": "path/to/file", "content": "..."}}' \
-    | python -m apothem.conformity.gate --hook
+    | python3 -E -s "$gate" --hook
 ```
 
-يطبع <bdi>`python -m apothem.conformity.gate --help`</bdi> ملخّص الاستخدام.
+يطبع <bdi>`python3 -E -s "$gate" --help`</bdi> ملخّص الاستخدام.
 راجِع [تشغيل بوابة المطابقة](/docs/usage/conformity-gate) للإجراء الكامل.
 
 ## المراجع
