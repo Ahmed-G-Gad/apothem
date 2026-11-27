@@ -16,7 +16,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   or translated, differs from the English page order the site's list script
   writes. Another runs `npm run check:built-docs` after the docs build, which
   fails when a sidebar section cannot be opened and closed from a button with
-  its state exposed, or a page shows a literal `**` outside code.
+  its state exposed, or a page shows a literal `**` or backtick outside code,
+  and lists every match.
 - **The CI metrics job reuses the coverage shards' data instead of running the
   test suite again.** The `ci.yml` metrics job ran the whole suite under
   coverage on one runner in 18 to 30 minutes, and its 30-minute limit cancelled
@@ -50,7 +51,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   section's title is now the link to its overview page, instead of the title
   followed by the same page under a near-identical name, and a separate button
   beside it opens and closes the section from the keyboard and tells a screen
-  reader whether it is open. A section with a single page, such as
+  reader whether it is open. A screen reader names that button "show or hide
+  pages" after the section name, in the page's language, so it is not heard
+  as a second copy of the link. A section with a single page, such as
   "Conformity gate", is one link. The blog posts are no longer listed a second
   time inside an extra "Posts" folder, and the "Page not found" page is no
   longer listed. The sidebar of every language lists the same pages in the
@@ -68,7 +71,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   literal text in four command-page summaries, the quick start's "The apothem
   command" box, bold phrases in the Japanese, Korean and Simplified Chinese
   pages, and the cut-off descriptions in the rules, commands and helpers
-  tables.
+  tables; a cut no longer leaves a half link or an open bracket either. The
+  summaries of four command pages and the raw Cursor comparison say which file
+  or folder a path names, so it reads as part of the sentence.
 - **The conformity gate reads every byte of a path name, and a failed
   `git diff` does not pass from a subfolder.** The gate read git's lists of
   path names as text, which turned a carriage return in a name into a line
