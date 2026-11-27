@@ -58,7 +58,7 @@ function normalize(url: string): string {
   return url.length > 1 && url.endsWith('/') ? url.slice(0, -1) : url;
 }
 
-function FolderHeader({ item }: { item: Folder }) {
+function FolderHeader({ item, listId }: { item: Folder; listId: string }) {
   const depth = useFolderDepth();
   const pathname = usePathname();
   const labelId = useId();
@@ -68,7 +68,11 @@ function FolderHeader({ item }: { item: Folder }) {
 
   if (!item.index) {
     return (
-      <SidebarFolderTrigger className={cn(ITEM, collapsible && BUTTON, 'w-full')} style={offset}>
+      <SidebarFolderTrigger
+        aria-controls={collapsible ? listId : undefined}
+        className={cn(ITEM, collapsible && BUTTON, 'w-full')}
+        style={offset}
+      >
         {item.icon}
         {item.name}
       </SidebarFolderTrigger>
@@ -90,6 +94,7 @@ function FolderHeader({ item }: { item: Folder }) {
       </SidebarItem>
       {collapsible ? (
         <SidebarFolderTrigger
+          aria-controls={listId}
           aria-labelledby={`${labelId} ${hintId}`}
           className={cn(ITEM, BUTTON, 'absolute inset-e-0 inset-y-0 justify-center px-2')}
         >
@@ -102,13 +107,23 @@ function FolderHeader({ item }: { item: Folder }) {
   );
 }
 
-// Radix removes a closed list from the page, which leaves the button's
-// `aria-controls` pointing at nothing. `forceMount` keeps the list mounted; it
-// also keeps Radix from hiding it, so the closed state sets `hidden` here.
-function FolderList({ depth, children }: { depth: number; children: ReactNode }) {
+// Radix removes a closed list from the page and drops the button's
+// `aria-controls` while it is closed. Here the list stays mounted
+// (`forceMount`, which also stops Radix hiding it, so the closed state sets
+// `hidden`) under an id of our own, and the button always names that id.
+function FolderList({
+  id,
+  depth,
+  children,
+}: {
+  id: string;
+  depth: number;
+  children: ReactNode;
+}) {
   const open = useFolder()?.open ?? true;
   return (
     <SidebarFolderContent
+      id={id}
       forceMount
       hidden={!open}
       className={cn(
@@ -125,14 +140,17 @@ function FolderList({ depth, children }: { depth: number; children: ReactNode })
 export function DisclosureFolder({ item, children }: { item: Folder; children: ReactNode }) {
   const path = useTreePath();
   const depth = useFolderDepth() + 1;
+  const listId = useId();
   return (
     <SidebarFolder
       collapsible={item.collapsible}
       active={path.includes(item)}
       defaultOpen={item.defaultOpen}
     >
-      <FolderHeader item={item} />
-      <FolderList depth={depth}>{children}</FolderList>
+      <FolderHeader item={item} listId={listId} />
+      <FolderList id={listId} depth={depth}>
+        {children}
+      </FolderList>
     </SidebarFolder>
   );
 }
