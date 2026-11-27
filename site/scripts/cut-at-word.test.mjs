@@ -96,6 +96,36 @@ describe('cutAtWord', () => {
 		assert.equal(cutAtWord('5 * 3 is fifteen and more words', 18), '5 * 3 is fifteen …');
 	});
 
+	it('keeps a link whose target holds an underscore', () => {
+		assert.equal(
+			cutAtWord('see [docs](https://x.com/_private) and more words here', 45),
+			'see [docs](https://x.com/_private) and more …',
+		);
+		assert.equal(
+			cutAtWord('see <https://x.com/_a> and https://y.com/_b_ then more words', 50),
+			'see <https://x.com/_a> and https://y.com/_b_ then …',
+		);
+	});
+
+	it('leaves an underscore that never closes in the full text alone', () => {
+		assert.equal(cutAtWord('path ~/.cache/_tmp holds data and more words follow', 40), 'path ~/.cache/_tmp holds data and more …');
+	});
+
+	it('leaves an asterisk that never closes in the full text alone', () => {
+		assert.equal(cutAtWord('(see *note) more words here please', 20), '(see *note) more …');
+	});
+
+	it('leaves snake_case path segments alone', () => {
+		assert.equal(
+			cutAtWord('state in ~/.apothem/_state_dir/run_log.json and _more text_ later', 46),
+			'state in ~/.apothem/_state_dir/run_log.json …',
+		);
+	});
+
+	it('drops emphasis only when its closer lies past the cut', () => {
+		assert.equal(cutAtWord('a ~/_x then _italic phrase runs long_ end', 26), 'a ~/_x then …');
+	});
+
 	it('never returns only the cut mark', () => {
 		for (const text of ['`aaaaaaaaaaaaaaaaaaaaaaaa`', '[bbbbbbbbbbbbbbbbbbbbbbbbbb](c)', '(dddddddddddddddddddddd)']) {
 			assert.notEqual(cutAtWord(text, 10).trim(), '…');
