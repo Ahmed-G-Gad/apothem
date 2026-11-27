@@ -322,7 +322,7 @@ def _fake_repository(git_dir: Path) -> Path:
     return git_dir
 
 
-def test_the_walk_still_skips_a_real_nested_checkout_quietly(tmp_path: Path) -> None:
+def test_the_walk_lists_a_real_nested_checkout_only_as_skipped(tmp_path: Path) -> None:
     root = (tmp_path / "project").resolve()
     _write(root / "README.md")
     _write(root / "nested" / "guide.md")
@@ -495,8 +495,12 @@ def test_a_package_folder_lists_its_submodule_and_worktree(
     assert (code, payload["passed"]) == (0, True)
     assert payload["skipped_checkouts"] == ["vend", "wt4"]
     assert "skipped_links" not in payload
-    agnosticism_grep._main(["agnosticism-grep", str(pkg)])
+    code = agnosticism_grep._main(["agnosticism-grep", str(pkg)])
     payload = json.loads(capsys.readouterr().out)
+    # agnosticism-grep finds nothing to inspect here and expects some scope,
+    # so it fails as it did before skipped_checkouts existed.
+    assert (code, payload["passed"]) == (2, False)
+    assert payload["empty_scope_expected"] is False
     assert payload["skipped_checkouts"] == ["vend", "wt4"]
     assert "skipped_links" not in payload
 
@@ -560,7 +564,7 @@ def test_the_stray_plans_sweep_enters_a_folder_whose_git_is_no_repository(
     assert take_skipped_paths() == []
 
 
-def test_the_stray_plans_sweep_skips_a_real_nested_checkout_quietly(
+def test_the_stray_plans_sweep_lists_a_real_nested_checkout_only_as_skipped(
     tmp_path: Path,
 ) -> None:
     root = (tmp_path / "project").resolve()
