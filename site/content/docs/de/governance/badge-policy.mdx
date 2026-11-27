@@ -2,13 +2,13 @@
 title: "Badge-Richtlinie"
 description: "Legt dynamische und statische Badge-Quellen für die README fest und deckt GitHub-nativen Workflow-Status, shields.io-Endpoint-JSON und statische Badge-Formen ab."
 machineTranslated: true
-sourceHash: "e3ae990f58d3dd8e"
+sourceHash: "f29b1ee5b0648b5b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Dieses Dokument ist die kanonische Referenz für die Badge-Leiste der README und
 die Infrastruktur, die deren dynamische Datenquellen veröffentlicht. Jeder Badge
-in der README des Projekts wird über eine der drei hier festgelegten Formen
+in der README des Projekts wird über eine der vier hier festgelegten Formen
 aufgelöst; künftig hinzugefügte neue Badges folgen denselben Formen oder werden
 im Review abgelehnt.
 
@@ -45,8 +45,10 @@ Vier Formen decken jeden Badge des Projekts ab:
    (Lizenzkennung, Python-Zielversion).
 4. **Registry- und Scorecard-Badges.** Ein Badge, dessen Wert ein Dritter aus
    öffentlichen Daten berechnet, die er bereits vorhält: die npm-Registry
-   (Version und Downloads, gerendert von shields.io) und die OpenSSF Scorecard
-   API. Das Projekt veröffentlicht für diese nichts; der Dritte ist die Quelle.
+   (Version und Downloads, gerendert von shields.io), die OpenSSF Scorecard
+   API und bestpractices.dev, das den OpenSSF-Best-Practices-Badge aus dem
+   dortigen Eintrag des Projekts ausliefert. Das Projekt veröffentlicht für
+   diese nichts; der Dritte ist die Quelle.
 
 Die Veröffentlichung von Projektmetriken über öffentliche Gists ist bewusst
 ausgeschlossen. shields.io-Endpoints über die projektkontrollierte Domain sind
@@ -67,7 +69,8 @@ Repository nur an angemeldete Mitglieder aus, und Scorecard scannt nur
 | Lizenz | shields.io statisch | `LICENSE` (MIT) | `https://img.shields.io/badge/license-MIT-0F172A` | Nein |
 | npm-Version | Registry | npm-Registry | `https://img.shields.io/npm/v/%40ahmed-g-gad%2Fapothem?color=10B981&label=npm` | Nein |
 | Abdeckungs-Gate | shields.io statisch | `pyproject.toml` `fail_under = 80` | `https://img.shields.io/badge/coverage%20gate-%E2%89%A580%25-2563EB` | Nein |
-| OpenSSF Scorecard | Scorecard | Ergebnisse von `.github/workflows/scorecard.yml` | `https://api.securityscorecards.dev/projects/github.com/ahmed-g-gad/apothem/badge` | Ja |
+| OpenSSF Scorecard | Scorecard | Ergebnisse von `.github/workflows/scorecard.yml` | `https://api.securityscorecards.dev/projects/github.com/Ahmed-G-Gad/apothem/badge` | Ja |
+| OpenSSF Best Practices | Registry | der Eintrag des Projekts auf bestpractices.dev | `https://www.bestpractices.dev/projects/16427/badge` | Nein |
 | Feedback | shields.io statisch | GitHub Issues | `https://img.shields.io/badge/feedback-GitHub%20issues-7C3AED` | Nein |
 | Dokumentation | shields.io statisch | die Dokumentationsseite | `https://img.shields.io/badge/docs-Fumadocs-0F172A` | Nein |
 | npm-Downloads | Registry | npm-Registry | `https://img.shields.io/npm/dm/%40ahmed-g-gad%2Fapothem?color=10B981&label=downloads` | Nein |

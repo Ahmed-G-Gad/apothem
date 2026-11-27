@@ -6,7 +6,7 @@ description: "Apothem's OpenSSF Scorecard target and the evidence surfaces used 
 
 Apothem targets the maximum OpenSSF Scorecard score while keeping the public facade honest about what Scorecard can and cannot infer from a new single-maintainer repository. This document enumerates each check, the evidence surface that backs it, and the control that keeps the posture current.
 
-The live score is at the [Scorecard viewer](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem); the badge is in the [README header](https://github.com/ahmed-g-gad/apothem/blob/main/README.md).
+The live score is at the [Scorecard viewer](https://securityscorecards.dev/viewer/?uri=github.com/Ahmed-G-Gad/apothem); the badge is in the [README header](https://github.com/ahmed-g-gad/apothem/blob/main/README.md).
 
 ## Per-check evidence matrix
 
@@ -15,7 +15,7 @@ The live score is at the [Scorecard viewer](https://securityscorecards.dev/viewe
 | **Binary-Artifacts** | [binary-artifacts-sweep.md](/docs/security/binary-artifacts-sweep) | Zero executable binaries tracked in source; generated distribution archives stay in `dist/`. |
 | **Branch-Protection** | [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) | `main` is protected before public release promotion; force-pushes and deletions are blocked after the fresh release commit lands. |
 | **CI-Tests** | [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | Pytest matrix, ruff, mypy, Trivy, docs build, and packaging smoke checks. |
-| **CII-Best-Practices** | [OpenSSF Best Practices badge](/docs/security/openssf-best-practices) | The answer sheet covers all 67 passing criteria with evidence for each. The check credits the badge only after the maintainer registers the project on bestpractices.dev and enters the answers; repository files alone cannot complete it. |
+| **CII-Best-Practices** | [OpenSSF Best Practices badge](/docs/security/openssf-best-practices) | The OpenSSF Best Practices page answers all 67 passing criteria, with evidence for each. The project is registered on bestpractices.dev as [project 16427](https://www.bestpractices.dev/en/projects/16427) and has held the passing badge since 2026-11-08, which this check credits. |
 | **Code-Review** | Branch protection + CODEOWNERS | Pull requests are required for `main` for everyone except repository admins, and branch protection requires 0 approving reviews while the project has one maintainer (see [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset)); Scorecard history remains limited until reviewed PRs exist. |
 | **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | A new solo-maintainer project cannot manufacture multi-organization contribution history; this improves naturally as contributors join. |
 | **Dangerous-Workflow** | Workflow audit | No `pull_request_target`; Actions are SHA-pinned and scoped with explicit permissions. |
