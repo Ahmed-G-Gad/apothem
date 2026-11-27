@@ -2,7 +2,7 @@
 title: "Gemini CLI"
 description: "Gemini CLI（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "231513ffdb2dcb22"
+sourceHash: "4b2afa3f4a237f9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,6 +31,9 @@ GEMINI.md
 .gemini/.apothem/support/
 ```
 
+プロジェクトには、プロジェクトへのインストールが毎回作成するデータフォルダー（デフォルトは
+`.apothem/`）も作られ、その中に `contexts/`、`learning/`、`memory/`、`plans/` が置かれます。
+
 ## プロファイルからネイティブ設定へのマッピング
 
 アダプターは Apothem の共有コホートを読み取り、それぞれを Gemini 互換の面を通じて振り分けます。
@@ -54,6 +57,11 @@ Apothem がここに付与を書き込むのは、英字、数字、`-` から�
 
 `~/.gemini/` は、グローバルな Gemini プロファイルを使用するツールのためのユーザースコープの領域のままです。
 Gemini CLI アダプターは、`--project` で渡されたプロジェクトにのみ書き込みます。
+
+Gemini CLI は、ほかの Apothem のインストールが書き込むホームディレクトリ内の 2 か所も読み込みます。
+1 つはユーザースキル層の一部である `~/.agents/skills/` で、複数のインストールが Apothem のスキルをここに書き込みます（[ハーネスレジストリ](/docs/reference/harness-registry#shared-roots)に一覧があります）。
+もう 1 つは `~/.gemini/GEMINI.md` で、[Antigravity](/docs/harnesses/antigravity) のインストールが Apothem のブロックを書き込みます。
+どちらかにすでに Apothem のコンテンツがある場合、`gemini-cli` のインストールは、その場所とそれを書き込んだインストールを示す注意を表示します。
 
 ## 検証
 
@@ -87,11 +95,23 @@ apothem uninstall --harness gemini-cli --project /path/to/project
 変更の前に、各ファイルのタイムスタンプ付きコピーが `~/.apothem/backups/` 配下に保存されます。プロジェクト内にバックアップファイルは残りません。
 共有プロファイルの YAML と Apothem エンジンには影響しません。
 
+以前のリリース（[変更履歴](/docs/changelog)に記載）は、インストールと更新のたびに、プロジェクト自身の `skills/AGENTS.md`（`.gemini/` 配下ではなくプロジェクトのルートにあるもの）を、`~/.apothem/backups/<timestamp>/gemini_cli/` 配下のバックアップセットにコピーしたうえで削除していました。
+現在のリリースはそのファイルに触れません。取り戻すには、Apothem を再度実行する前に `~/.apothem/backups/` を別の場所にコピーし、そのコピーからファイルを手でプロジェクトに戻してください。
+復旧の詳しい手順は[変更履歴](/docs/changelog#data-loss-in-earlier-releases-recover-your-files)にあります。
+
 ## コンフォーミティゲート
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+プロジェクトのフォルダーから実行します。Windows では、`python3` の代わりに `python` を使い、
+フルパスを指定します。Windows PowerShell と cmd は `~` を展開しないためです。
+PowerShell では `$HOME\.apothem\src\apothem\conformity\gate.py`、
+cmd では `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` です。このパスは
+インストーラーがエンジンを置く場所で、`-E -s` はあなたの `PYTHONPATH` とユーザーの
+site-packages をゲートから締め出します。両者とその他のインストールについては
+[コンフォーミティゲート](/docs/conformity-gate)で説明しています。
 
 ## トラブルシューティング
 

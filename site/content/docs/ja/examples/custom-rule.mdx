@@ -2,7 +2,7 @@
 title: "カスタムルール"
 description: "あなたのプロジェクト向けにカスタムの常時オンルールを作成する。"
 machineTranslated: true
-sourceHash: "0b22ce8bce931d04"
+sourceHash: "69efcab14f844e72"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,14 +34,14 @@ When in doubt, err on the side of more hyphens.
 
 ## ルールの形式が正しいことを検証する
 
-ちょうど書いたルールファイルに対して、フロントマターのバリデーターを実行します。Apothem のチェックアウトからは 1 つ目のコマンドを使ってください。そこでは `PYTHONPATH=src` によってパッケージがインポート可能になります。スクリプトでインストールした後は、ソースが `$HOME/.apothem/src` 配下にあるため、2 つ目のコマンドを使います：
+ちょうど書いたルールファイルに対して、フロントマターのバリデーターを実行します。Apothem のチェックアウトのルートからは 1 つ目のコマンドを使ってください。そこでは `PYTHONPATH=src` によってパッケージがインポート可能になります（`python -m` は現在のフォルダーのモジュールを先に読み込むため、信頼できるフォルダーを使ってください）。スクリプトでインストールした後は 2 つ目のコマンドを使います。ソースは `$HOME/.apothem/src` 配下にあり、ゲートはスクリプトパスから `-E -s` 付きで実行されるため、`PYTHONPATH` もユーザーの site-packages も影響しません：
 
 ```bash
 # From an Apothem checkout
 PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
 
 # After a script install
-PYTHONPATH="$HOME/.apothem/src" python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
+python3 -E -s "$HOME/.apothem/src/apothem/conformity/gate.py" --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
 ```
 
 形式が正しいルールは、問題なく合格と報告されます。

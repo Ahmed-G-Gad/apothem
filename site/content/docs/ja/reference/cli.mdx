@@ -2,7 +2,7 @@
 title: "CLI 概要"
 description: "Apothem CLI の概要 — すべてのサブコマンドとフラグ。"
 machineTranslated: true
-sourceHash: "23e6a1450707e054"
+sourceHash: "ce86e94ba98910b5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,13 @@ sourceHash: "23e6a1450707e054"
 | フラグ | 説明 |
 |------|-------------|
 | `--version` | Apothem のバージョンを出力して終了します |
-| `--help` | コマンドのヘルプを出力します |
+| `-h`, `--help` | コマンドのヘルプを出力します |
+
+以下のセクションでは `install`, `update`, `uninstall`, `verify`, `status`,
+`profile`, `harnesses`、`doctor` を扱います。このページ末尾の生成された表と
+[CLI リファレンス](/docs/cli-reference)には、
+`quickstart`、`diff`、`rollback`、`backups`、`migrate-workspace`、
+`completion` を含むすべてのコマンドが載っています。
 
 ## サブコマンド
 
@@ -131,8 +137,11 @@ apothem status [--profile PATH] [--project PATH]
 | `--profile PATH` | ドリフトのベースラインとして使用する共有プロファイル。デフォルトのプロファイルを読み取れない場合は、スイープを中断するのではなく、ドリフトを `unknown` に格下げします。 |
 | `--project PATH` | プロジェクトスコープのハーネス向けのプロジェクトルート。指定しない場合、それらのハーネスは `needs-project` を報告します。 |
 
-各行は `installed` フラグと `verified` フラグを組み合わせており、この 2 つを合わせたものが
-ドリフト状態になります。
+各行には `installed` フラグ、`verified` フラグ、ドリフト状態があります。
+`installed` フラグが false の行は `absent`、`needs-project`、`error` のいずれかを報告し、
+`in-sync`、`drift`、`unknown` はインストール済みの行にのみ現れます。ドリフト状態が
+`verified` フラグに左右されることはありません。インストール済みのハーネスについては、
+インストールされた設定をプロファイルのベースラインと比較するか、比較が行われなかった理由を示します。
 
 | 状態 | 意味 |
 |-------|---------|
@@ -141,6 +150,7 @@ apothem status [--profile PATH] [--project PATH]
 | `drift` | インストール済みですが、もはや一致していません — `apothem update` で修復します。 |
 | `unknown` | インストール済みですが、ベースラインのプロファイルを読み取れませんでした。 |
 | `needs-project` | プロジェクトスコープのハーネスが `--project` なしで報告されたため、そのターゲットを解決できません。 |
+| `error` | 確認中にアダプターが失敗しました。`status` はエラーを報告し、`2` で終了します。 |
 
 `installed` が答えるのは「Apothem はここにインストールしたか？」であり、「このハーネスは
 マシン上に存在するか？」ではありません。判定は Apothem 自身のアーティファクト — 命令アンカー内の

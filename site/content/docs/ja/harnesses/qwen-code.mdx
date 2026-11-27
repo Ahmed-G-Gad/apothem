@@ -2,7 +2,7 @@
 title: "Qwen Code"
 description: "Qwen Code（ベータ版）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "f5b172839bc072f8"
+sourceHash: "60c859a693851061"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,8 +31,16 @@ apothem install --harness qwen-code
 ~/.qwen/.apothem/support/{rules,templates,hooks}/
 ```
 
+インストールでは Apothem のデータフォルダー（デフォルトは `~/.qwen/.apothem/`）も作成され、
+その中に `contexts/`、`learning/`、`memory/`、`plans/` が置かれます。
+
 ファイル `~/.qwen/apothem/rules/00-apothem-profile.md` はプロファイルドキュメントです。
 共有プロファイルに由来するあなたのアイデンティティとプリファレンスを保持します。
+
+インストールと更新のたびに、`~/.qwen/apothem/rules/` 内の Apothem が置いたのではないファイルは、
+`~/.apothem/backups/` 配下のバックアップセットに保存されたうえで、すべて削除されます。
+そのバックアップは、そのハーネスの新しいバックアップセットが 10 個できた時点で削除されるため、
+自分のファイルは別の場所に置いてください。
 
 ## プロファイルからネイティブ設定へのマッピング
 
@@ -94,8 +102,16 @@ apothem uninstall --harness qwen-code
 ## コンフォーミティゲート
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+プロジェクトのフォルダーから実行します。Windows では、`python3` の代わりに `python` を使い、
+フルパスを指定します。Windows PowerShell と cmd は `~` を展開しないためです。
+PowerShell では `$HOME\.apothem\src\apothem\conformity\gate.py`、
+cmd では `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` です。このパスは
+インストーラーがエンジンを置く場所で、`-E -s` はあなたの `PYTHONPATH` とユーザーの
+site-packages をゲートから締め出します。両者とその他のインストールについては
+[コンフォーミティゲート](/docs/conformity-gate)で説明しています。
 
 ## トラブルシューティング
 

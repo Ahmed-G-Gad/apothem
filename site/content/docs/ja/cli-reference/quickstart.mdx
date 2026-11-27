@@ -2,7 +2,7 @@
 title: "quickstart"
 description: "apothem quickstart ガイド付き初回実行コマンドの CLI リファレンス。"
 machineTranslated: true
-sourceHash: "951e6d6877611c54"
+sourceHash: "a461df3fe9749c28"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,7 +31,7 @@ apothem quickstart [--harness NAME|all] [--project PATH] [--profile PATH]
 - **プレビューと確認** — `--harness all` の場合、対象はプロジェクトルートとホームディレクトリという 2 つの見出しの下に一覧表示されます。対話的な実行では、プロジェクトの外に書き込む前に確認します。単一の名前で指定したハーネスは、プレビューも確認もなしにインストールされます。`--yes`、非対話シェル、`--format json` は、確認を求めずに続行します。`--harness all` のプレビューを拒否すると、インストールの書き込みより前に中止します。手順 1 で作成されたスタータープロファイルは残ります。
 - **インストール** — ハーネスがネイティブにサポートしていない機能は、ハーネスごとに 1 つのグループ化された注記として要約されます（機能ごとの詳細は `--verbose` で確認できます）。完全な一覧は、常に `--format json` の warnings 配列に含まれます。
 - **次のステップ** — ターミナルの出力は、後続のコマンド（`apothem
-  verify …`、`apothem doctor`）の名前を挙げます。
+  verify …`、`apothem doctor`）の名前を挙げます。`--project` のフォルダーは、[`doctor`](/docs/cli-reference/doctor) と同じようにシェル向けに引用符で囲まれます。引用符で扱えない場合、出力は `--project` までのコマンドを表示し、その後にフォルダーを言葉で示します。JSON の `recommended_next` エントリーは `Run apothem verify --harness … with --project set to <folder>` となり、そのまま実行するコマンドではありません。
 
 ## オプション
 
@@ -61,11 +61,19 @@ apothem quickstart [--harness NAME|all] [--project PATH] [--profile PATH]
   "steps": [
     {"step": "profile", "outcome": "created", "path": "…", "placeholder_identity": ["name", "email", "github"]},
     {"step": "install", "status": "success", "harness": "all", "files_written": ["…"], "warnings": [], "results": []},
-    {"step": "recommend", "next": ["apothem verify --harness all --project .", "apothem doctor"]}
+    {"step": "recommend", "next": ["apothem verify --harness all --project \".\"", "apothem doctor"]}
   ],
-  "recommended_next": ["apothem verify --harness all --project .", "apothem doctor"]
+  "recommended_next": ["apothem verify --harness all --project \".\"", "apothem doctor"]
 }
 ```
+
+インストールのステップがファイルを Apothem のマーカー行のためにそのまま残した場合（[`install`](/docs/cli-reference/install#capability-notes)を参照）、
+両方の `status` の値は `"partial"` となり、終了コードは `2` です。プレーンモードでは、
+実行はインストールの `✗` 行を表示し、続いて推奨される次の手順を表示します。そのファイルを
+修正するまで `apothem verify` は失敗するため、最初の手順は、`apothem verify` の代わりに、
+インストールがそのまま残した各ファイルを警告のとおりに修正し、同じツールに対して
+`apothem update` を実行することになります（プレーンモードでは `Fix the files it left:`、
+JSON では最初の `recommended_next` エントリー `Fix each file the install left as it is, as its warning says, then run apothem update --harness …`）。
 
 ## 例
 
@@ -82,7 +90,7 @@ apothem quickstart --harness claude-code --json
 |---|---|
 | 0 | ガイド付きの実行が完了した |
 | 1 | 想定された検証、プロファイル、ハーネス、プロジェクト、またはアダプターのエラー |
-| 2 | 少なくとも 1 回の書き込みの後の、部分的なバッチのマテリアライズ |
+| 2 | 部分的: バッチが少なくとも 1 回の書き込みの後で停止したか、インストールが Apothem のブロックを置くファイルを、その Apothem のマーカー行のためにそのまま残した |
 | 64 | 使用法エラー: 不明なオプションまたはコマンド、あるいは欠落した、または無効なオプション値。`--json` のもとでは、エラーはコード `cli.usage` を持つ JSON エンベロープになります。 |
 
 ## 関連項目

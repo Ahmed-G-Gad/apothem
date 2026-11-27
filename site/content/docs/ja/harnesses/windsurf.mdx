@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "Windsurf（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "26f3db9f3fdef394"
+sourceHash: "6ddfbde9bafb1d18"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -133,6 +133,8 @@ Devin は自身のローカル設定ファイルを（`.git/info/exclude` を通
 "/path/to/python" -E -s "/path/to/project/.apothem/support/windsurf/hooks/dispatch.py" --contract devin SessionStart
 ```
 
+`-E -s` により、Python は `PYTHONPATH` とその他の `PYTHON*` 変数を無視し、ユーザーの site-packages を読み飛ばすため、プロジェクト内のどのファイルもフックに読み込まれることはありません。
+
 `--contract devin` は、Devin の小文字のツール名（`exec`、`write`、`edit`、`read`、`grep`、`glob`）を Apothem のハンドラーが判定する名前に対応付け、出力は Claude Code が読むのと同じエンベロープのままにします。
 マッチャーは書き込まれません。Devin のマッチャーは正規表現であり、省略したものはすべてのツールに一致し、`SessionStart` には一致させるツールがありません。
 
@@ -259,8 +261,16 @@ apothem uninstall --harness windsurf --project /path/to/project
 ## コンフォーミティゲート
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+プロジェクトのフォルダーから実行します。Windows では、`python3` の代わりに `python` を使い、
+フルパスを指定します。Windows PowerShell と cmd は `~` を展開しないためです。
+PowerShell では `$HOME\.apothem\src\apothem\conformity\gate.py`、
+cmd では `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` です。このパスは
+インストーラーがエンジンを置く場所で、`-E -s` はあなたの `PYTHONPATH` とユーザーの
+site-packages をゲートから締め出します。両者とその他のインストールについては
+[コンフォーミティゲート](/docs/conformity-gate)で説明しています。
 
 ## トラブルシューティング
 

@@ -2,7 +2,7 @@
 title: "MCP サーバー"
 description: "Model Context Protocol サーバーの設定 — オペレーター所有であり、各ツールのネイティブな MCP 機構を通じて登録されます。いくつかのアダプターは共有プロファイルの MCP インベントリを投影し、残りのアダプターはサーバーエントリを記述しません。"
 machineTranslated: true
-sourceHash: "1fbc48cd12ad0388"
+sourceHash: "0fdad1bd642d3d81"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -52,17 +52,21 @@ Apothem が管理する Claude Code の設定が `mcpServers` ブロックを持
 `OpenCode` アダプターは、インベントリを `opencode.json` の `mcp` ブロックに書き込みます。
 `OpenCode` は設定内で `${NAME}` ではなく `{env:NAME}` を置換するため、アダプターは、
 サーバーの環境、ヘッダー、または URL にある各 `${NAME}` 参照を `{env:NAME}` として
-書き込みます。設定されていない変数は空文字列になります。コマンド引数は書かれたとおりに
-コピーされます。環境値またはヘッダー値にある `$NAME`、および `${NAME:-default}` のような
-その他の `${...}` 形式は、書かれたとおりにコピーされ、`apothem install` は、値ではなく
+書き込みます。設定されていない変数は空文字列になります。変数を同じ名前のまま渡すだけの
+環境エントリー（`GITHUB_TOKEN: ${GITHUB_TOKEN}` など）は省かれます。`OpenCode` はサーバーを
+自身の環境で起動するため、設定されていない変数は設定されないままになるからです。
+それが異なる場合は [OpenCode のページ](/docs/harnesses/opencode)に記載されています。
+コマンド引数は書かれたとおりにコピーされます。環境値またはヘッダー値にある `$NAME`、
+および `${NAME:-default}` やコマンド引数内の単純な `${NAME}` のようなその他の
+`${...}` 形式は、書かれたとおりにコピーされ、`apothem install` は、値ではなく
 参照のある場所を示して、`OpenCode` がそれを展開しないことを警告します。`OpenCode` は、
 `{env:NAME}` の値を、読み込む設定テキストにエスケープせずに挿入します（`OpenCode` 2 は、
 そのテキストがそのままでは解析できない場合にのみエスケープします）。そのため、
 バックスラッシュ、二重引用符、制御文字を含む値は、`OpenCode` 1 がファイルを読み取れなくなる
 原因になり得ます。また、どちらのバージョンでも、その中の `\t` や `\n` は制御文字として
-サーバーに届きます。`apothem install` はそのような値について警告します。他のツールが
-`${NAME}` 参照を保持できるよう、その値は `harnesses.opencode.mcp_servers.<name>` の下に
-`{file:path}` として設定してください。
+サーバーに届きます。`apothem install` はそのような値について警告します。オーバーライドは
+サーバー全体を置き換えるため、そのサーバー全体を `harnesses.opencode.mcp_servers.<name>` の下に
+書き直し、そこで値を `{file:path}` として書いてください。他のツールは `${NAME}` 参照を保持します。
 
 ## ヘルパーに MCP サーバーへのアクセスを与える
 

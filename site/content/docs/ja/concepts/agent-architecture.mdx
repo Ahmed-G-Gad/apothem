@@ -2,7 +2,7 @@
 title: "エージェントアーキテクチャ"
 description: "Apothem が、フック面やルール形式の異なる 17 種類の AI ハーネスにわたって、単一のエージェント能力コホートをどのように投影するか。"
 machineTranslated: true
-sourceHash: "f7b510f076abbabd"
+sourceHash: "be0f8df513fb3c8f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,7 +41,7 @@ Apothem は単一の共有プロファイル(`~/.config/apothem/profile.yaml`)�
 | hermes | サポート資料のみ | `config.yaml` と外部スキルディレクトリ | クラス II-B | `config.yaml` |
 | kimi-code | サポート資料のみ | `AGENTS.md` と、`.kimi-code/.apothem/support/` 配下のサポートルール | クラス I | なし |
 | kiro | `.kiro/hooks/apothem.json` 内のネイティブの SessionStart。ツールイベントのフックはなし（ベンダーはその出力を無視する） | `.kiro/steering/apothem-rules.md` ステアリングファイル | クラス I | なし |
-| open-claw | サポート資料のみ | `openclaw.json` と追加のスキルディレクトリ | クラス II-B | `openclaw.json` |
+| open-claw | サポート資料のみ | `openclaw.json` と追加のスキルディレクトリ、および `bootstrap-extra-files` フックが読み込むワークスペースのルールファイル `apothem/AGENTS.md` | クラス II-B | `openclaw.json` |
 | opencode | サポート資料のみ | プロファイルでレンダリングされた JSON と、ネイティブのコマンド、スキル、エージェント | クラス II-B | `opencode.json` |
 | qwen-code | ネイティブの PreToolUse / Stop / SessionStart | `QWEN.md` と、ネイティブのコマンド、スキル、エージェント | クラス II-B | `settings.json` / `QWEN.md` |
 | trae | なし | `.trae/rules/apothem-rules.md` プロジェクトルールファイル | クラス I | なし |
@@ -59,7 +59,7 @@ Apothem は単一の共有プロファイル(`~/.config/apothem/profile.yaml`)�
   エージェントを TOML に変換し、コマンドプロンプトを Codex スキルとしてラップし、
   `config.toml` はオペレーター所有のまま残します。
 - **antigravity** は `~/.gemini/GEMINI.md` をグローバルなコンテキストのアンカーとして保持し、
-  `~/.gemini/antigravity-cli/plugins/apothem/` 配下に Apothem プラグインをインストールします。
+  `~/.gemini/config/plugins/apothem/` 配下に Apothem プラグインをインストールします。
   アダプターが Antigravity のフックスキーマの変換を担うまで、フックファイルは
   サポート資料として保持されます。
 - **cursor** は、ベンダーの MDC フロントマター（`description`、`globs`、`alwaysApply`）を
@@ -145,7 +145,7 @@ CLI を実行するとき —— に現れます:
 | 軸 | 17 種類のハーネスにわたって観測される範囲 |
 |------|---------------------------------------------|
 | フック面 | ネイティブな複数イベント（claude-code、codex、qwen-code）→ ベンダーがモデルに届けるイベントでのネイティブ（codebuddy: SessionStart と PostToolUse、cursor: sessionStart、github-copilot: sessionStart と postToolUse、kiro: SessionStart、windsurf: SessionStart と PostToolUse）→ サポート専用のフック資料（antigravity、gemini-cli、hermes、kimi-code、open-claw、opencode）→ アダプターがフックを登録しない（glm、trae、zed） |
-| ルール有効化形式 | フラットな `.md`（claude-code）→ プラグインルール（antigravity）→ `.mdc` ワークスペース（cursor）→ ディレクトリルール（codebuddy、trae、windsurf）→ ステアリングファイル（kiro）→ プロジェクトルートのフラットファイル（zed）→ 単一の埋め込みファイル（codex、gemini-cli、github-copilot、kimi-code）→ 構成から参照されるサポート資料（hermes、open-claw、opencode、qwen-code）→ バックエンドプロバイダー構成（glm） |
+| ルール有効化形式 | フラットな `.md`（claude-code）→ プラグインルール（antigravity）→ `.mdc` ワークスペース（cursor）→ ディレクトリルール（codebuddy、trae、windsurf）→ ステアリングファイル（kiro）→ プロジェクトルートのフラットファイル（zed）→ 単一の埋め込みファイル（codex、gemini-cli、github-copilot、kimi-code）→ フックで読み込まれるワークスペースのルールファイル（open-claw）→ 構成から参照されるサポート資料（hermes、opencode、qwen-code）→ バックエンドプロバイダー構成（glm） |
 | アダプタークラス | クラス I の生の伝播 → クラス II-A の生の伝播 + ベンダー設定 → クラス II-B のプロファイルレンダリングによる単一面 |
 
 

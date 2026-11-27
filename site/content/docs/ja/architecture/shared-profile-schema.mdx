@@ -2,7 +2,7 @@
 title: "共有プロファイルのスキーマ"
 description: "Apothem 共有プロファイル YAML のスキーマ。"
 machineTranslated: true
-sourceHash: "574a594762c4f468"
+sourceHash: "cdd83bde9f17392d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,13 +31,16 @@ identity:
 プレースホルダーのアイデンティティフィールド——を書き出し、成功を報告する前にそれを検証します。
 
 ```yaml
+# yaml-language-server: $schema=https://apothem.ahmedgad.com/schemas/profile.schema.json
+schema_version: 1
 identity:
-  name: "Example User"
-  email: "dev@example.invalid"
-  github: "example-user"
+  name: Example User
+  email: dev@example.invalid
+  github: example-user
 ```
 
-このコマンドは、これらのフィールドを名指しする個人化の促しを表示します。プレースホルダーのままの
+1 行目は、YAML をサポートするエディターにスキーマの場所を示します。
+`schema_version: 1` はプロファイルスキーマのバージョンです。このコマンドは、アイデンティティのフィールドを名指しする個人化の促しを表示します。プレースホルダーのままの
 アイデンティティが後で `install` や `update`
 に到達した場合、それらのコマンドは助言的な注記を 1 つ表示して続行します——Apothem
 はプレースホルダーのアイデンティティを決して捏造せず、そのために停止することもありません。
@@ -46,6 +49,7 @@ identity:
 
 | フィールド | 必須 | デフォルト | 注記 |
 | --- | --- | --- | --- |
+| `schema_version` | いいえ | `1` として読まれる | プロファイルスキーマのバージョン。`profile init` は `1` を書き込みます。エンジンがサポートするより新しいバージョンは拒否されます。 |
 | `identity.name` | はい | なし | 空でない操作者の表示名。 |
 | `identity.role` | いいえ | `senior software engineer` | 共有のロールテキスト。 |
 | `identity.email` | いいえ | 省略 | 存在する場合はメール形式でなければなりません。 |
@@ -57,8 +61,13 @@ identity:
 | `preferences.test_framework` | いいえ | 省略 | 存在する場合は空でない文字列。 |
 | `rules` | いいえ | `[]` | 一意で空でない文字列。改行は LF に正規化されます。 |
 | `seriousness` | いいえ | `PERSONAL_USE` | `EXPLORING`、`PERSONAL_USE`、`SHARED`、`PUBLIC_LAUNCH` のいずれか。 |
+| `enforcement.*` | いいえ | それぞれ `false` | オプトインのトグル: `sprints`、`agent_teams`、`multitasking`、`continuous_execution`、`learning_loop`。 |
+| `mcp_servers` | いいえ | `{}` | サーバー名をキーとする MCP サーバー。それぞれ `transport`（`stdio`、`http`、`sse`、`streamable-http`）を設定します。`stdio` サーバーには `command` が、それ以外には `url` が必要です。 |
+| `agent_mcp_servers` | いいえ | `{}` | ヘルパーごとに、その名前をキーとして、呼び出してよい MCP サーバー。Claude Code と Gemini CLI のインストールが読み取ります。 |
 | `harnesses` | いいえ | `{}` | サポートされるハーネス ID をキーとする、ハーネスごとのオーバーライド。 |
 | `exclude_harnesses` | いいえ | `[]` | `--harness all` から除外される、サポートされるハーネス ID。 |
+| `workspace.directory_name` | いいえ | `.apothem` | 共有作業フォルダーの名前。1 つのパス要素。 |
+| `workspace.scope` | いいえ | `project-local` | `project-local`（プロジェクトルートの下）または `user-home`（ホームディレクトリの下）。 |
 
 ## ハーネスキー
 

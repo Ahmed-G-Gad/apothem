@@ -2,7 +2,7 @@
 title: "コアワークフロー"
 description: "Apothem の 4 つのコアワークフロー — プロファイル、ルール、計画、そしてコンフォーミティゲート。"
 machineTranslated: true
-sourceHash: "a53e8d62d7df7ef4"
+sourceHash: "2c2b69afe24907e5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -68,16 +68,16 @@ apothem verify --harness claude-code
 
 ## コンフォーミティゲート
 
-Apothem のチェックアウトから、次のコマンドを実行します。
+Apothem のチェックアウトからは、チェックアウトのルートで実行します（`python -m` は現在のフォルダーのモジュールを先に読み込むため、信頼できるフォルダーを使ってください）。
 
 ```bash
 PYTHONPATH=src python -m apothem.conformity.gate --all .
 ```
 
-スクリプトでインストールした後は、次のコマンドを実行します。
+スクリプトでインストールした後は、チェックしたいプロジェクトから、ゲートをスクリプトパスで `-E -s` 付きで実行します。Windows では、`python3` の代わりに `python` を使い、`~/.apothem/...` の代わりに PowerShell では `$HOME\.apothem\...`、cmd では `%USERPROFILE%\.apothem\...` を使います。Windows PowerShell と cmd は `~` を展開しないためです。フラグについては[コンフォーミティゲート](/docs/conformity-gate)で説明しています。
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python3 -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
 
 すべての機械的なコンフォーミティチェックを実行し、バーごとに合否を報告します。

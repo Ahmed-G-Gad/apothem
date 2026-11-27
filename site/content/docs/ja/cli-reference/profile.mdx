@@ -2,7 +2,7 @@
 title: "profile"
 description: "apothem profile コマンドグループの CLI リファレンス。"
 machineTranslated: true
-sourceHash: "012b17d6a7a7bc49"
+sourceHash: "93fe295d7fa540f1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -74,7 +74,28 @@ apothem profile edit [--profile PATH] [--quiet|-q] [--verbose|-v]
 
 ### `profile edit`
 
-システムのエディターで共有プロファイルを開きます。
+システムのエディターで共有プロファイルを開きます。そのパスにまだプロファイルがない場合、
+`edit` はまずそこに `profile init` が書き込むのと同じスタータープロファイルを書き込み、
+それから開きます。
+
+### リンクの先にあるプロファイル
+
+デフォルトの `~/.config/apothem/profile.yaml` のように、ホームディレクトリ内で指定された
+プロファイルパスは、ホームディレクトリの外へ出るリンクを通して書き込まれることはありません。
+そのリンクは、`~/.config` のようなプロファイルより上のフォルダー（Windows ではジャンクションも
+リンクとみなされます）の場合も、別のドライブにある dotfiles のファイルのようなプロファイル
+ファイル自体の場合もあります。そのとき、`profile init`、`profile set`、`profile edit` は、
+何かを書き込んだり開いたりする前に停止します。プロファイルがまだない場合のメッセージは
+`Apothem could not create the starter profile` です。既存のプロファイルに対しては、
+`profile set`、`profile edit`、`profile init --force` が
+`Apothem could not write the profile` で停止します。`--force` なしの `profile init` は、
+どこでもそうであるように、先に `profile file already exists` で停止します。`profile show`
+とプロファイルを読むだけのコマンドは、引き続きそれを読み取ります。dotfile マネージャーが
+作るような、ホームディレクトリ内にとどまるリンクはたどられます。プロファイルをホーム
+ディレクトリの外に置くには、そこにあるプロファイル自身のパス（プロファイルファイルのリンクが
+指す先のパスを含む）を `--profile PATH` で渡します。ホームディレクトリの外で指定したパスは、
+そのリンクが指す先に書き込まれます。そこにまだプロファイルがない場合は、先に
+`apothem profile init --profile PATH` で作成してください。
 
 ## 検証エラー
 

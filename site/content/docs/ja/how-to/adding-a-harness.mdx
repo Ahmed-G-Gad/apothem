@@ -2,7 +2,7 @@
 title: "ハーネスを追加する"
 description: "ハーネスアダプターを有効化し、そのネイティブ構成を共有プロファイルから生成します。"
 machineTranslated: true
-sourceHash: "6daae4aec1547438"
+sourceHash: "d42e0475934c3217"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,10 +13,10 @@ sourceHash: "6daae4aec1547438"
 
 - `~/.config/apothem/profile.yaml` にある共有プロファイル(まだ存在しない
   場合は `apothem profile init` で作成します)。
-- `PATH` 上の `apothem` CLI。自己完結型のソースツリーをインストールした
-  場合は、各コマンドの前に `PYTHONPATH="$HOME/.apothem/src"` を付け、
-  `apothem` の代わりに `python -m apothem` を実行します —— あるいは
-  `npx @ahmed-g-gad/apothem` を使用します。
+- `PATH` 上の `apothem` CLI。自己完結型のソースツリーをインストールし、
+  そのフォルダーがまだ `PATH` にない場合は、シムをフルパス(デフォルトは
+  `~/.local/bin/apothem`)で実行するか、インストーラーが出力したコマンドを
+  コピーします —— あるいは `npx @ahmed-g-gad/apothem` を使用します。
 
 ## 手順
 
