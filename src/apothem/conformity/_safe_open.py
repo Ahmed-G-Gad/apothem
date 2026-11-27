@@ -171,6 +171,13 @@ if sys.platform != "win32":
         )
     )
 
+    # The errors an open gives when the entry it meets is a socket, a device
+    # whose driver is absent, or another kind it cannot open: a special file
+    # swapped in after the look.
+    _SPECIAL_ERRNOS: Final[frozenset[int]] = frozenset(
+        {errno.ENXIO, errno.ENODEV, errno.EOPNOTSUPP, errno.ENOTSUP}
+    )
+
     def _same_entry(seen: os.stat_result, opened: os.stat_result) -> bool:
         """Return True when *opened* is the entry *seen* named (0 is no inode)."""
         if not seen.st_ino or not opened.st_ino:
@@ -181,29 +188,47 @@ if sys.platform != "win32":
         """Open the folder *root*, which the caller trusts, as given."""
         return os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
 
+    def _check_kind(seen: os.stat_result, *, folder: bool, shown: Path) -> None:
+        """Raise unless *seen* is the kind of entry wanted at *shown*.
+
+        A link or a special file (a named pipe, a socket, a device) is refused
+        and noted at any level; a file where a folder is wanted is not a
+        folder, and a folder where the file is wanted is a folder.
+        """
+        mode = seen.st_mode
+        if stat.S_ISLNK(mode):
+            _refuse(shown, "a link is in the way")
+        if folder:
+            if stat.S_ISDIR(mode):
+                return
+            if stat.S_ISREG(mode):
+                raise NotADirectoryError(errno.ENOTDIR, "not a folder", str(shown))
+            _refuse(shown, "a special file is in the way")
+        if stat.S_ISDIR(mode):
+            raise IsADirectoryError(errno.EISDIR, "a folder", str(shown))
+        if not stat.S_ISREG(mode):
+            _refuse(shown, "not a regular file")
+
+    def _look(parent: int, name: str, shown: Path) -> os.stat_result:
+        """Look at *name* inside the open folder *parent* without following it."""
+        try:
+            return os.stat(name, dir_fd=parent, follow_symlinks=False)
+        except OSError as exc:
+            exc.filename = str(shown)
+            raise
+
     def _open_level(parent: int, name: str, *, folder: bool, shown: Path) -> int:
         """Open *name* inside the open folder *parent* without following it.
 
         *folder* says whether a folder or a regular file is wanted; *shown*
         is the full path, for errors and the skip log.
         """
-        try:
-            seen = os.stat(name, dir_fd=parent, follow_symlinks=False)
-        except OSError as exc:
-            exc.filename = str(shown)
-            raise
-        if stat.S_ISLNK(seen.st_mode):
-            _refuse(shown, "a link is in the way")
+        seen = _look(parent, name, shown)
+        _check_kind(seen, folder=folder, shown=shown)
         if folder:
-            if not stat.S_ISDIR(seen.st_mode):
-                raise NotADirectoryError(errno.ENOTDIR, "not a folder", str(shown))
             flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
             wanted = stat.S_ISDIR
         else:
-            if stat.S_ISDIR(seen.st_mode):
-                raise IsADirectoryError(errno.EISDIR, "a folder", str(shown))
-            if not stat.S_ISREG(seen.st_mode):
-                _refuse(shown, "not a regular file")
             flags = (
                 os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_NOCTTY | os.O_CLOEXEC
             )
@@ -211,7 +236,13 @@ if sys.platform != "win32":
         try:
             fd = os.open(name, flags, dir_fd=parent)
         except OSError as exc:
-            if exc.errno in _LINK_ERRNOS or (folder and exc.errno == errno.ENOTDIR):
+            if exc.errno in _LINK_ERRNOS or exc.errno in _SPECIAL_ERRNOS:
+                _refuse(shown, "the entry changed since it was looked at")
+            if folder and exc.errno == errno.ENOTDIR:
+                # Something else took the folder's place: look again, so a
+                # file there is not a folder and a link or special file is
+                # refused.
+                _check_kind(_look(parent, name, shown), folder=True, shown=shown)
                 _refuse(shown, "the entry changed since it was looked at")
             exc.filename = str(shown)
             raise

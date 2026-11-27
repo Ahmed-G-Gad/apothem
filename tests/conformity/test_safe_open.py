@@ -20,9 +20,11 @@ from __future__ import annotations
 import ctypes
 import errno
 import os
+import socket
 import sys
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -172,20 +174,90 @@ def test_a_folder_in_the_file_place_is_a_folder(project: Path) -> None:
 def test_a_named_pipe_at_any_level_is_never_waited_on(
     project: Path, depth: int
 ) -> None:
-    """A named pipe is not opened as a file, and never makes the read wait."""
+    """A named pipe is not opened as a file or a folder, never makes the read
+    wait, and is noted at any level."""
     level = _level(project, depth)
     _remove_level(level)
     os.mkfifo(level)
     _project_paths.start_skip_log(project)
 
-    expected = (
-        ProjectFileRefusedError if depth == len(_LEVELS) - 1 else NotADirectoryError
-    )
-    with pytest.raises(expected):
+    with pytest.raises(ProjectFileRefusedError):
         read_project_bytes(project, _target(project))
 
-    noted = ["a/b/c/f.txt"] if expected is ProjectFileRefusedError else []
-    assert _project_paths.take_skipped_paths() == noted
+    assert _project_paths.take_skipped_paths() == [
+        level.relative_to(project).as_posix()
+    ]
+
+
+class _SwappingOs:
+    """``os`` for ``_safe_open``, swapping one entry right after its look."""
+
+    def __init__(self, name: str, swap: Callable[[], None]) -> None:
+        self._name = name
+        self._swap: Callable[[], None] | None = swap
+
+    def __getattr__(self, attribute: str) -> Any:  # noqa: ANN401
+        return getattr(os, attribute)
+
+    def stat(self, path: Any, **kwargs: Any) -> os.stat_result:  # noqa: ANN401
+        seen = os.stat(path, **kwargs)  # noqa: PTH116 - stands in for os.stat
+        if path == self._name and self._swap is not None:
+            swap, self._swap = self._swap, None
+            swap()
+        return seen
+
+
+@_POSIX_ONLY
+@pytest.mark.parametrize("depth", range(len(_LEVELS)))
+def test_a_socket_swapped_in_after_the_look_is_refused_and_noted(
+    project: Path, monkeypatch: pytest.MonkeyPatch, depth: int
+) -> None:
+    """``openat`` on a socket fails with ``ENXIO``; that is a swap too."""
+    level = _level(project, depth)
+    held: list[socket.socket] = []
+
+    def swap() -> None:
+        _remove_level(level)
+        # A socket's path must be short: bind it by its name in its folder.
+        monkeypatch.chdir(level.parent)
+        server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        held.append(server)
+        server.bind(level.name)
+
+    monkeypatch.setattr(_safe_open, "os", _SwappingOs(level.name, swap))
+    _project_paths.start_skip_log(project)
+    try:
+        with pytest.raises(ProjectFileRefusedError):
+            read_project_bytes(project, _target(project))
+    finally:
+        for server in held:
+            server.close()
+
+    assert held, "the look never reached the level"
+    assert _project_paths.take_skipped_paths() == [
+        level.relative_to(project).as_posix()
+    ]
+
+
+@_POSIX_ONLY
+@pytest.mark.parametrize("depth", range(len(_LEVELS) - 1))
+def test_a_file_swapped_in_for_a_folder_after_the_look_is_not_a_folder(
+    project: Path, monkeypatch: pytest.MonkeyPatch, depth: int
+) -> None:
+    """A plain file is not a link: it is not a folder, and nothing is noted."""
+    level = _level(project, depth)
+
+    def swap() -> None:
+        _remove_level(level)
+        level.write_bytes(b"a file\n")
+
+    monkeypatch.setattr(_safe_open, "os", _SwappingOs(level.name, swap))
+    _project_paths.start_skip_log(project)
+
+    with pytest.raises(NotADirectoryError):
+        read_project_bytes(project, _target(project))
+
+    assert _project_paths.take_skipped_paths() == []
 
 
 @pytest.mark.parametrize(
