@@ -271,16 +271,16 @@ def _checked(
     return completed
 
 
-def _tracks_a_file_in(root: Path) -> bool:
+def _tracks_a_file_in(root: Path, prefix: str) -> bool:
     """Return True when git's repository tracks a file in *root* or below it.
 
     The index counts, so a staged file is tracked. When the repository
     ignores case (``core.ignorecase``, as on Windows and macOS), the folder's
-    path below the top is matched without regard to case. A tracked folder
-    renamed on disk only in case then still counts: git status shows no
-    change there, but ``git ls-files -- .`` matches by case and lists
-    nothing. The setting and the folder's path are read only then, so a
-    tracked folder costs one git start. Raises
+    path below the top, *prefix* from :func:`_work_tree_prefix`, is matched
+    without regard to case. A tracked folder renamed on disk only in case
+    then still counts: git status shows no change there, but
+    ``git ls-files -- .`` matches by case and lists nothing. The setting is
+    read only then, so a tracked folder costs one git start. Raises
     :class:`~apothem.conformity._grep_base.GitFailedError` when a git command
     fails.
     """
@@ -293,17 +293,12 @@ def _tracks_a_file_in(root: Path) -> bool:
     )
     if case.returncode != 0 or case.stdout.strip() != "true":
         return False
-    shown = _checked(
-        _git(root, "git rev-parse", "rev-parse", "--show-prefix", file_names=True),
-        "git rev-parse",
-    )
-    # The path below the top, with a trailing "/", as git spells it from the
-    # folder on disk. ``top`` reads it from the top, where ``icase`` covers
-    # every part of it. ``literal`` is a guard only: git compares the path as
-    # plain text first, and the trailing "/" keeps a "*" or "[" in a name
-    # from matching another folder, so it changes no result today.
-    prefix = shown.stdout.removesuffix("\n")
-    return bool(prefix) and _lists_a_file(root, f":(top,icase,literal){prefix}")
+    # *prefix* ends in "/", as git spells the path from the folder on disk.
+    # ``top`` reads it from the top, where ``icase`` covers every part of it.
+    # ``literal`` is a guard only: git compares the path as plain text first,
+    # and the trailing "/" keeps a "*" or "[" in a name from matching another
+    # folder, so it changes no result today.
+    return _lists_a_file(root, f":(top,icase,literal){prefix}")
 
 
 def _lists_a_file(root: Path, pathspec: str) -> bool:
@@ -315,18 +310,19 @@ def _lists_a_file(root: Path, pathspec: str) -> bool:
     return bool(tracked.stdout)
 
 
-def _repository_is_above(root: Path) -> bool:
-    """Return True when the work tree git uses from *root* has its top above it.
+def _work_tree_prefix(root: Path) -> str:
+    """Return *root*'s path below the top of the work tree git uses there.
 
-    git answers: ``git rev-parse --show-prefix`` prints *root*'s path below
-    the top of the work tree, empty at the top. Only a repository whose top
-    is above *root* is one *root* may not belong to. Nothing in a ``.git``
-    entry is read here; a git failure is left to the ``git log`` that
+    git answers: ``git rev-parse --show-prefix`` prints it with a trailing
+    ``/``, and nothing at the top, so a non-empty result means the top is
+    above *root*; only a repository whose top is above *root* is one *root*
+    may not belong to. Nothing in a ``.git`` entry is read here. A git
+    failure gives an empty result and is left to the ``git log`` that
     follows, which fails the same way. Raises
     :class:`~apothem.conformity._grep_base.GitTimeoutError` past the limit.
     """
     shown = _git(root, "git rev-parse", "rev-parse", "--show-prefix", file_names=True)
-    return shown.returncode == 0 and bool(shown.stdout.removesuffix("\n"))
+    return shown.stdout.removesuffix("\n") if shown.returncode == 0 else ""
 
 
 def _read_head_subject(root: Path) -> tuple[str | None, str, str | None]:
@@ -358,7 +354,8 @@ def _read_head_subject(root: Path) -> tuple[str | None, str, str | None]:
     if nearest_linked_git_entry(root) is not None or not in_checkout(root):
         return None, "not-a-git-repo", None
     try:
-        if _repository_is_above(root) and not _tracks_a_file_in(root):
+        prefix = _work_tree_prefix(root)
+        if prefix and not _tracks_a_file_in(root, prefix):
             # git uses a repository in a folder above ``root`` (an empty
             # ``.git`` folder in ``root``, say from a ``git init`` that
             # stopped, is one git looks past). Its history belongs to ``root``

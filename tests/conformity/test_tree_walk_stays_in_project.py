@@ -28,6 +28,7 @@ import itertools
 import json
 import os
 import subprocess
+import sys
 from pathlib import Path
 from typing import NoReturn
 
@@ -1214,10 +1215,38 @@ def test_a_git_dir_from_a_hook_does_not_redirect_the_coverage_history(
     assert not agents_md_coverage_grep._is_partial_clone(plain)
 
 
+def _lstat_error(kind: str, path: Path) -> OSError:
+    """Return the error ``os.lstat`` raises for *kind* (a winerror for most)."""
+    if kind == "permission":
+        return PermissionError(13, "denied", os.fspath(path))
+    error = FileNotFoundError(2, "not found", os.fspath(path))
+    # On Windows a path too long (206), a bad path (3, 161) or a share that
+    # cannot be reached (53, 67) is a FileNotFoundError too; only 2 means
+    # nothing is there.
+    error.winerror = int(kind)  # type: ignore[attr-defined]
+    return error
+
+
+@pytest.mark.parametrize(
+    ("kind", "refused"),
+    [
+        ("permission", True),
+        ("206", True),
+        ("3", True),
+        ("161", True),
+        ("53", True),
+        ("67", True),
+        ("2", False),
+    ],
+)
 def test_an_entry_lstat_cannot_read_is_refused(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, kind: str, refused: bool
 ) -> None:
-    """The guard fails closed: a .git entry it cannot look at counts as a link."""
+    """The guard fails closed: a .git entry it cannot look at stops git.
+
+    It is not a link, so it gets its own sentence and stays out of
+    ``skipped_links``.
+    """
     inner = (tmp_path / "project" / "pkg").resolve()
     inner.mkdir(parents=True)
     blocked = inner.parent / ".git"
@@ -1225,13 +1254,48 @@ def test_an_entry_lstat_cannot_read_is_refused(
 
     def lstat(path: object, *args: object, **kwargs: object) -> os.stat_result:
         if os.fspath(path) == os.fspath(blocked):  # type: ignore[arg-type]
-            raise PermissionError(13, "denied", os.fspath(blocked))
+            raise _lstat_error(kind, blocked)
         return real_lstat(path, *args, **kwargs)  # type: ignore[arg-type]
 
     monkeypatch.setattr(os, "lstat", lstat)
+    _no_git(monkeypatch)
     start_skip_log(inner)
-    assert nearest_linked_git_entry(inner) == blocked
-    assert take_skipped_paths() == [blocked.as_posix()]
+    found = nearest_linked_git_entry(inner)
+    assert take_skipped_paths() == []
+    if not refused:
+        assert found is None
+        return
+    assert found == blocked
+    with pytest.raises(_corpus.CorpusListError) as raised:
+        _corpus.tracked_entries(inner)
+    assert str(raised.value) == (
+        f"the .git entry {blocked.as_posix()} on git's search path could not be "
+        "looked at, so the gate does not run git below it"
+    )
+    result = no_global_plans_grep.check(inner)
+    assert [f.path for f in result.findings] == [blocked.as_posix()]
+    assert "could not be looked at" in result.findings[0].detail
+
+
+_FOLDS_CASE = pytest.mark.skipif(
+    os.name != "nt" and sys.platform != "darwin",
+    reason="only Windows and macOS match file names without regard to case",
+)
+
+
+@_FOLDS_CASE
+@pytest.mark.parametrize("spelling", [".GIT", ".Git"])
+def test_the_walk_never_enters_a_git_folder_in_another_case(
+    tmp_path: Path, spelling: str
+) -> None:
+    """git uses ``.GIT`` as ``.git`` where names fold case; the walk prunes it."""
+    root = (tmp_path / "project").resolve()
+    _write(root / "page.md")
+    _write(root / spelling / "inside.md")
+    # A nested checkout spelled in another case is skipped whole as well.
+    _write(root / "nested" / "page.md")
+    (root / "nested" / spelling).mkdir()
+    assert _walk(root, ".md") == ["page.md"]
 
 
 def _real_repository(folder: Path, *, bare: bool = False) -> Path:

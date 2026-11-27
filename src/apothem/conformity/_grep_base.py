@@ -56,6 +56,7 @@ import argparse
 import json
 import os
 import re
+import stat
 import sys
 from collections.abc import Callable, Iterable, Iterator
 from dataclasses import asdict, dataclass, field
@@ -762,34 +763,25 @@ def in_checkout(directory: Path) -> bool:
 
 
 def nearest_linked_git_entry(root: Path) -> Path | None:
-    """Return a ``.git`` entry on git's search path from *root* that is a link.
+    """Return a ``.git`` entry on git's search path from *root* that git must not use.
 
     git looks for the repository in *root* and in the folders above it
     (:func:`checkout_search_folders`). This looks at the ``.git`` entry of
     each of those folders with ``os.lstat``, as the tree is at that moment,
     and returns the first one that is a link (to a folder or a file, a
-    junction, or one that dangles), after noting it in the skip log. An entry
-    ``os.lstat`` cannot read for any reason but its absence is returned too,
-    so the check fails closed. It does not stop at a real ``.git`` entry and
-    does not judge whether a folder holds a repository: a link anywhere on
-    the path is refused, even above a repository git would use first. That
-    false refusal, such as for every project below a home folder whose
-    ``.git`` is a link, is the deliberate cost of a simple rule.
+    junction, or one that dangles), noted in the skip log, or that
+    ``os.lstat`` cannot look at for any reason but its absence, so the check
+    fails closed (:func:`linked_git_message` gives each its own sentence). It
+    does not stop at a real ``.git`` entry and does not judge whether a
+    folder holds a repository.
 
-    What this does not check: which repository git then reads. A ``.git``
-    file's ``gitdir:`` line, ``commondir``, alternates, ``core.worktree``, a
-    configuration include, or a link inside the git folder can name another
-    one, and git follows them, so git can reach a network path or wait until
-    the time limit (see :mod:`apothem.conformity._git`). The gate never reads
-    inside a ``.git`` entry itself, uses git's output only as names, modes,
-    status letters, the subject of the last commit, commit times and a few
-    settings, and never opens a path git prints without checking each level
-    inside the root.
-
-    Every check in the ``--all`` and ``--all-perwrite`` set that runs git
-    calls this first, never runs git when it returns an entry, and runs git
-    with ``discover=True`` (see ``run_git``). The ``--staged`` checks do not;
-    the conformity README says so.
+    The boundary this is part of, what it refuses that git would handle
+    safely, and what it leaves to git, are stated once, in the conformity
+    README's rule for checks that run git (``src/apothem/conformity/README.md``,
+    "Project files only, never through a link"); the usage page and the
+    changelog repeat it word for word. Every check in the ``--all`` and
+    ``--all-perwrite`` set that runs git calls this first and runs git with
+    ``discover=True``; the ``--staged`` checks do not.
     """
     if linked_git_entry(root):
         return root / GIT_ENTRY
@@ -797,15 +789,54 @@ def nearest_linked_git_entry(root: Path) -> Path | None:
         entry = folder / GIT_ENTRY
         try:
             info = os.lstat(entry)
-        except (FileNotFoundError, NotADirectoryError):
-            continue
-        except (OSError, ValueError):
-            note_skipped(entry)
+        except OSError as exc:
+            if _absent(exc, entry):
+                continue
+            return entry
+        except ValueError:
             return entry
         if is_link(info):
             note_skipped(entry)
             return entry
     return None
+
+
+def _absent(exc: OSError, entry: Path) -> bool:
+    """Return True when *exc* from ``os.lstat(entry)`` means nothing is there.
+
+    On Windows a path too long, a bad path or an unreachable share also
+    raise :class:`FileNotFoundError`. Only ``ERROR_FILE_NOT_FOUND`` (2)
+    means the entry is absent, and ``ERROR_PATH_NOT_FOUND`` (3) when what
+    would hold it is missing or is not a folder, such as a root that does not
+    exist or is a file; ``os.lstat`` looks at it.
+    """
+    if isinstance(exc, NotADirectoryError):
+        return True
+    if not isinstance(exc, FileNotFoundError):
+        return False
+    code = getattr(exc, "winerror", None)
+    if code in (None, 2):
+        return True
+    if code != 3:
+        return False
+    try:
+        holder = os.lstat(entry.parent)
+    except FileNotFoundError:
+        return True
+    except (OSError, ValueError):
+        return False
+    return not stat.S_ISDIR(holder.st_mode)
+
+
+def git_entry_unreadable(entry: Path) -> bool:
+    """Return True when ``os.lstat`` cannot look at *entry* for a reason but absence."""
+    try:
+        os.lstat(entry)
+    except OSError as exc:
+        return not _absent(exc, entry)
+    except ValueError:
+        return True
+    return False
 
 
 def linked_git_label(root: Path, entry: Path) -> str:
@@ -828,11 +859,43 @@ def linked_git_message(root: Path, entry: Path) -> str:
     the root may lie above a repository git would use first, so its sentence
     says only what the gate did.
     """
+    if git_entry_unreadable(entry):
+        return (
+            f"the .git entry {linked_git_label(root, entry)} on git's search "
+            "path could not be looked at, so the gate does not run git below it"
+        )
     if entry == root / GIT_ENTRY:
         return "the .git entry is a link, so git would read another repository"
     return (
         f"the .git entry {linked_git_label(root, entry)} on git's search path "
         "is a link, so the gate does not run git below it"
+    )
+
+
+# Whether file names on this host match without regard to case: NTFS, and
+# APFS and HFS+ as macOS formats them by default.
+_NAMES_FOLD_CASE: Final[bool] = os.name == "nt" or sys.platform == "darwin"
+
+
+def _walk_name(name: str) -> str:
+    """Return *name* as the host's file system matches it."""
+    return name.casefold() if _NAMES_FOLD_CASE else name
+
+
+def _names_git(name: str) -> bool:
+    """Return True when the folder entry *name* is a ``.git`` git would use.
+
+    ``.git`` in any case where names fold case, and on Windows also a short
+    name such as ``GIT~1``, as ``_corpus._names_git`` judges an index name.
+    """
+    folded = _walk_name(name)
+    if folded == GIT_ENTRY:
+        return True
+    return (
+        os.name == "nt"
+        and folded.startswith("git~")
+        and folded[4:].isascii()
+        and folded[4:].isdigit()
     )
 
 
@@ -868,7 +931,12 @@ def iter_tree_files(
     skipped too; what it points to is yielded under its own path when the
     walk reaches it. A directory it cannot read is skipped.
     """
-    pruned = PRUNED_SEGMENTS.union(extra_prune) if prune else frozenset(extra_prune)
+    pruned = frozenset(
+        _walk_name(name)
+        for name in (
+            PRUNED_SEGMENTS.union(extra_prune) if prune else frozenset(extra_prune)
+        )
+    )
     wanted_suffixes = tuple(os.path.normcase(suffix) for suffix in suffixes)
     wanted_names = frozenset(os.path.normcase(name) for name in names)
     match_all = not wanted_suffixes and not wanted_names
@@ -886,12 +954,14 @@ def iter_tree_files(
         entries = scan_entries(folder)
         # The root's own ``.git`` marks the checkout being inspected; one
         # below it marks a nested checkout, which is skipped whole.
-        if prune and not is_root and any(path.name == GIT_ENTRY for path, _ in entries):
+        if prune and not is_root and any(_names_git(path.name) for path, _ in entries):
             continue
         files: list[Path] = []
         folders: list[Path] = []
         for path, kind in sorted(entries, key=lambda entry: entry[0].name):
-            if path.name in pruned and kind in (DIR_ENTRY, LINK_ENTRY):
+            if (
+                _walk_name(path.name) in pruned or (prune and _names_git(path.name))
+            ) and kind in (DIR_ENTRY, LINK_ENTRY):
                 if kind == LINK_ENTRY:
                     note_skipped(path)
                 continue

@@ -220,25 +220,25 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   `nearest_linked_git_entry(root)` from `_grep_base.py` first, does not run
   git when it returns an entry (`linked_git_message` gives the sentence that
   names it), never asks `in_checkout` before it, and passes `discover=True` to
-  every `run_git` call. The gate itself opens only regular files inside the
-  root, checking each folder on the way with `lstat`, including every path git
-  lists, and never reads inside a `.git` entry. Before they run git, the
-  checks that run it look with `lstat` at the `.git` entry of the root and of
-  every folder above it that git searches, as the tree is at that moment; if
-  any of them is a link, or cannot be looked at, they do not run git. This
-  also refuses projects git would handle safely, such as every project below a
-  home folder whose `.git` is a link, even one with its own repository: that
-  is the deliberate cost of a simple rule. They run git without `GIT_DIR` and
-  the other variables that name the repository, its stores or its index. Which
-  repository git then reads is not checked: a `gitdir:` line, `commondir`,
-  alternates, `core.worktree`, an include, or a link inside the git folder can
-  name another one, and git follows them, so git can reach a network path or
-  wait until its time limit. The gate uses git's output only as names, modes,
-  status letters, the subject of the last commit, commit times and a few
-  settings, and never opens a path git prints without checking each level
-  inside the root. The callers today are `_corpus.tracked_entries`,
-  `no_global_plans_grep._git_ls_files` and `no_global_plans_grep.check`,
-  `agents_md_coverage_grep._read_history`, and
+  every `run_git` call. In `--all` and `--all-perwrite`, the gate itself opens
+  only regular files inside the root, checking each folder on the way with
+  `lstat`, including every path git lists, and never reads inside a `.git`
+  entry. Before they run git, the checks that run it look with `lstat` at the
+  `.git` entry of the root and of every folder above it that git searches, as
+  the tree is at that moment; if any of them is a link, or cannot be looked
+  at, they do not run git. This also refuses projects git would handle safely,
+  such as every project below a home folder whose `.git` is a link, even one
+  with its own repository: that is the deliberate cost of a simple rule. They
+  run git without `GIT_DIR` and the other variables that name the repository,
+  its stores or its index. Which repository git then reads is not checked: a
+  `gitdir:` line, `commondir`, alternates, `core.worktree`, an include, or a
+  link inside the git folder can name another one, and git follows them, so
+  git can reach a network path or wait until its time limit. The gate uses
+  git's output only as names, modes, status letters, the subject of the last
+  commit, commit times and a few settings, and never opens a path git prints
+  without checking each level inside the root. The callers today are
+  `_corpus.tracked_entries`, `no_global_plans_grep._git_ls_files` and
+  `no_global_plans_grep.check`, `agents_md_coverage_grep._read_history`, and
   `conventional_commit_grep._read_head_subject`; `conventional-commit-grep`
   asks git itself (`rev-parse --show-prefix`) whether the work tree's top is
   above the root. The `--staged` checks (`production-ready-pr-grep` and

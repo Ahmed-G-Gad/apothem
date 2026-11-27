@@ -669,7 +669,33 @@ def hook(event, args):
 
 from apothem.conformity import gate
 
+# Python raises no audit event for a stat that follows a link, and on Windows
+# such a stat opens the target. Every one counts as an access: os.stat with
+# follow_symlinks, and the os.path checks that follow links.
+_real_stat = os.stat
+
+
+def _logged_stat(path, *args, dir_fd=None, follow_symlinks=True, **kwargs):
+    if follow_symlinks and dir_fd is None and not isinstance(path, int):
+        log.write(json.dumps([current[0], "stat", os.path.abspath(os.fsdecode(os.fspath(path)))]) + "\n")
+    return _real_stat(path, *args, dir_fd=dir_fd, follow_symlinks=follow_symlinks, **kwargs)
+
+
+def _logging(check):
+    def checked(path):
+        if not isinstance(path, int):
+            log.write(json.dumps([current[0], "stat", os.path.abspath(os.fsdecode(os.fspath(path)))]) + "\n")
+        return check(path)
+    return checked
+
+
+os.stat = _logged_stat
+for name in ("isdir", "isfile", "exists"):
+    setattr(os.path, name, _logging(getattr(os.path, name)))
 sys.addaudithook(hook)
+# The control: a stat the wrappers must record.
+current[0] = "control"
+os.path.isdir(root)
 for module in modules:
     current[0] = module
     sys.argv = [module, root]
@@ -768,7 +794,7 @@ def _project_naming_a_foreign_repository(tmp_path: Path, route: str) -> Path:
         {
             "page.md": "# Outside\n",
             "link-out.md/page.md": "# Out\n",
-            "extra.config": "[core]\n\tquotePath = false\n",
+            "extra.config": "[apothem]\n\toracle = included\n",
         },
     )
     project = tmp_path / "project"
@@ -777,7 +803,8 @@ def _project_naming_a_foreign_repository(tmp_path: Path, route: str) -> Path:
     if route == "commondir":
         gitdir = foreign / ".git" / "worktrees" / "project"
         gitdir.mkdir(parents=True)
-        (gitdir / "HEAD").write_text("ref: refs/heads/side\n", encoding="utf-8")
+        # The work tree's HEAD names the foreign repository's own branch.
+        shutil.copyfile(foreign / ".git" / "HEAD", gitdir / "HEAD")
         (gitdir / "commondir").write_text(
             str(foreign / ".git") + "\n", encoding="utf-8"
         )
@@ -801,8 +828,9 @@ def _project_naming_a_foreign_repository(tmp_path: Path, route: str) -> Path:
         elif route == "alternates":
             shutil.rmtree(own / "objects")
             (own / "objects" / "info").mkdir(parents=True)
-            (own / "objects" / "info" / "alternates").write_text(
-                str(foreign / ".git" / "objects") + "\n", encoding="utf-8"
+            # git reads the line with its CR on Windows, so write LF only.
+            (own / "objects" / "info" / "alternates").write_bytes(
+                os.fsencode(str(foreign / ".git" / "objects")) + b"\n"
             )
         elif route == "include":
             with (own / "config").open("a", encoding="utf-8") as config:
@@ -817,6 +845,32 @@ def _project_naming_a_foreign_repository(tmp_path: Path, route: str) -> Path:
     _link_folder(root / "link-out.md", elsewhere / "link-out.md")
     _link_folder(root / "via", elsewhere)
     return root
+
+
+def _route_took_effect(root: Path, route: str, foreign: Path) -> bool:
+    """Return True when git, run in *root*, reads the foreign repository.
+
+    A route that stopped working would otherwise pass the test quietly.
+    """
+
+    def git(*args: str) -> str:
+        return subprocess.run(
+            ["git", *args],
+            cwd=str(root),
+            env=hermetic_git_env(),
+            capture_output=True,
+            text=True,
+            check=False,
+        ).stdout.strip()
+
+    if route == "include":
+        return git("config", "--get", "apothem.oracle") == "included"
+    if route == "core-worktree":
+        top = git("rev-parse", "--show-toplevel")
+        return bool(top) and Path(top).resolve() == foreign.resolve()
+    # The project holds no history of its own: the subject comes from the
+    # foreign repository's objects, read through the route.
+    return git("log", "-1", "--format=%s") == "feat: foreign repository"
 
 
 @pytest.mark.parametrize("route", _ROUTES)
@@ -864,21 +918,19 @@ def test_a_foreign_repository_reaches_no_file_outside(
     perwrite = json.loads(
         next(path for _, event, path in events if event == "perwrite")
     )
-    if route != "core-worktree":
-        # With core.worktree naming another folder, what git lists from the
-        # project is git's own business; only the reads below are checked.
-        # git listed the foreign names, and only the regular file was read.
-        assert perwrite.get("check_error") is None
-        assert perwrite["files_scanned"] == 1
-        assert perwrite["files_skipped"]["link"] == 2
-        assert perwrite["files_skipped"]["missing"] == 1
-        # The control: the hook saw the one read, so it is not blind here.
-        assert any(
-            label == "all-perwrite"
-            and event == "open"
-            and Path(path) == root / "README.md"
-            for label, event, path in events
-        )
+    # git listed the foreign names, and only the regular file was read.
+    assert perwrite.get("check_error") is None
+    assert perwrite["files_scanned"] == 1
+    assert perwrite["files_skipped"]["link"] == 2
+    assert perwrite["files_skipped"]["missing"] == 1
+    # The controls: the hook saw the one read, and the stat wrappers record.
+    assert any(
+        label == "all-perwrite" and event == "open" and Path(path) == root / "README.md"
+        for label, event, path in events
+    )
+    assert any(label == "control" and event == "stat" for label, event, _ in events)
+    # The route took effect: git read the foreign repository through it.
+    assert _route_took_effect(root, route, tmp_path / "foreign")
 
     # Python's own reads: the interpreter, its packages and this checkout's
     # source. A folder that holds the project does not count.
@@ -919,6 +971,9 @@ def test_a_foreign_repository_reaches_no_file_outside(
     def stays_inside(event: str, path: Path) -> bool:
         if path != root and root not in path.parents:
             return False
+        # The gate never reads inside a .git entry, the root's own included.
+        if any(part.casefold() == ".git" for part in path.relative_to(root).parts):
+            return False
         # Each level below the root is a real folder, not a link of any kind
         # (a junction lstats as a folder on Windows), and the target is a
         # regular file (open) or a real folder (a listing). A path that does
@@ -932,14 +987,25 @@ def test_a_foreign_repository_reaches_no_file_outside(
                 return True
             if not found:
                 return False
-        found = real(path, stat.S_ISREG if event == "open" else stat.S_ISDIR)
+        # A stat may look at a file or a folder; it must not follow a link.
+        want = {
+            "open": stat.S_ISREG,
+            "stat": lambda mode: stat.S_ISREG(mode) or stat.S_ISDIR(mode),
+        }.get(event, stat.S_ISDIR)
+        found = real(path, want)
         return found is None or found
 
     offenders = sorted(
         f"{label}: {event} {path}"
         for label, event, path in events
-        if label != "-"
-        and event in ("open", "os.scandir", "os.listdir")
+        if label not in ("-", "control")
+        and event in ("open", "stat", "os.scandir", "os.listdir")
+        # A stat outside this test's folders is the host's own business,
+        # such as the search for git along PATH.
+        and (event != "stat" or tmp_path in Path(path).parents)
+        # Outside Windows the search path's folders are stat'ed for their
+        # file system (git stops at another one); they are resolved already.
+        and not (event == "stat" and (Path(path) == root or Path(path) in root.parents))
         and not runtime_read(Path(path))
         and not stays_inside(event, Path(path))
     )

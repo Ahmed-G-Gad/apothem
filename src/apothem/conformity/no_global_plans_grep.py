@@ -68,6 +68,7 @@ from apothem.conformity._grep_base import (
     GitCheckError,
     GitTimeoutError,
     finish_root_report,
+    git_entry_unreadable,
     has_git_entry,
     linked_git_label,
     linked_git_message,
@@ -214,6 +215,13 @@ _LINKED_GIT_DETAIL: Final[str] = (
     "git; the tracked-plans check did not run, and the project is treated "
     "as having no checkout — replace the link with a real .git folder or "
     "file"
+)
+# Finding text for a .git entry on git's search path that os.lstat could
+# not look at (a path too long, a share that cannot be reached, no access).
+_UNREADABLE_GIT_DETAIL: Final[str] = (
+    "a .git entry on git's search path could not be looked at, so the gate "
+    "does not run git; the tracked-plans check did not run, and the project "
+    "is treated as having no checkout"
 )
 
 # Finding text for a plans location that is a link or a junction.
@@ -401,13 +409,17 @@ def check(root: Path) -> GrepResult:
     findings: list[Finding] = []
     linked = nearest_linked_git_entry(root)
     if linked is not None:
-        # git would read another repository's index; the sweep still runs.
+        # A .git entry on git's search path is a link, or could not be
+        # looked at, so git is not run; the sweep still runs.
         # The finding names the entry as the skip log does: ``.git`` at the
         # root, its full path above it.
         tracked: list[str] = []
-        findings.append(
-            Finding(path=linked_git_label(root, linked), detail=_LINKED_GIT_DETAIL)
+        detail = (
+            _UNREADABLE_GIT_DETAIL
+            if git_entry_unreadable(linked)
+            else _LINKED_GIT_DETAIL
         )
+        findings.append(Finding(path=linked_git_label(root, linked), detail=detail))
     else:
         tracked = _git_ls_files(root)
     for path in tracked:
