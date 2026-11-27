@@ -1,7 +1,6 @@
 {
   "title": "Команды конвейера",
   "pages": [
-    "index",
     "plan",
     "plan-spec",
     "plan-generate",

@@ -1,7 +1,6 @@
 {
   "title": "أدلّة التشغيل",
   "pages": [
-    "index",
     "release-cycle",
     "deployment-checklist",
     "release-recovery",

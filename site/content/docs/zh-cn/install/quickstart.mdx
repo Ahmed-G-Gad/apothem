@@ -55,7 +55,7 @@ Recommended first step — the guided setup (profile -> preview -> install):
   如果你还没有配置档案，安装器会将示例配置档案复制到 `~/.config/apothem/profile.yaml` 并继续执行：它会在同一次运行中物化你的第一个工具并验证它。示例中的身份字段是占位值，因此安装会打印一条提示。在第 2 步中将配置档案改成你自己的，然后按照第 5 步的做法，用 `apothem update --harness <name>` 应用它。
 </Callout>
 
-<Callout title="`apothem` 命令">
+<Callout title="apothem 命令">
   安装器会将一个 `apothem` 垫片写入 `$HOME/.local/bin`（POSIX）或 `%LOCALAPPDATA%\Microsoft\WindowsApps`（Windows），并且绝不会修改你的 `PATH`。一旦该目录已加入 `PATH`，你就可以直接以 `apothem <command>` 的形式运行引擎。如果它尚未加入 `PATH`，横幅会打印一个自包含的回退方式——`PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>`——它无需垫片；请将你的横幅所打印的确切前缀加在每条命令之前。
 </Callout>
 

@@ -1,7 +1,6 @@
 {
   "title": "Adaptateurs d'environnement",
   "pages": [
-    "index",
     "claude-code",
     "cursor",
     "gemini-cli",

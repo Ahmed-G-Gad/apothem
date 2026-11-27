@@ -1,7 +1,6 @@
 {
   "title": "Konsep",
   "pages": [
-    "index",
     "ai-platform-agnosticism",
     "resumable-planning",
     "agent-architecture",

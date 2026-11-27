@@ -2,12 +2,12 @@
 title: "/plan-audit"
 description: "/plan-audit — /plan 파이프라인의 폐루프 수호자 — spec → generate → review를 감싸며, 스위트가 검토된 무발견 전체가 될 때까지 발견을 능동적으로 교정합니다."
 machineTranslated: true
-sourceHash: "ad784374d4fb602c"
+sourceHash: "1f5196367610e634"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**역할:** 수호자
-**파이프라인 위치:** 감싸기 / 직교(실행 전)
+- **역할:** 수호자
+- **파이프라인 위치:** 감싸기 / 직교(실행 전)
 
 `/plan` 파이프라인의 폐루프 수호자. `/plan-review`가 생성된 스위트를 보고하고 정련하는 반면, `/plan-audit`는 상류 사이클(`/plan-spec → /plan-generate → /plan-review`)을 감싸 스위트를 검토된 무발견 전체로 구동합니다 — 누락된 상류 단계만 실행하고, 결과를 감사하며, 기계적으로 해결 가능한 발견을 제자리에서 수정하고, 판단 분기를 구조화 질의 채널을 통해 드러내며, 스위트가 깨끗해지거나 유계 후퇴가 발동될 때까지 반복합니다. 페이즈 구현 작업을 실행하는 일은 결코 없습니다. 스위트를 `/plan-execute`에 넘길 준비가 된 상태로 남깁니다.
 

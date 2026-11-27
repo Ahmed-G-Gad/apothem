@@ -1,7 +1,6 @@
 {
   "title": "Harnesses",
   "pages": [
-    "index",
     "claude-code",
     "cursor",
     "gemini-cli",

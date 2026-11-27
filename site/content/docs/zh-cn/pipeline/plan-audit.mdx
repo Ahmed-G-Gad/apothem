@@ -2,12 +2,12 @@
 title: "/plan-audit"
 description: "/plan-audit——/plan 流水线的闭环守卫——封装 spec → generate → review，并主动修复发现，直到套件成为一个已审查、零发现的整体。"
 machineTranslated: true
-sourceHash: "ad784374d4fb602c"
+sourceHash: "1f5196367610e634"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**角色：** 守卫
-**流水线位置：** 封装 / 正交（执行前）
+- **角色：** 守卫
+- **流水线位置：** 封装 / 正交（执行前）
 
 `/plan` 流水线的闭环守卫。`/plan-review` 报告并精炼一个已生成的套件，而 `/plan-audit` 封装上游循环（`/plan-spec → /plan-generate → /plan-review`），并把套件驱动到一个已审查、零发现的整体——仅运行缺失的上游阶段，审计结果，就地修复机械可解的发现，通过结构化询问通道呈现判断分叉，并循环直到套件干净或触发有界退避。它从不执行阶段实现工作；它让套件准备好交给 `/plan-execute`。
 

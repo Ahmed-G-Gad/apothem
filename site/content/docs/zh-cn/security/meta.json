@@ -1,8 +1,8 @@
 {
   "title": "安全",
   "pages": [
-    "index",
     "openssf-scorecard-target",
+    "openssf-best-practices",
     "branch-protection-ruleset",
     "webhooks-audit",
     "binary-artifacts-sweep",
