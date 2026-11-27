@@ -64,6 +64,10 @@ top-level `.github/README.md` would, and none exists.
   checks are `ci.yml`'s `quality / <os> / py<ver>` matrix (`ubuntu-latest` and
   `windows-latest`, Python 3.10 to 3.14; the prerelease `py3.15` cell is not
   required), `ci.yml`'s `coverage`, and `dco.yml`'s `Require Signed-off-by`.
+  Each Windows Python version runs as two `quality` shard cells, which are
+  not required; the `quality-windows` job reports the required
+  `quality / windows-latest / py<ver>` contexts and fails unless every
+  `quality` cell passed.
   Three more workflows declare, in their own headers, that their jobs are
   required checks, and the maintainer intends to add them, but they are not in
   the live set yet: `clean-install-gate.yml` (the `installer-shell-compat`,

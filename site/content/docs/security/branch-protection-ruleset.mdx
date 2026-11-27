@@ -56,9 +56,11 @@ Require Signed-off-by
 
 | Context | Workflow and job | How it reports on every pull request |
 |---|---|---|
-| `quality / <os> / py<ver>` (10) | `ci.yml`, job `quality` | `ci.yml` runs when a pull request touches a code or config path. `ci-docs-stub.yml` reports the same contexts on a documentation-only pull request. |
+| `quality / <os> / py<ver>` (10) | `ci.yml`, job `quality` for `ubuntu-latest`; job `quality-windows` for `windows-latest` | `ci.yml` runs when a pull request touches a code or config path. `ci-docs-stub.yml` reports the same contexts on a documentation-only pull request. |
 | `coverage` | `ci.yml`, job `coverage` | Same as `quality`. |
 | `Require Signed-off-by` | `dco.yml`, job `dco` | Its pull-request trigger has no `paths` filter, so it runs on every pull request to `main`. |
+
+On Windows, the `quality` job runs the tests for each Python version in two halves, as the cells `quality / windows-latest / py<ver> / shard 1 of 2` and `shard 2 of 2`. Those cells are not required. The `quality-windows` job reports the required `quality / windows-latest / py<ver>` contexts, and each passes only when every `quality` cell passed, so a failure in any cell turns all five Windows contexts red.
 
 The `quality / ubuntu-latest / py3.15` prerelease cell runs in `ci.yml` with `continue-on-error` and is not required. Any other workflow, including CodeQL, Scorecard, and pip-audit, may report status, but its outcome does not gate merge unless its context is added to this list.
 
