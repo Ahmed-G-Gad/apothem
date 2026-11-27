@@ -139,13 +139,19 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   not take for a repository, does not hide its folder) and the vendored,
   virtual-environment, cache and build-output trees (`node_modules`, `_vendor`,
   `venv`, `dist`, `.next`; the set is `PRUNED_SEGMENTS`), through
-  `iter_tree_files` in `_grep_base.py`. Six validators walk that way:
-  `agents-md-coverage-grep`, `agnosticism-grep`, `dynamism-grep`,
-  `freshness-token-grep`, `plain-language-grep` and `reference-token-grep`; the
-  stray-suite sweep in `no-global-plans-grep` stops at a nested checkout through
-  the same `nested_checkout` test and keeps its own skip list. A walker confined to one fixed
-  subtree (`naming-grep` under `src/apothem/`, `redundancy-grep`, a plan suite's
-  own files) reads everything below that subtree.
+  `iter_tree_files` in `_grep_base.py`. A nested `.git` file that names the
+  root's own repository or one outside the root still hides its folder, as it
+  does for git, but `nested_checkout` notes that `.git` file for
+  `skipped_links`; a worktree or submodule, whose `gitdir:` line points into
+  the root repository's `worktrees/` or `modules/` folder, stays silent. The
+  paths are compared as written, so nothing beyond what `git_entry_state`
+  reads is read. Six validators walk that way: `agents-md-coverage-grep`,
+  `agnosticism-grep`, `dynamism-grep`, `freshness-token-grep`,
+  `plain-language-grep` and `reference-token-grep`; the stray-suite sweep in
+  `no-global-plans-grep` stops at a nested checkout through the same
+  `nested_checkout` test and keeps its own skip list. A walker confined to one
+  fixed subtree (`naming-grep` under `src/apothem/`, `redundancy-grep`, a plan
+  suite's own files) reads everything below that subtree.
 - **Every git call goes through `run_git`.** The project being checked can come
   with a `.git` folder someone else wrote, and its `.git/config` can name a
   program for git to start (`core.fsmonitor`, a signature program, a second git
@@ -212,8 +218,9 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   `include_links=True` to see each link by its own name. The helpers note
   every link and special file they leave out, every folder `scan_entries`
   could not list (no access, a path too long), and the `.git` entry of a
-  nested checkout the walk skipped when that entry is a link or a special
-  file; `finish_root_report` lists them under `skipped_links`. A run that
+  nested checkout the walk skipped when that entry is a link, a special file
+  or a `.git` file that names the root's own repository or one outside the
+  root; `finish_root_report` lists them under `skipped_links`. A run that
   inspected nothing while it left a link out does not pass, even when an
   empty scope is expected. The helpers look at each level and the caller
   then opens the file by name, so a writer racing the gate can swap a checked
@@ -262,9 +269,10 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   git runs; it raises a `GitCheckError`, which they report as `check_error`.
   Its sentence is the same, except for a link in the folder git runs in: a
   hook's `GIT_DIR` may name the repository git reads, so that sentence says
-  only that the gate does not run git (`STAGED_LINKED_GIT_MESSAGE`). They run git without `discover=True`, so a hook's
-  `GIT_DIR` still names the repository. `conventional-commit-grep` reports a
-  link with the status `not-a-git-repo` and a `check_error` that names it.
+  only that the gate does not run git (`STAGED_LINKED_GIT_MESSAGE`). They run
+  git without `discover=True`, so a hook's `GIT_DIR` still names the
+  repository. `conventional-commit-grep` reports a link with the status
+  `not-a-git-repo` and a `check_error` that names it.
 
 - **No unfinished pass.** A check that could not finish does not pass either.
   Give every `run_git` call a timeout, far above what the command takes, since

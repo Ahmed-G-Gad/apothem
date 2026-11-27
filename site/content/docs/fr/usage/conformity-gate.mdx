@@ -129,16 +129,17 @@ un `check_error` qui nomme le lien. `no-global-plans-grep` signale le lien comme
 constat et échoue, et la vérification des fichiers compagnons saute son test de
 fraîcheur, comme sans historique. `--all-perwrite` ne liste pas non plus les
 fichiers suivis : il échoue avec un `check_error` qui nomme le lien, tout comme
-les deux vérifications `--staged`, qui ne nomment un lien que dans `check_error`
-: elles lisent le dépôt que nomme le `GIT_DIR` d'un hook mais refusent quand
-même un lien sur le chemin de recherche depuis le dossier où elles tournent. Une
-entrée `.git` que le gate ne peut pas examiner (un chemin trop long, un partage
-injoignable, pas d'accès) n'est pas un lien et n'apparaît pas sous
-`skipped_links` : `conventional-commit-grep` échoue avec le statut `git-failed`
-et un `check_error` ; la vérification des fichiers compagnons, `--all-perwrite`
-et les deux vérifications `--staged` échouent avec un `check_error` qui dit que
-l'entrée n'a pas pu être examinée, et `no-global-plans-grep` la signale comme
-constat.
+les deux vérifications `--staged`, qui ne nomment un lien que dans
+`check_error`, ou y disent que l'entrée `.git` du dossier où elles tournent est
+un lien : elles lisent le dépôt que nomme le `GIT_DIR` d'un hook mais refusent
+quand même un lien sur le chemin de recherche depuis le dossier où elles
+tournent. Une entrée `.git` que le gate ne peut pas examiner (un chemin trop
+long, un partage injoignable, pas d'accès) n'est pas un lien et n'apparaît pas
+sous `skipped_links` : `conventional-commit-grep` échoue avec le statut
+`git-failed` et un `check_error` ; la vérification des fichiers compagnons,
+`--all-perwrite` et les deux vérifications `--staged` échouent avec un
+`check_error` qui dit que l'entrée n'a pas pu être examinée, et
+`no-global-plans-grep` la signale comme constat.
 
 Six validateurs partent de la racine du dépôt et parcourent toute
 l'arborescence à la recherche des fichiers qu'ils vérifient :
@@ -153,13 +154,19 @@ reference-token-grep
 ```
 
 Ceux-ci ignorent les checkouts git imbriqués, tels que les worktrees, les
-sous-modules et les clones imbriqués, et ignorent les répertoires qui
+sous-modules et les clones imbriqués (un dossier dont le fichier ou le dossier
+`.git` contient ou nomme un dépôt ; un simple fichier `.git` ou un dossier
+`.git` vide ne masque pas son dossier), et ignorent les répertoires qui
 contiennent des dépendances, des environnements virtuels, des caches ou des
-sorties de build, tels que `node_modules`, `venv` et `dist`. La vérification
-des plans égarés de `no-global-plans-grep` s'arrête également à un checkout
-imbriqué. Une exécution de l'un d'eux rend compte du checkout sur lequel elle a
-été pointée, et de rien d'autre. Un validateur qui lit un dossier fixe, tel que
-`naming-grep` sous `src/apothem/`, lit tout ce qui se trouve sous ce dossier.
+sorties de build, tels que `node_modules`, `venv` et `dist`. La vérification des
+plans égarés de `no-global-plans-grep` s'arrête également à un checkout
+imbriqué. Un fichier `.git` qui nomme le propre dépôt du projet ou un dépôt hors
+du projet masque toujours son dossier, comme pour git, mais le rapport liste ce
+fichier `.git` sous `skipped_links` ; un worktree ou un sous-module du projet ne
+laisse aucune note. Une exécution de l'un d'eux rend compte du checkout sur
+lequel elle a été pointée, et de rien d'autre. Un validateur qui lit un dossier
+fixe, tel que `naming-grep` sous `src/apothem/`, lit tout ce qui se trouve sous
+ce dossier.
 
 ## Barres du portail
 

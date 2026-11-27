@@ -127,9 +127,10 @@ checkout, tetapi tidak lolos: ia memberi `check_error` yang menyebut tautan itu.
 pemeriksaan berkas pendamping melewati uji kebaruannya, seperti saat tidak ada
 riwayat. `--all-perwrite` juga tidak mendaftar berkas yang dilacak: ia gagal
 dengan `check_error` yang menyebut tautan itu, begitu pula dua pemeriksaan
-`--staged`, yang menyebut tautan hanya di `check_error`: keduanya membaca
-repositori yang disebut `GIT_DIR` milik hook tetapi tetap menolak tautan di
-jalur pencarian dari folder tempat mereka berjalan. Entri `.git` yang tidak
+`--staged`, yang menyebut tautan hanya di `check_error`, atau menyatakan di sana
+bahwa entri `.git` di folder tempat mereka berjalan adalah tautan: keduanya
+membaca repositori yang disebut `GIT_DIR` milik hook tetapi tetap menolak tautan
+di jalur pencarian dari folder tempat mereka berjalan. Entri `.git` yang tidak
 dapat dilihat gate (jalur terlalu panjang, share yang tidak terjangkau, tanpa
 akses) bukan tautan dan tidak dicantumkan di bawah `skipped_links`:
 `conventional-commit-grep` gagal dengan status `git-failed` dan `check_error`;
@@ -150,13 +151,19 @@ reference-token-grep
 ```
 
 Validator-validator ini melewati checkout git bersarang, seperti worktree,
-submodule, dan klon bersarang, serta melewati direktori yang menampung
+submodule, dan klon bersarang (folder yang file atau folder `.git`-nya menyimpan
+atau menyebut sebuah repositori; file `.git` biasa atau folder `.git` kosong
+tidak menyembunyikan foldernya), serta melewati direktori yang menampung
 dependensi, lingkungan virtual, cache, atau keluaran build, seperti
 `node_modules`, `venv`, dan `dist`. Pemeriksaan rencana-nyasar di
-`no-global-plans-grep` juga berhenti pada checkout bersarang. Eksekusi salah
-satu validator ini melaporkan checkout yang ditunjuknya dan tidak ada yang lain.
-Validator yang membaca satu folder tetap, seperti `naming-grep` di bawah
-`src/apothem/`, membaca semua yang ada di bawah folder tersebut.
+`no-global-plans-grep` juga berhenti pada checkout bersarang. File `.git` yang
+menyebut repositori milik proyek itu sendiri atau repositori di luar proyek
+tetap menyembunyikan foldernya, seperti bagi git, tetapi laporan mencantumkan
+file `.git` itu di bawah `skipped_links`; worktree atau submodule proyek tidak
+dicatat. Eksekusi salah satu validator ini melaporkan checkout yang ditunjuknya
+dan tidak ada yang lain. Validator yang membaca satu folder tetap, seperti
+`naming-grep` di bawah `src/apothem/`, membaca semua yang ada di bawah folder
+tersebut.
 
 ## Bar gerbang
 

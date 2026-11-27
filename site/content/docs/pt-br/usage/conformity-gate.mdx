@@ -125,9 +125,10 @@ achado e falha, e a verificação de arquivos companheiros pula seu teste de
 atualidade, como faz sem histórico. O `--all-perwrite` também não lista os
 arquivos rastreados: ele falha com um `check_error` que nomeia o link, assim
 como as duas verificações `--staged`, que nomeiam um link apenas no
-`check_error`: elas leem o repositório que o `GIT_DIR` de um hook nomeia, mas
-ainda recusam um link no caminho de busca a partir da pasta em que rodam. Uma
-entrada `.git` que o gate não consegue olhar (um caminho longo demais, um
+`check_error`, ou dizem ali que a entrada `.git` da pasta em que rodam é um
+link: elas leem o repositório que o `GIT_DIR` de um hook nomeia, mas ainda
+recusam um link no caminho de busca a partir da pasta em que rodam. Uma entrada
+`.git` que o gate não consegue olhar (um caminho longo demais, um
 compartilhamento inalcançável, sem acesso) não é um link e não aparece em
 `skipped_links`: o `conventional-commit-grep` falha com o status `git-failed` e
 um `check_error`; a verificação de arquivos companheiros, o `--all-perwrite` e
@@ -147,11 +148,16 @@ reference-token-grep
 ```
 
 Eles ignoram checkouts git aninhados, como worktrees, submódulos e clones
-aninhados, e ignoram diretórios que guardam dependências, ambientes virtuais,
-caches ou saída de build, como `node_modules`, `venv` e `dist`. A verificação
-de planos perdidos em `no-global-plans-grep` também para em um checkout
-aninhado. Uma execução de qualquer um deles relata sobre o checkout para o qual
-foi apontada e sobre nada mais. Um validador que lê uma pasta fixa, como
+aninhados (uma pasta cujo arquivo ou pasta `.git` contém ou nomeia um
+repositório; um arquivo `.git` simples ou uma pasta `.git` vazia não oculta sua
+pasta), e ignoram diretórios que guardam dependências, ambientes virtuais,
+caches ou saída de build, como `node_modules`, `venv` e `dist`. A verificação de
+planos perdidos em `no-global-plans-grep` também para em um checkout aninhado.
+Um arquivo `.git` que nomeia o próprio repositório do projeto ou um fora do
+projeto ainda oculta sua pasta, como faz para o git, mas o relatório lista esse
+arquivo `.git` em `skipped_links`; um worktree ou um submódulo do projeto não
+deixa registro. Uma execução de qualquer um deles relata sobre o checkout para o
+qual foi apontada e sobre nada mais. Um validador que lê uma pasta fixa, como
 `naming-grep` sob `src/apothem/`, lê tudo abaixo dessa pasta.
 
 ## Barras do portão

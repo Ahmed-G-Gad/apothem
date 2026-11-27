@@ -350,21 +350,25 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   looking at its `.git` entry, so a `.git` link there, or in a folder above it
   that git searches, made them read another repository's staged names and
   files. They now look first and fail with a `check_error` that names the link,
-  or says the entry could not be looked at, without running git; they still
-  read the repository a hook's `GIT_DIR` names, but a project whose own `.git`
-  is a link now fails them, even in a hook. `conventional-commit-grep` keeps
+  says the `.git` entry in the folder they run in is a link, or says the entry
+  could not be looked at, without running git; they still read the repository
+  a hook's `GIT_DIR` names, but a project whose own `.git` is a link now fails
+  them, even in a hook. `conventional-commit-grep` keeps
   the status `not-a-git-repo` for a `.git` link but now gives a `check_error`
   that names it. A folder whose `.git` entry is a link, a dangling one
   included, was left out of every tree walk as a nested checkout with nothing
   in the report; `skipped_links` now names that `.git` entry, in the walk and
   in the stray-plans check of `no-global-plans-grep`. A plain `.git` file or
   an empty `.git` folder, which git does not take for a repository, also hid
-  its folder from both; such a folder is now checked. A folder the walk cannot
-  list (no access, a path too long, a read error) is named there too, where
-  before it read as empty. The `--all` validators still check each level and
-  then open a file by name, so someone writing to the project while the gate
-  runs can swap a checked entry for a link or a named pipe, or make a read
-  wait until the time limit; the usage page now says so.
+  its folder from both; such a folder is now checked. A `.git` file that names
+  the project's own repository or one outside the project still hides its
+  folder, as it does for git, but `skipped_links` now names that `.git` file;
+  a worktree or a submodule of the project stays silent. A folder the walk
+  cannot list (no access, a path too long, a read error) is named there too,
+  where before it read as empty. The `--all` validators still check each level
+  and then open a file by name, so someone writing to the project while the
+  gate runs can swap a checked entry for a link or a named pipe, or make a
+  read wait until the time limit; the usage page now says so.
 
 ## [1.6.0] - 2026-11-26
 

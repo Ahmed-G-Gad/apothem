@@ -9,8 +9,9 @@ Why these tests exist. The conformity validators refuse to run git through a
 - the two ``--staged`` checks run git in the current folder, so they look at
   the ``.git`` entries on git's search path first, as the ``--all`` checks do;
 - a nested folder whose ``.git`` is a link is left out of every walk, and the
-  report names that ``.git`` entry; one whose ``.git`` holds or names no
-  repository is walked, not hidden;
+  report names that ``.git`` entry, as it does a ``.git`` file that names
+  the root's own repository or one outside the project; one whose ``.git``
+  holds or names no repository is walked, not hidden;
 - a folder the walk cannot list is named in the report, not read as empty;
 - the history read of ``agents-md-coverage-grep`` keeps the time of a file
   whose name git would quote;
@@ -233,6 +234,29 @@ def test_the_staged_surface_check_refuses_a_linked_git_above_its_package(
     )
 
 
+def test_the_staged_surface_check_looks_for_links_from_the_package_folder(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # The package folder's own ``.git`` is the link. Seen from the package
+    # folder, where git runs, it is the link in that folder; seen from the
+    # subfolder the run started in, it would be a link above. Only the first
+    # gives the staged sentence, so this pins that the package folder is used.
+    other = _repository(tmp_path / "other")
+    root = (tmp_path / "project").resolve()
+    package = root / "pkg"
+    _write(package / "src" / "apothem" / "__init__.py", '__version__ = "1.2.0"\n')
+    _link_folder(package / ".git", other / ".git")
+    inner = package / "tools"
+    inner.mkdir()
+    monkeypatch.chdir(inner)
+    _no_git(monkeypatch)
+    code = semver_stability_grep._main(["semver-stability-grep", "--staged"])
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 2
+    assert payload["passed"] is False
+    assert payload["check_error"] == _STAGED_LINKED_GIT_MESSAGE
+
+
 def test_the_staged_class_check_still_runs_in_a_plain_checkout(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -293,17 +317,86 @@ def test_the_walk_still_skips_a_real_nested_checkout_quietly(tmp_path: Path) -> 
     assert take_skipped_paths() == []
 
 
-def test_the_walk_skips_a_nested_git_file_that_names_a_repository(
-    tmp_path: Path,
-) -> None:
+def _linked_work_tree(git_dir: Path) -> Path:
+    """Make *git_dir* look like a linked work tree's own folder, without git."""
+    _write(git_dir / "HEAD", "ref: refs/heads/main\n")
+    _write(git_dir / "commondir", "../..\n")
+    return git_dir
+
+
+def _project_with_gitdir(tmp_path: Path, case: str) -> Path:
+    """Return a project whose ``nested`` folder has a ``.git`` file for *case*.
+
+    The root holds a repository in a ``.git`` folder, except in the ``wt-``
+    cases, where the root is itself a linked work tree of ``store/.git``.
+    """
     root = (tmp_path / "project").resolve()
     _write(root / "README.md")
     _write(root / "nested" / "guide.md")
-    store = _fake_repository(tmp_path / "store")
-    _write(root / "nested" / ".git", f"gitdir: {store.as_posix()}\n")
+    (root / "nested" / ".plans").mkdir()
+    if case.startswith("wt-"):
+        common = _fake_repository(tmp_path / "store" / ".git")
+        own = _linked_work_tree(common / "worktrees" / "project")
+        _write(root / ".git", f"gitdir: {own.as_posix()}\n")
+    else:
+        common = _fake_repository(root / ".git")
+    if case in ("root-repository", "wt-common"):
+        named = common
+    elif case == "wt-own":
+        named = common / "worktrees" / "project"
+    elif case == "outside":
+        named = _fake_repository(tmp_path / "elsewhere")
+    elif case == "inside":
+        named = _fake_repository(root / "stores" / "nested.git")
+    elif case in ("submodule", "wt-submodule"):
+        named = _fake_repository(common / "modules" / "nested")
+    else:  # "work-tree", "wt-work-tree"
+        named = _linked_work_tree(common / "worktrees" / "nested")
+    if case == "root-repository":
+        # As written in the file: ``gitdir: ../.git``.
+        gitdir = Path(os.path.relpath(named, root / "nested")).as_posix()
+    else:
+        gitdir = named.as_posix()
+    _write(root / "nested" / ".git", f"gitdir: {gitdir}\n")
+    return root
+
+
+# A .git file that names the root's own repository or one outside the project
+# hides its folder for git as well, so the folder is left out and the .git
+# file is noted. A worktree or a submodule of the root's repository, or a
+# repository kept inside the project, is a checkout of its own: no note.
+_GITDIR_CASES = [
+    ("root-repository", ["nested/.git"]),
+    ("outside", ["nested/.git"]),
+    ("wt-common", ["nested/.git"]),
+    ("wt-own", ["nested/.git"]),
+    ("submodule", []),
+    ("work-tree", []),
+    ("inside", []),
+    ("wt-submodule", []),
+    ("wt-work-tree", []),
+]
+
+
+@pytest.mark.parametrize(("case", "noted"), _GITDIR_CASES)
+def test_the_walk_notes_a_nested_git_file_that_hides_its_folder(
+    tmp_path: Path, case: str, noted: list[str]
+) -> None:
+    root = _project_with_gitdir(tmp_path, case)
     start_skip_log(root)
-    assert [p.name for p in iter_tree_files(root, (".md",))] == ["README.md"]
-    assert take_skipped_paths() == []
+    walked = [p.relative_to(root).as_posix() for p in iter_tree_files(root, (".md",))]
+    assert walked == ["README.md"]
+    assert take_skipped_paths() == noted
+
+
+@pytest.mark.parametrize(("case", "noted"), _GITDIR_CASES)
+def test_the_stray_plans_sweep_notes_a_nested_git_file_that_hides_its_folder(
+    tmp_path: Path, case: str, noted: list[str]
+) -> None:
+    root = _project_with_gitdir(tmp_path, case)
+    start_skip_log(root)
+    assert no_global_plans_grep._sweep_stray_plans_dirs(root, frozenset()) == []
+    assert take_skipped_paths() == noted
 
 
 def _plain_git_entry(folder: Path, shape: str) -> None:
@@ -359,6 +452,23 @@ def test_the_stray_plans_sweep_names_a_nested_linked_git(tmp_path: Path) -> None
     findings = no_global_plans_grep._sweep_stray_plans_dirs(root, frozenset())
     assert findings == []
     assert take_skipped_paths() == ["docs/.git"]
+
+
+@pytest.mark.skipif(os.name != "nt", reason="NTFS folders ignore case by default")
+def test_a_nested_linked_git_is_named_by_its_listed_spelling(tmp_path: Path) -> None:
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    root = (tmp_path / "project").resolve()
+    _write(root / "README.md")
+    _write(root / "docs" / "guide.md")
+    (root / "docs" / ".plans").mkdir()
+    _link_folder(root / "docs" / ".GIT", outside)
+    start_skip_log(root)
+    assert [p.name for p in iter_tree_files(root, (".md",))] == ["README.md"]
+    assert take_skipped_paths() == ["docs/.GIT"]
+    start_skip_log(root)
+    assert no_global_plans_grep._sweep_stray_plans_dirs(root, frozenset()) == []
+    assert take_skipped_paths() == ["docs/.GIT"]
 
 
 # ---------------------------------------------------------------------------

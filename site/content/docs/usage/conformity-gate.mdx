@@ -184,7 +184,8 @@ gives a `check_error` that names the link.
 companion coverage check skips its freshness test, as it does with no history.
 `--all-perwrite` does not list the tracked files either: it fails with a
 `check_error` that names the link, and so do the two `--staged` checks, which
-name a link only in `check_error`: they read the repository a hook's
+name a link only in `check_error`, or say there that the `.git` entry in the
+folder they run in is a link: they read the repository a hook's
 `GIT_DIR` names but still refuse a link on the search path from the folder
 they run in. A `.git` entry the gate cannot look at (a path too long, a share
 it cannot reach, no access) is not a link and is not listed under
@@ -398,9 +399,12 @@ enter a linked folder, and skip directories that hold
 dependencies, virtual environments, caches or build output, such as
 `node_modules`, `venv` and `dist`. The
 stray-plans check in `no-global-plans-grep` also stops at a nested checkout. A
-run of any of these reports on the checkout it was pointed at and on nothing
-else. A validator that reads one fixed folder, such as `naming-grep` under
-`src/apothem/`, reads everything below that folder.
+`.git` file that names the project's own repository or one outside the project
+still hides its folder, as it does for git, but the report lists that `.git`
+file under `skipped_links`; a worktree or a submodule of the project stays
+silent. A run of any of these reports on the checkout it was pointed at and on
+nothing else. A validator that reads one fixed folder, such as `naming-grep`
+under `src/apothem/`, reads everything below that folder.
 
 `--all-perwrite` checks the files that `git ls-files` lists under the root.
 git lists each entry exactly as the repository's index holds it, and a project

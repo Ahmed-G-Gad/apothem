@@ -131,16 +131,17 @@ Link nennt. `no-global-plans-grep` meldet den Link als Befund und scheitert, und
 die Prüfung der Begleitdateien überspringt ihren Aktualitätstest, wie ohne
 Historie. `--all-perwrite` listet die verfolgten Dateien ebenfalls nicht auf: Es
 scheitert mit einem `check_error`, der den Link nennt, und ebenso die beiden
-`--staged`-Prüfungen, die einen Link nur im `check_error` nennen: Sie lesen das
-Repository, das das `GIT_DIR` eines Hooks nennt, lehnen aber dennoch einen Link
-auf dem Suchpfad ab dem Ordner ab, in dem sie laufen. Ein `.git`-Eintrag, den
-das Gate nicht betrachten kann (ein zu langer Pfad, eine nicht erreichbare
-Freigabe, kein Zugriff), ist kein Link und steht nicht unter `skipped_links`:
-`conventional-commit-grep` scheitert mit dem Status `git-failed` und einem
-`check_error`, die Prüfung der Begleitdateien, `--all-perwrite` und die beiden
-`--staged`-Prüfungen scheitern mit einem `check_error`, der sagt, dass der
-Eintrag nicht betrachtet werden konnte, und `no-global-plans-grep` meldet ihn
-als Befund.
+`--staged`-Prüfungen, die einen Link nur im `check_error` nennen oder dort
+sagen, dass der `.git`-Eintrag im Ordner, in dem sie laufen, ein Link ist: Sie
+lesen das Repository, das das `GIT_DIR` eines Hooks nennt, lehnen aber dennoch
+einen Link auf dem Suchpfad ab dem Ordner ab, in dem sie laufen. Ein
+`.git`-Eintrag, den das Gate nicht betrachten kann (ein zu langer Pfad, eine
+nicht erreichbare Freigabe, kein Zugriff), ist kein Link und steht nicht unter
+`skipped_links`: `conventional-commit-grep` scheitert mit dem Status
+`git-failed` und einem `check_error`, die Prüfung der Begleitdateien,
+`--all-perwrite` und die beiden `--staged`-Prüfungen scheitern mit einem
+`check_error`, der sagt, dass der Eintrag nicht betrachtet werden konnte, und
+`no-global-plans-grep` meldet ihn als Befund.
 
 Sechs Validatoren beginnen im Wurzelverzeichnis des Repositorys und durchsuchen
 den gesamten Baum nach den Dateien, die sie prüfen:
@@ -155,13 +156,19 @@ reference-token-grep
 ```
 
 Diese überspringen verschachtelte Git-Checkouts, etwa Worktrees, Submodule und
-verschachtelte Klone, und überspringen Verzeichnisse, die Abhängigkeiten,
-virtuelle Umgebungen, Caches oder Build-Ausgaben enthalten, etwa `node_modules`,
-`venv` und `dist`. Die Prüfung auf verirrte Pläne in `no-global-plans-grep` hält
-ebenfalls an einem verschachtelten Checkout an. Ein Lauf eines dieser
-Validatoren meldet Ergebnisse zu dem Checkout, auf den er gerichtet wurde, und zu
-nichts anderem. Ein Validator, der einen festen Ordner liest, etwa `naming-grep`
-unter `src/apothem/`, liest alles unterhalb dieses Ordners.
+verschachtelte Klone (ein Ordner, dessen `.git`-Datei oder `.git`-Ordner ein
+Repository enthält oder nennt; eine einfache `.git`-Datei oder ein leerer
+`.git`-Ordner verbirgt seinen Ordner nicht), und überspringen Verzeichnisse, die
+Abhängigkeiten, virtuelle Umgebungen, Caches oder Build-Ausgaben enthalten, etwa
+`node_modules`, `venv` und `dist`. Die Prüfung auf verirrte Pläne in
+`no-global-plans-grep` hält ebenfalls an einem verschachtelten Checkout an. Eine
+`.git`-Datei, die das eigene Repository des Projekts oder eines außerhalb des
+Projekts nennt, verbirgt ihren Ordner weiterhin, wie bei git, doch der Bericht
+führt diese `.git`-Datei unter `skipped_links` auf; ein Worktree oder ein
+Submodul des Projekts bleibt ohne Vermerk. Ein Lauf eines dieser Validatoren
+meldet Ergebnisse zu dem Checkout, auf den er gerichtet wurde, und zu nichts
+anderem. Ein Validator, der einen festen Ordner liest, etwa `naming-grep` unter
+`src/apothem/`, liest alles unterhalb dieses Ordners.
 
 ## Gate-Stufen
 

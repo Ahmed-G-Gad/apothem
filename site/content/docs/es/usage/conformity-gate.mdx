@@ -125,7 +125,8 @@ fuera de un checkout, pero no pasa: da un `check_error` que nombra el enlace.
 comprobación de archivos acompañantes omite su prueba de actualidad, como cuando
 no hay historial. `--all-perwrite` tampoco lista los archivos rastreados: falla
 con un `check_error` que nombra el enlace, y lo mismo hacen las dos
-comprobaciones `--staged`, que nombran un enlace solo en `check_error`: leen el
+comprobaciones `--staged`, que nombran un enlace solo en `check_error`, o dicen
+ahí que la entrada `.git` de la carpeta en la que corren es un enlace: leen el
 repositorio que nombra el `GIT_DIR` de un hook pero aun así rechazan un enlace
 en la ruta de búsqueda desde la carpeta en la que corren. Una entrada `.git` que
 el gate no puede mirar (una ruta demasiado larga, un recurso compartido
@@ -148,13 +149,18 @@ reference-token-grep
 ```
 
 Estos omiten los checkouts de git anidados, como worktrees, submódulos y clones
-anidados, y omiten los directorios que contienen dependencias, entornos
+anidados (una carpeta cuyo archivo o carpeta `.git` contiene o nombra un
+repositorio; un archivo `.git` simple o una carpeta `.git` vacía no oculta su
+carpeta), y omiten los directorios que contienen dependencias, entornos
 virtuales, cachés o resultados de compilación, como `node_modules`, `venv` y
 `dist`. La comprobación de planes extraviados de `no-global-plans-grep` también
-se detiene en un checkout anidado. Una ejecución de cualquiera de ellos informa
-sobre el checkout al que se apuntó y sobre nada más. Un validador que lee una
-carpeta fija, como `naming-grep` bajo `src/apothem/`, lee todo lo que hay debajo
-de esa carpeta.
+se detiene en un checkout anidado. Un archivo `.git` que nombra el propio
+repositorio del proyecto o uno fuera del proyecto sigue ocultando su carpeta,
+como hace para git, pero el informe lista ese archivo `.git` en `skipped_links`;
+un worktree o un submódulo del proyecto no deja nota. Una ejecución de
+cualquiera de ellos informa sobre el checkout al que se apuntó y sobre nada más.
+Un validador que lee una carpeta fija, como `naming-grep` bajo `src/apothem/`,
+lee todo lo que hay debajo de esa carpeta.
 
 ## Barras de la puerta
 
