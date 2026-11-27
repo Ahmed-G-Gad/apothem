@@ -2,7 +2,7 @@
 title: "Gerbang konformitas"
 description: "Jalankan gerbang konformitas Apothem untuk memverifikasi kesehatan ekosistem."
 machineTranslated: true
-sourceHash: "1e86535725961fda"
+sourceHash: "0bd3bfad466f605b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,6 +30,82 @@ PYTHONPATH=src python -m apothem.conformity.gate --all .
 PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 ```
 
+Perintah-perintah ini menjalankan gerbang dari checkout Apothem. `python -m`
+membaca modul dari folder saat ini terlebih dahulu, jadi jalankan dari root
+checkout atau dari folder lain yang Anda percayai. Untuk memeriksa proyek yang
+berkasnya tidak Anda percayai, jalankan gerbang melalui jalur skripnya dengan
+`-E -s`: `python3 -E -s src/apothem/conformity/gate.py --all .` di dalam
+checkout, atau `python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .`
+setelah pemasangan skrip. Di Windows, gunakan `python` sebagai pengganti
+`python3` beserta jalur lengkapnya, karena Windows PowerShell dan cmd tidak
+menguraikan `~`: `$HOME\.apothem\src\apothem\conformity\gate.py` di PowerShell,
+atau `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` di cmd. Memulai
+lewat skrip menjauhkan folder saat ini dari entri pertama jalur pencarian modul
+Python; `-E` juga menjauhkan `PYTHONPATH`, tempat entri kosong atau relatif juga
+menunjuk folder saat ini, dan `-s` menjauhkan site-packages pengguna Anda. Ini
+hanya menjauhkan berkas proyek dari kode Python milik gerbang sendiri; `git`
+yang dijalankan gerbang dibahas berikutnya.
+
+Tiga validator standalone menjalankan `git` di proyek yang mereka periksa,
+begitu pula `--all`, yang menjalankan ketiganya, dan `--all-perwrite`, yang
+mendaftar berkas yang dilacak dengan `git ls-files`:
+
+```text
+agents-md-coverage-grep
+conventional-commit-grep
+no-global-plans-grep
+```
+
+Pengaturan repositori itu sendiri, di `.git/config`, berkas yang disertakannya,
+dan `.git/config.worktree`, dapat menyebut program yang dijalankan git
+meskipun git hanya membaca. Gerbang mematikan setiap pengaturan seperti itu yang
+dikenalnya dengan opsi di baris perintah git, yang mengalahkan setiap berkas
+yang dibaca git dan juga sampai ke git mana pun yang dijalankan git di dalam
+submodule:
+
+- tanpa pemantau sistem berkas (`core.fsmonitor`);
+- tanpa program tanda tangan (`gpg.program`, `gpg.ssh.program`, dan
+  `gpg.x509.program` menunjuk ke jalur yang tidak mungkin berisi apa pun, dan
+  `log.showSignature` dimatikan);
+- tanpa hook, tanpa pager, dan tanpa pemeliharaan otomatis;
+- tanpa program diff eksternal atau konversi teks, dan perubahan submodule
+  ditampilkan hanya sebagai id commit, sehingga git tidak menjalankan git kedua
+  di dalam submodule;
+- isi berkas dibaca dengan `git cat-file blob`, yang menolak entri submodule
+  di tempat `git show` akan menampilkannya sebagai commit.
+
+Tiga pengaturan menyebut berkas untuk dibaca git, bukan program, dan berkas itu
+dapat berada di jalur jaringan. Baris perintah gerbang juga mencegah git
+membacanya: berkas urutan diff (`diff.orderFile`), berkas pengecualian
+(`core.excludesFile`), dan berkas mailmap.
+
+Gerbang juga menyetel `GIT_NO_LAZY_FETCH=1` dan `GIT_ALLOW_PROTOCOL` yang
+kosong, sehingga git tidak pernah mengambil objek yang hilang dari partial
+clone melalui alamat yang disebut repositori. Gerbang menjalankan git hanya
+dari entri jalur lengkap di `PATH` Anda. Gerbang tidak pernah mengambil git
+dari folder saat ini: gerbang melewati entri `PATH` yang kosong dan relatif,
+yang menunjuk folder itu, dan tidak mencarinya di sana terlebih dahulu,
+seperti yang dilakukan Windows untuk nama program tanpa jalur. git hanya
+mendapat entri jalur lengkap itu untuk program yang dijalankannya berdasarkan
+nama.
+
+Jadi Anda dapat menjalankan perintah ini pada proyek yang datang bersama folder
+`.git`-nya dari orang lain, dalam arsip atau folder bersama: tidak satu pun
+pengaturan di atas dapat membuat gerbang menjalankan program. Dua batasan
+tersisa. Repositori masih dapat membuat git membaca jalur di tempat lain
+melalui pengaturan atau berkas apa pun yang menyebut jalur, misalnya
+`include.path` atau `includeIf`, `core.worktree`, baris `gitdir:` dari berkas
+`.git`, atau `.git/objects/info/alternates`; di Windows, jalur jaringan di sana
+(`\\server\share`) membuat Windows terhubung ke server itu dan memasukkan
+kredensial Anda. Satu kasus lebih sempit: Git for Windows 2.55 menolak jalur
+jaringan di baris `gitdir:` sebelum terhubung, kecuali pengaturan
+`safe.directory` Anda sendiri mengizinkan jalur itu. Selain itu, daftar ini
+mencakup pengaturan yang dikenal saat ini; rilis git berikutnya dapat
+menambahkan pengaturan baru. Pengaturan git global dan sistem milik Anda tetap
+berlaku, kecuali yang di atas, yang ditimpa oleh baris perintah gerbang. Ini
+hanya mencakup git: `python -m` membaca modul Python dari folder saat ini
+terlebih dahulu, jadi mulai gerbang dari folder yang Anda percayai.
+
 Kode keluar: `0` bersih (atau advisori), `2` pemblokiran temuan mode strict,
 `3` kesalahan penggunaan: flag atau nama validator yang tidak dikenal, berkas
 yang tidak ada, atau direktori root yang tidak ada. `--help` mencetak
@@ -43,7 +119,7 @@ Setiap validator melaporkan `inspected` — berapa banyak target yang
 diperiksanya — dan `--all` menyalin hitungan tersebut ke setiap entri hasil.
 Validator yang tidak memeriksa apa pun melaporkan `passed: false`, sehingga
 direktori kerja yang salah tidak dapat lolos diam-diam. Dua validator suite
-rencana merupakan salah satu pengecualian: suite rencana berada di pohon
+rencana merupakan satu pengecualian: suite rencana berada di pohon
 `.apothem/plans/` yang di-gitignore, sehingga keduanya melaporkan
 `empty_scope_expected: true` pada checkout yang bersih dan tetap lolos.
 Validator alur kerja melakukan hal yang sama ketika proyek belum memiliki
@@ -60,25 +136,25 @@ berikut sebagai tidak ada:
 - tautan, bahkan tautan yang menunjuk ke dalam root. Penelusuran atau daftar
   folder melewatinya, sehingga tujuannya hanya diperiksa di tempat validator
   mencapainya melalui jalurnya sendiri;
-- pipa bernama, perangkat, atau soket, tempat pembacaan akan menunggu atau
-  tidak pernah selesai;
+- named pipe, perangkat, atau soket, tempat pembacaan akan menunggu atau tidak
+  pernah selesai;
 - di Windows, nama yang diakhiri titik atau spasi, karena Windows akan membuka
   entri lain dengan nama itu.
 
 Beberapa pemeriksaan masih memakai tautan tanpa memasukinya:
 
 - untuk berkas tetap yang berupa tautan simbolik, seperti `CLAUDE.md` yang
-  menunjuk ke berkas lain, gate membaca teks tautan itu sendiri dan membuka
+  menunjuk ke berkas lain, gerbang membaca teks tautan itu sendiri dan membuka
   berkas yang disebutnya hanya jika itu berkas biasa di dalam proyek, yang
   dicapai melalui folder nyata. Tautan `README.md` per folder dihitung dengan
   cara yang sama. Tautan absolut dihitung jika ditulis melalui folder proyek
-  sebagaimana folder itu terselesaikan, atau di Windows melalui jalur yang
-  sama dengan huruf besar-kecil berbeda; validator yang dijalankan sendiri
-  juga menerima folder seperti yang Anda ketik, kecuali jalur itu memuat `..`,
-  sedangkan gate menyelesaikan folder sebelum memulai setiap validator.
+  sebagaimana folder itu ter-resolve, atau di Windows melalui jalur yang sama
+  dengan huruf besar-kecil berbeda; validator yang dijalankan sendiri juga
+  menerima folder seperti yang Anda ketik, kecuali jalur itu memuat `..`,
+  sedangkan gerbang me-resolve folder sebelum memulai setiap validator.
   `.gitattributes` yang ditautkan tetap dihitung tidak ada, karena git tidak
   membacanya;
-- pemeriksaan rencana tersesat di `no-global-plans-grep` melaporkan folder
+- pemeriksaan rencana-nyasar di `no-global-plans-grep` melaporkan folder
   rencana atau folder `.apothem` yang berupa tautan, dengan namanya, ke mana
   pun tautan itu mengarah;
 - `no-toplevel-docs-grep` melaporkan tautan `docs` di root dengan namanya;
@@ -90,64 +166,272 @@ menyembunyikan berkas tanpa jejak. Di sana juga dicantumkan folder yang tidak
 dapat didaftarnya (tanpa akses, jalur terlalu panjang, galat baca), dan entri
 `.git` dari folder yang dilewatinya sebagai checkout bersarang jika entri itu
 berupa tautan atau berkas khusus; folder itu sendiri dicantumkan di bawah
-`skipped_checkouts`, yang dijelaskan di bawah. Validator yang lolos saat foldernya tidak ada,
-seperti validator workflow, tidak lolos saat folder itu berupa tautan: berkasnya
-mungkin ada di baliknya, sehingga proses gagal seperti proses yang tidak
-memeriksa apa pun. Tautan keras adalah berkas biasa dan dibaca seperti itu.
-Validator `--all` dan `--all-perwrite` melihat setiap tingkat saat mencapainya,
-lalu membuka berkas tingkat demi tingkat dari root, setiap folder di dalam
-folder yang dibuka sebelumnya, tidak pernah melalui tautan. Jadi, saat seseorang
-yang dapat menulis ke proyek menukar berkas yang sudah diperiksa, atau folder di
-atasnya, dengan tautan atau named pipe selama gate berjalan, gate tidak membaca
-melalui tautan itu dan tidak menunggu pada pipe: berkasnya tidak dibaca.
-Validator `--all` menghitungnya sebagai tidak ada atau tidak terbaca, sama
-seperti ia menghitung tautan, dan mencantumkan entri yang ditukar di bawah
-`skipped_links`; `--all-perwrite` menghitungnya sebagai `link`, atau sebagai
-`unreadable` bila ditukar lagi. Di Windows masih
-ada satu penantian, seperti pada pembukaan biasa: program yang dapat menulis
-ke proyek dapat memegang kunci oportunistik (oplock) pada berkas dan tidak
-melepasnya saat gate membukanya. Tidak ada cara membuka berkas yang
-menghindari penantian itu, jadi validator `--all` menunggu sampai batas 10
-menitnya, dan `--all-perwrite`, yang tidak punya batas seperti itu, sampai
-program itu melepasnya. Pada
-`--all` dan `--all-perwrite`, gate sendiri hanya membuka berkas biasa di dalam
-root, memeriksa setiap folder di jalan dengan `lstat`, termasuk setiap jalur
-yang didaftar git, dan tidak pernah membaca di dalam entri `.git`. Sebelum
+`skipped_checkouts`, yang dijelaskan di bawah. Validator yang lolos saat
+foldernya tidak ada, seperti validator alur kerja, tidak lolos saat folder itu
+berupa tautan: berkasnya mungkin ada di baliknya, sehingga proses gagal seperti
+proses yang tidak memeriksa apa pun. Tautan keras adalah berkas biasa dan
+dibaca seperti itu. Validator `--all` dan `--all-perwrite` melihat setiap
+tingkat saat mencapainya, lalu membuka berkas tingkat demi tingkat dari root,
+setiap folder di dalam folder yang dibuka sebelumnya, tidak pernah melalui
+tautan. Jadi, saat seseorang yang dapat menulis ke proyek menukar berkas yang
+diperiksa, atau folder di atasnya, dengan tautan atau named pipe selama
+gerbang berjalan, gerbang tidak membaca melalui tautan itu dan tidak menunggu
+pada pipe: berkasnya tidak dibaca. Validator `--all` menghitungnya sebagai
+tidak ada atau tidak terbaca, sama seperti ia menghitung tautan, dan
+mencantumkan entri yang ditukar di bawah `skipped_links`; `--all-perwrite`
+menghitungnya sebagai `link`, atau sebagai `unreadable` bila ditukar lagi,
+seperti dijelaskan di bawah. Di Windows masih ada satu penantian, seperti pada
+pembukaan biasa: program yang dapat menulis ke proyek dapat memegang kunci
+oportunistik (oplock) pada berkas dan tidak melepasnya saat gerbang
+membukanya. Tidak ada cara membuka berkas yang menghindari penantian itu, jadi
+validator `--all` menunggu sampai batas 10 menitnya, dan `--all-perwrite`, yang
+tidak punya batas seperti itu, sampai program itu melepasnya. Pada `--all` dan
+`--all-perwrite`, gerbang sendiri hanya membuka berkas biasa di dalam root,
+memeriksa setiap folder di jalan dengan `lstat`, termasuk setiap jalur yang
+didaftar git, dan tidak pernah membaca di dalam entri `.git`. Sebelum
 menjalankan git, tiga validator `--all` yang menjalankan git, dan dua
 pemeriksaan `--staged`, melihat dengan `lstat` entri `.git` dari root dan dari
 setiap folder di atasnya yang ditelusuri git, sebagaimana pohon pada saat itu;
 jika salah satunya berupa tautan, atau tidak dapat dilihat, mereka tidak
 menjalankan git. Ini juga menolak proyek yang akan ditangani git dengan aman,
-seperti setiap proyek di bawah folder home yang `.git`-nya berupa tautan, bahkan
-yang memiliki repositori sendiri: itulah harga yang disengaja dari aturan
-sederhana. Tiga validator `--all` menjalankan git tanpa `GIT_DIR` dan variabel
-lain yang menyebut repositori, penyimpanannya, atau indeksnya; pemeriksaan
-`--staged` mempertahankan `GIT_DIR` milik hook. Repositori mana yang kemudian
-dibaca git tidak diperiksa: baris `gitdir:`, `commondir`, alternates,
-`core.worktree`, include, atau tautan di dalam folder git dapat menyebut
-repositori lain, dan git mengikutinya, sehingga git bisa mencapai jalur jaringan
-atau menunggu sampai batas waktunya. Gate memakai keluaran git hanya sebagai
-nama, mode, huruf status, subjek commit terakhir, waktu commit, dan beberapa
-pengaturan, dan tidak pernah membuka jalur yang dicetak git tanpa memeriksa
-setiap tingkat di dalam root. Ketika tautan ditemukan, masing-masing dari tiga
-validator `--all` mencantumkannya di bawah `skipped_links` (relatif terhadap
-root jika berada di dalamnya, dengan jalur lengkap jika berada di atasnya).
-`conventional-commit-grep` kemudian melaporkan `not-a-git-repo`, seperti di luar
-checkout, tetapi tidak lolos: ia memberi `check_error` yang menyebut tautan itu.
-`no-global-plans-grep` melaporkan tautan sebagai temuan dan gagal, dan
-pemeriksaan berkas pendamping melewati uji kebaruannya, seperti saat tidak ada
-riwayat. `--all-perwrite` juga tidak mendaftar berkas yang dilacak: ia gagal
-dengan `check_error` yang menyebut tautan itu, begitu pula dua pemeriksaan
-`--staged`, yang menyebut tautan hanya di `check_error`, atau menyatakan di sana
-bahwa entri `.git` di folder tempat mereka berjalan adalah tautan: keduanya
-membaca repositori yang disebut `GIT_DIR` milik hook tetapi tetap menolak tautan
-di jalur pencarian dari folder tempat mereka berjalan. Entri `.git` yang tidak
-dapat dilihat gate (jalur terlalu panjang, share yang tidak terjangkau, tanpa
-akses) bukan tautan dan tidak dicantumkan di bawah `skipped_links`:
-`conventional-commit-grep` gagal dengan status `git-failed` dan `check_error`;
-pemeriksaan berkas pendamping, `--all-perwrite`, dan dua pemeriksaan `--staged`
-gagal dengan `check_error` yang menyatakan entri itu tidak dapat dilihat, dan
-`no-global-plans-grep` melaporkannya sebagai temuan.
+seperti setiap proyek di bawah folder home yang `.git`-nya berupa tautan,
+bahkan yang memiliki repositori sendiri: itulah harga yang disengaja dari
+aturan sederhana. Tiga validator `--all` menjalankan git tanpa `GIT_DIR` dan
+variabel lain yang menyebut repositori, penyimpanannya, atau indeksnya;
+pemeriksaan `--staged` mempertahankan `GIT_DIR` milik hook. Repositori mana
+yang kemudian dibaca git tidak diperiksa: baris `gitdir:`, `commondir`,
+alternates, `core.worktree`, include, atau tautan di dalam folder git dapat
+menyebut repositori lain, dan git mengikutinya, sehingga git bisa mencapai
+jalur jaringan atau menunggu sampai batas waktunya. Gerbang memakai keluaran
+git hanya sebagai nama, mode, huruf status, subjek commit terakhir, waktu
+commit, dan beberapa pengaturan, dan tidak pernah membuka jalur yang dicetak
+git tanpa memeriksa setiap tingkat di dalam root. Ketika tautan ditemukan,
+masing-masing dari tiga validator `--all` mencantumkannya di bawah
+`skipped_links` (relatif terhadap root jika berada di dalamnya, dengan jalur
+lengkap jika berada di atasnya). `conventional-commit-grep` kemudian melaporkan
+`not-a-git-repo`, seperti di luar checkout, tetapi tidak lolos: ia memberi
+`check_error` yang menyebut tautan itu. `no-global-plans-grep` melaporkan
+tautan sebagai temuan dan gagal, dan pemeriksaan berkas pendamping melewati
+uji kebaruannya, seperti saat tidak ada riwayat. `--all-perwrite` juga tidak
+mendaftar berkas yang dilacak: ia gagal dengan `check_error` yang menyebut
+tautan itu, begitu pula dua pemeriksaan `--staged`, yang menyebut tautan hanya
+di `check_error`, atau menyatakan di sana bahwa entri `.git` di folder tempat
+mereka berjalan adalah tautan: keduanya membaca repositori yang disebut
+`GIT_DIR` milik hook tetapi tetap menolak tautan di jalur pencarian dari folder
+tempat mereka berjalan. Entri `.git` yang tidak dapat dilihat gerbang (jalur
+terlalu panjang, share yang tidak terjangkau, tanpa akses) bukan tautan dan
+tidak dicantumkan di bawah `skipped_links`: `conventional-commit-grep` gagal
+dengan status `git-failed` dan `check_error`; pemeriksaan berkas pendamping,
+`--all-perwrite`, dan dua pemeriksaan `--staged` gagal dengan `check_error`
+yang menyatakan entri itu tidak dapat dilihat, dan `no-global-plans-grep`
+melaporkannya sebagai temuan.
+
+Setiap validator standalone berjalan sebagai program tersendiri, dan gerbang
+memberinya 10 menit, dalam `--all` maupun `--check`. Yang paling lambat
+memerlukan sekitar satu menit pada repositori Apothem sendiri. Validator yang
+masih berjalan saat batas tercapai dihentikan, bersama setiap program yang
+dijalankannya, seperti perintah `git` yang masih menunggu, dan dilaporkan
+dengan `passed: false` serta `check_error` yang menyatakan validator itu tidak
+selesai. Di Linux dan macOS setiap validator berjalan dalam sesinya sendiri,
+dan `SIGTERM` atau `SIGHUP` ke gerbang, misalnya dari `timeout` atau terminal
+yang ditutup, menghentikan program-program validator sebelum gerbang keluar
+dengan kode 128 ditambah nomor sinyal itu. Hal itu juga berlaku untuk sinyal
+yang tiba saat gerbang memulai atau menghentikan validator: gerbang menunggu
+hingga langkah itu selesai, dan kode keluarnya tetap 128 ditambah nomor sinyal
+itu bahkan ketika Ctrl+C menyusul selama langkah itu. `SIGKILL`, yang tidak
+dapat ditangkap program mana pun, di sana hanya mengakhiri gerbang: validator
+yang telah dijalankannya terus berjalan hingga selesai, dan perintah `git` yang
+ditunggu validator itu tetap berhenti pada batasnya sendiri. Di Windows setiap
+validator berjalan dalam job object, yang juga mengakhiri program-programnya
+saat gerbang sendiri berakhir. Setiap program yang dijalankan gerbang di sana
+menunggu, dalam keadaan ditangguhkan, hingga program itu berada di dalam job
+object. Program yang tidak dapat dilanjutkan dihentikan, dan galatnya
+menyatakan apakah program itu berada di dalam job object. Program yang diminta
+berakhir oleh pihak lain sebelum dilanjutkan tidak pernah berjalan, dan gagal
+dengan cara yang sama, apa pun kode keluarnya, dengan dua pengecualian.
+Program yang berakhir dengan kode keluar 259, kode yang juga diberikan Windows
+untuk program yang sedang berjalan, terbaca sebagai sedang berjalan selama
+Windows masih mengakhirinya. Program yang berakhir tepat sebelum dilanjutkan
+hanya tertangkap ketika gerbang membaca kode keluarnya dalam 1 ms setelah
+dilanjutkan; pembacaan yang lebih lambat, misalnya pada mesin yang sibuk atau
+saat thread lain di proses pemanggil sedang sibuk, menganggap kode keluarnya
+sebagai milik program itu sendiri. Pada mesin tempat pengukuran dilakukan,
+program terkecil yang dapat dijalankan Windows hidup setidaknya 3 ms setelah
+dilanjutkan, dan `git` 27 ms, sehingga program yang sudah berjalan tidak
+dikira program yang diakhiri. Program yang berakhir tepat setelah dilanjutkan
+juga tidak dapat dibedakan dari program yang sudah berjalan. Di setiap
+platform, dalam proses milik gerbang sendiri, Ctrl+C yang tiba selama
+penyalaan menunggu hingga program berjalan (di Windows, hingga gerbang telah
+mencoba melanjutkannya), sehingga tidak ada program yang tertinggal dalam
+keadaan ditangguhkan atau berjalan melewati batasnya. Ctrl+C kedua yang tiba
+saat gerbang menghentikan program menunggu hingga penghentian selesai. Ctrl+C
+yang tiba tepat sebelum penghentian dimulai membuat gerbang mencoba
+penghentian lagi, hingga tiga kali. Ketika percobaan itu gagal, atau Ctrl+C
+jatuh di antara dua percobaan, gerbang menghentikan program tanpa menahan
+sinyal, lagi-lagi hingga tiga kali, sehingga satu Ctrl+C tambahan tidak
+melewatkan penghentian. Diperlukan beberapa kali menekan Ctrl+C, masing-masing
+dalam rentang mikrodetik dari salah satu titik ini, untuk membuat program
+tetap berjalan. Setelah penghentian, gerbang menunggu hingga setengah detik
+agar program yang dihentikan berakhir, sehingga di Linux dan macOS program itu
+tidak tertinggal sebagai proses defunct, dan Ctrl+C selama penantian itu tidak
+menggantikan terminasi yang sudah berlangsung. Handler yang disetel proses
+pemanggil untuk sinyal lain masih dapat membuat program tetap berjalan (di
+Windows, dalam keadaan ditangguhkan), ketika galatnya jatuh dalam beberapa
+mikrodetik setelah program dimulai, sebelum gerbang mencatatnya. Ketika
+gerbang mengubah handler sinyalnya sendiri, sinyal yang tiba di tengah
+perubahan tidak membuat handler tertinggal dalam keadaan berubah. Di Linux dan
+macOS gerbang memblokir Ctrl+C, `SIGTERM`, dan `SIGHUP`, dan tidak ada sinyal
+lain, selama beberapa mikrodetik yang diperlukan perubahan itu, sehingga
+sinyal seperti itu menunggu hingga perubahan selesai dan bertemu handler yang
+saat itu terpasang. Gerbang kemudian hanya membuka blokir sinyal yang
+diblokirnya. Untuk sinyal lain, di Windows, dan untuk sinyal yang tiba tepat
+sebelum pemblokiran, perubahan yang terhenti oleh sinyal itu dilakukan lagi,
+hingga tiga kali. Ketika pemulihan handler gagal di setiap percobaan, gerbang
+melakukan satu percobaan terakhir untuk setiap handler yang tersisa. Handler
+tetap berubah ketika galat juga menghentikan percobaan terakhir itu, seperti
+`TimeoutError` dari timer yang disetel proses pemanggil yang menyala setiap
+kali, dan dalam kasus langka ketika beberapa sinyal yang handler-nya memunculkan
+galat tiba berturut-turut, dalam rentang mikrodetik, dan melewatkan percobaan
+terakhir. Galat yang muncul lagi di setiap percobaan, seperti `RecursionError`
+di dekat batas rekursi Python, mengakhiri perubahan dalam dua percobaan dan
+berlanjut. Gerbang memulihkan handler-nya dengan panggilan yang tidak lebih
+dalam daripada panggilan yang mengubahnya, sehingga di dekat batas itu gerbang
+tidak membiarkan Ctrl+C terabaikan. Handler `SIGTERM` yang disetel proses
+pemanggil selama proses berjalan tetap terpasang. Di Linux dan macOS, dalam
+subinterpreter Python, tempat handler sinyal tidak boleh disetel, gerbang
+menjalankan programnya tanpa mengubah handler; di Windows, Python tidak dapat
+membaca keluaran program dari subinterpreter terisolasi, yang tidak
+mengizinkan thread daemon. Ctrl+C mencetak satu baris dan keluar dengan
+`130`. Batas-batas itu bertambah: proses yang di dalamnya beberapa validator
+menunggu memakan jumlah batas mereka.
+
+Lima validator juga memberi setiap perintah `git` yang mereka jalankan batas
+waktu tersendiri. Batas itu berlaku di setiap platform, termasuk di Windows
+ketika `git` di `PATH` adalah peluncur yang dipasang Git for Windows, yang
+menjalankan git yang sebenarnya:
+
+```text
+conventional-commit-grep            git log -1, git rev-parse           1 minute
+                                    git ls-files, git config            1 minute
+agents-md-coverage-grep             git rev-parse, git config           1 minute
+                                    git log over the whole history      5 minutes
+no-global-plans-grep                git ls-files                        1 minute
+production-ready-pr-grep --staged   git diff --cached                   1 minute
+semver-stability-grep --staged      git diff --cached, git cat-file     1 minute
+```
+
+Perintah-perintah ini memakan sepersekian detik pada kebanyakan proyek,
+sehingga batas hanya tercapai ketika `git` menunggu sesuatu yang tidak pernah
+datang. Pengaturan git milik proyek dapat membuatnya menunggu selamanya,
+misalnya `include.path` di `.git/config`-nya yang menyebut named pipe. Perintah
+`git` yang berjalan melewati batasnya tidak lolos: validator melaporkan
+`passed: false` dengan `check_error` yang menyebut perintah itu. Begitu pula
+`git` yang menolak checkout yang ditemukannya, misalnya checkout milik pengguna
+lain atau yang memiliki baris rusak di `.git/config`-nya; `check_error` lalu
+memberikan kode keluar git, dan kode keluar 128 adalah kode yang dipakai git
+saat tidak dapat membuka atau membaca repositori. Folder yang entri `.git`-nya
+tidak dapat dibuka git dihitung sebagai checkout seperti itu, karena riwayat
+yang diperlukan pemeriksaan mungkin ada di sana tanpa terbaca: folder `.git`
+kosong di luar checkout lain mana pun, atau berkas `.git` yang menyebut folder
+yang sudah tidak ada, seperti yang ditinggalkan worktree yang dibongkar atau
+submodule yang disalin. Hapus entri itu, atau jalankan gerbang pada checkout
+lengkap. Hal itu juga berlaku untuk pemeriksaan pendamping usang, meskipun
+temuannya selain itu bersifat advisori, dan pemeriksaan subjek commit lalu
+juga melaporkan `inspected: 0` dengan `empty_scope_expected: false`. Di
+Windows, `git` yang dijalankan gerbang tetapi tidak dapat dilanjutkan juga
+merupakan `git` yang gagal: `check_error` memberikan kode keluar 128, dan itu
+tidak pernah dihitung sebagai `git` yang tidak ada. Pemeriksaan pendamping
+usang membaca seluruh riwayat sekali, dan pembacaan itu mendapat 5 menit,
+sehingga riwayat yang besar menjadi lambat alih-alih gagal; riwayat yang lebih
+lama dibaca menggagalkan pemeriksaan. Folder biasa yang tidak berada di dalam
+checkout git mana pun, repositori yang belum memiliki commit, atau mesin tanpa
+`git` tetap lolos pemeriksaan ini seperti sebelumnya. Begitu pula partial
+clone, yang dibuat dengan `git clone --filter`: gerbang tidak membiarkan `git`
+mengambil apa yang ditinggalkan clone itu, dan git tidak memberikan jawaban
+yang membedakan objek yang ditinggalkan clone dari objek yang hilang. Jadi
+dalam partial clone, pemeriksaan pendamping usang menganggap setiap pembacaan
+riwayat yang gagal sebagai riwayat yang tidak tersedia: pemeriksaan melewati
+uji kebaruannya dan lolos, seperti saat tidak ada riwayat. Pengecualian ini,
+dan `check_error` untuk checkout yang ditolak git, berlaku untuk empat
+validator lainnya: `no-global-plans-grep` memerlukan checkout yang dapat dibaca
+git, sehingga di luar checkout, pada mesin tanpa `git`, atau di checkout yang
+ditolak git, validator ini gagal seperti sebelumnya, dengan alasannya di
+standard error: kode keluar git, bukan teks git sendiri. Seperti hasil lain
+yang tidak lolos, mode advisori default melaporkannya dan keluar dengan `0`,
+dan `--strict` keluar dengan `2`.
+
+Untuk dua pemeriksaan `--staged`, nilai yang tidak dapat dibaca git untuk
+pengaturan diff, seperti `diff.renameLimit = abc`, adalah salah satu baris
+rusak seperti itu: `git diff` gagal, dan kumpulan perubahan yang tidak terbaca
+bukanlah kumpulan perubahan yang kosong. Kedua pemeriksaan ini, pemeriksaan
+subjek commit, dan pemeriksaan pendamping usang mencari checkout di folder
+tempat mereka berjalan dan di folder-folder di atasnya, sehingga hal yang sama
+berlaku di subfolder checkout. Pencarian berhenti di tempat git berhenti: di
+folder yang disebut dalam `GIT_CEILING_DIRECTORIES` dan, di luar Windows, di
+folder pada sistem berkas lain, kecuali `GIT_DISCOVERY_ACROSS_FILESYSTEM`
+disetel. Karena itu, folder tanpa repositori sendiri yang di-mount di bawah
+sebuah repositori tetap lolos. Pemeriksaan subjek commit yang dijalankan pada
+subfolder checkout memeriksa commit terbaru checkout itu ketika checkout
+melacak berkas di subfolder itu, atau memiliki berkas yang di-stage di sana. Di
+tempat checkout mengabaikan huruf besar-kecil, seperti di Windows dan macOS,
+hal itu juga berlaku untuk subfolder yang namanya diubah di disk hanya dalam
+huruf besar atau kecil. Folder yang tidak dilacak checkout, baik tidak dilacak
+maupun diabaikan, tidak memiliki riwayat sendiri dan lolos, seperti proyek
+baru di dalam repositori dotfiles folder home. Folder `.git` kosong di atas
+folder tempat pemeriksaan berjalan, tanpa repositori lebih jauh di atasnya,
+membuat git gagal, dan pemeriksaan melaporkan `git-failed`.
+
+Kedua pemeriksaan `--staged` membaca nama yang di-stage dari puncak work tree,
+apa pun pengaturan `diff.relative` Anda, sehingga pengaturan subfolder tidak
+pernah menyembunyikan berkas yang di-stage.
+
+`semver-stability-grep --staged` mencari paket di folder tempat ia berjalan
+lalu di folder-folder di atasnya, hingga folder terdekat yang memuat
+repositori atau tempat git berhenti mencari, dan menjalankan git di folder yang
+memuat paket, sehingga proses dari subfolder memeriksa kumpulan perubahan yang
+sama. Pemeriksaan ini juga membaca berkas versi dari folder itu, sehingga paket
+di bawah puncak repositori ikut diperiksa. Ketika berkas `.git` yang ditolak
+git terletak di antara folder tempat ia berjalan dan paket, git berjalan di
+folder tempat ia berjalan, berhenti di berkas itu, dan pemeriksaan melaporkan
+`check_error`. git menolak berkas `.git` yang tidak menyebut repositori, yang
+lebih besar dari 1 MiB, atau yang tidak memuat `gitdir:`, satu spasi, dan
+sebuah jalur, dengan hanya akhir baris setelahnya. Di Windows pemeriksaan juga
+menolak berkas `.git` yang menyebut jalur jaringan, perangkat, atau NT
+(`\\host\share`, `\\?\`, `\??\`), dan tidak mencari jalur itu sendiri.
+Pemeriksaan juga menolak jalur yang ditolak Git for Windows: nama yang
+diakhiri titik atau spasi atau berupa nama perangkat seperti `aux.d`, `lpt0`,
+atau `CONIN$` (tetapi bukan `com0`, yang diterima Git for Windows), atau `:`
+setelah drive. Pemeriksaan membaca byte dalam jalur yang bukan UTF-8 seperti
+yang dilakukan Git for Windows: dari `0xA0` ke atas sebagai karakter itu dan di
+bawahnya sebagai dua digit heksadesimal, sehingga `0x9F` terbaca `9f`. Folder
+terdekat yang memuat `src/apothem/__init__.py` adalah yang diperiksa;
+pemeriksaan tidak membaca `GIT_WORK_TREE`. Proyek tanpa paket itu tidak
+memiliki apa pun untuk diperiksa di sana: proyek itu lolos tanpa menjalankan
+git, apa pun keadaan repositorinya.
+
+Gerbang membaca setiap daftar nama jalur dari git byte demi byte, sehingga nama
+yang memuat jeda baris, carriage return, atau byte yang bukan UTF-8 menyebut
+berkas yang sama bagi setiap pemeriksaan. Satu kasus tidak dapat dibaca:
+Windows tidak dapat menyerahkan nama yang bukan UTF-8 kepada git, yang hanya
+dapat dimuat indeks yang dibuat di sistem lain. `semver-stability-grep --staged`
+lalu melaporkan `check_error` untuk kumpulan perubahan itu; pemeriksaan tidak
+melewati berkas itu. Pembacaan riwayat oleh pemeriksaan pendamping usang adalah
+pengecualian dari kalimat pertama: di sana git mencetak nama dengan karakter
+kontrol dalam bentuk berkutipnya, dan byte yang bukan UTF-8 terbaca sebagai
+karakter pengganti, sehingga pemeriksaan itu tidak dapat mencocokkan folder
+dengan nama seperti itu.
+
+Pemeriksaan pendamping usang hanya memperlakukan `AGENTS.md` di puncak
+repositori sebagai kanon. Ketika Anda menjalankannya pada subfolder yang
+memiliki README sendiri, `AGENTS.md` subfolder itu adalah pendamping per folder.
+Ketika subfolder itu adalah puncak repositorinya sendiri, seperti submodule
+atau clone bersarang, `AGENTS.md`-nya justru menjadi kanon repositori itu.
+Proses pada seluruh repositori melewati beberapa subfolder, seperti fixture
+pengujian dan repositori bersarang, yang diperiksa oleh proses pada subfolder
+itu sendiri. Subfolder tanpa README tidak diperiksa sebagai folder tersendiri
+dengan cara ini; jalankan pemeriksaan pada folder di atasnya. Pendamping yang
+dihapus dalam sebuah commit lalu ditulis lagi dihitung sebagai baru hingga Anda
+meng-commit-nya.
 
 Enam validator mulai dari root repositori dan menelusuri seluruh pohon untuk
 mencari berkas yang mereka periksa:
@@ -162,21 +446,148 @@ reference-token-grep
 ```
 
 Validator-validator ini melewati checkout git bersarang, seperti worktree,
-submodule, dan klon bersarang (folder yang file atau folder `.git`-nya menyimpan
-atau menyebut sebuah repositori; file `.git` biasa atau folder `.git` kosong
-tidak menyembunyikan foldernya), serta melewati direktori yang menampung
-dependensi, lingkungan virtual, cache, atau keluaran build, seperti
-`node_modules`, `venv`, dan `dist`. Pemeriksaan rencana-nyasar di
-`no-global-plans-grep` juga berhenti pada checkout bersarang. Setiap folder
-yang dilewati sebagai checkout bersarang dicantumkan dalam laporan di bawah
-`skipped_checkouts`, apa pun yang disebut entri `.git`-nya, karena satu baris
-`gitdir:` dapat membuat git melewati folder mana pun. Daftar itu tidak pernah
-mengubah hasil, dan folder yang dilewati dengan cara ini tidak diperiksa;
-folder yang dilewati berdasarkan namanya, seperti `node_modules`, tidak
-dicantumkan. Eksekusi salah satu validator ini melaporkan checkout yang ditunjuknya
-dan tidak ada yang lain. Validator yang membaca satu folder tetap, seperti
-`naming-grep` di bawah `src/apothem/`, membaca semua yang ada di bawah folder
-tersebut.
+submodule, dan clone bersarang (folder yang berkas atau folder `.git`-nya
+memuat atau menyebut sebuah repositori; berkas `.git` biasa atau folder `.git`
+kosong tidak menyembunyikan foldernya), tidak pernah memasuki folder yang
+ditautkan, dan melewati direktori yang menampung dependensi, lingkungan
+virtual, cache, atau keluaran build, seperti `node_modules`, `venv`, dan
+`dist`. Pemeriksaan rencana-nyasar di `no-global-plans-grep` juga berhenti pada
+checkout bersarang. Setiap folder yang dilewati sebagai checkout bersarang
+dicantumkan dalam laporan di bawah `skipped_checkouts`, apa pun yang disebut
+entri `.git`-nya, karena satu baris `gitdir:` dapat membuat git melewati folder
+mana pun. Daftar itu tidak pernah mengubah hasil, dan folder yang dilewati
+dengan cara ini tidak diperiksa; folder yang dilewati berdasarkan namanya,
+seperti `node_modules`, tidak dicantumkan. Proses salah satu validator ini
+melaporkan checkout yang ditunjuknya dan tidak ada yang lain. Validator yang
+membaca satu folder tetap, seperti `naming-grep` di bawah `src/apothem/`,
+membaca semua yang ada di bawah folder tersebut.
+
+`--all-perwrite` memeriksa berkas yang didaftar `git ls-files` di bawah root.
+git mendaftar setiap entri persis seperti yang dimuat indeks repositori, dan
+sebuah proyek dapat datang dengan indeks dan berkas buatan orang lain, sehingga
+gerbang membaca jalur yang terdaftar hanya jika jalur itu berkas biasa di dalam
+root, berukuran paling banyak 64 MiB, dan berisi teks UTF-8. Gerbang menghitung
+setiap jalur terdaftar lainnya di bawah `files_skipped`, menurut alasannya:
+
+- `outside_project`: entri dengan bagian yang kosong, `.`, atau `..`, seperti
+  `../notes.md`, `a//b.md`, atau nama yang diawali `/`, atau bagian yang
+  menyebut `.git` di Windows: `.git` dalam huruf apa pun, juga dengan titik,
+  spasi, atau titik dua setelahnya, dan `GIT~1`. git menolak setiap entri ini
+  secara default di setiap sistem, sehingga proses tidak lolos;
+- `unsupported_name`: di Windows, nama yang tidak dapat dimuat sistem seperti
+  yang tertulis: nama dengan titik dua (seperti `a:b.md`, yang `a:`-nya terbaca
+  sebagai drive), garis miring terbalik, salah satu dari `<>"|?*` atau karakter
+  kontrol, atau bagian yang diakhiri titik atau spasi; dan nama yang dibaca
+  Windows sebagai hal lain: nama perangkat yang berdiri sendiri, seperti `CON`,
+  `NUL`, atau `COM1`, atau nama pendek seperti `GIT~2`. git di Linux atau macOS
+  dapat melacak nama seperti itu, sehingga nama itu dihitung tanpa
+  menggagalkan proses. Entri yang ditulis tangan seperti `C:/x` atau `..\..\x`
+  juga masuk ke sini di Windows;
+- `link`: tautan simbolik, atau di Windows junction, di tingkat mana pun di
+  bawah root, bahkan yang menunjuk ke dalamnya, atau entri yang ditandai indeks
+  sebagai tautan (dalam tahap mana pun dari konflik merge, sehingga berkas
+  seperti itu tidak dibaca hingga konflik diselesaikan).
+  git menyimpan tautan sebagai jalur yang ditunjuknya, dan berkas terlacak yang
+  ditunjuk tautan diperiksa melalui jalurnya sendiri;
+- `submodule`: entri sebuah submodule;
+- `not_regular_file`: apa pun lainnya yang bukan berkas biasa, seperti folder,
+  named pipe, atau perangkat, tempat pembacaan akan menunggu atau tidak pernah
+  selesai;
+- `missing`: berkas terlacak yang tidak ada di working tree; di Windows ini
+  mencakup nama yang didaftar git dalam byte yang bukan UTF-8, yang hanya dimuat
+  indeks yang dibuat di sistem lain (Git for Windows menulis berkas seperti itu
+  dengan nama lain, sehingga isinya tidak diperiksa), dan jalur yang lebih
+  panjang daripada yang diizinkan sistem ketika jalur panjang tidak diaktifkan;
+- `unreadable`: berkas, atau folder di jalan menuju berkas itu, yang tidak
+  diizinkan sistem untuk dilihat, dibuka, atau dibaca gerbang: karena tidak ada
+  izin, karena program lain memegang berkas itu atau sebagiannya, atau karena
+  sistem tidak dapat membukanya, seperti berkas khusus daring yang program
+  sinkronisasinya berhenti. Ketika program lain memegang seluruh berkas,
+  gerbang menunggu 0,2 detik dan mencoba sekali lagi: di Windows, program yang
+  membukanya tanpa berbagi; di tempat lain, write lease yang sedang diputus,
+  seperti oplock Samba atau delegasi NFS. Proses tidak lolos, karena temuan di
+  dalamnya akan luput. Beberapa kasus menggagalkan proses dengan cara ini
+  meskipun berkasnya tidak bermasalah: pemutusan lease yang memakan waktu lebih
+  dari 0,2 detik, berkas yang menunggu dihapus, dan named pipe dalam proyek di
+  share `\\wsl$`, tempat setiap pembacaan terlebih dahulu menunggu sekitar 10
+  detik;
+- `too_large`: berkas di atas 64 MiB yang 64 MiB pertamanya berupa teks UTF-8,
+  atau berkas yang tumbuh melewati 64 MiB saat gerbang membacanya. Proses tidak
+  lolos, dengan alasan yang sama;
+- `not_utf8_text`: berkas yang byte-nya bukan teks UTF-8, seperti berkas UTF-16
+  dengan byte-order mark. Di atas 64 MiB, 64 MiB pertama yang menentukan, dan
+  berkas dianggap biner ketika seperempat atau lebih dari 8000 byte pertamanya
+  adalah NUL, seperti gambar besar berisi nol atau berkas UTF-16 yang sebagian
+  besar berisi teks Latin tanpa byte-order mark, sehingga tidak menggagalkan
+  proses; beberapa byte NUL di dalam teks tidak dihitung;
+- `exempt`: berkas yang sengaja dikecualikan pemeriksaan: berkas yang
+  akhirannya menandainya sebagai biner, seperti gambar atau arsip, dan apa pun
+  di bawah folder `.apothem/plans`, `tests/conformity`, `tests/fixtures`,
+  `_vendor`, atau `node_modules` pada kedalaman mana pun di dalam root.
+  Pemeriksaan untuk `outside_project` dan `unsupported_name` didahulukan,
+  sehingga tidak ada pengecualian yang menyembunyikannya.
+
+Ketika proses tidak lolos karena `outside_project`, `unreadable`, atau
+`too_large`, `files_not_passed` menyebut entri di balik setiap alasan itu,
+seperti yang didaftar git, terurut, hingga 10 per alasan; `files_skipped`
+memuat hitungan lengkapnya. Satu baris di stderr juga menyebut alasan-alasan
+itu beserta hitungannya, sehingga log CI yang hanya menampilkan stderr
+menjelaskan mengapa proses gagal.
+
+Tingkat-tingkat setiap berkas diperiksa tepat sebelum berkas itu dibaca, dan
+berkas yang dibuka harus berkas yang ditemukan pemeriksaan itu. Berkas yang
+ditukar program lain di antara keduanya, dengan berkas lain, tautan, atau named
+pipe, dicari sekali lagi, dan dihitung sebagai `unreadable` jika ditukar lagi;
+tautan simbolik atau, di Windows, junction yang ditukar masuk ditemukan sebagai
+`link` pada pencarian kedua. Gerbang tidak pernah menunggu pada named pipe atau
+membaca melalui tautan yang menggantikan tempat berkas itu. Di Windows, berkas
+yang disimpan Data Deduplication atau program sinkronisasi cloud di balik
+reparse point dibaca melalui program itu seperti biasa; ketika program itu
+berhenti, berkasnya `unreadable`.
+
+Berkas dibuka dari root tingkat demi tingkat, dan tidak ada tingkat yang dibuka
+melalui tautan, sehingga folder di atas berkas yang ditukar program lain dengan
+tautan di antara pemeriksaan dan pembukaan juga tidak diikuti: berkas dihitung
+sebagai `link`.
+
+Ada dua hal yang tidak terlihat oleh pemeriksaan ini. Tautan keras terbaca
+sebagai berkas biasa, sehingga tautan keras ke berkas di tempat lain ikut
+dibaca; git tidak membuat tautan seperti itu. Dan di Windows, sistem berkas
+jaringan yang tidak memberikan reparse tag maupun file ID sebuah berkas, tetapi
+memuat tautan simbolik, dapat membuat berkas ditukar dengan tautan di antara
+pemeriksaan dan pembukaan tanpa terlihat oleh gerbang.
+
+Dalam proses ini, matcher `link-check` mencari target tautan hanya di dalam
+root: tautan relatif yang keluar dari root dihitung sebagai eksternal, dan
+pencarian folder `site/content/docs` berhenti di root. Dalam setiap mode,
+matcher tidak pernah mencari tautan yang menyebut sebuah tempat dengan
+sendirinya, seperti share jaringan (`\\host\share`), drive (`C:/notes.md`),
+atau alamat `file:`. Di Windows, mencari share mengirimkan kredensial Anda ke
+host itu. Di Windows matcher juga tidak memeriksa segmen rute `/docs/` yang
+memuat titik dua, yang dibaca Windows sebagai drive, dan tautan yang hanya
+ditemukannya melalui bagian yang diakhiri titik atau spasi: Windows dapat
+membuang akhiran itu (`ci.yml.` menemukan `ci.yml`), sehingga penemuan itu
+tidak membuktikan apa pun. Tautan seperti itu yang tidak menemukan apa pun
+dilaporkan mati seperti biasa. Di setiap sistem, rute `/docs/` dengan segmen
+`.` atau `..`, seperti `/docs/../x`, dihitung sebagai eksternal dan tidak
+dicari.
+
+Setiap panggilan `git ls-files` mendapat 60 detik: panggilan yang dibuat proses
+ini, dan panggilan di `no-global-plans-grep`, yang laporannya lalu membawa
+`check_error` yang sama dan gagal; ketika git sendiri gagal di sana, pesannya
+memberikan kode keluar git, bukan teks git sendiri. Repositori yang
+pengaturannya membuat git menunggu, seperti `include.path` yang menunjuk ke
+named pipe, menahan setiap panggilan ini paling lama selama itu, juga di
+Windows, tempat batas itu juga menghentikan git yang dijalankan peluncur Git.
+Proses `--all-perwrite` yang tidak membaca berkas apa pun tidak lolos: proses
+itu melaporkan `files_scanned: 0` dengan `empty_scope_expected: false`. Ketika
+daftar berkas terlacak tidak dapat dibaca, `check_error` memberikan alasan
+tetap: git tidak dapat dimulai, `git ls-files` gagal dengan kode keluar
+tertentu, atau tidak selesai tepat waktu. Untuk melihat pesan git sendiri,
+misalnya ketika root tidak berada di dalam work tree git, jalankan
+`git ls-files` di root; laporan menghilangkannya, karena pesan itu dapat
+menyebut berkas di luar proyek. Dengan `--strict`, proses yang tidak lolos
+keluar dengan `2`.
 
 ## Bar gerbang
 
@@ -220,7 +631,8 @@ masukan di standard input, jadi berikan berkasnya saat Anda menjalankannya dari
 terminal. Validator standalone menerima direktori root (direktori saat ini jika
 dihilangkan). `--list` menunjukkan kelompok tempat setiap validator berada.
 
-Mode `--hook` (`python -m apothem.conformity.gate --hook`) adalah entry point
+Mode `--hook` (`<python> -E -s .../conformity/gate.py --hook`, dengan
+`<python>` adalah interpreter yang ditemukan pemasangan) adalah entry point
 yang di-dispatch oleh harness: mode ini membaca payload JSON tool-input dari
 stdin dan menjalankan rantai matcher per-penulisan terhadap penulisan yang
 tertunda. Inilah bentuk yang dipanggil oleh hook `PreToolUse` yang di-deploy;

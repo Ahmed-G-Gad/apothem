@@ -2,7 +2,7 @@
 title: "Portail de conformité"
 description: "Exécutez le portail de conformité d'Apothem pour vérifier la santé de l'écosystème."
 machineTranslated: true
-sourceHash: "1e86535725961fda"
+sourceHash: "0bd3bfad466f605b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,6 +31,84 @@ PYTHONPATH=src python -m apothem.conformity.gate --all .
 # Strict: exit non-zero (code 2) when a blocking finding is present
 PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 ```
+
+Ces commandes exécutent le portail depuis un checkout d'Apothem. `python -m`
+lit d'abord les modules du dossier courant ; lancez-les donc depuis la racine du
+checkout ou depuis un autre dossier de confiance. Pour vérifier un projet dont
+vous ne faites pas confiance aux fichiers, lancez plutôt le portail par le
+chemin de son script avec `-E -s` :
+`python3 -E -s src/apothem/conformity/gate.py --all .` dans un checkout, ou
+`python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .` après une
+installation par script. Sous Windows, utilisez `python` à la place de
+`python3`, et le chemin complet, car Windows PowerShell et cmd ne développent
+pas `~` : `$HOME\.apothem\src\apothem\conformity\gate.py` dans PowerShell, ou
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` dans cmd. Un lancement
+par script tient le dossier courant hors de la première entrée du chemin de
+recherche des modules de Python ; `-E` écarte aussi `PYTHONPATH`, où une entrée
+vide ou relative désigne également le dossier courant, et `-s` écarte vos
+site-packages utilisateur. Cela ne tient les fichiers du projet qu'à l'écart du
+propre code Python du portail ; le `git` qu'exécute le portail est traité
+ci-dessous.
+
+Trois validateurs autonomes exécutent `git` dans le projet qu'ils vérifient, de
+même que `--all`, qui les exécute, et `--all-perwrite`, qui liste les fichiers
+suivis avec `git ls-files` :
+
+```text
+agents-md-coverage-grep
+conventional-commit-grep
+no-global-plans-grep
+```
+
+Les propres réglages de ce dépôt, dans `.git/config`, les fichiers qu'il inclut
+et `.git/config.worktree`, peuvent nommer un programme que git démarre alors
+qu'il ne fait que lire. Le portail désactive chacun des réglages de ce type
+qu'il connaît par des options sur la ligne de commande de git, qui l'emportent
+sur tout fichier que lit git et atteignent aussi tout git que git démarre dans
+un sous-module :
+
+- aucun moniteur du système de fichiers (`core.fsmonitor`) ;
+- aucun programme de signature (`gpg.program`, `gpg.ssh.program` et
+  `gpg.x509.program` pointent vers un chemin où rien ne peut exister, et
+  `log.showSignature` est désactivé) ;
+- aucun hook, aucun pager et aucune maintenance automatique ;
+- aucun programme externe de diff ou de conversion de texte, et les
+  modifications de sous-module affichées uniquement comme identifiants de
+  commit, de sorte que git ne démarre aucun second git dans un sous-module ;
+- le contenu des fichiers lu avec `git cat-file blob`, qui refuse une entrée de
+  sous-module là où `git show` l'afficherait comme un commit.
+
+Trois réglages nomment un fichier que git doit lire, et non un programme, et ce
+fichier peut se trouver sur un chemin réseau. La ligne de commande du portail
+empêche aussi git de les lire : le fichier d'ordre des diffs
+(`diff.orderFile`), le fichier d'exclusions (`core.excludesFile`) et le fichier
+mailmap.
+
+Il définit aussi `GIT_NO_LAZY_FETCH=1` et un `GIT_ALLOW_PROTOCOL` vide, de sorte
+que git ne récupère jamais un objet manquant d'un clone partiel par une adresse
+que nomme le dépôt. Le portail ne démarre git que depuis une entrée à chemin
+complet de votre `PATH`. Il ne prend jamais git dans le dossier courant : il
+ignore les entrées vides et relatives de `PATH`, qui désignent ce dossier, et il
+n'y cherche pas en premier, comme le fait Windows pour un nom de programme nu.
+git ne reçoit que ces entrées à chemin complet pour les programmes qu'il démarre
+par leur nom.
+
+Vous pouvez donc exécuter ces commandes sur un projet arrivé avec son dossier
+`.git` de quelqu'un d'autre, dans une archive ou un dossier partagé : aucun des
+réglages ci-dessus ne peut amener le portail à démarrer un programme. Deux
+limites demeurent. Le dépôt peut encore faire lire à git un chemin situé
+ailleurs par tout réglage ou fichier qui en nomme un, par exemple
+`include.path` ou `includeIf`, `core.worktree`, la ligne `gitdir:` d'un fichier
+`.git`, ou `.git/objects/info/alternates` ; sous Windows, un chemin réseau à cet
+endroit (`\\server\share`) amène Windows à se connecter à ce serveur et à vous y
+authentifier. Un cas est plus restreint : Git for Windows 2.55 refuse un chemin
+réseau dans une ligne `gitdir:` avant de se connecter, sauf si votre propre
+réglage `safe.directory` autorise ce chemin. Et la liste couvre les réglages
+connus aujourd'hui ; une version ultérieure de git peut en ajouter un nouveau.
+Vos propres réglages git globaux et système s'appliquent toujours, sauf ceux
+ci-dessus, que la ligne de commande du portail remplace. Ceci ne couvre que git :
+`python -m` lit d'abord les modules Python du dossier courant ; lancez donc le
+portail depuis un dossier de confiance.
 
 Codes de sortie : `0` propre (ou consultatif), `2` un blocage par constats en
 mode strict, `3` une erreur d'utilisation : un drapeau ou un nom de validateur
@@ -71,14 +149,14 @@ traite chacun de ces éléments comme absent :
 Quelques vérifications utilisent encore un lien sans y entrer :
 
 - pour un fichier fixe qui est un lien symbolique, comme un `CLAUDE.md` qui
-  pointe vers un autre fichier, le gate lit le texte du lien lui-même et
+  pointe vers un autre fichier, le portail lit le texte du lien lui-même et
   n'ouvre le fichier nommé que s'il s'agit d'un fichier ordinaire dans le
   projet, atteint par des dossiers réels. Un lien `README.md` propre à un
   dossier compte de la même façon. Un lien absolu compte lorsqu'il est écrit à
   travers le dossier du projet tel qu'il se résout, ou sous Windows à travers
   le même chemin avec une autre casse ; un validateur lancé seul accepte aussi
   le dossier tel que vous l'avez saisi, sauf si ce chemin contient `..`, alors
-  que le gate résout le dossier avant de lancer chaque validateur. Un
+  que le portail résout le dossier avant de lancer chaque validateur. Un
   `.gitattributes` lié compte toujours comme absent, car git ne le lit pas ;
 - la vérification des plans égarés de `no-global-plans-grep` signale par son
   nom un dossier de plans ou un dossier `.apothem` qui est un lien, où que
@@ -93,27 +171,26 @@ lister (pas d'accès, un chemin trop long, une erreur de lecture) et l'entrée
 `.git` d'un dossier qu'il a ignoré comme checkout imbriqué lorsque cette entrée
 est un lien ou un fichier spécial ; le dossier lui-même est listé sous
 `skipped_checkouts`, décrit plus bas. Un validateur qui réussit quand son dossier
-manque, comme les validateurs de workflows, ne réussit pas quand ce dossier est
-un lien : les fichiers peuvent se trouver derrière, donc l'exécution échoue
-comme une exécution qui n'a rien vérifié. Un lien physique est un fichier
+manque, comme les validateurs de flux de travail, ne réussit pas quand ce
+dossier est un lien : les fichiers peuvent se trouver derrière, donc l'exécution
+échoue comme une exécution qui n'a rien vérifié. Un lien physique est un fichier
 ordinaire et se lit comme tel. Les validateurs `--all` et `--all-perwrite`
 examinent chaque niveau quand ils l'atteignent, puis ouvrent le fichier niveau
 par niveau depuis la racine, chaque dossier à l'intérieur de celui ouvert avant
 lui, jamais à travers un lien. Ainsi, quand quelqu'un qui peut écrire dans le
 projet remplace un fichier déjà vérifié, ou un dossier au-dessus de lui, par un
-lien ou un tube nommé pendant que le gate tourne, le gate ne lit pas à travers
-le lien et n'attend pas sur le tube : le fichier n'est pas lu. Un validateur
-`--all` le compte comme absent ou illisible, comme il compte un lien, et liste
-l'entrée remplacée dans `skipped_links` ; `--all-perwrite` le compte comme
-`link`, ou comme `unreadable` s'il est remplacé une nouvelle fois.
-Sous Windows, une attente subsiste, comme pour une ouverture
+lien ou un tube nommé pendant que le portail tourne, le portail ne lit pas à
+travers le lien et n'attend pas sur le tube : le fichier n'est pas lu. Un
+validateur `--all` le compte comme absent ou illisible, comme il compte un lien,
+et liste l'entrée remplacée sous `skipped_links` ; `--all-perwrite` le compte
+comme `link`, ou comme `unreadable` s'il est remplacé une nouvelle fois, comme
+décrit plus bas. Sous Windows, une attente subsiste, comme pour une ouverture
 ordinaire : un programme qui peut écrire dans le projet peut tenir un verrou
-opportuniste (oplock) sur un fichier et ne pas le relâcher quand le gate
-l'ouvre. Aucune manière d'ouvrir le fichier n'évite cette attente : un
-validateur `--all` attend donc jusqu'à sa limite de 10 minutes, et
-`--all-perwrite`, qui n'a pas de telle limite, jusqu'à ce que ce programme le
-relâche. Dans `--all`
-et `--all-perwrite`, le gate lui-même n'ouvre que des fichiers ordinaires dans
+opportuniste sur un fichier et ne pas le relâcher quand le portail l'ouvre.
+Aucune manière d'ouvrir le fichier n'évite cette attente : un validateur `--all`
+attend donc jusqu'à sa limite de 10 minutes, et `--all-perwrite`, qui n'a pas de
+telle limite, jusqu'à ce que ce programme le relâche. Dans `--all` et
+`--all-perwrite`, le portail lui-même n'ouvre que des fichiers ordinaires dans
 la racine, vérifie chaque dossier du chemin avec `lstat`, y compris chaque
 chemin que git liste, et ne lit jamais à l'intérieur d'une entrée `.git`. Avant
 d'exécuter git, les trois validateurs `--all` qui exécutent git, ainsi que les
@@ -129,8 +206,8 @@ variables qui nomment le dépôt, ses stockages ou son index ; les vérification
 pas vérifié : une ligne `gitdir:`, `commondir`, des alternates, `core.worktree`,
 un include ou un lien dans le dossier git peuvent en nommer un autre, et git les
 suit, si bien que git peut atteindre un chemin réseau ou attendre jusqu'à sa
-limite de temps. Le gate n'utilise la sortie de git que comme noms, modes,
-lettres d'état, objet du dernier commit, heures de commit et quelques réglages,
+limite de temps. Le portail n'utilise la sortie de git que comme noms, modes,
+lettres d'état, sujet du dernier commit, heures de commit et quelques réglages,
 et n'ouvre jamais un chemin affiché par git sans vérifier chaque niveau dans la
 racine. Lorsqu'un lien est trouvé, chacun des trois validateurs `--all` le liste
 sous `skipped_links` (relativement à la racine s'il s'y trouve, par son chemin
@@ -144,13 +221,222 @@ les deux vérifications `--staged`, qui ne nomment un lien que dans
 `check_error`, ou y disent que l'entrée `.git` du dossier où elles tournent est
 un lien : elles lisent le dépôt que nomme le `GIT_DIR` d'un hook mais refusent
 quand même un lien sur le chemin de recherche depuis le dossier où elles
-tournent. Une entrée `.git` que le gate ne peut pas examiner (un chemin trop
+tournent. Une entrée `.git` que le portail ne peut pas examiner (un chemin trop
 long, un partage injoignable, pas d'accès) n'est pas un lien et n'apparaît pas
 sous `skipped_links` : `conventional-commit-grep` échoue avec le statut
 `git-failed` et un `check_error` ; la vérification des fichiers compagnons,
 `--all-perwrite` et les deux vérifications `--staged` échouent avec un
 `check_error` qui dit que l'entrée n'a pas pu être examinée, et
 `no-global-plans-grep` la signale comme constat.
+
+Chaque validateur autonome s'exécute comme un programme à part, et le portail
+lui accorde 10 minutes, dans `--all` comme dans `--check`. Le plus lent prend
+environ une minute sur le propre dépôt d'Apothem. Un validateur encore en cours
+à la limite est arrêté, avec chaque programme qu'il a démarré, comme une
+commande `git` encore en attente, et signalé avec `passed: false` et un
+`check_error` qui dit qu'il n'a pas terminé. Sous Linux et macOS, chaque
+validateur s'exécute dans une session à part, et un `SIGTERM` ou un `SIGHUP`
+envoyé au portail, par exemple par `timeout` ou par un terminal fermé, arrête
+les programmes du validateur avant que le portail ne se termine avec le code
+128 plus le numéro du signal. Cela vaut aussi pour un signal qui arrive pendant
+que le portail démarre ou arrête un validateur : il attend que cette étape soit
+terminée, et le code de sortie reste 128 plus son numéro même lorsqu'un Ctrl+C
+suit pendant cette étape. Un `SIGKILL`, qu'aucun programme ne peut intercepter,
+n'y termine que le portail : un validateur qu'il a démarré continue jusqu'à ce
+qu'il ait fini, et une commande `git` que ce validateur attend s'arrête quand
+même à sa propre limite. Sous Windows, chaque validateur s'exécute dans un objet
+de tâche (job object), qui termine aussi ses programmes quand le portail
+lui-même se termine. Chaque programme que le portail y démarre attend, suspendu,
+d'être dans l'objet de tâche. Un programme qu'il ne peut pas reprendre est
+arrêté, et l'erreur dit s'il se trouve dans l'objet de tâche. Un programme
+auquel quelque chose d'autre a demandé de se terminer avant sa reprise ne s'est
+jamais exécuté, et échoue de la même façon, quel que soit son code de sortie, à
+deux exceptions près. Un programme terminé avec le code de sortie 259, le code
+que Windows donne aussi à un programme en cours, se lit comme en cours tant que
+Windows est encore en train de le terminer. Un programme terminé juste avant la
+reprise n'est détecté que lorsque le portail lit son code de sortie dans la
+milliseconde qui suit la reprise ; une lecture plus tardive, par exemple sur une
+machine chargée ou quand d'autres threads du processus appelant sont occupés,
+prend son code de sortie pour celui du programme lui-même. Sur la machine où
+cela a été mesuré, le plus petit programme que Windows peut exécuter a vécu au
+moins 3 ms après sa reprise, et `git` 27 ms ; un programme qui s'est exécuté
+n'est donc pas pris pour un programme qui a été terminé. Un programme terminé
+juste après la reprise ne peut pas non plus être distingué d'un programme qui
+s'est exécuté. Sur toutes les plateformes, dans l'exécution propre du portail,
+un Ctrl+C qui arrive pendant le démarrage attend que le programme s'exécute
+(sous Windows, que le portail ait tenté de le reprendre), de sorte qu'aucun
+programme ne reste suspendu ou en cours au-delà de sa limite. Un second Ctrl+C
+qui arrive pendant que le portail arrête un programme attend que l'arrêt soit
+terminé. Un Ctrl+C qui arrive juste avant le début de l'arrêt amène le portail à
+retenter l'arrêt, jusqu'à trois fois. Lorsque ces tentatives échouent, ou qu'un
+Ctrl+C tombe entre deux d'entre elles, le portail arrête le programme sans
+retenir les signaux, là encore jusqu'à trois fois, de sorte qu'un Ctrl+C de plus
+ne saute pas l'arrêt. Il faut plusieurs Ctrl+C, chacun à quelques microsecondes
+de l'un de ces points, pour laisser le programme tourner. Après un arrêt, le
+portail attend jusqu'à une demi-seconde que le programme arrêté se termine, de
+sorte que sous Linux et macOS il ne subsiste pas comme processus défunt, et un
+Ctrl+C pendant cette attente ne remplace pas une terminaison déjà engagée. Un
+gestionnaire que le processus appelant a défini pour un autre signal peut encore
+laisser le programme tourner (sous Windows, suspendu), lorsque son erreur tombe
+dans les quelques microsecondes qui suivent le démarrage du programme, avant que
+le portail ne l'enregistre. Lorsque le portail modifie ses propres gestionnaires
+de signaux, un signal qui arrive au milieu de la modification ne laisse pas un
+gestionnaire modifié. Sous Linux et macOS, le portail bloque Ctrl+C, `SIGTERM`
+et `SIGHUP`, et aucun autre signal, pendant les quelques microsecondes que prend
+la modification ; un tel signal attend donc que la modification soit terminée et
+rencontre les gestionnaires alors en place. Le portail ne débloque ensuite que
+les signaux qu'il a bloqués. Pour tout autre signal, sous Windows, et pour un
+signal arrivé juste avant le blocage, une modification que le signal a
+interrompue est refaite, jusqu'à trois fois. Lorsque la remise en place de ses
+gestionnaires échoue à chaque tentative, le portail fait une dernière tentative
+pour chaque gestionnaire restant. Un gestionnaire reste modifié lorsqu'une
+erreur arrête aussi cette dernière tentative, comme une `TimeoutError` venue
+d'une minuterie définie par le processus appelant qui se déclenche à chaque
+fois, et dans de rares cas lorsque plusieurs signaux dont les gestionnaires
+lèvent une exception arrivent coup sur coup, à quelques microsecondes
+d'intervalle, et sautent la dernière tentative. Une erreur qui revient à chaque
+tentative, comme une `RecursionError` près de la limite de récursion de Python,
+termine la modification en deux tentatives au plus et poursuit. Le portail
+remet ses gestionnaires en place avec des appels qui ne sont pas plus profonds
+que ceux qui les ont modifiés ; près de cette limite, il ne laisse donc pas
+Ctrl+C ignoré. Un gestionnaire `SIGTERM` que le processus appelant définit
+pendant une exécution reste en place. Sous Linux et macOS, dans un
+sous-interpréteur Python, où aucun gestionnaire de signal ne peut être défini, le
+portail exécute ses programmes sans modifier les gestionnaires ; sous Windows,
+Python ne peut pas lire la sortie d'un programme depuis un sous-interpréteur
+isolé, qui n'autorise aucun thread démon. Ctrl+C affiche une ligne et se termine
+avec le code `130`. Les limites s'additionnent : une exécution dans laquelle
+plusieurs validateurs attendent prend la somme de leurs limites.
+
+Cinq validateurs donnent aussi à chaque commande `git` qu'ils exécutent une
+limite de temps qui lui est propre. Les limites valent sur toutes les
+plateformes, y compris sous Windows lorsque le `git` du `PATH` est le lanceur
+qu'installe Git for Windows, qui démarre le vrai git :
+
+```text
+conventional-commit-grep            git log -1, git rev-parse           1 minute
+                                    git ls-files, git config            1 minute
+agents-md-coverage-grep             git rev-parse, git config           1 minute
+                                    git log over the whole history      5 minutes
+no-global-plans-grep                git ls-files                        1 minute
+production-ready-pr-grep --staged   git diff --cached                   1 minute
+semver-stability-grep --staged      git diff --cached, git cat-file     1 minute
+```
+
+Ces commandes prennent une fraction de seconde sur la plupart des projets ; une
+limite n'est donc atteinte que lorsque `git` attend quelque chose qui ne vient
+jamais. Les propres réglages git d'un projet peuvent le faire attendre
+indéfiniment, par exemple un `include.path` dans son `.git/config` qui nomme un
+tube nommé. Une commande `git` qui dépasse sa limite ne réussit pas : le
+validateur signale `passed: false` avec un `check_error` qui nomme la commande.
+Il en va de même d'un `git` qui refuse un checkout qu'il a trouvé, par exemple
+un checkout appartenant à un autre utilisateur ou dont le `.git/config` contient
+une ligne erronée ; le `check_error` donne alors le code de sortie de git, et le
+code de sortie 128 est celui qu'utilise git lorsqu'il ne peut pas ouvrir ou
+lire un dépôt. Un dossier dont git ne peut pas ouvrir l'entrée `.git` compte
+comme un tel checkout, car l'historique dont les vérifications ont besoin s'y
+trouve peut-être sans avoir été lu : un dossier `.git` vide en dehors de tout
+autre checkout, ou un fichier `.git` qui nomme un dossier qui n'existe plus, tel
+qu'en laisse un worktree décompressé ou un sous-module copié. Supprimez cette
+entrée, ou exécutez le portail sur un checkout complet. Cela vaut aussi pour la
+vérification des fichiers compagnons périmés, bien que ses constats soient
+consultatifs par ailleurs, et la vérification des sujets de commit signale alors
+aussi `inspected: 0` avec `empty_scope_expected: false`. Sous Windows, un `git`
+que le portail a démarré mais n'a pas pu reprendre est lui aussi un `git` en
+échec : le `check_error` donne le code de sortie 128, et cela ne compte jamais
+comme un `git` absent. La vérification des fichiers compagnons périmés lit tout
+l'historique une fois, et cette lecture dispose de 5 minutes ; un historique
+volumineux est donc lent plutôt qu'en échec, et un historique dont la lecture
+prend plus longtemps fait échouer la vérification. Un simple dossier qui ne se
+trouve dans aucun checkout git, un dépôt sans aucun commit, ou une machine sans
+`git` réussissent toujours ces vérifications comme avant. De même pour un clone
+partiel, créé avec `git clone --filter` : le portail ne laisse pas `git`
+récupérer ce que le clone a laissé de côté, et git ne donne aucune réponse qui
+distingue un objet laissé de côté par le clone d'un objet perdu. Dans un clone
+partiel, la vérification des fichiers compagnons périmés compte donc toute
+lecture d'historique en échec comme un historique non disponible : elle saute
+son test de fraîcheur et réussit, comme sans historique. Ces exemptions, ainsi
+que le `check_error` pour un checkout que git refuse, concernent les quatre
+autres validateurs : `no-global-plans-grep` a besoin d'un checkout que git peut
+lire ; en dehors d'un checkout, sur une machine sans `git`, ou dans un checkout
+que git refuse, il échoue donc comme avant, avec la raison sur la sortie
+d'erreur standard : le code de sortie de git, et non le propre texte de git.
+Comme pour tout résultat qui ne réussit pas, le mode consultatif par défaut le
+signale et se termine avec `0`, et `--strict` se termine avec `2`.
+
+Pour les deux vérifications `--staged`, une valeur que git ne peut pas lire pour
+un réglage de diff, comme `diff.renameLimit = abc`, est une telle ligne
+erronée : `git diff` échoue, et un ensemble de modifications qui n'a pas été lu
+n'est pas un ensemble vide. Ces deux vérifications, la vérification des sujets
+de commit et la vérification des fichiers compagnons périmés cherchent le
+checkout dans le dossier où elles s'exécutent et dans les dossiers au-dessus ;
+il en va donc de même dans un sous-dossier du checkout. Elles cessent de
+chercher là où git cesse : à un dossier nommé dans `GIT_CEILING_DIRECTORIES` et,
+hors de Windows, à un dossier situé sur un autre système de fichiers, sauf si
+`GIT_DISCOVERY_ACROSS_FILESYSTEM` est défini. Un dossier sans dépôt propre,
+monté sous un dépôt, réussit donc toujours. La vérification des sujets de commit
+lancée sur un sous-dossier d'un checkout vérifie le dernier commit du checkout
+lorsque le checkout suit un fichier dans ce sous-dossier, ou y a un fichier
+indexé. Là où le checkout ignore la casse, comme sous Windows et macOS, cela
+vaut aussi pour un sous-dossier dont le nom n'a changé sur le disque qu'en
+majuscules ou en minuscules. Un dossier que le checkout ne suit pas, non suivi
+ou ignoré, n'a pas d'historique propre et réussit, comme un nouveau projet à
+l'intérieur d'un dépôt de dotfiles du dossier personnel. Un dossier `.git` vide
+au-dessus du dossier où elle s'exécute, sans dépôt plus haut, fait échouer git,
+et la vérification signale `git-failed`.
+
+Les deux vérifications `--staged` lisent les noms indexés depuis le haut de
+l'arbre de travail, quel que soit votre propre réglage `diff.relative`, de sorte
+qu'un réglage de sous-dossier ne cache jamais un fichier indexé.
+
+`semver-stability-grep --staged` cherche le paquet dans le dossier où il
+s'exécute puis dans les dossiers au-dessus, jusqu'au dossier le plus proche qui
+contient un dépôt ou là où git cesse de chercher, et exécute git dans le dossier
+qui contient le paquet ; une exécution depuis un sous-dossier vérifie donc le
+même ensemble de modifications. Il lit aussi le fichier de version depuis ce
+dossier, de sorte qu'un paquet situé sous le haut du dépôt est vérifié. Lorsqu'un
+fichier `.git` que git refuse se trouve entre le dossier où il s'exécute et le
+paquet, git s'exécute plutôt dans le dossier où il s'exécute, s'arrête à ce
+fichier, et la vérification signale un `check_error`. git refuse un fichier
+`.git` qui ne nomme aucun dépôt, qui dépasse 1 Mio, ou qui ne contient pas
+`gitdir:`, une espace et un chemin, suivis uniquement de fins de ligne. Sous
+Windows, la vérification refuse aussi un fichier `.git` qui nomme un chemin
+réseau, de périphérique ou NT (`\\host\share`, `\\?\`, `\??\`), et elle ne
+recherche pas ce chemin elle-même. Elle refuse aussi un chemin que Git for
+Windows refuse : un nom qui se termine par un point ou une espace ou qui est un
+nom de périphérique, comme `aux.d`, `lpt0` ou `CONIN$` (mais pas `com0`, que Git
+for Windows accepte), ou un `:` après le lecteur. Elle lit un octet du chemin
+qui n'est pas de l'UTF-8 comme le fait Git for Windows : à partir de `0xA0`
+comme ce caractère, et en dessous comme deux chiffres hexadécimaux, de sorte que
+`0x9F` se lit `9f`. Le dossier le plus proche qui contient
+`src/apothem/__init__.py` est celui qui est vérifié ; elle ne lit pas
+`GIT_WORK_TREE`. Un projet sans le paquet n'a rien à vérifier à cet endroit : il
+réussit sans exécuter git, quel que soit l'état de son dépôt.
+
+Le portail lit chaque liste de noms de chemins venant de git octet par octet, de
+sorte qu'un nom qui contient un saut de ligne, un retour chariot ou un octet qui
+n'est pas de l'UTF-8 désigne le même fichier pour chaque vérification. Un cas ne
+peut pas être lu : Windows ne peut pas transmettre à git un nom qui n'est pas de
+l'UTF-8, ce que seul un index créé sur un autre système peut contenir.
+`semver-stability-grep --staged` signale alors un `check_error` pour l'ensemble
+de modifications ; il n'ignore pas ce fichier. La lecture de l'historique par la
+vérification des fichiers compagnons périmés est l'exception à la première
+phrase : git y affiche un nom contenant un caractère de contrôle sous sa forme
+entre guillemets, et un octet qui n'est pas de l'UTF-8 se lit comme le caractère
+de remplacement ; cette vérification ne peut donc pas faire correspondre un
+dossier portant un tel nom.
+
+La vérification des fichiers compagnons périmés ne traite comme canon que le
+`AGENTS.md` situé en haut du dépôt. Lorsque vous l'exécutez sur un sous-dossier
+qui a son propre README, le `AGENTS.md` de ce sous-dossier est un compagnon
+propre au dossier. Lorsque le sous-dossier est le haut d'un dépôt à part, comme
+un sous-module ou un clone imbriqué, son `AGENTS.md` est plutôt le canon de ce
+dépôt. Une exécution sur le dépôt entier ignore certains sous-dossiers, comme
+les fixtures de test et les dépôts imbriqués, qu'une exécution sur le
+sous-dossier lui-même vérifie. Un sous-dossier sans README n'est pas vérifié de
+cette manière comme un dossier à part ; exécutez la vérification sur un dossier
+au-dessus. Un compagnon supprimé dans un commit puis réécrit compte comme nouveau
+jusqu'à ce que vous le validiez dans un commit.
 
 Six validateurs partent de la racine du dépôt et parcourent toute
 l'arborescence à la recherche des fichiers qu'ils vérifient :
@@ -167,19 +453,150 @@ reference-token-grep
 Ceux-ci ignorent les checkouts git imbriqués, tels que les worktrees, les
 sous-modules et les clones imbriqués (un dossier dont le fichier ou le dossier
 `.git` contient ou nomme un dépôt ; un simple fichier `.git` ou un dossier
-`.git` vide ne masque pas son dossier), et ignorent les répertoires qui
-contiennent des dépendances, des environnements virtuels, des caches ou des
-sorties de build, tels que `node_modules`, `venv` et `dist`. La vérification des
-plans égarés de `no-global-plans-grep` s'arrête également à un checkout
-imbriqué. Chaque dossier ignoré comme checkout imbriqué est listé dans le
-rapport sous `skipped_checkouts`, quoi que nomme son entrée `.git`, car une
-seule ligne `gitdir:` peut faire ignorer n'importe quel dossier à git. Cette
-liste ne change jamais le verdict, et un dossier ignoré ainsi n'est pas
-vérifié ; les dossiers ignorés par leur nom, tels que `node_modules`, n'y
-figurent pas. Une exécution de l'un d'eux rend compte du checkout sur
-lequel elle a été pointée, et de rien d'autre. Un validateur qui lit un dossier
-fixe, tel que `naming-grep` sous `src/apothem/`, lit tout ce qui se trouve sous
-ce dossier.
+`.git` vide ne masque pas son dossier), n'entrent jamais dans un dossier lié, et
+ignorent les répertoires qui contiennent des dépendances, des environnements
+virtuels, des caches ou des sorties de build, tels que `node_modules`, `venv` et
+`dist`. La vérification des plans égarés de `no-global-plans-grep` s'arrête
+également à un checkout imbriqué. Chaque dossier ignoré comme checkout imbriqué
+est listé dans le rapport sous `skipped_checkouts`, quoi que nomme son entrée
+`.git`, car une seule ligne `gitdir:` peut faire ignorer n'importe quel dossier
+à git. Cette liste ne change jamais le verdict, et un dossier ignoré ainsi n'est
+pas vérifié ; les dossiers ignorés par leur nom, tels que `node_modules`, n'y
+figurent pas. Une exécution de l'un d'eux rend compte du checkout sur lequel
+elle a été pointée, et de rien d'autre. Un validateur qui lit un dossier fixe,
+tel que `naming-grep` sous `src/apothem/`, lit tout ce qui se trouve sous ce
+dossier.
+
+`--all-perwrite` vérifie les fichiers que `git ls-files` liste sous la racine.
+git liste chaque entrée exactement telle que l'index du dépôt la contient, et un
+projet peut arriver avec un index et des fichiers créés par quelqu'un d'autre ;
+le portail ne lit donc un chemin listé que s'il s'agit d'un fichier ordinaire
+dans la racine, de 64 Mio au plus, contenant du texte UTF-8. Il compte tout
+autre chemin listé sous `files_skipped`, par motif :
+
+- `outside_project` : une entrée avec une partie vide, `.` ou `..`, comme
+  `../notes.md`, `a//b.md` ou un nom commençant par `/`, ou une partie qui
+  nomme `.git` sous Windows : `.git` quelle que soit la casse, aussi suivi de
+  points, d'espaces ou d'un deux-points, et `GIT~1`. git refuse chacune de ces
+  entrées par défaut sur tous les systèmes ; l'exécution ne réussit donc pas ;
+- `unsupported_name` : sous Windows, un nom que le système ne peut pas contenir
+  tel qu'il est écrit : un nom avec un deux-points (comme `a:b.md`, dont `a:` se
+  lit comme un lecteur), une barre oblique inverse, l'un de `<>"|?*` ou un
+  caractère de contrôle, ou une partie qui se termine par un point ou une
+  espace ; et un nom que Windows lit comme autre chose : un nom de périphérique
+  isolé, comme `CON`, `NUL` ou `COM1`, ou un nom court comme `GIT~2`. git sous
+  Linux ou macOS peut suivre un tel nom ; il est donc compté sans faire échouer
+  l'exécution. Une entrée écrite à la main comme `C:/x` ou `..\..\x` aboutit
+  aussi ici sous Windows ;
+- `link` : un lien symbolique, ou sous Windows une jonction, à tout niveau sous
+  la racine, même un lien qui pointe dans la racine, ou une entrée que l'index
+  marque comme lien (à n'importe quelle étape d'un conflit de fusion, de sorte
+  qu'un tel fichier n'est pas lu tant que le conflit n'est pas résolu).
+  git stocke un lien sous la forme du chemin vers lequel il pointe, et un
+  fichier suivi vers lequel pointe un lien est vérifié sous son propre chemin ;
+- `submodule` : l'entrée d'un sous-module ;
+- `not_regular_file` : tout autre élément qui n'est pas un fichier ordinaire,
+  comme un dossier, un tube nommé ou un périphérique, où une lecture attendrait
+  ou ne finirait jamais ;
+- `missing` : un fichier suivi qui n'est pas dans l'arbre de travail ; sous
+  Windows, cela inclut un nom que git a listé en octets qui ne sont pas de
+  l'UTF-8, ce que seul un index créé sur un autre système contient (Git for
+  Windows écrit un tel fichier sous un autre nom, de sorte que son contenu n'est
+  pas vérifié), et un chemin plus long que ce que le système permet lorsque les
+  chemins longs ne sont pas activés ;
+- `unreadable` : un fichier, ou un dossier sur le chemin qui y mène, que le
+  système ne laisse pas le portail examiner, ouvrir ou lire : faute de
+  permission, parce qu'un autre programme tient le fichier ou une partie de
+  celui-ci, ou parce que le système ne peut pas l'ouvrir, comme un fichier
+  uniquement en ligne dont le programme de synchronisation est arrêté. Lorsqu'un
+  autre programme tient le fichier entier, le portail attend 0,2 seconde et
+  réessaie une fois : sous Windows, un programme qui l'a ouvert sans le
+  partager ; ailleurs, un bail d'écriture en cours de rupture, comme un oplock
+  Samba ou une délégation NFS. L'exécution ne réussit pas, car un constat qui
+  s'y trouverait passerait inaperçu. Quelques cas font ainsi échouer
+  l'exécution alors que le fichier n'a aucun problème : une rupture de bail qui
+  prend plus de 0,2 seconde, un fichier en attente de suppression, et un tube
+  nommé dans un projet sur un partage `\\wsl$`, où chaque lecture attend
+  d'abord environ 10 secondes ;
+- `too_large` : un fichier de plus de 64 Mio dont les 64 premiers Mio sont du
+  texte UTF-8, ou un fichier qui dépasse 64 Mio pendant que le portail le lit.
+  L'exécution ne réussit pas, pour la même raison ;
+- `not_utf8_text` : un fichier dont les octets ne sont pas du texte UTF-8, comme
+  un fichier UTF-16 avec une marque d'ordre des octets. Au-delà de 64 Mio, les
+  64 premiers Mio décident, et un fichier est binaire lorsqu'un quart ou plus de
+  ses 8000 premiers octets sont NUL, comme une grande image remplie de zéros ou
+  un fichier UTF-16 de texte majoritairement latin sans marque d'ordre des
+  octets ; il ne fait donc pas échouer l'exécution ; quelques octets NUL dans du
+  texte ne comptent pas ;
+- `exempt` : un fichier que les vérifications laissent de côté par conception :
+  un fichier dont le suffixe le marque comme binaire, comme une image ou une
+  archive, et tout ce qui se trouve sous un dossier `.apothem/plans`,
+  `tests/conformity`, `tests/fixtures`, `_vendor` ou `node_modules` à n'importe
+  quelle profondeur dans la racine. Les vérifications `outside_project` et
+  `unsupported_name` passent en premier ; aucune exemption ne les masque donc.
+
+Lorsqu'une exécution ne réussit pas pour `outside_project`, `unreadable` ou
+`too_large`, `files_not_passed` nomme les entrées derrière chacun de ces motifs,
+telles que git les liste, triées, jusqu'à 10 par motif ; `files_skipped` donne
+le nombre complet. Une ligne sur stderr nomme aussi ces motifs et leurs
+nombres, de sorte qu'un journal de CI qui n'affiche que stderr dit pourquoi
+l'exécution a échoué.
+
+Les niveaux de chaque fichier sont vérifiés juste avant sa lecture, et le
+fichier ouvert doit être celui que cette vérification a trouvé. Un fichier
+qu'un autre programme remplace entre-temps, par un autre fichier, un lien ou un
+tube nommé, est recherché une fois de plus, et compté comme `unreadable` s'il
+est remplacé de nouveau ; un lien symbolique ou, sous Windows, une jonction mis
+à sa place est trouvé comme `link` au second examen. Le portail n'attend jamais
+sur un tube nommé et ne lit jamais à travers un lien qui a pris la place du
+fichier. Sous Windows, un fichier que la déduplication des données ou un
+programme de synchronisation cloud garde derrière un point d'analyse est lu par
+ce programme comme d'habitude ; lorsque le programme est arrêté, le fichier est
+`unreadable`.
+
+Le fichier est ouvert depuis la racine niveau par niveau, et aucun niveau n'est
+ouvert à travers un lien ; un dossier au-dessus du fichier qu'un autre
+programme remplace par un lien entre la vérification et l'ouverture n'est donc
+pas suivi non plus : le fichier compte comme `link`.
+
+Deux choses échappent à ces vérifications. Un lien physique se lit comme un
+fichier ordinaire ; un lien physique vers un fichier situé ailleurs est donc
+lu ; git n'en crée pas. Et sous Windows, un système de fichiers réseau qui ne
+donne ni l'étiquette de point d'analyse d'un fichier ni son identifiant de
+fichier, mais qui contient des liens symboliques, pourrait voir un fichier
+remplacé par un lien entre la vérification et l'ouverture sans que le portail
+ne le voie.
+
+Dans cette exécution, le matcher `link-check` ne recherche une cible de lien
+qu'à l'intérieur de la racine : un lien relatif qui sort de la racine compte
+comme externe, et la recherche d'un dossier `site/content/docs` s'arrête à la
+racine. Dans tous les modes, il ne recherche jamais un lien qui nomme un
+emplacement par lui-même, comme un partage réseau (`\\host\share`), un lecteur
+(`C:/notes.md`) ou une adresse `file:`. Sous Windows, rechercher un partage
+envoie votre authentification à cet hôte. Sous Windows, il laisse aussi non
+vérifié un segment de route `/docs/` contenant un deux-points, que Windows lit
+comme un lecteur, et un lien qu'il ne trouve qu'à travers une partie qui se
+termine par un point ou une espace : Windows peut supprimer cette terminaison
+(`ci.yml.` trouve `ci.yml`), de sorte que la découverte ne prouve rien. Un tel
+lien qui ne trouve rien est signalé comme mort, comme d'habitude. Sur tous les
+systèmes, une route `/docs/` avec un segment `.` ou `..`, comme `/docs/../x`,
+compte comme externe et n'est pas recherchée.
+
+Chaque appel à `git ls-files` dispose de 60 secondes : celui que fait cette
+exécution, et celui de `no-global-plans-grep`, dont le rapport porte alors le
+même `check_error` et échoue ; lorsque git lui-même y échoue, son message donne
+le code de sortie de git, et non le propre texte de git. Un dépôt dont les
+propres réglages font attendre git, comme un `include.path` qui pointe vers un
+tube nommé, retient chacun de ces appels pendant cette durée au plus, y compris
+sous Windows, où la limite arrête aussi le git qu'a démarré le lanceur de Git.
+Une exécution `--all-perwrite` qui n'a lu aucun fichier ne réussit pas : elle
+signale `files_scanned: 0` avec `empty_scope_expected: false`. Lorsque la liste
+des fichiers suivis ne peut pas être lue, `check_error` donne une raison fixe :
+git n'a pas démarré, `git ls-files` a échoué avec un code de sortie donné, ou il
+n'a pas terminé à temps. Pour voir le propre message de git, par exemple lorsque
+la racine ne se trouve dans aucun arbre de travail git, exécutez `git ls-files`
+dans la racine ; le rapport l'omet, car il peut nommer des fichiers hors du
+projet. Avec `--strict`, une exécution qui n'a pas réussi se termine avec `2`.
 
 ## Barres du portail
 
@@ -224,10 +641,11 @@ depuis un terminal. Un validateur autonome prend un répertoire racine (le
 répertoire courant s'il est omis). `--list` indique à quel groupe appartient
 chaque validateur.
 
-Le mode `--hook` (`python -m apothem.conformity.gate --hook`) est le point
-d'entrée appelé par l'environnement : il lit sur stdin une charge utile JSON
-d'entrée d'outil et exécute la chaîne de matchers par écriture sur l'écriture
-en attente. C'est la forme qu'invoque le hook `PreToolUse` déployé ; vous
+Le mode `--hook` (`<python> -E -s .../conformity/gate.py --hook`, où
+`<python>` est l'interpréteur que l'installation a trouvé) est le point
+d'entrée appelé par le harness : il lit sur stdin une charge utile JSON d'entrée
+d'outil et exécute la chaîne de matchers par écriture sur l'écriture en
+attente. C'est la forme qu'invoque le hook `PreToolUse` déployé ; vous
 l'appelez rarement à la main.
 
 Le mode hook est **limité à un ensemble de répertoires**. Il n'exécute la

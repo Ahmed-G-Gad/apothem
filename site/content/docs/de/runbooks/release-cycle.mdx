@@ -2,7 +2,7 @@
 title: "Runbook zum Release-Zyklus"
 description: "Vollständiger Release-Workflow von den lokalen Gates über das signierte GitHub Release bis zur npm-Veröffentlichung."
 machineTranslated: true
-sourceHash: "290e07a124d79a3c"
+sourceHash: "74550dc717817290"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,8 @@ CHANGELOG und einem Installationspfad-Smoke-Test, der bestätigt, dass jede
 benutzerseitige Oberfläche auf den kanonischen Installationsbefehl antwortet.
 
 Das Release-Modell ist **additiv**. Jedes Release fügt einen Commit auf `main`
-und ein signiertes, annotiertes `vX.Y.Z`-Tag hinzu; nichts wird per Force-Push
+(den Squash-Merge eines Release-Pull-Requests) und ein signiertes, annotiertes
+`vX.Y.Z`-Tag hinzu; nichts wird per Force-Push
 übertragen, und kein früheres Tag, kein GitHub Release und keine npm-Version
 wird entfernt. Jedes Release behält sein Tag, sein GitHub Release und seine npm-Version, und alle bleiben veröffentlicht:
 npm-Versionen sind unveränderlich (ein veröffentlichtes `name@version` kann
@@ -29,7 +30,7 @@ Publishing auf npmjs.com, und `publish-vscode.yml` paketiert die
 VS Code-Erweiterung und veröffentlicht sie im Visual Studio Marketplace. Der
 versionierte CHANGELOG-Abschnitt landet im
 Release-Commit; der Operator führt den Installationspfad-Smoke-Test aus,
-nachdem beide Workflows abgeschlossen sind.
+nachdem alle drei Workflows abgeschlossen sind.
 
 ## 1. Voraussetzungen
 
@@ -37,8 +38,13 @@ Der Maintainer bestätigt vor dem Taggen Folgendes:
 
 - **Arbeitsbaum.** Sauber (`git status` zeigt nichts Ausstehendes). Die gesamte
   Feature-Arbeit für das Release ist auf `main`.
-- **CI grün.** Für den neuesten Stand von `main` gibt `gh run list --branch=main --limit=1
-  --json conclusion --jq '.[0].conclusion'` den Wert `success` zurück.
+- **CI grün.** Der neueste CI-Lauf auf `main` war erfolgreich:
+  `gh run list --workflow ci.yml --branch=main --limit=1 --json conclusion
+  --jq '.[0].conclusion'` gibt `success` zurück. Ohne `--workflow` liest der
+  Befehl den neuesten Lauf eines beliebigen Workflows (etwa Badges), nicht CI.
+  Die Bereitschaftsprüfung in §2.4 prüft später jeden erforderlichen Workflow
+  für den Release-Commit; `scripts/release/check-release-ready.sh` listet sie
+  auf.
 - **Werkzeuge.** `gh` (GitHub CLI) Version 2.40 oder neuer, authentifiziert
   gegen `ahmed-g-gad`; `git` 2.40 oder neuer mit geladenem
   GPG-Signier-Unterschlüssel; die npm-Trusted-Publisher-Bindung für
@@ -67,19 +73,25 @@ Der Maintainer bestätigt vor dem Taggen Folgendes:
 
 ### 2.1 Den Release-Commit verfassen
 
-Die Version steht in mehr als einem Dutzend Dateien, bearbeiten Sie sie also
-nicht von Hand. Ein einziger Befehl ändert sie alle:
+Der Release-Commit gelangt wie jede andere Änderung über einen Pull Request,
+der per Squash gemergt wird, auf `main`. Der Branch-Schutz bindet keinen
+Admin, der direkt auf `main` pushen könnte; dieses Runbook nutzt diese
+Umgehung nicht. Erstellen Sie den Commit auf einem Branch `release/vX.Y.Z`. Die
+Version steht in mehr als einem Dutzend Dateien, bearbeiten Sie sie also nicht
+von Hand. Ein einziger Befehl ändert sie alle:
 
 ```bash
 git checkout main
 git pull --ff-only origin main
+git checkout -b release/vX.Y.Z
+npm ci --prefix site
 python scripts/release/bump_version.py X.Y.Z
 ```
 
 `bump_version.py` aktualisiert jeden Versionsanker gemeinsam:
 
 - Jedes Paketierungs-, Erweiterungs-, Plugin- und Marketplace-Manifest sowie
-  die Zitationsdatei (Version und Release-Datum). Die vollständige Liste:
+  die Zitationsdatei (Version und Release-Datum):
 
   ```text
   pyproject.toml
@@ -95,6 +107,24 @@ python scripts/release/bump_version.py X.Y.Z
   CITATION.cff
   ```
 
+- Die Wrapper-Dateien, die die Engine über npx ausführen und deren Aufrufe
+  `npx @ahmed-g-gad/apothem@X.Y.Z` auf das Release gepinnt sind:
+
+  ```text
+  commands/apothem.toml
+  qwen-commands/apothem.md
+  GEMINI.md
+  QWEN.md
+  plugins/apothem/skills/apothem/SKILL.md
+  vscode-extension/extension.js
+  vscode-extension/package.json
+  vscode-extension/README.md
+  ```
+
+  Die beiden Listen sind `JSON_ANCHORS` und `NPX_PIN_ANCHORS` in
+  `scripts/release/bump_version.py`; maßgeblich ist das Skript, nicht diese
+  Seite.
+
 - `CHANGELOG.md`: Die `[Unreleased]`-Einträge werden zu einem datierten
   `## [X.Y.Z]`-Abschnitt, `[Unreleased]` vergleicht ab `vX.Y.Z`, und ein
   `[X.Y.Z]`-Link wird hinzugefügt.
@@ -102,36 +132,66 @@ python scripts/release/bump_version.py X.Y.Z
   Ob ältere Minor-Versionen gelistet bleiben, entscheiden Sie; das Skript gibt
   eine Erinnerung aus.
 
+Zwei Änderungen an `SECURITY.md` nehmen Sie selbst von Hand im selben Commit
+vor:
+
+- Fügen Sie das neue Tag oben in die Tabelle der signierten Tags unter
+  „Release tags are not all the same kind of object“ ein. Das Skript ändert
+  diese Tabelle nicht. Die Zeile lautet:
+
+  ```text
+  | `vX.Y.Z` | annotated, GPG-signed | `git verify-tag vX.Y.Z` |
+  ```
+
+- Ändern Sie bei einer neuen Minor-Version die Zeile der vorherigen
+  Minor-Version auf die Unterstützung, die Sie für sie beibehalten, etwa
+  „Critical security fixes only, until `<date>`“.
+
 Danach erzeugt es die abgeleiteten Bäume neu: das Claude Code-Plugin-Paket, die
 Behavior-Diff-Goldens sowie die Referenz- und Changelog-Seiten der
 Dokumentation. Übergeben Sie `--dry-run`, um die Änderungen zuerst aufzulisten,
 `--date
 YYYY-MM-DD`, um das Release-Datum festzulegen (Standard: heute in UTC), oder
-`--no-regen`, um die Neuerzeugung zu überspringen. Das Skript lehnt eine
-fehlerhafte Version oder ein Downgrade ab, und ein erneuter Aufruf mit der
-aktuellen Version richtet nur abweichende Anker neu aus.
+`--no-regen`, um die Neuerzeugung zu überspringen. Die Dokumentationsseiten
+werden mit Markdown-Paketen aus `site/node_modules` gebaut; fehlt dieser
+Ordner, bricht das Skript daher ab, bevor es eine Datei ändert;
+`npm ci --prefix site` installiert ihn. Das Skript lehnt eine fehlerhafte
+Version oder ein Downgrade ab, und ein erneuter Aufruf mit der aktuellen
+Version richtet nur abweichende Anker neu aus.
 
-Prüfen Sie den Diff und committen Sie dann:
+Prüfen Sie den Diff, committen Sie dann, pushen Sie den Branch und öffnen Sie
+den Pull Request:
 
 ```bash
-git checkout -b release/vX.Y.Z
 git add -A
 git commit -s -m "chore(release): cut vX.Y.Z"
 git push -u origin release/vX.Y.Z
 gh pr create --base main --head release/vX.Y.Z \
   --title "chore(release): cut vX.Y.Z" --body "Release vX.Y.Z."
+```
+
+Das Flag `-s` fügt die Zeile `Signed-off-by` hinzu, nach der die erforderliche
+Prüfung `Require Signed-off-by` bei jedem Commit des Pull Requests sucht. Der
+Betreff des Squash-Commits ist der Titel des Pull Requests plus ` (#N)` und
+muss in 72 Zeichen passen.
+
+Warten Sie auf die erforderlichen Prüfungen, mergen Sie den Pull Request dann
+per Squash und holen Sie den Merge-Commit in Ihren Klon:
+
+```bash
 gh pr checks release/vX.Y.Z --required --watch
 gh pr merge release/vX.Y.Z --squash --match-head-commit "$(git rev-parse HEAD)"
 git checkout main
 git pull --ff-only origin main
+git log -1 --format='%h %s'
 ```
 
-Das Flag `-s` fügt die Zeile `Signed-off-by` hinzu, die die erforderliche
-Prüfung `Require Signed-off-by` erwartet. Der Release-Commit gelangt als
-Squash-Merge dieses Pull Requests auf `main`; GitHub signiert diesen Commit mit
-seinem eigenen Schlüssel, und Ihre Signatur des Release ist die des Tags (§2.2).
-Der Merge löst die Standard-CI-Matrix (lint, test, build) auf `main` aus; warten
-Sie auf Grün, bevor Sie taggen.
+Der letzte Befehl gibt den kurzen Hash gefolgt von
+`chore(release): cut vX.Y.Z (#N)` aus. GitHub erstellt den Squash-Commit und
+signiert ihn mit seinem eigenen Schlüssel, daher trägt der Commit nicht Ihre
+GPG-Signatur. Ihre Signatur des Release ist die des Tags (§2.2), die die
+Installer prüfen. Der Merge startet die Standard-CI-Matrix (lint, test, build)
+auf `main`; warten Sie auf Grün, bevor Sie taggen.
 
 Die Prüfung in §2.4 setzt außerdem voraus, dass CodeQL und Conformity für den
 Release-Commit grün sind. Beide Workflows laufen nur, wenn sich ihre eigenen
@@ -147,19 +207,23 @@ gh run list --workflow conformity.yml --commit "$(git rev-parse HEAD)" --limit 1
 ```
 
 Warten Sie, bis beide erfolgreich abgeschlossen sind, bevor Sie taggen, und
-pushen Sie bis zur Veröffentlichung des Releases nichts anderes auf `main`: Ein
-späterer Push verschiebt `main` vom Release-Commit weg, und CI bricht einen
+mergen Sie bis zur Veröffentlichung des Releases nichts anderes in `main`: Ein
+späterer Merge verschiebt `main` vom Release-Commit weg, und CI bricht einen
 noch laufenden Lauf auf demselben Branch ab.
 
 ### 2.2 Das Tag signieren und pushen
+
+Taggen Sie den Squash-Commit aus §2.1, der in Ihrem Klon der HEAD von `main`
+ist:
 
 ```bash
 git tag -a -s vX.Y.Z -m "vX.Y.Z"
 git push origin vX.Y.Z
 ```
 
-Die Kombination `-a -s` erzeugt ein annotiertes, GPG-signiertes Tag. Der Push
-löst `.github/workflows/release.yml` aus, das baut, signiert, attestiert und
+Die Kombination `-a -s` erzeugt ein annotiertes, GPG-signiertes Tag. Ein
+fehlender oder gesperrter Signierschlüssel lässt bereits `git tag` scheitern,
+bevor etwas gepusht wird (§6). Der Push löst `.github/workflows/release.yml` aus, das baut, signiert, attestiert und
 veröffentlicht.
 
 ### 2.3 Bestätigen, dass der Release-Workflow abgeschlossen ist
@@ -483,6 +547,78 @@ in der nächsten Änderung an `main`, und fügen Sie den vorherigen Digest zu de
 hat. Der CI-Job `release-preflight` checkt jedes Tag aus und schlägt daher mit
 den Tag-Namen fehl, bis der Pin aktualisiert ist.
 
+### 2.6 Die Badges, die Website und den Kanal-Smoke-Test aktualisieren
+
+Der Badges-Workflow liest nach jedem CI-Lauf auf `main` das neueste Tag mit
+`git describe`. CI für den Release-Commit war fertig, bevor das Tag existierte,
+daher nennt das veröffentlichte Release-Badge noch das vorherige Release.
+Starten Sie drei Workflows von Hand, in dieser Reihenfolge, sobald die
+Veröffentlichungen auf npm und im Marketplace aus §2.4 abgeschlossen sind.
+Jeder muss erfolgreich sein, bevor Sie den nächsten starten: Die
+Veröffentlichung der Website kopiert die Badges aus dem neuesten erfolgreichen
+Badges-Lauf, und der Kanal-Smoke-Test installiert von der veröffentlichten
+Website und aus den Registrys.
+
+```bash
+gh workflow run badges.yml --ref main
+gh run watch "$(gh run list --workflow badges.yml --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId')" --exit-status
+gh workflow run publish-static-site.yml --ref main
+gh run watch "$(gh run list --workflow publish-static-site.yml --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId')" --exit-status
+gh workflow run channel-smoke.yml --ref main
+gh run watch "$(gh run list --workflow channel-smoke.yml --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId')" --exit-status
+curl -fsSL https://apothem.ahmedgad.com/badges/release.json
+```
+
+`--event workflow_dispatch` hält den Badges-Lauf, den CI auf `main` von selbst
+startet, aus der Liste heraus. Ein gestarteter Lauf kann einige Sekunden
+brauchen, bis er in `gh run list` erscheint; prüfen Sie daher, dass der Lauf,
+dem jedes `gh run watch` folgt, der ist, den Sie gerade gestartet haben, und
+nicht ein früherer Start. Der letzte Befehl gibt JSON aus, dessen `message`
+`vX.Y.Z` ist.
+
+### 2.7 Die Sicherheitshinweise veröffentlichen, die das Release behebt
+
+Ein Release, das eine gemeldete Schwachstelle behebt, wird ausgeliefert,
+während sein Repository-Sicherheitshinweis noch ein Entwurf ist.
+Veröffentlichen Sie jeden erst, wenn die behobene Version auf npm live ist
+(`npm view @ahmed-g-gad/apothem version` gibt `X.Y.Z` aus), und erst, nachdem
+Sie ihn vollständig gelesen haben. Listen Sie die Entwürfe auf:
+
+```bash
+gh api "repos/Ahmed-G-Gad/apothem/security-advisories?state=draft" \
+  --jq '.[] | [.ghsa_id, .severity, .summary] | @tsv'
+```
+
+Für jeden Entwurf, den dieses Release behebt:
+
+1. Lesen Sie seine Beschreibung. Der Text unter Patches nennt `X.Y.Z` als
+   behobene Version und gibt den Upgrade-Schritt an, und kein
+   `TODO(clarify)` ist übrig. Bearbeiten Sie ihn andernfalls auf der Seite des
+   Hinweises.
+2. Setzen Sie die gepatchte Version für jedes betroffene Paket. Die API ersetzt
+   die gesamte Liste `vulnerabilities`; senden Sie daher jeden Eintrag mit
+   gesetztem `patched_versions` zurück:
+
+   ```bash
+   ghsa=GHSA-xxxx-xxxx-xxxx
+   gh api "repos/Ahmed-G-Gad/apothem/security-advisories/${ghsa}" \
+     --jq '{vulnerabilities: [.vulnerabilities[] | {package: {ecosystem: .package.ecosystem, name: .package.name}, vulnerable_version_range, patched_versions: "X.Y.Z", vulnerable_functions}]}' \
+     | gh api -X PATCH "repos/Ahmed-G-Gad/apothem/security-advisories/${ghsa}" \
+         --input - --jq '.vulnerabilities'
+   ```
+
+   Die Ausgabe des ersten Aufrufs geht über eine Pipe direkt in den zweiten,
+   sodass keine Datei in Ihrem Klon zurückbleibt. Die Ausgabe listet jedes
+   Paket mit `patched_versions` `X.Y.Z` auf.
+3. Veröffentlichen Sie ihn:
+
+   ```bash
+   gh api -X PATCH "repos/Ahmed-G-Gad/apothem/security-advisories/${ghsa}" \
+     -f state=published --jq '.state'
+   ```
+
+   Der Befehl gibt `published` aus.
+
 ## 3. Distributionsoberflächen
 
 Jede Oberfläche hat einen Verifizierungsbefehl, der die Frage „Ist das Release
@@ -493,7 +629,7 @@ hier gelandet?“ beantwortet:
 | 1 | GitHub Release (Python-Distributionen) | `apothem-X.Y.Z.tar.gz` (sdist) + `apothem-X.Y.Z-py3-none-any.whl` | `gh release view vX.Y.Z --json assets --jq '.assets[].name'` enthält beide Dateinamen |
 | 2 | GitHub Release (SBOM) | `sbom.cdx.json` + `sbom.cdx.json.cosign.bundle` | die Asset-Liste enthält beide; das `metadata.component.purl` des SBOM ist `pkg:pypi/apothem@X.Y.Z`, und seine Komponenten umfassen jedes Paket in `src/apothem/_vendor/vendor.txt` |
 | 3 | GitHub Release (Signaturen) | ein `<asset>.cosign.bundle` je sdist, Wheel, SBOM, VS Code-Erweiterung, Plattformarchiv und `SHA256SUMS` (frühere Releases benennen die Archiv- und `SHA256SUMS`-Bundles `<asset>.sig`) | `cosign verify-blob` mit der exakten Identität aus §5.5 endet mit 0 |
-| 4 | GitHub Release (Provenienz) | `provenance.intoto.jsonl` | `bash scripts/release/verify-provenance.sh <download-dir>` endet mit 0 (§5.5) |
+| 4 | GitHub Release (Provenienz) | `provenance.intoto.jsonl` | `bash scripts/release/verify-provenance.sh --require-all <download-dir>` endet mit 0 und gibt `chain OK (3 of 3 layers verified: ...)` aus (§5.5) |
 | 5 | GitHub Release (Plattformarchive) | `apothem-vX.Y.Z-darwin.tar.gz`, `apothem-vX.Y.Z-linux.tar.gz`, `apothem-vX.Y.Z-windows.zip` | die Asset-Liste enthält jedes Archiv plus `SHA256SUMS`. Die darwin- und linux-Archive sind dieselben Bytes unter zwei Namen (die Laufzeit ist plattformneutral; `--platform` wählt nur tar.gz oder zip), daher zeigen ihre `SHA256SUMS`-Zeilen denselben Digest zweimal |
 | 6 | GitHub Release (VS Code-Erweiterung) | `apothem.vsix` + `apothem.vsix.cosign.bundle` | die Asset-Liste enthält beide; `code --install-extension apothem.vsix` installiert sie. Releases aus der Zeit, bevor der Release-Workflow die Erweiterung paketierte, enthalten keines von beiden |
 | 7 | npmjs.com | `@ahmed-g-gad/apothem@X.Y.Z` | `npm view @ahmed-g-gad/apothem version` gibt `X.Y.Z` zurück; `npx @ahmed-g-gad/apothem@X.Y.Z --version` gibt `Apothem, version X.Y.Z` aus |
@@ -512,6 +648,21 @@ Keep-a-Changelog-Konvention. Die CHANGELOG-Bearbeitung des Release-Commits:
 - Bestätigt, dass der Versionsabschnitt die Überschrift `## [X.Y.Z] - YYYY-MM-DD`
   verwendet (ein Bindestrich; `bump_version.py` schreibt sie, und
   `extract_release_notes.py` gleicht das Präfix `## [X.Y.Z]` ab).
+- Braucht für die Seite des GitHub Release keine Kürzung. GitHub lehnt einen
+  Release-Text über 125.000 Zeichen ab, daher kürzt `extract_release_notes.py`
+  im Release-Job einen längeren Abschnitt auf 120.000: Es behält die
+  `###`-Überschriften, kürzt Einträge auf ihre fett gesetzten Titel (Security
+  und den Abschnitt zum Datenverlust zuletzt), lässt Einträge nur weg, wenn
+  Titel nicht genügen, sagt, wie viele es ausgelassen hat, und verlinkt die
+  vollständigen Notes in der getaggten `CHANGELOG.md`. Es kürzt nur Notes, die
+  aus `###`-Abschnitten mit `- `-Einträgen bestehen, deren weitere Zeilen mit
+  zwei Leerzeichen beginnen. Enthalten Notes, die gekürzt werden müssen, eine
+  andere Zeile (Text vor der ersten Überschrift, eine `####`-Überschrift, einen
+  Absatz, ein anderes Listenzeichen, einen Tab, eine Trennlinie oder
+  Überschriften-Unterstreichung, einen Code-Zaun, einen HTML-Block oder eine
+  Linkdefinition), bricht es mit einem Fehler ab, der die Zeile nennt. Ein
+  CI-Test schickt jedes Release in der `CHANGELOG.md` hindurch, sodass eine
+  solche Zeile vor dem Tag scheitert.
 - Bestätigt, dass die Standardüberschriften — Added, Changed, Deprecated,
   Removed, Fixed, Security — verwendet werden, wo zutreffend. Leere Überschriften
   werden aus der gerenderten Datei entfernt.
@@ -521,6 +672,26 @@ Keep-a-Changelog-Konvention. Die CHANGELOG-Bearbeitung des Release-Commits:
 
 Ein CHANGELOG-Abschnitt, der die Prüfung durch den Maintainer überstanden hat,
 dient als Release-Notes-Anker für die Ankündigungserzählung.
+
+Nachdem das Release gemergt ist, ist der Abschnitt der Version geschlossen. Ein
+Branch, der vor dem Release abgezweigt wurde, kann das Release ohne Konflikt
+hineinmergen und seinen Eintrag im veröffentlichten Abschnitt zurücklassen;
+verschieben Sie daher jeden solchen Eintrag nach dem Merge von Hand zurück
+unter `[Unreleased]`. Die Prüfung `quality / ubuntu-latest /
+py3.12` führt `check_changelog_released_sections.py` aus, das einen Pull
+Request scheitern lässt, der einen veröffentlichten Abschnitt ändert, und ihn
+nennt. CI läuft auf einem Pull Request nicht erneut, wenn sich main bewegt, und
+ein erneutes Ausführen seiner Prüfungen testet denselben alten Merge; mergen
+Sie daher nach einem Release main in jeden offenen Pull Request (oder
+schließen und öffnen Sie ihn erneut), bevor er gemergt wird. Dieselbe Prüfung
+läuft bei jedem Push auf main gegen die Spitze vor dem Push und meldet einen
+Abschnitt, der sich dort geändert hat; ein Push-Lauf, den ein neuerer Push
+abbricht, prüft nichts. Eine bewusste Korrektur veröffentlichter Notes
+besteht, wenn ein Commit den Trailer
+`Changelog-Released-Edit: <version> <reason>` trägt, der nur den Abschnitt
+dieser Version freigibt. Git liest Trailer aus dem letzten Absatz einer
+Nachricht; wird dieser Pull Request per Squash gemergt, beenden Sie die
+Squash-Nachricht daher mit dem Trailer, neben `Signed-off-by`.
 
 ## 5. Installationspfad-Smoke-Test
 
@@ -595,9 +766,15 @@ bash ../scripts/release/verify-provenance.sh --require-all .
 ```
 
 Erwartet: `Verified OK`, `PASSED: SLSA verification passed` und
-`verify-provenance: chain OK (3 of 3 layers verified: SHA256SUMS manifest, cosign signatures, SLSA provenance)`. Das Skript prüft
-`SHA256SUMS`, jedes Signatur-Bundle und die Provenienz in einem Lauf; es
-leitet das Tag aus dem Wheel-Namen ab (`--tag vX.Y.Z` überschreibt es).
+`verify-provenance: chain OK (3 of 3 layers verified: SHA256SUMS manifest,
+cosign signatures, SLSA provenance)`. Das Skript prüft `SHA256SUMS`, jedes
+Signatur-Bundle und die Provenienz in einem Lauf; es leitet das Tag aus dem
+Wheel-Namen ab (`--tag vX.Y.Z` überschreibt es). Es überspringt eine Prüfung,
+deren Werkzeug oder Datei fehlt, und gibt dann `partial check` mit den
+übersprungenen Prüfungen statt `chain OK` aus. Ohne `--require-all` endet eine
+Teilprüfung dennoch mit 0; mit der Option (`-RequireAll` für
+`verify-provenance.ps1`) endet jede übersprungene Prüfung mit 1, sodass der
+Exit-Status allein eine vollständige von einer Teilprüfung unterscheidet.
 
 Der Smoke-Test erzeugt eine einzeilige PASS / FAIL-Zeile pro Oberfläche;
 vermerken Sie die Zeilen im Release-Protokoll des Maintainers.
@@ -609,8 +786,8 @@ den npm-Publisher:
 
 | Fehler | Diagnose | Behebung |
 |---|---|---|
-| Tag-Push abgelehnt (Signierfehler) | `git push origin vX.Y.Z` gibt `error: failed to push some refs` mit einer GPG-bezogenen Meldung zurück | Verifizieren Sie, dass der GPG-Unterschlüssel geladen ist (`gpg --list-secret-keys --keyid-format=long`); taggen Sie lokal mit `-s` neu, nachdem Sie den Schlüsselbund repariert haben; pushen Sie erneut |
-| Release-Build stoppt bei `Check the plugin version changed with the plugin` | Das Protokoll des Build-Jobs nennt das Plugin und das vorherige Tag; es wurde kein Asset gebaut oder veröffentlicht | Das Plugin-Paket hat sich seit dem vorherigen Release geändert, seine Version aber nicht. Löschen Sie das Tag (`git push --delete origin vX.Y.Z`, `git tag -d vX.Y.Z`), führen Sie `python scripts/release/bump_version.py X.Y.Z` aus, committen Sie, und signieren und pushen Sie das Tag dann erneut (§2.2). Dieselbe Prüfung läuft bei jedem Pull Request als Warnungs-Annotation, sodass dies normalerweise vor dem Taggen auffällt |
+| Tag-Signierung scheitert | `git tag -a -s vX.Y.Z` bricht mit einem gpg-Fehler ab (etwa `gpg failed to sign the data`) und erstellt kein Tag, daher wird nichts gepusht | Verifizieren Sie, dass der GPG-Unterschlüssel geladen ist (`gpg --list-secret-keys --keyid-format=long`); führen Sie, nachdem Sie den Schlüsselbund repariert haben, den Befehl `git tag -a -s` erneut aus und pushen Sie dann das Tag (§2.2) |
+| Release-Build stoppt bei `Check the plugin version changed with the plugin` | Das Protokoll des Build-Jobs nennt das Plugin und das vorherige Tag; es wurde kein Asset gebaut oder veröffentlicht | Das Plugin-Paket hat sich seit dem vorherigen Release geändert, seine Version aber nicht. `publish-npm.yml` und `publish-vscode.yml` laufen neben dem Release-Workflow; prüfen Sie daher zuerst, dass keiner von beiden veröffentlicht hat (`npm view @ahmed-g-gad/apothem version` gibt nicht `X.Y.Z` aus, und der Marketplace führt die Version nicht auf). Hat einer von beiden veröffentlicht, lassen Sie das Tag bestehen und erstellen Sie das nächste Patch-Release. Andernfalls löschen Sie das Tag (`git push --delete origin vX.Y.Z`, `git tag -d vX.Y.Z`), führen `python scripts/release/bump_version.py X.Y.Z` aus, bringen die Änderung wie in §2.1 über einen Pull Request ein und signieren und pushen das Tag dann erneut (§2.2). Das Tag benennt dann den neuen Release-Commit, was das [Runbook zur Release-Wiederherstellung](/docs/runbooks/release-recovery) §2 nur erlaubt, weil aus dem ersten nichts veröffentlicht wurde. Dieselbe Prüfung läuft bei jedem Pull Request als Warnungs-Annotation, sodass dies normalerweise vor dem Taggen auffällt |
 | Ein `release.yml`-Job scheitert an einer einzelnen Stufe | `gh run view <run-id> --log` nennt den fehlgeschlagenen Job (build, der auch das SBOM schreibt / sign / provenance / archive / publish) | Führen Sie den fehlgeschlagenen Job allein über `gh run rerun <run-id> --failed` erneut aus; wenn der Fehler erneut auftritt, beheben Sie die Eingabe des Jobs an ihrer Quelle, bevor Sie neu taggen |
 | Die SLSA-Provenienz-Verifizierung scheitert | Der Job `verify SLSA provenance artifact` endet mit einem Wert ungleich null | Untersuchen Sie das Provenienz-Artefakt auf eine Abweichung des Subjekt-Digests; bauen Sie aus demselben Tag neu — die Provenienz bindet sich an die exakten Artefakt-Digests, sodass jede Neuerzeugung eines Artefakts eine vollständige erneute Ausführung des Workflows erfordert |
 | Veröffentlichung auf npmjs.com abgelehnt | Der npm-Job endet während `npm publish` mit einem Wert ungleich null; ein Registry-`404` während `PUT` ist eine Abweichung bei Autorisierung / Trusted Publisher, kein Beweis dafür, dass der Paketcode fehlt | Verifizieren Sie, dass npm Trusted Publishing für `@ahmed-g-gad/apothem` den Eigentümer `ahmed-g-gad`, das Repository `apothem`, den Workflow `publish-npm.yml` und die erlaubte Aktion `npm publish` nennt; bestätigen Sie, dass der Job mit der Node-Version und dem npm-CLI-OIDC-Mindeststand läuft, die im Workflow gepinnt sind |

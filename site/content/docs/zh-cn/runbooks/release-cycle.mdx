@@ -2,22 +2,22 @@
 title: "发布周期操作手册"
 description: "从本地闸门、经签名的 GitHub Release，到 npm 发布的完整发布工作流。"
 machineTranslated: true
-sourceHash: "290e07a124d79a3c"
+sourceHash: "74550dc717817290"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 本操作手册将 `apothem` 的一次 `vX.Y.Z` 发布从干净的工作树推进到经过验证的分发表面。该流程是为使用 `gh`、`git` 和发布级 shell 的维护者编写的；它以一个经过验证的 Release 页面、一份已归档的 CHANGELOG，以及一次确认每个面向用户的表面都能响应规范安装命令的安装路径冒烟测试作为结束。
 
-发布模型是**追加式**的。每次发布在 `main` 上添加一个提交和一个经签名的附注 `vX.Y.Z` 标签；任何内容都不会被强制推送，任何较早的标签、GitHub Release 或 npm 版本都不会被移除。每个发布都保留其标签、其 GitHub Release 和其 npm 版本，并且全部保持已发布状态：npm 版本不可变（已发布的 `name@version` 永远无法被替换），而固定版本的安装依赖于这些标签。
+发布模型是**追加式**的。每次发布在 `main` 上添加一个提交（发布拉取请求的压缩合并）和一个经签名的附注 `vX.Y.Z` 标签；任何内容都不会被强制推送，任何较早的标签、GitHub Release 或 npm 版本都不会被移除。每个发布都保留其标签、其 GitHub Release 和其 npm 版本，并且全部保持已发布状态：npm 版本不可变（已发布的 `name@version` 永远无法被替换），而固定版本的安装依赖于这些标签。
 
-标签推送会启动三个工作流。`.github/workflows/release.yml` 构建、签名、证明并发布 GitHub Release 及其完整的产物集：sdist、wheel、CycloneDX SBOM、Sigstore cosign 签名包、SLSA-3 出处溯源，以及平台运行时归档。`publish-npm.yml` 通过 npm 受信任发布将 `@ahmed-g-gad/apothem` 发布到 npmjs.com，`publish-vscode.yml` 打包 VS Code 扩展，并将其发布到 Visual Studio Marketplace。带版本号的 CHANGELOG 部分随发布提交一同落地；操作者在两个工作流都完成后运行安装路径冒烟测试。
+标签推送会启动三个工作流。`.github/workflows/release.yml` 构建、签名、证明并发布 GitHub Release 及其完整的产物集：sdist、wheel、CycloneDX SBOM、Sigstore cosign 签名包、SLSA-3 出处溯源，以及平台运行时归档。`publish-npm.yml` 通过 npm 受信任发布将 `@ahmed-g-gad/apothem` 发布到 npmjs.com，`publish-vscode.yml` 打包 VS Code 扩展，并将其发布到 Visual Studio Marketplace。带版本号的 CHANGELOG 部分随发布提交一同落地；操作者在全部三个工作流都完成后运行安装路径冒烟测试。
 
 ## 1. 前置条件
 
 维护者在打标签前确认以下各项：
 
 - **工作树。** 干净（`git status` 显示无任何待处理项）。该发布的所有功能工作都已在 `main` 上。
-- **CI 为绿色。** 针对最新的 `main`，`gh run list --branch=main --limit=1 --json conclusion --jq '.[0].conclusion'` 返回 `success`。
+- **CI 为绿色。** `main` 上最新的 CI 运行已成功：`gh run list --workflow ci.yml --branch=main --limit=1 --json conclusion --jq '.[0].conclusion'` 返回 `success`。不带 `--workflow` 时，该命令读取的是任意工作流（例如 Badges）的最新运行，而不是 CI。§2.4 中的就绪检查稍后会在发布提交上检查每个必需的工作流；`scripts/release/check-release-ready.sh` 列出了这些工作流。
 - **工具链。** `gh`（GitHub CLI）2.40 或更高版本，已针对 `ahmed-g-gad` 完成认证；`git` 2.40 或更高版本，已加载 GPG 签名子密钥；`@ahmed-g-gad/apothem` 的 npm 受信任发布者绑定已生效（按照[发布者账户设置操作手册](/docs/runbooks/publisher-account-setup)验证）。
 - **版本锚点已对齐。** `pyproject.toml` 中声明的版本字符串与计划的标签去掉 `v` 前缀后一致（由 §2.1 连同其他所有锚点一起设置）。验证：
 
@@ -37,17 +37,19 @@ sourceHash: "290e07a124d79a3c"
 
 ### 2.1 编写发布提交
 
-版本号分布在超过一打的文件中，因此不要手工编辑它们。一条命令即可更新全部文件：
+与其他所有更改一样，发布提交通过一个以压缩方式合并（squash merge）的拉取请求进入 `main`。分支保护不约束管理员，管理员可以直接推送到 `main`；本操作手册不使用这种绕过方式。请在 `release/vX.Y.Z` 分支上创建该提交。版本号分布在超过一打的文件中，因此不要手工编辑它们。一条命令即可更新全部文件：
 
 ```bash
 git checkout main
 git pull --ff-only origin main
+git checkout -b release/vX.Y.Z
+npm ci --prefix site
 python scripts/release/bump_version.py X.Y.Z
 ```
 
 `bump_version.py` 会一并更新每个版本锚点：
 
-- 每个打包、扩展、插件和市场清单，以及引用文件（版本号和发布日期）。完整列表：
+- 每个打包、扩展、插件和市场清单，以及引用文件（版本号和发布日期）：
 
   ```text
   pyproject.toml
@@ -63,27 +65,59 @@ python scripts/release/bump_version.py X.Y.Z
   CITATION.cff
   ```
 
+- 通过 npx 运行引擎的包装文件，其中的 `npx @ahmed-g-gad/apothem@X.Y.Z` 调用固定到该发布版本：
+
+  ```text
+  commands/apothem.toml
+  qwen-commands/apothem.md
+  GEMINI.md
+  QWEN.md
+  plugins/apothem/skills/apothem/SKILL.md
+  vscode-extension/extension.js
+  vscode-extension/package.json
+  vscode-extension/README.md
+  ```
+
+  这两个列表是 `scripts/release/bump_version.py` 中的 `JSON_ANCHORS` 和 `NPX_PIN_ANCHORS`；权威来源是该脚本，而不是本页。
+
 - `CHANGELOG.md`：`[Unreleased]` 条目变为带日期的 `## [X.Y.Z]` 部分，`[Unreleased]` 改为从 `vX.Y.Z` 开始比较，并添加一个 `[X.Y.Z]` 链接。
 - `SECURITY.md`：新的次版本会获得一个受支持的 `X.Y.x` 行。较旧的次版本是否继续列出由你决定；脚本会打印一条提醒。
 
-随后它会重新生成派生树：Claude Code 插件包、行为差异黄金基准，以及文档参考页和变更日志页。传入 `--dry-run` 可先列出更改，传入 `--date YYYY-MM-DD` 可设置发布日期（默认：UTC 时区的今天），传入 `--no-regen` 可跳过重新生成。该脚本会拒绝格式错误的版本号或降级，而用当前版本号重新运行它只会重新对齐零散的锚点。
+有两处 `SECURITY.md` 编辑需要你在同一个提交中手工完成：
 
-审查差异，然后提交：
+- 在“Release tags are not all the same kind of object”下的签名标签表顶部添加新标签。脚本不会改动该表。该行内容为：
+
+  ```text
+  | `vX.Y.Z` | annotated, GPG-signed | `git verify-tag vX.Y.Z` |
+  ```
+
+- 对于新的次版本，将上一个次版本的行改为你为其保留的支持级别，例如“Critical security fixes only, until `<date>`”。
+
+随后它会重新生成派生树：Claude Code 插件包、行为差异黄金基准，以及文档参考页和变更日志页。传入 `--dry-run` 可先列出更改，传入 `--date YYYY-MM-DD` 可设置发布日期（默认：UTC 时区的今天），传入 `--no-regen` 可跳过重新生成。文档页面使用 `site/node_modules` 中的 Markdown 包构建，因此当该文件夹缺失时，脚本会在更改任何文件之前停止；`npm ci --prefix site` 会安装它。该脚本会拒绝格式错误的版本号或降级，而用当前版本号重新运行它只会重新对齐零散的锚点。
+
+审查差异，然后提交、推送分支并创建拉取请求：
 
 ```bash
-git checkout -b release/vX.Y.Z
 git add -A
 git commit -s -m "chore(release): cut vX.Y.Z"
 git push -u origin release/vX.Y.Z
 gh pr create --base main --head release/vX.Y.Z \
   --title "chore(release): cut vX.Y.Z" --body "Release vX.Y.Z."
+```
+
+`-s` 标志会添加 `Signed-off-by` 行，必需检查 `Require Signed-off-by` 会在拉取请求的每个提交上查找该行。压缩提交的主题是拉取请求标题加上 ` (#N)`，并且必须在 72 个字符以内。
+
+等待必需检查通过，然后以压缩方式合并该拉取请求，并将合并提交拉取到你的克隆中：
+
+```bash
 gh pr checks release/vX.Y.Z --required --watch
 gh pr merge release/vX.Y.Z --squash --match-head-commit "$(git rev-parse HEAD)"
 git checkout main
 git pull --ff-only origin main
+git log -1 --format='%h %s'
 ```
 
-`-s` 标志会添加必需检查 `Require Signed-off-by` 所查找的 `Signed-off-by` 行。发布提交作为该拉取请求的压缩合并（squash merge）进入 `main`；GitHub 使用自己的密钥对该提交签名，而你对发布的签名在标签上（§2.2）。合并会在 `main` 上触发标准 CI 矩阵（lint、test、build）；在打标签之前等待其变绿。
+最后一条命令会打印短哈希，后跟 `chore(release): cut vX.Y.Z (#N)`。GitHub 创建该压缩提交并用它自己的密钥签名，因此该提交不带有你的 GPG 签名。你对发布的签名是标签上的签名（§2.2），安装器会检查它。合并会在 `main` 上启动标准 CI 矩阵（lint、test、build）；在打标签之前等待其变绿。
 
 §2.4 中的就绪检查还要求 CodeQL 和合规工作流在发布提交上均为绿色。这两个工作流都只在各自的路径发生变化时才会运行，而发布提交通常不会改动这些路径，因此请在发布提交成为 `main` 的最新提交之后启动它们，然后确认每次运行都对应该提交：
 
@@ -94,16 +128,18 @@ gh run list --workflow codeql.yml --commit "$(git rev-parse HEAD)" --limit 1
 gh run list --workflow conformity.yml --commit "$(git rev-parse HEAD)" --limit 1
 ```
 
-在打标签之前，等待两者都成功；在发布完成之前，不要向 `main` 推送任何其他内容：之后的推送会使 `main` 偏离发布提交，而且 CI 会取消同一分支上仍在进行中的运行。
+在打标签之前，等待两者都成功；在发布完成之前，不要向 `main` 合并任何其他内容：之后的合并会使 `main` 偏离发布提交，而且 CI 会取消同一分支上仍在进行中的运行。
 
 ### 2.2 签名并推送标签
+
+为 §2.1 中的压缩提交打标签，它就是你克隆中 `main` 的最新提交：
 
 ```bash
 git tag -a -s vX.Y.Z -m "vX.Y.Z"
 git push origin vX.Y.Z
 ```
 
-`-a -s` 组合会生成一个经 GPG 签名的附注标签。该推送会触发 `.github/workflows/release.yml`，由它构建、签名、证明并发布。
+`-a -s` 组合会生成一个经 GPG 签名的附注标签。签名密钥缺失或被锁定会让 `git tag` 本身失败，此时尚未推送任何内容（§6）。该推送会触发 `.github/workflows/release.yml`，由它构建、签名、证明并发布。
 
 ### 2.3 确认发布工作流已完成
 
@@ -240,6 +276,54 @@ Entra 路径以一个短期有效的令牌取代存储的个人访问令牌。`p
 
 标签存在之后，将 `tests/unit/test_template_digests.py` 中的 `_LATEST_RELEASE` 和 `_LATEST_RELEASE_DIGESTS` 设置为新版本，以及该版本所发布的每个纯文本模板的 SHA-256 摘要（`git show vX.Y.Z:<template path> | sha256sum`）。请在对 `main` 的下一次更改中执行此操作；当模板发生变化时，将之前的摘要添加到清单条目的 `earlier_digests` 中。`release-preflight` CI 作业会检出每个标签，因此在固定值刷新之前，它会以这些标签名称失败。
 
+### 2.6 刷新徽章、站点和渠道冒烟测试
+
+徽章工作流会在 `main` 上的每次 CI 运行之后，用 `git describe` 读取最新的标签。发布提交上的 CI 在标签存在之前就已完成，因此已发布的发布徽章仍显示上一个发布版本。在 §2.4 中的 npm 和 Marketplace 发布完成之后，按以下顺序手动运行三个工作流。每一个都必须成功之后才能启动下一个：站点发布会从最新一次成功的徽章运行中复制徽章，而渠道冒烟测试会从已发布的站点和注册表进行安装。
+
+```bash
+gh workflow run badges.yml --ref main
+gh run watch "$(gh run list --workflow badges.yml --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId')" --exit-status
+gh workflow run publish-static-site.yml --ref main
+gh run watch "$(gh run list --workflow publish-static-site.yml --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId')" --exit-status
+gh workflow run channel-smoke.yml --ref main
+gh run watch "$(gh run list --workflow channel-smoke.yml --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId')" --exit-status
+curl -fsSL https://apothem.ahmedgad.com/badges/release.json
+```
+
+`--event workflow_dispatch` 会把 `main` 上的 CI 自行启动的徽章运行排除在列表之外。调度的运行可能需要几秒钟才会出现在 `gh run list` 中，因此请确认每个 `gh run watch` 所跟踪的运行正是你刚刚启动的那一个，而不是更早的一次调度。最后一条命令打印的 JSON 中，`message` 为 `vX.Y.Z`。
+
+### 2.7 发布本次发布所修复的安全公告
+
+修复了已报告漏洞的发布在发出时，其仓库安全公告仍是草稿。只有在修复后的版本已在 npm 上线（`npm view @ahmed-g-gad/apothem version` 打印 `X.Y.Z`），并且你已通读该公告之后，才发布每一份公告。列出草稿：
+
+```bash
+gh api "repos/Ahmed-G-Gad/apothem/security-advisories?state=draft" \
+  --jq '.[] | [.ghsa_id, .severity, .summary] | @tsv'
+```
+
+对于本次发布所修复的每一份草稿：
+
+1. 阅读其描述。Patches 文本应将 `X.Y.Z` 列为修复版本并给出升级步骤，且不留下任何 `TODO(clarify)`。如果不是这样，请在该公告的页面上编辑它。
+2. 在每个受影响的包上设置已修补版本。API 会替换整个 `vulnerabilities` 列表，因此请在设置 `patched_versions` 之后把每个条目发回：
+
+   ```bash
+   ghsa=GHSA-xxxx-xxxx-xxxx
+   gh api "repos/Ahmed-G-Gad/apothem/security-advisories/${ghsa}" \
+     --jq '{vulnerabilities: [.vulnerabilities[] | {package: {ecosystem: .package.ecosystem, name: .package.name}, vulnerable_version_range, patched_versions: "X.Y.Z", vulnerable_functions}]}' \
+     | gh api -X PATCH "repos/Ahmed-G-Gad/apothem/security-advisories/${ghsa}" \
+         --input - --jq '.vulnerabilities'
+   ```
+
+   第一次调用的输出通过管道直接传给第二次调用，因此不会在你的克隆中留下任何文件。输出会列出每个包，其 `patched_versions` 为 `X.Y.Z`。
+3. 发布它：
+
+   ```bash
+   gh api -X PATCH "repos/Ahmed-G-Gad/apothem/security-advisories/${ghsa}" \
+     -f state=published --jq '.state'
+   ```
+
+   该命令打印 `published`。
+
 ## 3. 分发表面
 
 每个表面都有一条回答“发布是否落地于此？”的验证命令：
@@ -249,7 +333,7 @@ Entra 路径以一个短期有效的令牌取代存储的个人访问令牌。`p
 | 1 | GitHub Release（Python 分发包） | `apothem-X.Y.Z.tar.gz`（sdist）+ `apothem-X.Y.Z-py3-none-any.whl` | `gh release view vX.Y.Z --json assets --jq '.assets[].name'` 包含这两个文件名 |
 | 2 | GitHub Release（SBOM） | `sbom.cdx.json` + `sbom.cdx.json.cosign.bundle` | 产物列表包含两者；SBOM 的 `metadata.component.purl` 为 `pkg:pypi/apothem@X.Y.Z`，且其组件包含 `src/apothem/_vendor/vendor.txt` 中的每个包 |
 | 3 | GitHub Release（签名） | sdist、wheel、SBOM、VS Code 扩展、每个平台归档和 `SHA256SUMS` 各对应一个 `<asset>.cosign.bundle`（较早的发布将归档和 `SHA256SUMS` 的签名包命名为 `<asset>.sig`） | 使用 §5.5 中的确切身份运行 `cosign verify-blob`，退出码为 0 |
-| 4 | GitHub Release（出处溯源） | `provenance.intoto.jsonl` | `bash scripts/release/verify-provenance.sh <download-dir>` 退出码为 0（§5.5） |
+| 4 | GitHub Release（出处溯源） | `provenance.intoto.jsonl` | `bash scripts/release/verify-provenance.sh --require-all <download-dir>` 退出码为 0，并打印 `chain OK (3 of 3 layers verified: ...)`（§5.5） |
 | 5 | GitHub Release（平台归档） | `apothem-vX.Y.Z-darwin.tar.gz`、`apothem-vX.Y.Z-linux.tar.gz`、`apothem-vX.Y.Z-windows.zip` | 产物列表包含每个归档以及 `SHA256SUMS`。darwin 和 linux 归档是同一份字节、两个名称（运行时与平台无关；`--platform` 只决定使用 tar.gz 还是 zip），因此它们的 `SHA256SUMS` 行会两次显示同一个摘要 |
 | 6 | GitHub Release（VS Code 扩展） | `apothem.vsix` + `apothem.vsix.cosign.bundle` | 产物列表包含两者；`code --install-extension apothem.vsix` 可安装它。在发布工作流开始打包该扩展之前的发布两者都不包含 |
 | 7 | npmjs.com | `@ahmed-g-gad/apothem@X.Y.Z` | `npm view @ahmed-g-gad/apothem version` 返回 `X.Y.Z`；`npx @ahmed-g-gad/apothem@X.Y.Z --version` 打印 `Apothem, version X.Y.Z` |
@@ -263,10 +347,13 @@ GitHub Release 是规范的产物表面；npm 包和脚本安装器是叠加在�
 `CHANGELOG.md` 按照 Keep-a-Changelog 约定，每个发布对应一个部分。发布提交对 CHANGELOG 的编辑：
 
 - 确认版本部分使用 `## [X.Y.Z] - YYYY-MM-DD` 标题（连字符；由 `bump_version.py` 写入，而 `extract_release_notes.py` 匹配 `## [X.Y.Z]` 前缀）。
+- 无需为 GitHub Release 页面做任何删减。GitHub 会拒绝超过 125,000 个字符的发布正文，因此发布作业中的 `extract_release_notes.py` 会把更长的部分缩短到 120,000 个字符：它保留 `###` 标题，把条目缩减为其粗体标题（Security 和数据丢失部分最后处理），只有在仅保留标题仍不够时才删除条目，说明省略了多少条目，并链接到已打标签的 `CHANGELOG.md` 中的完整说明。它只缩短这样的说明：由若干 `###` 部分组成，其中是 `- ` 条目，且条目的其他行以两个空格开头。当需要缩短的说明包含任何其他行（第一个标题之前的文本、`####` 标题、段落、其他列表标记、制表符、分隔线或标题下划线、代码围栏、HTML 块或链接定义）时，它会以一条指明该行的错误停止。一项 CI 测试会让 `CHANGELOG.md` 中的每个发布都经过它，因此这样的行会在打标签之前就导致失败。
 - 确认在适用之处使用标准标题——Added、Changed、Deprecated、Removed、Fixed、Security。空标题会从渲染后的文件中删去。
 - 记录的是**能力**，而非实现。仅使用领域语言；不包含计划内部引用；不包含提交哈希；不包含计划或阶段标识符。
 
 经过维护者审查而保留下来的 CHANGELOG 部分，即可作为公告叙述的发布说明锚点。
+
+发布合并之后，该版本的部分即告关闭。在发布之前切出的分支可能会在没有冲突的情况下把发布合并进来，并把它自己的条目留在已发布的部分中，因此请在合并之后手工把每个这样的条目移回 `[Unreleased]` 下。`quality / ubuntu-latest / py3.12` 检查会运行 `check_changelog_released_sections.py`，它会让更改了已发布部分的拉取请求失败，并指出该部分。main 移动时，CI 不会在拉取请求上再次运行，而重新运行其检查测试的仍是同一个旧的合并，因此在发布之后，请在每个打开的拉取请求合并之前把 main 合并进去（或关闭后重新打开它）。同一检查也会在每次推送到 main 时运行，以推送之前的末端为基准，并报告在那里发生变化的部分；被更新的推送取消的推送运行不会检查任何内容。当某个提交带有尾注 `Changelog-Released-Edit: <version> <reason>` 时，对已发布说明的有意更正会通过，该尾注只放行该版本的部分。Git 从消息的最后一段读取尾注，因此当该拉取请求以压缩方式合并时，请让压缩消息以该尾注结尾，与 `Signed-off-by` 放在一起。
 
 ## 5. 安装路径冒烟测试
 
@@ -333,7 +420,7 @@ slsa-verifier verify-artifact \
 bash ../scripts/release/verify-provenance.sh --require-all .
 ```
 
-预期：`Verified OK`、`PASSED: SLSA verification passed` 以及 `verify-provenance: chain OK (3 of 3 layers verified: SHA256SUMS manifest, cosign signatures, SLSA provenance)`。该脚本在一次运行中检查 `SHA256SUMS`、每个签名包和出处溯源；它从 wheel 文件名推导出标签（`--tag vX.Y.Z` 可覆盖该值）。
+预期：`Verified OK`、`PASSED: SLSA verification passed` 以及 `verify-provenance: chain OK (3 of 3 layers verified: SHA256SUMS manifest, cosign signatures, SLSA provenance)`。该脚本在一次运行中检查 `SHA256SUMS`、每个签名包和出处溯源；它从 wheel 文件名推导出标签（`--tag vX.Y.Z` 可覆盖该值）。当某项检查所需的工具或文件缺失时，它会跳过该检查，并打印 `partial check` 及被跳过的检查，而不是 `chain OK`。不带 `--require-all` 时，部分检查仍以 0 退出；带上它（对于 `verify-provenance.ps1` 为 `-RequireAll`）时，任何被跳过的检查都会以 1 退出，因此仅凭退出状态就能区分完整检查和部分检查。
 
 冒烟测试为每个表面产出一行 PASS / FAIL 记录；将这些记录写入维护者的发布日志。
 
@@ -343,8 +430,8 @@ bash ../scripts/release/verify-provenance.sh --require-all .
 
 | 故障 | 诊断 | 恢复 |
 |---|---|---|
-| 标签推送被拒绝（签名失败） | `git push origin vX.Y.Z` 返回 `error: failed to push some refs` 并带有 GPG 相关消息 | 验证 GPG 子密钥已加载（`gpg --list-secret-keys --keyid-format=long`）；修复密钥环后在本地用 `-s` 重新打标签；重新推送 |
-| 发布构建停在 `Check the plugin version changed with the plugin` | 构建作业日志会指出该插件和上一个标签；没有任何产物被构建或发布 | 插件包自上一次发布以来有变化，但其版本号没有变化。删除该标签（`git push --delete origin vX.Y.Z`、`git tag -d vX.Y.Z`），运行 `python scripts/release/bump_version.py X.Y.Z`，提交，然后再次签名并推送标签（§2.2）。同一检查会在每个拉取请求上以警告注解的形式运行，因此该问题通常会在打标签之前暴露出来 |
+| 标签签名失败 | `git tag -a -s vX.Y.Z` 因 gpg 错误（例如 `gpg failed to sign the data`）而停止，并且不会创建标签，因此不会推送任何内容 | 验证 GPG 子密钥已加载（`gpg --list-secret-keys --keyid-format=long`）；修复密钥环后，再次运行 `git tag -a -s` 命令，然后推送标签（§2.2） |
+| 发布构建停在 `Check the plugin version changed with the plugin` | 构建作业日志会指出该插件和上一个标签；没有任何产物被构建或发布 | 插件包自上一次发布以来有变化，但其版本号没有变化。`publish-npm.yml` 和 `publish-vscode.yml` 与发布工作流并行运行，因此请先确认两者都未发布（`npm view @ahmed-g-gad/apothem version` 不打印 `X.Y.Z`，并且 Marketplace 未列出该版本）。如果其中任何一个已发布，请保留该标签，并切出下一个补丁发布。否则删除该标签（`git push --delete origin vX.Y.Z`、`git tag -d vX.Y.Z`），运行 `python scripts/release/bump_version.py X.Y.Z`，按照 §2.1 通过拉取请求落地该更改，然后再次签名并推送标签（§2.2）。此后该标签指向新的发布提交；[发布恢复操作手册](/docs/runbooks/release-recovery) §2 之所以允许这样做，只是因为第一个提交没有发布任何内容。同一检查会在每个拉取请求上以警告注解的形式运行，因此该问题通常会在打标签之前暴露出来 |
 | `release.yml` 作业在单个阶段失败 | `gh run view <run-id> --log` 会指出失败的作业（build（它也会写入 SBOM）/ sign / provenance / archive / publish） | 通过 `gh run rerun <run-id> --failed` 单独重新运行失败的作业；如果故障再次出现，在重新打标签之前从源头修复该作业的输入 |
 | SLSA 出处溯源验证失败 | `verify SLSA provenance artifact` 作业以非零状态退出 | 检查出处溯源产物是否存在主体摘要不匹配；从同一标签重新构建——出处溯源绑定到确切的产物摘要，因此任何产物的重新生成都需要完整地重新运行工作流 |
 | npmjs.com 发布被拒绝 | npm 作业在 `npm publish` 期间以非零状态退出；`PUT` 期间的注册表 `404` 表示授权 / 受信任发布者不匹配，并不能证明包代码缺失 | 验证 `@ahmed-g-gad/apothem` 的 npm 受信任发布指定了所有者 `ahmed-g-gad`、仓库 `apothem`、工作流 `publish-npm.yml` 以及允许的操作 `npm publish`；确认该作业以工作流中固定的 Node 版本和 npm CLI OIDC 下限运行 |
