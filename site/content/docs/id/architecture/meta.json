@@ -1,7 +1,6 @@
 {
   "title": "Arsitektur",
   "pages": [
-    "index",
     "source-layout",
     "shared-profile-schema",
     "harness-adapter-abstraction",

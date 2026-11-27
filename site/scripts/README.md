@@ -24,6 +24,23 @@ Run any of them from `site/`.
   `git status` under `content/docs/` after a build signals a missed
   regeneration (the CI docs-reference-sync drift gate enforces it). Do not
   hand-edit the generated pages or blocks.
+- **`cut-at-word.mjs`** — `cutAtWord`, which shortens the excerpts in the
+  generated reference tables on a word boundary. It parses the text as GFM
+  Markdown, counts only the characters the page shows, and keeps or drops
+  whole inline nodes at the cut, so no code span, emphasis, bold,
+  strikethrough or link is left open (a link the cut lands in keeps its label
+  as plain text). It steps back to an earlier word boundary rather than end a
+  cell inside an open parenthesis; it cuts inside one only when every earlier
+  word boundary is inside it too (the excerpt opens with the parenthesis).
+  Each cut is parsed again and checked before it is used; when no cut passes,
+  the shown text is cut at a word boundary and written as escaped plain text
+  ending in " …", within the limit counted in characters shown (at least one
+  character is kept, so a limit under 3 can be passed). The Markdown packages it imports are
+  declared in `package.json`, so `npm ci` installs them; the generator stops
+  with that fix named when they are missing.
+  Covered by `cut-at-word.test.mjs` under `npm test`, which also cuts every
+  excerpt source that `update-reference-inventory.mjs` exports through
+  `cutInputs()` (the script writes pages only when run directly).
 - **`build-llms-txt.mjs`** — walks `content/docs/**` and emits the English-only
   `public/llms.txt` (compact index) and `public/llms-full.txt` (concatenated
   bodies). Runs in `prebuild`. `assertLocaleParity()` fails the build if its
@@ -31,10 +48,27 @@ Run any of them from `site/`.
   cannot leak its translated pages into the English artifacts.
 - **`author-ia.mjs`** — authors the Fumadocs `meta.json` information-architecture
   files (section ordering), except `pipeline/meta.json`, which
-  `update-reference-inventory.mjs` generates. Carries `assertNoDrift`, which
-  fails if a live doc page is missing from a curated list. Run `node scripts/author-ia.mjs` to
-  regenerate the metas, or `--check` (the `ia:check` npm script) to run the drift
-  guard read-only without rewriting — the check-only mode is the CI-safe form.
+  `update-reference-inventory.mjs` generates. It writes the English metas and
+  every locale's metas: a locale meta keeps its translated `title` and group
+  labels and takes its page order from the English list, so each locale
+  sidebar lists the same pages in the same order. Carries `assertNoDrift`, which
+  fails if a live doc page is missing from a curated list; the 404 page is the
+  one root page left out of the sidebar on purpose. Run `node scripts/author-ia.mjs` to
+  regenerate the metas, or `--check` (the `ia:check` npm script, run by CI) to
+  run the drift guards read-only without rewriting; the check also fails when
+  any meta it owns, English or locale, differs from what it would write. The
+  locale folders come from `ROUTED_LOCALES` in `lib/i18n.ts`. A locale meta that
+  does not parse, or whose number of sidebar group labels differs from the
+  English list, stops the run with the file named, so translated labels are
+  never overwritten with English.
+- **`check-built-docs.mjs`** — checks the built docs pages after a build
+  (`check:built-docs` npm script, run by CI): every sidebar section opens and
+  closes from a button that carries `aria-expanded` and `aria-controls`, each
+  button's `aria-controls` and `aria-labelledby` name elements on the page, a
+  list's `hidden` attribute and its button's `aria-expanded` match the list's
+  open or closed state, no sidebar link holds the open/close icon, and no page
+  shows a literal `**` or backtick outside code. Exits 1 with every defect,
+  grouped by kind.
 - **`check-search-index-sizes.mjs`** — guards the per-locale static search-index
   sizes in the built output. Re-derives `ROUTED_LOCALES` from `lib/i18n.ts` via
   `assertLocaleParity()` and fails on drift. Runs after a build

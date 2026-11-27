@@ -1,7 +1,6 @@
 {
   "title": "Perintah pipeline",
   "pages": [
-    "index",
     "plan",
     "plan-spec",
     "plan-generate",

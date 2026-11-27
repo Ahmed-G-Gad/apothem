@@ -2,12 +2,12 @@
 title: "/plan-audit"
 description: "/plan-audit — Closed-Loop-Wächter der /plan-Pipeline — umhüllt spec → generate → review und behebt Befunde aktiv, bis die Suite ein geprüftes, befundfreies Ganzes ist."
 machineTranslated: true
-sourceHash: "ad784374d4fb602c"
+sourceHash: "1f5196367610e634"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**Rolle:** Wächter
-**Pipeline-Position:** umhüllend / orthogonal (vor der Ausführung)
+- **Rolle:** Wächter
+- **Pipeline-Position:** umhüllend / orthogonal (vor der Ausführung)
 
 Closed-Loop-Wächter der `/plan`-Pipeline. Während `/plan-review` eine generierte Suite meldet und verfeinert, umhüllt `/plan-audit` den vorgelagerten Zyklus (`/plan-spec → /plan-generate → /plan-review`) und treibt die Suite zu einem geprüften, befundfreien Ganzen — es führt nur die fehlenden vorgelagerten Stufen aus, auditiert das Ergebnis, behebt mechanisch lösbare Befunde an Ort und Stelle, legt Ermessensgabelungen über den Kanal der strukturierten Inquiry offen und schleift, bis die Suite sauber ist oder ein begrenzter Rückzug auslöst. Es führt niemals Phasen-Implementierungsarbeit aus; es lässt die Suite bereit für `/plan-execute`.
 

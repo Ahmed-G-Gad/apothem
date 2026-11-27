@@ -1,7 +1,6 @@
 {
   "title": "التثبيت",
   "pages": [
-    "index",
     "quickstart",
     "concepts",
     "harness-setup",

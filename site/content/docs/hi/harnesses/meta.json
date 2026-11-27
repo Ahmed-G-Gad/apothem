@@ -1,7 +1,6 @@
 {
   "title": "हार्नेस अडैप्टर",
   "pages": [
-    "index",
     "claude-code",
     "cursor",
     "gemini-cli",

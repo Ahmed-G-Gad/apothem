@@ -1,7 +1,6 @@
 {
   "title": "런북",
   "pages": [
-    "index",
     "release-cycle",
     "deployment-checklist",
     "release-recovery",

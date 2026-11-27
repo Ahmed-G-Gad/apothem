@@ -1,12 +1,12 @@
 {
   "title": "مرجع واجهة سطر الأوامر",
   "pages": [
-    "index",
     "quickstart",
     "install",
     "uninstall",
     "update",
     "rollback",
+    "backups",
     "verify",
     "status",
     "diff",

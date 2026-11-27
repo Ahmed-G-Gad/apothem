@@ -1,7 +1,6 @@
 {
   "title": "Adaptor harness",
   "pages": [
-    "index",
     "claude-code",
     "cursor",
     "gemini-cli",

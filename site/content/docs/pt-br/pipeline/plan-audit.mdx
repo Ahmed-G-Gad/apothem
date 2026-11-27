@@ -2,12 +2,12 @@
 title: "/plan-audit"
 description: "/plan-audit — Guardião de laço fechado do pipeline /plan — envolve spec → generate → review e remedia ativamente os achados até a suíte ser um todo revisado e com zero achados."
 machineTranslated: true
-sourceHash: "ad784374d4fb602c"
+sourceHash: "1f5196367610e634"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-**Papel:** Guardião
-**Posição no pipeline:** envolvente / ortogonal (pré-execução)
+- **Papel:** Guardião
+- **Posição no pipeline:** envolvente / ortogonal (pré-execução)
 
 Guardião de laço fechado do pipeline `/plan`. Enquanto `/plan-review` reporta e refina uma suíte gerada, `/plan-audit` envolve o ciclo a montante (`/plan-spec → /plan-generate → /plan-review`) e leva a suíte a um todo revisado e com zero achados — executando apenas as etapas a montante que faltam, auditando o resultado, corrigindo no lugar os achados resolvíveis mecanicamente, expondo as bifurcações de julgamento através do canal de inquiry estruturada e repetindo o laço até a suíte estar limpa ou um recuo limitado disparar. Nunca executa trabalho de implementação de fase; deixa a suíte pronta para `/plan-execute`.
 

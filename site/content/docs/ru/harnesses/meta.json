@@ -1,7 +1,6 @@
 {
   "title": "Адаптеры окружений",
   "pages": [
-    "index",
     "claude-code",
     "cursor",
     "gemini-cli",

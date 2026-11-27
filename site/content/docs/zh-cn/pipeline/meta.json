@@ -1,7 +1,6 @@
 {
   "title": "流水线命令",
   "pages": [
-    "index",
     "plan",
     "plan-spec",
     "plan-generate",

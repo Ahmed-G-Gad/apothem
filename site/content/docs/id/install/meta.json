@@ -1,7 +1,6 @@
 {
   "title": "Instalasi",
   "pages": [
-    "index",
     "quickstart",
     "concepts",
     "harness-setup",

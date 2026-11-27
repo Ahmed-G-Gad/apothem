@@ -1,12 +1,12 @@
 {
   "title": "CLI संदर्भ",
   "pages": [
-    "index",
     "quickstart",
     "install",
     "uninstall",
     "update",
     "rollback",
+    "backups",
     "verify",
     "status",
     "diff",

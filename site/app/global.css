@@ -226,6 +226,27 @@
   }
 }
 
+/*
+ * Sidebar width under the nav landmark. Fumadocs sets the docs sidebar width
+ * from a rule that only matches when the sidebar's placeholder is a direct
+ * child of the layout grid:
+ *   #nd-docs-layout:has(> .md:layout:[--fd-sidebar-width:268px])
+ * The site wraps the sidebar in <nav aria-label="Documentation"> (see
+ * components/docs-landmarks.tsx), so that rule never matches and the width
+ * stays at the 0px the layout container sets: on every tablet and desktop page
+ * the sidebar collapsed to a sliver with its header text overlapping. This rule
+ * sets the same width through the wrapper. It sits outside every cascade
+ * layer on purpose: the container's 0px comes from a class in the later
+ * `utilities` layer, which would win over a rule in `base` whatever the
+ * selector. lib/sidebar-width.test.mjs fails if Fumadocs changes its value or
+ * the rule moves into a layer.
+ */
+@media (width >= 48rem) {
+  #nd-docs-layout:has(> nav > [data-sidebar-placeholder]) {
+    --fd-sidebar-width: 268px;
+  }
+}
+
 @layer base {
   /*
    * Keyboard focus floor (WCAG 2.4.7 / 2.4.11). Custom landing links and the

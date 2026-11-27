@@ -190,6 +190,9 @@ same change-set**, then the gates must pass. Run these from the repository root:
 python scripts/dev/assemble_plugin_tree.py
 
 # 2. Regenerate the docs reference inventory (source-generated reference pages).
+#    The generator imports Markdown packages from site/node_modules, so install
+#    them once first; without them it stops and names this command.
+npm ci --prefix site
 node site/scripts/update-reference-inventory.mjs
 
 # 3. Regenerate the behavior-diff golden corpus.

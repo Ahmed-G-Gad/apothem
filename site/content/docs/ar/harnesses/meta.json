@@ -1,7 +1,6 @@
 {
   "title": "محوّلات أُطُر العمل",
   "pages": [
-    "index",
     "claude-code",
     "cursor",
     "gemini-cli",
