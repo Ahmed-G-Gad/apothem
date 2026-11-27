@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "Windsurf (GA) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "26f3db9f3fdef394"
+sourceHash: "6ddfbde9bafb1d18"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -182,6 +182,10 @@ Apothem Devin पर कोई `PreToolUse` गार्ड पंजीकृ�
 ```text
 "/path/to/python" -E -s "/path/to/project/.apothem/support/windsurf/hooks/dispatch.py" --contract devin SessionStart
 ```
+
+`-E -s` के कारण Python `PYTHONPATH` और अन्य `PYTHON*` वेरिएबल को अनदेखा करता है
+और आपके उपयोगकर्ता site-packages को छोड़ देता है, ताकि प्रोजेक्ट की कोई भी फ़ाइल
+हुक में लोड न हो सके।
 
 `--contract devin` Devin के लोअरकेस टूल नामों (`exec`, `write`, `edit`,
 `read`, `grep`, `glob`) को उन नामों पर मैप करता है जिनकी Apothem के हैंडलर जाँच
@@ -376,8 +380,16 @@ Apothem इंस्टॉल अब भी उनका उपयोग न क
 ## अनुरूपता गेट
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+इसे अपने प्रोजेक्ट फ़ोल्डर से चलाएँ। Windows पर, `python3` के स्थान पर `python` का
+और पूरे पथ का उपयोग करें, क्योंकि Windows PowerShell और cmd `~` का विस्तार नहीं करते:
+PowerShell में `$HOME\.apothem\src\apothem\conformity\gate.py`, या cmd में
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`। यह पथ वह जगह है
+जहाँ इंस्टॉलर इंजन रखता है, और `-E -s` आपके `PYTHONPATH` और उपयोगकर्ता
+site-packages को गेट से बाहर रखता है; [अनुरूपता गेट](/docs/conformity-gate)
+दोनों को और अन्य इंस्टॉल को समझाता है।
 
 ## समस्या निवारण
 

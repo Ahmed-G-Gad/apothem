@@ -2,7 +2,7 @@
 title: "साझा प्रोफ़ाइल स्कीमा"
 description: "Apothem साझा प्रोफ़ाइल YAML के लिए स्कीमा।"
 machineTranslated: true
-sourceHash: "574a594762c4f468"
+sourceHash: "cdd83bde9f17392d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,13 +31,16 @@ identity:
 की सूचना देने से पहले उसे सत्यापित करता है:
 
 ```yaml
+# yaml-language-server: $schema=https://apothem.ahmedgad.com/schemas/profile.schema.json
+schema_version: 1
 identity:
-  name: "Example User"
-  email: "dev@example.invalid"
-  github: "example-user"
+  name: Example User
+  email: dev@example.invalid
+  github: example-user
 ```
 
-कमांड इन फ़ील्ड्स को नाम देते हुए एक व्यक्तिगतकरण संकेत प्रिंट करता है। यदि कोई
+पहली पंक्ति YAML समर्थन वाले संपादकों को स्कीमा की ओर इंगित करती है;
+`schema_version: 1` प्रोफ़ाइल-स्कीमा संस्करण है। कमांड पहचान फ़ील्ड्स को नाम देते हुए एक व्यक्तिगतकरण संकेत प्रिंट करता है। यदि कोई
 अभी भी प्लेसहोल्डर पहचान बाद में `install` या `update` तक पहुँचती है, तो वे कमांड
 एक परामर्शी टिप्पणी प्रिंट करते हैं और आगे बढ़ जाते हैं — Apothem कभी भी एक
 प्लेसहोल्डर पहचान को न तो गढ़ता है और न ही उस पर रुकता है।
@@ -46,6 +49,7 @@ identity:
 
 | फ़ील्ड | आवश्यक | डिफ़ॉल्ट | टिप्पणियाँ |
 | --- | --- | --- | --- |
+| `schema_version` | नहीं | `1` के रूप में पढ़ा जाता है | प्रोफ़ाइल-स्कीमा संस्करण; `profile init` `1` लिखता है। इंजन द्वारा समर्थित से नया संस्करण अस्वीकार किया जाता है। |
 | `identity.name` | हाँ | कोई नहीं | संचालक का गैर-रिक्त प्रदर्शन नाम। |
 | `identity.role` | नहीं | `senior software engineer` | साझा भूमिका पाठ। |
 | `identity.email` | नहीं | छोड़ा गया | उपस्थित होने पर ईमेल-स्वरूपित होना चाहिए। |
@@ -57,8 +61,13 @@ identity:
 | `preferences.test_framework` | नहीं | छोड़ा गया | उपस्थित होने पर गैर-रिक्त स्ट्रिंग। |
 | `rules` | नहीं | `[]` | अद्वितीय गैर-रिक्त स्ट्रिंग्स; न्यूलाइन LF में सामान्यीकृत होती हैं। |
 | `seriousness` | नहीं | `PERSONAL_USE` | `EXPLORING`, `PERSONAL_USE`, `SHARED`, `PUBLIC_LAUNCH` में से एक। |
+| `enforcement.*` | नहीं | प्रत्येक `false` | ऑप्ट-इन टॉगल: `sprints`, `agent_teams`, `multitasking`, `continuous_execution`, `learning_loop`। |
+| `mcp_servers` | नहीं | `{}` | सर्वर नाम द्वारा कुंजीबद्ध MCP सर्वर। हर एक `transport` (`stdio`, `http`, `sse` या `streamable-http`) सेट करता है: `stdio` सर्वर को `command` चाहिए, अन्य को `url`। |
+| `agent_mcp_servers` | नहीं | `{}` | प्रति सहायक, उसके नाम से कुंजीबद्ध, वे MCP सर्वर जिन्हें वह कॉल कर सकता है। Claude Code और Gemini CLI इंस्टॉल इसे पढ़ते हैं। |
 | `harnesses` | नहीं | `{}` | समर्थित हार्नेस ID द्वारा कुंजीबद्ध प्रति-हार्नेस ओवरराइड्स। |
 | `exclude_harnesses` | नहीं | `[]` | `--harness all` से बहिष्कृत समर्थित हार्नेस ID। |
+| `workspace.directory_name` | नहीं | `.apothem` | साझा कार्यशील फ़ोल्डर का नाम; एक पथ घटक। |
+| `workspace.scope` | नहीं | `project-local` | `project-local` (प्रोजेक्ट रूट के अंतर्गत) या `user-home` (आपकी होम डायरेक्टरी के अंतर्गत)। |
 
 ## हार्नेस कुंजियाँ
 

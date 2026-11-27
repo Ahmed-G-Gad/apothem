@@ -2,7 +2,7 @@
 title: "CodeBuddy"
 description: "Tencent CodeBuddy (GA) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "fbf19289d20e8ab7"
+sourceHash: "325f29aff29de35e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -170,6 +170,10 @@ Apothem CodeBuddy पर कोई `PreToolUse` गार्ड पंजीक�
 "/path/to/python" -E -s "/path/to/project/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart
 ```
 
+`-E -s` के कारण Python `PYTHONPATH` और अन्य `PYTHON*` वेरिएबल को अनदेखा करता है
+और आपके उपयोगकर्ता site-packages को छोड़ देता है, ताकि प्रोजेक्ट की कोई भी फ़ाइल
+हुक में लोड न हो सके।
+
 `--contract codebuddy` आउटपुट के लिए कोई प्रभाव नहीं डालता: CodeBuddy वही
 एनवेलप पढ़ता है जिसे Claude Code पढ़ता है। CodeBuddy हुक कमांड आपके शेल के माध्यम
 से चलाता है, और Windows पर Git Bash के माध्यम से (यह न cmd.exe का समर्थन करता है
@@ -204,11 +208,13 @@ Apothem CodeBuddy पर कोई `PreToolUse` गार्ड पंजीक�
 ## प्रोफ़ाइल-से-नेटिव-कॉन्फ़िग मैपिंग
 
 अडैप्टर Apothem की साझा प्रोफ़ाइल पढ़ता है और प्रत्येक `apothem install` या
-`apothem update` रन पर प्रोजेक्ट नियम फ़ाइल रेंडर करता है। CodeBuddy,
-[CodeBuddy Rules दस्तावेज़](https://www.codebuddy.ai/docs/ide/Rules) के अनुसार,
-`.codebuddy/rules/` के अंतर्गत हर `*.md` फ़ाइल को वैकल्पिक YAML फ़्रंटमैटर
+`apothem update` रन पर प्रोजेक्ट नियम फ़ाइल रेंडर करता है। CodeBuddy Code,
+[CodeBuddy मेमोरी दस्तावेज़](https://www.codebuddy.ai/docs/cli/memory#modular-rules-with-codebuddy-rules) के अनुसार,
+`.codebuddy/rules/` के अंतर्गत हर `*.md` फ़ाइल को, उप-फ़ोल्डरों सहित, वैकल्पिक YAML फ़्रंटमैटर
 (`alwaysApply`, `paths`, `enabled`) वाले Markdown के रूप में पढ़ता है; Apothem
-की फ़ाइल `alwaysApply: true` रखती है ताकि शासन सतह हर इंटरैक्शन पर लागू हो।
+की फ़ाइल `alwaysApply: true` रखती है, इसलिए CodeBuddy Code उसे प्रोजेक्ट के रूट फ़ोल्डर में
+शुरू होने वाले हर सत्र में लोड करता है। यह प्रोजेक्ट नियम केवल उसी फ़ोल्डर से पढ़ता है जिसमें
+यह शुरू होता है, और किसी इंस्टॉल द्वारा जोड़ी या बदली गई नियम फ़ाइल को केवल पुनः आरंभ के बाद पढ़ता है।
 फ़्रंटमैटर फ़ाइल की पहली सामग्री है और Apothem-प्रबंधित ब्लॉक उसके बाद आता है;
 ब्लॉक के बाद आपके द्वारा जोड़ा गया पाठ हर सिंक पर बना रहता है। सत्य का स्रोत
 साझा प्रोफ़ाइल है; अगला सिंक Apothem-प्रबंधित सामग्री को बदले, उससे पहले उत्पन्न
@@ -218,7 +224,11 @@ Apothem CodeBuddy पर कोई `PreToolUse` गार्ड पंजीक�
 
 CodeBuddy की नियम सतह `.codebuddy/rules/` के अंतर्गत प्रोजेक्ट-स्कोप वाली है।
 अडैप्टर एक समर्पित `apothem-rules.md` फ़ाइल लिखता है जो उसी डायरेक्टरी में
-ऑपरेटर द्वारा लिखी गई किसी भी नियम फ़ाइल के साथ सह-अस्तित्व में रहती है।
+ऑपरेटर द्वारा लिखी गई किसी भी नियम फ़ाइल के साथ सह-अस्तित्व में रहती है। CodeBuddy IDE का
+[Rules पृष्ठ](https://www.codebuddy.ai/docs/ide/User-guide/Rules#project-rules)
+Apothem की तरह सादी `.md` फ़ाइल के बजाय प्रति नियम एक फ़ोल्डर का वर्णन करता है, जिसमें हर एक में
+`RULE.mdc` फ़ाइल होती है। पृष्ठ यह नहीं बताता कि IDE सादी `.md` फ़ाइल भी लोड करता है या नहीं, और
+Apothem ने इसकी पुष्टि नहीं की है।
 `CODEBUDDY.md` प्रोजेक्ट मेमोरी फ़ाइल, कमिट की गई `.codebuddy/settings.json`, और
 प्रोजेक्ट `.mcp.json` (MCP सर्वर) ऑपरेटर-स्वामित्व वाले हैं; Apothem उन्हें नहीं
 लिखता। CodeBuddy स्लैश कमांड का भी दस्तावेज़ीकरण करता है; अडैप्टर कोई भी नहीं
@@ -307,8 +317,16 @@ Apothem इंस्टॉल अब भी उनका उपयोग न क
 ## अनुरूपता गेट
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+इसे अपने प्रोजेक्ट फ़ोल्डर से चलाएँ। Windows पर, `python3` के स्थान पर `python` का
+और पूरे पथ का उपयोग करें, क्योंकि Windows PowerShell और cmd `~` का विस्तार नहीं करते:
+PowerShell में `$HOME\.apothem\src\apothem\conformity\gate.py`, या cmd में
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`। यह पथ वह जगह है
+जहाँ इंस्टॉलर इंजन रखता है, और `-E -s` आपके `PYTHONPATH` और उपयोगकर्ता
+site-packages को गेट से बाहर रखता है; [अनुरूपता गेट](/docs/conformity-gate)
+दोनों को और अन्य इंस्टॉल को समझाता है।
 
 ## समस्या निवारण
 

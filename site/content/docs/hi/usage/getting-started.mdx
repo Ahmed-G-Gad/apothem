@@ -2,7 +2,7 @@
 title: "मुख्य वर्कफ़्लो"
 description: "Apothem के चार मुख्य वर्कफ़्लो — प्रोफ़ाइल, नियम, योजनाएँ, और अनुरूपता गेट।"
 machineTranslated: true
-sourceHash: "a53e8d62d7df7ef4"
+sourceHash: "2c2b69afe24907e5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -67,16 +67,21 @@ apothem verify --harness claude-code
 
 ## अनुरूपता गेट
 
-Apothem चेकआउट से, चलाएँ:
+Apothem चेकआउट से, इसे चेकआउट रूट से चलाएँ (`python -m` मॉड्यूल पहले वर्तमान
+फ़ोल्डर से पढ़ता है, इसलिए ऐसे फ़ोल्डर का उपयोग करें जिस पर आपको भरोसा है):
 
 ```bash
 PYTHONPATH=src python -m apothem.conformity.gate --all .
 ```
 
-स्क्रिप्ट इंस्टॉल के बाद, चलाएँ:
+स्क्रिप्ट इंस्टॉल के बाद, गेट को उसके स्क्रिप्ट पथ से `-E -s` के साथ उस प्रोजेक्ट से
+चलाएँ जिसकी आप जाँच करना चाहते हैं। Windows पर, `python3` के स्थान पर `python` का,
+और `~/.apothem/...` के स्थान पर PowerShell में `$HOME\.apothem\...` या cmd में
+`%USERPROFILE%\.apothem\...` का उपयोग करें, क्योंकि Windows PowerShell और cmd `~` का
+विस्तार नहीं करते; [अनुरूपता गेट](/docs/conformity-gate) फ़्लैग समझाता है:
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python3 -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
 
 सभी यांत्रिक अनुरूपता जाँचें चलाता है और प्रति बार पास/फ़ेल की रिपोर्ट करता है।
