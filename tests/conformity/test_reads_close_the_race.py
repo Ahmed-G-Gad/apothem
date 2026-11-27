@@ -22,17 +22,22 @@ that, right after the check answers for the target path, the path is swapped:
   place.
 
 The outside copy holds content the validator would report, so a read of it
-shows in the result. Each run must not report that content, must finish well
-within the deadline, and must name the swapped entry under the skip log that
-becomes ``skipped_links``. One validator stands for each way the validators
+shows in the result. Each run must not report that content, must open no file
+of the outside copy (an audit hook records each open by name, links
+resolved: the corpus run's file-ID check already kept it from reading an
+outside file, but not from opening one), must finish well within the
+deadline, and must name the swapped entry under the skip log that becomes
+``skipped_links``. One validator stands for each way the validators
 check a path before they read it.
 """
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import subprocess
+import sys
 import threading
 from collections.abc import Callable, Iterator
 from pathlib import Path
@@ -155,9 +160,41 @@ class _Race:
             os.close(fd)
 
 
+# Every file opened by name while a check runs, links resolved when it is
+# opened. Python offers no way to remove an audit hook, so one hook is added
+# once and records only while a list is on this stack.
+_RECORDING: list[list[str]] = []
+_HOOKED: list[bool] = []
+
+
+def _record_open(event: str, args: tuple[Any, ...]) -> None:
+    if not _RECORDING or event not in ("open", "_winapi.CreateFile") or not args:
+        return
+    target = args[0]
+    if not isinstance(target, (str, bytes, os.PathLike)):
+        return
+    with contextlib.suppress(OSError, TypeError, ValueError):
+        _RECORDING[-1].append(os.path.realpath(os.fsdecode(os.fspath(target))))
+
+
+def _is_below(path: str, folder: Path) -> bool:
+    base = os.path.normcase(os.path.realpath(folder))
+    return os.path.normcase(path).startswith(base + os.sep)
+
+
 def _within_deadline(race: _Race, call: Callable[[], _T]) -> _T:
-    """Run *call* on a thread; fail when it is still running at the deadline."""
+    """Run *call* on a thread; fail when it is still running at the deadline.
+
+    Every file opened by name meanwhile is recorded with links resolved; none
+    may lie in the outside copy. (The guarded open names a level inside an
+    open folder, so its own opens are not recorded here; the other
+    assertions show where it went.)
+    """
+    if not _HOOKED:
+        sys.addaudithook(_record_open)
+        _HOOKED.append(True)
     box: dict[str, Any] = {}
+    opened: list[str] = []
 
     def run() -> None:
         try:
@@ -165,15 +202,20 @@ def _within_deadline(race: _Race, call: Callable[[], _T]) -> _T:
         except BaseException as exc:  # handed back to the test below
             box["error"] = exc
 
-    thread = threading.Thread(target=run, daemon=True)
-    thread.start()
-    thread.join(_DEADLINE_SECONDS)
-    if thread.is_alive():
-        race.release()
-        thread.join(5)
-        pytest.fail("the read waited on a named pipe that took the file's place")
+    _RECORDING.append(opened)
+    try:
+        thread = threading.Thread(target=run, daemon=True)
+        thread.start()
+        thread.join(_DEADLINE_SECONDS)
+        if thread.is_alive():
+            race.release()
+            thread.join(5)
+            pytest.fail("the read waited on a named pipe that took the file's place")
+    finally:
+        _RECORDING.remove(opened)
     if "error" in box:
         raise box["error"]
+    assert [path for path in opened if _is_below(path, race.outside)] == []
     return box["result"]  # type: ignore[no-any-return]
 
 
