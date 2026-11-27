@@ -1479,7 +1479,9 @@ def test_the_walk_never_enters_a_git_folder_in_another_case(
     _write(root / spelling / "inside.md")
     # A nested checkout spelled in another case is skipped whole as well.
     _write(root / "nested" / "page.md")
-    (root / "nested" / spelling).mkdir()
+    _write(root / "nested" / spelling / "HEAD", "ref: refs/heads/main\n")
+    (root / "nested" / spelling / "objects").mkdir()
+    (root / "nested" / spelling / "refs").mkdir()
     assert _walk(root, ".md") == ["page.md"]
 
 

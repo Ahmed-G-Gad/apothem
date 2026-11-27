@@ -122,7 +122,8 @@ def start_skip_log(root: Path) -> None:
 
 
 def note_skipped(path: Path) -> None:
-    """Note that *path*, a link or a special file, was left out."""
+    """Note that *path* was left out: a link, a special file, or a folder
+    that could not be listed."""
     if _skip_root is not None and os.fspath(path) not in _used:
         _skipped.setdefault(os.fspath(path), path)
 
@@ -222,21 +223,42 @@ def path_kind(path: Path) -> EntryKind | None:
 # The Windows errors that say a listed folder is not there: the file (2) or
 # the path (3) is not found, or the name is not a folder (267).
 _NOT_THERE_WINERRORS: Final[frozenset[int]] = frozenset({2, 3, 267})
+# Windows without long paths turned on fails a folder path of this length or
+# more with "path not found" (3), not "name too long" (206): a folder name
+# may be at most 260 characters less the 12 a file name inside it needs.
+_LONG_FOLDER_PATH: Final[int] = 260 - 12
 
 
-def _listing_absent(exc: OSError) -> bool:
-    """Return True when *exc*, from listing a folder, means there is no folder.
+def _too_long_for_win32(folder: Path) -> bool:
+    r"""Return True when *folder*, on Windows, may be past the old path limit.
+
+    A path with the ``\\?\`` prefix has no such limit. Elsewhere than
+    Windows nothing is too long here.
+    """
+    if os.name != "nt":
+        return False
+    full = os.fspath(folder.absolute())
+    return not full.startswith("\\\\?\\") and len(full) >= _LONG_FOLDER_PATH
+
+
+def _listing_absent(exc: OSError, folder: Path) -> bool:
+    """Return True when *exc*, from listing *folder*, means there is no folder.
 
     A folder that is gone, or a name that is not a folder, hides nothing. On
     Windows a path too long (206) and other failures also raise
     :class:`FileNotFoundError`; only the codes in
-    :data:`_NOT_THERE_WINERRORS` mean nothing is there to list.
+    :data:`_NOT_THERE_WINERRORS` mean nothing is there to list. A Windows
+    host without long paths turned on reports a folder past the old path
+    limit as "path not found" (3) even when its parent just listed it, so a
+    3 on such a folder (:func:`_too_long_for_win32`) is not read as absence.
     """
     if isinstance(exc, NotADirectoryError):
         return True
     if not isinstance(exc, FileNotFoundError):
         return False
     code = getattr(exc, "winerror", None)
+    if code == 3 and _too_long_for_win32(folder):
+        return False
     return code is None or code in _NOT_THERE_WINERRORS
 
 
@@ -255,7 +277,7 @@ def scan_entries(folder: Path) -> list[tuple[Path, EntryKind]]:
         with os.scandir(folder) as listing:
             entries = list(listing)
     except OSError as exc:
-        if not _listing_absent(exc):
+        if not _listing_absent(exc, folder):
             note_skipped(folder)
         return []
     found: list[tuple[Path, EntryKind]] = []

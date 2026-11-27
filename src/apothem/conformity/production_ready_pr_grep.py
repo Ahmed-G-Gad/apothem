@@ -150,8 +150,9 @@ def _staged_paths() -> list[str]:
     one above it): a change set that was not read is not an empty one. Raises
     :class:`~apothem.conformity._grep_base.GitEntryLinkedError`, without
     running git, when a ``.git`` entry in the current folder or one above it
-    that git searches is a link, which git would follow to another repository,
-    and :class:`~apothem.conformity._grep_base.GitEntryUnreadableError` when
+    that git searches is a link (a hook's ``GIT_DIR`` is kept, so the refusal
+    does not say where git would go), and
+    :class:`~apothem.conformity._grep_base.GitEntryUnreadableError` when
     one could not be looked at (see
     :func:`~apothem.conformity._grep_base.refuse_linked_git`).
     """

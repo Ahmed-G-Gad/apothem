@@ -9,7 +9,8 @@ Why these tests exist. The conformity validators refuse to run git through a
 - the two ``--staged`` checks run git in the current folder, so they look at
   the ``.git`` entries on git's search path first, as the ``--all`` checks do;
 - a nested folder whose ``.git`` is a link is left out of every walk, and the
-  report names that ``.git`` entry;
+  report names that ``.git`` entry; one whose ``.git`` holds or names no
+  repository is walked, not hidden;
 - a folder the walk cannot list is named in the report, not read as empty;
 - the history read of ``agents-md-coverage-grep`` keeps the time of a file
   whose name git would quote;
@@ -38,11 +39,16 @@ from apothem.conformity import (
     production_ready_pr_grep,
     semver_stability_grep,
 )
-from apothem.conformity._grep_base import iter_tree_files
+from apothem.conformity._grep_base import STAGED_LINKED_GIT_MESSAGE, iter_tree_files
 from apothem.conformity._project_paths import start_skip_log, take_skipped_paths
 from tests._shared.git_env import hermetic_git_env
 
 _LINKED_GIT_MESSAGE = "the .git entry is a link, so git would read another repository"
+# The --staged checks may read the repository a hook's GIT_DIR names, so
+# their sentence says only that the gate does not run git.
+_STAGED_LINKED_GIT_MESSAGE = (
+    "the .git entry in the folder git runs in is a link, so the gate does not run git"
+)
 
 
 def _write(path: Path, text: str = "x\n") -> Path:
@@ -116,7 +122,7 @@ def test_the_staged_class_check_refuses_a_linked_git(
     _no_git(monkeypatch)
     result = production_ready_pr_grep._check_staged()
     assert result.passed is False
-    assert result.check_error == _LINKED_GIT_MESSAGE
+    assert result.check_error == _STAGED_LINKED_GIT_MESSAGE
 
 
 def test_the_staged_class_check_refuses_a_linked_git_above(
@@ -146,7 +152,85 @@ def test_the_staged_surface_check_refuses_a_linked_git(
     payload = json.loads(capsys.readouterr().out)
     assert code != 0
     assert payload["passed"] is False
-    assert payload["check_error"] == _LINKED_GIT_MESSAGE
+    assert payload["check_error"] == _STAGED_LINKED_GIT_MESSAGE
+
+
+def test_the_staged_sentence_is_the_one_the_tests_pin() -> None:
+    assert STAGED_LINKED_GIT_MESSAGE == _STAGED_LINKED_GIT_MESSAGE
+
+
+def test_the_staged_class_command_refuses_a_linked_git(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = _project_with_linked_git(tmp_path)
+    monkeypatch.chdir(root)
+    _no_git(monkeypatch)
+    code = production_ready_pr_grep._main(["production-ready-pr-grep", "--staged"])
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 2
+    assert payload["passed"] is False
+    assert payload["check_error"] == _STAGED_LINKED_GIT_MESSAGE
+
+
+def _refuse_lstat(monkeypatch: pytest.MonkeyPatch, blocked: Path) -> None:
+    """Make ``os.lstat`` of *blocked* fail as a denied look would."""
+    real_lstat = os.lstat
+
+    def lstat(path: object, *args: object, **kwargs: object) -> os.stat_result:
+        if os.fspath(path) == os.fspath(blocked):  # type: ignore[call-overload]
+            raise PermissionError(13, "denied", os.fspath(blocked))
+        return real_lstat(path, *args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(os, "lstat", lstat)
+
+
+@pytest.mark.parametrize("check", ["class", "surface"])
+def test_the_staged_checks_refuse_a_git_entry_they_cannot_look_at(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    check: str,
+) -> None:
+    root = (tmp_path / "project").resolve()
+    _write(root / "src" / "apothem" / "__init__.py", '__version__ = "1.2.0"\n')
+    (root / ".git").mkdir()
+    monkeypatch.chdir(root)
+    _no_git(monkeypatch)
+    _refuse_lstat(monkeypatch, root / ".git")
+    if check == "class":
+        code = production_ready_pr_grep._main(["production-ready-pr-grep", "--staged"])
+    else:
+        code = semver_stability_grep._main(["semver-stability-grep", "--staged"])
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 2
+    assert payload["passed"] is False
+    assert payload["check_error"] == (
+        "the .git entry .git on git's search path could not be looked at, "
+        "so the gate does not run git below it"
+    )
+
+
+def test_the_staged_surface_check_refuses_a_linked_git_above_its_package(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # The package folder holds no repository of its own and the folder above
+    # it has a ``.git`` junction. Run from a subfolder, the check finds the
+    # package above, runs git there, and must refuse the link above that.
+    root = _project_with_linked_git(tmp_path)
+    package = root / "pkg"
+    _write(package / "src" / "apothem" / "__init__.py", '__version__ = "1.2.0"\n')
+    inner = package / "tools"
+    inner.mkdir()
+    monkeypatch.chdir(inner)
+    _no_git(monkeypatch)
+    code = semver_stability_grep._main(["semver-stability-grep", "--staged"])
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 2
+    assert payload["passed"] is False
+    assert payload["check_error"] == (
+        f"the .git entry {(root / '.git').as_posix()} on git's search path "
+        "is a link, so the gate does not run git below it"
+    )
 
 
 def test_the_staged_class_check_still_runs_in_a_plain_checkout(
@@ -191,13 +275,80 @@ def test_the_walk_names_a_dangling_nested_linked_git(tmp_path: Path) -> None:
     assert take_skipped_paths() == ["docs/.git"]
 
 
+def _fake_repository(git_dir: Path) -> Path:
+    """Make *git_dir* look like a repository to git, without running git."""
+    _write(git_dir / "HEAD", "ref: refs/heads/main\n")
+    (git_dir / "objects").mkdir()
+    (git_dir / "refs").mkdir()
+    return git_dir
+
+
 def test_the_walk_still_skips_a_real_nested_checkout_quietly(tmp_path: Path) -> None:
     root = (tmp_path / "project").resolve()
     _write(root / "README.md")
     _write(root / "nested" / "guide.md")
-    (root / "nested" / ".git").mkdir()
+    _fake_repository(root / "nested" / ".git")
     start_skip_log(root)
     assert [p.name for p in iter_tree_files(root, (".md",))] == ["README.md"]
+    assert take_skipped_paths() == []
+
+
+def test_the_walk_skips_a_nested_git_file_that_names_a_repository(
+    tmp_path: Path,
+) -> None:
+    root = (tmp_path / "project").resolve()
+    _write(root / "README.md")
+    _write(root / "nested" / "guide.md")
+    store = _fake_repository(tmp_path / "store")
+    _write(root / "nested" / ".git", f"gitdir: {store.as_posix()}\n")
+    start_skip_log(root)
+    assert [p.name for p in iter_tree_files(root, (".md",))] == ["README.md"]
+    assert take_skipped_paths() == []
+
+
+def _plain_git_entry(folder: Path, shape: str) -> None:
+    """Give *folder* a ``.git`` that holds or names no repository."""
+    if shape == "file":
+        _write(folder / ".git", "gitdir: nowhere\n")
+    else:
+        (folder / ".git").mkdir(parents=True)
+
+
+@pytest.mark.parametrize("shape", ["file", "empty-folder"])
+def test_the_walk_enters_a_folder_whose_git_is_no_repository(
+    tmp_path: Path, shape: str
+) -> None:
+    root = (tmp_path / "project").resolve()
+    _write(root / "README.md")
+    _write(root / "docs" / "guide.md")
+    _plain_git_entry(root / "docs", shape)
+    start_skip_log(root)
+    walked = [p.relative_to(root).as_posix() for p in iter_tree_files(root, (".md",))]
+    assert walked == ["README.md", "docs/guide.md"]
+    assert take_skipped_paths() == []
+
+
+@pytest.mark.parametrize("shape", ["file", "empty-folder"])
+def test_the_stray_plans_sweep_enters_a_folder_whose_git_is_no_repository(
+    tmp_path: Path, shape: str
+) -> None:
+    root = (tmp_path / "project").resolve()
+    (root / "docs" / ".plans").mkdir(parents=True)
+    _plain_git_entry(root / "docs", shape)
+    start_skip_log(root)
+    findings = no_global_plans_grep._sweep_stray_plans_dirs(root, frozenset())
+    assert [finding.path for finding in findings] == ["docs/.plans/"]
+    assert take_skipped_paths() == []
+
+
+def test_the_stray_plans_sweep_skips_a_real_nested_checkout_quietly(
+    tmp_path: Path,
+) -> None:
+    root = (tmp_path / "project").resolve()
+    (root / "nested" / ".plans").mkdir(parents=True)
+    _fake_repository(root / "nested" / ".git")
+    start_skip_log(root)
+    assert no_global_plans_grep._sweep_stray_plans_dirs(root, frozenset()) == []
     assert take_skipped_paths() == []
 
 
@@ -272,6 +423,41 @@ def test_a_path_too_long_is_named(
     start_skip_log(tmp_path)
     assert _project_paths.scan_entries(tmp_path / "deep") == []
     assert take_skipped_paths() == ["deep"]
+
+
+def _not_found(winerror: int) -> FileNotFoundError:
+    """Return a listing failure with the Windows code *winerror*."""
+    error = FileNotFoundError(2, "not found")
+    error.winerror = winerror  # type: ignore[attr-defined]
+    return error
+
+
+@pytest.mark.skipif(os.name != "nt", reason="the old path limit is a Windows one")
+def test_a_long_path_not_found_on_a_listed_folder_is_named(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Without long paths turned on, Windows lists a folder past the old path
+    # limit in its parent, then fails to list it with "path not found" (3).
+    def scandir(path: object) -> NoReturn:
+        raise _not_found(3)
+
+    monkeypatch.setattr(_project_paths.os, "scandir", scandir)
+    deep = tmp_path / ("d" * 260)
+    start_skip_log(tmp_path)
+    assert _project_paths.scan_entries(deep) == []
+    assert take_skipped_paths() == [deep.name]
+
+
+def test_a_short_path_not_found_is_not_named(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def scandir(path: object) -> NoReturn:
+        raise _not_found(3)
+
+    monkeypatch.setattr(_project_paths.os, "scandir", scandir)
+    start_skip_log(tmp_path)
+    assert _project_paths.scan_entries(tmp_path / "gone") == []
+    assert take_skipped_paths() == []
 
 
 # ---------------------------------------------------------------------------

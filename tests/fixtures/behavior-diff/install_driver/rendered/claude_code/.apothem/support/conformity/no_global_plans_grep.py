@@ -64,21 +64,20 @@ from typing import Final
 
 from apothem.conformity._git import run_git, split_names
 from apothem.conformity._grep_base import (
-    GIT_ENTRY,
     GIT_LS_FILES_TIMEOUT_SECONDS,
     GitCheckError,
     GitTimeoutError,
     finish_root_report,
     git_entry_unreadable,
-    has_git_entry,
+    is_git_entry,
     linked_git_label,
     linked_git_message,
     nearest_linked_git_entry,
+    nested_checkout,
     parse_root_args,
 )
 from apothem.conformity._project_paths import (
     DIR_ENTRY,
-    FILE_ENTRY,
     LINK_ENTRY,
     SKIPPED_FOLDER_ENTRY,
     note_skipped,
@@ -262,9 +261,9 @@ def _sweep_stray_plans_dirs(
     The walk prunes the vendored / generated / VCS / cache trees in
     ``_SWEEP_SKIP_DIRS`` so a plans directory inside one of those (upstream or
     machine state, never an apothem plan suite) is not flagged, and it does not
-    enter a nested git checkout (a directory holding a ``.git`` file or
-    directory below the root: a worktree, a submodule, a nested clone), which
-    owns its own plans tree. It descends into
+    enter a nested git checkout (a directory below the root whose ``.git``
+    file or directory holds or names a repository: a worktree, a submodule, a
+    nested clone), which owns its own plans tree. It descends into
     ``.apothem`` directories (they hold operator memory/learning/contexts data
     alongside plans) but never descends into a plans tree itself or into the
     ``.apothem`` data children — only the ``plans`` child of an ``.apothem``
@@ -322,9 +321,18 @@ def _sweep_stray_plans_dirs(
         current = stack.pop()
         # Every entry is classified without following it; a link is never
         # entered, but one at a plans location is reported by name.
-        for entry, kind in scan_entries(current):
+        entries = scan_entries(current)
+        # A nested git checkout (a worktree, a submodule, a nested clone) is
+        # another repository with its own plans tree, not a stray suite of
+        # this project. A ``.git`` that is a link or a special file marks one
+        # too, but the folder is then left out because of it, so the report
+        # names that entry as the folder lists it (:func:`nested_checkout`).
+        if current != resolved_root and nested_checkout(current, entries):
+            continue
+        listed = frozenset(entry.name for entry, _ in entries)
+        for entry, kind in entries:
             name = entry.name
-            if name in _SWEEP_SKIP_DIRS:
+            if name in _SWEEP_SKIP_DIRS or is_git_entry(entry, listed):
                 continue
             rel = entry.relative_to(resolved_root).as_posix()
             if kind == LINK_ENTRY:
@@ -360,16 +368,6 @@ def _sweep_stray_plans_dirs(
                         f"{rel}/plans",
                         link=child_kind == LINK_ENTRY,
                     )
-                continue
-            if has_git_entry(entry):
-                # A nested git checkout (a worktree, a submodule, a nested
-                # clone) is another repository with its own plans tree, not a
-                # stray suite of this project. A ``.git`` that is a link or a
-                # special file marks one too, but the folder is then left out
-                # because of it, so the report names that entry.
-                git_entry = entry / GIT_ENTRY
-                if path_kind(git_entry) not in (DIR_ENTRY, FILE_ENTRY):
-                    note_skipped(git_entry)
                 continue
             stack.append(entry)
     return findings

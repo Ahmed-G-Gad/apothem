@@ -84,52 +84,55 @@ Algumas verificações ainda usam um link sem entrar nele:
 - `naming-grep` verifica o próprio nome de um link.
 
 O relatório de cada validador lista em `skipped_links` os links e arquivos
-especiais que deixou de fora, então um link nunca esconde um arquivo sem
-deixar rastro. Ele também lista ali uma pasta que não conseguiu listar (sem
-acesso, um caminho longo demais, um erro de leitura) e a entrada `.git` de uma
-pasta que ignorou como checkout aninhado quando essa entrada é um link ou um
-arquivo especial. Um validador que passa quando sua pasta está ausente, como os
+especiais que deixou de fora, então um link nunca esconde um arquivo sem deixar
+rastro. Ele também lista ali uma pasta que não conseguiu listar (sem acesso, um
+caminho longo demais, um erro de leitura) e a entrada `.git` de uma pasta que
+ignorou como checkout aninhado quando essa entrada é um link ou um arquivo
+especial. Um validador que passa quando sua pasta está ausente, como os
 validadores de workflows, não passa quando essa pasta é um link: os arquivos
-podem estar atrás dele, então a execução falha como uma que não verificou
-nada. Um link físico é um arquivo comum e é lido como tal. Essas verificações
+podem estar atrás dele, então a execução falha como uma que não verificou nada.
+Um link físico é um arquivo comum e é lido como tal. Os validadores do `--all`
 olham cada nível quando o alcançam e depois abrem o arquivo pelo nome, então um
 segundo usuário que possa escrever no projeto enquanto o gate roda pode trocar
-um arquivo ou uma pasta já verificados por um link antes da abertura; o gate
-não protege contra isso. No `--all` e no `--all-perwrite`, o próprio gate abre
-apenas arquivos comuns dentro da raiz, verifica cada pasta no caminho com
-`lstat`, incluindo cada caminho que o git lista, e nunca lê dentro de uma
+um arquivo ou uma pasta já verificados por um link ou um pipe nomeado antes da
+abertura, ou fazer uma leitura esperar até o limite de tempo; o gate não protege
+contra isso. O `--all-perwrite` abre o último nível sem segui-lo, mas suas
+pastas ainda podem ser trocadas. No `--all` e no `--all-perwrite`, o próprio
+gate abre apenas arquivos comuns dentro da raiz, verifica cada pasta no caminho
+com `lstat`, incluindo cada caminho que o git lista, e nunca lê dentro de uma
 entrada `.git`. Antes de executar o git, os três validadores do `--all` que
 executam o git, e as duas verificações `--staged`, olham com `lstat` a entrada
 `.git` da raiz e de cada pasta acima dela em que o git procura, como a árvore
-está naquele momento; se alguma delas for um link, ou não puder ser olhada,
-eles não executam o git. Isso também recusa projetos que o git trataria com
-segurança, como todo projeto abaixo de uma pasta pessoal cujo `.git` é um
-link, mesmo um com repositório próprio: esse é o custo deliberado de uma regra
-simples. Eles executam o git sem `GIT_DIR` e as outras variáveis que nomeiam o
-repositório, seus armazenamentos ou seu índice. Qual repositório o git lê
+está naquele momento; se alguma delas for um link, ou não puder ser olhada, eles
+não executam o git. Isso também recusa projetos que o git trataria com
+segurança, como todo projeto abaixo de uma pasta pessoal cujo `.git` é um link,
+mesmo um com repositório próprio: esse é o custo deliberado de uma regra
+simples. Os três validadores do `--all` executam o git sem `GIT_DIR` e as outras
+variáveis que nomeiam o repositório, seus armazenamentos ou seu índice; as
+verificações `--staged` mantêm o `GIT_DIR` de um hook. Qual repositório o git lê
 depois não é verificado: uma linha `gitdir:`, `commondir`, alternates,
 `core.worktree`, um include ou um link dentro da pasta do git podem nomear
-outro, e o git os segue, então o git pode alcançar um caminho de rede ou
-esperar até o seu limite de tempo. O gate usa a saída do git apenas como
-nomes, modos, letras de status, o assunto do último commit, horários de commit
-e algumas configurações, e nunca abre um caminho que o git imprime sem
-verificar cada nível dentro da raiz. Quando um link é encontrado, cada um o
-lista em `skipped_links` (relativo à raiz quando está dentro dela, pelo
-caminho completo quando está acima). O `conventional-commit-grep` então relata
-`not-a-git-repo`, como fora de um checkout, mas não passa: ele dá um
+outro, e o git os segue, então o git pode alcançar um caminho de rede ou esperar
+até o seu limite de tempo. O gate usa a saída do git apenas como nomes, modos,
+letras de status, o assunto do último commit, horários de commit e algumas
+configurações, e nunca abre um caminho que o git imprime sem verificar cada
+nível dentro da raiz. Quando um link é encontrado, cada um dos três validadores
+do `--all` o lista em `skipped_links` (relativo à raiz quando está dentro dela,
+pelo caminho completo quando está acima). O `conventional-commit-grep` então
+relata `not-a-git-repo`, como fora de um checkout, mas não passa: ele dá um
 `check_error` que nomeia o link. O `no-global-plans-grep` relata o link como
 achado e falha, e a verificação de arquivos companheiros pula seu teste de
 atualidade, como faz sem histórico. O `--all-perwrite` também não lista os
 arquivos rastreados: ele falha com um `check_error` que nomeia o link, assim
-como as duas verificações `--staged`, que leem o repositório que o `GIT_DIR`
-de um hook nomeia, mas ainda recusam um link no caminho de busca a partir da
-pasta em que rodam. Uma entrada `.git` que o gate não consegue olhar (um
-caminho longo demais, um compartilhamento inalcançável, sem acesso) não é um
-link e não aparece em `skipped_links`: o `conventional-commit-grep` falha com o
-status `git-failed` e um `check_error`; a verificação de arquivos
-companheiros, o `--all-perwrite` e as duas verificações `--staged` falham com
-um `check_error` que diz que a entrada não pôde ser olhada, e o
-`no-global-plans-grep` a relata como achado.
+como as duas verificações `--staged`, que nomeiam um link apenas no
+`check_error`: elas leem o repositório que o `GIT_DIR` de um hook nomeia, mas
+ainda recusam um link no caminho de busca a partir da pasta em que rodam. Uma
+entrada `.git` que o gate não consegue olhar (um caminho longo demais, um
+compartilhamento inalcançável, sem acesso) não é um link e não aparece em
+`skipped_links`: o `conventional-commit-grep` falha com o status `git-failed` e
+um `check_error`; a verificação de arquivos companheiros, o `--all-perwrite` e
+as duas verificações `--staged` falham com um `check_error` que diz que a
+entrada não pôde ser olhada, e o `no-global-plans-grep` a relata como achado.
 
 Seis validadores partem da raiz do repositório e buscam em toda a árvore os
 arquivos que verificam:
