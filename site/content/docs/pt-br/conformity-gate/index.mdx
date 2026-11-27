@@ -2,7 +2,7 @@
 title: "Conformity gate"
 description: "Conformity gate do Apothem — a fração mecânica do portão de pré-emissão de quinze barras (M1-M15) pelo qual todo artefato emitido precisa passar."
 machineTranslated: true
-sourceHash: "3327d1105c04f8e3"
+sourceHash: "4abccec00243f36d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,16 +30,18 @@ O portão executa apenas validadores verificáveis por máquina. O julgamento ra
 
 ## Escala de severidade
 
-O portão não tem a escala Crítica, Importante ou Consultiva e não tem limite de dois achados. Sem `--strict` (ou `APOTHEM_CONFORMITY_STRICT=1`), o portão relata os achados e sai com `0`. Com `--strict`, uma verificação de arquivo único ou de hook sai com `2` quando qualquer matcher falha, e uma execução sobre o corpus (`--all` ou `--all-perwrite`) sai com `2` quando um validador ou matcher bloqueante falha; os achados consultivos são apenas relatados. O hook de Write/Edit instalado não passa `--strict`, então ele relata os achados e a gravação prossegue, a menos que `APOTHEM_CONFORMITY_STRICT=1` esteja definido no ambiente do hook.
+O portão não tem a escala Crítica, Importante ou Consultiva e não tem limite de dois achados. Sem `--strict` (ou `APOTHEM_CONFORMITY_STRICT=1`), o portão relata os achados e sai com `0`. Com `--strict`, uma verificação de arquivo único ou de hook sai com `2` quando qualquer matcher falha, e uma execução sobre o corpus (`--all` ou `--all-perwrite`) sai com `2` quando um validador ou matcher bloqueante falha; os achados consultivos são apenas relatados. Uma execução `--all-perwrite` que não leu nenhum arquivo, encontrou uma entrada do índice que sai do projeto, ou encontrou um arquivo que não conseguiu ler ou um arquivo de texto acima do seu limite de tamanho, relata `passed: false`, com um `check_error` quando a lista de arquivos rastreados não pode ser lida (por exemplo, em uma pasta fora de uma árvore de trabalho do git), então com `--strict` ela também sai com `2`. O hook de Write/Edit instalado não passa `--strict`, então ele relata os achados e a gravação prossegue, a menos que `APOTHEM_CONFORMITY_STRICT=1` esteja definido no ambiente do hook.
+
+Em execuções `--all` e `--check`, um validador standalone que não conseguiu terminar também não passa. Um que ainda esteja em execução após 10 minutos é interrompido, e um cujo próprio comando `git` ultrapassa seu limite de tempo, ou falha em um checkout que ele encontrou, relata isso; qualquer desses resultados traz `passed: false` e um `check_error` que diz o motivo, então com `--strict` ele também sai com `2`. [Executar o conformity gate](/docs/usage/conformity-gate) lista os limites.
 
 ## Validadores
 
 A fração mecânica fica em [`src/apothem/conformity/`](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/conformity), orquestrada por [`src/apothem/conformity/gate.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/gate.py).
 Cada validador é executado de uma de três maneiras:
 
-- **per-write**: em cada gravação pendente (`--hook`), ou em cada arquivo rastreado com `--all-perwrite`.
+- **per-write**: em cada gravação pendente (`--hook`), ou em cada arquivo rastreado com `--all-perwrite`, que lê apenas os arquivos regulares dentro do projeto e conta os caminhos que ignora (links, pipes nomeados, dispositivos, entradas que saem do projeto).
 - **standalone**: no repositório inteiro com `--all`, ou um de cada vez com `--check <name>`.
-- **change-set**: contra um diff preparado (staged), executado diretamente como `python -m apothem.conformity.semver_stability_grep --staged`, e não por meio do portão.
+- **change-set**: contra um diff preparado (staged), executado diretamente a partir da raiz do checkout como `PYTHONPATH=src python -m apothem.conformity.semver_stability_grep --staged`, e não por meio do portão.
 
 A tabela abaixo é gerada a partir dos módulos dos validadores.
 
@@ -112,35 +114,66 @@ Em um harness instalado, o portão é executado automaticamente: o
 `settings.json` do Claude Code o conecta como um hook `PreToolUse` que invoca a
 cópia materializada em `~/.claude/.apothem/support/conformity/gate.py` antes de
 cada Write/Edit. O portão então verifica apenas as gravações dentro do escopo do
-seu hook, e uma gravação fora do escopo passa em silêncio; [Executar o conformity gate](/docs/usage/conformity-gate)
-lista o escopo. A partir de um checkout do código-fonte, a forma de módulo
-executa o mesmo código; prefixe cada comando `python` abaixo com
-`PYTHONPATH=src`. O portão é consultivo por padrão: ele relata os achados e sai
+seu hook, e uma gravação fora do escopo passa em silêncio;
+[Executar o conformity gate](/docs/usage/conformity-gate) lista o escopo.
+
+Execute o portão pelo caminho do script com `-E -s`, como fazem os exemplos
+abaixo, e não como `python -m apothem.conformity.gate`. O projeto que você
+verifica pode conter um arquivo com o nome de um dos módulos do portão, e o
+Python não deve carregá-lo. `-m` coloca a pasta atual em primeiro lugar no
+caminho de busca de módulos do Python; iniciar um script coloca ali a pasta do
+próprio script. Só isso não basta: uma entrada vazia ou relativa em `PYTHONPATH`
+também nomeia a pasta atual. `-E` faz o Python ignorar `PYTHONPATH` e as outras
+variáveis `PYTHON*`, e `-s` deixa de fora o seu site-packages de usuário. O
+portão não precisa de nada de nenhum dos dois. Essas flags mantêm os arquivos do
+projeto fora apenas do próprio código Python do portão; o `git` que o portão
+executa é tratado abaixo. Após uma instalação por script, o script é
+`~/.apothem/src/apothem/conformity/gate.py` (no Windows,
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`, executado com
+`python` no lugar de `python3`); em um checkout, é
+`src/apothem/conformity/gate.py`. O portão inicia cada validador standalone em
+seu próprio processo, também com `-E -s` e com a pasta atual mantida fora do
+caminho de busca. O portão é consultivo por padrão: ele relata os achados e sai
 com `0`. Adicione `--strict` para sair com `2` diante de um achado bloqueante. Um
 nome de validador desconhecido sai com `3`.
 
+`--all`, `--all-perwrite`, três validadores standalone e as verificações de
+change-set `--staged` executam `git` no projeto que verificam. Cada um inicia o
+git apenas a partir de uma entrada de caminho completo do seu `PATH`, com toda
+configuração do `.git/config` desse repositório conhecida por iniciar um
+programa desativada e com a busca de um objeto ausente bloqueada, de modo que um
+projeto que veio com sua pasta `.git` de outra pessoa não consegue fazê-los
+iniciar um programa por meio dessas configurações.
+[Executar o conformity gate](/docs/usage/conformity-gate) lista as configurações
+e os dois limites que permanecem: o git ainda pode ler um caminho que o
+repositório nomeia em qualquer configuração ou arquivo (`include.path`,
+`core.worktree`, a linha `gitdir:` de um arquivo `.git`, entre outros), e uma
+versão posterior do git pode adicionar uma nova configuração.
+
 ```shell
+gate=~/.apothem/src/apothem/conformity/gate.py   # or src/apothem/conformity/gate.py
+
 # Every standalone validator across the repository:
-python -m apothem.conformity.gate --all .
+python3 -E -s "$gate" --all .
 
 # The same sweep, failing on a blocking finding (the CI form):
-python -m apothem.conformity.gate --all --strict .
+python3 -E -s "$gate" --all --strict .
 
 # Every per-write validator against every tracked file:
-python -m apothem.conformity.gate --all-perwrite .
+python3 -E -s "$gate" --all-perwrite .
 
 # One validator by name (names come from --list):
-python -m apothem.conformity.gate --check naming-grep .
+python3 -E -s "$gate" --check naming-grep .
 
 # List every registered validator as JSON:
-python -m apothem.conformity.gate --list
+python3 -E -s "$gate" --list
 
 # Single-file dispatch (mimics the PreToolUse hook):
 echo '{"tool_input": {"file_path": "path/to/file", "content": "..."}}' \
-    | python -m apothem.conformity.gate --hook
+    | python3 -E -s "$gate" --hook
 ```
 
-`python -m apothem.conformity.gate --help` imprime o resumo de uso.
+`python3 -E -s "$gate" --help` imprime o resumo de uso.
 Consulte [Executar o conformity gate](/docs/usage/conformity-gate) para o procedimento completo.
 
 ## Referência

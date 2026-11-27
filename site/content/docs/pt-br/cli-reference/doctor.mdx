@@ -2,7 +2,7 @@
 title: "doctor"
 description: "Referência da CLI para o comando apothem doctor."
 machineTranslated: true
-sourceHash: "9336c060509b05e7"
+sourceHash: "78a7cea770c98762"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,18 +27,158 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   como `not_installed` e não é uma falha, de modo que uma máquina com um harness
   saudável passa. Os harnesses com escopo de projeto são verificados
   quando `--project` nomeia a raiz deles; sem ele, são relatados como
-  `needs_project`.
+  `needs_project`. Um arquivo com linhas de marcador que o Apothem não consegue
+  distinguir do seu texto conta como uma instalação enquanto o ledger de
+  instalação não puder ser lido, de modo que esse harness é verificado em vez de
+  ser relatado como `not_installed`. O doctor nomeia um ledger que não consegue
+  ler em uma verificação `ledger.unreadable` quando lê esse ledger para iniciar
+  os hooks do harness (veja **Runtime de hooks** abaixo): para um harness que
+  passa na verificação e para um cuja verificação reprovada nomeia arquivos com
+  marcadores do Apothem (`harness.stray_begin`). A correção dela diz para mover
+  um ledger danificado para outro lugar e executar `update` ou, para um ledger
+  que o doctor não consegue abrir (porque outro programa o mantém aberto, por
+  exemplo), tornar esse arquivo legível. Um harness cuja verificação falha por
+  outro motivo recebe a verificação `harness.verify_failed` e nenhuma
+  verificação de hooks, portanto também nenhuma verificação `ledger.unreadable`.
 - **Verificação.** Cada harness instalado deve passar na mesma verificação que o
-  [`verify`](/docs/cli-reference/verify).
-- **Runtime de hooks.** Para cada harness verificado, o doctor lê os arquivos que
-  a instalação mais recente dele gravou, encontra os comandos de hook que o
-  Apothem registrou ali e inicia cada interpretador e cada script de hook uma vez
-  com uma carga útil sem efeito (os argumentos registrados mais `--help`, `{}` no
+  [`verify`](/docs/cli-reference/verify). Quando um arquivo contém um marcador
+  BEGIN do Apothem sem marcador END, a verificação reprovada é
+  `harness.stray_begin`, e a correção dela nomeia cada um desses arquivos e a
+  linha do marcador, dá passos numerados que alteram essa linha e todas as outras
+  linhas de marcador BEGIN, exceto a que abre o bloco do Apothem (uma palavra
+  adicionada dentro de cada comentário), e diz para não adicionar de volta o
+  marcador END, o que deixaria dois blocos do Apothem depois que uma instalação ou
+  atualização tivesse gravado o bloco do Apothem separado dele: uma atualização
+  sozinha não resolve isso
+  (consulte
+  [Resolução de problemas](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
+  Um arquivo que contém dois ou mais blocos inteiros entre os marcadores do
+  Apothem, ou cujos pares de marcadores o Apothem não consegue distinguir do seu
+  texto, como o bloco dele dentro de um bloco de código seu, reprova a mesma
+  verificação: a mensagem dela diz que o arquivo contém "Apothem markers to fix
+  by hand", e a correção dela nomeia cada bloco pelas suas linhas (consulte
+  [Um arquivo contém dois blocos entre os marcadores do Apothem](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)),
+  ou cada par de marcadores, onde suas linhas são lidas e como corrigi-lo, junto com
+  cada marcador BEGIN que não inicia nenhum par de marcadores (consulte
+  [O Apothem não consegue distinguir o bloco dele do seu texto](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+  Para um arquivo de regras do OpenClaw, a correção diz, como a nota do verify,
+  que a próxima atualização grava o bloco do Apothem se o arquivo então couber no
+  limite por arquivo do OpenClaw, limite que o texto antigo do Apothem que você
+  mantiver consome.
+- **Runtime de hooks.** Para cada harness verificado, e para cada um que um desses
+  marcadores reprova, o doctor lê os arquivos que a instalação verificada gravou:
+  a instalação na própria pasta do harness (um `CODEX_HOME` definido onde o doctor
+  é executado é essa pasta) ou, para um harness com escopo de projeto, na pasta de
+  `--project`. Uma instalação em outra pasta, como um `CODEX_HOME` para o qual o
+  doctor não está apontado ou um projeto que você já excluiu, não é usada no lugar
+  dela. O doctor encontra os comandos de hook que o Apothem registrou nos arquivos
+  JSON entre eles e inicia cada interpretador e cada script de hook uma vez com
+  uma carga útil sem efeito (os argumentos registrados mais `--help`, `{}` no
   stdin, um diretório de trabalho temporário e `PYTHONPATH` removido). Nada é
   gravado. Um interpretador ausente, um script ausente ou uma falha no momento da
-  importação reprova a verificação.
+  importação reprova a verificação. Quando um hook tem uma linha de comando
+  separada para cada sistema, o doctor inicia aquela que a ferramenta executa
+  nesta máquina: uma linha `powershell` ou `commandWindows` no Windows e uma linha
+  `bash` no macOS e no Linux, para uma ferramenta que lê essa chave. Uma
+  ferramenta que lê apenas `command` tem sua linha `command` iniciada. O doctor lê
+  apenas as chaves que a própria ferramenta lê, e uma lista `args` apenas para uma
+  ferramenta que executa seu comando com uma, de modo que uma linha ou lista
+  mantida sob outra chave não é iniciada nem contada. O doctor inicia o próprio
+  programa, sem um shell, então no Windows ele omite o `&` com que começa uma
+  linha escrita para o PowerShell. Um hook registrado fora de um arquivo JSON não
+  é iniciado e não é contado em `N started`. O registro de instalação é
+  encontrado sob qualquer grafia dessa pasta, como outra combinação de maiúsculas
+  e minúsculas no Windows. Quando o ledger de instalação não tem registro para
+  essa pasta, a verificação não é executada: o relatório mostra `not checked`, sua
+  última linha nomeia os harnesses cujos comandos de hook não foram verificados em
+  vez de `All checks passed` (ela diz "some hook commands" para um harness que
+  também iniciou outros que passaram), e a saída JSON traz uma verificação
+  `hook.unchecked`.
+- **Arquivos de hook do projeto.** Qualquer pessoa que possa fazer commit em um
+  projeto pode alterar os arquivos dele, então, para um harness com escopo de
+  projeto, o doctor inicia um comando de hook somente quando tudo o que ele
+  executa é conhecido. Ele lê o registro de instalação do projeto que `--project`
+  nomeia, obtém comandos de hook apenas dos lugares de onde a ferramenta os lê (no
+  máximo 100 de um arquivo; além disso, uma linha `hook.unchecked` nomeia o
+  arquivo e o restante não é iniciado) e inicia um comando somente quando o
+  interpretador dele é o que essa instalação registrou (a menos que esteja dentro
+  do projeto, onde outras pessoas podem alterá-lo) ou o Python sob o qual o
+  próprio Apothem roda, as opções antes do script não executam código (como `-E`
+  e `-s`), o script é o script de hook que essa instalação gravou, em uma pasta
+  cujos arquivos ainda correspondem às somas de verificação SHA-256 que a
+  instalação registrou e que não contém nenhum outro arquivo Python nem nenhum
+  link, e os argumentos depois dele são os que o Apothem grava. O doctor então
+  inicia esses caminhos conhecidos em vez do texto que leu, e não procura nenhum
+  outro caminho que um comando de hook nomeie. Um interpretador ou script de hook
+  registrado que não existe mais reprova a verificação sem que nada seja
+  iniciado; para um script de hook ausente, a correção executa `update` para
+  colocar os scripts de volta. O doctor não inicia nenhum outro comando de hook do
+  projeto e relata cada um, com o motivo, como `hook.unchecked` (informativo, não
+  uma falha, marcado com `!` na saída simples). O mesmo vale para um comando cujos
+  caminhos conhecidos o doctor não consegue procurar, como um em uma pasta que
+  você não consegue abrir. Um interpretador registrado dentro do projeto não é
+  iniciado, já que outras pessoas podem alterá-lo, a menos que o próprio doctor
+  rode sob ele: a correção executa `update` a partir de uma pasta fora do projeto,
+  com um Apothem que roda sob um Python fora do projeto, o que registra esse
+  Python no lugar. Um Apothem instalado no próprio ambiente do projeto não
+  consegue fazer isso; use um instalado fora dele. Se o ambiente virtual do
+  projeto estiver ativo, desative-o primeiro: enquanto ele estiver ativo, o Python
+  dele vem primeiro no seu `PATH`, e o comando npx rodaria sob ele e o registraria
+  novamente. Para escolher o Python sob o qual o comando npx roda, defina
+  `APOTHEM_PYTHON` com o caminho dele. Um caminho que não seja um Python 3.10 ou
+  posterior funcional é ignorado sem mensagem e o `PATH` é pesquisado no lugar,
+  então execute o doctor novamente para verificar se a linha sumiu. A atualização
+  roda de fora do projeto porque `python -m apothem`, executado na pasta do
+  projeto, iniciaria uma pasta chamada `apothem` com commit ali em vez do
+  Apothem. Hooks instalados por uma versão anterior, que não registrava
+  interpretador ou somas de verificação, permanecem sem verificação até que você
+  execute `update` com as mesmas opções com que instalou.
+- **Arquivos de hook que a verificação não lê.** A verificação de hooks não lê
+  nenhum arquivo de hook maior que 4 MB e nada além de um arquivo comum (um pipe
+  ou um dispositivo, por exemplo). Cada um desses arquivos recebe uma linha
+  `hook.unchecked` que o nomeia, quer ele contenha apenas hooks ou seja um arquivo
+  de configurações no qual os hooks são mesclados, e quer esteja em um projeto ou
+  sob sua pasta pessoal. Uma atualização mantém como está um arquivo grande demais
+  ou que não é comum, então a correção dele diz para reduzir o arquivo para menos
+  de 4 MB ou substituí-lo por um arquivo comum e, em seguida, executar o doctor
+  novamente. Um arquivo do qual a ferramenta não executa nenhum hook não recebe
+  linha: o arquivo de configurações de uma ferramenta cujos hooks o Apothem mantém
+  apenas na sua pasta de suporte, ou uma cópia mantida sob `.apothem/support`.
+  Um arquivo sob sua pasta pessoal é lido através de um link, já que é seu.
+  Em um projeto, a verificação não lê nenhum arquivo de hook que alcança através
+  de um link, como uma pasta de configurações substituída por um link para uma
+  pasta fora do projeto. Cada um desses arquivos recebe uma linha
+  `hook.unchecked`, quer contenha apenas hooks ou seja um arquivo de configurações
+  no qual os hooks são mesclados. A linha nomeia o arquivo e o link, que pode ser
+  o próprio arquivo ou uma de suas pastas. A correção diz para verificar para onde
+  o link leva: substitua um link que você criou por uma cópia real da pasta ou do
+  arquivo para o qual ele leva e verifique os comandos de hook nela, ou remova um
+  link que você não criou e execute o comando `update` com que a correção termina.
+  De qualquer forma, apenas o próprio link é removido, não a pasta ou o arquivo
+  para o qual ele leva. Um comando de hook cujo script de hook é alcançado através
+  de um link não é iniciado; sua linha nomeia o script e o link, que pode ser o
+  próprio script ou uma de suas pastas, e sua correção é a mesma, exceto que não
+  há comandos de hook a verificar. Um script de hook que a instalação registrou
+  fora do projeto também não é iniciado, e sua linha diz isso. Um link, ou um
+  arquivo Python que a instalação não gravou, dentro da pasta do script de hook
+  também deixa o comando sem ser iniciado. Uma atualização mantém qualquer um
+  deles, então a correção diz para remover a entrada que a linha nomeia (para um
+  link, apenas o próprio link; mova seus próprios scripts para outro lugar) e, em
+  seguida, executar o doctor novamente. Se o link tomou o lugar de uma pasta que a
+  instalação gravou, a próxima execução relata essa pasta como ausente, e executar
+  `update` a coloca de volta. Uma pasta do projeto que a verificação não consegue
+  abrir também recebe uma linha, e sua correção diz para dar à sua conta permissão
+  para abri-la. No Windows, que não tem como abrir um arquivo recusando um link, a
+  verificação de link é feita logo antes de o arquivo ser aberto. Um script de
+  hook maior que 4 MB conta como alterado desde a instalação, já que nenhum que o
+  Apothem grava é tão grande.
 
-Toda verificação que falha nomeia uma correção. Sai com 0 quando nenhuma
+Toda verificação que falha nomeia uma correção. Uma correção que executa `update`
+termina com o comando, depois de dois-pontos. Para um harness com escopo de
+projeto, o comando nomeia `--project` com a pasta entre aspas para o shell, como
+o [`uninstall`](/docs/cli-reference/uninstall) coloca seus passos entre aspas.
+Quando essas aspas não conseguem carregar a pasta, a correção indica `--project`
+por extenso e termina com a pasta como ela é. Sai com 0 quando nenhuma
 verificação falha e com 1 caso contrário.
 
 ## Saída JSON
@@ -52,11 +192,13 @@ e `profile_error` quando o perfil é inválido) e adiciona:
 - `project` — a raiz de `--project` resolvida, ou `null`.
 - `harnesses[].status` — `ok`, `not_installed`, `needs_project`,
   `verify_failed`, `hook_failed` ou `error`; além de `verified` e `hooks`
-  (`{"probed": N, "failed": [...]}`, ou `null` quando não existe nenhum registro
-  de instalação).
+  (`{"probed": N, "failed": [...]}`, ou `null` quando a pasta verificada não tem
+  registro de instalação, o ledger de instalação não pode ser lido ou o doctor
+  não conseguiu terminar de verificar os comandos de hook; uma verificação
+  `hook.unchecked` diz o motivo).
 - `checks` — um registro por verificação: `code` (por exemplo
-  `harness.verify_failed`, `hook.start_failed`, `ledger.unreadable` ou um código
-  `profile.*`), `status` (`pass`, `fail` ou `info`), `harness`, `message` e
+  `harness.verify_failed`, `harness.stray_begin`, `hook.start_failed`,
+  `hook.unchecked`, `ledger.unreadable` ou um código `profile.*`), `status` (`pass`, `fail` ou `info`), `harness`, `message` e
   `fix`.
 
 ```json
@@ -104,7 +246,7 @@ stdout, adequado para ser encaminhado por pipe a outras ferramentas.
 | Código | Significado |
 |---|---|
 | 0 | Todas as verificações passaram (também quando nenhum harness está instalado ainda) |
-| 1 | Um harness instalado não passa na verificação, um comando de hook registrado não consegue iniciar, um adaptador não pôde ser carregado ou sondado, ou um perfil presente falhou na validação de schema |
+| 1 | Um harness instalado não passa na verificação, um comando de hook registrado não consegue iniciar, um ledger de instalação não pode ser lido, um adaptador não pôde ser carregado ou sondado, ou um perfil presente falhou na validação de schema |
 | 64 | Erro de uso: uma opção ou um comando desconhecido, ou um valor de opção ausente ou inválido. Com `--json`, o erro é um envelope JSON com o código `cli.usage`. |
 
 ## Veja também

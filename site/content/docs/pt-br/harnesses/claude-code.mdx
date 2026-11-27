@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Adaptador de harness do Apothem para o Claude Code (GA)."
 machineTranslated: true
-sourceHash: "42277b35237235a2"
+sourceHash: "4e5a2944b6820b60"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,7 +25,10 @@ pela superfície de skills atual do Claude Code. O renderizador de statusline é
 para `~/.claude/statuslines/`, mas não é conectado: o Claude Code lê sua linha de status
 a partir da configuração `statusLine`, que o adaptador deixa sem definir. Para ativá-lo,
 adicione ao `settings.json` uma entrada `statusLine` de `"type": "command"` que execute
-`~/.claude/statuslines/render.py`. O valor `commandWindows` do trecho é executado no
+`~/.claude/statuslines/render.py`. Os comandos do trecho iniciam o Python com `-E -s`,
+como os hooks fazem. Nenhuma instalação ou atualização altera `statusLine`; então, se
+você copiou o comando de um trecho anterior, que não tinha `-E -s`, adicione `-E -s`
+depois do interpretador você mesmo. O valor `commandWindows` dele é executado no
 Windows e nomeia o interpretador sem aspas. Quando o caminho do interpretador contém um
 espaço, a instalação grava nesse valor a forma curta 8.3 do Windows, quando o volume a
 possui. As entradas de hook em `settings.json` mantêm o caminho completo.
@@ -34,12 +37,16 @@ possui. As entradas de hook em `settings.json` mantêm o caminho completo.
 `statuslines/`, `output-styles/` e a subárvore de suporte `.apothem/support/`
 (`.apothem/support/hooks/`, `.apothem/support/conformity/`,
 `.apothem/support/schemas/`, `.apothem/support/templates/`) sob `~/.claude/`.
+A instalação também cria a pasta de dados do Apothem, `~/.claude/.apothem/` por
+padrão, com `contexts/`, `learning/`, `memory/` e `plans/` dentro dela.
 Os arquivos de comando são convertidos em
 diretórios de skill filhos. O despachante de hooks e o conformity gate são
 executados a partir de suas cópias materializadas — as entradas de hook do
 `settings.json` invocam `~/.claude/.apothem/support/hooks/dispatch.py` e
 `~/.claude/.apothem/support/conformity/gate.py` por caminho absoluto, de modo
-que nenhum pacote `apothem` importável é necessário no host.
+que nenhum pacote `apothem` importável é necessário no host. Cada entrada inicia
+o Python com `-E -s`, de modo que `PYTHONPATH`, as outras variáveis `PYTHON*` e os
+seus site-packages de usuário nunca chegam a um hook.
 
 `~/.claude/CLAUDE.md` permanece de propriedade do operador. O adaptador grava
 nele um único bloco do Apothem delimitado por sentinelas, que contém a projeção
@@ -68,29 +75,29 @@ gerenciados pelo Apothem recebem backup antes da substituição; as entradas nã
 relacionadas criadas pelo operador são preservadas. O `settings.json` é mesclado
 para que as chaves criadas pelo operador permaneçam recuperáveis.
 
-Os arquivos escritos pelo operador são mantidos somente fora das pastas abaixo.
-Cada instalação e cada atualização remove cada uma destas pastas em `~/.claude/`
-que exista, tenha ela sido escrita pelo Apothem ou não: `src/`, `conformity/`,
-`schemas/`, `hooks/`, `config/`, `scripts/`, `tools/`, `lib/`, `templates/`,
-`docs/`, `tests/`, `packaging/`, `mcp/`, `examples/`, `assets/`, `site/`,
-`public/` e `commands/`. Também remove `statuslines/__init__.py` e os arquivos
-`AGENTS.md` em `agents/`, `rules/`, `skills/`, `statuslines/` e
-`output-styles/`. Uma pasta removida é excluída por inteiro, incluindo os
-arquivos que você colocou nela. Os comandos de barra que você mantém em
-`commands/` também são removidos, e o Apothem instala os próprios prompts de
-comando como skills em `skills/`. Um script de hook que você mantém em `hooks/`
-é removido, o que deixa qualquer entrada de `settings.json` que o chame
-apontando para lugar nenhum. A varredura roda antes de a instalação gravar os
-próprios arquivos. Cada caminho removido é copiado primeiro para
-`~/.apothem/backups/`, e o registro da instalação indica essa cópia. A
-desinstalação não a restaura. Para restaurar um caminho removido, execute
-`apothem rollback --harness claude-code --install-id ID` referente à instalação
-que o removeu, conforme descrito na [referência de
-rollback](/docs/cli-reference/rollback). Um `apothem rollback` simples reverte
-somente a instalação mais recente. Os registros de instalação e as suas cópias
-são mantidos para as 10 instalações mais recentes; assim, um caminho removido só
-pode ser restaurado enquanto a sua instalação estiver entre elas. `apothem diff --harness claude-code` lista essas remoções como `Prune stale files` antes de
-você instalar.
+A instalação e a atualização deixam intactos os seus próprios arquivos em
+`~/.claude/`, incluindo os comandos de barra em `commands/` e os scripts de hook
+em `hooks/`. Versões anteriores, em vez disso, removiam pastas inteiras ali a
+cada instalação e atualização (`commands/`, `hooks/`, `scripts/`, `templates/` e
+outras), com os arquivos que você havia colocado nelas; o
+[changelog](/docs/changelog) nomeia essas versões. Veja [Recuperar arquivos que
+uma versão anterior removeu](#recuperar-arquivos-que-uma-versão-anterior-removeu).
+
+### Recuperar arquivos que uma versão anterior removeu
+
+Cada pasta removida foi copiada antes para
+`~/.apothem/backups/<timestamp>/claude_code/.claude/<folder>/`. A versão atual
+nunca exclui um conjunto de backup que contenha uma pasta assim, mas a retenção
+de uma versão anterior pode já ter excluído conjuntos mais antigos. Para
+recuperar:
+
+1. Copie `~/.apothem/backups/` para outro lugar antes de executar o Apothem novamente.
+2. Copie à mão os arquivos de que você precisa dessa cópia de volta para `~/.claude/`.
+3. Execute `apothem update` em seguida.
+
+`apothem rollback --install-id` reverte a instalação anterior inteira, incluindo
+`settings.json` e `CLAUDE.md`, então não é o caminho para recuperar esses
+arquivos.
 
 As skills instaladas, e as skills empacotadas no plugin do Claude Code, carregam
 `user-invocable` em vez do `userInvocable` do corpus de origem, porque o Claude
@@ -215,6 +222,30 @@ está bem formado e que todas as vinculações de hook em settings.json são
 resolvíveis. O adaptador não cria nenhuma entrada de servidor MCP: registre os
 servidores com `claude mcp add` (consulte
 [Servidores MCP](/docs/reference/mcp)).
+
+O Claude Code também lê o `AGENTS.md` de um projeto, a partir da versão que a sua
+[página de memória](https://code.claude.com/docs/en/memory#agents-md) nomeia.
+Com a configuração padrão **Project instructions**, ele faz isso somente quando
+não há `CLAUDE.md`, `.claude/CLAUDE.md` nem `CLAUDE.local.md` na pasta de
+trabalho ou em uma pasta acima dela. Ele lê os arquivos `AGENTS.md` dali quando
+uma sessão começa, e o `AGENTS.md` de uma pasta abaixo da pasta de trabalho
+quando a sua ferramenta Read abre um arquivo nessa pasta e a pasta não tem
+nenhum desses três arquivos. `~/.claude/CLAUDE.md` não conta, então o bloco do
+Apothem ali continua sendo carregado junto com um `AGENTS.md` de projeto. A
+instalação do Kimi Code grava um bloco do Apothem no `AGENTS.md` do projeto,
+então, em um projeto assim, o Claude Code carrega os dois blocos; o
+[registro de harnesses](/docs/reference/harness-registry#shared-roots) lista os
+leitores desse arquivo e as suas condições.
+
+**Project instructions** é uma configuração de todo o usuário, não por projeto:
+defini-la como `claude-md` em `/config` limita o Claude Code aos seus arquivos
+`CLAUDE.md` em todos os projetos, e `claude-md-and-agents-md` carrega os dois
+tipos de arquivo onde quer que estejam. Algumas sessões não leem nenhum
+`AGENTS.md`, seja qual for a configuração: aquelas com o plugin integrado que o
+lê desativado, algumas primeiras sessões após uma atualização a partir de uma
+versão que não conseguia lê-lo e, em versões iniciais, algumas sessões no Amazon
+Bedrock ou com a telemetria desativada. A página de memória as lista e nomeia
+as versões.
 
 `~/.claude/agents/` é uma raiz compartilhada que pertence ao `Claude Code`, assim como
 `~/.claude/skills/` e `~/.claude/CLAUDE.md`: outras ferramentas suportadas carregam esses

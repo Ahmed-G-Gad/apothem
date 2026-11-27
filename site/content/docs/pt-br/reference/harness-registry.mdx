@@ -2,7 +2,7 @@
 title: "Registro de harnesses"
 description: "Referência técnica do registro dos adaptadores de harness integrados do Apothem."
 machineTranslated: true
-sourceHash: "242f7f2bf421b85e"
+sourceHash: "2f51bca3eb9467c5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,7 +17,7 @@ registro, até o `capabilities.yml` de cada adaptador e até o
 
 | Harness | Nome de instalação | Escopo | Formato | Alvos | MCP | Pin de convenção |
 | --- | --- | --- | --- | --- | --- | --- |
-| Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md`; `~/.gemini/antigravity-cli/plugins/apothem/` | discovery-pending | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
+| Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md`; `~/.gemini/config/plugins/apothem/` | discovery-pending | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
 | Claude Code | `claude-code` | user | json | `~/.claude/settings.json`; `~/.claude/CLAUDE.md`; `agents`, `rules`, `skills`, `statuslines`, `output-styles` nativos; `~/.claude/.apothem/support/` | discovery-pending | `src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md` |
 | CodeBuddy | `codebuddy` | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md`; `<project>/.codebuddy/agents/`; `<project>/.codebuddy/settings.local.json`; `<project>/.apothem/support/hooks/`; `~/.codebuddy/skills/`; `~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` |
 | Codex | `codex` | user | markdown | `~/.codex/AGENTS.md`; `hooks.json`; `hooks/`; `agents/*.toml`; `~/.agents/skills/`; `~/.config/apothem/` | discovery-pending | `src/apothem/harnesses/codex/STANDARD-CONVENTION-PIN.md` |
@@ -28,7 +28,7 @@ registro, até o `capabilities.yml` de cada adaptador e até o
 | Hermes | `hermes` | user | yaml | `~/.hermes/config.yaml`; `~/.hermes/.apothem/support/` | native | `src/apothem/harnesses/hermes/STANDARD-CONVENTION-PIN.md` |
 | Kimi Code | `kimi-code` | project | markdown | `<project>/AGENTS.md`; `<project>/.kimi-code/skills/`; `<project>/.kimi-code/agents/`; `<project>/.kimi-code/.apothem/support/` | discovery-pending | `src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md` |
 | Kiro | `kiro` | project | markdown | `<project>/.kiro/steering/apothem-rules.md`; `<project>/.kiro/agents/`; `<project>/.kiro/hooks/apothem.json`; `<project>/.apothem/support/kiro/hooks/`; `~/.kiro/skills/`; `~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md` |
-| Open-Claw | `open-claw` | user | json | `~/.openclaw/openclaw.json`; `~/.openclaw/.apothem/support/` | unsupported | `src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md` |
+| Open-Claw | `open-claw` | user | json | `~/.openclaw/openclaw.json`; `~/.openclaw/.apothem/support/`; `<workspace>/apothem/AGENTS.md` (carregado pelo hook `bootstrap-extra-files`; não está na lista de alvos do registro, por isso a tabela gerada abaixo o omite) | unsupported | `src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md` |
 | OpenCode | `opencode` | user | json | `~/.config/opencode/opencode.json`; `commands`, `skills`, `agents` nativos; `~/.config/opencode/.apothem/support/` | native | `src/apothem/harnesses/opencode/STANDARD-CONVENTION-PIN.md` |
 | Qwen Code | `qwen-code` | user | json | `~/.qwen/settings.json`; `~/.qwen/QWEN.md`; `commands`, `skills`, `agents` nativos; `~/.qwen/.apothem/support/` | native | `src/apothem/harnesses/qwen_code/STANDARD-CONVENTION-PIN.md` |
 | Trae | `trae` | project | markdown | `<project>/.trae/rules/apothem-rules.md`; `<project>/.trae/agents/`; `~/.trae/skills/`; `~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/trae/STANDARD-CONVENTION-PIN.md` |
@@ -111,7 +111,7 @@ coinstalador coloca o conteúdo do Apothem diante de cada leitor.
 | `~/.claude/agents/` | Claude Code | nenhum | Cursor |
 | `~/.codex/agents/` | Codex | nenhum | Cursor |
 | `~/.claude/CLAUDE.md` | Claude Code | nenhum | OpenCode, Windsurf |
-| `<project>/AGENTS.md` | Kimi Code | nenhum | Antigravity, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
+| `<project>/AGENTS.md` | Kimi Code | nenhum | Antigravity, Claude Code, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
 | `<project>/GEMINI.md` | Gemini CLI | nenhum | Antigravity, GitHub Copilot, Zed |
 | `~/.gemini/GEMINI.md` | Antigravity | nenhum | Gemini CLI |
 | `<project>/.github/copilot-instructions.md` | GitHub Copilot | nenhum | Zed |
@@ -138,7 +138,20 @@ carrega `~/.claude/CLAUDE.md`. O `Codex` usa o primeiro entre
 `AGENTS.override.md` e `AGENTS.md` em cada pasta, então carrega
 `<project>/AGENTS.md` somente quando o projeto não tem `AGENTS.override.md` ao
 lado desse arquivo. O `CodeBuddy` usa `<project>/AGENTS.md` como memória de
-projeto somente quando o projeto não tem `CODEBUDDY.md`. O `Zed` carrega apenas
+projeto somente quando o projeto não tem `CODEBUDDY.md`. O `Claude Code` lê `AGENTS.md` nas versões
+que a sua [página de memória](https://code.claude.com/docs/en/memory#agents-md) nomeia, e
+a nota de instalação informa a primeira delas. Com a configuração padrão **Project
+instructions**, ele carrega todos os `AGENTS.md` e `.claude/AGENTS.md` da
+pasta de trabalho e das pastas acima dela quando uma sessão começa, mas somente
+quando nenhuma dessas pastas contém um `CLAUDE.md`, `.claude/CLAUDE.md` ou
+`CLAUDE.local.md`. Ele carrega o `AGENTS.md` de uma pasta abaixo da pasta de
+trabalho, como um projeto aberto a partir de uma pasta pai, quando a sua ferramenta Read
+abre um arquivo ali e essa pasta também não tem nenhum desses três arquivos.
+`~/.claude/CLAUDE.md` não conta, então o bloco do Apothem ali continua sendo carregado
+junto com `<project>/AGENTS.md`. A configuração `claude-md-and-agents-md` carrega
+os dois tipos de arquivo, e `claude-md` e `managed-only` não carregam nenhum `AGENTS.md`.
+Algumas sessões não leem nenhum `AGENTS.md` em nenhuma configuração; a página de memória
+as lista. O `Zed` carrega apenas
 o primeiro arquivo de instruções do projeto da sua lista: `.rules`,
 `.cursorrules`, `.windsurfrules`, `.clinerules`,
 `.github/copilot-instructions.md`, `AGENT.md`, `AGENTS.md`, `CLAUDE.md` e depois
@@ -211,8 +224,55 @@ O registro permanece sincronizado por meio destas verificações:
 | --- | --- |
 | `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | Confirma que cada adaptador tem um pin de convenção que não tem mais de 90 dias de idade, cita pelo menos uma URL do fornecedor e não tem nenhum alvo de descoberta vencido. A CI o executa em cada pull request, semanalmente e antes de um lançamento. |
 | `python scripts/dev/check_vendor_urls.py` | Busca cada URL de fornecedor que os pins e os templates de harness citam e falha diante de uma página movida ou inativa, incluindo um nome de host que não resolve mais ou um certificado que falha na verificação; um tempo limite esgotado, uma conexão recusada ou redefinida, ou um erro de servidor 5xx é relatado como inacessível e não o faz falhar. Um nome de host que resolve apenas para um endereço de espaço reservado que nenhum servidor pode ter (os servidores de nomes de um fornecedor podem devolver esse endereço para a região de onde a verificação é executada) não recebe nenhuma requisição: ele é relatado como não roteável, não faz a verificação falhar, e suas páginas precisam de uma verificação manual. O monitor semanal de convenções o executa, emite um aviso para cada host desse tipo a cada execução e lista as páginas desses hosts na issue que ele abre. |
-| `python -m apothem.conformity.gate --all .` | Executa as verificações de conformidade de documentação e de implementação. |
+| `python scripts/dev/check_vendor_releases.py` | Consulta cada canal de lançamento em `scripts/dev/vendor-release-channels.json` sobre a sua versão atual: a dist-tag de um pacote npm, o lançamento mais recente de um repositório GitHub (ou, para um canal com um padrão de tag, o seu lançamento estável mais novo com uma tag correspondente entre os 100 mais novos), ou um projeto PyPI. Para um endereço de instalador, pergunta para onde o endereço redireciona. Compara a resposta com o que foi revisado por último. Uma nova versão major, um lançamento que passa de um gatilho que o arquivo nomeia, um endereço de instalador que redireciona para outro lugar, ou um pacote, dist-tag, lançamento ou endereço que não existe mais o faz falhar, assim como um padrão de tag ao qual nenhum lançamento estável entre os 100 mais novos corresponde. Uma versão minor ou patch mais nova é relatada e não o faz falhar, a menos que o nível `watch` do canal nomeie esse nível. Um registro que não responde, ou cuja resposta é interrompida no meio, é relatado como inacessível e também não o faz falhar. Cada tentativa de requisição tem 30 segundos no total e, após 20 minutos, a verificação não consulta mais nenhum canal, de modo que sempre grava o seu relatório. Antes de qualquer requisição, verifica se cada pasta de harness tem uma entrada e se a frase de evidência de cada canal está no seu pin, e sai com 1 quando uma não está; o relatório e a issue então dizem o que está errado. O monitor semanal de convenções o executa com um token somente leitura, lista cada canal no resumo da execução e abre uma issue quando ele falha. `--list` imprime os canais sem consultar nenhum registro. |
+| `python3 -E -s src/apothem/conformity/gate.py --all .` | Executa as verificações de conformidade de documentação e de implementação. |
 | `python -m pytest` | Exercita os testes de fixtures do registro e os testes de contrato dos adaptadores. |
+
+## Canais de lançamento
+
+`scripts/dev/vendor-release-channels.json` tem uma entrada para cada pasta de
+harness. Um harness monitorado lista os seus canais de lançamento. Cada canal registra a
+versão revisada por último, com a data. Essa é a versão que o seu pin nomeia ou,
+quando o pin não nomeia nenhuma, a versão que o registro servia quando o canal
+foi registrado. Um registro também pode conter apenas uma versão major. Cada canal cita
+a frase do pin que o nomeia. O primeiro número de uma versão é a sua
+versão major, incluindo 0, então uma linha 0.x que passa de 0.26 para 0.27 relata
+uma versão minor mais nova e não falha. Um canal com versões de calendário,
+como os números ano.mês.lançamento do OpenClaw, relata cada lançamento mais novo
+sem falhar e não aceita nível `watch`. Codex, Gemini CLI, Hermes, Qwen
+Code e GLM estão em linhas 0.x, então uma nova versão de um deles é listada no
+resumo da execução e não abre nenhuma issue até chegar a 1.0, a menos que o seu canal
+defina um nível `watch`.
+
+O OpenCode tem quatro canais. `opencode-ai` traz o OpenCode 1, e
+`@opencode/cli` traz o OpenCode 2. Os lançamentos no GitHub de `anomalyco/opencode`
+mostram uma nova linha major qualquer que seja o pacote npm em que ela é distribuída. O
+quarto canal pergunta para onde `opencode.ai/install` redireciona. Em 2026-11-03, ele
+redirecionava para o script de instalação do OpenCode 1. Esse script instala a versão que a
+dist-tag `latest` de `opencode-ai` nomeia quando ela é uma versão do OpenCode 1,
+e nunca instala o OpenCode 2. A decisão sobre o OpenCode de 2026-11-03 passa a
+gravar os formatos próprios do OpenCode 2 onde o OpenCode 2 é executado quando surgir um
+de dois sinais: o OpenCode 2 anuncia uma data para remover a sua tradução dos
+formatos do OpenCode 1, ou `opencode.ai/install` ou `opencode-ai` passa para o
+OpenCode 2. A verificação monitora o segundo sinal. O canal `opencode-ai` e
+o canal do instalador têm cada um um gatilho: a verificação falha quando a
+versão `latest` de `opencode-ai` passa da versão major 1, ou quando
+`opencode.ai/install` deixa de redirecionar para o script do OpenCode 1. Uma alteração
+dentro desse script não altera o redirecionamento, então a verificação não a
+vê. Nenhum registro responde ao primeiro sinal, então ele continua sendo uma verificação
+manual, com prazo até 2027-02-01, junto com a próxima revisão do pin do OpenCode.
+
+Antigravity, Cursor, Kiro, Trae e Windsurf não são monitorados. Cada um é um
+aplicativo de desktop, ou uma ferramenta de linha de comando que se instala com um script,
+e o seu pin não nomeia nenhum canal de lançamento que um script possa consultar sem
+credenciais. O arquivo informa o motivo de cada um.
+
+Depois de verificar novamente um pin em relação a um novo lançamento ou destino de
+redirecionamento, atualize os campos `reviewed`, `reviewed_on` e `reviewed_from` desse
+canal. Um gatilho em um canal de versão faz a verificação falhar toda semana até que você o
+remova ou altere. Um gatilho em um endereço de instalador para assim que `reviewed`
+registra o novo destino, então registre esse destino somente depois que a ação do gatilho
+estiver concluída.
 
 ## Referência gerada de adaptadores de harness
 

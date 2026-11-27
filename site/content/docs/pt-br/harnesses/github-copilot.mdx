@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "Adaptador de harness do Apothem para o GitHub Copilot (GA)."
 machineTranslated: true
-sourceHash: "b1b8b4918d7d754d"
+sourceHash: "040eeddf99d35ec6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -168,6 +168,10 @@ com o seu interpretador e o caminho do seu projeto no lugar dos dois caminhos:
 "/path/to/python" -E -s "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
 ```
 
+`-E -s` faz o Python ignorar `PYTHONPATH` e as outras variáveis `PYTHON*` e
+pular os seus site-packages de usuário, de modo que nenhum arquivo do projeto
+pode ser carregado no hook.
+
 `--contract copilot` faz o despachante ler a entrada em camelCase do Copilot e imprimir
 `{"additionalContext": ...}`, que é o que o Copilot lê para esses dois eventos.
 
@@ -227,6 +231,24 @@ em arquivos para que este adaptador gerencie. O Apothem mira o arquivo de
 instruções com escopo de projeto documentado e deixa as configurações de usuário
 no nível da IDE sob a propriedade do operador. Ele grava um arquivo de hook,
 `.github/hooks/apothem.json`, e nenhum outro arquivo em `.github/hooks/`.
+
+O Copilot também carrega dois arquivos de projeto nos quais outras instalações
+do Apothem gravam um bloco: o arquivo `AGENTS.md` que a instalação do
+[Kimi Code](/docs/harnesses/kimi-code) grava, e o arquivo de contexto que a
+[instalação de outra ferramenta de linha de comando](/docs/harnesses/gemini-cli)
+grava:
+
+```text
+<project>/AGENTS.md
+<project>/GEMINI.md
+```
+
+Assim, em um projeto com essas instalações, os blocos do Apothem delas também
+chegam ao Copilot. Quando um desses arquivos já contém um bloco do Apothem,
+instalar `github-copilot` imprime uma nota que nomeia o arquivo e a instalação
+que o gravou. O
+[registro de harnesses](/docs/reference/harness-registry#shared-roots) lista as
+outras ferramentas que carregam cada arquivo.
 
 Dentro do repositório do Apothem, `.github/copilot-instructions.md` é uma voz
 entre as superfícies de instruções de assistente desse repositório. Em um
@@ -332,11 +354,15 @@ onde o instalador coloca o engine, e `-E -s` mantém seu `PYTHONPATH` e os
 site-packages do usuário fora do gate; [Conformity gate](/docs/conformity-gate)
 explica os dois e as outras instalações.
 
-A execução com `--all` cobre os validadores independentes. Ela não executa a verificação de coerência multissuperfície descrita em Notas de compatibilidade. Para executar essa verificação pelo nome em um checkout:
+A execução com `--all` cobre os validadores independentes. Ela não executa a verificação de coerência multissuperfície descrita em Notas de compatibilidade. Para executar essa verificação pelo nome, execute o gate do próprio checkout a partir da raiz de um checkout do repositório do Apothem:
 
 ```bash
-python -m apothem.conformity.gate --check multi-surface-coherence-grep AGENTS.md
+python3 -E -s src/apothem/conformity/gate.py --check multi-surface-coherence-grep AGENTS.md
 ```
+
+A cópia instalada em `~/.apothem` encontra os arquivos que compara ao lado de si
+mesma; então, executada contra um checkout, ela pula a verificação e informa
+aprovação.
 
 ## Solução de problemas
 
