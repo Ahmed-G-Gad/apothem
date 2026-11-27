@@ -2,7 +2,7 @@
 title: "Documentación de settings.json"
 description: "Configura la ejecución de hooks de Claude Code, permisos, eventos, tiempos de espera, runtime de Python, validación y precedencia de ajustes por capas para el ecosistema Apothem."
 machineTranslated: true
-sourceHash: "f83dad93ea1dbe9c"
+sourceHash: "a7175abd0e0c77ac"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -38,7 +38,9 @@ Cada hook configurado usa la forma de comando exec de Claude Code. La plantilla 
 puerta de conformidad (`~/.claude/.apothem/support/conformity/gate.py`, con sus fixtures de schema
 junto a él en `~/.claude/.apothem/support/schemas/`) son scripts autónomos de la biblioteca
 estándar — no se requiere ningún paquete `apothem` importable en el host, y una sola
-plantilla sirve para cada plataforma.
+plantilla sirve para cada plataforma. `-E -s` hace que Python ignore `PYTHONPATH` y
+las demás variables `PYTHON*` y omita los site-packages del usuario, de modo que nada
+del proyecto que abrió el asistente se carga en un hook.
 
 ## Esquema de configuración de hooks
 
@@ -88,13 +90,13 @@ patrón de localizador + despacho para habilitarlo.
 Tres validadores cubren la superficie de hooks, con rigor creciente:
 
 ```bash
-# Estructural + higiene de Python (rápido, offline)
+# Structural + Python-hygiene (fast, offline)
 python scripts/dev/validate_hooks.py
 
-# Ecosistema completo (estructura + frontmatter + comprobaciones de hooks delegadas)
+# Full ecosystem (structure + frontmatter + delegated hook checks)
 python scripts/dev/validate_ecosystem.py
 
-# Barrido adversarial (azota cada comando de hook configurado con entradas degradadas)
+# Adversarial sweep (storms every configured hook command with degraded inputs)
 python scripts/dev/chaos_pass.py
 ```
 

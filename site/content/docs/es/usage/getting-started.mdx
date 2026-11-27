@@ -2,7 +2,7 @@
 title: "Flujos de trabajo principales"
 description: "Los cuatro flujos de trabajo principales de Apothem: perfil, reglas, planes y la puerta de conformidad."
 machineTranslated: true
-sourceHash: "a53e8d62d7df7ef4"
+sourceHash: "2c2b69afe24907e5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -72,16 +72,23 @@ el flujo completo.
 
 ## Puerta de conformidad
 
-Desde un checkout de Apothem, ejecuta:
+Desde un checkout de Apothem, ejecútala desde la raíz del checkout (`python -m`
+lee primero los módulos de la carpeta actual, así que usa una carpeta de
+confianza):
 
 ```bash
 PYTHONPATH=src python -m apothem.conformity.gate --all .
 ```
 
-Tras una instalación con script, ejecuta:
+Tras una instalación con script, ejecuta la puerta por la ruta de su script con
+`-E -s`, desde el proyecto que quieras comprobar. En Windows, usa `python` en
+lugar de `python3`, y `$HOME\.apothem\...` en PowerShell o
+`%USERPROFILE%\.apothem\...` en cmd en lugar de `~/.apothem/...`, ya que
+Windows PowerShell y cmd no expanden `~`;
+[Puerta de conformidad](/docs/conformity-gate) explica las opciones:
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python3 -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
 
 Ejecuta todas las comprobaciones mecánicas de conformidad e informa de

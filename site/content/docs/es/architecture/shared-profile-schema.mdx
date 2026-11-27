@@ -2,7 +2,7 @@
 title: "Esquema del perfil compartido"
 description: "Esquema del YAML del perfil compartido de Apothem."
 machineTranslated: true
-sourceHash: "574a594762c4f468"
+sourceHash: "cdd83bde9f17392d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,13 +33,17 @@ identidad de marcador de posición que se espera que el operador personalice —
 lo valida antes de informar que tuvo éxito:
 
 ```yaml
+# yaml-language-server: $schema=https://apothem.ahmedgad.com/schemas/profile.schema.json
+schema_version: 1
 identity:
-  name: "Example User"
-  email: "dev@example.invalid"
-  github: "example-user"
+  name: Example User
+  email: dev@example.invalid
+  github: example-user
 ```
 
-El comando imprime un aviso de personalización que nombra estos campos. Si una
+La primera línea dirige a los editores con soporte para YAML hacia el esquema;
+`schema_version: 1` es la versión del esquema del perfil. El comando imprime un
+aviso de personalización que nombra los campos de identidad. Si una
 identidad que sigue siendo un marcador de posición llega más tarde a `install`
 o `update`, esos comandos imprimen una nota informativa y continúan — Apothem
 nunca fabrica ni se bloquea ante una identidad de marcador de posición.
@@ -48,6 +52,7 @@ nunca fabrica ni se bloquea ante una identidad de marcador de posición.
 
 | Campo | Obligatorio | Predeterminado | Notas |
 | --- | --- | --- | --- |
+| `schema_version` | No | se lee como `1` | Versión del esquema del perfil; `profile init` escribe `1`. Se rechaza una versión más reciente de la que admite el motor. |
 | `identity.name` | Sí | ninguno | Nombre de visualización del operador no vacío. |
 | `identity.role` | No | `senior software engineer` | Texto de rol compartido. |
 | `identity.email` | No | omitido | Debe tener formato de correo electrónico cuando esté presente. |
@@ -59,8 +64,13 @@ nunca fabrica ni se bloquea ante una identidad de marcador de posición.
 | `preferences.test_framework` | No | omitido | Cadena no vacía cuando esté presente. |
 | `rules` | No | `[]` | Cadenas no vacías únicas; los saltos de línea se normalizan a LF. |
 | `seriousness` | No | `PERSONAL_USE` | Uno de `EXPLORING`, `PERSONAL_USE`, `SHARED`, `PUBLIC_LAUNCH`. |
+| `enforcement.*` | No | `false` en cada uno | Interruptores opcionales: `sprints`, `agent_teams`, `multitasking`, `continuous_execution`, `learning_loop`. |
+| `mcp_servers` | No | `{}` | Servidores MCP indexados por nombre de servidor. Cada uno establece `transport` (`stdio`, `http`, `sse` o `streamable-http`): un servidor `stdio` necesita `command`, los demás necesitan `url`. |
+| `agent_mcp_servers` | No | `{}` | Por cada asistente, indexado por su nombre, los servidores MCP a los que puede llamar. Lo leen las instalaciones de Claude Code y Gemini CLI. |
 | `harnesses` | No | `{}` | Anulaciones por entorno indexadas por el ID de entorno compatible. |
 | `exclude_harnesses` | No | `[]` | IDs de entorno compatibles excluidos de `--harness all`. |
+| `workspace.directory_name` | No | `.apothem` | Nombre de la carpeta de trabajo compartida; un único componente de ruta. |
+| `workspace.scope` | No | `project-local` | `project-local` (bajo la raíz del proyecto) o `user-home` (bajo tu directorio personal). |
 
 ## Claves de entorno
 

@@ -2,7 +2,7 @@
 title: "Lista de verificación de sincronización entre máquinas"
 description: "Procedimiento de verificación para confirmar que el adaptador de Claude Code se instala, valida y desinstala correctamente en un host nuevo, con comprobaciones completas de portabilidad."
 machineTranslated: true
-sourceHash: "649ffe348614b809"
+sourceHash: "b241d44d7e0005f9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -110,6 +110,11 @@ make test                                                     # exit 0, no failu
 **Esperado:** Todas las puertas en verde. Captura los códigos de salida y las líneas de resumen.
 
 ## 5. Verificación de la desinstalación
+
+Ejecuta estos comandos desde `$HOME/.apothem`, la carpeta a la que cambió la sección 4. La
+desinstalación elimina el shim `apothem`, así que las líneas `verify` inician el motor
+desde el código fuente conservado con `python3 -m`, que lee primero los módulos de la carpeta
+actual: ejecútalas solo desde esa carpeta o desde otra carpeta de confianza.
 
 ```bash
 # POSIX path — interactive uninstall

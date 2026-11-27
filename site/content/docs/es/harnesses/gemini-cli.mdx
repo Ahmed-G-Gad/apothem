@@ -2,7 +2,7 @@
 title: "Gemini CLI"
 description: "Adaptador de entorno de Apothem para Gemini CLI (GA)."
 machineTranslated: true
-sourceHash: "231513ffdb2dcb22"
+sourceHash: "4b2afa3f4a237f9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,6 +34,10 @@ GEMINI.md
 .gemini/skills/
 .gemini/.apothem/support/
 ```
+
+El proyecto también recibe la carpeta de datos que crea toda instalación de
+proyecto, `.apothem/` de forma predeterminada, con `contexts/`, `learning/`,
+`memory/` y `plans/` dentro.
 
 ## Asignación del perfil a la configuración nativa
 
@@ -79,6 +83,16 @@ una concesión para un ayudante que ya alcanza todos los servidores MCP.
 herramientas que usan un perfil global de Gemini. El adaptador de Gemini CLI
 escribe únicamente en el proyecto pasado mediante `--project`.
 
+Gemini CLI también carga dos ubicaciones de tu directorio personal que escriben
+otras instalaciones de Apothem: `~/.agents/skills/`, parte de su nivel de skills
+de usuario, donde varias instalaciones escriben las skills de Apothem (el
+[registro de entornos](/docs/reference/harness-registry#shared-roots) las lista),
+y `~/.gemini/GEMINI.md`, donde la instalación de
+[Antigravity](/docs/harnesses/antigravity) escribe un bloque de Apothem.
+Cuando alguna de las dos ubicaciones ya contiene contenido de Apothem, instalar
+`gemini-cli` imprime una nota que la nombra junto con la instalación que lo
+escribió.
+
 ## Verificación
 
 ```bash
@@ -120,11 +134,31 @@ marca de tiempo de cada archivo; no se deja ningún archivo de respaldo en el
 proyecto. El YAML del perfil compartido y el motor de Apothem no se ven
 afectados.
 
+Las versiones anteriores (el [registro de cambios](/docs/changelog) las nombra)
+también eliminaban el propio `skills/AGENTS.md` de un proyecto (en la raíz del
+proyecto, no bajo `.gemini/`) en cada instalación y actualización, tras
+copiarlo en un conjunto de respaldo bajo
+`~/.apothem/backups/<timestamp>/gemini_cli/`. La versión actual deja ese archivo
+intacto. Para recuperarlo, copia `~/.apothem/backups/` en otro lugar antes de
+volver a ejecutar Apothem y luego copia a mano el archivo desde esa copia de
+vuelta al proyecto. El
+[registro de cambios](/docs/changelog#data-loss-in-earlier-releases-recover-your-files)
+tiene los pasos completos de recuperación.
+
 ## Puerta de conformidad
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Ejecútalo desde la carpeta de tu proyecto. En Windows, usa `python` en lugar de
+`python3` y la ruta completa, ya que Windows PowerShell y cmd no expanden `~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` en PowerShell, o
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` en cmd. La ruta es
+donde el instalador coloca el motor, y `-E -s` mantiene tu `PYTHONPATH` y tus
+site-packages de usuario fuera de la puerta;
+[Puerta de conformidad](/docs/conformity-gate) explica ambas cosas y las demás
+instalaciones.
 
 ## Solución de problemas
 

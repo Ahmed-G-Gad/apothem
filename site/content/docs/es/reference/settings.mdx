@@ -1,14 +1,13 @@
 ---
 title: "Ajustes"
-description: "Configuración del entorno Claude Code en settings.json: permisos de herramientas, cableado de hooks, variables de entorno y plantillas de la línea de estado."
+description: "Configuración del entorno Claude Code en settings.json: permisos de herramientas y cableado de hooks."
 machineTranslated: true
-sourceHash: "986e09594ded6bad"
+sourceHash: "ece5596a2a8b8bc1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-`settings.json` lleva la configuración del entorno Claude Code: el cableado de
-hooks, los permisos de herramientas, las variables de entorno y los ajustes de
-la línea de estado.
+`settings.json` lleva la configuración del entorno Claude Code que Apothem fusiona
+en tu archivo: los permisos de herramientas y el cableado de hooks.
 
 La referencia canónica completa está en
 [settings-reference.md](/docs/reference/settings-reference). Esta página resume el contrato
@@ -18,10 +17,14 @@ y remite a la referencia más detallada.
 
 | Sección | Propósito |
 |---------|---------|
+| `$schema` | URL del schema que usan los editores para comprobar el archivo |
 | `permissions` | Listas de herramientas permitidas y prohibidas por matcher |
 | `hooks` | Tabla de comandos de hook indexada por evento (el cableado canónico) |
-| `env` | Variables de entorno por sesión |
-| `statusLine` | Plantilla de la línea de estado que renderiza el host |
+
+La plantilla de Apothem no define ninguna otra clave, así que claves como `env` y `statusLine`
+siguen siendo tuyas. El renderizador de la línea de estado se copia en `~/.claude/statuslines/`
+pero no se conecta; la [página de Claude Code](/docs/harnesses/claude-code) muestra la
+entrada `statusLine` que debes agregar tú mismo.
 
 ## Invariante de plantilla única
 

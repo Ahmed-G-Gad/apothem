@@ -2,7 +2,7 @@
 title: "CodeBuddy"
 description: "Adaptador de entorno de Apothem para Tencent CodeBuddy (GA)."
 machineTranslated: true
-sourceHash: "fbf19289d20e8ab7"
+sourceHash: "325f29aff29de35e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -172,6 +172,10 @@ de las dos rutas:
 "/path/to/python" -E -s "/path/to/project/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart
 ```
 
+`-E -s` hace que Python ignore `PYTHONPATH` y las demás variables `PYTHON*`
+y omita tus site-packages de usuario, de modo que ningún archivo del proyecto
+puede cargarse en el hook.
+
 `--contract codebuddy` no cambia nada en la salida: CodeBuddy lee el mismo
 sobre que Claude Code. CodeBuddy ejecuta los comandos de hook a través de tu
 shell, y a través de Git Bash en Windows (no admite ni cmd.exe ni PowerShell), así
@@ -207,11 +211,14 @@ CodeBuddy `disableAllHooks` para desactivar todos los hooks.
 
 El adaptador lee el perfil compartido de Apothem y renderiza el archivo de
 reglas del proyecto en cada ejecución de `apothem install` o `apothem update`.
-CodeBuddy lee cada archivo `*.md` bajo `.codebuddy/rules/` como Markdown con
-frontmatter YAML opcional (`alwaysApply`, `paths`, `enabled`) según la
-[documentación de CodeBuddy Rules](https://www.codebuddy.ai/docs/ide/Rules); el
-archivo de Apothem lleva `alwaysApply: true`, de modo que la superficie de
-gobernanza se aplica en cada interacción. El frontmatter es el primer contenido
+CodeBuddy Code lee cada archivo `*.md` bajo `.codebuddy/rules/`, subcarpetas
+incluidas, como Markdown con frontmatter YAML opcional (`alwaysApply`, `paths`,
+`enabled`) según la
+[documentación de memoria de CodeBuddy](https://www.codebuddy.ai/docs/cli/memory#modular-rules-with-codebuddy-rules);
+el archivo de Apothem lleva `alwaysApply: true`, así que CodeBuddy Code lo carga
+en cada sesión que inicia en la carpeta raíz del proyecto. Solo lee las reglas
+del proyecto de la carpeta en la que se inicia, y lee un archivo de reglas que una
+instalación añade o cambia solo después de un reinicio. El frontmatter es el primer contenido
 del archivo y el bloque gestionado por Apothem va a continuación; el texto que
 agregues después del bloque se conserva en cada sincronización. El perfil
 compartido es la fuente de verdad; las ediciones locales del proyecto sobre el
@@ -223,7 +230,12 @@ reemplace el contenido gestionado por Apothem.
 La superficie de reglas de CodeBuddy tiene alcance de proyecto bajo
 `.codebuddy/rules/`. El adaptador escribe un archivo `apothem-rules.md`
 dedicado que coexiste con cualquier archivo de reglas que el operador redacte
-en el mismo directorio. El archivo de memoria de proyecto `CODEBUDDY.md`, el
+en el mismo directorio. La
+[página de Rules](https://www.codebuddy.ai/docs/ide/User-guide/Rules#project-rules)
+del IDE de CodeBuddy describe una carpeta por regla, cada una con un archivo
+`RULE.mdc`, en lugar de un archivo `.md` simple como el de Apothem. La página no
+dice si el IDE también carga un archivo `.md` simple, y Apothem no ha confirmado
+que lo haga. El archivo de memoria de proyecto `CODEBUDDY.md`, el
 `.codebuddy/settings.json` confirmado y el `.mcp.json` del proyecto (servidores
 MCP) son propiedad del operador; Apothem no los escribe. CodeBuddy también
 documenta comandos de barra; el adaptador no escribe ninguno y, en su lugar,
@@ -316,8 +328,17 @@ eliminarse.
 ## Puerta de conformidad
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Ejecútalo desde la carpeta de tu proyecto. En Windows, usa `python` en lugar de
+`python3` y la ruta completa, ya que Windows PowerShell y cmd no expanden `~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` en PowerShell, o
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` en cmd. La ruta es
+donde el instalador coloca el motor, y `-E -s` mantiene tu `PYTHONPATH` y tus
+site-packages de usuario fuera de la puerta;
+[Puerta de conformidad](/docs/conformity-gate) explica ambas cosas y las demás
+instalaciones.
 
 ## Solución de problemas
 

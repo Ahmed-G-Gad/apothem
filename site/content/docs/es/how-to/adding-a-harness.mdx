@@ -2,7 +2,7 @@
 title: "Añadir un entorno"
 description: "Habilita un adaptador de entorno para que su configuración nativa se materialice desde el perfil compartido."
 machineTranslated: true
-sourceHash: "6daae4aec1547438"
+sourceHash: "d42e0475934c3217"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,8 +14,9 @@ nativa de ese entorno desde tu perfil compartido.
 - Un perfil compartido en `~/.config/apothem/profile.yaml` (crea uno con
   `apothem profile init` si aún no existe).
 - La CLI `apothem` en tu `PATH`. Si instalaste el árbol de código fuente
-  autocontenido, antepone a cada comando `PYTHONPATH="$HOME/.apothem/src"` y ejecuta
-  `python -m apothem` en lugar de `apothem` — o usa `npx @ahmed-g-gad/apothem`.
+  autocontenido y su carpeta aún no está en `PATH`, ejecuta el shim por su ruta
+  completa (`~/.local/bin/apothem` de forma predeterminada) o copia el comando
+  que imprimió el instalador — o usa `npx @ahmed-g-gad/apothem`.
 
 ## Pasos
 

@@ -2,11 +2,11 @@
 title: "status"
 description: "Referencia de la CLI para el comando apothem status."
 machineTranslated: true
-sourceHash: "8b2767bb799e4c2e"
+sourceHash: "fe8df509dd01788b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Informa el estado de instalación, de verificación y de desviación de cada entorno
+Informa el estado de instalación, de verificación y de deriva de cada entorno
 registrado.
 
 ## Sinopsis
@@ -19,7 +19,7 @@ apothem status [--profile PATH] [--project PATH]
 
 `status` es un comando de inspección de solo lectura. Recorre cada adaptador de
 entorno registrado e informa tres hechos por entorno: si está instalado, si sus
-destinos gestionados se verifican y si la configuración instalada se ha desviado
+destinos gestionados se verifican y si la configuración instalada ha derivado
 del perfil compartido. No escribe nada en disco.
 
 Para cada entorno, `status` informa:
@@ -35,16 +35,16 @@ El valor de `drift` es uno de los siguientes:
 | Valor | Significado |
 |---|---|
 | `in-sync` | La configuración instalada lleva textualmente el perfil compartido recién proyectado. |
-| `drift` | El entorno está instalado, pero el contenido de perfil proyectado ya no coincide con el perfil compartido actual. Vuelve a ejecutar `apothem install` para proyectarlo de nuevo. |
+| `drift` | El entorno está instalado, pero el contenido de perfil proyectado ya no coincide con el perfil compartido actual, o un archivo en el que la instalación actual mantiene un bloque gestionado contiene un marcador BEGIN que no inicia ningún bloque completo, dos o más bloques completos entre los marcadores de Apothem, o pares de marcadores que Apothem no puede distinguir de tu texto. Un archivo que solo lista un registro de instalación anterior, como el archivo de reglas de un espacio de trabajo de OpenClaw que la instalación ya no usa, no cuenta aquí; `apothem verify` y `apothem doctor` lo nombran. Ejecuta `apothem update` para aplicar el perfil actual; corrige esos marcadores a mano (consulta [Solución de problemas](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker), [Un archivo contiene dos bloques entre los marcadores de Apothem](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers) y [Apothem no puede distinguir su bloque de tu texto](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)). |
 | `absent` | El entorno no está instalado, así que no hay nada que comparar. |
 | `needs-project` | Se informó un entorno con alcance de proyecto sin `--project`, así que su destino no puede resolverse. Pasa `--project PATH` para inspeccionarlo. |
-| `unknown` | No se pudo cargar el perfil predeterminado, así que un entorno instalado no tiene una referencia con la que compararse. Corrige el perfil para recuperar el veredicto de desviación. |
+| `unknown` | No se pudo cargar el perfil predeterminado, así que un entorno instalado no tiene una referencia con la que compararse. Corrige el perfil para recuperar el veredicto de deriva. |
 
-La desviación se informa y nunca se trata como un error: `status` sale con 0
-incluso cuando uno o más entornos informan `drift`. La desviación es un hecho
+La deriva se informa y nunca se trata como un error: `status` sale con 0
+incluso cuando uno o más entornos informan `drift`. La deriva es un hecho
 sobre tu configuración, no un fallo del comando.
 
-Si no se puede cargar el perfil compartido predeterminado, la desviación se
+Si no se puede cargar el perfil compartido predeterminado, la deriva se
 degrada a `unknown` para los entornos instalados (los hechos de instalación y de
 verificación se siguen informando) en lugar de abortar el barrido. Un
 `--profile` explícito que no se puede cargar es un error del usuario y, en
@@ -61,7 +61,7 @@ referencia nunca se cargó.
 
 | Opción | Descripción |
 |---|---|
-| `--profile PATH` | YAML del perfil compartido que selecciona la referencia de desviación. Sin esta opción, se usa el perfil predeterminado (`~/.config/apothem/profile.yaml`). |
+| `--profile PATH` | YAML del perfil compartido que selecciona la referencia de deriva. Sin esta opción, se usa el perfil predeterminado (`~/.config/apothem/profile.yaml`). |
 | `--project PATH` | Raíz del proyecto para los entornos con alcance de proyecto. Sin esta opción, los entornos con alcance de proyecto informan `needs-project`. |
 | `--quiet`, `-q` | Suprime la salida informativa; solo se emiten errores. |
 | `--verbose`, `-v` | Emite salida de diagnóstico adicional. |
@@ -122,7 +122,7 @@ apothem status --json
 
 | Código | Significado |
 |---|---|
-| 0 | Estado informado (la desviación se informa, no es un error) |
+| 0 | Estado informado (la deriva se informa, no es un error) |
 | 1 | Error de validación esperado (un `--profile` no válido, o una ruta de `--project` que no existe) |
 | 2 | Al menos un adaptador no pudo informar su estado |
 | 64 | Error de uso: una opción o un comando desconocidos, o un valor de opción ausente o no válido. Con `--json`, el error es un sobre JSON con el código `cli.usage`. |
