@@ -51,9 +51,12 @@ Run any of them from `site/`.
   never overwritten with English.
 - **`check-built-docs.mjs`** — checks the built docs pages after a build
   (`check:built-docs` npm script, run by CI): every sidebar section opens and
-  closes from a button that carries `aria-expanded` and `aria-controls`, no
-  sidebar link holds the open/close icon, and no page shows a literal `**`
-  outside code. Exits 1 with the defects grouped by kind.
+  closes from a button that carries `aria-expanded` and `aria-controls`, each
+  button's `aria-controls` and `aria-labelledby` name elements on the page, a
+  list's `hidden` attribute and its button's `aria-expanded` match the list's
+  open or closed state, no sidebar link holds the open/close icon, and no page
+  shows a literal `**` or backtick outside code. Exits 1 with every defect,
+  grouped by kind.
 - **`check-search-index-sizes.mjs`** — guards the per-locale static search-index
   sizes in the built output. Re-derives `ROUTED_LOCALES` from `lib/i18n.ts` via
   `assertLocaleParity()` and fails on drift. Runs after a build
