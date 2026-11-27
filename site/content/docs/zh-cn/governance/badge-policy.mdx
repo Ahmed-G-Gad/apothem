@@ -2,11 +2,11 @@
 title: "徽章策略"
 description: "为 README 规定动态与静态徽章来源，涵盖 GitHub 原生工作流状态、shields.io 端点 JSON 以及静态徽章形式。"
 machineTranslated: true
-sourceHash: "4ec8f4ae2e02624c"
+sourceHash: "14aafb239c51e36d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-本文档是 README 徽章条以及发布其动态数据源的基础设施的规范参考。项目 README 中的每个徽章都通过此处规定的三种形式之一解析；将来新增的徽章遵循相同的形式，否则会在评审时被拒绝。
+本文档是 README 徽章条以及发布其动态数据源的基础设施的规范参考。项目 README 中的每个徽章都通过此处规定的四种形式之一解析；将来新增的徽章遵循相同的形式，否则会在评审时被拒绝。
 
 ## 1. 背景
 
@@ -35,7 +35,7 @@ sourceHash: "4ec8f4ae2e02624c"
 | npm 版本 | 注册表 | npm 注册表 | `https://img.shields.io/npm/v/%40ahmed-g-gad%2Fapothem?color=10B981&label=npm` | 否 |
 | 覆盖率闸门 | shields.io 静态 | `pyproject.toml` `fail_under = 80` | `https://img.shields.io/badge/coverage%20gate-%E2%89%A580%25-2563EB` | 否 |
 | OpenSSF Scorecard | Scorecard | `.github/workflows/scorecard.yml` 结果 | `https://api.securityscorecards.dev/projects/github.com/ahmed-g-gad/apothem/badge` | 是 |
-| OpenSSF Best Practices | 第三方注册表 | 项目在 bestpractices.dev 上的条目 | `https://www.bestpractices.dev/projects/16427/badge` | 否 |
+| OpenSSF Best Practices | 注册表 | 项目在 bestpractices.dev 上的条目 | `https://www.bestpractices.dev/projects/16427/badge` | 否 |
 | 反馈 | shields.io 静态 | GitHub Issues | `https://img.shields.io/badge/feedback-GitHub%20issues-7C3AED` | 否 |
 | 文档 | shields.io 静态 | 文档站点 | `https://img.shields.io/badge/docs-Fumadocs-0F172A` | 否 |
 | npm 下载量 | 注册表 | npm 注册表 | `https://img.shields.io/npm/dm/%40ahmed-g-gad%2Fapothem?color=10B981&label=downloads` | 否 |

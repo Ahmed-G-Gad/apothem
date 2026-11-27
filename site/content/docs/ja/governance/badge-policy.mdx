@@ -2,12 +2,12 @@
 title: "バッジポリシー"
 description: "README の動的バッジソースと静的バッジソースを規定します。GitHub ネイティブのワークフローステータス、shields.io エンドポイント JSON、静的バッジの形式を扱います。"
 machineTranslated: true
-sourceHash: "4ec8f4ae2e02624c"
+sourceHash: "14aafb239c51e36d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 このドキュメントは、README のバッジ帯と、その動的データソースを公開するインフラストラクチャに関する正規のリファレンスです。
-プロジェクトの README にあるすべてのバッジは、ここで規定する 3 つの形式のいずれかを通じて解決されます。
+プロジェクトの README にあるすべてのバッジは、ここで規定する 4 つの形式のいずれかを通じて解決されます。
 今後追加される新しいバッジは同じ形式に従うか、そうでなければレビューで却下されます。
 
 ## 1. 背景
@@ -58,7 +58,7 @@ Scorecard は公開リポジトリのみをスキャンします。
 | npm バージョン | レジストリ | npm レジストリ | `https://img.shields.io/npm/v/%40ahmed-g-gad%2Fapothem?color=10B981&label=npm` | いいえ |
 | カバレッジゲート | shields.io 静的 | `pyproject.toml` `fail_under = 80` | `https://img.shields.io/badge/coverage%20gate-%E2%89%A580%25-2563EB` | いいえ |
 | OpenSSF Scorecard | スコアカード | `.github/workflows/scorecard.yml` の結果 | `https://api.securityscorecards.dev/projects/github.com/ahmed-g-gad/apothem/badge` | はい |
-| OpenSSF Best Practices | サードパーティのレジストリ | bestpractices.dev 上のプロジェクトのエントリ | `https://www.bestpractices.dev/projects/16427/badge` | いいえ |
+| OpenSSF Best Practices | レジストリ | bestpractices.dev 上のプロジェクトのエントリ | `https://www.bestpractices.dev/projects/16427/badge` | いいえ |
 | フィードバック | shields.io 静的 | GitHub Issues | `https://img.shields.io/badge/feedback-GitHub%20issues-7C3AED` | いいえ |
 | ドキュメント | shields.io 静的 | ドキュメントサイト | `https://img.shields.io/badge/docs-Fumadocs-0F172A` | いいえ |
 | npm ダウンロード数 | レジストリ | npm レジストリ | `https://img.shields.io/npm/dm/%40ahmed-g-gad%2Fapothem?color=10B981&label=downloads` | いいえ |
