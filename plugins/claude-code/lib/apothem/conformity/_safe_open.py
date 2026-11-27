@@ -12,30 +12,40 @@ inside the folder already open, and the file last, and none of those opens
 follows a link.
 
 - POSIX: each level is looked at with ``fstatat`` and opened with ``openat``
-  and ``O_NOFOLLOW`` inside the folder opened just before it (folders with
-  ``O_DIRECTORY``, the file with ``O_NONBLOCK`` so a named pipe cannot make
-  the open wait). The opened level must be the one looked at (same device and
-  inode, same type), and the file must be a regular file; the file is then
-  set back to blocking reads.
+  and ``O_NOFOLLOW`` inside the folder opened just before it (the file with
+  ``O_NONBLOCK``, so a named pipe cannot make the open wait). A folder is
+  opened with ``O_PATH`` on Linux, or ``O_SEARCH`` where the system has it,
+  so it needs only search permission, as an open by name did; elsewhere it
+  must be readable too. The opened level must be the one looked at (same
+  device and inode, same type), and the file must be a regular file; the file
+  is then set back to blocking reads.
 - Windows: each level is opened with ``NtCreateFile`` inside the folder handle
   opened just before it, with ``FILE_OPEN_REPARSE_POINT``, so a reparse point
   is opened itself. One whose tag names another file or folder (a symbolic
   link, a junction) is refused. Any other reparse point, such as a cloud
-  placeholder or a deduplicated file, is opened once more without the flag so
-  its filter gives the real content, and the second handle must name the same
-  file. Names are taken as written: Win32 does not rewrite a trailing dot, and
-  ``CON`` is a file name there, not a device.
+  placeholder or a deduplicated file, is opened once more, from that first
+  handle and not by name, without the flag so its filter gives the real
+  content; the second handle must name the same file (the 128-bit file ID
+  where the file system gives one). Names are taken as written: Win32 does not
+  rewrite a trailing dot, and ``CON`` is a file name there, not a device.
 
 A refusal raises :class:`ProjectFileRefusedError` (``ELOOP``) and notes the level
 that was refused in the skip log, so the report lists it under
-``skipped_links``. While a skip log runs (one command-line run of a
-validator), the folders opened stay open in a small cache, so the next file in
-the same folder costs one open; the cache holds handles, never verdicts, and
-is released when the log stops.
+``skipped_links``. Each read opens its levels afresh and closes each folder
+once the level below it is open, so no folder stays open between reads:
+another program may rename or delete a project folder while the gate runs,
+and a folder swapped for a link after an earlier read is refused and noted
+like any other.
 
 What it does not cover. A hard link reads as an ordinary file, and a file
 system that gives no inode or file ID cannot show a swap to another regular
-file (see the conformity README).
+file (see the conformity README). On Windows an open waits while another
+program holds an opportunistic lock on the file and does not acknowledge its
+break; no open option avoids that wait, so a program that can write to the
+project can hold a read until the validator's time limit (each ``--all``
+validator runs under one; ``--all-perwrite`` runs in the gate's own process
+without one). No test reads a real cloud placeholder or deduplicated file:
+the tests stand in for one by its reparse tag.
 """
 
 from __future__ import annotations
@@ -44,21 +54,10 @@ import errno
 import os
 import stat
 import sys
-import threading
-from collections import OrderedDict
 from pathlib import Path
 from typing import BinaryIO, Final, NoReturn
 
-from apothem.conformity._project_paths import (
-    NAME_SURROGATE_TAG_BIT,
-    note_skipped,
-    on_skip_log_bounds,
-    skip_log_running,
-)
-
-# How many folders one run keeps open at most: enough for the folders a
-# validator reads in turn, few enough to leave the process its file handles.
-FOLDER_CACHE_LIMIT: Final[int] = 64
+from apothem.conformity._project_paths import NAME_SURROGATE_TAG_BIT, note_skipped
 
 
 class ProjectFileRefusedError(OSError):
@@ -114,74 +113,6 @@ def _parts_inside(root: Path, path: Path) -> tuple[str, ...]:
 
 
 # ---------------------------------------------------------------------------
-# The folder cache
-# ---------------------------------------------------------------------------
-
-_cache: OrderedDict[tuple[str, tuple[str, ...]], int] = OrderedDict()
-# One open at a time: a handle the cache closes is never in use elsewhere.
-_lock = threading.RLock()
-
-
-def clear_folder_cache() -> None:
-    """Close every folder the cache holds."""
-    with _lock:
-        while _cache:
-            _, handle = _cache.popitem(last=False)
-            _close_handle(handle)
-
-
-on_skip_log_bounds(clear_folder_cache)
-
-
-def _trim_cache() -> None:
-    while len(_cache) > FOLDER_CACHE_LIMIT:
-        _, handle = _cache.popitem(last=False)
-        _close_handle(handle)
-
-
-def _folder_handle(root: Path, folders: tuple[str, ...], transient: list[int]) -> int:
-    """Return a handle to ``root/<folders>``, opened level by level.
-
-    While a skip log runs, the deepest folder already open is taken from the
-    cache and every folder opened is kept there; otherwise each one is added to
-    *transient* for the caller to close.
-    """
-    caching = skip_log_running()
-    key = os.fspath(root)
-    handle: int | None = None
-    depth = len(folders)
-    if caching:
-        while depth >= 0:
-            cached = _cache.get((key, folders[:depth]))
-            if cached is not None:
-                _cache.move_to_end((key, folders[:depth]))
-                handle = cached
-                break
-            depth -= 1
-    if handle is None:
-        depth = 0
-        handle = _open_root(root)
-        _keep(handle, (key, ()), caching, transient)
-    for level in range(depth, len(folders)):
-        shown = root.joinpath(*folders[: level + 1])
-        handle = _open_level(handle, folders[level], folder=True, shown=shown)
-        _keep(handle, (key, folders[: level + 1]), caching, transient)
-    return handle
-
-
-def _keep(
-    handle: int,
-    key: tuple[str, tuple[str, ...]],
-    caching: bool,
-    transient: list[int],
-) -> None:
-    if caching:
-        _cache[key] = handle
-    else:
-        transient.append(handle)
-
-
-# ---------------------------------------------------------------------------
 # The public reads
 # ---------------------------------------------------------------------------
 
@@ -196,18 +127,20 @@ def open_project_file(root: Path, path: Path) -> BinaryIO:
     opened, raises :class:`ProjectFileRefusedError` and is noted in the skip log; a
     missing level raises ``FileNotFoundError``, a file on the way
     ``NotADirectoryError``, and a folder in the file's place
-    ``IsADirectoryError``. Nothing outside *root* is opened.
+    ``IsADirectoryError``. Nothing outside *root* is opened, and no folder
+    stays open once the file is.
     """
     parts = _parts_inside(root, path)
-    with _lock:
-        transient: list[int] = []
-        try:
-            parent = _folder_handle(root, parts[:-1], transient)
-            handle = _open_level(parent, parts[-1], folder=False, shown=path)
-        finally:
-            for folder in reversed(transient):
-                _close_handle(folder)
-            _trim_cache()
+    parent = _open_root(root)
+    try:
+        for depth in range(1, len(parts)):
+            shown = root.joinpath(*parts[:depth])
+            child = _open_level(parent, parts[depth - 1], folder=True, shown=shown)
+            done, parent = parent, child
+            _close_handle(done)
+        handle = _open_level(parent, parts[-1], folder=False, shown=path)
+    finally:
+        _close_handle(parent)
     return _as_binary_file(handle, path)
 
 
@@ -246,6 +179,33 @@ if sys.platform != "win32":
         )
     )
 
+    # The errors an open gives when the entry it meets is a socket, a device
+    # whose driver is absent, or another kind it cannot open: a special file
+    # swapped in after the look.
+    _SPECIAL_ERRNOS: Final[frozenset[int]] = frozenset(
+        {errno.ENXIO, errno.ENODEV, errno.EOPNOTSUPP, errno.ENOTSUP}
+    )
+    # A folder is only a place to open names in. O_PATH (Linux) and O_SEARCH
+    # need search permission alone, as an open by name did; without either, a
+    # folder must be readable too.
+    _FOLDER_FLAGS: Final[int] = (
+        (getattr(os, "O_PATH", 0) or getattr(os, "O_SEARCH", 0) or os.O_RDONLY)
+        | os.O_DIRECTORY
+        | os.O_CLOEXEC
+    )
+    _FILE_FLAGS: Final[int] = (
+        os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_NOCTTY | os.O_CLOEXEC
+    )
+    # Each level is looked at and opened inside the folder opened before it
+    # (fstatat without following, openat). Every supported system has both;
+    # where one is missing, a read fails as unreadable rather than with
+    # NotImplementedError, which no validator catches.
+    _OPENS_INSIDE_A_FOLDER: Final[bool] = (
+        os.open in os.supports_dir_fd
+        and os.stat in os.supports_dir_fd
+        and os.stat in os.supports_follow_symlinks
+    )
+
     def _same_entry(seen: os.stat_result, opened: os.stat_result) -> bool:
         """Return True when *opened* is the entry *seen* named (0 is no inode)."""
         if not seen.st_ino or not opened.st_ino:
@@ -254,7 +214,42 @@ if sys.platform != "win32":
 
     def _open_root(root: Path) -> int:
         """Open the folder *root*, which the caller trusts, as given."""
-        return os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+        if not _OPENS_INSIDE_A_FOLDER:
+            raise OSError(
+                errno.ENOTSUP,
+                "this system cannot open a file inside an open folder",
+                str(root),
+            )
+        return os.open(root, _FOLDER_FLAGS)
+
+    def _check_kind(seen: os.stat_result, *, folder: bool, shown: Path) -> None:
+        """Raise unless *seen* is the kind of entry wanted at *shown*.
+
+        A link or a special file (a named pipe, a socket, a device) is refused
+        and noted at any level; a file where a folder is wanted is not a
+        folder, and a folder where the file is wanted is a folder.
+        """
+        mode = seen.st_mode
+        if stat.S_ISLNK(mode):
+            _refuse(shown, "a link is in the way")
+        if folder:
+            if stat.S_ISDIR(mode):
+                return
+            if stat.S_ISREG(mode):
+                raise NotADirectoryError(errno.ENOTDIR, "not a folder", str(shown))
+            _refuse(shown, "a special file is in the way")
+        if stat.S_ISDIR(mode):
+            raise IsADirectoryError(errno.EISDIR, "a folder", str(shown))
+        if not stat.S_ISREG(mode):
+            _refuse(shown, "not a regular file")
+
+    def _look(parent: int, name: str, shown: Path) -> os.stat_result:
+        """Look at *name* inside the open folder *parent* without following it."""
+        try:
+            return os.stat(name, dir_fd=parent, follow_symlinks=False)
+        except OSError as exc:
+            exc.filename = str(shown)
+            raise
 
     def _open_level(parent: int, name: str, *, folder: bool, shown: Path) -> int:
         """Open *name* inside the open folder *parent* without following it.
@@ -262,31 +257,24 @@ if sys.platform != "win32":
         *folder* says whether a folder or a regular file is wanted; *shown*
         is the full path, for errors and the skip log.
         """
-        try:
-            seen = os.stat(name, dir_fd=parent, follow_symlinks=False)
-        except OSError as exc:
-            exc.filename = str(shown)
-            raise
-        if stat.S_ISLNK(seen.st_mode):
-            _refuse(shown, "a link is in the way")
+        seen = _look(parent, name, shown)
+        _check_kind(seen, folder=folder, shown=shown)
         if folder:
-            if not stat.S_ISDIR(seen.st_mode):
-                raise NotADirectoryError(errno.ENOTDIR, "not a folder", str(shown))
-            flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
+            flags = _FOLDER_FLAGS | os.O_NOFOLLOW
             wanted = stat.S_ISDIR
         else:
-            if stat.S_ISDIR(seen.st_mode):
-                raise IsADirectoryError(errno.EISDIR, "a folder", str(shown))
-            if not stat.S_ISREG(seen.st_mode):
-                _refuse(shown, "not a regular file")
-            flags = (
-                os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_NOCTTY | os.O_CLOEXEC
-            )
+            flags = _FILE_FLAGS
             wanted = stat.S_ISREG
         try:
             fd = os.open(name, flags, dir_fd=parent)
         except OSError as exc:
-            if exc.errno in _LINK_ERRNOS or (folder and exc.errno == errno.ENOTDIR):
+            if exc.errno in _LINK_ERRNOS or exc.errno in _SPECIAL_ERRNOS:
+                _refuse(shown, "the entry changed since it was looked at")
+            if folder and exc.errno == errno.ENOTDIR:
+                # Something else took the folder's place: look again, so a
+                # file there is not a folder and a link or special file is
+                # refused.
+                _check_kind(_look(parent, name, shown), folder=True, shown=shown)
                 _refuse(shown, "the entry changed since it was looked at")
             exc.filename = str(shown)
             raise
@@ -350,8 +338,10 @@ if sys.platform == "win32":
     _FILE_FLAG_BACKUP_SEMANTICS: Final[int] = 0x02000000
     _SECURITY_SQOS_IDENTIFICATION: Final[int] = 0x00100000 | 0x00010000
     _OPEN_EXISTING: Final[int] = 3
-    # The FILE_INFO_BY_HANDLE_CLASS value of a file's attributes and reparse tag.
+    # The FILE_INFO_BY_HANDLE_CLASS values of a file's attributes and reparse
+    # tag, and of its volume and 128-bit file ID.
     _FILE_ATTRIBUTE_TAG_INFO: Final[int] = 9
+    _FILE_ID_INFO: Final[int] = 18
     # The Windows errors a file system gives for an information class it does
     # not have: invalid function, not supported, invalid parameter.
     _QUERY_NOT_SUPPORTED: Final[frozenset[int]] = frozenset({1, 50, 87})
@@ -397,6 +387,14 @@ if sys.platform == "win32":
         """``FILE_ATTRIBUTE_TAG_INFO``: a file's attributes and reparse tag."""
 
         _fields_ = (("attributes", wintypes.DWORD), ("tag", wintypes.DWORD))
+
+    class _FileIdInfo(ctypes.Structure):
+        """``FILE_ID_INFO``: a file's volume and 128-bit file ID."""
+
+        _fields_ = (
+            ("volume", ctypes.c_ulonglong),
+            ("file_id", ctypes.c_ubyte * 16),
+        )
 
     class _ByHandleFileInformation(ctypes.Structure):
         """``BY_HANDLE_FILE_INFORMATION``, of which the file ID is used."""
@@ -499,7 +497,11 @@ if sys.platform == "win32":
     def _create_relative(
         parent: int, name: str, access: int, options: int, shown: Path
     ) -> int:
-        """Open *name* inside the open folder *parent* with ``NtCreateFile``."""
+        """Open *name* inside the open folder *parent* with ``NtCreateFile``.
+
+        An empty *name* opens *parent* itself once more, by its handle: the
+        same file, whatever its name now leads to.
+        """
         size = len(name.encode("utf-16-le"))
         text = _UnicodeString(size, size, name)
         quality = _SecurityQualityOfService(
@@ -541,33 +543,48 @@ if sys.platform == "win32":
     def _close_handle(handle: int) -> None:
         _kernel32().CloseHandle(handle)
 
+    def _query(handle: int, info_class: int, info: ctypes.Structure) -> bool:
+        """Fill *info* with the record *info_class* of the open file *handle*.
+
+        Return False when the file system does not have that record; any other
+        failure raises ``OSError``, so the entry is not used.
+        """
+        query = _kernel32().GetFileInformationByHandleEx
+        if query(handle, info_class, ctypes.byref(info), ctypes.sizeof(info)):
+            return True
+        error = ctypes.get_last_error()
+        if error in _QUERY_NOT_SUPPORTED:
+            return False
+        raise ctypes.WinError(error)
+
     def _reparse_tag(handle: int) -> int | None:
         """Return the reparse tag of the open file *handle*: 0 for none, or None
         when the file system does not give one.
 
         ``os.fstat`` reports no tag on Windows, so the attribute and tag record
-        (``FileAttributeTagInfo``) is read from the handle. Any other failure
-        raises ``OSError``, so the entry is not used.
+        (``FileAttributeTagInfo``) is read from the handle.
         """
         info = _AttributeTagInfo()
-        query = _kernel32().GetFileInformationByHandleEx
-        if not query(
-            handle, _FILE_ATTRIBUTE_TAG_INFO, ctypes.byref(info), ctypes.sizeof(info)
-        ):
-            error = ctypes.get_last_error()
-            if error in _QUERY_NOT_SUPPORTED:
-                return None
-            raise ctypes.WinError(error)
+        if not _query(handle, _FILE_ATTRIBUTE_TAG_INFO, info):
+            return None
         if not info.attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT:
             return 0
         return int(info.tag)
 
     def _file_id(handle: int) -> tuple[int, int]:
-        """Return the volume and file index of the open file *handle*."""
-        info = _ByHandleFileInformation()
-        if not _kernel32().GetFileInformationByHandle(handle, ctypes.byref(info)):
+        """Return the volume and file ID of the open file *handle*.
+
+        The 128-bit ID (``FileIdInfo``) comes first: on ReFS, which a Dev
+        Drive uses, the 64-bit file index is not unique. A file system without
+        that record gives the 64-bit index.
+        """
+        info = _FileIdInfo()
+        if _query(handle, _FILE_ID_INFO, info):
+            return int(info.volume), int.from_bytes(bytes(info.file_id), "little")
+        basic = _ByHandleFileInformation()
+        if not _kernel32().GetFileInformationByHandle(handle, ctypes.byref(basic)):
             raise ctypes.WinError(ctypes.get_last_error())
-        return info.volume_serial, (info.index_high << 32) | info.index_low
+        return basic.volume_serial, (basic.index_high << 32) | basic.index_low
 
     def _open_level(parent: int, name: str, *, folder: bool, shown: Path) -> int:
         """Open *name* inside the open folder *parent* without following it.
@@ -576,9 +593,11 @@ if sys.platform == "win32":
         another file or folder is refused; a plain entry is used through that
         handle. Any other reparse point, or an entry whose file system gives no
         tag, is opened again without the flag, so its filter gives the real
-        content, and the second handle must name the same entry; when no
-        filter claims the tag (its program is stopped), that open fails and
-        the entry is unreadable rather than read as its empty stub.
+        content. That second open starts from the first handle with an empty
+        name, so it reaches the same file even when the name was swapped for a
+        junction in between, and the second handle must name the same file;
+        when no filter claims the tag (its program is stopped), that open
+        fails and the entry is unreadable rather than read as its empty stub.
         """
         access = _FOLDER_ACCESS if folder else _FILE_ACCESS
         options = _FILE_SYNCHRONOUS_IO_NONALERT
@@ -593,7 +612,7 @@ if sys.platform == "win32":
                 _refuse(shown, "a link is in the way")
             if tag == 0:
                 return first
-            second = _create_relative(parent, name, access, options, shown)
+            second = _create_relative(first, "", access, options, shown)
             try:
                 if _file_id(second) != _file_id(first):
                     _refuse(shown, "the entry changed between opens")
