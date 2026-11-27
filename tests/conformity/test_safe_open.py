@@ -251,6 +251,16 @@ def test_bytes_that_are_not_utf8_raise_like_read_text(tmp_path: Path) -> None:
         read_project_text(tmp_path, target)
 
 
+def test_bytes_are_read_as_they_are(tmp_path: Path) -> None:
+    """No line ending is changed and a Ctrl-Z ends nothing, as in a C runtime
+    text-mode read on Windows."""
+    data = b"a\r\nb\x1ac\rd\n"
+    target = tmp_path / "raw.bin"
+    target.write_bytes(data)
+
+    assert read_project_bytes(tmp_path, target) == data
+
+
 def test_max_bytes_caps_the_read(tmp_path: Path) -> None:
     target = tmp_path / "big.bin"
     target.write_bytes(b"x" * 100)

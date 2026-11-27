@@ -610,7 +610,7 @@ if sys.platform == "win32":
         """Wrap the open file *handle* as a binary file object; it must be a
         regular file (``NtCreateFile`` also opens a folder by that name)."""
         try:
-            fd = msvcrt.open_osfhandle(handle, os.O_RDONLY)
+            fd = msvcrt.open_osfhandle(handle, os.O_RDONLY | os.O_BINARY)
         except BaseException:
             _close_handle(handle)
             raise
