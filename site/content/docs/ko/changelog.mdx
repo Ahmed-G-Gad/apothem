@@ -522,9 +522,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `--all-perwrite` counts it as a `link` or `unreadable`. The `.git` file a
   nested checkout holds is read the same way, from the root the walk started
   at. A `.git` link to a regular file now counts as a repository without its
-  `gitdir:` line being read through the link. A hard link still reads as an
-  ordinary file, and on Windows a program that holds an opportunistic lock
-  on a file can still make a read wait, as it could before.
+  `gitdir:` line being read through the link. The five validators that read
+  a CI matrix or publish workflow, a workflow's concurrency settings, the
+  installer scripts or the Plans Discipline surfaces now report a file they
+  cannot read, for example for lack of permission, as a finding that names
+  the file unreadable, instead of stopping with a traceback. A hard link
+  still reads as an ordinary file, and on Windows a program that holds an
+  opportunistic lock on a file can still make a read wait, as it could
+  before.
 
 ## [1.6.0] - 2026-11-26
 
