@@ -27,6 +27,7 @@ from __future__ import annotations
 import itertools
 import json
 import os
+import stat
 import subprocess
 import sys
 from pathlib import Path
@@ -1297,6 +1298,76 @@ def test_an_entry_lstat_cannot_read_is_refused(
     passed, perwrite = gate._run_all_perwrite(inner)
     assert not passed
     assert json.loads(perwrite)["check_error"] == message
+
+
+def test_an_entry_read_again_as_a_link_is_no_longer_unreadable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Each look replaces the last: an entry once unreadable can be a link later."""
+    inner = (tmp_path / "project" / "pkg").resolve()
+    inner.mkdir(parents=True)
+    blocked = inner.parent / ".git"
+    real_lstat = os.lstat
+    unreadable = [True]
+
+    def lstat(path: object, *args: object, **kwargs: object) -> os.stat_result:
+        if unreadable[0] and os.fspath(path) == os.fspath(blocked):  # type: ignore[arg-type]
+            raise _lstat_error("permission", blocked)
+        return real_lstat(path, *args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(os, "lstat", lstat)
+    assert nearest_linked_git_entry(inner) == blocked
+    assert _grep_base.git_entry_unreadable(blocked)
+    unreadable[0] = False
+    target = tmp_path / "elsewhere"
+    target.mkdir()
+    _link_folder(blocked, target)
+    assert nearest_linked_git_entry(inner) == blocked
+    assert not _grep_base.git_entry_unreadable(blocked)
+    assert "is a link" in _grep_base.linked_git_message(inner, blocked)
+
+
+def test_path_not_found_up_the_chain_is_absent_only_where_it_ends_in_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """winerror 3 on the holder too is judged again one level up (too long paths)."""
+    holder = (tmp_path / "a" / "b").resolve()
+    entry = holder / ".git"
+    real_lstat = os.lstat
+
+    def lstat(path: object, *args: object, **kwargs: object) -> os.stat_result:
+        if os.fspath(path) in (os.fspath(entry), os.fspath(holder)):  # type: ignore[arg-type]
+            raise _lstat_error("3", Path(os.fspath(path)))  # type: ignore[arg-type]
+        return real_lstat(path, *args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(os, "lstat", lstat)
+    # a/ exists and is a folder, so a/b is not missing: something else failed.
+    (tmp_path / "a").mkdir()
+    assert not _grep_base._absent(_lstat_error("3", entry), entry)
+    # Without a/, the chain ends in nothing there: absent.
+    (tmp_path / "a").rmdir()
+    assert _grep_base._absent(_lstat_error("3", entry), entry)
+
+
+@_WINDOWS_ONLY
+def test_a_case_variant_with_no_file_number_is_not_taken_for_git(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A file number of 0 says nothing, so a ``.GIT`` there is walked."""
+    root = (tmp_path / "project").resolve()
+    _write(root / ".GIT" / "inside.md")
+    real_lstat = os.lstat
+
+    def lstat(path: object, *args: object, **kwargs: object) -> os.stat_result:
+        info = real_lstat(path, *args, **kwargs)  # type: ignore[arg-type]
+        if Path(os.fspath(path)).name.lower() == ".git":  # type: ignore[arg-type]
+            fields = list(info)
+            fields[stat.ST_INO] = 0
+            return os.stat_result(fields)
+        return info
+
+    monkeypatch.setattr(os, "lstat", lstat)
+    assert _walk(root, ".md") == [".GIT/inside.md"]
 
 
 def test_a_short_name_spelled_file_does_not_hide_its_folder(tmp_path: Path) -> None:

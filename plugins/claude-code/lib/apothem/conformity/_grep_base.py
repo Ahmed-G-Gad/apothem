@@ -796,6 +796,8 @@ def nearest_linked_git_entry(root: Path) -> Path | None:
         return root / GIT_ENTRY
     for folder in checkout_search_folders(root):
         entry = folder / GIT_ENTRY
+        # What this look finds replaces what an earlier one found.
+        _unreadable_entries.discard(os.fspath(entry))
         try:
             info = os.lstat(entry)
         except OSError as exc:
@@ -833,7 +835,9 @@ def _absent(exc: OSError, entry: Path) -> bool:
     try:
         holder = os.lstat(entry.parent)
     except FileNotFoundError as missing:
-        return getattr(missing, "winerror", None) in (None, 2, 3)
+        # The holder's own winerror 3 is judged the same way, up the chain,
+        # so only a chain that ends in nothing there or in no folder counts.
+        return _absent(missing, entry.parent)
     except (OSError, ValueError):
         return False
     return not stat.S_ISDIR(holder.st_mode)
@@ -887,23 +891,30 @@ def linked_git_message(root: Path, entry: Path) -> str:
     )
 
 
-def _is_git_entry(path: Path) -> bool:
+def _is_git_entry(path: Path, listed: frozenset[str]) -> bool:
     """Return True when the listed entry *path* is the ``.git`` of its folder.
 
-    ``.git`` as listed, or another spelling of it in case (``.GIT``) only
-    when the file system opens ``.git`` there as that same entry: a
-    case-sensitive folder (NTFS, APFS) holds two entries, and git uses only
-    ``.git``. Both are looked at with ``os.lstat``. A folder listing gives
-    long names only, so a short name such as ``GIT~2`` is a name of its own.
+    *listed* holds the names in the folder's own listing. ``.git`` as listed
+    is; another spelling of it in case (``.GIT``) is only when the listing
+    holds no exact ``.git`` and the file system opens ``.git`` there as that
+    same entry, judged by ``os.lstat`` and ``os.path.samestat``. A file
+    number of 0 (some network and FUSE file systems) says nothing, so it
+    counts as not ``.git``. A case-sensitive folder (NTFS, APFS) can hold
+    both, and git uses only ``.git``. A folder listing gives long names
+    only, so a short name such as ``GIT~2`` is a name of its own.
     """
     if path.name == GIT_ENTRY:
         return True
-    if path.name.lower() != GIT_ENTRY:
+    if path.name.lower() != GIT_ENTRY or GIT_ENTRY in listed:
         return False
     try:
-        return os.path.samestat(os.lstat(path), os.lstat(path.parent / GIT_ENTRY))
+        variant = os.lstat(path)
+        exact = os.lstat(path.parent / GIT_ENTRY)
     except (OSError, ValueError):
         return False
+    if variant.st_ino == 0 or exact.st_ino == 0:
+        return False
+    return os.path.samestat(variant, exact)
 
 
 def iter_tree_files(
@@ -964,14 +975,19 @@ def iter_tree_files(
         entries = scan_entries(folder)
         # The root's own ``.git`` marks the checkout being inspected; one
         # below it marks a nested checkout, which is skipped whole.
-        if prune and not is_root and any(_is_git_entry(path) for path, _ in entries):
+        listed = frozenset(path.name for path, _ in entries)
+        if (
+            prune
+            and not is_root
+            and any(_is_git_entry(path, listed) for path, _ in entries)
+        ):
             continue
         files: list[Path] = []
         folders: list[Path] = []
         for path, kind in sorted(entries, key=lambda entry: entry[0].name):
             if (
                 os.path.normcase(path.name) in pruned
-                or (prune_git and _is_git_entry(path))
+                or (prune_git and _is_git_entry(path, listed))
             ) and kind in (DIR_ENTRY, LINK_ENTRY):
                 if kind == LINK_ENTRY:
                     note_skipped(path)

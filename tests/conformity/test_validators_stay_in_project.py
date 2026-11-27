@@ -651,10 +651,6 @@ def hook(event, args):
             started = started[0]
         log.write(json.dumps([current[0], event, os.fsdecode(started)]) + "\n")
         return
-    # On Windows the corpus run opens each file with _winapi.CreateFile,
-    # which raises only its own event: it counts as an open.
-    if event == "_winapi.CreateFile":
-        event = "open"
     if event not in ("open", "os.scandir", "os.listdir") or not args:
         return
     target = args[0]
@@ -666,6 +662,21 @@ def hook(event, args):
         return
     log.write(json.dumps([current[0], event, os.path.abspath(text)]) + "\n")
 
+
+# On Windows the corpus run opens each file with _winapi.CreateFile. Its
+# audit event is no help: Python 3.10 passes it a garbled path. So the call
+# itself is wrapped, before the gate is imported; _corpus looks it up when
+# it calls it.
+if sys.platform == "win32":
+    import _winapi
+
+    _real_create_file = _winapi.CreateFile
+
+    def _logged_create_file(file_name, *args):
+        log.write(json.dumps([current[0], "open", os.path.abspath(file_name)]) + "\n")
+        return _real_create_file(file_name, *args)
+
+    _winapi.CreateFile = _logged_create_file
 
 from apothem.conformity import gate
 
@@ -696,14 +707,6 @@ sys.addaudithook(hook)
 # The control: a stat the wrappers must record.
 current[0] = "control"
 os.path.isdir(root)
-# Whether this Python raises an audit event for _winapi.CreateFile, the call
-# the corpus run opens files with on Windows: some releases do not.
-if sys.platform == "win32":
-    import _winapi
-
-    current[0] = "probe"
-    handle = _winapi.CreateFile(events_path, _winapi.GENERIC_READ, 7, 0, 3, 0, 0)
-    _winapi.CloseHandle(handle)
 for module in modules:
     current[0] = module
     sys.argv = [module, root]
@@ -894,9 +897,9 @@ def test_a_foreign_repository_reaches_no_file_outside(
     file or a real folder inside the root, reached through real folders, and
     the only program they start is git.
     """
-    # The gate resolves the root, and so its events name resolved paths; a
-    # temporary folder can be an 8.3 short name (RUNNER~1) or reached
-    # through a link (/var on macOS), so this test resolves it too.
+    # The gate resolves the root, so its events name resolved paths; a
+    # temporary folder reached through a link (/var on macOS) would not
+    # compare equal, so this test resolves it too.
     tmp_path = tmp_path.resolve()
     root = _project_naming_a_foreign_repository(tmp_path, route)
     scratch = tmp_path / "scratch"
@@ -936,19 +939,10 @@ def test_a_foreign_repository_reaches_no_file_outside(
     assert perwrite["files_skipped"]["link"] == 2
     assert perwrite["files_skipped"]["missing"] == 1
     # The controls: the hook saw the one read, and the stat wrappers record.
-    # On a Windows Python that raises no event for _winapi.CreateFile (the
-    # probe saw none) the corpus reads cannot be seen at all; the counts
-    # above and every other check below still hold there.
-    sees_corpus_reads = sys.platform != "win32" or any(
-        label == "probe" for label, _event, _path in events
+    assert any(
+        label == "all-perwrite" and event == "open" and Path(path) == root / "README.md"
+        for label, event, path in events
     )
-    if sees_corpus_reads:
-        assert any(
-            label == "all-perwrite"
-            and event == "open"
-            and Path(path) == root / "README.md"
-            for label, event, path in events
-        )
     assert any(label == "control" and event == "stat" for label, event, _ in events)
     # The route took effect: git read the foreign repository through it.
     assert _route_took_effect(root, route, tmp_path / "foreign")
@@ -1019,7 +1013,7 @@ def test_a_foreign_repository_reaches_no_file_outside(
     offenders = sorted(
         f"{label}: {event} {path}"
         for label, event, path in events
-        if label not in ("-", "control", "probe")
+        if label not in ("-", "control")
         and event in ("open", "stat", "os.scandir", "os.listdir")
         # A stat outside this test's folders is the host's own business,
         # such as the search for git along PATH.

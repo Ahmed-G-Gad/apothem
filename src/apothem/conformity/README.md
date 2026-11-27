@@ -236,9 +236,15 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   git can reach a network path or wait until its time limit. The gate uses
   git's output only as names, modes, status letters, the subject of the last
   commit, commit times and a few settings, and never opens a path git prints
-  without checking each level inside the root. The callers today are
-  `_corpus.tracked_entries`, `no_global_plans_grep._git_ls_files` and
-  `no_global_plans_grep.check`, `agents_md_coverage_grep._read_history`, and
+  without checking each level inside the root. A `.git` entry the gate cannot
+  look at (a path too long, a share it cannot reach, no access) is not a link
+  and is not listed under `skipped_links`: `conventional-commit-grep` fails
+  with the status `git-failed` and a `check_error`, the companion coverage
+  check and `--all-perwrite` fail with a `check_error` that says the entry
+  could not be looked at, and `no-global-plans-grep` reports it as a finding.
+  The callers today are `_corpus.tracked_entries`,
+  `no_global_plans_grep._git_ls_files` and `no_global_plans_grep.check`,
+  `agents_md_coverage_grep._read_history`, and
   `conventional_commit_grep._read_head_subject`; `conventional-commit-grep`
   asks git itself (`rev-parse --show-prefix`) whether the work tree's top is
   above the root. The `--staged` checks (`production-ready-pr-grep` and

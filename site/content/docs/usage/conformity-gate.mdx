@@ -172,7 +172,12 @@ pass: the link was left out, so its empty result is not the one it expects.
 `no-global-plans-grep` reports the link as a finding and fails, and the
 companion coverage check skips its freshness test, as it does with no history.
 `--all-perwrite` does not list the tracked files either: it fails with a
-`check_error` that names the link.
+`check_error` that names the link. A `.git` entry the gate cannot look at (a
+path too long, a share it cannot reach, no access) is not a link and is not
+listed under `skipped_links`: `conventional-commit-grep` fails with the status
+`git-failed` and a `check_error`, the companion coverage check and
+`--all-perwrite` fail with a `check_error` that says the entry could not be
+looked at, and `no-global-plans-grep` reports it as a finding.
 
 Each standalone validator runs as a program of its own, and the gate gives it
 10 minutes, in `--all` and in `--check`. The slowest one takes about a minute on
