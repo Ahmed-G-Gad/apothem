@@ -217,25 +217,39 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   passed, to `_second_reads`): its control test fails only while the
   validator reaches none of those files, so a path left out is not tested.
   A check in the `--all` or `--all-perwrite` set that runs git calls
-  `nearest_linked_git_entry(root)` from `_grep_base.py` first and treats a
-  returned entry as no checkout (`linked_git_message` gives the sentence
-  that names it): it never runs git, and never asks `in_checkout`, before
-  that call, and it passes `discover=True` to every `run_git` call, so a
-  `GIT_DIR` from the environment (git exports one to its hooks) cannot point
-  git somewhere the helper did not look. git follows a `.git` link in the
-  root or in a folder above it, or a link among the files of the repository
-  it stops at (`HEAD`, `commondir`, `objects`, `refs`), to another
-  repository; the helper walks the folders git searches without following
-  any link and refuses each of these. Its repository test is stricter than
-  git's, never looser: where git would stop at a repository the test
-  rejects, the walk goes on and may refuse a link above it that git never
-  reaches. That false refusal is deliberate. The callers today are
-  `_corpus.tracked_entries`, `no_global_plans_grep._git_ls_files` and
-  `no_global_plans_grep.check`, `agents_md_coverage_grep._read_history`, and
-  `conventional_commit_grep._read_head_subject`. The `--staged` checks
-  (`production-ready-pr-grep` and `semver-stability-grep` with `--staged`)
-  run git in the current folder without this guard; they are not part of
-  `--all` or `--all-perwrite`.
+  `nearest_linked_git_entry(root)` from `_grep_base.py` first, does not run
+  git when it returns an entry (`linked_git_message` gives the sentence that
+  names it), never asks `in_checkout` before it, and passes `discover=True` to
+  every `run_git` call. In `--all` and `--all-perwrite`, the gate itself opens
+  only regular files inside the root, checking each folder on the way with
+  `lstat`, including every path git lists, and never reads inside a `.git`
+  entry. Before they run git, the checks that run it look with `lstat` at the
+  `.git` entry of the root and of every folder above it that git searches, as
+  the tree is at that moment; if any of them is a link, or cannot be looked
+  at, they do not run git. This also refuses projects git would handle safely,
+  such as every project below a home folder whose `.git` is a link, even one
+  with its own repository: that is the deliberate cost of a simple rule. They
+  run git without `GIT_DIR` and the other variables that name the repository,
+  its stores or its index. Which repository git then reads is not checked: a
+  `gitdir:` line, `commondir`, alternates, `core.worktree`, an include, or a
+  link inside the git folder can name another one, and git follows them, so
+  git can reach a network path or wait until its time limit. The gate uses
+  git's output only as names, modes, status letters, the subject of the last
+  commit, commit times and a few settings, and never opens a path git prints
+  without checking each level inside the root. A `.git` entry the gate cannot
+  look at (a path too long, a share it cannot reach, no access) is not a link
+  and is not listed under `skipped_links`: `conventional-commit-grep` fails
+  with the status `git-failed` and a `check_error`, the companion coverage
+  check and `--all-perwrite` fail with a `check_error` that says the entry
+  could not be looked at, and `no-global-plans-grep` reports it as a finding.
+  The callers today are `_corpus.tracked_entries`,
+  `no_global_plans_grep._git_ls_files` and `no_global_plans_grep.check`,
+  `agents_md_coverage_grep._read_history`, and
+  `conventional_commit_grep._read_head_subject`; `conventional-commit-grep`
+  asks git itself (`rev-parse --show-prefix`) whether the work tree's top is
+  above the root. The `--staged` checks (`production-ready-pr-grep` and
+  `semver-stability-grep` with `--staged`) run git in the current folder
+  without this guard and are not part of `--all` or `--all-perwrite`.
 
 - **No unfinished pass.** A check that could not finish does not pass either.
   Give every `run_git` call a timeout, far above what the command takes, since

@@ -90,12 +90,15 @@ from apothem.conformity._git import run_git
 from apothem.conformity._grep_base import (
     CHECK_ERROR_KEY,
     GitCheckError,
+    GitEntryUnreadableError,
     GitFailedError,
     GitTimeoutError,
     finish_root_report,
+    git_entry_unreadable,
     in_checkout,
     is_project_file,
     iter_tree_files,
+    linked_git_message,
     nearest_linked_git_entry,
     parse_root_args,
     project_file_target,
@@ -384,9 +387,15 @@ def _read_history(root: Path) -> _History | None:
     :class:`~apothem.conformity._grep_base.GitFailedError` when git fails
     although *root* is inside a checkout (git refused the repository) or
     after it found the history in a full clone: in both cases the history is
-    there but was not read.
+    there but was not read. Raises
+    :class:`~apothem.conformity._grep_base.GitEntryUnreadableError` when a
+    ``.git`` entry on git's search path could not be looked at.
     """
-    if nearest_linked_git_entry(root) is not None:
+    linked = nearest_linked_git_entry(root)
+    if linked is not None:
+        if git_entry_unreadable(linked):
+            # Not a link: the gate could not look, so the history is unread.
+            raise GitEntryUnreadableError(linked_git_message(root, linked))
         return None
     try:
         head = run_git(
