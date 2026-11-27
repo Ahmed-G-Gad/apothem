@@ -486,9 +486,8 @@ shows only stderr says why the run failed.
 Each file's levels are checked right before it is read, and the file opened must
 be the one that check found. A file another program swaps in between, for
 another file, a link or a named pipe, is looked up once more, and counted as
-`unreadable` if it is swapped again; on Windows a junction swapped in is
-`unreadable` at once, and a symbolic link is found as a `link` on the second
-look. The gate never waits on a named pipe or reads through a link that took the
+`unreadable` if it is swapped again; a symbolic link or, on Windows, a
+junction swapped in is found as a `link` on the second look. The gate never waits on a named pipe or reads through a link that took the
 file's place. On Windows, a file that Data Deduplication or a cloud sync program
 keeps behind a reparse point is read through that program as usual; when the
 program is stopped, the file is `unreadable`.
