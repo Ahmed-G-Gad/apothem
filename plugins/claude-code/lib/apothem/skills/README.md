@@ -29,7 +29,7 @@ Skill definitions — reusable, detectable techniques the harness loads on deman
 | [`knowledge-wiki/`](knowledge-wiki/) | Index-first Markdown knowledge base grown from project sources — focus-driven source pages with their reading basis, typed relations with confidence, deterministic lint, change-triggered drift report, and hub analysis. | Model-invocable and user-invocable. |
 | [`decision-matrix/`](decision-matrix/) | Weighted, evidence-cited choice between options — dealbreakers first, a sensitivity check on the weights, a runner-up, and the cheapest reversible first step. | Model-invocable and user-invocable. |
 | [`issue-lifecycle/`](issue-lifecycle/) | Issue to fix with evidence at each stage — duplicate-checked issue drafts, read-only sizing, a marked failing-test checkpoint, an ours-or-dependency fix decision, a drafted reporter request, and an opt-in draft pull request. | User-invocable only (it drafts outward-facing text; it pushes and opens a draft pull request only in `publish`, after three confirmations, and never posts the reporter request). |
-| [`ui-design/`](ui-design/) | Interface design and refinement to a craft floor — surface classification, ranked rule categories, adjustable variance / motion / density, a `DESIGN.md` project context, and a pre-delivery checklist. | Model-invocable and user-invocable. |
+| [`ui-design/`](ui-design/) | Interface design, redesign and audit to a banded floor — scope and genre routing, a build record at the top of each stylesheet and a build log, `DESIGN.md` as the optional locked system, and fresh-context reviews before delivery. | Model-invocable and user-invocable. |
 | [`paper-toolkit/`](paper-toolkit/) | Suite-free paper work: a reading note with its basis, a 2 to 5 paper comparison with comparability verdicts and a cite-for table, a related-work draft from supplied sources with visible citation-needed markers and a coverage report, an author-side critique, a reference style pass, and reference entries built from identifiers with every field copied from an opened record. | Model-invocable and user-invocable. |
 | [`perspectives/`](perspectives/) | Contested-question panel: several separate viewpoints argue from evidence, then a reconciliation of agreement, real disagreements and what would settle each, a recommendation with its confidence, and the strongest dissent kept visible. | Model-invocable and user-invocable. |
 | [`teaching-pack/`](teaching-pack/) | Teaching pack from one paper or technical document: learning goals, a section-by-section curriculum, plain-step formula and algorithm walk-throughs, worked examples, a quiz with answer key, a glossary and an optional slide outline. Each line is marked with its source section or as outside it, and parts the source cannot support are reported as thin. | Model-invocable and user-invocable. |
@@ -127,10 +127,23 @@ selectively.
 | `teaching-pack/references/slide-outline.md` | The optional slide-outline shape and the hand-off to a host slide or document skill. |
 | `teaching-pack/references/pre-delivery-checks.md` | The checks run before a pack is delivered. |
 | `ui-design/SKILL.md` | The ui-design skill's entry point and procedure. |
-| `ui-design/references/surface-classes.md` | The four surface classes and the priorities each sets. |
-| `ui-design/references/rule-catalog.md` | The ranked rule categories with the conflict-priority table. |
-| `ui-design/references/design-md-template.md` | The `DESIGN.md` project design-context template. |
-| `ui-design/references/pre-delivery-checklist.md` | The checklist run before a UI is called done. |
+| `ui-design/references/rule-catalog.md` | The four bands (baseline, habit, polish, bookkeeping), grading, check classes, waivers and acknowledgements, and the rule table. |
+| `ui-design/references/build-record.md` | The build record at the top of the stylesheet, the check-only record, self-critique, the decision summary, the build log with rotation, and the handoff material request. |
+| `ui-design/references/surface-classes.md` | Scope (component, page, app screen), genre and the dials, and the steps and rules each one sets. |
+| `ui-design/references/page-anatomy.md` | The material inventory, the visitor's job, and which sections a page holds and in what order. |
+| `ui-design/references/page-shapes.md` | Named page shapes on six axes, used to record a build and to rotate between builds. |
+| `ui-design/references/direction-and-themes.md` | What a theme may hold, how candidate directions are proposed and picked, brand capture, and the safe-fetching rules every fetch follows. |
+| `ui-design/references/layout-and-composition.md` | Canvas, spacing, section rules, the composition library and responsive behavior. |
+| `ui-design/references/hero.md` | The opening screen: posture, fold fit, visual, words and entrance. |
+| `ui-design/references/typography.md` | Face count and choice, the type scale, heading, body and label setting, and font loading. |
+| `ui-design/references/color-and-surfaces.md` | The palette, contrast, dark mode, depth and texture. |
+| `ui-design/references/interaction-and-motion.md` | Control states, forms, overlays, feedback and motion. |
+| `ui-design/references/imagery-and-data.md` | Pictures, product captures, icons, logos, video and charts: source, size and framing. |
+| `ui-design/references/copy-and-honesty.md` | Page copy, labels, nav and footer, and what a page may claim. |
+| `ui-design/references/redesign.md` | Changing an existing page: the preservation contract, depths, the before-record, the regression sweep, several pages, and pages this skill did not build. |
+| `ui-design/references/design-md-template.md` | The `DESIGN.md` locked-system template, the token and base sheet templates, the framework mapping and the token JSON export. |
+| `ui-design/references/pre-delivery-checklist.md` | The sweep, the builder's side of the hero and finish reviews, the manual passes and the polish list. |
+| `ui-design/references/review-protocols.md` | The reviewer's side of the hero and finish reviews, loaded by the `design-critic` subagent; the building thread loads it only at the review point on a host with no subagents. |
 
 ## Operating in this folder
 
