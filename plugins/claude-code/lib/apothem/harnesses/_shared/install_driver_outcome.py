@@ -9,13 +9,15 @@ of the operator's, links, a BEGIN marker left alone), or
 unfinished, and :func:`record_uninstall` appends the record that says which:
 ``uninstall`` or ``uninstall-incomplete``. A finished uninstall also ends the
 harness's install under each other spelling of the same folder
-(:func:`end_other_spellings`).
+(:func:`end_other_spellings`). An uninstall that a refusal of the real-home
+guard stops is recorded unfinished only when it had already changed a file
+(:func:`record_before_refusal`).
 """
 
 from __future__ import annotations
 
 import contextlib
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from pathlib import Path
 
 from apothem.lib import home_write_guard, install_ledger
@@ -279,3 +281,20 @@ def end_other_spellings(
             )
             warnings.append(_result("warning", "record_uninstall", ledger, message))
     return warnings
+
+
+def record_before_refusal(
+    record_pass: Callable[..., list[MaterializationResult]],
+    record: LedgerRecord | None,
+    done: list[MaterializationResult],
+) -> None:
+    """Record an unfinished uninstall when *done* changed or backed up a file.
+
+    Called while a refusal of the real-home guard is raised, with
+    *record_pass* the uninstall's :func:`record_uninstall` bound to its harness
+    and root. A refusal before any removal records nothing. A second refusal,
+    or any error writing the record, is dropped so the first one propagates.
+    """
+    if any(result.changed or result.backup_path is not None for result in done):
+        with contextlib.suppress(OSError, install_ledger.LedgerError):
+            record_pass(record, done, finished=False)
