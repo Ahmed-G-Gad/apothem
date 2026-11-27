@@ -17,7 +17,10 @@ one child process, under a Python audit hook that records every file opened
 pathlib globs and walks the validators use all go through those calls. Their
 reads go through the guarded open (``_safe_open``), which opens each level
 inside the folder opened before it; its level opens are wrapped so each one is
-recorded by its full path (a file as ``open``, a folder as ``open-folder``).
+recorded by its full path (a file as ``open``, a folder as ``open-folder``),
+and its root open as an open by name, so a read that trusts a folder below the
+run's root as its root fails the run. On Windows each ``NtCreateFile`` by name
+that would follow a link is recorded as a following open.
 The hook also records every open by name (``named-open``: ``io.open``, so
 ``Path.read_text``, or Windows' ``CreateFile``), every ``os.open``
 (``os-open``) and every ``os.open`` that would follow a link at its last level
@@ -139,6 +142,11 @@ def _project_files() -> dict[str, str]:
         "src/apothem/rules/sample-rule.md": _PAGE,
         "src/apothem/skills/sample/SKILL.md": _PAGE,
         "tests/fixtures/plans-discipline.txt": "Plans live in the project.\n",
+        # A nested folder with a .git file: each tree walker reads that file
+        # (a gitdir: line that names no repository, so the walk goes on into
+        # the folder) from the run's root.
+        "nested-checkout/.git": "gitdir: nowhere\n",
+        "nested-checkout/inner/page.md": _PAGE,
     }
 
 
@@ -377,11 +385,25 @@ def hook(event, args):
     note(event, os.path.abspath(text))
 
 
-# The guarded open's level opens, each recorded by its full path once it
-# succeeds: a refused level was never opened.
+# The guarded open opens the root by its name (os.open, or CreateFileW
+# through ctypes on Windows, which no audit event names), then each level
+# inside the folder opened before it. The root open is recorded as an open by
+# name, so one of a folder below the run's root (a read that trusted a nested
+# folder as its root) fails the run. Each level open is recorded by its full
+# path once it succeeds; a level refused after its first open (a link opened
+# as itself, never followed) is not. On Windows every NtCreateFile is wrapped
+# too: one by name without FILE_OPEN_REPARSE_POINT would follow a link, so it
+# is recorded as a following open, before it runs; a reopen starts from an
+# open handle with no name and follows nothing.
 from apothem.conformity import _safe_open
 
+_real_open_root = _safe_open._open_root
 _real_open_level = _safe_open._open_level
+
+
+def _logged_open_root(root):
+    note("named-open", os.path.abspath(os.fspath(root)))
+    return _real_open_root(root)
 
 
 def _logged_open_level(parent, name, *, folder, shown):
@@ -390,7 +412,17 @@ def _logged_open_level(parent, name, *, folder, shown):
     return handle
 
 
+_safe_open._open_root = _logged_open_root
 _safe_open._open_level = _logged_open_level
+if sys.platform == "win32":
+    _real_create_relative = _safe_open._create_relative
+
+    def _logged_create_relative(parent, name, access, options, shown):
+        if name and not options & _safe_open.FILE_OPEN_REPARSE_POINT:
+            note("following-open", os.path.abspath(os.fspath(shown)))
+        return _real_create_relative(parent, name, access, options, shown)
+
+    _safe_open._create_relative = _logged_create_relative
 sys.addaudithook(hook)
 results = {}
 for module in modules:
@@ -542,7 +574,11 @@ _TREE_WALKERS = frozenset(
 
 
 def _comparable(result: list[object]) -> list[object]:
-    """Return a result without its ``skipped_links`` list, the one part a link adds."""
+    """Return a result without the parts a link adds.
+
+    That is the ``skipped_links`` list, and the ``skipped_checkouts`` list: a
+    ``.git`` that is a link or a named pipe marks its folder as a checkout.
+    """
     code, report = result
     try:
         payload = json.loads(str(report))
@@ -550,6 +586,7 @@ def _comparable(result: list[object]) -> list[object]:
         return [code, report]
     if isinstance(payload, dict):
         payload.pop("skipped_links", None)
+        payload.pop("skipped_checkouts", None)
     return [code, payload]
 
 
@@ -762,14 +799,25 @@ if sys.platform == "win32":
 
     _winapi.CreateFile = _logged_create_file
 
-# The guarded open (every validator read and the corpus run) opens each level
-# inside the folder opened before it: os.open with a folder descriptor, or
-# NtCreateFile on Windows, neither of which an audit event names in full. Its
-# level opens are wrapped instead, each recorded by its full path once it
-# succeeds: a refused level was never opened.
+# The guarded open opens the root by its name (os.open, or CreateFileW
+# through ctypes on Windows, which no audit event names), then each level
+# inside the folder opened before it. The root open is recorded as an open by
+# name, so one of a folder below the run's root (a read that trusted a nested
+# folder as its root) fails the run. Each level open is recorded by its full
+# path once it succeeds; a level refused after its first open (a link opened
+# as itself, never followed) is not. On Windows every NtCreateFile is wrapped
+# too: one by name without FILE_OPEN_REPARSE_POINT would follow a link, so it
+# is recorded as a following open, before it runs; a reopen starts from an
+# open handle with no name and follows nothing.
 from apothem.conformity import _safe_open
 
+_real_open_root = _safe_open._open_root
 _real_open_level = _safe_open._open_level
+
+
+def _logged_open_root(root):
+    note("named-open", os.path.abspath(os.fspath(root)))
+    return _real_open_root(root)
 
 
 def _logged_open_level(parent, name, *, folder, shown):
@@ -778,7 +826,17 @@ def _logged_open_level(parent, name, *, folder, shown):
     return handle
 
 
+_safe_open._open_root = _logged_open_root
 _safe_open._open_level = _logged_open_level
+if sys.platform == "win32":
+    _real_create_relative = _safe_open._create_relative
+
+    def _logged_create_relative(parent, name, access, options, shown):
+        if name and not options & _safe_open.FILE_OPEN_REPARSE_POINT:
+            note("following-open", os.path.abspath(os.fspath(shown)))
+        return _real_create_relative(parent, name, access, options, shown)
+
+    _safe_open._create_relative = _logged_create_relative
 
 from apothem.conformity import gate
 
