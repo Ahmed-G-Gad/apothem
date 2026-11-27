@@ -2,7 +2,7 @@
 title: "Einstieg: von null zu einem funktionierenden Harness"
 description: "Ein durchgängiger Rundgang von einer leeren Maschine bis zu einer materialisierten, verifizierten Harness-Konfiguration."
 machineTranslated: true
-sourceHash: "daa3b8225766a994"
+sourceHash: "47bada9b8a6906cd"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -46,8 +46,9 @@ unterstützten Harness — tauschen Sie den Namen aus, wenn Sie die
   oder installieren Sie zuvor die beiden Pakete.
 
 Apothem wird als gebündelter Quellbaum statt als veröffentlichtes Paket
-ausgeliefert — es gibt keinen `pip install`-Schritt. Der Installer klont den Baum
-und führt die Engine direkt daraus aus.
+ausgeliefert — es gibt keinen `pip install`-Schritt. Der Installer legt den Baum
+ab, aus einem verifizierten Release-Archiv oder einem Git-Klon, und führt die
+Engine direkt daraus aus.
 
 ## Schritt 1 — Apothem installieren
 
@@ -60,8 +61,8 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 Der Installer führt diese Schritte aus:
 
 1. **Prüfung der Voraussetzungen.** Der Installer findet einen echten Python-3.10+-Interpreter und bestätigt, dass die beiden Laufzeitbibliotheken (`click` und `rich`) importierbar sind. Fehlt eine davon, nennt er sie, bricht ab und gibt den Installationsbefehl aus. Setzen Sie `APOTHEM_AUTO_INSTALL_DEPS=1`, um ohne Nachfrage zu installieren, da ein Lauf über eine Pipe nicht nachfragen kann.
-2. **Ablage des Quellcodes.** Der gebündelte Baum wird nach `~/.apothem` geklont (überschreibbar über die Umgebungsvariable `APOTHEM_HOME`). Ein erneuter Lauf checkt im bestehenden Klon das Release-Tag aus, statt ihn zu duplizieren.
-3. **Profil-Bootstrap.** Wenn Sie noch kein Profil haben, kopiert der Installer das Beispielprofil nach `~/.config/apothem/profile.yaml`, installiert und verifiziert daraus Claude Code im selben Lauf und warnt, dass die Identitätsfelder Platzhalter sind.
+2. **Ablage des Quellcodes.** Der gebündelte Baum wird in `~/.apothem` abgelegt (überschreibbar über die Umgebungsvariable `APOTHEM_HOME`): das verifizierte Release-Archiv, wenn cosign installiert ist, sonst ein Git-Klon. Der neue Quellcode wird geprüft, bevor er irgendetwas ersetzt, und eine fehlgeschlagene Prüfung lässt Ihre bestehende Installation unverändert. Ein erneuter Lauf aktualisiert den bestehenden Baum, statt ihn zu duplizieren, und behält die Daten, die die Engine dort speichert, etwa ihre Backups. Ein Git-Klon mit Änderungen an versionierten Dateien stoppt die Aktualisierung, bis Sie sie committen oder per stash zurückstellen. Ein symbolischer Link unter `~/.apothem` wird abgelehnt, es sei denn, er führt zu einem vorhandenen Klon, und ein Ordner, der etwas anderes als eine Apothem-Installation enthält, bleibt unangetastet, es sei denn, Sie übergeben `--yes`.
+3. **Profil-Bootstrap.** Wenn Sie noch kein Profil haben, kopiert der Installer das Beispielprofil nach `~/.config/apothem/profile.yaml`, installiert und verifiziert daraus Claude Code im selben Lauf und warnt, dass die Identitätsfelder Platzhalter sind. Das Beispiel enthält außerdem Beispielregeln, zwei Beispiel-MCP-Server und Überschreibungen pro Harness; in Schritt 2 entfernen Sie, was Sie nicht möchten.
 
 Sie können die Installation mit Umgebungsvariablen steuern. Diejenigen, die Sie
 am wahrscheinlichsten verwenden:
@@ -83,7 +84,7 @@ projektbezogenen Harness anschließend und nennen Sie dabei das Projekt:
 apothem install --harness cursor --project /path/to/project
 ```
 
-Weitere erkannte Variablen sind `APOTHEM_REPO` und `APOTHEM_REF` (welches Remote geklont und welche Git-Ref ausgecheckt wird — ungesetzt wird das neueste signierte Release-Tag aufgelöst und verifiziert; setzen Sie ein Tag, um es festzulegen, oder `main` für den beweglichen Branch (ein Branch ist kein signiertes Tag, daher braucht er zusätzlich `APOTHEM_ALLOW_UNVERIFIED=1`)), `APOTHEM_ALLOW_UNVERIFIED=1` (stuft einen Fehlschlag der Tag-Signaturprüfung zu einer Warnung herab und erlaubt eine Nicht-Tag-Ref wie `main`), `APOTHEM_SOURCE` (verwendet einen vorhandenen lokalen Checkout statt eines Klons) und `APOTHEM_SKIP_VERIFY=1` (überspringt die Verifizierung nach der Installation, die wir ausführen wollen; lassen Sie die Variable daher ungesetzt).
+Weitere erkannte Variablen sind `APOTHEM_REPO` und `APOTHEM_REF` (welches Remote geklont und welche Git-Ref ausgecheckt wird — ungesetzt wird das neueste Release aufgelöst und verifiziert; setzen Sie ein Tag, um es festzulegen, oder `main` für den beweglichen Branch (ein Branch ist kein signiertes Tag, daher braucht er zusätzlich `APOTHEM_ALLOW_UNVERIFIED=1`)), `APOTHEM_ALLOW_UNVERIFIED=1` (stuft einen Fehlschlag der Tag-Signaturprüfung zu einer Warnung herab, erlaubt eine Nicht-Tag-Ref wie `main` und erlaubt `APOTHEM_VERIFY=checksum`, das das Release nicht verifiziert), `APOTHEM_SOURCE` (verwendet einen vorhandenen lokalen Checkout statt eines Klons) und `APOTHEM_SKIP_VERIFY=1` (überspringt die Verifizierung nach der Installation, die wir ausführen wollen; lassen Sie die Variable daher ungesetzt).
 
 Wenn der Installer einen vollständigen Lauf abschließt, gibt er ein Banner aus,
 das zeigt, wie die Engine aufgerufen wird. Er legt einen `apothem`-Shim in Ihren
@@ -95,17 +96,18 @@ sobald dieses Verzeichnis im `PATH` liegt:
 apothem <command>
 ```
 
-Falls der Shim nicht abgelegt werden konnte — oder sein Verzeichnis noch nicht
-im `PATH` liegt —, gibt das Banner eine eigenständige Ausweichlösung aus, die
-keinen Shim benötigt:
+Liegt sein Verzeichnis noch nicht im `PATH`, gibt das Banner den vollständigen
+Pfad des Shims aus (standardmäßig `~/.local/bin/apothem` oder im Ordner, den
+`APOTHEM_BIN_DIR` nennt):
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>
+~/.local/bin/apothem <command>
 ```
 
-Der Rest dieses Tutorials schreibt `apothem <command>`; wenn Sie die
-Ausweichform verwenden, stellen Sie das exakte Präfix voran, das Ihr
-Installer-Banner ausgegeben hat.
+Konnte der Shim nicht abgelegt werden, gibt das Banner einen Befehl aus, der die
+Engine startet und dabei den aktuellen Ordner aus `sys.path` heraushält. Der Rest
+dieses Tutorials schreibt `apothem <command>`; wenn Sie eine dieser Formen
+verwenden, setzen Sie stattdessen ein, was Ihr Installer-Banner ausgegeben hat.
 
 ## Schritt 2 — Das Profil zu Ihrem eigenen machen
 
@@ -151,6 +153,9 @@ Hat Ihr Lauf in Schritt 1 das Profil angelegt, hat er Claude Code bereits mit de
 ```bash
 apothem update --harness claude-code
 ```
+
+Hat der Installer Claude Code nicht installiert (zum Beispiel, weil Sie
+`APOTHEM_HARNESS` auf einen anderen Harness gesetzt haben), installieren Sie es jetzt:
 
 ```bash
 apothem install --harness claude-code

@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "CLI-Referenz für den Befehl apothem uninstall."
 machineTranslated: true
-sourceHash: "85553b3611d8d842"
+sourceHash: "774c779bd9ded4af"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,12 +20,178 @@ Entfernt die vom Adapter verwalteten Harness-Ziele und danach die Verzeichnisse,
 die die Installation angelegt hat, sobald sie leer sind (ein Verzeichnis, das
 irgendetwas von Ihnen enthält, bleibt bestehen).
 
+## Was eine Deinstallation entfernt [#what-an-uninstall-removes]
+
+Eine Installation vermerkt den SHA-256 jeder Datei, die sie an ihren Platz
+kopiert (Skills, Befehle, Regeln und Ähnliches), im Installations-Ledger
+(`~/.apothem/state/<harness>/ledger.jsonl`). Eine Deinstallation entfernt eine
+solche Datei nur, solange sie noch diesen Inhalt hat, und danach jeden Ordner,
+der nichts mehr enthält, einschließlich eines leeren Ordners, den Sie in einem
+Apothem-Ordner angelegt haben. Alles andere bleibt bestehen und erhält eine
+`Warning:`-Zeile: eine Datei, die Sie einem Apothem-Ordner hinzugefügt haben,
+eine Apothem-Datei, die Sie bearbeitet haben, eine eigene Datei mit einem
+Apothem-Namen und ein Pfad, den der Installationseintrag nicht auflistet. Eine
+Datei, die Sie behalten, behält auch ihren Ordner.
+
+Eine Installation, die ein früheres Release vermerkt hat, gibt nicht an, welche
+Dateien Apothem geschrieben hat. Für sie vergleicht die Deinstallation jede
+Datei mit dem, was dieses Release an diesem Pfad schreibt, und entfernt die
+Dateien mit denselben Bytes. Zwei Stellen enthalten den Python-Interpreter, den
+die Installation gefunden hat: der Befehl der Statusline und ein Kommentar im
+Konformitäts-Gate. Eine solche Stelle gilt nur dann als gleich, wenn sie
+`py -3` enthält, den einen Launcher, den ein früheres Release dort geschrieben
+hat, oder den vollständigen Pfad einer Interpreterdatei auf diesem Rechner, und
+sonst nichts. Ein Pfad dort, der `&`, `#` oder `$` enthält (ein
+Windows-Benutzername wie `R&D`) oder der hier keine Datei benennt, gilt nie als
+gleich, sodass diese Datei behalten wird. Ein Pfad zu einem Interpreter, den
+Sie inzwischen aktualisiert oder entfernt haben, benennt hier ebenfalls keine
+Datei, sodass auch diese Datei behalten wird: Führen Sie `apothem update` aus
+und deinstallieren Sie dann erneut. Die Hook-Einträge von Apothem in einer
+Einstellungs- oder Hooks-Datei werden nicht auf diese Weise verglichen: Sie
+werden an dem Dispatcher-Skript erkannt, das sie ausführen, unabhängig davon,
+welcher Interpreter davor steht, und entfernt, nachdem die Datei gesichert
+wurde.
+
+Eine Datei unter einem Namen, den Apothem schreibt, die abweicht (von diesem
+früheren Release geschrieben oder von Ihnen bearbeitet), bleibt bestehen, und
+die Deinstallation wird nicht abgeschlossen: Sie gibt
+`✗ <harness> uninstall did not finish:` mit der Anzahl solcher Pfade aus (ein
+Ordner zählt einmal, und seine Dateien werden unter seiner `Warning:`-Zeile
+aufgelistet) und endet mit `2`. Ebenso ein Pfad, den jenes Release vermerkt hat
+und den dieses Release nicht mehr schreibt, da es nichts gibt, womit er
+verglichen werden könnte. Eine Installation ganz ohne Eintrag (ihr Ledger wurde
+gelöscht) endet auf dieselbe Weise, weil nichts zeigt, welche ihrer Dateien
+Apothem geschrieben hat; jeder Pfad, den sie außerhalb eines Links behält, wird
+unter einer einzigen `Warning:`-Zeile aufgelistet, einschließlich der Dateien,
+die Sie hinzugefügt haben, da nichts sie unterscheidet. Auch die gemeinsamen
+Ordner in Ihrem Home-Verzeichnis bleiben für sie bestehen. Einige Teile werden
+dennoch entfernt: die Zeilen von Apothem in einer gemeinsam genutzten Datei wie
+einer Regeldatei oder `hooks.json` (eine Datei, die danach nichts anderes mehr
+enthält, wird ebenfalls entfernt; eine Datei, deren Block seinen END-Marker
+verloren hat, bleibt unverändert, siehe
+[Eine Deinstallation, die nicht abgeschlossen wurde](#an-uninstall-that-did-not-finish)),
+die Memory-, Kontext- und Lernspeicher des Datenordners (zuvor gesichert; sie
+enthalten Ihre Daten, nicht nur die von Apothem) und, bei einigen Harnesses,
+Ordner eines älteren Layouts, die der Harness als veraltet auflistet. Nach der
+`✗`-Zeile benennt eine Zeile `Note:
+<harness> - no install record matched` die gemeinsamen Ordner, die sie
+belassen hat, und was sie dennoch entfernt hat. Für einen Harness mit
+Projekt-Geltungsbereich sagt sie außerdem, dass Sie prüfen sollen, ob
+`--project` den Ordner benennt, in den Sie installiert haben, bevor Sie
+`apothem update` ausführen, da ein Update in einem anderen Ordner dort
+installiert; der Ordner steht in Anführungszeichen wie in den anderen
+ausgegebenen Befehlen oder wird so benannt, wie er ist, wenn diese
+Anführungszeichen ihn nicht tragen können, in denselben Fällen wie bei der
+`Warning:`-Zeile der Datenspeicher weiter unten. Wenn eine Warnung eine Datei
+wegen eines Apothem-Markers benennt, den die Deinstallation belassen hat (ein
+BEGIN-Marker ohne nachfolgendes END, zwei verschiedene Blöcke zwischen den
+Markern von Apothem oder Markerpaare, die Apothem nicht zuordnen kann), sagt die
+`✗`-Zeile, dass Sie diese Datei vor dem Update reparieren sollen, mit dem
+Hinweis für die jeweilige Art von Marker (siehe
+[Eine Deinstallation, die nicht abgeschlossen wurde](#an-uninstall-that-did-not-finish));
+für einen Harness mit Projekt-Geltungsbereich sagt dies auch die `Note:`-Zeile.
+Nur `CLAUDE.md` oder ein Profildokument, das zwei verschiedene Blöcke enthält,
+wird in dieser Zeile ausgelassen (siehe unten). Die `Note:`-Zeile wird auch
+unter `--quiet` ausgegeben, und zwar auf den Fehlerstrom. In der Ausgabe mit
+`--format json` hat die `uninstall`-Zeile des Harness `"outcome": "error"`,
+trägt diesen Hinweis in ihrer Meldung und hat
+`"detail": {"kept_reason": "no-record"}`.
+`apothem update` schreibt die Dateien dieses Releases und vermerkt sie; wenn Sie
+es und danach erneut `apothem uninstall` ausführen, ist die Aufgabe also
+erledigt. Kopieren Sie vorher jede aufgelistete Datei, die Sie bearbeitet oder
+hinzugefügt haben: Das Update überschreibt die Pfade, die es schreibt, und
+ersetzt jeden Apothem-Ordnereintrag, den es als Ganzes schreibt (es sichert
+beides vorher unter `~/.apothem/backups/`, aber nichts stellt es wieder her).
+Reparieren Sie vorher auch jede Datei, die eine Warnung wegen eines
+Apothem-Markers benennt (siehe
+[Eine Deinstallation, die nicht abgeschlossen wurde](#an-uninstall-that-did-not-finish)).
+Bei einer Installation, die ein früheres Release vermerkt hat, gehört eine
+Datei in einem Apothem-Ordner unter einem Namen, den Apothem nie schreibt,
+Ihnen: Sie wird unter der `Warning:`-Zeile für geänderte oder eigene Dateien
+aufgelistet, sie bleibt bestehen, und die Deinstallation wird trotzdem
+abgeschlossen.
+
+Wenn der letzte Eintrag an diesem Ort eine abgeschlossene Deinstallation ist
+(und etwa eine Installation danach abbrach, bevor sie sich vermerken konnte),
+vergleicht die Deinstallation jeden Pfad mit dem, was dieses Release schreibt,
+abgesehen von den gemeinsamen Ordnern in Ihrem Home-Verzeichnis: Diese bleiben
+unverändert, wie wenn es keinen Eintrag gibt (siehe
+[Gemeinsame Ordner in Ihrem Home-Verzeichnis](#shared-folders-in-your-home-directory)).
+Sie entfernt eine Datei nur, wenn die Datei genau dieselben Bytes hat, und sie
+entfernt einen Ordner, der keine Datei enthält. Nichts dort zeigt, welchen
+Interpreter diese Installation gefunden hat, daher gilt eine Datei, die den
+Pfad eines Interpreters enthält (der Befehl der Statusline, der Kommentar im
+Konformitäts-Gate), nie als gleich und bleibt bestehen. Solange das Gate
+bestehen bleibt, gilt der Harness weiterhin als installiert; prüfen Sie diese
+Datei also und entfernen Sie sie von Hand. Alles andere bleibt ebenfalls
+bestehen (eine eigene Datei, eine Apothem-Datei, die Sie bearbeitet haben, ein
+Cache, den ein anderes Programm geschrieben hat) und erhält eine
+`Warning:`-Zeile, und die Deinstallation wird abgeschlossen. Eine Datei, die in
+einem Ordner übrig bleibt, dessen andere Dateien entfernt wurden, wird unter der
+Zeile für geänderte oder eigene Dateien aufgelistet; jeder andere Pfad wird
+unter einer Zeile aufgelistet, die besagt, dass kein Installationseintrag ihn
+auflistet, dass er nicht dem entspricht, was dieses Release schreibt, und dass
+Sie ihn von Hand entfernen können, wenn Sie ihn nicht mehr möchten. Eine Datei
+mit genau denselben Bytes hinter einem Link stoppt die Deinstallation, wie es
+die eigenen Dateien von Apothem hinter einem Link bei einer vermerkten
+Installation tun (siehe unten). Wird eine solche Deinstallation nicht
+abgeschlossen (etwa wegen einer Datei, die sie nicht entfernen konnte), gilt der
+Harness weiterhin als installiert, und ein erneuter Lauf der Deinstallation
+funktioniert auf dieselbe Weise, auch nach einer Installation, die fehlschlug
+und ihre eigenen Änderungen rückgängig machte. Nach einem Rollback oder nach
+ausschließlich nicht abgeschlossenen Deinstallationen stoppt ein solcher Pfad
+die Deinstallation so, wie wenn es keinen Eintrag gibt.
+
+Wenn an diesem Ort keine Installation vermerkt ist, wie in den obigen Fällen,
+belässt die Deinstallation auch den verwalteten Block von Apothem an seinem
+Platz: in `~/.claude/CLAUDE.md` für Claude Code und im Profildokument
+`apothem/rules/00-apothem-profile.md` im Ordner eines Werkzeugs, das über eine
+einzige Einstellungsdatei konfiguriert wird, etwa Open-Claw, OpenCode oder Qwen
+Code. Nichts zeigt, welche Installation diesen Block geschrieben hat, daher
+bleibt die Datei unverändert, und eine `Warning:`-Zeile benennt sie; die
+Warnung stoppt die Deinstallation nicht. Wenn Sie den Block nicht mehr möchten
+(Claude Code liest `CLAUDE.md` weiterhin), entfernen Sie ihn von Hand mit der
+nummerierten Korrektur, die die Warnung angibt, zum Beispiel "Fix A: A1. Change
+line 5: add a word inside its comment. Apothem then finds no block of its own
+in this file." (siehe
+[Einer nummerierten Korrektur folgen](/docs/install/troubleshooting#follow-a-numbered-fix)).
+Die Warnung benennt den Block anhand seiner Zeilen, und die Korrektur ändert
+seine BEGIN-Marker-Zeile an Ort und Stelle, sodass keine Ihrer Zeilen anders
+lautet; den alten Apothem-Text darunter bis zu seiner END-Marker-Zeile können
+Sie dann von Hand löschen. Ein eigener BEGIN-Marker oberhalb des Blocks oder
+einer in einem Markerpaar, das Sie zitieren, gehört nicht dazu: Die Korrektur
+ändert auch jede solche Zeile, da sie sonst als die von Apothem gelesen würde,
+sobald der Block entfernt ist. Wenn diese Datei zwei verschiedene Blöcke
+zwischen den Markern von Apothem enthält (etwa ein eigenes Markerpaar außerhalb
+von Code), würde das Löschen vom ersten BEGIN-Marker bis zum nächsten
+END-Marker Text von Ihnen mitnehmen, daher gibt die Warnung für eine solche
+Datei stattdessen den passenden Text aus (siehe
+[Eine Deinstallation, die nicht abgeschlossen wurde](#an-uninstall-that-did-not-finish)):
+Sie benennt jeden Block anhand seiner Zeilen oder den Block von Apothem und die
+Markerzeilen um ihn herum und sagt, wie Sie die Datei reparieren und dabei
+Ihren eigenen Text behalten. Wenn sie den Block von Apothem und die
+Markerzeilen um ihn herum benennt, sagt sie danach, dass Sie den Block von
+Apothem von Hand löschen sollen, wenn Sie ihn nicht mehr möchten. Wenn sie zwei
+oder mehr ganze Blöcke benennt, sagt sie stattdessen, dass Sie
+`apothem update` und danach erneut `apothem uninstall` ausführen sollen: Ein
+eigener BEGIN-Marker oberhalb des Blocks von Apothem und ein END-Marker
+darunter, die dieser Text nicht benennt, würden einen einzigen Block bilden,
+sobald der Block von Apothem von Hand gelöscht wäre, und das nächste Update
+würde die Zeilen dazwischen ersetzen. Die erneut ausgeführte Deinstallation
+benennt zuerst diese Markerzeilen. Auch diese Warnung stoppt die Deinstallation
+nicht, und die `✗`-Zeile benennt diese Datei nicht. Reparieren Sie sie
+ebenfalls, bevor Sie `apothem update` ausführen: Ein Update repariert sie
+nicht.
+
 Das Memory, die Kontexte und die Lernspeicher des gemeinsamen Arbeitsverzeichnisses
 werden nur gesichert und entfernt, wenn dies der letzte Harness ist, der in
 diesem Verzeichnis installiert ist. Die Deinstallation entfernt sie an dem Ort,
 den die Installation vermerkt hat, sodass sie dort gefunden werden, wo die
 Installation sie geschrieben hat (siehe die Profilfelder `workspace`). Das
-Verzeichnis `plans/` wird nie entfernt.
+Verzeichnis `plans/` wird nie entfernt. Hier zählt eine Installation, deren
+Ordner nicht mehr existiert (ein gelöschtes Projekt), weiterhin als Nutzer der
+Speicher, anders als bei den gemeinsamen Ordnern weiter unten, und die
+Deinstallation teilt dies mit (siehe unten).
 
 Fragt nach Bestätigung, sofern nicht
 `--yes` angegeben ist. Wenn keine Abfrage möglich ist — `--format json`
@@ -35,7 +201,27 @@ vornherein mit einem strukturierten Fehler `uninstall.confirmation_required`
 (Exit-Code 1), sofern nicht `--yes` angegeben ist. Ist ein ausgewählter Harness
 nicht installiert, ist der Befehl erfolgreich (Exit-Code 0) und gibt in der
 einfachen Ausgabe `NAME is not installed; nothing to remove.` aus, wobei `NAME`
-die Harness-ID ist.
+die Harness-ID ist. Eine Datei mit Markerzeilen, die Apothem nicht von Ihrem
+Text unterscheiden kann, gilt als installiert, solange ein Installationseintrag
+sie auflistet, und auch, solange das Installations-Ledger nicht gelesen werden
+kann: Die Deinstallation stoppt dann an dem beschädigten Ledger (Exit-Code 1)
+und benennt es, wie bei einer Datei mit einem ganzen Block, statt den Harness
+als nicht installiert zu melden.
+
+Die Deinstallation stoppt, bevor sie etwas entfernt, wenn ein Link den Ordner
+eines Werkzeugs in Ihrem Home-Verzeichnis aus diesem herausführt, etwa
+`~/work/tool`, wobei `~/work` auf ein anderes Laufwerk verlinkt ist. Unter
+Windows zählt eine Junction als Link. In einem interaktiven Lauf fragt der
+Befehl vorher nicht nach einer Bestätigung. Ein Lauf, der nicht fragen kann
+(JSON-Ausgabe oder kein Terminal), stoppt trotzdem zuerst und verlangt
+`--yes`; der Link-Fehler erscheint, sobald Sie es angeben. Der Fehler enthält
+`uninstall
+refused: target path crosses a link`, benennt den Link und den Ordner, zu dem
+er führt, und sagt, was zu tun ist; der Befehl endet mit Exit-Code 1. Lassen
+Sie den Link auf einen Ordner innerhalb Ihres Home-Verzeichnisses zeigen oder
+ersetzen Sie ihn durch den Ordner selbst, und führen Sie die Deinstallation
+erneut aus. Einem Ordner, den Sie als Pfad außerhalb Ihres Home-Verzeichnisses
+angeben, wird gefolgt.
 
 Die gemeinsamen Datenspeicher unter `.apothem/` an der Installationswurzel
 (`memory/`, `contexts/`, `learning/`) bleiben bestehen, solange ein anderer
@@ -45,7 +231,53 @@ Datenspeicher in die Apothem-Sicherungswurzel (`~/.apothem/backups/`) und
 entfernt ihn dann samt allem, was er enthält. Alles, was Sie in `plans/`
 aufbewahren, wird niemals entfernt.
 
-## Gemeinsame Ordner in Ihrem Home-Verzeichnis
+Wenn die einzigen Installationen, die die Speicher behalten, in Ordnern liegen,
+die nicht mehr existieren, behält der Befehl die Speicher und gibt eine
+`Warning:`-Zeile aus, die eine solche Installation und die Schritte benennt,
+mit denen sie freigegeben wird. Eine Deinstallation in einem leeren, neu
+angelegten Ordner findet nichts Installiertes, daher installieren die Schritte
+das Werkzeug dort zuerst erneut, mit demselben `--profile`, das diese
+Installation verwendet hat. Die Speicher liegen außerhalb dieses Ordners, also
+hat das Profil dieser Installation sie dort abgelegt, wo sie sind. Eine
+Installation ohne dieses Profil schreibt eigene Speicher, und die
+Deinstallation danach lässt die vorhandenen ohne eine Installation zurück, die
+sie verwendet. Apothem vermerkt nicht, welches Profil eine Installation
+verwendet hat, daher gibt die Warnung `--profile <the profile it used>` aus,
+das Sie selbst ausfüllen. Für ein Werkzeug, das in einem Projekt installiert
+ist, lauten die Schritte:
+
+```bash
+mkdir -p /path/to/old-project
+apothem install --harness cursor --project /path/to/old-project --profile /path/to/that-profile.yaml
+apothem uninstall --harness cursor --project /path/to/old-project --yes
+```
+
+Die Warnung setzt den Ordner unter Windows in doppelte und anderswo in einfache
+Anführungszeichen. Wenn diese Anführungszeichen den Ordner nicht tragen können,
+gibt die Warnung dieselben Schritte in Worten an und benennt den Ordner so, wie
+er ist. Unter Windows geschieht das, wenn der Ordner `$`, einen Backquote,
+`%`, `!`, ein gerades oder typografisches doppeltes Anführungszeichen oder ein
+Steuerzeichen enthält, die eine Windows-Shell innerhalb doppelter
+Anführungszeichen verändern würde; `&`, `^`, `|`, `<` oder `>` in einem Ordner
+ohne Leerzeichen, die PowerShell und Git Bash dann ohne ihre Anführungszeichen
+an das `apothem.cmd` des Installers übergeben, sodass die Eingabeaufforderung
+auf sie reagiert; oder zwei Backslashes hintereinander, wie am Anfang einer
+Netzwerkfreigabe (`\\server\share`), die Git Bash als einen liest. Anderswo
+geschieht es, wenn der Ordner ein gerades oder typografisches einfaches
+Anführungszeichen enthält (eine Shell kann einfache Anführungszeichen auch an
+einem typografischen beenden), ein Steuerzeichen, zwei Backslashes
+hintereinander oder einen abschließenden Backslash (fish liest innerhalb
+einfacher Anführungszeichen zwei als einen, und ein abschließender maskiert
+dort das schließende Anführungszeichen).
+
+Für ein Werkzeug, das in Ihrem Home-Verzeichnis installiert ist, gibt die
+Warnung dieselben Schritte in Worten an: Der Ordner, in den es installiert
+wurde, kann aus einer Umgebungsvariable stammen (etwa `XDG_CONFIG_HOME`), die
+ein ausgegebener Befehl nicht wiederholen würde. Die Speicher werden mit dieser
+Deinstallation entfernt, wenn keine andere Installation sie noch verwendet. Sie
+können die Speicher auch von Hand entfernen.
+
+## Gemeinsame Ordner in Ihrem Home-Verzeichnis [#shared-folders-in-your-home-directory]
 
 Mehrere Installationen können einen Ordner in Ihrem Home-Verzeichnis gemeinsam
 verwenden: den Skills-Ordner (`~/.agents/skills/` oder `~/.codebuddy/skills/`,
@@ -61,6 +293,22 @@ verwendet.
   Projekten installiert ist, zählt als zwei Installationen; die Deinstallation
   aus Projekt A behält die Ordner also, solange Projekt B sie noch verwendet.
   Die letzte Deinstallation entfernt sie (siehe das zweite Beispiel unten).
+- Ein Ordner zählt als ein Ordner, gleich wie Ihr Home-Ordner bei der jeweiligen
+  Installation geschrieben war. Wenn Ihr Home-Ordner ein Link ist, etwa
+  `/home`, das unter Fedora Silverblue auf `/var/home` führt, oder ein
+  Windows-Benutzerprofil, das hinter eine Junction verschoben wurde, verwenden
+  eine Installation über den Link und eine über den Ordner, zu dem er führt,
+  dieselben Ordner. Zwei so installierte Werkzeuge sind zwei Installationen, und
+  die Deinstallation des einen behält die Ordner für das andere. Ein auf beide
+  Arten installiertes Werkzeug ist eine Installation: Seine Deinstallation
+  entfernt, gleich wie Ihr Home dabei geschrieben ist, was jede der beiden
+  Installationen geschrieben hat, sowie die Ordner, die keine andere
+  Installation verwendet. Stoppt diese Deinstallation, bevor sie abgeschlossen
+  ist, bleiben beide Installationen vermerkt, bis Sie beheben, was sie
+  gestoppt hat, und die Deinstallation erneut ausführen. Eine Deinstallation
+  findet eine Installation nur, wenn Ihr Home auf eine der Arten geschrieben
+  ist, die eine Installation dieses Werkzeugs verwendet hat; bei jeder anderen
+  Schreibweise findet sie nichts zu entfernen.
 - Entfernt wird nur, was der eigene Eintrag der Installation auflistet. Eine
   Installation, die vorgenommen wurde, bevor die Ordner verwaltet wurden, hat
   keinen solchen Eintrag, daher entfernt ihre Deinstallation nichts in Ihrem
@@ -89,6 +337,355 @@ Er trägt `path`, `holders` (die Installationen, die den Ordner behalten), `stal
 (ignorierte Installationen) sowie `kept` und `total` (die behaltenen vermerkten
 Einträge und die Einträge, die die Installation aufgelistet hat).
 
+Eine Deinstallation gibt außerdem eine `Warning:`-Zeile für alles aus, was sie
+absichtlich an seinem Platz belassen hat. Apothem entfernt nichts über einen
+symbolischen Link oder eine Windows-Junction, daher bleibt ein Link in einem
+Ordner, den es entfernt, bestehen, ebenso ein übrig gebliebener Ordner aus
+einem früheren Release, der über einen Link erreicht wird. Pfade, die wegen
+desselben Links oder aus demselben Grund behalten werden (nicht von Apothem
+geschrieben, nicht im Installationseintrag), werden als eine Zeile mit ihrer
+Anzahl ausgegeben. Unter einer Zeile für behaltene Pfade wird jede behaltene
+Datei aufgelistet, einschließlich der Dateien in einem behaltenen Ordner (ein
+behaltener Ordner, der nichts enthält, wird selbst aufgelistet). Eine von
+Apothem geschriebene Datei, die es nicht entfernen konnte, wird unter der
+`✗`-Zeile aufgelistet, die sie meldet, nicht als behaltene Datei. Mit
+`--quiet` werden diese Zeilen nur ausgegeben, wenn die Deinstallation nicht
+abgeschlossen wird, und dann zusammen mit der `✗`-Zeile auf der
+Standardfehlerausgabe, sodass die Pfade, auf die sich ihr Hinweis bezieht,
+sichtbar bleiben. Eine Zeile, die einen in einer Datei belassenen
+Apothem-Marker benennt, wird unter `--quiet` auch dann auf der
+Standardfehlerausgabe ausgegeben, wenn die Deinstallation abgeschlossen wird:
+Das Werkzeug liest weiterhin allen alten Apothem-Text unterhalb dieses Markers,
+eine spätere Installation behält beides, und `verify` schlägt dann fehl, bis
+Sie beides löschen. Im `--format json`-Umschlag ist jede solche Zeile ein
+`warnings`-Eintrag mit `"outcome": "warning"`, der `message` der Zeile,
+`count` (wie viele Pfade sie umfasst), `paths` (jeder dieser Pfade) und, bei
+behaltenen Pfaden, `files` (jede behaltene Datei). Diese Warnungen stoppen die
+Deinstallation nicht. Vier Arten tun es: Dateien einer Installation, die ein
+früheres Release vermerkt hat und die von dem abweichen, was dieses Release
+schreibt, die Dateien einer Installation ganz ohne Eintrag (siehe
+[Was eine Deinstallation entfernt](#what-an-uninstall-removes)), eine Datei, die
+zwei verschiedene Blöcke zwischen den Markern von Apothem enthält, und eine
+Datei, deren Markerzeilen Apothem nicht von Ihrem Text unterscheiden kann
+(siehe
+[Eine Deinstallation, die nicht abgeschlossen wurde](#an-uninstall-that-did-not-finish)).
+
+Die eigenen Dateien von Apothem, die über einen Link erreicht werden, sind ein
+anderer Fall: Die meisten Werkzeuge laden sie weiterhin, daher ist die
+Deinstallation nicht abgeschlossen. (OpenClaw lädt seine Regeldatei nicht mehr,
+sobald die Deinstallation den Pfad von Apothem aus seinem Hook-Eintrag entfernt
+hat, daher sagt die `✗`-Zeile dies bei OpenClaw nur, solange es sie noch lädt;
+siehe [OpenClaw](/docs/harnesses/open-claw#uninstalling).) Angenommen,
+`~/.claude/rules` ist eine Junction zu einem Dotfiles-Ordner, der noch die
+Regeln enthält, die Apothem geschrieben hat: Der Befehl gibt
+`✗ <harness> uninstall did not finish:` mit dem Link und der Anzahl der
+belassenen Pfade aus, lässt die Installation vermerkt und endet mit `2`.
+Ersetzen Sie den Link durch einen echten Ordner mit denselben Dateien und
+führen Sie den Befehl dann erneut aus. Bei einer Installation, deren Eintrag
+die geschriebenen Dateien auflistet, stoppt ein verlinkter Ordner, der nur Ihre
+eigenen Dateien oder von Ihnen bearbeitete Apothem-Dateien enthält, die
+Deinstallation nicht: Der Link bleibt mit einer Warnung bestehen, und die
+Deinstallation wird abgeschlossen. Bei einer Installation, die ein früheres
+Release vermerkt hat, stoppt jede Datei hinter dem Link unter einem Namen, den
+dieses Release schreibt, die Deinstallation, ob bearbeitet oder nicht, weil
+nichts sie von dem unterscheidet, was jenes Release geschrieben hat. Ersetzen
+Sie den Link durch einen echten Ordner mit denselben Dateien und folgen Sie
+dann den Schritten für eine solche Installation oben: Kopieren Sie jede Datei,
+die Sie bearbeitet haben, reparieren Sie jede Datei, die eine Warnung wegen
+eines Apothem-Markers benennt, führen Sie `apothem update` aus und
+deinstallieren Sie dann erneut.
+
+Wenn ein Entfernungsschritt einen Fehler meldet (etwa eine installierte Datei,
+deren Pfad aus Ihrem Home-Ordner herausführt), gibt der Befehl `✗ <harness> uninstall
+did not finish: <reason>` statt `Uninstalled` aus, einmal je Grund mit der
+Anzahl der Pfade, auf die er zutrifft. Wenn ein Link in einem Ordner Ihres
+Home-Verzeichnisses diese Pfade aus ihm herausführt
+(`target escapes the allowed materialization root`), benennt die Zeile
+außerdem den Link und den Ordner, zu dem er führt, und sagt, dass Sie den Link
+durch einen echten Ordner ersetzen sollen; Pfade hinter zwei Links ergeben zwei
+Zeilen. Der Link erhält trotzdem seine Warnung, dass er an seinem Platz
+belassen wurde. Die Installation bleibt vermerkt, sodass ein erneuter Lauf des
+Befehls entfernt, was der erste Lauf übrig gelassen hat. Die Hinweise zur
+Beibehaltung werden nicht ausgegeben, weil die Ordner, die sie beschreiben,
+nicht freigegeben wurden. In der JSON-Ausgabe erhält der Harness eine
+`results`-Zeile mit `"outcome": "error"` und `"operation": "uninstall"`,
+gefolgt von einer Zeile für jeden fehlgeschlagenen Schritt. Wenn die Gründe
+einen einzigen Link benennen, trägt diese Zeile ihn in `detail.symlink` und den
+Ordner, zu dem er führt, in `detail.leads_to`. Die Zeile eines Schritts listet
+die Dateien, die er behalten hat, als `files` und die von Apothem geschriebenen
+Dateien, die er nicht entfernen konnte, als `stuck` auf. Der `status` des
+Umschlags ist `"partial"` und der Exit-Code `2`, wenn die Deinstallation
+Dateien entfernt hat, bevor der Schritt fehlschlug, oder wenn ein anderer
+Harness entfernt wurde; andernfalls ist `status` `"error"` und der Exit-Code
+`1`. Das oberste `error` bleibt `null`: Die Gründe stehen in `results`. Eine
+Deinstallation, die mit einer Ausnahme stoppt (etwa wegen einer Sicherung, die
+nicht geschrieben werden kann), gibt `✗ <harness> uninstall
+stopped after removing files:` aus, wenn sie Dateien entfernt oder die
+Einträge oder den Block von Apothem aus einer Datei wie `openclaw.json`
+entfernt hatte, bevor sie stoppte (oder `failed:`, wenn sie nichts geändert
+hatte), zusammen mit der Meldung, und erhält eine `results`-Zeile mit ihrer
+Meldung, gefolgt von einer Zeile für jeden Schritt, der davor fehlschlug. Wenn
+vor dem Stopp ein Schritt fehlgeschlagen war oder sie etwas gefunden hatte, das
+eine Deinstallation unabgeschlossen lässt (die eigenen Dateien von Apothem
+hinter einem Link, Dateien einer Installation, die ein früheres Release
+vermerkt hat und die von dem abweichen, was dieses Release schreibt, die
+Dateien einer Installation ohne Eintrag, eine Datei mit zwei verschiedenen
+Blöcken zwischen den Markern von Apothem oder eine Datei mit Markerzeilen, die
+Apothem nicht von Ihrem Text unterscheiden kann), folgt für jeden Grund eine
+Zeile `✗ <harness> uninstall did not finish:` wie oben, und derselbe Text wird
+an das Ende der Meldung der Zeile angehängt. Bei einer Installation ohne
+Eintrag folgt ihnen die `Note:`-Zeile, mit ihrer Prüfung des
+`--project`-Ordners für einen Harness mit Projekt-Geltungsbereich, und das
+`detail` der Zeile hat `"kept_reason": "no-record"`, wie unter
+[Was eine Deinstallation entfernt](#what-an-uninstall-removes) beschrieben.
+Wenn diese Gründe und die davor fehlgeschlagenen Schritte einen einzigen Link
+benennen, trägt die Zeile ihn in `detail.symlink` und den Ordner, zu dem er
+führt, in `detail.leads_to`. Sie endet mit `2` und `status` `"partial"`, wenn
+sie vorher Dateien entfernt oder geändert, die eigenen Dateien von Apothem
+hinter einem Link gefunden, Dateien der Installation eines früheren Releases
+oder einer Installation ohne Eintrag behalten oder eine Datei mit zwei
+verschiedenen Blöcken zwischen den Markern von Apothem oder mit Markerzeilen,
+die Apothem nicht von Ihrem Text unterscheiden kann, belassen hatte, oder wenn
+ein anderer Harness entfernt wurde, andernfalls mit `1`. Ein unerwarteter
+Fehler (eine Ausnahme, etwa eine Sicherung, die nicht geschrieben werden kann)
+im ersten Schritt einer Deinstallation von Open-Claw, Antigravity oder Kimi
+Code meldet nichts von dem, was dieser Schritt getan hat (siehe
+[Eine Deinstallation, die nicht abgeschlossen wurde](#an-uninstall-that-did-not-finish)):
+Die Deinstallation gibt `failed:` aus und endet mit `1` (`2`, wenn ein anderer
+Harness entfernt wurde), unabhängig davon, was der Schritt geändert hatte. Wenn
+stattdessen der Regeldatei-Schritt von Open-Claw einen Fehler meldet (eine
+Regeldatei, die er nicht neu schreiben kann, oder eine `openclaw.json` mit
+Kommentaren), ist das ein fehlgeschlagener Schritt wie oben: Die Deinstallation
+gibt `did not finish:` aus, vermerkt sich als unabgeschlossen mit den
+Sicherungen dieses Schritts und endet mit `2`, wenn dieser Schritt eine Datei
+geändert oder die Regeldatei von Apothem hinter einem Link gefunden hatte oder
+wenn ein anderer Harness entfernt wurde, andernfalls mit `1`. `Ctrl+C` gibt
+`Aborted!` aus und endet mit `1`, unabhängig davon, was die Deinstallation bis
+dahin entfernt hatte. Eine verweigerte Deinstallation (etwa wegen eines Links,
+der den Ordner aus Ihrem Home-Verzeichnis herausführt) entfernt nichts und
+endet mit `1`; ihre Zeile benennt diesen Link in `detail.symlink` und den
+Ordner, zu dem er führt, in `detail.leads_to`, und eine Zeile für den
+verweigerten Schritt folgt ihr.
+
+### Eine Deinstallation, die nicht abgeschlossen wurde [#an-uninstall-that-did-not-finish]
+
+Wenn eine Deinstallation nicht abgeschlossen wird, hängt sie dem
+Installations-Ledger einen `uninstall-incomplete`-Eintrag statt eines
+`uninstall`-Eintrags an. Das geschieht, wenn ein Schritt fehlgeschlagen ist,
+wenn die eigenen Dateien von Apothem hinter einem Link bleiben, wenn eine Datei
+zwei verschiedene Blöcke zwischen den Markern von Apothem oder Markerzeilen
+enthält, die Apothem nicht von Ihrem Text unterscheiden kann (siehe unten), wenn
+Dateien einer Installation, die ein früheres Release vermerkt hat, von dem
+abweichen, was dieses Release schreibt, und wenn die Installation keinen
+Eintrag hat. Die letzten vier enden mit `2` und `status` `"partial"`, auch wenn
+nichts entfernt wurde, einschließlich eines zweiten Laufs, bevor Sie beheben,
+was sie benennen. Die letzten beiden werden erst nach `apothem update`
+abgeschlossen (siehe
+[Was eine Deinstallation entfernt](#what-an-uninstall-removes)). Eine
+Deinstallation, die eine Ausnahme oder `Ctrl+C` stoppt, hängt je nach dem
+Schritt, in dem sie stoppte, Folgendes an:
+
+- im ersten Schritt von Open-Claw, der den Block von Apothem aus der Regeldatei
+  jedes Workspace entfernt, oder von Antigravity und Kimi Code, der entfernt,
+  was ein älteres Layout hinterlassen hat: nichts, auch nicht für die Dateien,
+  die dieser Schritt bis dahin geändert hatte, deren Sicherungen unter
+  `~/.apothem/backups/` bleiben, ohne dass ein Eintrag sie vor `backups prune`
+  schützt;
+- im Schritt, der die Einträge von Apothem aus der Einstellungsdatei eines
+  Werkzeugs entfernt, das über eine einzige Einstellungsdatei konfiguriert
+  wird, etwa Open-Claw, OpenCode oder Qwen Code: den Eintrag nur dann, wenn der
+  erste Schritt von Open-Claw den Block von Apothem aus einer Regeldatei
+  entfernt oder eine gesichert hatte, und andernfalls nichts, auch wenn dieser
+  Schritt die Regeldatei von Apothem hinter einem Link gefunden hat;
+- im Schritt, der entfernt, was der Installationseintrag auflistet, dem letzten
+  Schritt jeder Deinstallation außer der von OpenCode: den Eintrag, auch wenn
+  er nichts geändert hat;
+- im Schritt, den die Deinstallation von OpenCode danach ausführt und der eine
+  Installation abschließt, die unter einer anderen Schreibweise ihres Ordners
+  vermerkt ist (etwa wenn `XDG_CONFIG_HOME` den Ordner benennt, zu dem ein
+  `~/.config`-Link führt): nichts weiter, sodass diese Installation vermerkt
+  bleibt. Ein späterer Lauf schließt sie noch nicht ab: Wenn die Dateien von
+  Apothem in dem Ordner entfernt sind, gilt OpenCode dort als nicht
+  installiert, daher überspringt `uninstall` es, und auch `status`, `verify`
+  und `rollback` sehen diese Installation nicht. Um sie abzuschließen,
+  installieren Sie OpenCode erneut in dem Ordner und deinstallieren es dann:
+  `apothem install --harness opencode --profile PATH` mit einem Profil
+  außerhalb des verlinkten Ordners (`apothem profile init --profile PATH`
+  erstellt eines), dann `apothem uninstall --harness opencode`.
+
+Wenn nichts angehängt wird, bleibt das Ledger, wie es war. Die Installation
+bleibt in jedem Fall vermerkt. Außer im letzten Fall sehen `apothem status`,
+`verify` und `rollback` sie weiterhin, und der Harness gilt als installiert,
+solange noch etwas, das die Installation geschrieben hat, so vorhanden ist, wie
+sie es geschrieben hat (siehe unten), sodass ein erneuter Lauf von `uninstall`
+die Aufgabe abschließt. Eine Installation ohne Eintrag hat keinen, den sie
+behalten könnte: Nur ihre Dateien auf der Festplatte lassen den Harness als
+installiert gelten, und `rollback` hat nichts zurückzusetzen. Ein `install`,
+`update`, `rollback` oder abgeschlossenes `uninstall` dieses Harness an diesem
+Ort ersetzt den Zustand, ebenso das Entfernen der verbleibenden Dateien von
+Hand: Wenn keine Datei von Apothem mehr so vorhanden ist, wie es sie
+geschrieben hat, und nichts mehr in seinem `.apothem`-Ordner liegt, gilt der
+Harness als nicht installiert, unabhängig davon, was sonst im Ordner liegt. Der
+erste Befehl, der prüft, ob der Harness installiert ist (`status`, `verify`,
+`uninstall`), hängt dann einen `uninstall`-Eintrag an, der die Installation
+abschließt. Nach einer abgeschlossenen Deinstallation listet jedoch kein
+Eintrag die Dateien auf, die eine Installation geschrieben hat, daher ersetzt
+dort nur eine Installation, ein Update oder eine abgeschlossene Deinstallation
+den Zustand. `backups prune` behält den Eintrag und die Sicherungen, auf die er
+verweist, solange die Installation, zu der er gehört, behalten wird. Nach einer
+abgeschlossenen Deinstallation behält es den Eintrag zusammen mit dem Eintrag
+dieser Deinstallation, sodass ein erneuter Lauf der Deinstallation weiterhin
+auf dieselbe Weise funktioniert.
+
+Was weiterhin zählt: eine ganze Datei, die die Installation geschrieben hat,
+solange sie unverändert ist (bei einer Installation, die ein früheres Release
+vermerkt hat, solange sie vorhanden ist); alles in den Ordnern, in die Apothem
+unter `.apothem` installiert; und eine Datei, in der Apothem einen verwalteten
+Block neben Ihrem eigenen Text führt, solange der Block noch darin steht,
+unabhängig davon, was Sie darum herum geschrieben haben. Diese Dateien sind
+`CLAUDE.md`, das Profildokument, in das das gemeinsame Profil projiziert wird,
+die Regeldatei in jedem OpenClaw-Workspace sowie `AGENTS.md` und die anderen
+Anweisungsdateien, denen die Installation einen Block hinzufügt.
+
+Ein verwalteter Block reicht von einem Marker `<!-- BEGIN APOTHEM MANAGED BLOCK -->`
+bis zum nächsten Marker `<!-- END APOTHEM MANAGED BLOCK -->`, jeder auf einer
+eigenen Zeile; Apothem liest einen Marker nur in dieser Form und außerhalb von
+Code, wie es ein Markdown-Viewer tun würde: ein umzäunter Codeblock (geschlossen
+durch einen Zaun aus demselben Zeichen, mindestens ebenso lang, ohne etwas
+danach) oder Code, der nach einer Leerzeile vier Spalten über sein
+Listenelement (oder den Rand) hinaus eingerückt ist. Ein Marker, den Sie in
+einem Satz oder einem Codebeispiel zitieren, ist also Ihr Text, und ein BEGIN-
+und ein END-Marker, die Sie in zwei getrennten Codeblöcken zitieren, bilden
+keinen Block. Apothem schließt einen Code-Zaun, den eine Regel in Ihrem Profil
+am Ende des Blocks, den es schreibt, offen lässt; in einem Block, den ein
+früheres Release geschrieben hat, verbirgt ein solcher Zaun den END-Marker nur,
+wenn ein weiteres Markerpaar folgt (siehe unten). Ein Zaun, den Sie bis zum
+Dateiende offen lassen, wird als Text gelesen, egal wie viele es sind, es sei
+denn, ein BEGIN-Marker außerhalb von Code darüber hat seinen END-Marker in Code
+und ein weiteres Markerpaar folgt ihnen. Eine Byte-Order-Mark am Dateianfang
+(wie manche Windows-Editoren sie speichern) verbirgt keinen Marker in der
+ersten Zeile. Marker in einem HTML-Block oder einem Blockzitat oder nach einem
+Listenelement, dessen Text am linken Rand weitergeht, können dennoch anders
+gelesen werden als von einem Markdown-Viewer.
+
+Wenn der Block von Apothem in einem Codeblock von Ihnen steht (ein Zaun, der
+darüber offen gelassen und durch einen darunter oder durch eine schließende
+Zeile innerhalb des Blocks geschlossen wird), oder wenn ein Codeblock zwischen
+einem BEGIN-Marker und seinem END diesen END-Marker verbirgt und danach ein
+weiteres Markerpaar folgt, kann Apothem seinen Block nicht von einem Beispiel
+von Ihnen unterscheiden. Die Deinstallation belässt eine solche Datei
+unverändert, entfernt den Rest der Installation und wird nicht abgeschlossen:
+Sie gibt `✗ <harness> uninstall did not finish:` gefolgt von "1 file(s) hold
+marker lines Apothem cannot tell from your text, so Apothem left them as they
+are; fix the marker lines each warning names, keeping your own text, then run
+apothem uninstall again" aus und endet mit `2`, auch bei einem zweiten Lauf.
+Der Installationseintrag bleibt bestehen, sodass auch eine spätere Installation
+die Datei unverändert lässt und die nächste Deinstallation sie erneut benennt.
+Ihre Warnung benennt jedes Markerpaar in der Datei anhand seiner Zeilen sowie
+jeden BEGIN-Marker außerhalb von Code, der kein Markerpaar beginnt. Ohne
+Installationseintrag erhält nur ein BEGIN-Marker, dessen END-Marker auf diese
+Weise verborgen ist, die Warnung: Ein Paar in einem Codeblock von Ihnen ist dann
+Ihr Text, und die Deinstallation bleibt für diesen Marker und für die Pfade,
+die kein Eintrag zeigt, unabgeschlossen. Die Warnung gibt dann nummerierte
+Korrekturen an und endet mit "Then run the uninstall again.", zum Beispiel
+"Fix A: A1. Change line 6: add a word inside its comment. Apothem then finds no
+block of its own in this file." Den alten Apothem-Text unterhalb einer Zeile,
+die Sie ändern, bis zu seiner END-Marker-Zeile können Sie dann von Hand
+löschen. Bei mehreren Korrekturen wählen Sie diejenige, deren Fall zutrifft,
+und führen jeden ihrer Schritte in der angegebenen Reihenfolge aus: Ein in
+dieser Datei belassenes Markerpaar hält die Deinstallation unabgeschlossen,
+auch ein eigenes, daher ändert jede Korrektur die BEGIN-Marker-Zeile jedes
+Paars, das sie nicht als Block von Apothem bezeichnet, und jedes BEGIN-Markers,
+der kein Paar beginnt (siehe
+[Apothem kann seinen Block nicht von Ihrem Text unterscheiden](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+Sobald die Datei kein solches Paar mehr enthält, schließt ein erneuter Lauf der
+Deinstallation sie ab.
+
+Wenn der END-Marker fehlt, zeigt nichts, wo der Text von Apothem endet und Ihrer
+beginnt, daher belässt die Deinstallation die Datei unverändert, benennt sie in
+einer Warnung und wird abgeschlossen (sofern nicht etwas anderes sie
+unabgeschlossen lässt, etwa eine Installation ohne Eintrag); ebenso ein
+erneuter Versuch nach einer Deinstallation, die nicht abgeschlossen wurde. Wenn
+ein BEGIN-Marker ohne nachfolgendes END übrig bleibt, sobald der Block von
+Apothem entfernt ist (eine Zeile von Ihnen oder der Rest eines älteren Blocks,
+der seinen END-Marker verloren hat), benennt die Deinstallation auch diese
+Datei und die Zeile des Markers, mit einem nummerierten Schritt, der diese
+Zeile ändert (ein Wort, das in ihren Kommentar eingefügt wird), sodass sie nicht
+mehr als Marker gelesen wird: Eine Installation behält sie unverändert, und das
+Werkzeug liest weiterhin den Text darunter. Allen alten Apothem-Text darunter
+können Sie dann von Hand löschen. Ein `install` oder `update` behält den Text
+nach einem solchen Marker unverändert, schreibt den Block von Apothem getrennt
+davon und benennt die Datei, und `verify` schlägt fehl, bis der Marker geändert
+ist (siehe
+[Eine Datei hat einen BEGIN-Marker von Apothem ohne END-Marker](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
+
+Eine Datei, die zwei verschiedene Blöcke zwischen den Markern enthält (ein
+Markerpaar, das Sie außerhalb eines Codeblocks zitieren, ein alter Block, dessen
+END-Marker Sie wiederhergestellt haben, oder ein Block, den Sie ein zweites Mal
+eingefügt haben), wird unverändert belassen und benannt, und die Deinstallation
+wird nicht abgeschlossen: Sie gibt `✗ <harness> uninstall did not finish:`
+gefolgt von "1 file(s) hold two different blocks between Apothem's markers, so
+Apothem left them as they are; fix each as its warning says, keeping your own
+text (follow one of its numbered fixes, which change marker lines in place),
+then run apothem uninstall again" aus und endet mit `2`, auch bei einem zweiten
+Lauf. Ihre Warnung benennt jeden Block anhand seiner Zeilen, wie es install und
+update tun, und gibt für jeden Block eine nummerierte Korrektur für den Fall an,
+dass es der Block von Apothem ist: Die Korrektur ändert die BEGIN-Marker-Zeile
+jedes anderen Blocks und behält dessen Text (in einer Datei, die mit dem
+Frontmatter von Apothem beginnt, ist der Block von Apothem der direkt darunter).
+Löschen Sie nicht den Block von Apothem, um ein eigenes Paar zu behalten: Die
+nächste Deinstallation würde dann den einen verbleibenden Block entfernen, Ihren
+eigenen. Ein `apothem update` repariert eine solche Datei nicht: Es lässt eine
+Datei mit zwei ganzen Blöcken unverändert, mit derselben Warnung, und `verify`
+schlägt fehl, bis Sie sie reparieren (siehe
+[Eine Datei enthält zwei Blöcke zwischen den Markern von Apothem](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)).
+
+Ein BEGIN-Marker oberhalb des Blocks von Apothem und ein END-Marker darunter
+bilden einen zweiten Block, der sich erst zeigt, wenn der Block von Apothem
+entfernt ist. Die Warnung der Deinstallation benennt dann den Block von Apothem
+und diese beiden Markerzeilen, zum Beispiel "once the block from line 5 to line
+36 is out, the BEGIN marker at line 2 and the END marker at line 39 make
+another", und sagt, dass Sie den Block von Apothem nicht löschen sollen: Der
+nächste Lauf würde dann die Zeilen 2 bis 39 als Block von Apothem lesen. Ihre
+eine Korrektur ändert stattdessen diese BEGIN-Marker-Zeile und behält Ihren
+eigenen Text, und der END-Marker darunter bildet dann mit nichts ein Paar; wenn
+dieser BEGIN-Marker der Rest eines älteren Apothem-Blocks ist, können Sie den
+alten Apothem-Text darunter dann von Hand löschen. Setzen Sie nicht beide
+Zeilen in einen Codeblock: Er würde auch den Block von Apothem enthalten. Ein
+`apothem update` repariert eine solche Datei ebenfalls nicht, und `verify`
+schlägt fehl, bis Sie sie reparieren. Die Zeilennummern zählen ein einzelnes CR
+als Zeilenende, ebenso wie CRLF und LF (siehe
+[Eine Datei hat einen BEGIN-Marker von Apothem ohne END-Marker](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
+
+Wenn der nächste Schritt der Deinstallation darin besteht, `apothem update`
+auszuführen, und eine Warnung eine Datei wegen eines Apothem-Markers benennt
+(im `--format json`-Umschlag hat ihr `detail` den Schlüssel `marker_left`),
+sagen die `✗`-Zeile und die Warnung jedes Pfads, den sie für ein früheres
+Release oder wegen eines fehlenden Eintrags behält, dass Sie diese Datei zuerst
+reparieren sollen, mit dem Hinweis für ihre Art von Marker.
+
+Wenn das Ledger den `uninstall-incomplete`-Eintrag nicht aufnehmen kann (etwa
+bei voller Festplatte), bleibt das Ledger, wie es war, und eine
+`Warning:`-Zeile benennt das Ledger und die Ordner der Sicherungen, die die
+Deinstallation angelegt hat: Kein Eintrag schützt diese Sicherungen vor
+`backups prune`, also kopieren Sie alle, die Sie benötigen. Ohne Eintrag dieses
+unabgeschlossenen Durchlaufs kann ein erneuter Lauf des Befehls den Harness als
+nicht installiert vorfinden und nichts entfernen; entfernen Sie dann die
+Dateien, die die `✗`- und `Warning:`-Zeilen aufgelistet haben, von Hand.
+Solange der Harness noch als installiert gilt, funktioniert ein erneuter Lauf
+des Befehls wie zuvor: anhand des Installationseintrags oder, nach einer
+abgeschlossenen Deinstallation ohne seitdem vermerkte Installation, auf
+dieselbe Weise wie dieser Durchlauf (siehe
+[Was eine Deinstallation entfernt](#what-an-uninstall-removes)). Wenn der
+`uninstall`-Eintrag einer abgeschlossenen Deinstallation nicht auf die
+Festplatte geschrieben werden kann, entfernt die Deinstallation ihn wieder aus
+dem Ledger und endet als unabgeschlossen. Sie wird mit derselben Art von
+Warnung abgeschlossen, wenn das Ledger noch mit einer abgeschlossenen
+Deinstallation endet: Der Eintrag blieb trotzdem im Ledger, oder die
+Deinstallation folgte auf eine, die abgeschlossen wurde. Ein Interrupt
+(`Ctrl+C`) nach dem Speichern des Eintrags lässt die Deinstallation
+abgeschlossen.
+
 Wenn ein Ordner wegen einer Installation bestehen bleibt, die Sie nicht finden
 können, benennt der Hinweis sie. Wurde der Projektordner gelöscht, wird die
 Installation ignoriert, und der Ordner wird mit der nächsten Deinstallation
@@ -97,6 +694,58 @@ seiner Regeldatei entfernt, meldet `uninstall` den Harness als nicht installiert
 und gibt seinen Anspruch nicht frei; führen Sie `install` für diesen Harness und
 dieses Projekt aus und dann `uninstall`, um ihn freizugeben. `apothem verify`
 zeigt, ob ein Ordner noch vollständig ist.
+
+`--project` wird mit aufgelösten Links und erweitertem `~` gelesen. Eine
+Installation, die aus Python-Code vorgenommen wurde und deren Projektordner
+anders geschrieben war, etwa über einen Link, wird weiterhin unter der
+Schreibweise gefunden, die ihr Eintrag enthält. Ein `install` oder `update`
+vermerkt den aufgelösten Ordner. Sobald die Installation ihre Prüfungen
+besteht, verschiebt sie eine unter einer anderen Schreibweise vermerkte
+Installation auf die aufgelöste, sodass die Installation auch nach dem
+Entfernen des Links noch gefunden wird; eine verweigerte Installation ändert
+keinen Eintrag. `uninstall` verschiebt eine solche Installation auf dieselbe
+Weise, bevor es etwas entfernt, sodass eine nicht abgeschlossene Deinstallation
+unter dem aufgelösten Ordner vermerkt wird, wo ein erneuter Lauf von
+`uninstall` sie auch nach dem Entfernen des Links noch findet. Ein Ordner, den
+ein Eintrag auf der Festplatte anders benennt (ein `\\localhost\C$`-Pfad zu
+einem als `C:\...` vermerkten Ordner), behält die Schreibweise des Eintrags,
+und eine Installation oder Deinstallation in einem Ordner, in dem noch eine
+eigene Installation vorhanden ist, lässt einen Eintrag unter einer anderen
+Schreibweise unverändert. Eine Schreibweise, deren Installation noch vorhanden
+ist, hat Vorrang vor einer, deren Installation entfernt wurde; von zwei
+vorhandenen diejenige mit mehr ihrer Dateien im Ordner, danach die neuere. Eine
+Installation, von deren Dateien keine im Ordner liegt, wird nicht für ihn
+gehalten, es sei denn, ihre Deinstallation wurde nicht abgeschlossen: Ein
+erneuter Lauf von `uninstall` schließt sie dann ab. Ordnernamen werden exakt
+verglichen: In einem Ordner mit Unterscheidung der Groß- und Kleinschreibung
+(etwa einem, den WSL angelegt hat) sind `Proj` und `proj` zwei Ordner und
+werden nie füreinander gehalten, und die Deinstallation des einen behält die
+gemeinsamen Ordner, die der andere verwendet. In einem gewöhnlichen
+Windows-Ordner sind sie ein Ordner, solange er existiert; sobald er entfernt
+ist, findet ihn nur die Schreibweise des Eintrags. Ein geklontes Volume, das
+neben seinem Original eingebunden ist, wird nicht für dieses gehalten, wenn
+Windows beide Volumes benennen kann. Ein Eintrag auf einer anderen
+Netzwerkfreigabe (ein `\\server\share`-Pfad oder ein darauf abgebildeter
+Laufwerksbuchstabe) wird nur anhand seines Textes verglichen, sodass eine nicht
+erreichbare Freigabe die Suche nach Einträgen nicht blockiert. Die Hinweise zu
+gemeinsamen Ordnern prüfen weiterhin jeden vermerkten Ordner, daher können sie
+weiterhin auf eine solche Freigabe warten.
+
+Drei Fälle werden nicht so gefunden, wie Sie es erwarten könnten. Eine
+Installation, die ein früheres Release zweimal vermerkt hat, einmal von der
+Befehlszeile und einmal aus Python über einen Link, behält nach `uninstall` den
+zweiten Eintrag, und die gemeinsamen Ordner bleiben für ihn bestehen. Entfernen
+Sie diesen aus Python mit dem Ordner in der Schreibweise, in der er installiert
+wurde. Eine Installation, die unter einer `\\localhost\C$`-Schreibweise eines
+Ordners auf diesem Computer vermerkt ist, wird nicht über ihre
+`C:\`-Schreibweise gefunden, da ein Eintrag auf einer Freigabe nicht von
+anderswo nachgeschlagen wird. Und wenn zwei Installationen über zwei Links zu
+zwei verschiedenen Ordnern vorgenommen wurden und ein Link später auf den
+anderen Ordner umgestellt wurde, nimmt die Deinstallation die Installation mit
+mehr ihrer Dateien in diesem Ordner. Wenn beide dieselben Dateinamen geschrieben
+haben (zwei Installationen desselben Releases) oder ein früheres Release sie
+vermerkt hat (es hat seine Dateien nicht aufgelistet), nimmt sie die neuere,
+deren Dateien in dem Ordner liegen können, zu dem der Link früher führte.
 
 Eine Entfernung mit `--harness all` ist bewusst erschöpfend: Sie umfasst jeden
 registrierten Harness, einschließlich derjenigen, die `exclude_harnesses` im
@@ -114,7 +763,7 @@ Der Alias in Verlaufsform `apothem uninstalling` (auch als
 | `--harness NAME` | Zu entfernender Harness-Adapter oder `all` für die registry-weite Menge (erforderlich). |
 | `--yes` | Überspringt die Bestätigungsabfrage. |
 | `--project PATH` | Projektwurzel für Harnesses mit Projekt-Geltungsbereich. |
-| `--quiet`, `-q` | Unterdrückt informative Ausgaben; nur Fehler werden ausgegeben. |
+| `--quiet`, `-q` | Unterdrückt informative Ausgaben; nur Fehler werden ausgegeben. Eine Deinstallation, die nicht abgeschlossen wird, gibt ihre `Warning:`-Zeilen, die auflisten, was sie behalten hat, weiterhin auf der Standardfehlerausgabe aus, und jede Deinstallation gibt dort eine `Warning:`-Zeile aus, die einen in einer Datei belassenen Apothem-Marker benennt. |
 | `--verbose`, `-v` | Aus Gründen der Konsistenz mit anderen Befehlen akzeptiert; dieser Befehl gibt keine zusätzliche Ausgabe aus. |
 | `--format plain\|json` | Ausgabeformat (Standard: `plain`). |
 | `--json` | Kurzform für `--format json`. |
@@ -156,6 +805,10 @@ In der JSON-Ausgabe hat der Umschlag `"status": "success"` und
 der Meldung `"not installed; no files
 removed"`. Das Feld `status` ist niemals `"not_installed"`.
 
+Ein an einem Link verweigertes Ergebnis benennt den Link in `detail.symlink` und
+den Ordner, zu dem er führt, in `detail.leads_to`, wie bei
+[`apothem install`](/docs/cli-reference/install#json-output).
+
 ## Beispiele
 
 ```bash
@@ -181,8 +834,8 @@ apothem uninstall --harness cursor --project A --yes     # removes it: no instal
 | Code | Bedeutung |
 |---|---|
 | 0 | Adapter deinstalliert oder war nicht installiert |
-| 1 | Harness nicht gefunden, Bestätigung abgelehnt oder nicht verfügbar (nicht interaktiver Modus oder JSON-Modus ohne `--yes`) oder jede Entfernung fehlgeschlagen |
-| 2 | Teilweise Entfernung — mindestens ein Harness wurde vor einem Fehlschlag entfernt |
+| 1 | Harness nicht gefunden, Bestätigung abgelehnt oder nicht verfügbar (nicht interaktiver Modus oder JSON-Modus ohne `--yes`), nichts wurde entfernt, weil jeder installierte Harness fehlschlug, bevor er etwas entfernte oder änderte, keinen Link benannte, der die eigenen Dateien von Apothem an ihrem Platz hält, keine Dateien der Installation eines früheren Releases oder einer Installation ohne Eintrag behielt und keine Datei mit zwei verschiedenen Blöcken zwischen den Markern von Apothem oder mit Markerzeilen, die Apothem nicht von Ihrem Text unterscheiden kann, belassen hat (ein unerwarteter Fehler, eine Ausnahme, im ersten Schritt einer Deinstallation von Open-Claw, Antigravity oder Kimi Code zählt als ein solcher Fehlschlag, unabhängig davon, was dieser Schritt geändert hatte), oder der Befehl wurde unterbrochen (`Ctrl+C`, das `Aborted!` ausgibt), unabhängig davon, was er bis dahin entfernt hatte |
+| 2 | Teilweise Entfernung — eine Deinstallation schlug fehl oder stoppte, nachdem sie Dateien entfernt oder die Einträge von Apothem aus einer Datei entfernt hatte (außer bei einem unerwarteten Fehler in einem solchen ersten Schritt, siehe `1`), mindestens ein Harness wurde entfernt und ein anderer schlug fehl, eine Deinstallation hat die eigenen Dateien von Apothem an ihrem Platz belassen, weil ein Link zu ihnen führt, eine Datei enthält zwei verschiedene Blöcke zwischen den Markern von Apothem oder Markerzeilen, die Apothem nicht von Ihrem Text unterscheiden kann, Dateien einer Installation, die ein früheres Release vermerkt hat, weichen von dem ab, was dieses Release schreibt, oder eine Installation hat keinen Eintrag, der zeigt, welche Dateien Apothem geschrieben hat |
 | 64 | Verwendungsfehler: eine unbekannte Option oder ein unbekannter Befehl oder ein fehlender oder ungültiger Optionswert. Unter `--json` ist der Fehler ein JSON-Umschlag mit dem Code `cli.usage`. |
 
 ## Siehe auch

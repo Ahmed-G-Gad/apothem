@@ -2,7 +2,7 @@
 title: "Plan-Disziplin — Projektlokaler, flüchtiger Arbeitsspeicher"
 description: "Verwalten Sie projektlokalen, flüchtigen Arbeitsspeicher in .apothem/plans/ (ein Legacy-.plans/-Baum wird per apothem migrate-workspace aktualisiert) mit Frontmatter-Schema, Lebenszyklus-Übergängen, Promotion zu ADRs und Durchsetzung über Hooks und Validatoren."
 machineTranslated: true
-sourceHash: "175d0e7730335ebd"
+sourceHash: "78ba9223bd5803ab"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -137,12 +137,12 @@ Wenn die Konfidenz für viele Pläne `high` ist, bietet der Prompt eine *Alle-mi
 Jedes Projekt, das dieses Ökosystem übernimmt, **MUSS** den folgenden Block zu seiner `.gitignore` hinzufügen:
 
 ```text
-# Apothem-Arbeitsverzeichnis (projektlokaler geteilter Zustand: Pläne, Memory,
-# Lernen, Kontexte; gitignored — niemals committet). Das einzige kanonische
-# Plan-Zuhause ist `.apothem/plans/`.
-# Siehe: <repo-url>/blob/main/site/content/docs/reference/plans-discipline.mdx
-# Ignorieren Sie die INHALTE dieses Verzeichnisses (nicht das Verzeichnis),
-# damit die `.keep`-Negation unten wirken kann.
+# Apothem working directory (project-local shared state: plans, memory,
+# learning, contexts; gitignored — never committed). The sole canonical plans
+# home is `.apothem/plans/`.
+# See: <repo-url>/blob/main/site/content/docs/reference/plans-discipline.mdx
+# Ignore the CONTENTS of this directory (not the directory) so the
+# `.keep` negation below can take effect.
 .apothem/*
 !.apothem/.keep
 ```
@@ -155,7 +155,7 @@ Die optionale `.keep`-Ausnahme bewahrt die Existenz des Verzeichnisses in Werkze
 
 Die Disziplin muss jede zukünftige Sitzung überdauern. Die folgenden Durchsetzungsflächen sind obligatorisch und im veröffentlichten Ökosystem kodiert:
 
-1. **`AGENTS.md` und gespiegelte Anweisungsflächen** — obligatorischer Verhaltensblock auf oberster Ebene, der erklärt: *„Planungsartefakte werden nach `<project-root>/.apothem/plans/` geschrieben — dem einzigen kanonischen Plan-Zuhause (ein Legacy-`<project-root>/.plans/`-Baum wird per `apothem migrate-workspace` aktualisiert) — niemals in irgendein Harness-Konfigurationsverzeichnis (zum Beispiel `~/.codex/` oder `~/.claude/`) und niemals an einen globalen Speicherort. Diese Regel ist nicht verhandelbar; zitieren Sie bei jeder zugehörigen Entscheidung §3 der Projektspezifikation."* Dieser Block wird vom Validator `plans-discipline-language` erkannt.
+1. **`AGENTS.md` und gespiegelte Anweisungsflächen** — obligatorischer Verhaltensblock auf oberster Ebene, der erklärt: *„Planungsartefakte werden nach `<project-root>/.apothem/plans/` geschrieben — dem einzigen kanonischen Plan-Zuhause. Ein Legacy-`<project-root>/.plans/`-Baum ist nicht mehr kanonisch; Operatoren aktualisieren einen vorhandenen per `apothem migrate-workspace`. Sie werden niemals in irgendein Harness-Konfigurationsverzeichnis (zum Beispiel `~/.codex/` oder `~/.claude/`) und niemals an einen globalen Speicherort geschrieben. Diese Regel ist nicht verhandelbar; §2 von `site/content/docs/reference/plans-discipline.mdx` legt sie vollständig dar."* Dieser Block wird vom Validator `plans-discipline-language` erkannt.
 2. **In-Repo-Anweisungsdatei pro Harness** — spiegelt dieselbe Direktive in der für die Anweisungsfläche dieses Harness angemessenen Rahmung wider (§4 *Plan-Disziplin*); vom selben Validator auf jeder registrierten Harness-Fläche erkannt.
 3. **Standard-Ausgabestil** — wenn eine Antwort planförmigen Inhalt produzieren würde (mehrstufige Strategie, Zerlegung, Design-Durchlauf, Debugging-Journal), leitet der Stil das Artefakt zu einem projektlokalen `.apothem/plans/`-Schreibvorgang, statt es inline zu drucken-und-verwerfen. Der Stil weist ausdrücklich an: *„Wenn keine Projektwurzel auffindbar ist, halten Sie mit einer strukturierten Rückfrage an, die den Operator fragt, wo geplant werden soll."*
 4. **Jeder delegierte Worker-Prompt** — trägt eine *Ausgabeflächen*-Strophe, die `.apothem/plans/` als Ziel für jedes Planungsartefakt benennt, und eine *Anti-Pattern*-Strophe, die harness-lokale Plan-Verzeichnisse als verboten benennt.

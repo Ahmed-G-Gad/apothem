@@ -2,7 +2,7 @@
 title: "Kern-Workflows"
 description: "Die vier Kern-Workflows von Apothem — Profil, Regeln, Pläne und das Konformitäts-Gate."
 machineTranslated: true
-sourceHash: "a53e8d62d7df7ef4"
+sourceHash: "2c2b69afe24907e5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -71,16 +71,23 @@ der [Pipeline-Befehlsreferenz](/docs/pipeline).
 
 ## Konformitäts-Gate
 
-Führen Sie von einem Apothem-Checkout aus Folgendes aus:
+Führen Sie es in einem Apothem-Checkout aus dessen Wurzel aus (`python -m`
+liest Module zuerst aus dem aktuellen Ordner, verwenden Sie also einen Ordner,
+dem Sie vertrauen):
 
 ```bash
 PYTHONPATH=src python -m apothem.conformity.gate --all .
 ```
 
-Nach einer Skript-Installation führen Sie Folgendes aus:
+Nach einer Skript-Installation führen Sie das Gate über seinen Skriptpfad mit
+`-E -s` aus, und zwar aus dem Projekt, das Sie prüfen möchten. Verwenden Sie unter
+Windows `python` anstelle von `python3` sowie in PowerShell `$HOME\.apothem\...`
+oder in cmd `%USERPROFILE%\.apothem\...` anstelle von `~/.apothem/...`, da
+Windows PowerShell und cmd `~` nicht expandieren;
+[Konformitäts-Gate](/docs/conformity-gate) erklärt die Flags:
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python3 -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
 
 Führt alle mechanischen Konformitätsprüfungen aus und meldet bestanden/nicht

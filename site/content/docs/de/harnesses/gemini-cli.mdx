@@ -2,7 +2,7 @@
 title: "Gemini CLI"
 description: "Apothem-Harness-Adapter für Gemini CLI (GA)."
 machineTranslated: true
-sourceHash: "231513ffdb2dcb22"
+sourceHash: "4b2afa3f4a237f9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,6 +34,10 @@ GEMINI.md
 .gemini/skills/
 .gemini/.apothem/support/
 ```
+
+Das Projekt erhält außerdem den Datenordner, den jede Projektinstallation
+anlegt, standardmäßig `.apothem/`, mit `contexts/`, `learning/`, `memory/` und
+`plans/` darin.
 
 ## Zuordnung von Profil zu nativer Konfiguration
 
@@ -79,6 +83,16 @@ einen Helfer, der bereits jeden MCP-Server erreicht.
 Gemini-Profil verwenden. Der Gemini CLI-Adapter schreibt nur in das über
 `--project` übergebene Projekt.
 
+Gemini CLI lädt außerdem zwei Orte in Ihrem Home-Verzeichnis, die andere
+Apothem-Installationen schreiben: `~/.agents/skills/`, Teil seiner Skill-Ebene
+auf Benutzerebene, wo mehrere Installationen die Skills von Apothem schreiben
+(die [Harness-Registry](/docs/reference/harness-registry#shared-roots) listet
+sie auf), und `~/.gemini/GEMINI.md`, wo die
+[Antigravity](/docs/harnesses/antigravity)-Installation einen Apothem-Block
+schreibt. Enthält einer der beiden Orte bereits Apothem-Inhalte, gibt die
+Installation von `gemini-cli` einen Hinweis aus, der den Ort und die
+Installation nennt, die ihn geschrieben hat.
+
 ## Verifizierung
 
 ```bash
@@ -120,11 +134,33 @@ Kopie unter `~/.apothem/backups/` gespeichert; im Projekt bleibt keine
 Sicherungsdatei zurück. Die YAML-Datei des gemeinsamen Profils und die
 Apothem-Engine bleiben unberührt.
 
+Frühere Releases (das [Changelog](/docs/changelog) nennt sie) entfernten
+außerdem bei jeder Installation und Aktualisierung die eigene
+`skills/AGENTS.md` eines Projekts (im Projektstammverzeichnis, nicht unter
+`.gemini/`), nachdem sie sie in einen Backup-Satz unter
+`~/.apothem/backups/<timestamp>/gemini_cli/` kopiert hatten.
+Das aktuelle Release lässt diese Datei unangetastet. Um sie zurückzubekommen,
+kopieren Sie `~/.apothem/backups/` an einen anderen Ort, bevor Sie Apothem
+erneut ausführen, und kopieren Sie dann die Datei aus dieser Kopie von Hand
+zurück in das Projekt. Das
+[Changelog](/docs/changelog#data-loss-in-earlier-releases-recover-your-files)
+enthält die vollständigen Wiederherstellungsschritte.
+
 ## Konformitäts-Gate
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Führen Sie ihn aus Ihrem Projektordner aus. Unter Windows verwenden Sie `python`
+statt `python3` und den vollständigen Pfad, da Windows PowerShell und cmd `~`
+nicht expandieren:
+`$HOME\.apothem\src\apothem\conformity\gate.py` in PowerShell oder
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` in cmd. Der Pfad ist der
+Ort, an den der Installer die Engine legt, und `-E -s` hält Ihren `PYTHONPATH`
+und die Site-Packages des Benutzers aus dem Gate heraus;
+[Konformitäts-Gate](/docs/conformity-gate) erklärt beides und die anderen
+Installationen.
 
 ## Fehlerbehebung
 

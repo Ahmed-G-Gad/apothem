@@ -2,7 +2,7 @@
 title: "Qwen Code"
 description: "Apothem-Harness-Adapter für Qwen Code (Beta)."
 machineTranslated: true
-sourceHash: "f5b172839bc072f8"
+sourceHash: "60c859a693851061"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,8 +34,17 @@ SKILL.md-Verzeichnisse und passt Helferdefinitionen als Qwen-Subagenten an.
 ~/.qwen/.apothem/support/{rules,templates,hooks}/
 ```
 
+Die Installation legt außerdem den Apothem-Datenordner an, standardmäßig
+`~/.qwen/.apothem/`, mit `contexts/`, `learning/`, `memory/` und `plans/` darin.
+
 Die Datei `~/.qwen/apothem/rules/00-apothem-profile.md` ist das Profildokument.
 Es trägt Ihre Identität und Ihre Präferenzen aus dem gemeinsamen Profil.
+
+Jede Installation und Aktualisierung löscht jede Datei in
+`~/.qwen/apothem/rules/`, die Apothem nicht dort abgelegt hat, nachdem sie sie
+in einem Backup-Satz unter `~/.apothem/backups/` gesichert hat. Diese Sicherung
+wird gelöscht, sobald 10 neuere Backup-Sätze des Harness existieren; bewahren
+Sie Ihre eigenen Dateien daher an einem anderen Ort auf.
 
 ## Zuordnung von Profil zu nativer Konfiguration
 
@@ -125,8 +134,18 @@ bleiben unberührt.
 ## Konformitäts-Gate
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Führen Sie ihn in Ihrem Projektordner aus. Verwenden Sie unter Windows `python`
+statt `python3` und den vollständigen Pfad, da Windows PowerShell und cmd `~`
+nicht expandieren:
+`$HOME\.apothem\src\apothem\conformity\gate.py` in PowerShell oder
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` in cmd. Der Pfad ist
+der Ort, an dem der Installer die Engine ablegt, und `-E -s` hält Ihren
+`PYTHONPATH` und Ihre Benutzer-site-packages vom Gate fern;
+[Konformitäts-Gate](/docs/conformity-gate) erklärt beides sowie die anderen
+Installationsarten.
 
 ## Fehlerbehebung
 

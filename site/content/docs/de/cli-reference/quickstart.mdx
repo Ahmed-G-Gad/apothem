@@ -2,7 +2,7 @@
 title: "quickstart"
 description: "CLI-Referenz für den geführten Erstlauf-Befehl apothem quickstart."
 machineTranslated: true
-sourceHash: "951e6d6877611c54"
+sourceHash: "a461df3fe9749c28"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -56,7 +56,13 @@ installiert jeden unterstützten Harness und ist immer eine explizite Wahl.
   Details je Fähigkeit); die vollständige Menge steht immer im warnings-Array von
   `--format json`.
 - **Nächster Schritt** — die Terminalausgabe nennt die Folgebefehle (`apothem
-  verify …`, `apothem doctor`).
+  verify …`, `apothem doctor`). Ein `--project`-Ordner wird für die Shell in
+  Anführungszeichen gesetzt, so wie [`doctor`](/docs/cli-reference/doctor) ihn
+  setzt. Wenn die Anführungszeichen ihn nicht tragen können, gibt die Ausgabe
+  den Befehl bis `--project` aus und nennt den Ordner danach in Worten, und der
+  Eintrag `recommended_next` im JSON lautet
+  `Run apothem verify --harness … with --project set to <folder>`, was kein
+  Befehl ist, der sich unverändert ausführen lässt.
 
 ## Optionen
 
@@ -87,11 +93,24 @@ zusammenfasst:
   "steps": [
     {"step": "profile", "outcome": "created", "path": "…", "placeholder_identity": ["name", "email", "github"]},
     {"step": "install", "status": "success", "harness": "all", "files_written": ["…"], "warnings": [], "results": []},
-    {"step": "recommend", "next": ["apothem verify --harness all --project .", "apothem doctor"]}
+    {"step": "recommend", "next": ["apothem verify --harness all --project \".\"", "apothem doctor"]}
   ],
-  "recommended_next": ["apothem verify --harness all --project .", "apothem doctor"]
+  "recommended_next": ["apothem verify --harness all --project \".\"", "apothem doctor"]
 }
 ```
+
+Wenn der Installationsschritt eine Datei wegen ihrer Apothem-Markerzeilen
+unverändert lässt (siehe [`install`](/docs/cli-reference/install#capability-notes)),
+sind beide `status`-Werte `"partial"` und der Exit-Code ist `2`. Im
+Plain-Modus gibt der Lauf die `✗`-Zeile der Installation aus, dann die
+empfohlenen nächsten Schritte. Da `apothem verify` für diese Datei fehlschlägt,
+bis Sie sie korrigieren, besteht der erste Schritt dann darin, jede Datei, die
+die Installation unverändert gelassen hat, so zu korrigieren, wie ihre Warnung
+es angibt, und `apothem update` für dieselben Werkzeuge auszuführen
+(`Fix the files it left:` im Plain-Modus und der erste `recommended_next`-Eintrag
+im JSON, `Fix each file the install
+left as it is, as its warning says, then run apothem update --harness …`),
+anstelle von `apothem verify`.
 
 ## Beispiele
 
@@ -108,7 +127,7 @@ apothem quickstart --harness claude-code --json
 |---|---|
 | 0 | Geführter Lauf abgeschlossen |
 | 1 | Erwarteter Validierungs-, Profil-, Harness-, Projekt- oder Adapterfehler |
-| 2 | Teilweise Batch-Materialisierung nach mindestens einem Schreibvorgang |
+| 2 | Teilergebnis: ein Batch wurde nach mindestens einem Schreibvorgang angehalten, oder die Installation hat eine Datei, in der Apothem seinen Block führt, wegen ihrer Apothem-Markerzeilen unverändert gelassen |
 | 64 | Verwendungsfehler: eine unbekannte Option oder ein unbekannter Befehl oder ein fehlender oder ungültiger Optionswert. Unter `--json` ist der Fehler ein JSON-Umschlag mit dem Code `cli.usage`. |
 
 ## Siehe auch

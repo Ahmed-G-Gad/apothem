@@ -2,7 +2,7 @@
 title: "Plattformen"
 description: "Unterstützte Betriebssysteme, Shells und Installer-Skripte für Apothem sowie die System-Python-Voraussetzung für die eigenständige Laufzeit."
 machineTranslated: true
-sourceHash: "40276e881e9e631c"
+sourceHash: "1c6e2bce2e1da696"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -45,8 +45,10 @@ er irgendetwas anderes tut:
   Microsoft-Store-Launcher-Shims ab, und der mitgelieferte `find-python`-Locator
   wendet dieselbe Untergrenze an.
 - **Laufzeitbibliotheken importierbar.** Die Engine importiert `click` und `rich` aus dem System-Interpreter; ihre übrigen Drittanbieter-Abhängigkeiten sind im Quellbaum eingebettet (vendored). Der Installer prüft, ob beide importierbar sind, benennt jede fehlende und bietet an, die fehlenden Voraussetzungen für dich zu installieren — mit deiner Bestätigung oder automatisch mit `--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1`.
-- **`git`** wird nur für die Netzwerkinstallation benötigt (das Skript klont den
-  Quellbaum). Eine lokale Installation aus einem Checkout benötigt kein `git`.
+- **`git`** und **`gpg`** werden nur für die Netzwerkinstallation benötigt: Das
+  Skript ermittelt damit das neueste Release und prüft dessen signierten Tag,
+  und ohne cosign klont es den Quellbaum. Eine lokale Installation aus einem
+  Checkout benötigt keines von beiden.
 
 Wenn der Interpreter, die Bibliotheken oder `git` fehlen, beendet sich der
 Installer mit einer Diagnose, die genau benennt, was bereitzustellen ist, statt

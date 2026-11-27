@@ -2,7 +2,7 @@
 title: "Prüfliste zur maschinenübergreifenden Synchronisation"
 description: "Prüfverfahren, um zu bestätigen, dass der Adapter für Claude Code auf einem frischen Host korrekt installiert, validiert und deinstalliert wird, mit vollständigen Portabilitätsprüfungen."
 machineTranslated: true
-sourceHash: "649ffe348614b809"
+sourceHash: "b241d44d7e0005f9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -110,6 +110,12 @@ make test                                                     # exit 0, no failu
 **Erwartet:** Jedes Gate grün. Exit-Codes und Zusammenfassungszeilen erfassen.
 
 ## 5. Verifizierung der Deinstallation
+
+Führen Sie diese Befehle in `$HOME/.apothem` aus, dem Ordner, in den Abschnitt 4
+gewechselt ist. Die Deinstallation entfernt den `apothem`-Shim, daher starten die
+`verify`-Zeilen die Engine aus dem behaltenen Quellcode mit `python3 -m`, das
+Module zuerst aus dem aktuellen Ordner liest: Führen Sie sie nur in diesem Ordner
+oder in einem anderen Ordner aus, dem Sie vertrauen.
 
 ```bash
 # POSIX path — interactive uninstall

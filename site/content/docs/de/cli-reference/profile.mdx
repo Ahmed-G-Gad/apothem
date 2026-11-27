@@ -2,7 +2,7 @@
 title: "profile"
 description: "CLI-Referenz für die Befehlsgruppe apothem profile."
 machineTranslated: true
-sourceHash: "012b17d6a7a7bc49"
+sourceHash: "93fe295d7fa540f1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -89,7 +89,31 @@ abgelehnt, und das Profil auf der Festplatte bleibt unverändert.
 
 ### `profile edit`
 
-Öffnet das gemeinsame Profil im Systemeditor.
+Öffnet das gemeinsame Profil im Systemeditor. Existiert unter dem Pfad noch
+kein Profil, schreibt `edit` dort zuerst das Startprofil, dasselbe Gerüst, das
+`profile init` schreibt, und öffnet es dann.
+
+### Profile hinter einem Link
+
+Ein Profilpfad, der innerhalb Ihres Home-Verzeichnisses angegeben ist, etwa der
+Standard `~/.config/apothem/profile.yaml`, wird nicht über einen Link
+geschrieben, der aus Ihrem Home-Verzeichnis herausführt. Dieser Link kann ein
+Ordner oberhalb des Profils sein, etwa `~/.config` (unter Windows zählt eine
+Junction als Link), oder die Profildatei selbst, etwa eine Dotfiles-Datei auf
+einem anderen Laufwerk. `profile init`, `profile set` und `profile edit`
+halten dann an, bevor sie etwas schreiben oder öffnen. Gibt es noch kein
+Profil, lautet die Meldung `Apothem could not create the starter profile`.
+Über einem vorhandenen Profil halten `profile set`, `profile edit` und `profile init
+--force` mit `Apothem could not write the profile` an; `profile init` ohne
+`--force` hält zuerst mit `profile file already exists` an, wie überall.
+`profile show` und die Befehle, die das Profil nur lesen, lesen es weiterhin.
+Ein Link, der innerhalb Ihres Home-Verzeichnisses bleibt, wie ihn
+Dotfile-Manager anlegen, wird verfolgt. Um das Profil außerhalb Ihres
+Home-Verzeichnisses zu halten, übergeben Sie `--profile PATH` mit dem eigenen
+Pfad des Profils dort, einschließlich des Pfads, zu dem ein Profildatei-Link
+führt: Ein Pfad, den Sie außerhalb Ihres Home-Verzeichnisses angeben, wird
+dorthin geschrieben, wohin seine Links führen. Gibt es dort noch kein Profil,
+legen Sie es zuerst mit `apothem profile init --profile PATH` an.
 
 ## Validierungsfehler
 

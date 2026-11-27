@@ -2,7 +2,7 @@
 title: "Agenten-Architektur"
 description: "Wie Apothem eine einzige agentische Fähigkeitskohorte über siebzehn Harnesses mit divergierenden Hook-Oberflächen und Regelformaten projiziert."
 machineTranslated: true
-sourceHash: "f7b510f076abbabd"
+sourceHash: "be0f8df513fb3c8f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -43,7 +43,7 @@ Materializer eine native Konfiguration rendert.
 | hermes | Nur Unterstützungsmaterial | `config.yaml` plus externes Skill-Verzeichnis | Klasse II-B | `config.yaml` |
 | kimi-code | Nur Unterstützungsmaterial | `AGENTS.md` plus Unterstützungsregeln unter `.kimi-code/.apothem/support/` | Klasse I | keiner |
 | kiro | Native SessionStart in `.kiro/hooks/apothem.json`; kein Tool-Event-Hook (der Vendor ignoriert deren Ausgabe) | `.kiro/steering/apothem-rules.md` Steering-Datei | Klasse I | keiner |
-| open-claw | Nur Unterstützungsmaterial | `openclaw.json` plus zusätzliches Skill-Verzeichnis | Klasse II-B | `openclaw.json` |
+| open-claw | Nur Unterstützungsmaterial | `openclaw.json` plus zusätzliches Skill-Verzeichnis und eine Workspace-Regeldatei `apothem/AGENTS.md`, die der Hook `bootstrap-extra-files` lädt | Klasse II-B | `openclaw.json` |
 | opencode | Nur Unterstützungsmaterial | profil-gerendertes JSON plus native Commands, Skills und Agenten | Klasse II-B | `opencode.json` |
 | qwen-code | Native PreToolUse / Stop / SessionStart | `QWEN.md` plus native Commands, Skills und Agenten | Klasse II-B | `settings.json` / `QWEN.md` |
 | trae | Keine | `.trae/rules/apothem-rules.md` Projektregeldatei | Klasse I | keiner |
@@ -61,7 +61,7 @@ Anmerkungen zur Matrix:
   Agenten nach TOML, verpackt Command-Prompts als Codex-Skills und belässt
   `config.toml` in der Hoheit des Operators.
 - **antigravity** behält `~/.gemini/GEMINI.md` als globalen Kontextanker und
-  installiert ein Apothem-Plugin unter `~/.gemini/antigravity-cli/plugins/apothem/`.
+  installiert ein Apothem-Plugin unter `~/.gemini/config/plugins/apothem/`.
   Hook-Dateien bleiben als Unterstützungsmaterial erhalten, bis der Adapter die
   Übersetzung des Antigravity-Hook-Schemas übernimmt.
 - **cursor** aktiviert Regeln über eine `.mdc`-Datei, die das Vendor-MDC-Frontmatter
@@ -147,7 +147,7 @@ Harness in der Matrix lässt sich auf eine davon zurückführen.
 | Achse | Über die siebzehn Harnesses beobachtete Spannweite |
 |------|---------------------------------------------|
 | Hook-Oberfläche | Native Multi-Event (claude-code, codex, qwen-code) → nativ bei den Events, die der Vendor an das Modell liefert (codebuddy: SessionStart und PostToolUse; cursor: sessionStart; github-copilot: sessionStart und postToolUse; kiro: SessionStart; windsurf: SessionStart und PostToolUse) → nur Unterstützungs-Hook-Material (antigravity, gemini-cli, hermes, kimi-code, open-claw, opencode) → kein vom Adapter registrierter Hook (glm, trae, zed) |
-| Regel-Aktivierungsformat | Flach `.md` (claude-code) → Plugin-Regeln (antigravity) → `.mdc`-Workspace (cursor) → Verzeichnisregeln (codebuddy, trae, windsurf) → Steering-Datei (kiro) → flache Datei im Projektstamm (zed) → einzelne eingebettete Datei (codex, gemini-cli, github-copilot, kimi-code) → konfigurations-referenziertes Unterstützungsmaterial (hermes, open-claw, opencode, qwen-code) → Backend-Provider-Konfiguration (glm) |
+| Regel-Aktivierungsformat | Flach `.md` (claude-code) → Plugin-Regeln (antigravity) → `.mdc`-Workspace (cursor) → Verzeichnisregeln (codebuddy, trae, windsurf) → Steering-Datei (kiro) → flache Datei im Projektstamm (zed) → einzelne eingebettete Datei (codex, gemini-cli, github-copilot, kimi-code) → per Hook geladene Workspace-Regeldatei (open-claw) → konfigurations-referenziertes Unterstützungsmaterial (hermes, opencode, qwen-code) → Backend-Provider-Konfiguration (glm) |
 | Adapterklasse | Klasse I Roh-Propagation → Klasse II-A Roh + Vendor-Settings → Klasse II-B profil-gerenderte Einzeloberfläche |
 
 

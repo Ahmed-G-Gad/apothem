@@ -2,7 +2,7 @@
 title: "install"
 description: "CLI-Referenz für den Befehl apothem install."
 machineTranslated: true
-sourceHash: "16be1a92f6de53b3"
+sourceHash: "5ba6f0eafa4b1b6f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,13 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 Lädt und validiert das gemeinsame Profil, wählt einen benannten Adapter oder die
 registry-weite Menge `all` aus, validiert den Materialisierungsplan und schreibt
 die harness-native Konfiguration sowie die Unterstützungskohorten. Adapter mit
-Projekt-Geltungsbereich erfordern `--project PATH`.
+Projekt-Geltungsbereich erfordern `--project PATH`. Der Ordner wird mit
+verfolgten Links und erweitertem `~` gelesen, und der Installationsdatensatz
+benennt ihn auf diese Weise. Eine Installation, die unter einer anderen
+Schreibweise des Ordners aufgezeichnet ist, etwa einem Link, den Python-Code
+oder ein früheres Release beibehalten hat, wird auf diese Schreibweise
+umgestellt, sobald die Installation ihre Prüfungen besteht (siehe
+[`uninstall`](/docs/cli-reference/uninstall)).
 
 Der Alias in Verlaufsform `apothem installing` (auch als `apothem Installing`
 akzeptiert) wird auf denselben Handler aufgelöst.
@@ -57,6 +63,39 @@ mit einer eigenen Bestätigung pro Ziel: Er schreibt eine Sicherung unter
 `~/.apothem/backups` und entfernt die Ziele, die Sie bestätigen. Diese
 Entfernungen und die Sicherung bleiben bestehen, wenn die Installationsabfrage
 abgelehnt wird.
+Die Ziele sind die Werkzeugordner in Ihrem Home-Verzeichnis, die die Abfrage
+auflistet, darunter `~/.agents` und `~/.config/apothem`.
+Bei einem Ziel, das selbst ein Link ist, eine Windows-Junction eingeschlossen,
+wird nur der Link entfernt, und ein Link innerhalb eines Ziels wird entfernt,
+ohne betreten zu werden. Ist `~/.config` ein Link, der aus Ihrem
+Home-Verzeichnis herausführt, hält der Schritt für den sauberen Neuanfang mit
+`Clean-slate removal was refused` an, bevor er etwas sichert oder entfernt, da
+das Entfernen von `~/.config/apothem` den Ordner am anderen Ende dieses Links
+löschen würde. Der Fehler nennt den Link: Ersetzen Sie ihn durch einen echten
+Ordner, oder lassen Sie ihn auf einen Ordner innerhalb Ihres
+Home-Verzeichnisses führen. Der Schritt hält auch an, bevor er etwas ändert und
+bevor er das Startprofil anlegt, wenn Ihr Home-Verzeichnis kein vollständiger
+Pfad ist, die Wurzel eines Laufwerks oder Dateisystems ist, ein Link oder eine
+Junction ist, die zu einer solchen führt, oder über einen Link erreicht wird,
+der eine Schleife bildet.
+
+Der Schritt für den sauberen Neuanfang entfernt das Standardprofil,
+`~/.config/apothem/profile.yaml`, zusammen mit `~/.config/apothem` und schreibt
+es danach zurück. Ein Profil, das er nicht entfernt hat, etwa eines, das Sie mit
+`--profile PATH` aus einem anderen Ordner übergeben, wird überhaupt nicht
+geschrieben. Das Zurückschreiben folgt derselben Regel wie jeder andere
+Profil-Schreibvorgang: Es wird abgelehnt, wenn ein Link es aus Ihrem
+Home-Verzeichnis herausführen würde. Kann das Profil nicht zurückgeschrieben
+werden, beendet sich der Befehl mit 1, und der Fehler nennt die
+Sicherungskopie, die es enthält. Der Fehlercode ist
+`clean_slate.profile_restore_refused`, wenn ein Link den Schreibvorgang
+abgelehnt hat, und `clean_slate.profile_restore_failed`, wenn der
+Schreibvorgang selbst fehlgeschlagen ist. Bricht eine Entfernung mittendrin ab,
+etwa bei einer Datei, die ein anderes Programm geöffnet hält, wird zuerst das
+Profil zurückgeschrieben. Der Befehl beendet sich dann mit 1 und dem Fehlercode
+`clean_slate.removal_failed`, und der Fehler nennt den Sicherungsordner. Kann
+das Profil nicht zurückgeschrieben werden, ist der Fehler stattdessen einer der
+beiden Profilcodes oben.
 
 ## Ordner in Ihrem Home-Verzeichnis
 
@@ -88,12 +127,42 @@ all seven                               ->  ~/.config/apothem/rules/ and templat
   geschriebenen Skill-Ordner unter seinem endgültigen Namen hinterlässt. Führen
   Sie die Installation erneut aus, um sie abzuschließen; sie ersetzt einen
   übrig gebliebenen Staging-Ordner.
-- Ein symbolischer Link auf oder oberhalb eines dieser Ordner, wie ihn
-  Dotfile-Manager für `~/.config` oder `~/.agents` anlegen, wird verfolgt, wenn er
-  an eine Stelle innerhalb Ihres Home-Verzeichnisses führt. Ein Link, der Ihr
-  Home-Verzeichnis verlässt, bricht die Installation mit
-  `target escapes the allowed materialization root` ab, ebenso ein Link innerhalb
-  eines Skill-Ordners.
+- Ein Link auf oder oberhalb eines dieser Ordner, wie ihn Dotfile-Manager für
+  `~/.config` oder `~/.agents` anlegen, wird verfolgt, wenn er an eine Stelle
+  innerhalb Ihres Home-Verzeichnisses führt. Unter Windows zählt eine Junction
+  als Link. Ein Link, der Ihr Home-Verzeichnis verlässt, bricht die Installation
+  mit `target escapes the
+  allowed materialization root` ab, gefolgt vom Link, dem Ordner, zu dem er
+  führt, und der Korrektur: Ersetzen Sie den Link durch einen echten Ordner. In
+  einen Skill-Ordner, der selbst ein Link ist, wird nie geschrieben: Die
+  Installation überspringt ihn mit einer Warnung oder hält an, wenn Apothem
+  diesen Skill zuvor dort geschrieben hat. Ein Link innerhalb eines
+  Skill-Ordners, den Apothem geschrieben hat, wird durch einen Ordner ersetzt,
+  wenn die Installation diesen Skill das nächste Mal schreibt.
+- Ein Harness-Ordner unterhalb von `~/.config`, etwa `~/.config/opencode/` von
+  OpenCode oder ein `CODEX_HOME` dort, folgt ebenfalls einem Link bei
+  `~/.config`, der an eine Stelle innerhalb Ihres Home-Verzeichnisses führt.
+  Ein Link bei `~/.config`, der Ihr Home-Verzeichnis verlässt, bricht die
+  Installation ab, bevor sie eine Datei schreibt, ebenso ein Link auf einem
+  Pfad, den die Installation innerhalb des Harness-Ordners schreibt. Beim
+  ersten Lauf wird auch das Startprofil, ebenfalls unterhalb von `~/.config`,
+  nicht über einen Link geschrieben, der Ihr Home-Verzeichnis verlässt: Der
+  Lauf hält mit `Apothem could
+  not create the starter profile` an, wie es `apothem quickstart`, `apothem profile
+  init`, `apothem profile set` und `apothem profile edit` tun. Um das Profil
+  außerhalb Ihres Home-Verzeichnisses zu halten, legen Sie es zuerst dort mit
+  `apothem
+  profile init --profile PATH` an, wobei PATH sein eigener Pfad außerhalb Ihres
+  Home-Verzeichnisses ist, und übergeben Sie jedem Befehl dasselbe
+  `--profile PATH`. Das bringt nur über den Profilschritt hinweg: Eine
+  Installation, die unterhalb von `~/.config` schreibt, hält weiterhin am Link
+  an. Für OpenCode setzen Sie außerdem `XDG_CONFIG_HOME` (siehe
+  [OpenCode](/docs/harnesses/opencode)). Ein Harness, dessen Installation immer
+  `~/.config/apothem/` schreibt, braucht stattdessen einen Link, der innerhalb
+  Ihres Home-Verzeichnisses bleibt; seine Harness-Seite sagt das.
+- Ein Home-Ordner, der selbst ein Link ist, etwa ein Windows-Benutzerprofil,
+  das hinter einer Junction auf ein anderes Laufwerk verschoben wurde, wird
+  verfolgt: Jeder Schreibvorgang bleibt innerhalb des Ordners, zu dem er führt.
 - Die Installation fügt Ihrem Repository keine Skill- oder Regeldatei hinzu. Das
   Projekt erhält die Regeldatei des Adapters sowie den Datenordner `.apothem/`,
   den jede Projektinstallation anlegt.
@@ -104,6 +173,51 @@ all seven                               ->  ~/.config/apothem/rules/ and templat
   `"operation": "skill_conflict"`, der den Ordner benennt. Benennen Sie den
   Ordner um oder verschieben Sie ihn und führen Sie dann
   [`update`](/docs/cli-reference/update) aus.
+- Diese Regel gilt für jeden gemeinsamen Skills-Ordner in der Tabelle oben:
+  `~/.agents/skills/`, `~/.codebuddy/skills/`, `~/.kiro/skills/` und
+  `~/.trae/skills/`. Ein Installationsdatensatz zeigt, dass ein Skill-Ordner
+  dort Apothem gehört, solange sein Installationsordner (ein Projekt oder ein
+  `CODEX_HOME`) aktiv ist: Er ist vorhanden und enthält noch eine der Dateien,
+  die diese Installation darin aufgezeichnet hat, mit dem Inhalt von Apothem.
+  Eine Datei, die Apothem gehört, zählt, solange sie vorhanden ist. Eine Datei,
+  die Ihnen gehört, etwa eine Anweisungsdatei, der Apothem seinen Block
+  hinzugefügt hat, zählt nur, solange sie diesen Block noch enthält oder, bei
+  einer Datei ohne Block, den Inhalt, den Apothem aufgezeichnet hat; ein neu
+  geklontes Projekt, das nur seine eigene Kopie der Datei behält, ist daher
+  nicht aktiv. Die Unterstützungsdateien, die eine Installation unter
+  `.apothem/support/` schreibt, zählen; die Datenspeicher unter `.apothem/`
+  (Memory, Kontexte, Pläne) zählen nicht, ebenso wenig eine Datei, die über
+  einen Link innerhalb des Installationsordners erreicht wird.
+- Jeder andere Datensatz, dessen Installationsordner nicht mehr existiert,
+  keine Apothem-Dateien enthält oder nicht gelesen werden kann (ein Laufwerk
+  oder eine Netzwerkfreigabe, die nicht antwortet, ein Berechtigungsfehler),
+  zeigt nur dann, dass ein Skill-Ordner Apothem gehört, wenn dieser Ordner
+  genau die Dateien enthält, die diese Installation aufgezeichnet hat,
+  unverändert, ohne hinzugefügte Datei und ohne Link darin. Ein Ordner, der
+  bereits enthält, was dieses Release schreibt, bleibt unverändert, sodass ein
+  unbearbeiteter Ordner, den ein früheres Release geschrieben hat, nicht
+  betroffen ist, solange er noch dem entspricht, was dieses Release schreibt.
+- Die gemeinsamen Ordner selbst zählen nie als Dateien eines
+  Installationsordners, sodass ein im Home-Ordner installiertes Projekt nicht
+  allein deshalb aktiv ist, weil `~/.agents/skills/` oder `~/.config/apothem/`
+  vorhanden ist.
+- Wenn also nur solche Datensätze einen Skill-Ordner auflisten, überspringt die
+  Installation ihn und lässt ihn in drei Fällen unberührt: Sie haben dort Ihren
+  eigenen Skill abgelegt, Sie haben ihn bearbeitet (eine Datei geändert,
+  hinzugefügt oder entfernt), oder ein früheres Release, das seine Dateien nicht
+  aufgezeichnet hat, hat ihn geschrieben, und dieses Release schreibt etwas
+  anderes. Dasselbe gilt, wenn nur eine frühere Installation im selben Ordner
+  ihn aufgelistet hat: Eine Installation, die den Ordner übersprungen hat,
+  listet ihn nicht auf, und er ist weiterhin nicht belegt, sofern er nicht
+  genau die Dateien enthält, die diese frühere Installation aufgezeichnet hat.
+  Die Warnung von Installation, Aktualisierung und Dry-Run nennt die Ursache und
+  die zwei Wege weiter, mit denselben Worten wie
+  [`verify`](/docs/cli-reference/verify), das den Harness als nicht
+  verifiziert meldet und diese Ordner nennt. Um Ihren Skill zu behalten, lassen
+  Sie ihn dort. Um die Version von Apothem zu verwenden, verschieben Sie den
+  Ordner aus dem Skills-Ordner und führen Sie dann
+  [`update`](/docs/cli-reference/update) für diesen Harness aus (mit
+  `--project` für einen Harness mit Projekt-Geltungsbereich).
 - Jede solche Installation, Aktualisierung und jeder solche Dry-Run gibt einen
   `Note:` aus, der die Ordner benennt, die außerhalb von `--project` geschrieben
   werden. Im JSON-Umschlag ist er ein `warnings`-Eintrag mit
@@ -119,8 +233,57 @@ verworfen. Im Plain-Modus ist dies ein einzelner gruppierter Hinweis je Harness
 unter `--verbose` gibt jede Fähigkeit ihre eigene Begründungszeile aus. Jede
 andere Adapterwarnung wird auch im Plain-Modus in einer eigenen `Warning:`-Zeile
 ausgegeben, zum Beispiel die Zed-Warnung, die eine Anweisungsdatei benennt, die
-von der neuen `.rules`-Datei verdeckt wird. Der `--format json`-Umschlag trägt
-unabhängig von der Ausführlichkeit immer das vollständige `warnings`-Array.
+von der neuen `.rules`-Datei verdeckt wird, und die Warnung, die eine Datei
+benennt, die einen Apothem-BEGIN-Marker ohne nachfolgendes END enthält: Die
+Installation behält den Text nach diesem Marker und schreibt den Block von
+Apothem getrennt davon, daher nennt die Warnung die Zeile des Markers, gibt
+nummerierte Schritte, die diese Zeile und jede andere BEGIN-Markerzeile außer
+der, die den Block von Apothem öffnet, ändern (auch einen BEGIN-Marker, den Sie
+in Code zitieren), und sagt, den END-Marker nicht stattdessen wieder
+hinzuzufügen, was
+dann zwei Apothem-Blöcke hinterließe (siehe
+[Fehlerbehebung](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
+Ebenso die Warnung für eine Datei, die zwei oder mehr vollständige Blöcke
+zwischen den Markern von Apothem enthält und jeden Block mit seinen Zeilen
+nennt (siehe
+[Eine Datei enthält zwei Blöcke zwischen den Markern von Apothem](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)),
+und die Warnung für eine Datei, in der Apothem seinen Block nicht von Ihrem
+Text unterscheiden kann und die jedes Markerpaar und dessen Behebung nennt (siehe
+[Apothem kann seinen Block nicht von Ihrem Text unterscheiden](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)):
+Die Installation lässt eine solche Datei unverändert (bei Markerpaaren,
+solange ein Installationsdatensatz die Datei auflistet; siehe
+[`update`](/docs/cli-reference/update)). Eine Installation, die eine solche
+Datei unverändert lässt, endet als teilweise, da das Werkzeug aus dieser Datei
+keinen aktuellen Apothem-Block erhält: Statt der `✓`-Zeile gibt sie auf der
+Standardfehlerausgabe eine `✗`-Zeile aus, die die Datei nennt (sodass
+`--quiet` sie behält), der `status` des `--format json`-Umschlags ist
+`"partial"`, die Warnung zu dieser Datei trägt
+`"detail": {"left_as_is": "1"}`, und der Exit-Code ist `2`. Jede Installation
+und Aktualisierung endet so, bis Sie die Markerzeilen korrigieren, die die
+Warnung nennt. Ohne `--quiet` endet eine solche Installation mit
+`--harness all` mit einer Zusammenfassungszeile, die statt mit `✓` mit `!`
+beginnt und die unverändert gelassenen Dateien zählt:
+`! Installed <n> harnesses (<m> files written); <k> file(s) left as they are, named above.`
+Mit `--clean` gibt eine solche Installation ihren nächsten Schritt,
+`apothem verify`, nicht aus, da er fehlschlägt, bis Sie die Datei korrigieren.
+In einem Dry-Run sagt die Warnung für eine unverändert gelassene Datei, dass
+Apothem
+"would leave the file as it is", und der Lauf endet weiterhin mit `status`
+`"dry_run"` und Exit-Code `0`. Eine Regel in Ihrem Profil, die einen Codeblock
+öffnet und nie schließt, verdeckt nicht den END-Marker des Blocks, den die
+Installation schreibt: Die Installation schließt diesen Codeblock am Ende des
+Blocks. Ein Block, den ein früheres Release aus einer solchen Regel geschrieben
+hat, hat keine solche schließende Zeile. Ein Codeblock von Ihnen, der oberhalb
+des Blocks von Apothem öffnet und nie schließt, ist ein anderer Fall: Eine
+schließende Zeile im Block schließt ihn, sodass der Block als Code gelesen
+wird. Die Installation warnt vor einem solchen Block, sobald sie ihn schreibt,
+und die Warnung nennt den Codeblock, der oberhalb des BEGIN-Markers zu
+schließen ist (siehe
+[Apothem kann seinen Block nicht von Ihrem Text unterscheiden](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+Ein Dry-Run liest die Datei, bevor etwas geschrieben wird, und zeigt daher
+nicht, dass der Block nach dem Schreiben als Code gelesen würde.
+Der `--format json`-Umschlag trägt unabhängig von der Ausführlichkeit immer das
+vollständige `warnings`-Array.
 
 Installation und Aktualisierung geben außerdem Empfehlungshinweise als
 `Note:`-Zeilen aus. Ein Empfehlungshinweis ändert niemals, was die Installation
@@ -163,6 +326,34 @@ würde den Befehl eine andere Datei ausführen lassen; daher bricht die Installa
 (und `--dry-run`) mit einem Fehler ab, der den Pfad benennt, und schreibt nichts;
 verschieben oder benennen Sie das Projekt um und führen Sie den Befehl erneut aus.
 Ein Leerzeichen oder ein Apostroph in einem Pfad ist unproblematisch.
+
+Manche Werkzeuge laden aus einer festen Liste in einem Ordner nur die erste
+Datei mit Text, sodass eine Datei von Ihnen vor der, die Apothem schreibt, das
+Werkzeug daran hindert, den Apothem-Block zu laden. Zum Beispiel liest
+[ein unterstütztes Werkzeug](/docs/harnesses/codex#compatibility-notes) eine
+`AGENTS.override.md` mit Text statt der `AGENTS.md`, die Apothem daneben in den
+Home-Ordner dieses Werkzeugs schreibt. Installation und Aktualisierung geben
+dann einen Hinweis aus, der diese Datei nennt, Dry-Runs eingeschlossen. Eine
+leere Override-Datei wird übersprungen, ebenso ein symbolischer Link auf
+`AGENTS.md`; ein Hardlink oder eine Kopie erhält den Hinweis, weil eine
+Installation, die `AGENTS.md` neu schreibt, sie als separate Datei
+zurücklässt. OpenCode 1 funktioniert anders: Eine `instructions`-Liste in einer
+`opencode.jsonc`, selbst eine leere, ersetzt die Liste, die Apothem in
+`opencode.json` im selben Ordner schreibt. Eine
+`config.json`, `opencode.json` oder `opencode.jsonc` dort, die es nicht lesen
+oder parsen kann, deren oberste Ebene kein Objekt ist, deren
+`instructions`-Wert keine Liste von Text ist oder die ein `{file:path}` mit
+einer Datei enthält, die es nicht lesen kann, hindert es daran, irgendeinen
+Teil seiner Konfiguration zu laden, ebenso ein Ordner mit einem dieser Namen.
+Installation und Aktualisierung geben auch für jede solche Datei einen
+`instruction_override`-Hinweis aus, außer für eine `opencode.json`, die sie
+nicht einmal als JSON5 parsen können und die sie mit einem
+`config.unparseable`-Fehler ablehnen
+([OpenCode-Hinweise](/docs/harnesses/opencode#compatibility-notes)). Der
+Hinweis ist ein `warnings`-Eintrag mit `"outcome": "advisory"` und
+`"operation": "instruction_override"`, dem `harness`, dem `path` der Datei, um
+die es im Hinweis geht, dem `target`, das die Installation schreibt, und einer
+`message`.
 
 Die MCP-Server des Profils erhalten drei Empfehlungshinweise, die jeweils das
 Profilfeld benennen:
@@ -244,6 +435,10 @@ JSON-Dokument nach stdout geschrieben:
 }
 ```
 
+Eine Installation, die eine Datei wegen ihrer Apothem-Markerzeilen unverändert
+gelassen hat, hat `status` `"partial"` und beendet sich mit Code `2` (siehe
+[Hinweise zu Fähigkeiten](#hinweise-zu-fähigkeiten)).
+
 Bei `--dry-run` wird nichts geschrieben, und `results` listet jeden Pfad auf, den
 die Installation schreiben würde, jeweils mit dem Ergebnis, das sie hätte
 (`created`, `updated` oder `unchanged`), und, für eine Datei, die Sie ebenfalls
@@ -271,6 +466,11 @@ bearbeiten, mit dem Unified Diff in `detail.diff` — derselbe Plan, den
   "error": null
 }
 ```
+
+Ein an einem Link abgelehntes Ergebnis nennt den Link in `detail.symlink` und
+den Pfad, zu dem er führt, in `detail.leads_to`. Ein Ergebnis, das abgelehnt
+wurde, weil ein Link den Ordner eines Werkzeugs aus Ihrem Home-Verzeichnis
+herausführt, trägt außerdem die Korrektur in `detail.fix`.
 
 Wenn `--clean` angegeben wird, trägt der Umschlag zusätzlich ein `clean`-Objekt,
 das die Entfernungsphase beschreibt — die Liste der Dispositionen je Ziel, ob der
@@ -334,7 +534,7 @@ apothem Installing --harness claude-code   # capitalized variant
 |---|---|
 | 0 | Adapter erfolgreich installiert oder Dry-Run sauber geplant |
 | 1 | Erwarteter Validierungs-, Profil-, Harness-, Projekt- oder Adapterfehler |
-| 2 | Teilweise Batch-Materialisierung nach mindestens einem Schreibvorgang |
+| 2 | Teilweise: Ein Batch hat nach mindestens einem Schreibvorgang angehalten, oder die Installation hat eine Datei, in der Apothem seinen Block hält, wegen ihrer Apothem-Markerzeilen unverändert gelassen (siehe [Hinweise zu Fähigkeiten](#hinweise-zu-fähigkeiten)); `status` ist `"partial"` |
 | 64 | Verwendungsfehler: eine unbekannte Option oder ein unbekannter Befehl oder ein fehlender oder ungültiger Optionswert. Unter `--json` ist der Fehler ein JSON-Umschlag mit dem Code `cli.usage`. |
 
 ## Siehe auch
