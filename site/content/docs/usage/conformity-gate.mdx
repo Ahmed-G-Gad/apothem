@@ -148,7 +148,8 @@ Each validator's report lists the links and special files it left out under
 `skipped_links`, so a link never hides a file without a trace. It also lists
 there a folder it could not list (no access, a path too long, a read error),
 and the `.git` entry of a folder it skipped as a nested checkout when that
-entry is a link or a special file. A validator
+entry is a link or a special file; the folder itself is listed under
+`skipped_checkouts`, described below. A validator
 that passes when its folder is missing, such as the workflow validators, does
 not pass when that folder is a link: the files may be behind it, so the run
 fails like one that checked nothing. A hard link is a regular file and is read
@@ -398,11 +399,12 @@ plain `.git` file or an empty `.git` folder does not hide its folder), never
 enter a linked folder, and skip directories that hold
 dependencies, virtual environments, caches or build output, such as
 `node_modules`, `venv` and `dist`. The
-stray-plans check in `no-global-plans-grep` also stops at a nested checkout. A
-`.git` file that names the project's own repository or one outside the project
-still hides its folder, as it does for git, but the report lists that `.git`
-file under `skipped_links`; a worktree or a submodule of the project stays
-silent. A run of any of these reports on the checkout it was pointed at and on
+stray-plans check in `no-global-plans-grep` also stops at a nested checkout.
+Every folder skipped as a nested checkout is listed under `skipped_checkouts`
+in the report, whatever its `.git` entry names, since one `gitdir:` line can
+make git skip any folder. The list never changes the verdict, and a folder
+skipped this way is not checked; folders skipped by name, such as
+`node_modules`, are not listed. A run of any of these reports on the checkout it was pointed at and on
 nothing else. A validator that reads one fixed folder, such as `naming-grep`
 under `src/apothem/`, reads everything below that folder.
 

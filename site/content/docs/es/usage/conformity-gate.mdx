@@ -89,7 +89,8 @@ especiales que dejó fuera, así que un enlace nunca oculta un archivo sin dejar
 rastro. También lista ahí una carpeta que no pudo listar (sin acceso, una ruta
 demasiado larga, un error de lectura) y la entrada `.git` de una carpeta que
 omitió como checkout anidado cuando esa entrada es un enlace o un archivo
-especial. Un validador que pasa cuando falta su carpeta, como los validadores de
+especial; la carpeta misma aparece en `skipped_checkouts`, descrito más
+abajo. Un validador que pasa cuando falta su carpeta, como los validadores de
 workflows, no pasa cuando esa carpeta es un enlace: los archivos pueden estar
 detrás, así que la ejecución falla como una que no revisó nada. Un enlace duro
 es un archivo normal y se lee como tal. Los validadores de `--all` miran cada
@@ -154,10 +155,12 @@ repositorio; un archivo `.git` simple o una carpeta `.git` vacía no oculta su
 carpeta), y omiten los directorios que contienen dependencias, entornos
 virtuales, cachés o resultados de compilación, como `node_modules`, `venv` y
 `dist`. La comprobación de planes extraviados de `no-global-plans-grep` también
-se detiene en un checkout anidado. Un archivo `.git` que nombra el propio
-repositorio del proyecto o uno fuera del proyecto sigue ocultando su carpeta,
-como hace para git, pero el informe lista ese archivo `.git` en `skipped_links`;
-un worktree o un submódulo del proyecto no deja nota. Una ejecución de
+se detiene en un checkout anidado. Cada carpeta omitida como checkout anidado
+aparece en el informe bajo `skipped_checkouts`, nombre lo que nombre su entrada
+`.git`, ya que una sola línea `gitdir:` puede hacer que git omita cualquier
+carpeta. La lista nunca cambia el veredicto, y una carpeta omitida así no se
+comprueba; las carpetas omitidas por su nombre, como `node_modules`, no se
+listan. Una ejecución de
 cualquiera de ellos informa sobre el checkout al que se apuntó y sobre nada más.
 Un validador que lee una carpeta fija, como `naming-grep` bajo `src/apothem/`,
 lee todo lo que hay debajo de esa carpeta.

@@ -88,7 +88,8 @@ especiais que deixou de fora, então um link nunca esconde um arquivo sem deixar
 rastro. Ele também lista ali uma pasta que não conseguiu listar (sem acesso, um
 caminho longo demais, um erro de leitura) e a entrada `.git` de uma pasta que
 ignorou como checkout aninhado quando essa entrada é um link ou um arquivo
-especial. Um validador que passa quando sua pasta está ausente, como os
+especial; a própria pasta é listada em `skipped_checkouts`, descrito abaixo.
+Um validador que passa quando sua pasta está ausente, como os
 validadores de workflows, não passa quando essa pasta é um link: os arquivos
 podem estar atrás dele, então a execução falha como uma que não verificou nada.
 Um link físico é um arquivo comum e é lido como tal. Os validadores do `--all`
@@ -153,10 +154,11 @@ repositório; um arquivo `.git` simples ou uma pasta `.git` vazia não oculta su
 pasta), e ignoram diretórios que guardam dependências, ambientes virtuais,
 caches ou saída de build, como `node_modules`, `venv` e `dist`. A verificação de
 planos perdidos em `no-global-plans-grep` também para em um checkout aninhado.
-Um arquivo `.git` que nomeia o próprio repositório do projeto ou um fora do
-projeto ainda oculta sua pasta, como faz para o git, mas o relatório lista esse
-arquivo `.git` em `skipped_links`; um worktree ou um submódulo do projeto não
-deixa registro. Uma execução de qualquer um deles relata sobre o checkout para o
+Toda pasta ignorada como checkout aninhado é listada no relatório em
+`skipped_checkouts`, seja o que for que sua entrada `.git` nomeie, já que uma
+única linha `gitdir:` pode fazer o git ignorar qualquer pasta. A lista nunca
+muda o veredito, e uma pasta ignorada assim não é verificada; pastas ignoradas
+pelo nome, como `node_modules`, não são listadas. Uma execução de qualquer um deles relata sobre o checkout para o
 qual foi apontada e sobre nada mais. Um validador que lê uma pasta fixa, como
 `naming-grep` sob `src/apothem/`, lê tudo abaixo dessa pasta.
 

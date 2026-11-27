@@ -89,7 +89,8 @@ ditinggalkannya di bawah `skipped_links`, sehingga tautan tidak pernah
 menyembunyikan berkas tanpa jejak. Di sana juga dicantumkan folder yang tidak
 dapat didaftarnya (tanpa akses, jalur terlalu panjang, galat baca), dan entri
 `.git` dari folder yang dilewatinya sebagai checkout bersarang jika entri itu
-berupa tautan atau berkas khusus. Validator yang lolos saat foldernya tidak ada,
+berupa tautan atau berkas khusus; folder itu sendiri dicantumkan di bawah
+`skipped_checkouts`, yang dijelaskan di bawah. Validator yang lolos saat foldernya tidak ada,
 seperti validator workflow, tidak lolos saat folder itu berupa tautan: berkasnya
 mungkin ada di baliknya, sehingga proses gagal seperti proses yang tidak
 memeriksa apa pun. Tautan keras adalah berkas biasa dan dibaca seperti itu.
@@ -156,11 +157,13 @@ atau menyebut sebuah repositori; file `.git` biasa atau folder `.git` kosong
 tidak menyembunyikan foldernya), serta melewati direktori yang menampung
 dependensi, lingkungan virtual, cache, atau keluaran build, seperti
 `node_modules`, `venv`, dan `dist`. Pemeriksaan rencana-nyasar di
-`no-global-plans-grep` juga berhenti pada checkout bersarang. File `.git` yang
-menyebut repositori milik proyek itu sendiri atau repositori di luar proyek
-tetap menyembunyikan foldernya, seperti bagi git, tetapi laporan mencantumkan
-file `.git` itu di bawah `skipped_links`; worktree atau submodule proyek tidak
-dicatat. Eksekusi salah satu validator ini melaporkan checkout yang ditunjuknya
+`no-global-plans-grep` juga berhenti pada checkout bersarang. Setiap folder
+yang dilewati sebagai checkout bersarang dicantumkan dalam laporan di bawah
+`skipped_checkouts`, apa pun yang disebut entri `.git`-nya, karena satu baris
+`gitdir:` dapat membuat git melewati folder mana pun. Daftar itu tidak pernah
+mengubah hasil, dan folder yang dilewati dengan cara ini tidak diperiksa;
+folder yang dilewati berdasarkan namanya, seperti `node_modules`, tidak
+dicantumkan. Eksekusi salah satu validator ini melaporkan checkout yang ditunjuknya
 dan tidak ada yang lain. Validator yang membaca satu folder tetap, seperti
 `naming-grep` di bawah `src/apothem/`, membaca semua yang ada di bawah folder
 tersebut.

@@ -71,10 +71,12 @@ from apothem.conformity._project_paths import (
     EntryKind,
     as_opened,
     linked_git_entry,
+    note_checkout,
     note_root_spelling,
     note_skipped,
     scan_entries,
     start_skip_log,
+    take_skipped_checkouts,
     take_skipped_paths,
 )
 from apothem.conformity._project_paths import (
@@ -104,6 +106,10 @@ STDIN_FLAG: Final[str] = "--stdin"
 # Report key emitted only when the run left out links or special files: their
 # paths relative to the root (see ``_project_paths``).
 SKIPPED_KEY: Final[str] = "skipped_links"
+# Report key emitted only when a walk left out folders as nested checkouts:
+# their paths relative to the root. It is for information only and never
+# changes a verdict (see ``nested_checkout``).
+CHECKOUTS_KEY: Final[str] = "skipped_checkouts"
 # Report key every root-based validator emits: how many targets it inspected.
 INSPECTED_KEY: Final[str] = "inspected"
 # Report key emitted only when nothing was inspected: whether the validator
@@ -354,10 +360,15 @@ def finish_root_report(
     outside it, such as a linked ``.git`` above the root), so a link never hides a file
     without a trace. A run that inspected nothing while it left a link out
     does not pass, even when an empty scope is expected: a fixed folder that
-    is a link must not pass as a folder that is not there yet.
+    is a link must not pass as a folder that is not there yet. Every folder a
+    walk left out as a nested checkout is listed under ``skipped_checkouts``
+    (relative to the root); that list never changes the verdict.
     """
     payload = json.loads(report_json)
     payload[INSPECTED_KEY] = inspected
+    checkouts = take_skipped_checkouts()
+    if checkouts:
+        payload[CHECKOUTS_KEY] = checkouts
     skipped = take_skipped_paths()
     if skipped:
         payload[SKIPPED_KEY] = skipped
@@ -584,52 +595,39 @@ def git_entry_state(directory: Path) -> str:
 
     A ``.git`` file is read only up to git's size limit plus one byte.
     """
-    return _git_entry(directory)[0]
-
-
-def _git_entry(directory: Path) -> tuple[str, Path | None]:
-    """Return :func:`git_entry_state` of *directory* and the repository it uses.
-
-    The repository is the ``.git`` folder itself, or the folder a ``.git``
-    file names, joined to *directory* as written; None when git uses none.
-    """
     entry = directory / GIT_ENTRY
     if entry.is_dir():
-        if _holds_repository(entry):
-            return GIT_ENTRY_REPOSITORY, entry
-        return GIT_ENTRY_NONE, None
+        return GIT_ENTRY_REPOSITORY if _holds_repository(entry) else GIT_ENTRY_NONE
     if not entry.is_file():
-        return GIT_ENTRY_NONE, None
+        return GIT_ENTRY_NONE
     try:
         with entry.open("rb") as handle:
             content = handle.read(_GITFILE_MAX_BYTES + 1)
     except OSError:
-        return GIT_ENTRY_BROKEN, None
+        return GIT_ENTRY_BROKEN
     if len(content) > _GITFILE_MAX_BYTES:
-        return GIT_ENTRY_BROKEN, None
+        return GIT_ENTRY_BROKEN
     # git reads the whole file. It must start with "gitdir: ", one space.
     # git drops only the CR and LF bytes at the end; the rest is the path as
     # written, so a second line, a tab or a second space stays in it. git
     # reads the path as a C string, so it ends at the first NUL byte.
     if not content.startswith(_GITFILE_PREFIX):
-        return GIT_ENTRY_BROKEN, None
+        return GIT_ENTRY_BROKEN
     raw = content[len(_GITFILE_PREFIX) :].rstrip(b"\r\n")
     if not raw:
-        return GIT_ENTRY_BROKEN, None  # git: "no path in gitfile"
+        return GIT_ENTRY_BROKEN  # git: "no path in gitfile"
     named = _decode_gitdir(raw.split(b"\0", 1)[0])
     if named is None:
-        return GIT_ENTRY_BROKEN, None
+        return GIT_ENTRY_BROKEN
     if _names_non_local_path(named) or _refused_by_git_for_windows(named):
-        return GIT_ENTRY_BROKEN, None
+        return GIT_ENTRY_BROKEN
     target = directory / named
     # A folder with a root but no drive (``\\``) turns a relative line such as
     # ``??/UNC/host/share`` into an NT path. A folder with a drive is left
     # out: a long-path folder (``\\\\?\\C:\\...``) is local.
     if not directory.drive and _names_non_local_path(str(target)):
-        return GIT_ENTRY_BROKEN, None
-    if _holds_repository(target):
-        return GIT_ENTRY_REPOSITORY, target
-    return GIT_ENTRY_BROKEN, None
+        return GIT_ENTRY_BROKEN
+    return GIT_ENTRY_REPOSITORY if _holds_repository(target) else GIT_ENTRY_BROKEN
 
 
 # git stops its search for a repository at a folder on another file system.
@@ -982,45 +980,7 @@ def is_git_entry(path: Path, listed: frozenset[str]) -> bool:
     return os.path.samestat(variant, exact)
 
 
-def _as_written(path: Path) -> Path:
-    """Return *path* as a full path, folded by name only (no file is read)."""
-    text = _without_long_path_prefix(os.fspath(path.absolute()))
-    return Path(os.path.normcase(os.path.normpath(text)))
-
-
-def _inside(path: Path, folder: Path) -> bool:
-    """Return True when *path* is below *folder*, both from :func:`_as_written`."""
-    return folder in path.parents
-
-
-def _foreign_gitdir(root: Path, named: Path) -> bool:
-    """Return True when a nested ``.git`` file naming *named* hides its folder.
-
-    A worktree or a submodule of the root's repository has its own folder in
-    that repository's ``worktrees`` or ``modules`` folder, and is a checkout of
-    its own. A ``.git`` file that names the root's own repository, or a
-    repository outside *root*, makes git treat the folder as a checkout too,
-    so the walk leaves it out like git does, but that one line could hide any
-    folder, so the caller notes it. The paths are compared as written: only
-    what :func:`git_entry_state` reads is read.
-    """
-    target = _as_written(named)
-    root_state, root_named = _git_entry(root)
-    if root_state == GIT_ENTRY_REPOSITORY and root_named is not None:
-        own = _as_written(root_named)
-        # A linked work tree's own folder sits in <repository>/worktrees/.
-        common = own.parent.parent if own.parent.name == "worktrees" else own
-        if target in (own, common):
-            return True
-        if _inside(target, common / "worktrees") or _inside(target, common / "modules"):
-            return False
-    project = _as_written(root)
-    return target != project and not _inside(target, project)
-
-
-def nested_checkout(
-    folder: Path, entries: list[tuple[Path, EntryKind]], root: Path | None = None
-) -> bool:
+def nested_checkout(folder: Path, entries: list[tuple[Path, EntryKind]]) -> bool:
     """Return True when a walk skips *folder*, listed as *entries*, as a checkout.
 
     *folder* is below the root. Its ``.git`` entry, as listed (see
@@ -1030,9 +990,11 @@ def nested_checkout(
     folder or file is a checkout only when it holds or names a repository
     (:func:`git_entry_state`): a plain ``.git`` file or an empty ``.git``
     folder is not one to git, so it does not hide its folder, and the walk
-    goes on into it (never into the ``.git`` entry itself). Given the walk's
-    *root*, a ``.git`` file that names the root's own repository or one
-    outside *root* is noted too (:func:`_foreign_gitdir`).
+    goes on into it (never into the ``.git`` entry itself). Every folder this
+    returns True for is noted in the checkout log (:func:`note_checkout`),
+    which the report lists under ``skipped_checkouts`` and which never changes
+    a verdict: one ``gitdir:`` line can make git, and so the walk, skip any
+    folder.
     """
     listed = frozenset(path.name for path, _ in entries)
     git_entries = [(path, kind) for path, kind in entries if is_git_entry(path, listed)]
@@ -1041,15 +1003,10 @@ def nested_checkout(
     linked = [path for path, kind in git_entries if kind not in (DIR_ENTRY, FILE_ENTRY)]
     for path in linked:
         note_skipped(path)
-    if linked:
+    if linked or git_entry_state(folder) == GIT_ENTRY_REPOSITORY:
+        note_checkout(folder)
         return True
-    state, named = _git_entry(folder)
-    if state != GIT_ENTRY_REPOSITORY:
-        return False
-    files = [path for path, kind in git_entries if kind == FILE_ENTRY]
-    if root is not None and files and named and _foreign_gitdir(root, named):
-        note_skipped(files[0])
-    return True
+    return False
 
 
 def iter_tree_files(
@@ -1084,9 +1041,8 @@ def iter_tree_files(
     skip log (see ``_project_paths``). A link that points inside ``root`` is
     skipped too; what it points to is yielded under its own path when the
     walk reaches it. A nested checkout whose ``.git`` is a link or a special
-    file, or a ``.git`` file that names the root's own repository or one
-    outside ``root``, is noted by that entry, and a directory it cannot list
-    (no access, a path too long) by its own path (see ``scan_entries``).
+    file is noted by that entry, and a directory it cannot list (no access,
+    a path too long) by its own path (see ``scan_entries``).
     """
     # Names match as the host's path rules spell them (os.path.normcase);
     # ``.git`` is judged on its own (:func:`is_git_entry`).
@@ -1116,7 +1072,7 @@ def iter_tree_files(
         # below it that holds or names a repository marks a nested checkout,
         # which is skipped whole (:func:`nested_checkout`).
         listed = frozenset(path.name for path, _ in entries)
-        if prune and not is_root and nested_checkout(folder, entries, root):
+        if prune and not is_root and nested_checkout(folder, entries):
             continue
         files: list[Path] = []
         folders: list[Path] = []

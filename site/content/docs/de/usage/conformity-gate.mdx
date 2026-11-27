@@ -91,7 +91,8 @@ ausgelassen hat, unter `skipped_links` auf, sodass ein Link nie eine Datei
 spurlos verbirgt. Dort stehen auch ein Ordner, den er nicht auflisten konnte
 (kein Zugriff, ein zu langer Pfad, ein Lesefehler), und der `.git`-Eintrag eines
 Ordners, den er als verschachtelten Checkout übersprungen hat, wenn dieser
-Eintrag ein Link oder eine Sonderdatei ist. Ein Validator, der besteht, wenn
+Eintrag ein Link oder eine Sonderdatei ist; der Ordner selbst steht unter
+`skipped_checkouts`, wie unten beschrieben. Ein Validator, der besteht, wenn
 sein Ordner fehlt, etwa die Workflow-Validatoren, besteht nicht, wenn dieser
 Ordner ein Link ist: Die Dateien könnten dahinter liegen, daher scheitert der
 Lauf wie einer, der nichts geprüft hat. Ein harter Link ist eine reguläre Datei
@@ -161,11 +162,13 @@ Repository enthält oder nennt; eine einfache `.git`-Datei oder ein leerer
 `.git`-Ordner verbirgt seinen Ordner nicht), und überspringen Verzeichnisse, die
 Abhängigkeiten, virtuelle Umgebungen, Caches oder Build-Ausgaben enthalten, etwa
 `node_modules`, `venv` und `dist`. Die Prüfung auf verirrte Pläne in
-`no-global-plans-grep` hält ebenfalls an einem verschachtelten Checkout an. Eine
-`.git`-Datei, die das eigene Repository des Projekts oder eines außerhalb des
-Projekts nennt, verbirgt ihren Ordner weiterhin, wie bei git, doch der Bericht
-führt diese `.git`-Datei unter `skipped_links` auf; ein Worktree oder ein
-Submodul des Projekts bleibt ohne Vermerk. Ein Lauf eines dieser Validatoren
+`no-global-plans-grep` hält ebenfalls an einem verschachtelten Checkout an. Jeder
+Ordner, der als verschachtelter Checkout übersprungen wurde, steht im Bericht
+unter `skipped_checkouts`, gleich was sein `.git`-Eintrag nennt, denn eine
+einzige `gitdir:`-Zeile kann git jeden Ordner überspringen lassen. Die Liste
+ändert das Ergebnis nie, und ein so übersprungener Ordner wird nicht geprüft;
+Ordner, die nach ihrem Namen übersprungen werden, etwa `node_modules`, stehen
+nicht darin. Ein Lauf eines dieser Validatoren
 meldet Ergebnisse zu dem Checkout, auf den er gerichtet wurde, und zu nichts
 anderem. Ein Validator, der einen festen Ordner liest, etwa `naming-grep` unter
 `src/apothem/`, liest alles unterhalb dieses Ordners.

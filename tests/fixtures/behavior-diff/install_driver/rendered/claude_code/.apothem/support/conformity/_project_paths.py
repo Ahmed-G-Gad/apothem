@@ -23,7 +23,10 @@ Skip log. While a validator runs from the command line, every link and special
 file these helpers leave out is noted, and so is every folder they could not
 list, so the report can list it (:func:`start_skip_log`,
 :func:`take_skipped_paths`): a link or an unreadable folder never hides a
-file or a tree without a trace.
+file or a tree without a trace. A second log holds every folder a walk left
+out as a nested checkout (:func:`note_checkout`,
+:func:`take_skipped_checkouts`); it is for information and never changes a
+verdict.
 """
 
 from __future__ import annotations
@@ -106,6 +109,8 @@ _skipped: dict[str, Path] = {}
 # Links the run read through (a fixed file that names a project file):
 # a walk that passes one by is not leaving anything out.
 _used: set[str] = set()
+# Folders a walk left out as a nested checkout, keyed like ``_skipped``.
+_checkouts: dict[str, Path] = {}
 
 
 def start_skip_log(root: Path) -> None:
@@ -119,6 +124,7 @@ def start_skip_log(root: Path) -> None:
     _skip_root = root
     _skipped.clear()
     _used.clear()
+    _checkouts.clear()
 
 
 def note_skipped(path: Path) -> None:
@@ -126,6 +132,12 @@ def note_skipped(path: Path) -> None:
     that could not be listed."""
     if _skip_root is not None and os.fspath(path) not in _used:
         _skipped.setdefault(os.fspath(path), path)
+
+
+def note_checkout(folder: Path) -> None:
+    """Note that a walk left out *folder* as a nested checkout."""
+    if _skip_root is not None:
+        _checkouts.setdefault(os.fspath(folder), folder)
 
 
 def _note_used(path: Path) -> None:
@@ -147,13 +159,8 @@ def note_root_spelling(typed: Path, resolved: Path) -> None:
         _root_spellings[typed] = resolved
 
 
-def take_skipped_paths() -> list[str]:
-    """Return the noted paths, relative to the root and sorted, and stop the log."""
-    global _skip_root
-    root, noted = _skip_root, list(_skipped.values())
-    _skip_root = None
-    _skipped.clear()
-    _used.clear()
+def _shown(root: Path | None, noted: list[Path]) -> list[str]:
+    """Return *noted* relative to *root* (or in full outside it), sorted once."""
     if root is None:
         return []
     shown: list[str] = []
@@ -163,6 +170,28 @@ def take_skipped_paths() -> list[str]:
         except ValueError:
             shown.append(path.as_posix())
     return sorted(set(shown))
+
+
+def take_skipped_checkouts() -> list[str]:
+    """Return the folders left out as nested checkouts, and clear that log.
+
+    The paths are relative to the root and sorted. The skip log itself keeps
+    running: call this before :func:`take_skipped_paths`, which stops it.
+    """
+    noted = list(_checkouts.values())
+    _checkouts.clear()
+    return _shown(_skip_root, noted)
+
+
+def take_skipped_paths() -> list[str]:
+    """Return the noted paths, relative to the root and sorted, and stop the log."""
+    global _skip_root
+    root, noted = _skip_root, list(_skipped.values())
+    _skip_root = None
+    _skipped.clear()
+    _used.clear()
+    _checkouts.clear()
+    return _shown(root, noted)
 
 
 # ---------------------------------------------------------------------------

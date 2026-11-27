@@ -9,9 +9,11 @@ Why these tests exist. The conformity validators refuse to run git through a
 - the two ``--staged`` checks run git in the current folder, so they look at
   the ``.git`` entries on git's search path first, as the ``--all`` checks do;
 - a nested folder whose ``.git`` is a link is left out of every walk, and the
-  report names that ``.git`` entry, as it does a ``.git`` file that names
-  the root's own repository or one outside the project; one whose ``.git``
-  holds or names no repository is walked, not hidden;
+  report names that ``.git`` entry; one whose ``.git`` holds or names no
+  repository is walked, not hidden;
+- every folder a walk leaves out as a nested checkout is listed under
+  ``skipped_checkouts``, whatever its ``gitdir:`` line names, and that list
+  never changes a verdict;
 - a folder the walk cannot list is named in the report, not read as empty;
 - the history read of ``agents-md-coverage-grep`` keeps the time of a file
   whose name git would quote;
@@ -35,13 +37,24 @@ from apothem.conformity import (
     _bounded_run,
     _project_paths,
     agents_md_coverage_grep,
+    agnosticism_grep,
     conventional_commit_grep,
     no_global_plans_grep,
     production_ready_pr_grep,
     semver_stability_grep,
 )
-from apothem.conformity._grep_base import STAGED_LINKED_GIT_MESSAGE, iter_tree_files
-from apothem.conformity._project_paths import start_skip_log, take_skipped_paths
+from apothem.conformity._grep_base import (
+    STAGED_LINKED_GIT_MESSAGE,
+    finish_root_report,
+    iter_tree_files,
+    nested_checkout,
+)
+from apothem.conformity._project_paths import (
+    note_checkout,
+    start_skip_log,
+    take_skipped_checkouts,
+    take_skipped_paths,
+)
 from tests._shared.git_env import hermetic_git_env
 
 _LINKED_GIT_MESSAGE = "the .git entry is a link, so git would read another repository"
@@ -288,6 +301,8 @@ def test_the_walk_names_a_nested_linked_git(tmp_path: Path) -> None:
     start_skip_log(root)
     walked = [p.relative_to(root).as_posix() for p in iter_tree_files(root, (".md",))]
     assert walked == ["README.md"]
+    # The folder is listed as a skipped checkout and its link as a skipped link.
+    assert take_skipped_checkouts() == ["docs"]
     assert take_skipped_paths() == ["docs/.git"]
 
 
@@ -314,6 +329,7 @@ def test_the_walk_still_skips_a_real_nested_checkout_quietly(tmp_path: Path) -> 
     _fake_repository(root / "nested" / ".git")
     start_skip_log(root)
     assert [p.name for p in iter_tree_files(root, (".md",))] == ["README.md"]
+    assert take_skipped_checkouts() == ["nested"]
     assert take_skipped_paths() == []
 
 
@@ -361,42 +377,152 @@ def _project_with_gitdir(tmp_path: Path, case: str) -> Path:
     return root
 
 
-# A .git file that names the root's own repository or one outside the project
-# hides its folder for git as well, so the folder is left out and the .git
-# file is noted. A worktree or a submodule of the root's repository, or a
-# repository kept inside the project, is a checkout of its own: no note.
+# Whatever its ``gitdir:`` line names (the root's own repository, one outside
+# the project, one kept inside it, a worktree or a submodule of the root's
+# repository), a .git file that names a repository hides its folder for git
+# and for the walk. The folder is listed as a skipped checkout; no link was
+# left out, so nothing goes under ``skipped_links``.
 _GITDIR_CASES = [
-    ("root-repository", ["nested/.git"]),
-    ("outside", ["nested/.git"]),
-    ("wt-common", ["nested/.git"]),
-    ("wt-own", ["nested/.git"]),
-    ("submodule", []),
-    ("work-tree", []),
-    ("inside", []),
-    ("wt-submodule", []),
-    ("wt-work-tree", []),
+    "root-repository",
+    "outside",
+    "wt-common",
+    "wt-own",
+    "submodule",
+    "work-tree",
+    "inside",
+    "wt-submodule",
+    "wt-work-tree",
 ]
 
 
-@pytest.mark.parametrize(("case", "noted"), _GITDIR_CASES)
-def test_the_walk_notes_a_nested_git_file_that_hides_its_folder(
-    tmp_path: Path, case: str, noted: list[str]
+@pytest.mark.parametrize("case", _GITDIR_CASES)
+def test_the_walk_lists_every_folder_it_skips_as_a_checkout(
+    tmp_path: Path, case: str
 ) -> None:
     root = _project_with_gitdir(tmp_path, case)
     start_skip_log(root)
     walked = [p.relative_to(root).as_posix() for p in iter_tree_files(root, (".md",))]
     assert walked == ["README.md"]
-    assert take_skipped_paths() == noted
+    assert take_skipped_checkouts() == ["nested"]
+    assert take_skipped_paths() == []
 
 
-@pytest.mark.parametrize(("case", "noted"), _GITDIR_CASES)
-def test_the_stray_plans_sweep_notes_a_nested_git_file_that_hides_its_folder(
-    tmp_path: Path, case: str, noted: list[str]
+@pytest.mark.parametrize("case", _GITDIR_CASES)
+def test_the_stray_plans_sweep_lists_every_folder_it_skips_as_a_checkout(
+    tmp_path: Path, case: str
 ) -> None:
     root = _project_with_gitdir(tmp_path, case)
     start_skip_log(root)
     assert no_global_plans_grep._sweep_stray_plans_dirs(root, frozenset()) == []
-    assert take_skipped_paths() == noted
+    assert take_skipped_checkouts() == ["nested"]
+    assert take_skipped_paths() == []
+
+
+def test_the_walk_lists_each_hidden_folder_layout(tmp_path: Path) -> None:
+    # Four ways one entry hides a folder: a .git file naming the root's own
+    # repository, a .git folder holding just HEAD, objects/ and refs/, a
+    # gitdir naming such a folder inside the project, and one naming a
+    # made-up folder in the root repository's modules/.
+    root = (tmp_path / "proj").resolve()
+    _fake_repository(root / ".git")
+    _write(root / "seen.md")
+    for name in ("a-own", "b-folder", "c-inproject", "d-modules"):
+        _write(root / name / "hidden.md")
+    _write(root / "a-own" / ".git", "gitdir: ../.git\n")
+    _fake_repository(root / "b-folder" / ".git")
+    _fake_repository(root / "assets" / "store")
+    _write(root / "c-inproject" / ".git", "gitdir: ../assets/store\n")
+    _fake_repository(root / ".git" / "modules" / "fake")
+    _write(root / "d-modules" / ".git", "gitdir: ../.git/modules/fake\n")
+    start_skip_log(root)
+    walked = [p.relative_to(root).as_posix() for p in iter_tree_files(root, (".md",))]
+    assert walked == ["seen.md"]
+    assert take_skipped_checkouts() == ["a-own", "b-folder", "c-inproject", "d-modules"]
+    assert take_skipped_paths() == []
+
+
+def test_nested_checkout_notes_nothing_without_a_skip_log(tmp_path: Path) -> None:
+    folder = tmp_path / "nested"
+    _fake_repository(folder / ".git")
+    entries = [(folder / ".git", _project_paths.DIR_ENTRY)]
+    assert nested_checkout(folder, entries) is True
+    start_skip_log(tmp_path)
+    assert take_skipped_checkouts() == []
+
+
+def _monorepo(tmp_path: Path) -> Path:
+    """Return ``proj/pkg`` in a repository holding a submodule and a worktree.
+
+    ``pkg/vend`` is a real submodule (gitdir ``../../.git/modules/pkg/vend``)
+    and ``pkg/wt4`` a real linked worktree (an absolute gitdir); each holds a
+    ``.plans`` folder and a markdown file the walk must not reach.
+    """
+    vendor = _repository(tmp_path / "vendor")
+    _write(vendor / "README.md")
+    _git(vendor, "add", "-A")
+    _git(vendor, "commit", "-q", "-m", "init")
+    proj = _repository(tmp_path / "proj").resolve()
+    _write(proj / "pkg" / "README.md")
+    _git(proj, "add", "-A")
+    _git(proj, "commit", "-q", "-m", "init")
+    _git(
+        proj,
+        "-c",
+        "protocol.file.allow=always",
+        "submodule",
+        "add",
+        "-q",
+        vendor.as_posix(),
+        "pkg/vend",
+    )
+    _git(proj, "commit", "-q", "-m", "vend")
+    _git(proj, "worktree", "add", "-q", "-b", "wt4", "pkg/wt4")
+    for name in ("vend", "wt4"):
+        (proj / "pkg" / name / ".plans").mkdir()
+        _write(proj / "pkg" / name / "docs" / "hidden.md")
+    return proj / "pkg"
+
+
+def test_a_package_folder_lists_its_submodule_and_worktree(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # The root is a subfolder of the repository, so it has no .git entry of
+    # its own; the submodule and the worktree below it are still listed only
+    # as skipped checkouts, and the verdict is the one an empty folder gives.
+    pkg = _monorepo(tmp_path)
+    code = no_global_plans_grep._main(["no-global-plans-grep", str(pkg)])
+    payload = json.loads(capsys.readouterr().out)
+    assert (code, payload["passed"]) == (0, True)
+    assert payload["skipped_checkouts"] == ["vend", "wt4"]
+    assert "skipped_links" not in payload
+    agnosticism_grep._main(["agnosticism-grep", str(pkg)])
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["skipped_checkouts"] == ["vend", "wt4"]
+    assert "skipped_links" not in payload
+
+
+@pytest.mark.parametrize("expected", [True, False])
+def test_skipped_checkouts_never_change_an_empty_scope_verdict(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], expected: bool
+) -> None:
+    start_skip_log(tmp_path)
+    note_checkout(tmp_path / "vend")
+    code = finish_root_report(
+        '{"passed": true}', passed=True, inspected=0, empty_scope_expected=expected
+    )
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["skipped_checkouts"] == ["vend"]
+    assert "skipped_links" not in payload
+    assert payload["empty_scope_expected"] is expected
+    assert (code, payload["passed"]) == ((0, True) if expected else (2, False))
+
+
+def test_the_report_has_no_checkout_key_when_no_folder_was_skipped(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    start_skip_log(tmp_path)
+    assert finish_root_report('{"passed": true}', passed=True, inspected=1) == 0
+    assert "skipped_checkouts" not in json.loads(capsys.readouterr().out)
 
 
 def _plain_git_entry(folder: Path, shape: str) -> None:
@@ -442,6 +568,7 @@ def test_the_stray_plans_sweep_skips_a_real_nested_checkout_quietly(
     _fake_repository(root / "nested" / ".git")
     start_skip_log(root)
     assert no_global_plans_grep._sweep_stray_plans_dirs(root, frozenset()) == []
+    assert take_skipped_checkouts() == ["nested"]
     assert take_skipped_paths() == []
 
 
@@ -451,6 +578,7 @@ def test_the_stray_plans_sweep_names_a_nested_linked_git(tmp_path: Path) -> None
     start_skip_log(root)
     findings = no_global_plans_grep._sweep_stray_plans_dirs(root, frozenset())
     assert findings == []
+    assert take_skipped_checkouts() == ["docs"]
     assert take_skipped_paths() == ["docs/.git"]
 
 

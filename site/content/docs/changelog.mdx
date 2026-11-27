@@ -370,11 +370,11 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   in the report; `skipped_links` now names that `.git` entry, in the walk and
   in the stray-plans check of `no-global-plans-grep`. A plain `.git` file or
   an empty `.git` folder, which git does not take for a repository, also hid
-  its folder from both; such a folder is now checked. A `.git` file that names
-  the project's own repository or one outside the project still hides its
-  folder, as it does for git, but `skipped_links` now names that `.git` file;
-  a worktree or a submodule of the project stays silent. A folder the walk
-  cannot list (no access, a path too long, a read error) is named there too,
+  its folder from both; such a folder is now checked. Every folder a walk or
+  the stray-plans check skips as a nested checkout is now listed under a new
+  `skipped_checkouts` key, whatever its `.git` entry names, since one
+  `gitdir:` line can hide any folder; the list never changes the verdict. A
+  folder the walk cannot list (no access, a path too long, a read error) is named there too,
   where before it read as empty. The `--all` validators still check each level
   and then open a file by name, so someone writing to the project while the
   gate runs can swap a checked entry for a link or a named pipe, or make a

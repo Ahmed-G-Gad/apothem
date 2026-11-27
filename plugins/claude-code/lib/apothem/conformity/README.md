@@ -139,13 +139,13 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   not take for a repository, does not hide its folder) and the vendored,
   virtual-environment, cache and build-output trees (`node_modules`, `_vendor`,
   `venv`, `dist`, `.next`; the set is `PRUNED_SEGMENTS`), through
-  `iter_tree_files` in `_grep_base.py`. A nested `.git` file that names the
-  root's own repository or one outside the root still hides its folder, as it
-  does for git, but `nested_checkout` notes that `.git` file for
-  `skipped_links`; a worktree or submodule, whose `gitdir:` line points into
-  the root repository's `worktrees/` or `modules/` folder, stays silent. The
-  paths are compared as written, so nothing beyond what `git_entry_state`
-  reads is read. Six validators walk that way: `agents-md-coverage-grep`,
+  `iter_tree_files` in `_grep_base.py`. `nested_checkout` notes every folder
+  it skips as a nested checkout, whatever its `.git` entry holds or names, and
+  `finish_root_report` lists those folders under `skipped_checkouts`: one
+  `gitdir:` line can make git, and so the walk, skip any folder. That list is
+  for information and never changes a verdict; a folder skipped this way is
+  still not checked, and the trees skipped by name (`PRUNED_SEGMENTS`) are not
+  listed. Six validators walk that way: `agents-md-coverage-grep`,
   `agnosticism-grep`, `dynamism-grep`, `freshness-token-grep`,
   `plain-language-grep` and `reference-token-grep`; the stray-suite sweep in
   `no-global-plans-grep` stops at a nested checkout through the same
@@ -218,11 +218,11 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   `include_links=True` to see each link by its own name. The helpers note
   every link and special file they leave out, every folder `scan_entries`
   could not list (no access, a path too long), and the `.git` entry of a
-  nested checkout the walk skipped when that entry is a link, a special file
-  or a `.git` file that names the root's own repository or one outside the
-  root; `finish_root_report` lists them under `skipped_links`. A run that
+  nested checkout the walk skipped when that entry is a link or a special
+  file; `finish_root_report` lists them under `skipped_links`. A run that
   inspected nothing while it left a link out does not pass, even when an
-  empty scope is expected. The helpers look at each level and the caller
+  empty scope is expected. The folders skipped as nested checkouts go under
+  `skipped_checkouts` instead, which never changes a verdict. The helpers look at each level and the caller
   then opens the file by name, so a writer racing the gate can swap a checked
   entry for a link or a named pipe before the open, or make a read wait until
   the time limit; only the `--all-perwrite` corpus opens without following the
