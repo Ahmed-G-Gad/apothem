@@ -8,7 +8,7 @@ sourceHash: "2a073782c97e3b02"
 
 Apothem aspira a la puntuación máxima de OpenSSF Scorecard y, al mismo tiempo, mantiene la fachada pública honesta sobre lo que Scorecard puede y no puede inferir de un repositorio nuevo con un único mantenedor. Este documento enumera cada comprobación, la superficie de evidencia que la respalda y el control que mantiene la postura al día.
 
-La puntuación en vivo está en el [visor de Scorecard](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem); la insignia está en el [encabezado del README](https://github.com/ahmed-g-gad/apothem/blob/main/README.md).
+La puntuación en vivo está en el [visor de Scorecard](https://securityscorecards.dev/viewer/?uri=github.com/Ahmed-G-Gad/apothem); la insignia está en el [encabezado del README](https://github.com/ahmed-g-gad/apothem/blob/main/README.md).
 
 ## Matriz de evidencia por comprobación
 
@@ -17,7 +17,7 @@ La puntuación en vivo está en el [visor de Scorecard](https://securityscorecar
 | **Binary-Artifacts** | [binary-artifacts-sweep.md](/docs/security/binary-artifacts-sweep) | Cero binarios ejecutables rastreados en el código fuente; los archivos comprimidos de distribución generados permanecen en `dist/`. |
 | **Branch-Protection** | [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) | `main` queda protegida antes de la promoción del lanzamiento público; los force-pushes y las eliminaciones se bloquean después de que llegue el commit de lanzamiento nuevo. |
 | **CI-Tests** | [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | Matriz de Pytest, ruff, mypy, Trivy, compilación de la documentación y comprobaciones de humo del empaquetado. |
-| **CII-Best-Practices** | Registro en OpenSSF Best Practices | Requiere un registro por parte del mantenedor en el sitio de OpenSSF Best Practices; esto no puede completarse solo con archivos del repositorio. |
+| **CII-Best-Practices** | Registro en OpenSSF Best Practices | El proyecto está registrado en bestpractices.dev como [proyecto 16427](https://www.bestpractices.dev/en/projects/16427) y tiene la insignia passing desde el 2026-11-08, que esta comprobación tiene en cuenta. |
 | **Code-Review** | Protección de ramas + CODEOWNERS | Las pull requests son obligatorias para `main` para todos excepto los administradores del repositorio, y la protección de ramas exige 0 revisiones de aprobación mientras el proyecto tenga un solo mantenedor (consulta [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset)); el historial de Scorecard sigue siendo limitado hasta que existan PR revisadas. |
 | **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | Un proyecto nuevo con un solo mantenedor no puede fabricar un historial de contribuciones de varias organizaciones; esto mejora de forma natural a medida que se incorporan colaboradores. |
 | **Dangerous-Workflow** | Auditoría de flujos de trabajo | Sin `pull_request_target`; las Actions están fijadas por SHA y acotadas con permisos explícitos. |

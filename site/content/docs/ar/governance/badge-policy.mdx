@@ -2,13 +2,13 @@
 title: "سياسة الشارات"
 description: "تحديد مصادر الشارات الديناميكية والثابتة لملف README، بما يشمل حالة سير العمل الأصلية في GitHub، وملفات JSON لنقاط نهاية shields.io، وأشكال الشارات الثابتة."
 machineTranslated: true
-sourceHash: "e3ae990f58d3dd8e"
+sourceHash: "f29b1ee5b0648b5b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 هذه الوثيقة هي المرجع المعتمد لشريط الشارات في <bdi>README</bdi> وللبنية التحتية التي
 تنشر مصادر بياناته الديناميكية. كل شارة في <bdi>README</bdi> المشروع تُحَلّ عبر أحد
-الأشكال الثلاثة المحدّدة هنا؛ والشارات الجديدة التي تُضاف مستقبلًا تتبع الأشكال نفسها
+الأشكال الأربعة المحدّدة هنا؛ والشارات الجديدة التي تُضاف مستقبلًا تتبع الأشكال نفسها
 وإلا رُفِضت في المراجعة.
 
 ## 1. الخلفية
@@ -42,8 +42,9 @@ sourceHash: "e3ae990f58d3dd8e"
    <bdi>Python</bdi> المستهدفة).
 4. **شارات السجلّ وبطاقة التقييم.** شارة يحسب قيمتها طرف ثالث من بيانات عامة يملكها
    أصلًا: سجلّ <bdi>npm</bdi> (النسخة والتنزيلات، ويعرضها <bdi>shields.io</bdi>) وواجهة
-   برمجة <bdi>OpenSSF Scorecard</bdi>. لا ينشر المشروع أي شيء لهذه الشارات؛ فالطرف الثالث
-   هو المصدر.
+   برمجة <bdi>OpenSSF Scorecard</bdi>، وموقع <bdi>bestpractices.dev</bdi> الذي يقدّم شارة
+   <bdi>OpenSSF Best Practices</bdi> من مُدخَل المشروع فيه. لا ينشر المشروع أي شيء لهذه
+   الشارات؛ فالطرف الثالث هو المصدر.
 
 نشر مقاييس المشروع عبر <bdi>Gist</bdi> عامة مُستبعَد بحكم التصميم. ونقاط نهاية
 <bdi>shields.io</bdi> على النطاق الذي يتحكّم فيه المشروع هي البديل المعتمد.
@@ -62,7 +63,8 @@ sourceHash: "e3ae990f58d3dd8e"
 | الرخصة | ثابت من <bdi>shields.io</bdi> | <bdi>`LICENSE`</bdi> (<bdi>MIT</bdi>) | <bdi>`https://img.shields.io/badge/license-MIT-0F172A`</bdi> | لا |
 | نسخة <bdi>npm</bdi> | سجلّ | سجلّ <bdi>npm</bdi> | <bdi>`https://img.shields.io/npm/v/%40ahmed-g-gad%2Fapothem?color=10B981&label=npm`</bdi> | لا |
 | بوابة التغطية | ثابت من <bdi>shields.io</bdi> | <bdi>`pyproject.toml`</bdi> <bdi>`fail_under = 80`</bdi> | <bdi>`https://img.shields.io/badge/coverage%20gate-%E2%89%A580%25-2563EB`</bdi> | لا |
-| <bdi>OpenSSF Scorecard</bdi> | بطاقة تقييم | نتائج <bdi>`.github/workflows/scorecard.yml`</bdi> | <bdi>`https://api.securityscorecards.dev/projects/github.com/ahmed-g-gad/apothem/badge`</bdi> | نعم |
+| <bdi>OpenSSF Scorecard</bdi> | بطاقة تقييم | نتائج <bdi>`.github/workflows/scorecard.yml`</bdi> | <bdi>`https://api.securityscorecards.dev/projects/github.com/Ahmed-G-Gad/apothem/badge`</bdi> | نعم |
+| <bdi>OpenSSF Best Practices</bdi> | سجلّ | مُدخَل المشروع على <bdi>bestpractices.dev</bdi> | <bdi>`https://www.bestpractices.dev/projects/16427/badge`</bdi> | لا |
 | الملاحظات | ثابت من <bdi>shields.io</bdi> | <bdi>GitHub Issues</bdi> | <bdi>`https://img.shields.io/badge/feedback-GitHub%20issues-7C3AED`</bdi> | لا |
 | الوثائق | ثابت من <bdi>shields.io</bdi> | موقع الوثائق | <bdi>`https://img.shields.io/badge/docs-Fumadocs-0F172A`</bdi> | لا |
 | تنزيلات <bdi>npm</bdi> | سجلّ | سجلّ <bdi>npm</bdi> | <bdi>`https://img.shields.io/npm/dm/%40ahmed-g-gad%2Fapothem?color=10B981&label=downloads`</bdi> | لا |

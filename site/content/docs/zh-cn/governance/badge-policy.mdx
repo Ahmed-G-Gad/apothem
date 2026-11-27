@@ -2,11 +2,11 @@
 title: "徽章策略"
 description: "为 README 规定动态与静态徽章来源，涵盖 GitHub 原生工作流状态、shields.io 端点 JSON 以及静态徽章形式。"
 machineTranslated: true
-sourceHash: "e3ae990f58d3dd8e"
+sourceHash: "f29b1ee5b0648b5b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-本文档是 README 徽章条以及发布其动态数据源的基础设施的规范参考。项目 README 中的每个徽章都通过此处规定的三种形式之一解析；将来新增的徽章遵循相同的形式，否则会在评审时被拒绝。
+本文档是 README 徽章条以及发布其动态数据源的基础设施的规范参考。项目 README 中的每个徽章都通过此处规定的四种形式之一解析；将来新增的徽章遵循相同的形式，否则会在评审时被拒绝。
 
 ## 1. 背景
 
@@ -19,7 +19,7 @@ sourceHash: "e3ae990f58d3dd8e"
 1. **GitHub 原生工作流状态徽章。** 工作流的徽章 URL 形如 `https://github.com/<owner>/<repo>/actions/workflows/<file>/badge.svg`，反映默认分支上的最新一次运行。GitHub 从仓库的公开元数据中提供该徽章。
 2. **shields.io 端点徽章。** shields.io 端点徽章解析一个 `https://img.shields.io/endpoint?url=<published-json>` URL，其中的 JSON 符合 shields.io 端点 schema（`schemaVersion`、`label`、`message`、`color`）。发布的 JSON 位于 `apothem.ahmedgad.com/badges/*.json`；其内容由一个 CI 工作流在每次成功的 CI 运行时生成。端点徽章将指标置于项目可控的发布之下，而不是放在第三方的可变存储中。
 3. **shields.io 静态徽章。** 静态徽章形如 `https://img.shields.io/badge/<label>-<message>-<color>`，没有响应式数据源。保留给确实很少变化的值（许可证标识符、Python 目标版本）。
-4. **注册表与 Scorecard 徽章。** 其值由第三方根据其已持有的公开数据计算得出的徽章：npm 注册表（版本和下载量，由 shields.io 渲染）以及 OpenSSF Scorecard API。项目不为这些徽章发布任何内容；第三方即是来源。
+4. **注册表与 Scorecard 徽章。** 其值由第三方根据其已持有的公开数据计算得出的徽章：npm 注册表（版本和下载量，由 shields.io 渲染）、OpenSSF Scorecard API，以及 bestpractices.dev（它根据项目在该站点上的条目提供 OpenSSF Best Practices 徽章）。项目不为这些徽章发布任何内容；第三方即是来源。
 
 按设计，排除通过公开 Gist 发布项目指标的做法。基于项目可控域名的 Shields.io 端点是规范的替代方案。
 
@@ -34,7 +34,8 @@ sourceHash: "e3ae990f58d3dd8e"
 | 许可证 | shields.io 静态 | `LICENSE`（MIT） | `https://img.shields.io/badge/license-MIT-0F172A` | 否 |
 | npm 版本 | 注册表 | npm 注册表 | `https://img.shields.io/npm/v/%40ahmed-g-gad%2Fapothem?color=10B981&label=npm` | 否 |
 | 覆盖率闸门 | shields.io 静态 | `pyproject.toml` `fail_under = 80` | `https://img.shields.io/badge/coverage%20gate-%E2%89%A580%25-2563EB` | 否 |
-| OpenSSF Scorecard | Scorecard | `.github/workflows/scorecard.yml` 结果 | `https://api.securityscorecards.dev/projects/github.com/ahmed-g-gad/apothem/badge` | 是 |
+| OpenSSF Scorecard | Scorecard | `.github/workflows/scorecard.yml` 结果 | `https://api.securityscorecards.dev/projects/github.com/Ahmed-G-Gad/apothem/badge` | 是 |
+| OpenSSF Best Practices | 注册表 | 项目在 bestpractices.dev 上的条目 | `https://www.bestpractices.dev/projects/16427/badge` | 否 |
 | 反馈 | shields.io 静态 | GitHub Issues | `https://img.shields.io/badge/feedback-GitHub%20issues-7C3AED` | 否 |
 | 文档 | shields.io 静态 | 文档站点 | `https://img.shields.io/badge/docs-Fumadocs-0F172A` | 否 |
 | npm 下载量 | 注册表 | npm 注册表 | `https://img.shields.io/npm/dm/%40ahmed-g-gad%2Fapothem?color=10B981&label=downloads` | 否 |
