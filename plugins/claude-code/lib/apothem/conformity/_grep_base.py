@@ -68,12 +68,15 @@ from apothem.conformity._project_paths import (
     FILE_ENTRY,
     LINK_ENTRY,
     SKIPPED_FOLDER_ENTRY,
+    EntryKind,
     as_opened,
     linked_git_entry,
+    note_checkout,
     note_root_spelling,
     note_skipped,
     scan_entries,
     start_skip_log,
+    take_skipped_checkouts,
     take_skipped_paths,
 )
 from apothem.conformity._project_paths import (
@@ -103,6 +106,10 @@ STDIN_FLAG: Final[str] = "--stdin"
 # Report key emitted only when the run left out links or special files: their
 # paths relative to the root (see ``_project_paths``).
 SKIPPED_KEY: Final[str] = "skipped_links"
+# Report key emitted only when a walk left out folders as nested checkouts:
+# their paths relative to the root. It is for information only and never
+# changes a verdict (see ``nested_checkout``).
+CHECKOUTS_KEY: Final[str] = "skipped_checkouts"
 # Report key every root-based validator emits: how many targets it inspected.
 INSPECTED_KEY: Final[str] = "inspected"
 # Report key emitted only when nothing was inspected: whether the validator
@@ -150,6 +157,16 @@ class GitEntryUnreadableError(GitCheckError):
     The check did not run git (see ``nearest_linked_git_entry``), and it has
     not earned a pass: the message is the sentence ``linked_git_message``
     gives, naming the entry.
+    """
+
+
+class GitEntryLinkedError(GitCheckError):
+    """A ``.git`` entry on git's search path is a link, so git was not run.
+
+    Raised by :func:`refuse_linked_git` for a check that reports a refusal as
+    its ``check_error``, such as a ``--staged`` check: git would follow the
+    link to another repository. The message is the sentence
+    ``linked_git_message`` gives, naming the entry.
     """
 
 
@@ -343,10 +360,15 @@ def finish_root_report(
     outside it, such as a linked ``.git`` above the root), so a link never hides a file
     without a trace. A run that inspected nothing while it left a link out
     does not pass, even when an empty scope is expected: a fixed folder that
-    is a link must not pass as a folder that is not there yet.
+    is a link must not pass as a folder that is not there yet. Every folder a
+    walk left out as a nested checkout is listed under ``skipped_checkouts``
+    (relative to the root); that list never changes the verdict.
     """
     payload = json.loads(report_json)
     payload[INSPECTED_KEY] = inspected
+    checkouts = take_skipped_checkouts()
+    if checkouts:
+        payload[CHECKOUTS_KEY] = checkouts
     skipped = take_skipped_paths()
     if skipped:
         payload[SKIPPED_KEY] = skipped
@@ -790,7 +812,9 @@ def nearest_linked_git_entry(root: Path) -> Path | None:
     "Project files only, never through a link"); the English usage page and
     the changelog state the same boundary. Every check in the ``--all`` and
     ``--all-perwrite`` set that runs git calls this first and runs git with
-    ``discover=True``; the ``--staged`` checks do not.
+    ``discover=True``. The ``--staged`` checks call it too, through
+    :func:`refuse_linked_git` on the folder git runs in; they keep the
+    repository a hook's ``GIT_DIR`` names.
     """
     # What this look finds replaces what an earlier one found.
     _unreadable_entries.discard(os.fspath(root / GIT_ENTRY))
@@ -814,6 +838,37 @@ def nearest_linked_git_entry(root: Path) -> Path | None:
             note_skipped(entry)
             return entry
     return None
+
+
+# The refusal of a ``--staged`` check whose own folder's ``.git`` is a link.
+STAGED_LINKED_GIT_MESSAGE: Final[str] = (
+    "the .git entry in the folder git runs in is a link, so the gate does not run git"
+)
+
+
+def refuse_linked_git(folder: Path) -> None:
+    """Raise when git must not run in *folder* (see :func:`nearest_linked_git_entry`).
+
+    For a check that runs git in *folder* and reports a refusal as its
+    ``check_error``. Raises :class:`GitEntryUnreadableError` when a ``.git``
+    entry on git's search path could not be looked at, and
+    :class:`GitEntryLinkedError` when one is a link (noted in the skip log).
+    The message is :func:`linked_git_message`'s sentence, except for a link
+    in *folder* itself: a ``--staged`` check keeps a hook's ``GIT_DIR``, so
+    git may not read the link's target, and the sentence
+    (:data:`STAGED_LINKED_GIT_MESSAGE`) says only that the gate does not run
+    git. Returns when git may run.
+    """
+    entry = nearest_linked_git_entry(folder)
+    if entry is None:
+        return
+    if git_entry_unreadable(entry):
+        raise GitEntryUnreadableError(linked_git_message(folder, entry))
+    if entry == folder / GIT_ENTRY:
+        # A hook's ``GIT_DIR`` may name the repository git reads, so the
+        # sentence says only what the gate did, not where git would go.
+        raise GitEntryLinkedError(STAGED_LINKED_GIT_MESSAGE)
+    raise GitEntryLinkedError(linked_git_message(folder, entry))
 
 
 def _absent(exc: OSError, entry: Path) -> bool:
@@ -897,7 +952,7 @@ def linked_git_message(root: Path, entry: Path) -> str:
     )
 
 
-def _is_git_entry(path: Path, listed: frozenset[str]) -> bool:
+def is_git_entry(path: Path, listed: frozenset[str]) -> bool:
     """Return True when the listed entry *path* is the ``.git`` of its folder.
 
     *listed* holds the names in the folder's own listing. ``.git`` as listed
@@ -925,6 +980,35 @@ def _is_git_entry(path: Path, listed: frozenset[str]) -> bool:
     return os.path.samestat(variant, exact)
 
 
+def nested_checkout(folder: Path, entries: list[tuple[Path, EntryKind]]) -> bool:
+    """Return True when a walk skips *folder*, listed as *entries*, as a checkout.
+
+    *folder* is below the root. Its ``.git`` entry, as listed (see
+    :func:`is_git_entry`), decides. A link (dangling or not) or a special
+    file marks a checkout for git too, but the folder is then left out
+    because of that entry, so the entry is noted in the skip log. A ``.git``
+    folder or file is a checkout only when it holds or names a repository
+    (:func:`git_entry_state`): a plain ``.git`` file or an empty ``.git``
+    folder is not one to git, so it does not hide its folder, and the walk
+    goes on into it (never into the ``.git`` entry itself). Every folder this
+    returns True for is noted in the checkout log (:func:`note_checkout`),
+    which the report lists under ``skipped_checkouts`` and which never changes
+    a verdict: one ``gitdir:`` line can make git, and so the walk, skip any
+    folder.
+    """
+    listed = frozenset(path.name for path, _ in entries)
+    git_entries = [(path, kind) for path, kind in entries if is_git_entry(path, listed)]
+    if not git_entries:
+        return False
+    linked = [path for path, kind in git_entries if kind not in (DIR_ENTRY, FILE_ENTRY)]
+    for path in linked:
+        note_skipped(path)
+    if linked or git_entry_state(folder) == GIT_ENTRY_REPOSITORY:
+        note_checkout(folder)
+        return True
+    return False
+
+
 def iter_tree_files(
     root: Path,
     suffixes: Iterable[str] = (),
@@ -948,17 +1032,20 @@ def iter_tree_files(
     it, for a caller that checks names and reads nothing.
     Post-conditions: yields regular files as ``root``-prefixed paths,
     directory by directory in name order, so a run is deterministic. The walk
-    never enters a nested checkout (a directory below ``root`` that holds a
-    ``.git`` file or directory; ``root`` itself is never nested, even when its
+    never enters a nested checkout (a directory below ``root`` whose ``.git``
+    file or directory holds or names a repository, see
+    :func:`nested_checkout`; ``root`` itself is never nested, even when its
     ``.git`` is a file), a directory named in the pruned set, or a link to a
     folder (a symbolic link or a Windows junction), and never yields a link, a
     named pipe, a device or a socket; each one it leaves out is noted in the
     skip log (see ``_project_paths``). A link that points inside ``root`` is
     skipped too; what it points to is yielded under its own path when the
-    walk reaches it. A directory it cannot read is skipped.
+    walk reaches it. A nested checkout whose ``.git`` is a link or a special
+    file is noted by that entry, and a directory it cannot list (no access,
+    a path too long) by its own path (see ``scan_entries``).
     """
     # Names match as the host's path rules spell them (os.path.normcase);
-    # ``.git`` is judged on its own (:func:`_is_git_entry`).
+    # ``.git`` is judged on its own (:func:`is_git_entry`).
     extra = frozenset(extra_prune)
     pruned = frozenset(
         os.path.normcase(name)
@@ -982,20 +1069,17 @@ def iter_tree_files(
         folder, is_root = stack.pop()
         entries = scan_entries(folder)
         # The root's own ``.git`` marks the checkout being inspected; one
-        # below it marks a nested checkout, which is skipped whole.
+        # below it that holds or names a repository marks a nested checkout,
+        # which is skipped whole (:func:`nested_checkout`).
         listed = frozenset(path.name for path, _ in entries)
-        if (
-            prune
-            and not is_root
-            and any(_is_git_entry(path, listed) for path, _ in entries)
-        ):
+        if prune and not is_root and nested_checkout(folder, entries):
             continue
         files: list[Path] = []
         folders: list[Path] = []
         for path, kind in sorted(entries, key=lambda entry: entry[0].name):
             if (
                 os.path.normcase(path.name) in pruned
-                or (prune_git and _is_git_entry(path, listed))
+                or (prune_git and is_git_entry(path, listed))
             ) and kind in (DIR_ENTRY, LINK_ENTRY):
                 if kind == LINK_ENTRY:
                     note_skipped(path)

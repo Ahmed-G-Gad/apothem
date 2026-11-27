@@ -50,16 +50,27 @@ def _write(path: Path, text: str = "x\n") -> Path:
 
 
 def make_worktree(directory: Path) -> Path:
-    """Mark ``directory`` as a linked worktree or submodule: ``.git`` is a file."""
-    directory.mkdir(parents=True, exist_ok=True)
-    (directory / ".git").write_text("gitdir: ../.git/worktrees/wt\n", encoding="utf-8")
+    """Mark ``directory`` as a linked worktree or submodule: ``.git`` is a file.
+
+    Its ``gitdir:`` line names a folder that holds what git asks of a linked
+    work tree's folder (``HEAD`` and ``commondir``), so the walk takes it for
+    a repository. The folder sits inside ``directory``, which the walk skips,
+    so the test tree holds no second checkout of its own.
+    """
+    store = directory / ".wt-store"
+    store.mkdir(parents=True, exist_ok=True)
+    (store / "HEAD").write_text("ref: refs/heads/main\n", encoding="utf-8")
+    (store / "commondir").write_text("../..\n", encoding="utf-8")
+    (directory / ".git").write_text("gitdir: .wt-store\n", encoding="utf-8")
     return directory
 
 
 def make_clone(directory: Path) -> Path:
-    """Mark ``directory`` as a nested clone: ``.git`` is a directory."""
+    """Mark ``directory`` as a nested clone: ``.git`` is a repository folder."""
     (directory / ".git").mkdir(parents=True, exist_ok=True)
     (directory / ".git" / "HEAD").write_text("ref: refs/heads/main\n", encoding="utf-8")
+    (directory / ".git" / "objects").mkdir(exist_ok=True)
+    (directory / ".git" / "refs").mkdir(exist_ok=True)
     return directory
 
 
