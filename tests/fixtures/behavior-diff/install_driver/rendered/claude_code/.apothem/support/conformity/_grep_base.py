@@ -56,6 +56,7 @@ import argparse
 import json
 import os
 import re
+import stat
 import sys
 from collections.abc import Callable, Iterable, Iterator
 from dataclasses import asdict, dataclass, field
@@ -71,7 +72,6 @@ from apothem.conformity._project_paths import (
     linked_git_entry,
     note_root_spelling,
     note_skipped,
-    path_kind,
     scan_entries,
     start_skip_log,
     take_skipped_paths,
@@ -142,6 +142,15 @@ class GitTimeoutError(GitCheckError):
     def __init__(self, command: str, seconds: float) -> None:
         """Name the git *command* that did not finish within *seconds*."""
         super().__init__(f"{command} did not finish within {seconds} seconds")
+
+
+class GitEntryUnreadableError(GitCheckError):
+    """A ``.git`` entry on git's search path could not be looked at.
+
+    The check did not run git (see ``nearest_linked_git_entry``), and it has
+    not earned a pass: the message is the sentence ``linked_git_message``
+    gives, naming the entry.
+    """
 
 
 class GitFailedError(GitCheckError):
@@ -762,148 +771,104 @@ def in_checkout(directory: Path) -> bool:
     return any(has_git_entry(folder) for folder in checkout_search_folders(directory))
 
 
-# What git's own repository test (``validate_headref``) accepts in ``HEAD``:
-# ``ref:``, then only the blanks git's ``isspace`` takes (space, tab, line
-# feed, carriage return), then ``refs/``; or an object id (SHA-1, or the
-# first 40 digits of a SHA-256 one). git reads 255 bytes of ``HEAD``.
-_HEAD_SYMREF: Final[re.Pattern[bytes]] = re.compile(rb"ref:[ \t\n\r]*refs/")
-_HEAD_OBJECT_ID: Final[re.Pattern[bytes]] = re.compile(rb"[0-9a-fA-F]{40}")
-_HEAD_READ_BYTES: Final[int] = 255
-# git reads the whole ``commondir`` file; a longer one is not judged here.
-_COMMONDIR_MAX_BYTES: Final[int] = 64 * 1024
-
-
-def _read_at_most(path: Path, limit: int) -> bytes | None:
-    """Return up to *limit* + 1 bytes of the regular file *path*; None on error."""
-    try:
-        with path.open("rb") as handle:
-            return handle.read(limit + 1)
-    except OSError:
-        return None
-
-
-def _repository_verdict(git_dir: Path) -> bool | Path:
-    """Say whether git's search stops at *git_dir* as a repository.
-
-    True only when *git_dir* passes a test at least as strict as git's own
-    (``is_git_directory``): a ``HEAD`` git accepts, and the object and
-    reference stores, found through a ``commondir`` file read as git reads
-    it (the whole file, trailing carriage returns and line feeds trimmed,
-    cut at a NUL). False when it fails that test or the test cannot be sure
-    (a read error, a file too large to judge, a line break left in the
-    ``commondir`` path): git may look past *git_dir*, so the walk goes on.
-
-    A link among the parts git reads (``HEAD``, ``commondir``, the folder
-    ``commondir`` names, ``objects``, ``refs``) is returned: git would follow
-    it, so the caller refuses it as it refuses a ``.git`` link. Nothing is
-    followed: each part is looked at with ``os.lstat`` before it is read.
-    """
-    head_path = git_dir / "HEAD"
-    head_kind = path_kind(head_path)
-    if head_kind == LINK_ENTRY:
-        return head_path
-    if head_kind != FILE_ENTRY:
-        return False
-    head = _read_at_most(head_path, _HEAD_READ_BYTES)
-    if head is None:
-        return False
-    head = head[:_HEAD_READ_BYTES]
-    if not (_HEAD_SYMREF.match(head) or _HEAD_OBJECT_ID.match(head)):
-        return False
-    stores = git_dir
-    commondir = git_dir / "commondir"
-    commondir_kind = path_kind(commondir)
-    if commondir_kind == LINK_ENTRY:
-        return commondir
-    if commondir_kind is not None:
-        if commondir_kind != FILE_ENTRY:
-            return False
-        data = _read_at_most(commondir, _COMMONDIR_MAX_BYTES)
-        if not data or len(data) > _COMMONDIR_MAX_BYTES:
-            return False
-        named = data.rstrip(b"\r\n").split(b"\0", 1)[0]
-        if not named or b"\n" in named or b"\r" in named:
-            return False
-        try:
-            stores = git_dir / os.fsdecode(named)
-        except UnicodeDecodeError:
-            return False
-        stores_kind = path_kind(stores)
-        if stores_kind == LINK_ENTRY:
-            return stores
-        if stores_kind != DIR_ENTRY:
-            return False
-    for store in (stores / "objects", stores / "refs"):
-        store_kind = path_kind(store)
-        if store_kind == LINK_ENTRY:
-            return store
-        if store_kind != DIR_ENTRY:
-            return False
-    return True
-
-
 def nearest_linked_git_entry(root: Path) -> Path | None:
-    """Return the linked entry git would read its repository through, and note it.
+    """Return a ``.git`` entry on git's search path from *root* that git must not use.
 
-    git looks for the repository in *root* and then in each folder above it
-    (:func:`checkout_search_folders`), and in each folder it looks first at
-    the ``.git`` entry and then at the folder itself, which may be a bare
-    repository. This walk does the same and stops where git would stop:
+    git looks for the repository in *root* and in the folders above it
+    (:func:`checkout_search_folders`). This looks at the ``.git`` entry of
+    each of those folders with ``os.lstat``, as the tree is at that moment,
+    and returns the first one that is a link (to a folder or a file, a
+    junction, or one that dangles), noted in the skip log, or that
+    ``os.lstat`` cannot look at for any reason but its absence, so the check
+    fails closed (:func:`linked_git_message` gives each its own sentence). It
+    does not stop at a real ``.git`` entry and does not judge whether a
+    folder holds a repository.
 
-    - a ``.git`` link (to a folder or a file, a junction, or one that
-      dangles), or a link among the parts git reads in the repository it
-      stops at (see :func:`_repository_verdict`): the link is noted in the
-      skip log and returned;
-    - a ``.git`` folder or a folder that passes the repository test, or a
-      ``.git`` file (git uses the repository it names, or stops with an
-      error): None.
-
-    The repository test is at least as strict as git's, never looser, so the
-    walk never stops where git goes on. A ``.git`` folder git would not take
-    as a repository (an empty one, a ``HEAD`` that names nothing under
-    ``refs/``, a ``commondir`` that leads nowhere) is looked past, as git
-    does. Where the test is stricter than git, the walk goes on past a
-    repository git would use, and a ``.git`` link above it is refused though
-    git never reaches it. That false refusal is deliberate: it fails closed.
-
-    The checks run git with *discover* set (``run_git``), which leaves out
-    ``GIT_DIR`` and the other location variables, so git finds the repository
-    from *root* as this walk did. A ``.git`` file's ``gitdir:`` target is
-    taken as written: it is a path the file states, not a link.
-
-    Every check that runs git calls this before git and before
-    :func:`in_checkout`, and treats an entry as no checkout, so a run on a
-    subfolder of a project behaves like a run on the project itself.
+    The boundary this is part of, what it refuses that git would handle
+    safely, and what it leaves to git, are stated once, in the conformity
+    README's rule for checks that run git (``src/apothem/conformity/README.md``,
+    "Project files only, never through a link"); the English usage page and
+    the changelog state the same boundary. Every check in the ``--all`` and
+    ``--all-perwrite`` set that runs git calls this first and runs git with
+    ``discover=True``; the ``--staged`` checks do not.
     """
+    # What this look finds replaces what an earlier one found.
+    _unreadable_entries.discard(os.fspath(root / GIT_ENTRY))
     if linked_git_entry(root):
         return root / GIT_ENTRY
     for folder in checkout_search_folders(root):
         entry = folder / GIT_ENTRY
-        kind = path_kind(entry)
-        if kind == LINK_ENTRY:
+        # What this look finds replaces what an earlier one found.
+        _unreadable_entries.discard(os.fspath(entry))
+        try:
+            info = os.lstat(entry)
+        except OSError as exc:
+            if _absent(exc, entry):
+                continue
+            _unreadable_entries.add(os.fspath(entry))
+            return entry
+        except ValueError:
+            _unreadable_entries.add(os.fspath(entry))
+            return entry
+        if is_link(info):
             note_skipped(entry)
             return entry
-        if kind == DIR_ENTRY:
-            verdict = _repository_verdict(entry)
-        elif kind is not None and git_entry_state(folder) != GIT_ENTRY_NONE:
-            return None
-        else:
-            verdict = False
-        if verdict is False:
-            verdict = _repository_verdict(folder)
-        if isinstance(verdict, Path):
-            note_skipped(verdict)
-            return verdict
-        if verdict:
-            return None
     return None
+
+
+def _absent(exc: OSError, entry: Path) -> bool:
+    """Return True when *exc* from ``os.lstat(entry)`` means nothing is there.
+
+    On Windows a path too long, a bad path or an unreachable share also
+    raise :class:`FileNotFoundError`. Only ``ERROR_FILE_NOT_FOUND`` (2)
+    means the entry is absent, and ``ERROR_PATH_NOT_FOUND`` (3) when what
+    would hold it is missing or is not a folder, such as a root that does not
+    exist or is a file; ``os.lstat`` looks at it.
+    """
+    if isinstance(exc, NotADirectoryError):
+        return True
+    if not isinstance(exc, FileNotFoundError):
+        return False
+    code = getattr(exc, "winerror", None)
+    if code in (None, 2):
+        return True
+    if code != 3:
+        return False
+    try:
+        holder = os.lstat(entry.parent)
+    except FileNotFoundError as missing:
+        # The holder's own winerror 3 is judged the same way, up the chain,
+        # so only a chain that ends in nothing there or in no folder counts.
+        # A drive root is its own parent: reached that way, the chain ends
+        # in nothing known, so the entry counts as unreadable.
+        if entry.parent == entry.parent.parent:
+            return False
+        return _absent(missing, entry.parent)
+    except (OSError, ValueError):
+        return False
+    return not stat.S_ISDIR(holder.st_mode)
+
+
+# The .git entries :func:`nearest_linked_git_entry` returned because
+# ``os.lstat`` could not look at them, by exact spelling.
+_unreadable_entries: set[str] = set()
+
+
+def git_entry_unreadable(entry: Path) -> bool:
+    """Return True when :func:`nearest_linked_git_entry` could not look at *entry*.
+
+    Such an entry is not a link: it is not in the skip log, and it gets its
+    own sentence (:func:`linked_git_message`). The answer is what the guard
+    found, not a second look.
+    """
+    return os.fspath(entry) in _unreadable_entries
 
 
 def linked_git_label(root: Path, entry: Path) -> str:
     """Return how a report names *entry*, as the skip log names it.
 
-    Relative to *root* when it lies inside it (``.git``, ``.git/HEAD``), and
-    by its full path otherwise, such as a linked ``.git`` above the root.
+    ``.git`` for the root's own entry, and the full path of one above the
+    root.
     """
     try:
         return entry.relative_to(root).as_posix()
@@ -912,17 +877,52 @@ def linked_git_label(root: Path, entry: Path) -> str:
 
 
 def linked_git_message(root: Path, entry: Path) -> str:
-    """Return the sentence for a check that did not run git through *entry*.
+    """Return the sentence for a check that did not run git because of *entry*.
 
-    It names *entry* (see :func:`linked_git_label`) and nothing git printed;
-    the root's own ``.git`` keeps the sentence it always had.
+    It names *entry* (see :func:`linked_git_label`) and nothing git printed.
+    The root's own ``.git`` keeps the sentence it always had; an entry above
+    the root may lie above a repository git would use first, so its sentence
+    says only what the gate did.
     """
+    if git_entry_unreadable(entry):
+        return (
+            f"the .git entry {linked_git_label(root, entry)} on git's search "
+            "path could not be looked at, so the gate does not run git below it"
+        )
     if entry == root / GIT_ENTRY:
         return "the .git entry is a link, so git would read another repository"
-    label = linked_git_label(root, entry)
-    if entry.name == GIT_ENTRY:
-        return f"the .git entry {label} is a link, so git would read another repository"
-    return f"{label}, which git reads, is a link, so git would read another repository"
+    return (
+        f"the .git entry {linked_git_label(root, entry)} on git's search path "
+        "is a link, so the gate does not run git below it"
+    )
+
+
+def _is_git_entry(path: Path, listed: frozenset[str]) -> bool:
+    """Return True when the listed entry *path* is the ``.git`` of its folder.
+
+    *listed* holds the names in the folder's own listing. ``.git`` as listed
+    is; another spelling of it in case (``.GIT``) is only when the listing
+    holds no exact ``.git`` and the file system opens ``.git`` there as that
+    same entry, judged by ``os.lstat`` and ``os.path.samestat``. Where the
+    file system gives no file number (0, as some network and FUSE file
+    systems do), the listing settles it: no exact ``.git`` is listed, yet
+    ``.git`` opens, so the file system matched it to this entry. A
+    case-sensitive folder (NTFS, APFS) can hold both, and git uses only
+    ``.git``. A folder listing gives long names
+    only, so a short name such as ``GIT~2`` is a name of its own.
+    """
+    if path.name == GIT_ENTRY:
+        return True
+    if path.name.lower() != GIT_ENTRY or GIT_ENTRY in listed:
+        return False
+    try:
+        variant = os.lstat(path)
+        exact = os.lstat(path.parent / GIT_ENTRY)
+    except (OSError, ValueError):
+        return False
+    if variant.st_ino == 0 or exact.st_ino == 0:
+        return True
+    return os.path.samestat(variant, exact)
 
 
 def iter_tree_files(
@@ -957,7 +957,15 @@ def iter_tree_files(
     skipped too; what it points to is yielded under its own path when the
     walk reaches it. A directory it cannot read is skipped.
     """
-    pruned = PRUNED_SEGMENTS.union(extra_prune) if prune else frozenset(extra_prune)
+    # Names match as the host's path rules spell them (os.path.normcase);
+    # ``.git`` is judged on its own (:func:`_is_git_entry`).
+    extra = frozenset(extra_prune)
+    pruned = frozenset(
+        os.path.normcase(name)
+        for name in (PRUNED_SEGMENTS.union(extra) if prune else extra)
+        if name != GIT_ENTRY
+    )
+    prune_git = prune or GIT_ENTRY in extra
     wanted_suffixes = tuple(os.path.normcase(suffix) for suffix in suffixes)
     wanted_names = frozenset(os.path.normcase(name) for name in names)
     match_all = not wanted_suffixes and not wanted_names
@@ -975,12 +983,20 @@ def iter_tree_files(
         entries = scan_entries(folder)
         # The root's own ``.git`` marks the checkout being inspected; one
         # below it marks a nested checkout, which is skipped whole.
-        if prune and not is_root and any(path.name == GIT_ENTRY for path, _ in entries):
+        listed = frozenset(path.name for path, _ in entries)
+        if (
+            prune
+            and not is_root
+            and any(_is_git_entry(path, listed) for path, _ in entries)
+        ):
             continue
         files: list[Path] = []
         folders: list[Path] = []
         for path, kind in sorted(entries, key=lambda entry: entry[0].name):
-            if path.name in pruned and kind in (DIR_ENTRY, LINK_ENTRY):
+            if (
+                os.path.normcase(path.name) in pruned
+                or (prune_git and _is_git_entry(path, listed))
+            ) and kind in (DIR_ENTRY, LINK_ENTRY):
                 if kind == LINK_ENTRY:
                     note_skipped(path)
                 continue

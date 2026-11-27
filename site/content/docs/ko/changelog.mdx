@@ -453,14 +453,35 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   and `naming-grep` checks a link's own name. Each report lists the links and
   special files it left out under `skipped_links`, and a validator whose
   folder is a link fails instead of passing as if the folder were not there
-  yet. The checks that run git read the `.git` folder through git itself.
-  When the `.git` entry git would use, in the root or in a folder above it,
-  or a file git reads in that repository, is a link, the three `--all`
-  validators that run git do not run it and list the link under
-  `skipped_links`, `no-global-plans-grep` reports it as a failing finding,
-  and `--all-perwrite` lists no tracked files and fails with a
-  `check_error`. A `GIT_DIR` set in the environment, as in a hook, no longer
-  points these validators' git somewhere else.
+  yet. The checks that run git read the `.git` folder through git itself;
+  see the next entry for when they do not run it.
+- **The checks that run git have a plain rule for links.** The three `--all`
+  validators that run git, and `--all-perwrite`, follow it. In `--all` and
+  `--all-perwrite`, the gate itself opens only regular files inside the root,
+  checking each folder on the way with `lstat`, including every path git
+  lists, and never reads inside a `.git` entry. Before they run git, they look
+  with `lstat` at the `.git` entry of the root and of every folder above it
+  that git searches, as the tree is at that moment; if any of them is a link,
+  or cannot be looked at, they do not run git. This also refuses projects git
+  would handle safely, such as every project below a home folder whose `.git`
+  is a link, even one with its own repository: that is the deliberate cost of
+  a simple rule. They run git without `GIT_DIR` and the other variables that
+  name the repository, its stores or its index. Which repository git then
+  reads is not checked: a `gitdir:` line, `commondir`, alternates,
+  `core.worktree`, an include, or a link inside the git folder can name
+  another one, and git follows them, so git can reach a network path or wait
+  until its time limit. The gate uses git's output only as names, modes,
+  status letters, the subject of the last commit, commit times and a few
+  settings, and never opens a path git prints without checking each level
+  inside the root. When they find a link, they list it under `skipped_links`
+  (by its full path when it lies above the root), `no-global-plans-grep`
+  reports it as a failing finding, and `--all-perwrite` lists no tracked files
+  and fails with a `check_error` that names it. A `.git` entry the gate cannot
+  look at (a path too long, a share it cannot reach, no access) is not a link
+  and is not listed under `skipped_links`: `conventional-commit-grep` fails
+  with the status `git-failed` and a `check_error`, the companion coverage
+  check and `--all-perwrite` fail with a `check_error` that says the entry
+  could not be looked at, and `no-global-plans-grep` reports it as a finding.
 
 ## [1.6.0] - 2026-11-26
 

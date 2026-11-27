@@ -228,6 +228,8 @@ GIT_LOCATION_VARIABLES: Final[tuple[str, ...]] = (
     "GIT_OBJECT_DIRECTORY",
     "GIT_ALTERNATE_OBJECT_DIRECTORIES",
     "GIT_INDEX_FILE",
+    "GIT_GRAFT_FILE",
+    "GIT_SHALLOW_FILE",
 )
 
 
@@ -239,10 +241,11 @@ def git_environment(
     A copy of *environ* (default ``os.environ``) with :data:`GIT_ENVIRONMENT`
     set and ``PATH`` narrowed to its full-path entries, so a program git
     starts by name is never taken from the current folder either. With
-    *discover*, :data:`GIT_LOCATION_VARIABLES` are left out, so git finds the
-    repository from the folder it runs in, as
-    :func:`~apothem.conformity._grep_base.nearest_linked_git_entry` modelled
-    it before the run.
+    *discover*, :data:`GIT_LOCATION_VARIABLES` (the variables that name the
+    repository, its stores, its index, or a file git reads in place of one
+    of the repository's own) are left out, so git searches from the folder it
+    runs in: the search path whose ``.git`` entries
+    :func:`~apothem.conformity._grep_base.nearest_linked_git_entry` checked.
     """
     env = dict(os.environ if environ is None else environ)
     if discover:
@@ -305,9 +308,10 @@ def run_git(
     start.
 
     A check that asked :func:`~apothem.conformity._grep_base.nearest_linked_git_entry`
-    before git sets *discover*: git then finds the repository from *cwd*, as
-    that check judged it, and not from a ``GIT_DIR`` the environment names
-    (see :func:`git_environment`).
+    before git sets *discover*: git then searches from *cwd*, the search path
+    whose ``.git`` entries that check looked at, and not from a ``GIT_DIR``
+    the environment names (see :func:`git_environment`). Which repository
+    git then reads is not checked.
 
     On Windows a git that started but could not be resumed
     (:class:`~apothem.conformity._bounded_run.ProgramResumeError`) is a
