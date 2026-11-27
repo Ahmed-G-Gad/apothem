@@ -10,7 +10,7 @@ import { describe, it } from 'node:test';
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { gfmFromMarkdown } from 'mdast-util-gfm';
 import { gfm } from 'micromark-extension-gfm';
-import { cutAtWord } from './cut-at-word.mjs';
+import { cutAtWord, plainCut } from './cut-at-word.mjs';
 import { cutInputs } from './update-reference-inventory.mjs';
 
 describe('cutAtWord', () => {
@@ -54,15 +54,23 @@ describe('cutAtWord', () => {
 	});
 
 	it('leaves brackets that never formed a link as they are', () => {
-		assert.equal(cutAtWord('See [guide](/docs/install and more) words', 30), 'See [guide](/docs/install and …');
+		assert.equal(cutAtWord('See [guide](/docs/install and more) words', 40), 'See [guide](/docs/install and more) …');
 	});
 
-	it('keeps an unclosed parenthesis, which is not markup', () => {
-		assert.equal(cutAtWord('Some words (an aside that goes on) end', 24), 'Some words (an aside …');
+	it('steps back to a boundary before a parenthesis the cut would leave open', () => {
+		assert.equal(cutAtWord('Some words (an aside that goes on) end', 24), 'Some words …');
+	});
+
+	it('keeps a closed parenthesis before the cut', () => {
+		assert.equal(cutAtWord('Steps (one) then more words here and there', 30), 'Steps (one) then more words …');
+	});
+
+	it('cuts inside a parenthesis the source never closes', () => {
+		assert.equal(cutAtWord('(an aside that never closes and goes on', 24), '(an aside that never …');
 	});
 
 	it('keeps markers that were literal text in the source', () => {
-		assert.equal(cutAtWord('Start **bold [link label](/x y z) and', 30), 'Start **bold [link label](/x …');
+		assert.equal(cutAtWord('Start **bold [link label](/x) y z and', 30), 'Start **bold [link label](/x) y z …');
 	});
 
 	it('falls back to a hard cut that closes a long opening code span', () => {
@@ -164,6 +172,12 @@ describe('cutAtWord', () => {
 	it('never splits a backslash escape or a character reference', () => {
 		const text = `a ${BACKSLASH}*b c &amp; d e f g h`;
 		assert.equal(cutAtWord(text, 12), `a ${BACKSLASH}*b c &amp; d …`);
+	});
+
+	it('writes the plain-text fallback escaped, within the limit', () => {
+		assert.equal(plainCut('a **b** c d e f g', 12), `a ${BACKSLASH}*${BACKSLASH}*b${BACKSLASH}*${BACKSLASH}* c …`);
+		assert.equal(plainCut('averyveryverylongword', 10), 'averyver …');
+		for (const limit of [3, 8, 12, 20]) assert.ok(plainCut('one two three four five six', limit).length <= Math.max(limit, 3));
 	});
 
 	it('drops a code span the cut lands in after other text', () => {

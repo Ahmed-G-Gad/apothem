@@ -26,6 +26,16 @@
 // strikethrough run keeps the content before the cut without its markers. The
 // cut there is still on a word boundary when the first `limit` visible
 // characters hold a space, and a hard cut at `limit` otherwise.
+//
+// A parenthesis is plain text, not markup, but a table cell that ends inside
+// an open "(" reads as broken, so the cut steps back to an earlier word
+// boundary where every "(" in the text is closed. Only when no boundary
+// allows that (the source opens a parenthesis it never closes, for example)
+// may the cut end inside one.
+//
+// When no cut keeps the markup whole, the shown text itself is cut at the last
+// word boundary that fits and written out as escaped plain text, so the result
+// still ends in " …" within the limit.
 
 import { fromMarkdown } from 'mdast-util-from-markdown';
 import { gfmFromMarkdown, gfmToMarkdown } from 'mdast-util-gfm';
@@ -87,14 +97,17 @@ export function visibleText(node) {
 	return parts.join(PHRASING_PARENTS.has(node.type) ? '' : ' ');
 }
 
-// The shown text of `node` as a string, and the indexes in it of the markup
+// The shown text of `node` as a string, the indexes in it of the markup
 // characters (*, _, ~, [ and backtick) that show as literal text rather than
-// as code, a link target or other markup.
+// as code, a link target or other markup, and the parentheses that show as
+// text.
 const MARKUP = /[*_~[`]/g;
+const PARENS = /[()]/g;
 
-function literalMarkup(node, out = { shown: '', literal: new Set() }) {
+function literalMarkup(node, out = { shown: '', literal: new Set(), parens: [] }) {
 	if (node.type === 'text') {
 		for (const m of node.value.matchAll(MARKUP)) out.literal.add(out.shown.length + m.index);
+		for (const m of node.value.matchAll(PARENS)) out.parens.push({ index: out.shown.length + m.index, open: m[0] === '(' });
 		out.shown += node.value;
 	} else if (!node.children) {
 		out.shown += visibleText(node);
@@ -111,8 +124,9 @@ function literalMarkup(node, out = { shown: '', literal: new Set() }) {
 // the source shows and no markup character as literal text that the source
 // did not show as literal text. A cut can change how the markup before it
 // pairs (a "_" closer that a following word turns into an inner-word "_"), so
-// every candidate is parsed again and checked.
-function faithful(cut, original) {
+// every candidate is parsed again and checked. With `balanced`, the cut must
+// also leave no "(" in its text open.
+function faithful(cut, original, balanced) {
 	const result = literalMarkup(parseMarkdown(cut));
 	if (!result.shown.endsWith(' …')) return false;
 	const body = result.shown.slice(0, -2);
@@ -120,7 +134,28 @@ function faithful(cut, original) {
 	for (const index of result.literal) {
 		if (index < body.length && !original.literal.has(index)) return false;
 	}
-	return true;
+	return !balanced || openParens(result.parens, body.length) === 0;
+}
+
+// How many "(" before `end` are still open there.
+function openParens(parens, end) {
+	let depth = 0;
+	for (const { index, open } of parens) {
+		if (index >= end) break;
+		depth = open ? depth + 1 : Math.max(0, depth - 1);
+	}
+	return depth;
+}
+
+// The last resort: the first `limit` shown characters, cut at the last word
+// boundary that leaves room for " …" (a hard cut when there is none), written
+// as plain text with every markup character escaped.
+export function plainCut(shown, limit) {
+	const room = Math.max(1, limit - 2);
+	const at = shown.lastIndexOf(' ', room);
+	const body = shown.slice(0, at > 0 ? at : room).trim();
+	if (!body) return null;
+	return `${serialize({ type: 'paragraph', children: [{ type: 'text', value: body }] })} …`;
 }
 
 function source(node, text) {
@@ -217,14 +252,19 @@ export function cutAtWord(text, limit) {
 	const shown = visibleText(tree);
 	if (shown.length <= limit) return text;
 	const original = literalMarkup(tree);
-	const accept = (cut) => (cut && faithful(`${cut} …`, original) ? `${cut} …` : null);
+	const accept = (cut, balanced) => (cut && faithful(`${cut} …`, original, balanced) ? `${cut} …` : null);
 	// Each word boundary at or before the limit, latest first.
-	for (let at = shown.lastIndexOf(' ', limit - 1); at > 0; at = shown.lastIndexOf(' ', at - 1)) {
-		const cut = render(tree, text, at, false) || render(tree, text, at, true);
-		const result = accept(cut);
-		if (result) return result;
+	const boundaries = [];
+	for (let at = shown.lastIndexOf(' ', limit - 1); at > 0; at = shown.lastIndexOf(' ', at - 1)) boundaries.push(at);
+	// First a boundary that closes every "(", then any boundary.
+	for (const balanced of [true, false]) {
+		for (const at of boundaries) {
+			const cut = render(tree, text, at, false) || render(tree, text, at, true);
+			const result = accept(cut, balanced);
+			if (result) return result;
+		}
 	}
 	// No cut keeps the markup whole (a code span that opens with spaces, cut to
-	// one character, say): the text is left as it is rather than broken.
-	return accept(render(tree, text, limit, true)) ?? text;
+	// one character, say): the shown text is cut as escaped plain text.
+	return accept(render(tree, text, limit, true), false) ?? plainCut(shown, limit) ?? text;
 }
