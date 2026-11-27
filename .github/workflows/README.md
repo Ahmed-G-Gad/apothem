@@ -15,7 +15,7 @@ top-level `.github/README.md` would, and none exists.
 | Workflow | Triggers | Purpose |
 |----------|----------|---------|
 | `ci.yml` | push (main), PR (main), dispatch | Twelve canonical check classes — lint, format-check, type-check, test matrix, coverage (the jobs `coverage shard 1 of 2` and `coverage shard 2 of 2` run in parallel, each on the half of the suite that `pytest --shard=K/2` keeps, measure all of `src/apothem`, and upload their coverage data as `coverage-data-1` and `coverage-data-2`; the `coverage` job, the required check, combines the data, keeps the engine folders listed in `[tool.coverage.run] source` in `pyproject.toml`, holds them to their 80% floor, uploads the XML and HTML reports, and fails unless both shards passed), security-scan, supply-chain-scan, docs-build (the site's unit tests, the build, and `scripts/dev/check_built_docs_links.py` on the export: a translated page's links open the language's own page when the site could use it, and every `#fragment` lands), example-run, release-preflight, metrics (runs no tests: after both coverage shards pass, it combines their data over every package, holds the engine, conformity and audit packages each to its own floor, and uploads the `metrics.json` artifact; when a shard fails, GitHub skips it), and home-isolation (the whole `pytest` suite with `HOME`, `USERPROFILE` and the four XDG base directories on empty folders; it fails and lists the paths if anything appears in them, and is not a required check). Release-preflight also runs `scripts/dev/validate_harness_convention_pins.py`, so a stale pin blocks the merge. |
-| `ci-matrix.yml` | push (main), PR (main), dispatch | Cross-platform 3-OS × 5-Python `pytest` matrix (adds macOS reach) via the in-repo reusable setup workflow, which installs the hash-locked `scripts/ci/requirements-ci-dev.txt`. |
+| `ci-matrix.yml` | push (main), PR (main), dispatch | Cross-platform 3-OS × 5-Python `pytest` matrix (adds macOS reach; each Windows Python version runs as two `--shard=K/2` cells) via the in-repo reusable setup workflow, which installs the hash-locked `scripts/ci/requirements-ci-dev.txt`. |
 | `ci-docs-stub.yml` | PR (main) | Documentation-only PR stub that reports the required `quality` / `coverage` contexts green; self-gates and fails if a gated code/config surface is present. |
 | `npm-shim.yml` | push (main), PR (main), dispatch | npm shim runtime-floor gate — runs `bin/apothem.mjs` on Node 18, 20, 22 and 24 with Python 3.10: the missing-prerequisite error, `--version`, an isolated dry-run install, and the packed tarball through `npx`. |
 | `clean-install-gate.yml` | push (main), PR (main), dispatch | Clean-machine install gate — one-shot installer shell-compat across documented shells, plus a hermetic clean-runner install and built-wheel smoke. |
@@ -64,6 +64,10 @@ top-level `.github/README.md` would, and none exists.
   checks are `ci.yml`'s `quality / <os> / py<ver>` matrix (`ubuntu-latest` and
   `windows-latest`, Python 3.10 to 3.14; the prerelease `py3.15` cell is not
   required), `ci.yml`'s `coverage`, and `dco.yml`'s `Require Signed-off-by`.
+  Each Windows Python version runs as two `quality` shard cells, which are
+  not required; the `quality-windows` job reports the required
+  `quality / windows-latest / py<ver>` contexts and fails unless every
+  `quality` cell passed.
   Three more workflows declare, in their own headers, that their jobs are
   required checks, and the maintainer intends to add them, but they are not in
   the live set yet: `clean-install-gate.yml` (the `installer-shell-compat`,
