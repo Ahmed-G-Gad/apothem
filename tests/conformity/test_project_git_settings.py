@@ -59,6 +59,7 @@ import pytest
 from apothem.conformity import (
     _bounded_run,
     _grep_base,
+    _safe_open,
     agents_md_coverage_grep,
     conventional_commit_grep,
     gate,
@@ -3027,12 +3028,12 @@ def test_a_git_file_larger_than_git_reads_is_broken_and_read_in_part(
     assert refused.returncode != 0
     assert b"too large to be a .git file" in refused.stderr
     sizes: list[int] = []
-    real_open: Callable[..., IO[Any]] = Path.open
+    real_open: Callable[..., IO[Any]] = _safe_open.open_project_file
 
-    def counting_open(self: Path, *args: object, **kwargs: object) -> _CountingReader:
-        return _CountingReader(real_open(self, *args, **kwargs), sizes)
+    def counting_open(root: Path, path: Path) -> _CountingReader:
+        return _CountingReader(real_open(root, path), sizes)
 
-    monkeypatch.setattr(Path, "open", counting_open)
+    monkeypatch.setattr(_safe_open, "open_project_file", counting_open)
 
     state = _grep_base.git_entry_state(folder)
 
