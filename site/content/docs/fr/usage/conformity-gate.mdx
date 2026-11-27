@@ -105,8 +105,8 @@ lien ou un tube nommé pendant que le gate tourne, le gate ne lit pas à travers
 le lien et n'attend pas sur le tube : le fichier n'est pas lu. Un validateur
 `--all` le compte comme absent ou illisible, comme il compte un lien, et liste
 l'entrée remplacée dans `skipped_links` ; `--all-perwrite` le compte comme
-`link`, ou comme `unreadable` s'il est remplacé une nouvelle fois, comme décrit
-plus bas. Sous Windows, une attente subsiste, comme pour une ouverture
+`link`, ou comme `unreadable` s'il est remplacé une nouvelle fois.
+Sous Windows, une attente subsiste, comme pour une ouverture
 ordinaire : un programme qui peut écrire dans le projet peut tenir un verrou
 opportuniste (oplock) sur un fichier et ne pas le relâcher quand le gate
 l'ouvre. Aucune manière d'ouvrir le fichier n'évite cette attente : un

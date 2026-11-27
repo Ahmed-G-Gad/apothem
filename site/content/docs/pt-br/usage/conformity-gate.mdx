@@ -101,7 +101,7 @@ nomeado enquanto o gate roda, o gate não lê através do link nem espera no pip
 o arquivo não é lido. Um validador do `--all` o conta como ausente ou ilegível,
 como conta um link, e lista a entrada trocada em `skipped_links`; o
 `--all-perwrite` o conta como `link`, ou como `unreadable` quando é trocado de
-novo, como descrito abaixo. No Windows resta uma espera, como já acontecia ao
+novo. No Windows resta uma espera, como já acontecia ao
 abrir o arquivo do jeito comum: um programa que pode escrever no projeto pode
 manter um bloqueio oportunista (oplock) sobre um arquivo e não soltá-lo quando o
 gate o abre. Nenhuma forma de abrir o arquivo evita essa espera, então um
