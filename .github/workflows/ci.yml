@@ -102,9 +102,12 @@ jobs:
     name: quality / ${{ matrix.os }} / py${{ matrix.python-version }}${{ matrix.shard && format(' / shard {0} of 2', matrix.shard) || '' }}
     runs-on: ${{ matrix.os }}
     # A Linux cell finishes in under 10 minutes. A Windows shard runs half the
-    # suite, which took 66 to 116 minutes whole on one Windows runner
-    # (November 2026). 90, the workflow-concurrency validator's matrix-job
-    # ceiling, leaves room for that and still stops a hung run.
+    # suite, which took 73 to 118 minutes whole on one Windows runner (the
+    # last six successful ci.yml runs on main, November 2026). Pytest is
+    # nearly all of that time (106.6 of 108.5 minutes in one cell), so a
+    # shard takes about half: 61 minutes at most. 90, the
+    # workflow-concurrency validator's matrix-job ceiling, leaves room for
+    # that and still stops a hung run.
     timeout-minutes: 90
     # A pre-release cell is advisory: it exercises the next Python against the
     # suite for early-warning without gating the merge. matrix.include carries
@@ -117,13 +120,15 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
-        # The whole suite took 66 to 116 minutes on one Windows runner
-        # (November 2026, 13,806 tests), close to the 120-minute ceiling, and
-        # it grows with every install test. So each Windows Python version
-        # runs as two cells, shard 1 and shard 2, each with
-        # `pytest --shard=K/2` (tests/conftest.py), which together run every
-        # test exactly once. Shard 0 is a Linux cell that runs the whole
-        # suite. The other steps run in both Windows shards.
+        # The whole suite took 73 to 118 minutes on one Windows runner (the
+        # last six successful ci.yml runs on main, November 2026, 13,806
+        # tests), close to the 120-minute ceiling, and it grows with every
+        # install test. So each Windows Python version runs as two cells,
+        # shard 1 and shard 2, each with `pytest --shard=K/2`
+        # (tests/conftest.py), which together run every test exactly once.
+        # Shard 0 is a Linux cell that runs the whole suite. The other steps
+        # run in both Windows shards. ci-matrix.yml splits its Windows cells
+        # the same way.
         shard: [0, 1, 2]
         exclude:
           - os: ubuntu-latest
@@ -272,9 +277,9 @@ jobs:
   # protection requires, and fails unless every quality cell passed. GitHub
   # skips a job when a job it needs failed or was cancelled, and a skipped
   # required check counts as passed, so it runs always() and fails itself.
-  # `needs.quality.result` covers every cell, so a failure in any of them
-  # turns all five of these contexts red; the shard cells' own names show
-  # which one failed. The advisory py3.15 cell does not count: its
+  # `needs.quality.result` covers every cell, Linux and Windows, so a failure
+  # in any of them turns all five of these contexts red; the quality cells'
+  # own names show which one failed. The advisory py3.15 cell does not count: its
   # continue-on-error lets it read as success here.
   quality-windows:
     name: quality / windows-latest / py${{ matrix.python-version }}
@@ -299,7 +304,7 @@ jobs:
           QUALITY_RESULT: ${{ needs.quality.result }}
         run: |
           if [ "${QUALITY_RESULT}" != "success" ]; then
-            echo "::error title=quality::Not every quality cell passed (result: ${QUALITY_RESULT}); the cells named quality / windows-latest / py<ver> / shard K of 2 show which Windows part failed."
+            echo "::error title=quality::Not every quality cell passed (result: ${QUALITY_RESULT}); the failing cell may be on any OS. See the quality / ubuntu-latest / py<ver> cells and the quality / windows-latest / py<ver> / shard K of 2 cells."
             exit 1
           fi
 

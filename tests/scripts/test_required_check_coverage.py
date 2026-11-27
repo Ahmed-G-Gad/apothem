@@ -37,6 +37,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import pytest
 import yaml
 
 _WORKFLOWS = Path(__file__).resolve().parents[2] / ".github" / "workflows"
@@ -88,9 +89,13 @@ _SHARD_SUFFIX = "${{ matrix.shard && format(' / shard {0} of 2', matrix.shard) |
 def _cells(matrix: dict) -> list[dict]:
     """Return the cells of a workflow matrix: the product, less exclude, plus include.
 
-    It covers what these workflows use: an include entry that sets a value
-    no cell has (a new Python version) adds a cell, and one that only adds
-    keys is merged into every cell it matches.
+    It models only the two include shapes these workflows use, and fails on
+    any other: an entry that sets a matrix key to a value that key's list
+    lacks (a new Python version) adds a cell of its own, and an entry that
+    sets no matrix key and no key an earlier entry set is merged into every
+    cell. GitHub's full rule, under which an entry merges into the cells it
+    would not overwrite, is not modelled, so a new include shape must extend
+    this function before the tests can trust its context names.
     """
     keys = [key for key in matrix if key not in ("include", "exclude")]
     cells: list[dict] = [{}]
@@ -99,17 +104,32 @@ def _cells(matrix: dict) -> list[dict]:
     for rule in matrix.get("exclude", []):
         cells = [c for c in cells if any(c.get(k) != v for k, v in rule.items())]
     for extra in matrix.get("include", []):
-        matching = [
-            cell
-            for cell in cells
-            if all(cell.get(k, v) == v for k, v in extra.items() if k in keys)
-        ]
-        if matching:
-            for cell in matching:
-                cell.update(extra)
-        else:
+        if any(k in keys and v not in matrix[k] for k, v in extra.items()):
             cells.append(dict(extra))
+            continue
+        assert not any(k in keys for k in extra), (
+            f"unsupported include {extra!r}: it sets a matrix key to a value "
+            "the matrix already has, which _cells does not model"
+        )
+        assert not any(k in cell for cell in cells for k in extra), (
+            f"unsupported include {extra!r}: it sets a key a cell already has"
+        )
+        for cell in cells:
+            cell.update(extra)
     return cells
+
+
+def test_cells_refuses_an_include_shape_it_does_not_model() -> None:
+    matrix = {"os": ["a", "b"], "python-version": ["1"]}
+    assert _cells({**matrix, "include": [{"python-version": "2", "x": 1}]})[-1] == {
+        "python-version": "2",
+        "x": 1,
+    }
+    assert all(c["x"] == 1 for c in _cells({**matrix, "include": [{"x": 1}]}))
+    with pytest.raises(AssertionError, match="unsupported include"):
+        _cells({**matrix, "include": [{"os": "a", "x": 1}]})
+    with pytest.raises(AssertionError, match="unsupported include"):
+        _cells({**matrix, "include": [{"x": 1}, {"x": 2}]})
 
 
 def _context(template: str, cell: dict) -> str:
