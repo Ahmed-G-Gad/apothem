@@ -517,6 +517,44 @@ def test_a_failed_uninstall_can_be_run_again(
     assert not failed[0].exists()
 
 
+@pytest.mark.parametrize("stop", ["error", "ctrl-c"])
+def test_an_exception_inside_the_older_layout_sweep_reports_and_records_nothing(
+    adapter: AntigravityAdapter,
+    gemini: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    stop: str,
+) -> None:
+    # The sweep removes the old plugin folder, after a backup, and then
+    # raises: the command prints the error alone, or Aborted! for Ctrl-C,
+    # and exits 1, and no record names that backup.
+    adapter.install({})
+    old = _revert_to_the_old_plugin_folder(gemini)
+    real = install_driver.sweep_stale
+
+    def sweep_then_stop(*args: object, **kwargs: object) -> object:
+        real(*args, **kwargs)  # type: ignore[arg-type]
+        if stop == "error":
+            raise OSError("disk went away")
+        raise KeyboardInterrupt
+
+    monkeypatch.setattr(install_driver, "sweep_stale", sweep_then_stop)
+    result = CliRunner().invoke(
+        cli.main, ["uninstall", "--harness", "antigravity", "--yes"]
+    )
+
+    assert result.exit_code == 1, result.output
+    said = (
+        "antigravity uninstall failed: disk went away"
+        if stop == "error"
+        else "Aborted!"
+    )
+    assert said in " ".join(result.output.split())
+    assert not old.exists()
+    assert _old_plugin_backups()
+    kinds = [record.kind for record in install_ledger.read_records("antigravity")]
+    assert kinds == ["install"]
+
+
 def test_a_link_directly_inside_the_plugin_folder_is_named_at_uninstall(
     adapter: AntigravityAdapter, gemini: Path, tmp_path: Path
 ) -> None:

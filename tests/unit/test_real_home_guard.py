@@ -3,19 +3,24 @@
 """The real-home guard in ``tests/conftest.py`` stops a test before it can write.
 
 Importing ``tests/conftest.py`` registers ``real_home_guard`` with the pytest
-session doing the import. Its setup hook fails a test, before any of its fixtures
-is set up, when the isolation fixtures of ``tests/conftest.py`` do not apply to
-it. Its call hook fails a test, before its body runs, when its environment points
-Apothem at the home the pytest process started with or at a real folder in it.
-Its report hook keeps such a failure failed when the test is marked ``xfail``.
-``__all__`` makes a star import of ``tests/conftest.py`` carry the isolation
-fixtures, which a star import used to skip because their names start with ``_``.
+session doing the import. Its setup hook fails a test, before any of its
+fixtures is set up, when the isolation fixtures of ``tests/conftest.py`` do not
+apply to it. Its call hook fails a test, before its body runs, when its
+environment points Apothem at the home the pytest process started with or at a
+real folder in it. Its report hook keeps such a failure failed when the test is
+marked ``xfail``. Its session hooks fail the run on a refusal of a write into a
+protected home that a caller absorbed outside any test, named for where it
+happened. ``__all__`` makes a star import of ``tests/conftest.py`` carry the
+isolation fixtures and ``_report_real_home_refusals``, which a star import
+would skip otherwise because their names start with ``_``.
 
-The ``test_*`` functions run in the suite, where ``tests/conftest.py`` is loaded
-as a conftest. They check that the guard is registered once, with its hooks
-ordered as intended, and that the call hook finds nothing for a suite test, and
-they check the guard's comparison on text: a folder below a real home is
-allowed, but not the home or a real folder in it.
+The ``test_*`` functions run in the suite, where ``tests/conftest.py`` is
+loaded as a conftest. They check that the guard is registered once, with its
+hooks ordered as intended (the session hooks that read the refusal log
+included), that ``tests/conftest.py`` holds none of the hooks the guard
+object implements, and that the call hook finds nothing for a suite test,
+and they check the guard's comparison on text: a folder below a real home
+is allowed, but not the home or a real folder in it.
 
 Showing the guard stop a test takes a pytest session of its own, because the
 call hook compares with the home its session started with.
@@ -23,32 +28,90 @@ call hook compares with the home its session started with.
 copy of this file, and that session collects only the ``case_*`` functions, so
 the ``pytester`` plugin stays out of the suite's own session. Each case points
 ``HOME``, ``USERPROFILE`` and ``LOCALAPPDATA`` at fresh folders, the fake real
-ones, writes a probe folder with pytester and runs it in-process. The probe
-session imports ``tests/conftest.py`` anew (one case imports it just before, in
-a thread, with the fake real home already set), so the fake real home is its
-real home, and the developer's own home is never named. The probe tests only read the
-home; the first line of each writes a sentinel file into the probe folder, never
-into a home, so a missing sentinel proves the body never started. The probe
-fixtures that stand for a fixture writing during setup write their sentinels
-there too. One probe test uses no fixture and the other uses ``tmp_path``.
+ones, writes a probe folder with pytester and runs it in-process, or, where
+the probe session ends with a ``SystemExit``, in a child process that inherits
+them. The probe session imports ``tests/conftest.py`` anew (one case imports
+it just before, in a thread, with the fake real home already set), so the fake
+real home is its real home, and the developer's own home is never named. The
+probe tests only read the home; the first line of each writes a sentinel file
+into the probe folder, never into a home, so a missing sentinel proves the body
+never started. The probe fixtures that stand for a fixture writing during setup
+write their sentinels there too. One probe test uses no fixture and the other
+uses ``tmp_path``.
+
+The other cases protect the fake real home with
+``apothem.lib.home_write_guard.also_protect_home`` and absorb a refusal of a
+write into it. Three absorb it in the test body or a fixture's teardown, with
+and without an ``xfail`` mark, and with the mark when the probe conftest takes
+the refusal fixture from a second copy of ``tests/conftest.py``, loaded under
+another module name. Each test errors at teardown. The rest absorb it outside
+any test: while a test module is imported, which fails that module's
+collection, and in a probe conftest's hook, which leaves the tests to run and
+pass and fails the run: at the session start (also in a run that collects no
+test), in a ``pytest_collection`` or ``pytest_collection_modifyitems`` hook, in
+a ``pytest_collection_finish`` hook while a path that does not exist stops the
+collection, between two collect reports (a ``pytest_itemcollected`` hook, and
+the ``pytest_collectreport`` hook of the session's own report), in a
+``pytest_runtestloop`` wrapper before it yields and in a plain
+``pytest_runtestloop`` hook (also with ``--co`` and with every test deselected,
+when no test runs), between two tests (a ``pytest_runtest_logreport`` hook for
+a teardown report), in a ``pytest_sessionfinish`` hook (also one that then
+calls ``pytest.exit(returncode=0)``, as a ``pytest_configure`` hook does before
+any session starts, and one that calls ``sys.exit(0)``, with and without xdist,
+or ``sys.exit(5)``, as a ``pytest_terminal_summary`` hook does with a bare
+``sys.exit()``, as a ``pytest_unconfigure`` hook does too, and so does a
+``sys.exit(0)`` after the guard's other hooks: in a ``tryfirst`` session-finish
+or unconfigure wrapper pytest registered after the guard, in a cleanup, and in
+an xdist controller's session-finish hook before it read its workers' files,
+also after a hook that ended the session finish with ``sys.exit`` or raised;
+these probe sessions run in a child process) or after a session-finish wrapper
+yields, in ``pytest_terminal_summary``, in ``pytest_unconfigure`` (with ``-p
+no:xdist``), and under xdist (``-n 2``) at the session start and in a worker's
+session finish (reported once, and also when a controller hook ended its test
+loop with ``pytest.exit`` before it took the worker's output), also in a
+``trylast`` hook of a conftest that pytest finds during collection, and after a
+worker handed its refusals to the controller: in its
+``pytest_terminal_summary``, in its ``pytest_unconfigure`` and after its own
+``tryfirst`` session-finish wrapper yields, which the worker writes to a file
+the controller reads and removes, also once a controller hook ended the run
+with ``pytest.exit`` before xdist ended the workers (a later run with the same
+``--basetemp`` and no refusal passes and reads none of the files an earlier run
+left in its folder, and no such file is made in a protected folder), a worker
+whose session ends at its start, which handed nothing over, is not named as if
+it had, a worker that ends with ``os._exit(0)`` in its session finish, before
+it hands anything over, still fails the run with what it absorbed between two
+tests and after its last test (a worker that hands the same over has each
+reported once), and so does one whose session-finish wrapper raises or calls
+``pytest.exit`` before its ``yield``, which leaves the guard's hand-off out of
+its output, and an empty file a worker left, a line it cut short and a file the
+controller cannot read each fail the run; a worker that stops on Ctrl-C has its
+refusal reported once, and one the controller absorbs while its workers run the
+tests is named for the run. Each names where the refusal happened. A session
+that absorbs nothing exits 0, with and without xdist. The guard refuses before
+any write, so nothing lands in a home.
 """
 
 from __future__ import annotations
 
+import errno
 import importlib
+import json
 import os
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
 import threading
 from pathlib import Path
-from types import ModuleType
-from typing import TYPE_CHECKING
+from types import ModuleType, SimpleNamespace
+from typing import IO, TYPE_CHECKING, Any
 
 import pytest
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Generator
+
     from pluggy import HookImpl
 
 #: Hands the repo root to the pytester session, which runs from a copy of this file.
@@ -90,6 +153,14 @@ _ISOLATION = (
     "_isolate_install_ledger",
     "_isolate_backup_root",
 )
+#: Every name ``__all__`` lists that starts with ``_``, which a star import
+#: carries only because it is listed: the five isolation fixtures and the
+#: fixture that fails a test after which a refusal was absorbed.
+_UNDERSCORE_EXPORTS = {
+    *_ISOLATION,
+    "_isolate_hook_state",
+    "_report_real_home_refusals",
+}
 #: The functions the pytester session collects, and the suite does not.
 _CASE_PREFIX = "case_"
 
@@ -296,6 +367,105 @@ _XFAIL_PROBES = "import pytest\n" + _PROBES.replace(
     "\ndef test_", '\n@pytest.mark.xfail(reason="probe")\ndef test_'
 )
 
+#: Four probe tests that each absorb a refusal of a write into a protected home:
+#: in the test body, in a function fixture's teardown, in a function fixture's
+#: teardown beside another fixture whose teardown fails, and in a module
+#: fixture's teardown. ``{home}`` is the protected home and ``{marker}`` a mark
+#: line or nothing. Nothing is written: the guard refuses before any write.
+_ABSORBING_PROBES = """
+import contextlib
+
+import pytest
+
+from apothem.lib import home_write_guard
+
+HOME = {home!r}
+home_write_guard.also_protect_home(HOME)
+
+
+def _absorb():
+    with contextlib.suppress(OSError):
+        home_write_guard.refuse_real_home_write(
+            HOME + "/.apothem/probe.txt", operation="write"
+        )
+
+
+@pytest.fixture
+def absorbs_at_teardown():
+    yield
+    _absorb()
+
+
+@pytest.fixture(scope="module")
+def absorbs_at_module_teardown():
+    yield
+    _absorb()
+
+
+@pytest.fixture
+def fails_at_teardown():
+    yield
+    raise ValueError("another fixture's teardown failed")
+
+{marker}
+def test_absorbs_in_its_body():
+    _absorb()
+
+{marker}
+def test_absorbs_in_a_fixture_teardown(absorbs_at_teardown):
+    pass
+
+{marker}
+def test_absorbs_beside_another_failing_teardown(
+    absorbs_at_teardown, fails_at_teardown
+):
+    pass
+
+{marker}
+def test_absorbs_in_a_module_fixture_teardown(absorbs_at_module_teardown):
+    pass
+"""
+#: The probe tests in the order they run. The module fixture's teardown runs
+#: with the last test's, so its test stays last. The third test's teardown
+#: fails twice at once, which pytest raises as an exception group.
+_ABSORBING_TESTS = (
+    "test_absorbs_in_its_body",
+    "test_absorbs_in_a_fixture_teardown",
+    "test_absorbs_beside_another_failing_teardown",
+    "test_absorbs_in_a_module_fixture_teardown",
+)
+
+#: After the star import, takes ``_report_real_home_refusals`` from a second
+#: copy of tests/conftest.py, loaded under another module name. A run of
+#: ``python -m pytest`` from ``tests/`` loads the file as the conftest
+#: ``conftest``, and makes such a copy when a conftest there imports from
+#: ``tests.conftest``, which imports the file again under that name, or with
+#: ``-p tests.conftest`` and the repository root on ``PYTHONPATH``, which
+#: imports it as ``tests.conftest`` before pytest loads the conftest. The
+#: copy registers no second guard, and its fixture raises its own
+#: ``RealHomeGuardFailure``. The probe stops if that class is the first
+#: copy's, and the session at its start if the guard pytest registered is
+#: not the first copy's: with the guard and the fixture from one copy, the
+#: case would pass without the guard meeting a second copy's failure.
+_SECOND_COPYS_REFUSAL_FIXTURE = f"""
+
+import importlib.util
+
+_SPEC = importlib.util.spec_from_file_location(
+    "a_second_copy_of_tests_conftest",
+    os.path.join(os.environ[{_REPO_VARIABLE!r}], "tests", "conftest.py"),
+)
+_SECOND = importlib.util.module_from_spec(_SPEC)
+_SPEC.loader.exec_module(_SECOND)
+assert _SECOND.RealHomeGuardFailure is not RealHomeGuardFailure
+_report_real_home_refusals = _SECOND._report_real_home_refusals
+
+
+def pytest_sessionstart(session):
+    guard = session.config.pluginmanager.get_plugin(REAL_HOME_GUARD_PLUGIN)
+    assert guard is real_home_guard, "the guard is not the first copy's"
+"""
+
 #: The names the call guard gives, as its findings spell them.
 _HOME_NAMES = {"HOME", "USERPROFILE", "Path.home()", "propagation.user_home()"}
 _FOLDER_NAMES = {
@@ -332,6 +502,26 @@ def _guard_impl(request: pytest.FixtureRequest, hook: str) -> HookImpl:
     return impls[0]
 
 
+def _implemented_hooks(manager: pytest.PytestPluginManager, plugin: object) -> set[str]:
+    """Return every hook *plugin* implements, read from its attributes.
+
+    pytest's own rule decides which attribute is a hook implementation (its
+    name starts with ``pytest_`` and it is a function or a method), and each
+    one counts under the hook its ``specname`` names, if it has one.
+    """
+    hooks: set[str] = set()
+    for name in dir(plugin):
+        opts = manager.parse_hookimpl_opts(plugin, name)
+        if opts is not None:
+            hooks.add(opts.get("specname") or name)
+    return hooks
+
+
+def _registered_hooks(manager: pytest.PytestPluginManager, plugin: object) -> set[str]:
+    """Return every hook pytest registered *plugin* under."""
+    return {caller.name for caller in manager.get_hookcallers(plugin) or ()}
+
+
 def test_the_import_registers_one_guard_object(request: pytest.FixtureRequest) -> None:
     conftest = _suite_conftest(request.config)
     manager = request.config.pluginmanager
@@ -342,10 +532,26 @@ def test_the_import_registers_one_guard_object(request: pytest.FixtureRequest) -
     ]
     assert guards == [conftest.real_home_guard]
     assert manager.get_plugin(conftest.REAL_HOME_GUARD_PLUGIN) is guards[0]
-    # The conftest module itself holds no guard hook, only the registrar.
-    for hook in ("pytest_runtest_setup", "pytest_runtest_call", "pytest_pyfunc_call"):
-        caller = getattr(request.node.ihook, hook)
-        assert [i for i in caller.get_hookimpls() if i.plugin is conftest] == []
+    # The guard's hooks are read from the object, so one added to
+    # RealHomeGuard is checked below with no list to update. They are the
+    # hooks pytest registered the object under.
+    hooks = _implemented_hooks(manager, guards[0])
+    assert hooks, "the guard implements no hook"
+    assert hooks == _registered_hooks(manager, guards[0])
+    # The conftest module itself defines none of them at module level, and
+    # pytest registered it under none of them (a function of another name
+    # with that specname would count), so a star import of it registers
+    # none of them a second time. The check goes by hook name only: a hook
+    # of the conftest's own, such as the registrar (a pytest_configure
+    # hook), fails it too once the guard implements a hook of that name.
+    shared = {name for name in hooks if callable(vars(conftest).get(name))}
+    shared |= _registered_hooks(manager, conftest) & hooks
+    assert not shared, (
+        f"tests/conftest.py implements the guard's hooks {sorted(shared)} at "
+        "module level, so a star import registers them a second time; a hook "
+        "of its own that shares a name with a guard hook needs an exception "
+        "made here on purpose"
+    )
     registrars = [
         impl
         for impl in request.config.hook.pytest_configure.get_hookimpls()
@@ -454,12 +660,67 @@ def test_the_report_hook_wraps_every_other_report_hook(
     assert order.index(impl.plugin) < order.index(skipping)
 
 
+def test_the_session_hooks_read_the_log_after_what_they_follow(
+    request: pytest.FixtureRequest,
+) -> None:
+    """Each hook that reads the refusal log outside a test finishes late enough."""
+    guard = request.config.pluginmanager.get_plugin("apothem-real-home-guard")
+
+    def guard_impls(hook: str) -> list[HookImpl]:
+        return [i for i in _call_order(request, hook) if i.plugin is guard]
+
+    for hook in (
+        "pytest_sessionstart",
+        "pytest_collection_finish",
+        "pytest_unconfigure",
+    ):
+        (impl,) = guard_impls(hook)
+        assert impl.wrapper, hook
+        assert impl.tryfirst, f"{hook}: it has to finish after every other one"
+    # On the object, like the others: at module level a star import would
+    # register it twice, and a conftest that imports single names not at all.
+    (collect,) = guard_impls("pytest_make_collect_report")
+    assert collect.wrapper, "it reads the log before and after each report"
+    (loop,) = guard_impls("pytest_runtestloop")
+    assert loop.wrapper
+    assert loop.trylast, "it has to start after every other wrapper"
+    wrappers = [
+        i
+        for i in _call_order(request, "pytest_runtestloop")
+        if i.wrapper or i.hookwrapper
+    ]
+    assert wrappers[-1] is loop
+    after_the_summary, at_the_end = guard_impls("pytest_sessionfinish")
+    assert after_the_summary.wrapper
+    assert after_the_summary.tryfirst
+    assert at_the_end.wrapper
+    assert at_the_end.trylast, "it has to go on after every plain one"
+    reporter = request.config.pluginmanager.get_plugin("terminalreporter")
+    calls = _call_order(request, "pytest_sessionfinish")
+    finish_wrappers = [i for i in calls if i.wrapper or i.hookwrapper]
+    assert finish_wrappers[-1] is at_the_end
+    (summary,) = [i for i in calls if i.plugin is reporter]
+    assert summary.wrapper, "the summary is written after its yield"
+    assert calls.index(after_the_summary) < calls.index(summary)
+    (main,) = guard_impls("pytest_cmdline_main")
+    assert main.wrapper
+    assert main.tryfirst, "it has to see an exit after the guard's other wrappers"
+    (worker_down,) = guard_impls("pytest_testnodedown")
+    assert worker_down.optionalhook, "only xdist defines the hook"
+    (worker_up,) = guard_impls("pytest_configure_node")
+    assert worker_up.optionalhook, "only xdist defines the hook"
+    assert not worker_up.wrapper
+
+
 def test_a_star_import_carries_the_isolation_and_the_guard(
     request: pytest.FixtureRequest,
 ) -> None:
     conftest = _suite_conftest(request.config)
     exported = set(conftest.__all__)
-    assert exported >= {*_ISOLATION, "_isolate_hook_state", *_GUARD_NAMES}
+    assert exported >= _GUARD_NAMES
+    underscored = {name for name in exported if name.startswith("_")}
+    # The texts on __all__ in tests/conftest.py and tests/README.md name these.
+    assert underscored == _UNDERSCORE_EXPORTS
     # Assertion rewriting adds names such as "@py_builtins"; no import binds them.
     public = {
         name
@@ -625,6 +886,603 @@ def test_a_folder_below_a_resolved_one_resolves_as_realpath_does(
         expected = os.path.normcase(os.path.realpath(path))
         assert conftest._resolved(str(path), known) == expected, path
         assert conftest._resolved(str(path)) == expected, path
+
+
+def test_a_controller_with_no_usable_temporary_folder_names_no_file(
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """With no usable temporary folder, the xdist controller names no file.
+
+    Python raises ``FileNotFoundError`` when no candidate temporary folder
+    can be written (a full disk, say). The controller then names no file for
+    its workers, which write what they find after the hand-off to
+    ``stderr``, instead of the error stopping the session.
+    """
+    conftest = _suite_conftest(request.config)
+
+    def no_folder() -> str:
+        raise FileNotFoundError(2, "No usable temporary directory found")
+
+    monkeypatch.setattr(tempfile, "gettempdir", no_folder)
+    config = SimpleNamespace(stash=pytest.Stash())
+
+    assert conftest._late_folder(config) is None
+
+
+def test_a_worker_that_cannot_send_a_refusal_says_why(
+    request: pytest.FixtureRequest,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """A worker's ``stderr`` note names why the refusal did not reach the file.
+
+    It held a refusal after its session finished, with no file named by the
+    controller in one run and a file in a folder that is gone in the other.
+    """
+    conftest = _suite_conftest(request.config)
+    gone = tmp_path / "gone" / "gw0.jsonl"
+    reasons = {
+        "the controller named no file for it": (
+            {},
+            "The run does not fail on it.",
+        ),
+        f"writing {gone} failed: ": (
+            {conftest._LATE_TO_THE_CONTROLLER: str(gone)},
+            "The run fails on it only when part of it reached that file, or "
+            "when the file is left empty.",
+        ),
+    }
+    for reason, (named, outcome) in reasons.items():
+        config = SimpleNamespace(
+            stash=pytest.Stash(),
+            workeroutput={},
+            workerinput={"workerid": "gw0", **named},
+            pluginmanager=SimpleNamespace(get_plugin=lambda name: None),
+        )
+        refusal = ("after the session finished", ("a refusal",))
+        config.stash[conftest._HELD] = [refusal]
+
+        conftest._report_held(config, None)
+
+        note = " ".join(capsys.readouterr().err.split())
+        assert "in xdist worker gw0, after the session finished" in note
+        assert f"could not send it to the controller: {reason}" in note, note
+        assert note.endswith(outcome), note
+        assert not gone.exists()
+
+
+class _HalfWrites:
+    """A file stream whose write puts half its data in the file, then fails."""
+
+    def __init__(self, stream: IO[Any]) -> None:
+        self._stream = stream
+
+    def __enter__(self) -> _HalfWrites:
+        return self
+
+    def __exit__(self, *exc: object) -> None:
+        self._stream.close()
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self._stream, name)
+
+    def write(self, data: bytes | str) -> int:
+        self._stream.write(data[: len(data) // 2])
+        self._stream.flush()
+        raise OSError(errno.ENOSPC, "No space left on device")
+
+
+def test_a_write_that_fails_part_way_leaves_the_workers_file_as_it_was(
+    request: pytest.FixtureRequest, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A worker's failed append is cut back, so the next try writes it once.
+
+    The worker writes the same reports again with its next refusal and when
+    it reports what it holds. Half a line left by a failed write, and the
+    whole line written after it, would have the controller read the report
+    twice.
+    """
+    conftest = _suite_conftest(request.config)
+    late = tmp_path / "gw0.jsonl"
+    before = b'{"where": "before", "messages": [], "handed_off": false}\n'
+    late.write_bytes(before)
+    config = SimpleNamespace(
+        stash=pytest.Stash(),
+        workerinput={"workerid": "gw0", conftest._LATE_TO_THE_CONTROLLER: str(late)},
+    )
+    report = ("after the session finished", ("a refusal",))
+    opened = Path.open
+
+    def half_open(path: Path, *args: str, **kwargs: str) -> _HalfWrites:
+        return _HalfWrites(opened(path, *args, **kwargs))
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "open", half_open)
+        reason = conftest._sent_late(config, [report])
+
+    assert reason is not None
+    assert "No space left on device" in reason
+    assert late.read_bytes() == before
+    assert conftest._sent_late(config, [report]) is None
+    lines = late.read_text(encoding="utf-8").splitlines()
+    assert [json.loads(line)["where"] for line in lines] == [
+        "before",
+        "after the session finished",
+    ]
+
+
+def test_a_copy_write_that_fails_part_way_is_cut_back(
+    request: pytest.FixtureRequest,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """The copy a worker writes beside its hand-off is cut back on a failure.
+
+    The refusals reach the controller through the output xdist sends, so a
+    line of the copy cut off part way would be one more refusal for the
+    controller to report. The worker says on ``stderr`` that the copy
+    failed, as a worker that ends before xdist sends its output loses them.
+    """
+    conftest = _suite_conftest(request.config)
+    late = tmp_path / "gw0.jsonl"
+    before = b'{"where": "before", "messages": [], "handed_off": false}\n'
+    late.write_bytes(before)
+    output: dict[str, object] = {}
+    worker = SimpleNamespace(
+        stash=pytest.Stash(),
+        workeroutput=output,
+        workerinput={"workerid": "gw0", conftest._LATE_TO_THE_CONTROLLER: str(late)},
+        pluginmanager=SimpleNamespace(get_plugin=lambda name: None),
+    )
+    worker.stash[conftest._HELD] = [("after the last test", ("a refusal",))]
+    opened = Path.open
+
+    def half_open(path: Path, *args: str, **kwargs: str) -> _HalfWrites:
+        return _HalfWrites(opened(path, *args, **kwargs))
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "open", half_open)
+        conftest._report_held(worker, None, to_the_controller=True)
+
+    assert output[conftest._TO_THE_CONTROLLER] == [
+        ("after the last test", ("a refusal",))
+    ]
+    assert late.read_bytes() == before
+    err = capsys.readouterr().err
+    assert "In xdist worker gw0, the guard handed its refusals" in err
+    assert "No space left on device" in err
+
+
+class _NoWrites(_HalfWrites):
+    """A file stream whose write fails before any of its data reaches the file."""
+
+    def write(self, data: bytes | str) -> int:
+        raise OSError(errno.ENOSPC, "No space left on device")
+
+
+@pytest.mark.parametrize("taken", [True, False], ids=["taken", "not-taken"])
+def test_a_copy_write_that_fails_on_a_new_file_marks_the_output(
+    request: pytest.FixtureRequest,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    taken: bool,
+) -> None:
+    """A copy write that leaves a new file empty says so in the output.
+
+    Opening the file to append creates it, so a write that fails before any
+    byte lands (a full disk, say) leaves an empty file. The file stays, and
+    the output the worker hands over says the copy left it empty. A
+    controller that takes that output gets the refusal from it and skips the
+    file, which it would otherwise hold as a second refusal, said to be from
+    a worker stopped while it wrote. One that does not take it (its test
+    loop ended first, say) holds the empty file, so the run still fails.
+    The worker says both on ``stderr``. A write ahead that failed first is
+    covered by :func:`test_a_write_ahead_that_fails_on_a_new_file_keeps_it`.
+    """
+    conftest = _suite_conftest(request.config)
+    late = tmp_path / "gw0.jsonl"
+    output: dict[str, object] = {}
+    worker = SimpleNamespace(
+        stash=pytest.Stash(),
+        workeroutput=output,
+        workerinput={"workerid": "gw0", conftest._LATE_TO_THE_CONTROLLER: str(late)},
+        pluginmanager=SimpleNamespace(get_plugin=lambda name: None),
+    )
+    refusal = ("after the last test", ("a refusal",))
+    worker.stash[conftest._HELD] = [refusal]
+    opened = Path.open
+
+    def no_open(path: Path, *args: str, **kwargs: str) -> _NoWrites:
+        return _NoWrites(opened(path, *args, **kwargs))
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "open", no_open)
+        conftest._report_held(worker, None, to_the_controller=True)
+
+    assert late.read_bytes() == b""
+    assert output[conftest._TO_THE_CONTROLLER] == [refusal]
+    assert output[conftest._COPY_LEFT_EMPTY] is True
+    note = " ".join(capsys.readouterr().err.split())
+    assert note.endswith(
+        "The write left the worker's file empty: the controller skips that "
+        "file when it takes the worker's output, and fails the run on it "
+        "otherwise."
+    ), note
+    # A Config of no session, for the isinstance check of the hook; the hook
+    # and _take_late read only its stash and plugin manager.
+    controller = pytest.Config.__new__(pytest.Config)
+    controller.stash = pytest.Stash()
+    plugins = SimpleNamespace(get_plugin=lambda name: None)
+    controller.pluginmanager = plugins  # type: ignore[assignment]
+    controller.stash[conftest._LATE_FILES] = {str(late): "gw0"}
+    if taken:
+        node = SimpleNamespace(
+            workeroutput=output, config=controller, gateway=SimpleNamespace(id="gw0")
+        )
+        conftest.real_home_guard.pytest_testnodedown(node)
+
+    conftest._take_late(controller)
+
+    held = controller.stash.get(conftest._HELD, [])
+    if taken:
+        assert held == [("in xdist worker gw0, after the last test", ("a refusal",))]
+    else:
+        assert [where for where, _ in held] == ["in xdist worker gw0"]
+        assert "is empty" in held[0][1][0]
+
+
+@pytest.mark.parametrize("then", ["crash", "copy-taken", "copy-not-taken"])
+def test_a_write_ahead_that_fails_on_a_new_file_keeps_it(
+    request: pytest.FixtureRequest,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    then: str,
+) -> None:
+    """An empty file a failed write ahead created stays, and the run fails.
+
+    The write ahead says nothing in the worker's output. When the worker
+    crashes before it hands its refusals to the controller (*crash*), the
+    empty file is the only sign of the refusal it held, and the controller
+    holds it. When the worker hands them over and the copy beside the
+    hand-off fails the same way, the file still stays, and the copy marks
+    the output. A controller that takes that output reports the refusal
+    once (*copy-taken*); one that does not holds the empty file
+    (*copy-not-taken*).
+    """
+    conftest = _suite_conftest(request.config)
+    late = tmp_path / "gw0.jsonl"
+    output: dict[str, object] = {}
+    worker = SimpleNamespace(
+        stash=pytest.Stash(),
+        workeroutput=output,
+        workerinput={"workerid": "gw0", conftest._LATE_TO_THE_CONTROLLER: str(late)},
+        pluginmanager=SimpleNamespace(get_plugin=lambda name: None),
+    )
+    refusal = ("after the last test", ("a refusal",))
+    worker.stash[conftest._HELD] = [refusal]
+    opened = Path.open
+
+    def no_open(path: Path, *args: str, **kwargs: str) -> _NoWrites:
+        return _NoWrites(opened(path, *args, **kwargs))
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "open", no_open)
+        conftest._write_ahead(worker, worker.stash[conftest._HELD])
+        assert late.is_file()
+        assert late.stat().st_size == 0
+        assert output == {}
+        if then != "crash":
+            conftest._report_held(worker, None, to_the_controller=True)
+
+    assert late.is_file()
+    assert late.stat().st_size == 0
+    # A Config of no session, for the isinstance check of the hook; the hook
+    # and _take_late read only its stash and plugin manager.
+    controller = pytest.Config.__new__(pytest.Config)
+    controller.stash = pytest.Stash()
+    plugins = SimpleNamespace(get_plugin=lambda name: None)
+    controller.pluginmanager = plugins  # type: ignore[assignment]
+    controller.stash[conftest._LATE_FILES] = {str(late): "gw0"}
+    if then == "copy-taken":
+        node = SimpleNamespace(
+            workeroutput=output, config=controller, gateway=SimpleNamespace(id="gw0")
+        )
+        conftest.real_home_guard.pytest_testnodedown(node)
+
+    conftest._take_late(controller)
+
+    held = controller.stash.get(conftest._HELD, [])
+    if then == "copy-taken":
+        assert held == [("in xdist worker gw0, after the last test", ("a refusal",))]
+    else:
+        assert [where for where, _ in held] == ["in xdist worker gw0"]
+        assert "is empty" in held[0][1][0]
+
+
+def test_a_last_write_that_fails_on_a_new_file_says_the_run_fails(
+    request: pytest.FixtureRequest,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """A last write that leaves a new file empty fails the run, and says so.
+
+    No byte of the refusal reached the file, but the write created it, and
+    the controller holds the empty file as a refusal of its own.
+    """
+    conftest = _suite_conftest(request.config)
+    late = tmp_path / "gw0.jsonl"
+    worker = SimpleNamespace(
+        stash=pytest.Stash(),
+        workeroutput={},
+        workerinput={"workerid": "gw0", conftest._LATE_TO_THE_CONTROLLER: str(late)},
+        pluginmanager=SimpleNamespace(get_plugin=lambda name: None),
+    )
+    worker.stash[conftest._HANDED_OFF] = True
+    worker.stash[conftest._HELD] = [("after the session finished", ("a refusal",))]
+    opened = Path.open
+
+    def no_open(path: Path, *args: str, **kwargs: str) -> _NoWrites:
+        return _NoWrites(opened(path, *args, **kwargs))
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "open", no_open)
+        conftest._report_held(worker, None)
+
+    note = " ".join(capsys.readouterr().err.split())
+    assert note.endswith("or when the file is left empty."), note
+    assert late.read_bytes() == b""
+    controller = SimpleNamespace(
+        stash=pytest.Stash(),
+        pluginmanager=SimpleNamespace(get_plugin=lambda name: None),
+    )
+    controller.stash[conftest._LATE_FILES] = {str(late): "gw0"}
+    controller.stash[conftest._TAKEN] = {"gw0"}
+
+    conftest._take_late(controller)
+
+    held = controller.stash.get(conftest._HELD, [])
+    assert [where for where, _ in held] == ["in xdist worker gw0"]
+    assert "is empty" in held[0][1][0]
+
+
+def test_a_last_write_after_a_copy_left_the_file_empty_says_so(
+    request: pytest.FixtureRequest,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """After a copy left the file empty, a failed last write's note says so.
+
+    The output the worker handed over says the copy left the file empty, so
+    a controller that takes it skips the file while it stays empty; the
+    run still fails on the refusals that output handed over. The worker's
+    note on a later last write that fails says the controller skips the
+    file. This checks that note, and that the file stays empty; the
+    controller's side is checked by
+    :func:`test_a_copy_write_that_fails_on_a_new_file_marks_the_output`.
+    """
+    conftest = _suite_conftest(request.config)
+    late = tmp_path / "gw0.jsonl"
+    late.write_bytes(b"")
+    worker = SimpleNamespace(
+        stash=pytest.Stash(),
+        workeroutput={conftest._COPY_LEFT_EMPTY: True},
+        workerinput={"workerid": "gw0", conftest._LATE_TO_THE_CONTROLLER: str(late)},
+        pluginmanager=SimpleNamespace(get_plugin=lambda name: None),
+    )
+    worker.stash[conftest._HANDED_OFF] = True
+    worker.stash[conftest._HELD] = [("after the session finished", ("a refusal",))]
+    opened = Path.open
+
+    def no_open(path: Path, *args: str, **kwargs: str) -> _NoWrites:
+        return _NoWrites(opened(path, *args, **kwargs))
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "open", no_open)
+        conftest._report_held(worker, None)
+
+    note = " ".join(capsys.readouterr().err.split())
+    assert note.endswith(
+        "The run fails on it when part of it reached that file. The copy "
+        "beside the hand-off left the file empty, and a controller that takes "
+        "the worker's output skips the file while it stays empty."
+    ), note
+    assert late.read_bytes() == b""
+
+
+def test_a_last_write_that_fails_part_way_still_fails_the_run(
+    request: pytest.FixtureRequest,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """The part of a worker's last write that reached its file stays there.
+
+    The worker found the refusal after it handed its refusals to the
+    controller, and no try follows that write. Its file already holds a
+    copy line written before the hand-off, which the controller skips once
+    it took the hand-off. Cut back to that line, the file would hold no
+    refusal the controller reports; the line cut off part way stays, and
+    the controller holds it as a refusal of its own.
+    """
+    conftest = _suite_conftest(request.config)
+    late = tmp_path / "gw0.jsonl"
+    copy = b'{"where": "before", "messages": ["a copy"], "handed_off": false}\n'
+    late.write_bytes(copy)
+    worker = SimpleNamespace(
+        stash=pytest.Stash(),
+        workeroutput={},
+        workerinput={"workerid": "gw0", conftest._LATE_TO_THE_CONTROLLER: str(late)},
+        pluginmanager=SimpleNamespace(get_plugin=lambda name: None),
+    )
+    worker.stash[conftest._HANDED_OFF] = True
+    worker.stash[conftest._HELD] = [("after the session finished", ("a refusal",))]
+    opened = Path.open
+
+    def half_open(path: Path, *args: str, **kwargs: str) -> _HalfWrites:
+        return _HalfWrites(opened(path, *args, **kwargs))
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "open", half_open)
+        conftest._report_held(worker, None)
+
+    assert "No space left on device" in capsys.readouterr().err
+    assert late.read_bytes().startswith(copy)
+    assert late.read_bytes() != copy
+    controller = SimpleNamespace(
+        stash=pytest.Stash(),
+        pluginmanager=SimpleNamespace(get_plugin=lambda name: None),
+    )
+    controller.stash[conftest._LATE_FILES] = {str(late): "gw0"}
+    controller.stash[conftest._TAKEN] = {"gw0"}
+
+    conftest._take_late(controller)
+
+    held = controller.stash.get(conftest._HELD, [])
+    assert [where for where, _ in held] == ["in xdist worker gw0"]
+
+
+def test_a_write_after_a_line_cut_off_part_way_starts_a_line_of_its_own(
+    request: pytest.FixtureRequest,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """A later write of the worker does not join the line cut off before it.
+
+    The worker's last write of a refusal failed part way and left a cut-off
+    line. A refusal it reports after that starts on a line of its own, so
+    the controller names where the worker found it.
+    """
+    conftest = _suite_conftest(request.config)
+    late = tmp_path / "gw0.jsonl"
+    worker = SimpleNamespace(
+        stash=pytest.Stash(),
+        workeroutput={},
+        workerinput={"workerid": "gw0", conftest._LATE_TO_THE_CONTROLLER: str(late)},
+        pluginmanager=SimpleNamespace(get_plugin=lambda name: None),
+    )
+    worker.stash[conftest._HANDED_OFF] = True
+    worker.stash[conftest._HELD] = [("after the session finished", ("FIRST",))]
+    opened = Path.open
+
+    def half_open(path: Path, *args: str, **kwargs: str) -> _HalfWrites:
+        return _HalfWrites(opened(path, *args, **kwargs))
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Path, "open", half_open)
+        conftest._report_held(worker, None)
+    worker.stash[conftest._HELD] = [("in a cleanup", ("SECOND",))]
+    conftest._report_held(worker, None)
+    capsys.readouterr()
+    controller = SimpleNamespace(
+        stash=pytest.Stash(),
+        pluginmanager=SimpleNamespace(get_plugin=lambda name: None),
+    )
+    controller.stash[conftest._LATE_FILES] = {str(late): "gw0"}
+    controller.stash[conftest._TAKEN] = {"gw0"}
+
+    conftest._take_late(controller)
+
+    held = controller.stash.get(conftest._HELD, [])
+    assert [where for where, _ in held] == [
+        "in xdist worker gw0",
+        "in xdist worker gw0, after it handed its refusals to the controller, "
+        "in a cleanup",
+    ]
+    assert held[1][1] == ("SECOND",)
+
+
+def test_a_passing_exit_fails_once_a_refusal_was_reported(
+    request: pytest.FixtureRequest,
+) -> None:
+    """The guard's session-finish and unconfigure wrappers fail a passing exit.
+
+    Its ``pytest_cmdline_main`` wrapper converts the same exits at the end
+    of the run, so the pytester cases pass without the conversion in the
+    other two wrappers; this checks that conversion on its own. A
+    ``SystemExit`` with the code ``None``, 0 or 5, or one that a POSIX
+    system cuts to 0 or 5 (256, -256, 261), becomes one with the code 1
+    once the guard has reported a refusal; any other code, and any code
+    before such a report, stays.
+    """
+    conftest = _suite_conftest(request.config)
+    config = SimpleNamespace(stash=pytest.Stash())
+
+    def ended(code: object, reported: bool) -> object:
+        config.stash[conftest._REPORTED] = reported
+        with (
+            pytest.raises(SystemExit) as raised,
+            conftest._a_passing_exit_fails(config),
+        ):
+            raise SystemExit(code)
+        return raised.value.code
+
+    codes = (None, 0, 5, 256, -256, 261, 3, 257, "a message")
+    found = {
+        (code, reported): ended(code, reported)
+        for code in codes
+        for reported in (False, True)
+    }
+
+    passing = {None, 0, 5, 256, -256, 261}
+    assert found == {
+        (code, reported): 1 if reported and code in passing else code
+        for code in codes
+        for reported in (False, True)
+    }
+
+
+def test_the_session_finish_and_unconfigure_wrappers_fail_a_passing_exit(
+    request: pytest.FixtureRequest,
+) -> None:
+    """Both wrappers turn a passing exit from a hook they wrap into a failure.
+
+    Each is driven on its own with a stand-in config, and the guard's
+    holding and reporting helpers are replaced by no-ops for the duration,
+    so this checks only that the wrapper passes a ``SystemExit`` from its
+    ``yield`` through :func:`_a_passing_exit_fails`. The pytester cases do
+    not check that, because the ``pytest_cmdline_main`` wrapper converts
+    the same exits at the end of the run. Each wrapper gets a config of its
+    own, with no session held and no ``session`` plugin, so neither depends
+    on what the other set.
+    """
+    conftest = _suite_conftest(request.config)
+    guard = conftest.real_home_guard
+
+    def reported() -> SimpleNamespace:
+        config = SimpleNamespace(
+            stash=pytest.Stash(),
+            pluginmanager=SimpleNamespace(get_plugin=lambda name: None),
+        )
+        config.stash[conftest._REPORTED] = True
+        return config
+
+    def ended(wrapper: Callable[[], Generator[None, None, None]]) -> object:
+        running = wrapper()
+        next(running)
+        with pytest.raises(SystemExit) as raised:
+            running.throw(SystemExit(0))
+        return raised.value.code
+
+    with pytest.MonkeyPatch.context() as patch:
+        for name in ("_hold", "_report_held", "_take_late", "_fail_the_run"):
+            patch.setattr(conftest, name, lambda *args, **kwargs: None)
+        for name in ("_is_controller", "_is_worker"):
+            patch.setattr(conftest, name, lambda *args: False)
+        found = {
+            "unconfigure": ended(lambda: guard.pytest_unconfigure(reported())),
+            "session finish": ended(
+                lambda: guard.pytest_sessionfinish_after_the_summary(
+                    SimpleNamespace(config=reported())
+                )
+            ),
+        }
+
+    assert found == {"session finish": 1, "unconfigure": 1}
 
 
 def test_the_pytester_cases_pass(tmp_path: Path) -> None:
@@ -795,6 +1653,7 @@ def case_a_star_import_isolates_and_runs(
     result = _run(pytester, f"--basetemp={fake_real_home / 'temp'}")
 
     result.assert_outcomes(passed=2)
+    assert result.ret == pytest.ExitCode.OK
     assert _written(pytester, _SENTINELS) == list(_SENTINELS)
 
 
@@ -1116,6 +1975,7 @@ def case_the_conftest_loaded_as_a_plugin_isolates_and_runs(
     )
 
     result.assert_outcomes(passed=2)
+    assert result.ret == pytest.ExitCode.OK
     assert _written(pytester, _SENTINELS) == list(_SENTINELS)
 
 
@@ -1129,3 +1989,1506 @@ def case_the_conftest_loaded_as_a_plugin_stops_a_fixture_that_undoes_it(
     _assert_stopped(result, pytester)
     assert _flagged(result) == _HOME_NAMES | _FOLDER_NAMES, result.stdout.str()
     assert f"{fake_real_home} is the real home" in result.stdout.str()
+
+
+def _assert_each_absorbed_refusal_errors(
+    result: pytest.RunResult,
+    home: Path,
+    tests: tuple[str, ...] = _ABSORBING_TESTS,
+    **outcomes: int,
+) -> None:
+    """Each test in *tests* errors at teardown, and nothing reached *home*."""
+    result.assert_outcomes(errors=len(tests), **outcomes)
+    expected: list[str] = []
+    for test in tests:
+        expected += [
+            f"*_ ERROR at teardown of {test} _*",
+            "*Apothem refused a write into the account's real home*",
+        ]
+    result.stdout.fnmatch_lines(expected)
+    assert "XFAIL" not in result.stdout.str()
+    assert not (home / ".apothem").exists()
+
+
+def case_an_xfail_test_that_absorbs_a_refusal_still_errors(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """pytest's ``skipping`` would turn the teardown error into XFAIL."""
+    pytester.makepyfile(
+        test_probe=_ABSORBING_PROBES.format(
+            home=str(fake_real_home), marker="@pytest.mark.xfail"
+        )
+    )
+    pytester.makeconftest(_STAR_IMPORT)
+
+    result = _run(pytester)
+
+    _assert_each_absorbed_refusal_errors(
+        result, fake_real_home, xpassed=len(_ABSORBING_TESTS)
+    )
+
+
+def case_an_xfail_test_errors_when_a_second_copy_reports_the_refusal(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """A failure from a second copy of tests/conftest.py is the guard's too.
+
+    The probe conftest's ``_report_real_home_refusals`` raises the class of a
+    second copy, while the guard, registered once from the first copy, checks.
+    The probe conftest checks both before any test runs (see
+    ``_SECOND_COPYS_REFUSAL_FIXTURE``). Were the class not recognised,
+    ``skipping`` would turn each teardown error into XFAIL and the run would
+    exit 0. The test with the module fixture is left out: its refusal is
+    logged after the fixture's teardown, and the guard then fails the teardown
+    report itself, so that test would fail the run even if the class were not
+    recognised.
+    """
+    tests = _ABSORBING_TESTS[:-1]
+    pytester.makepyfile(
+        test_probe=_ABSORBING_PROBES.format(
+            home=str(fake_real_home), marker="@pytest.mark.xfail"
+        )
+    )
+    pytester.makeconftest(_STAR_IMPORT + _SECOND_COPYS_REFUSAL_FIXTURE)
+
+    result = _run(pytester, "-k", "not module_fixture")
+
+    assert result.ret == pytest.ExitCode.TESTS_FAILED, result.stdout.str()
+    _assert_each_absorbed_refusal_errors(
+        result, fake_real_home, tests, xpassed=len(tests)
+    )
+
+
+def case_a_test_that_absorbs_a_refusal_errors(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    pytester.makepyfile(
+        test_probe=_ABSORBING_PROBES.format(home=str(fake_real_home), marker="")
+    )
+    pytester.makeconftest(_STAR_IMPORT)
+
+    result = _run(pytester)
+
+    _assert_each_absorbed_refusal_errors(
+        result, fake_real_home, passed=len(_ABSORBING_TESTS)
+    )
+
+
+#: A helper that absorbs one refusal of a write into the protected home
+#: ``{home}``, for a probe to call outside any test.
+_ABSORB_ONE = """
+import contextlib
+
+from apothem.lib import home_write_guard
+
+
+def _absorb():
+    home_write_guard.also_protect_home({home!r})
+    with contextlib.suppress(OSError):
+        home_write_guard.refuse_real_home_write(
+            {home!r} + "/.apothem/probe.txt", operation="write"
+        )
+"""
+
+#: A probe module that absorbs the refusal while it is imported.
+_ABSORBED_AT_IMPORT = """
+_absorb()
+
+
+def test_after_the_import():
+    pass
+"""
+
+#: A conftest hook that absorbs the refusal after the last test.
+_ABSORBED_AT_SESSION_FINISH = """
+
+def pytest_sessionfinish(session):
+    _absorb()
+"""
+
+
+def case_a_refusal_absorbed_at_import_fails_the_collection(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """Not the first test that runs after it: the module that absorbed it."""
+    pytester.makepyfile(
+        test_probe=_ABSORB_ONE.format(home=str(fake_real_home)) + _ABSORBED_AT_IMPORT
+    )
+    pytester.makeconftest(_STAR_IMPORT)
+
+    result = _run(pytester)
+
+    result.assert_outcomes(errors=1)
+    result.stdout.fnmatch_lines(
+        [
+            "*ERROR collecting test_probe.py*",
+            "*outside any test, while pytest collected test_probe.py*",
+        ]
+    )
+    assert "during this test" not in result.stdout.str()
+    assert not (fake_real_home / ".apothem").exists()
+
+
+#: A conftest hook that absorbs the refusal once, after pytest collected
+#: ``test_probe.py`` and before it collects ``test_second.py``.
+_ABSORBED_WHEN_AN_ITEM_IS_COLLECTED = """
+
+def pytest_itemcollected(item):
+    if item.name == "test_fixture_free":
+        _absorb()
+"""
+
+#: A conftest hook that absorbs the refusal at the session's own collect report.
+_ABSORBED_AT_THE_SESSIONS_COLLECT_REPORT = """
+
+def pytest_collectreport(report):
+    if report.nodeid == "":
+        _absorb()
+"""
+
+
+def case_a_refusal_absorbed_between_two_collect_reports_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """Not the collection of the module pytest collects next, which ran no test."""
+    pytester.makepyfile(test_second="def test_second():\n    pass\n")
+    pytester.makeconftest(
+        _STAR_IMPORT
+        + _ABSORB_ONE.format(home=str(fake_real_home))
+        + _ABSORBED_WHEN_AN_ITEM_IS_COLLECTED
+    )
+
+    result = _run(pytester)
+
+    result.assert_outcomes(passed=len(_PROBE_TESTS) + 1)
+    assert result.ret == pytest.ExitCode.TESTS_FAILED
+    result.stdout.fnmatch_lines(
+        [
+            "*outside any test, during collection, before pytest collected "
+            "test_second.py, and the refusal*"
+        ]
+    )
+    assert "ERROR collecting" not in result.stdout.str()
+    assert "during this test" not in result.stdout.str()
+    assert not (fake_real_home / ".apothem").exists()
+
+
+def case_a_refusal_absorbed_at_the_sessions_collect_report_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """Not the collection of the root folder, which would drop every test."""
+    result = _run_absorbing(
+        pytester, fake_real_home, _ABSORBED_AT_THE_SESSIONS_COLLECT_REPORT
+    )
+
+    _assert_the_run_failed_on_it(
+        result, fake_real_home, "during collection, before pytest collected ."
+    )
+    assert "ERROR collecting" not in result.stdout.str()
+
+
+def case_a_refusal_absorbed_after_the_last_test_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    pytester.makepyfile(test_probe="def test_passes():\n    pass\n")
+    pytester.makeconftest(
+        _STAR_IMPORT
+        + _ABSORB_ONE.format(home=str(fake_real_home))
+        + _ABSORBED_AT_SESSION_FINISH
+    )
+
+    result = _run(pytester)
+
+    result.assert_outcomes(passed=1)
+    assert result.ret == pytest.ExitCode.TESTS_FAILED
+    result.stdout.fnmatch_lines(["*outside any test, after the last test*"])
+    assert not (fake_real_home / ".apothem").exists()
+
+
+#: A conftest hook that absorbs the refusal in the terminal summary. pytest's
+#: terminal reporter writes the summary after every plain session-finish hook.
+_ABSORBED_IN_THE_TERMINAL_SUMMARY = """
+
+def pytest_terminal_summary(terminalreporter):
+    _absorb()
+"""
+
+#: A session-finish wrapper that absorbs the refusal after it yields, which is
+#: after every plain session-finish hook.
+_ABSORBED_AFTER_A_SESSION_FINISH_WRAPPER = """
+
+@pytest.hookimpl(wrapper=True)
+def pytest_sessionfinish(session):
+    try:
+        return (yield)
+    finally:
+        _absorb()
+"""
+
+#: A conftest hook that absorbs the refusal when pytest unconfigures.
+_ABSORBED_AT_UNCONFIGURE = """
+
+def pytest_unconfigure(config):
+    _absorb()
+"""
+
+#: A session-finish hook that absorbs the refusal in an xdist worker only.
+_ABSORBED_AT_A_WORKERS_SESSION_FINISH = """
+
+def pytest_sessionfinish(session):
+    if hasattr(session.config, "workerinput"):
+        _absorb()
+"""
+
+
+def _run_absorbing(
+    pytester: pytest.Pytester, home: Path, hook: str, *args: str
+) -> pytest.RunResult:
+    """Run the two probe tests under a conftest whose *hook* absorbs a refusal."""
+    pytester.makeconftest(_STAR_IMPORT + _ABSORB_ONE.format(home=str(home)) + hook)
+    return _run(pytester, *args)
+
+
+def _assert_the_run_failed_on_it(
+    result: pytest.RunResult, home: Path, where: str
+) -> None:
+    """Both probe tests pass, and the run fails on the refusal, named *where*."""
+    result.assert_outcomes(passed=len(_PROBE_TESTS))
+    assert result.ret == pytest.ExitCode.TESTS_FAILED
+    result.stdout.fnmatch_lines([f"*outside any test, {where}, and the refusal*"])
+    assert "during this test" not in result.stdout.str()
+    assert not (home / ".apothem").exists()
+
+
+def case_a_refusal_absorbed_in_the_terminal_summary_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    result = _run_absorbing(pytester, fake_real_home, _ABSORBED_IN_THE_TERMINAL_SUMMARY)
+
+    _assert_the_run_failed_on_it(result, fake_real_home, "after the last test")
+
+
+def case_a_refusal_absorbed_after_a_session_finish_wrapper_yields_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    result = _run_absorbing(
+        pytester, fake_real_home, _ABSORBED_AFTER_A_SESSION_FINISH_WRAPPER
+    )
+
+    _assert_the_run_failed_on_it(result, fake_real_home, "after the last test")
+
+
+def case_a_refusal_absorbed_at_unconfigure_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """Without xdist too, whose two hooks the guard implements as optional."""
+    result = _run_absorbing(
+        pytester, fake_real_home, _ABSORBED_AT_UNCONFIGURE, "-p", "no:xdist"
+    )
+
+    _assert_the_run_failed_on_it(result, fake_real_home, "after the session finished")
+
+
+#: A session-finish hook that absorbs the refusal and then ends the run with
+#: ``pytest.exit`` and the exit code ``{code}``.
+_ABSORBED_BEFORE_PYTEST_EXIT = """
+
+def pytest_sessionfinish(session):
+    _absorb()
+    pytest.exit("probe", returncode={code})
+"""
+
+
+def case_pytest_exit_with_code_0_after_a_refusal_still_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """pytest sets the code ``pytest.exit`` gives after every session-finish wrapper.
+
+    The guard sets "tests failed" again in ``pytest_unconfigure``, also for
+    261, which a POSIX system cuts to 5. Any other code is the hook's own,
+    and stays.
+    """
+    exit_0 = _ABSORBED_BEFORE_PYTEST_EXIT.format(code=0)
+
+    result = _run_absorbing(pytester, fake_real_home, exit_0)
+
+    assert result.ret == pytest.ExitCode.TESTS_FAILED
+    result.stdout.fnmatch_lines(
+        ["*outside any test, after the last test, and the refusal*"]
+    )
+    assert not (fake_real_home / ".apothem").exists()
+    exit_261 = _ABSORBED_BEFORE_PYTEST_EXIT.format(code=261)
+    assert _run_absorbing(pytester, fake_real_home, exit_261).ret == 1
+    exit_4 = _ABSORBED_BEFORE_PYTEST_EXIT.format(code=4)
+    assert _run_absorbing(pytester, fake_real_home, exit_4).ret == 4
+
+
+#: A configure hook that absorbs the refusal and then ends the run with
+#: ``pytest.exit`` and the exit code 0, before any session starts.
+_ABSORBED_BEFORE_PYTEST_EXIT_AT_CONFIGURE = """
+
+def pytest_configure(config):
+    _absorb()
+    pytest.exit("probe", returncode=0)
+"""
+
+
+def case_pytest_exit_with_code_0_while_pytest_configures_still_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """No session starts, so the refusal is named for a run that ran none.
+
+    pytest returns the exit status of the session it made before it
+    configured, whose start it never called, after ``pytest_unconfigure``.
+    """
+    result = _run_absorbing(
+        pytester,
+        fake_real_home,
+        _ABSORBED_BEFORE_PYTEST_EXIT_AT_CONFIGURE,
+        "-p",
+        "no:xdist",
+    )
+
+    assert result.ret == pytest.ExitCode.TESTS_FAILED
+    output = " ".join(f"{result.stdout.str()}\n{result.stderr.str()}".split())
+    named = "outside any test, while pytest ran no test session, and the refusal"
+    assert named in output, output
+    assert "after the session finished" not in output
+    assert not (fake_real_home / ".apothem").exists()
+
+
+#: A session-finish hook, a terminal-summary hook and an unconfigure hook,
+#: each of which absorbs the refusal and then ends the run with ``sys.exit``
+#: and the exit code ``{code}`` (none for a bare ``sys.exit()``).
+_ABSORBED_BEFORE_SYS_EXIT = """
+
+def pytest_sessionfinish(session):
+    _absorb()
+    sys.exit({code})
+"""
+_ABSORBED_BEFORE_SYS_EXIT_IN_THE_TERMINAL_SUMMARY = """
+
+def pytest_terminal_summary(terminalreporter):
+    _absorb()
+    sys.exit({code})
+"""
+_ABSORBED_BEFORE_SYS_EXIT_AT_UNCONFIGURE = """
+
+def pytest_unconfigure(config):
+    _absorb()
+    sys.exit({code})
+"""
+
+
+def _run_absorbing_in_a_child(
+    pytester: pytest.Pytester, home: Path, hook: str, *args: str
+) -> pytest.RunResult:
+    """Run what :func:`_run_absorbing` runs, in a child process.
+
+    pytester's in-process run cannot report a ``SystemExit`` that leaves
+    ``pytest.main``: pytest 9.1 fails there with a ``NameError`` of its own.
+    The child inherits the fake real home from the environment.
+    """
+    pytester.makeconftest(_STAR_IMPORT + _ABSORB_ONE.format(home=str(home)) + hook)
+    return pytester.runpytest_subprocess("-p", "no:cacheprovider", *args, timeout=300)
+
+
+def case_sys_exit_with_code_0_after_a_refusal_still_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """pytest catches no ``SystemExit`` around either hook.
+
+    ``sys.exit(0)`` would end the run with 0 after the guard reported the
+    refusal, so the guard raises ``SystemExit`` with the code 1 in its
+    place, also in an xdist controller, whose workers run the hook too. So
+    does a bare ``sys.exit()``, here in a terminal-summary hook, which runs
+    within the session finish, ``sys.exit(5)``, as "no tests collected"
+    counts as a pass for some jobs, and ``sys.exit(256)``, which a POSIX
+    system cuts to 0. Any other code is the hook's own, and stays.
+    """
+    for hook, code, where, args in (
+        (_ABSORBED_BEFORE_SYS_EXIT, "0", "after the last test", ()),
+        (_ABSORBED_BEFORE_SYS_EXIT, "0", "after the last test", ("-n", "2")),
+        (_ABSORBED_BEFORE_SYS_EXIT, "5", "after the last test", ()),
+        (_ABSORBED_BEFORE_SYS_EXIT, "256", "after the last test", ()),
+        (
+            _ABSORBED_BEFORE_SYS_EXIT_IN_THE_TERMINAL_SUMMARY,
+            "",
+            "after the last test",
+            (),
+        ),
+        (
+            _ABSORBED_BEFORE_SYS_EXIT_AT_UNCONFIGURE,
+            "0",
+            "after the session finished",
+            (),
+        ),
+    ):
+        result = _run_absorbing_in_a_child(
+            pytester, fake_real_home, hook.format(code=code), *args
+        )
+
+        assert result.ret == pytest.ExitCode.TESTS_FAILED, (code, result.stdout.str())
+        result.stdout.fnmatch_lines([f"*outside any test, {where}, and the refusal*"])
+    for hook in (_ABSORBED_BEFORE_SYS_EXIT, _ABSORBED_BEFORE_SYS_EXIT_AT_UNCONFIGURE):
+        kept = _run_absorbing_in_a_child(pytester, fake_real_home, hook.format(code=3))
+        assert kept.ret == 3, kept.stdout.str()
+    assert not (fake_real_home / ".apothem").exists()
+
+
+#: A plain session-finish hook that absorbs the refusal, and a ``tryfirst``
+#: session-finish wrapper that pytest registers after the guard, so that it
+#: finishes after the guard's own wrappers: it ends the run with
+#: ``sys.exit`` and the code ``{code}`` after its ``yield``.
+_EXITS_AFTER_THE_GUARDS_SESSION_FINISH_WRAPPERS = """
+
+@pytest.hookimpl(specname="pytest_sessionfinish")
+def pytest_sessionfinish_absorbs(session):
+    _absorb()
+
+
+@pytest.hookimpl(wrapper=True, tryfirst=True)
+def pytest_sessionfinish(session):
+    try:
+        return (yield)
+    finally:
+        sys.exit({code})
+"""
+
+#: A ``tryfirst`` unconfigure wrapper that pytest registers after the guard,
+#: so that it finishes after the guard's own: after its ``yield`` it absorbs
+#: the refusal and ends the run with ``sys.exit`` and the code ``{code}``.
+_EXITS_AFTER_THE_GUARDS_UNCONFIGURE_WRAPPER = """
+
+@pytest.hookimpl(wrapper=True, tryfirst=True)
+def pytest_unconfigure(config):
+    try:
+        return (yield)
+    finally:
+        _absorb()
+        sys.exit({code})
+"""
+
+#: A cleanup registered with ``config.add_cleanup``, which pytest runs after
+#: every ``pytest_unconfigure`` hook: it absorbs the refusal and ends the run
+#: with ``sys.exit`` and the code ``{code}``.
+_EXITS_IN_A_CLEANUP = """
+
+def _absorb_and_exit():
+    _absorb()
+    sys.exit({code})
+
+
+def pytest_configure(config):
+    config.add_cleanup(_absorb_and_exit)
+"""
+
+#: In the xdist controller only, a plain session-finish hook that ends the
+#: run with ``sys.exit(0)`` before the controller has read the files its
+#: workers wrote.
+_THE_CONTROLLER_EXITS_AT_ITS_SESSION_FINISH = """
+
+def pytest_sessionfinish(session):
+    if not hasattr(session.config, "workerinput"):
+        sys.exit(0)
+"""
+
+
+def case_sys_exit_after_the_guards_other_hooks_still_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """The guard's ``pytest_cmdline_main`` wrapper sees the exit last.
+
+    pytest runs the session-finish and unconfigure hooks, and the cleanups,
+    inside ``pytest_cmdline_main``. A ``tryfirst`` wrapper of either hook
+    that pytest registers after the guard finishes after the guard's own,
+    and a cleanup runs after every unconfigure hook, so a ``sys.exit(0)``
+    there passed the run; so did one in an xdist controller's plain
+    session-finish hook, before it read what its workers found after they
+    handed their refusals over. Any other code stays.
+    """
+    late = f"{_AFTER_THE_HAND_OFF}, after the last test"
+    after = "outside any test, after the session finished, and the refusal"
+    found = {}
+    for label, hook, args, named in (
+        (
+            "a later tryfirst session-finish wrapper",
+            _EXITS_AFTER_THE_GUARDS_SESSION_FINISH_WRAPPERS.format(code=0),
+            (),
+            ("outside any test, after the last test, and the refusal",),
+        ),
+        (
+            "a later tryfirst unconfigure wrapper",
+            _EXITS_AFTER_THE_GUARDS_UNCONFIGURE_WRAPPER.format(code=0),
+            (),
+            (after,),
+        ),
+        ("a cleanup", _EXITS_IN_A_CLEANUP.format(code=0), (), (after,)),
+        (
+            "the xdist controller",
+            _ABSORBED_IN_A_WORKERS_TERMINAL_SUMMARY
+            + _THE_CONTROLLER_EXITS_AT_ITS_SESSION_FINISH,
+            ("-n", "2"),
+            (f"in xdist worker gw0, {late}", f"in xdist worker gw1, {late}"),
+        ),
+    ):
+        result = _run_absorbing_in_a_child(pytester, fake_real_home, hook, *args)
+
+        output = " ".join(result.stdout.str().split())
+        found[label] = (result.ret, [output.count(each) for each in named])
+    failed = pytest.ExitCode.TESTS_FAILED
+    assert {label: (failed, [1] * len(seen)) for label, (_, seen) in found.items()} == (
+        found
+    )
+    kept = _run_absorbing_in_a_child(
+        pytester, fake_real_home, _EXITS_IN_A_CLEANUP.format(code=3)
+    )
+    assert kept.ret == 3, kept.stdout.str()
+    assert not (fake_real_home / ".apothem").exists()
+
+
+#: A plain session-finish hook that ends the run with ``sys.exit`` and the
+#: code ``{code}``, after it absorbed the refusal when ``{absorb}`` is true.
+_EXITS_AT_THE_SESSION_FINISH = """
+
+def pytest_sessionfinish(session):
+    if {absorb}:
+        _absorb()
+    sys.exit({code})
+"""
+
+#: A plain session-finish hook that absorbs the refusal and then raises an
+#: exception other than ``SystemExit``.
+_RAISES_AT_THE_SESSION_FINISH = """
+
+def pytest_sessionfinish(session):
+    _absorb()
+    raise RuntimeError("probe")
+"""
+
+#: A plain unconfigure hook that absorbs the refusal.
+_ABSORBED_AT_UNCONFIGURE_ALONE = """
+
+def pytest_unconfigure(config):
+    _absorb()
+"""
+
+
+def case_a_passing_exit_after_one_that_left_the_session_finish_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """An exception that leaves the session finish does not hide a later exit.
+
+    pytest skips ``pytest_unconfigure`` and the cleanups then, and calls
+    them after ``pytest_cmdline_main``, so the guard's wrapper of that hook
+    calls them itself first. A ``sys.exit(0)`` in a cleanup, or in a
+    ``tryfirst`` unconfigure wrapper that pytest registered after the guard,
+    after a session-finish hook absorbed the refusal and ended the run with
+    ``sys.exit`` (0 or 3) or raised another exception, exits 1; so does a
+    session-finish ``sys.exit(0)`` when the only refusal comes in a plain
+    unconfigure hook after it. A code other than 0 or 5 from the later exit
+    stays.
+    """
+    found = {}
+    for label, hook, named in (
+        (
+            "sys.exit(0) at the session finish, then in a cleanup",
+            _EXITS_AT_THE_SESSION_FINISH.format(absorb=True, code=0)
+            + _EXITS_IN_A_CLEANUP.format(code=0),
+            "outside any test, after the last test, and the refusal",
+        ),
+        (
+            "sys.exit(3) at the session finish, then in a later wrapper",
+            _EXITS_AT_THE_SESSION_FINISH.format(absorb=True, code=3)
+            + _EXITS_AFTER_THE_GUARDS_UNCONFIGURE_WRAPPER.format(code=0),
+            "outside any test, after the last test, and the refusal",
+        ),
+        (
+            "RuntimeError at the session finish, then sys.exit(0) in a cleanup",
+            _RAISES_AT_THE_SESSION_FINISH + _EXITS_IN_A_CLEANUP.format(code=0),
+            "outside any test, after the last test, and the refusal",
+        ),
+        (
+            "sys.exit(0) at the session finish, the refusal at unconfigure",
+            _EXITS_AT_THE_SESSION_FINISH.format(absorb=False, code=0)
+            + _ABSORBED_AT_UNCONFIGURE_ALONE,
+            "outside any test, after the session finished, and the refusal",
+        ),
+    ):
+        result = _run_absorbing_in_a_child(pytester, fake_real_home, hook)
+
+        output = " ".join(result.stdout.str().split())
+        found[label] = (result.ret, named in output)
+    failed = pytest.ExitCode.TESTS_FAILED
+    assert dict.fromkeys(found, (failed, True)) == found
+    kept = _run_absorbing_in_a_child(
+        pytester,
+        fake_real_home,
+        _EXITS_AT_THE_SESSION_FINISH.format(absorb=True, code=3)
+        + _EXITS_IN_A_CLEANUP.format(code=4),
+    )
+    assert kept.ret == 4, kept.stdout.str()
+    assert not (fake_real_home / ".apothem").exists()
+
+
+def case_an_xdist_workers_refusal_after_its_last_test_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """The worker hands it to the controller, which ignores the worker's exit code.
+
+    The worker also writes a copy to its file, which the controller skips:
+    each refusal is reported once.
+    """
+    result = _run_absorbing(
+        pytester, fake_real_home, _ABSORBED_AT_A_WORKERS_SESSION_FINISH, "-n", "2"
+    )
+
+    _assert_the_run_failed_on_it(
+        result, fake_real_home, "in xdist worker gw?, after the last test"
+    )
+    output = result.stdout.str()
+    for worker in ("gw0", "gw1"):
+        named = f"in xdist worker {worker}, after the last test, and the refusal"
+        assert output.count(named) == 1, output
+
+
+#: A report hook that ends the xdist controller's test loop with
+#: ``pytest.exit`` and the exit code 0 at the first test call a worker
+#: reports, so the controller never takes what the worker hands over at its
+#: session finish. The controller is told apart by its config, as below.
+_ENDS_THE_CONTROLLERS_TEST_LOOP = """
+
+CONFIGS = []
+
+
+def pytest_configure(config):
+    CONFIGS.append(config)
+
+
+def pytest_runtest_logreport(report):
+    if not hasattr(CONFIGS[-1], "workerinput") and report.when == "call":
+        pytest.exit("probe", returncode=0)
+"""
+
+
+def case_a_workers_refusal_fails_the_run_after_the_controllers_loop_ended(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """The worker also writes what it hands over to its file.
+
+    The controller's loop ended before it took the worker's output, so it
+    reports the refusal from the file, named as the output would name it.
+    """
+    result = _run_absorbing(
+        pytester,
+        fake_real_home,
+        _ENDS_THE_CONTROLLERS_TEST_LOOP + _ABSORBED_AT_A_WORKERS_SESSION_FINISH,
+        "-n",
+        "1",
+    )
+
+    assert result.ret == pytest.ExitCode.TESTS_FAILED
+    output = result.stdout.str()
+    named = "in xdist worker gw0, after the last test, and the refusal"
+    assert output.count(named) == 1, output
+    assert _AFTER_THE_HAND_OFF not in output
+    assert not (fake_real_home / ".apothem").exists()
+
+
+#: How the controller names a refusal an xdist worker found after it handed
+#: what it held to the controller.
+_AFTER_THE_HAND_OFF = "after it handed its refusals to the controller"
+
+#: A terminal-summary hook that absorbs the refusal in an xdist worker only,
+#: after the worker handed its refusals to the controller.
+_ABSORBED_IN_A_WORKERS_TERMINAL_SUMMARY = """
+
+def pytest_terminal_summary(terminalreporter, config):
+    if hasattr(config, "workerinput"):
+        _absorb()
+"""
+
+#: An unconfigure hook that absorbs the refusal in an xdist worker only.
+_ABSORBED_AT_A_WORKERS_UNCONFIGURE = """
+
+def pytest_unconfigure(config):
+    if hasattr(config, "workerinput"):
+        _absorb()
+"""
+
+#: A ``tryfirst`` session-finish wrapper, registered after the guard and so
+#: finishing after the guard's own, that absorbs the refusal after its
+#: ``yield`` in an xdist worker only.
+_ABSORBED_AFTER_A_WORKERS_FIRST_SESSION_FINISH_WRAPPER = """
+
+@pytest.hookimpl(wrapper=True, tryfirst=True)
+def pytest_sessionfinish(session):
+    try:
+        return (yield)
+    finally:
+        if hasattr(session.config, "workerinput"):
+            _absorb()
+"""
+
+
+def _assert_each_worker_sent_it_late(
+    result: pytest.RunResult, home: Path, where: str
+) -> None:
+    """Both workers found the refusal after the hand-off; the run failed on it."""
+    _assert_the_run_failed_on_it(
+        result, home, f"in xdist worker gw?, {_AFTER_THE_HAND_OFF}, {where}"
+    )
+    output = result.stdout.str()
+    for worker in ("gw0", "gw1"):
+        named = f"in xdist worker {worker}, {_AFTER_THE_HAND_OFF}, {where}"
+        assert output.count(named) == 1, output
+
+
+def case_an_xdist_workers_refusal_in_its_terminal_summary_fails_the_run(
+    pytester: pytest.Pytester,
+    fake_real_home: Path,
+    tmp_path_factory: pytest.TempPathFactory,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The worker writes it to a file the controller reads once it is down.
+
+    The controller makes that file's folder in its temporary folder and
+    removes it when it has read it.
+    """
+    temp = tmp_path_factory.mktemp("controller-temp")
+    monkeypatch.setattr(tempfile, "tempdir", str(temp))
+
+    result = _run_absorbing(
+        pytester, fake_real_home, _ABSORBED_IN_A_WORKERS_TERMINAL_SUMMARY, "-n", "2"
+    )
+
+    _assert_each_worker_sent_it_late(result, fake_real_home, "after the last test")
+    assert list(temp.iterdir()) == []
+
+
+#: Keeps the folder of late-refusal files the xdist controller made, as a run
+#: stopped before it removed its folder would: the guard's removal does
+#: nothing in this session.
+_THE_LATE_FOLDER_KEPT = """
+
+import tests.conftest as _guard_module
+
+_guard_module._rmtree = lambda *args, **kwargs: None
+"""
+
+
+def case_a_folder_an_earlier_run_left_is_never_read(
+    pytester: pytest.Pytester,
+    fake_real_home: Path,
+    tmp_path_factory: pytest.TempPathFactory,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A later run makes a folder of its own and never reads the earlier one.
+
+    The first run keeps its folder, with each worker's file in it. A second
+    run with the same ``--basetemp`` and no refusal passes and names none of
+    the first run's refusals, and the first run's files are still there.
+    """
+    temp = tmp_path_factory.mktemp("controller-temp")
+    monkeypatch.setattr(tempfile, "tempdir", str(temp))
+    basetemp = f"--basetemp={fake_real_home / 'temp'}"
+    kept_and_absorbed = _THE_LATE_FOLDER_KEPT + _ABSORBED_IN_A_WORKERS_TERMINAL_SUMMARY
+
+    first = _run_absorbing(
+        pytester, fake_real_home, kept_and_absorbed, "-n", "2", basetemp
+    )
+
+    _assert_each_worker_sent_it_late(first, fake_real_home, "after the last test")
+    (kept,) = temp.iterdir()
+    files = sorted(path.name for path in kept.iterdir())
+    assert files == ["gw0.jsonl", "gw1.jsonl"]
+    pytester.makeconftest(_STAR_IMPORT)
+    again = _run(pytester, "-n", "2", basetemp)
+    again.assert_outcomes(passed=len(_PROBE_TESTS))
+    assert again.ret == pytest.ExitCode.OK
+    assert "refused" not in again.stdout.str()
+    assert list(temp.iterdir()) == [kept]
+    assert sorted(path.name for path in kept.iterdir()) == files
+
+
+def case_an_xdist_workers_refusal_at_its_unconfigure_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    result = _run_absorbing(
+        pytester, fake_real_home, _ABSORBED_AT_A_WORKERS_UNCONFIGURE, "-n", "2"
+    )
+
+    _assert_each_worker_sent_it_late(
+        result, fake_real_home, "after the session finished"
+    )
+
+
+def case_an_xdist_workers_refusal_after_its_first_session_finish_wrapper_fails(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """The wrapper finishes after the guard's, so the worker's unconfigure sees it."""
+    result = _run_absorbing(
+        pytester,
+        fake_real_home,
+        _ABSORBED_AFTER_A_WORKERS_FIRST_SESSION_FINISH_WRAPPER,
+        "-n",
+        "2",
+    )
+
+    _assert_each_worker_sent_it_late(
+        result, fake_real_home, "after the session finished"
+    )
+
+
+#: A ``tryfirst`` session-finish hook that ends the run with ``pytest.exit``
+#: and the code 0 in the xdist controller. pluggy calls no plain hook after
+#: one that raises, so xdist's own, which tells the workers to exit and waits
+#: for them, does not run.
+_EXITS_BEFORE_XDIST_ENDS_THE_WORKERS = """
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_sessionfinish(session):
+    if not hasattr(session.config, "workerinput"):
+        pytest.exit("probe", returncode=0)
+"""
+
+#: An unconfigure hook that absorbs the refusal in an xdist worker after a
+#: pause, so the worker is still running when the controller unconfigures.
+_ABSORBED_LATE_AT_A_WORKERS_UNCONFIGURE = """
+
+def pytest_unconfigure(config):
+    if hasattr(config, "workerinput"):
+        import time
+
+        time.sleep(1)
+        _absorb()
+"""
+
+
+def case_the_controller_waits_for_its_workers_before_it_reads_their_files(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """A hook that ends the run before xdist's own leaves the workers running.
+
+    The guard tells them to exit and waits for them before it reads their
+    files, so what they find in their ``pytest_unconfigure`` still fails the
+    run, which ``pytest.exit`` set to 0. pytest writes no summary then.
+    """
+    result = _run_absorbing(
+        pytester,
+        fake_real_home,
+        _EXITS_BEFORE_XDIST_ENDS_THE_WORKERS + _ABSORBED_LATE_AT_A_WORKERS_UNCONFIGURE,
+        "-n",
+        "2",
+    )
+
+    assert result.ret == pytest.ExitCode.TESTS_FAILED
+    output = result.stdout.str()
+    for worker in ("gw0", "gw1"):
+        named = f"in xdist worker {worker}, {_AFTER_THE_HAND_OFF}, after the session"
+        assert output.count(named) == 1, output
+    assert not (fake_real_home / ".apothem").exists()
+
+
+#: A session-start hook that absorbs the refusal in an xdist worker and ends
+#: the worker's session there, so the worker never reaches its session
+#: finish and hands nothing to the controller.
+_ABSORBED_WHERE_A_WORKERS_SESSION_ENDS_AT_ITS_START = """
+
+def pytest_sessionstart(session):
+    if hasattr(session.config, "workerinput"):
+        _absorb()
+        pytest.exit("probe", returncode=0)
+"""
+
+
+def case_a_worker_that_handed_nothing_over_is_not_named_as_if_it_had(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """A worker whose session ends at its start sends its refusal in the file.
+
+    It never reached its session finish, where it hands its refusals to the
+    controller, so the controller names the refusal for where it happened,
+    not as found after that hand-off.
+    """
+    result = _run_absorbing(
+        pytester,
+        fake_real_home,
+        _ABSORBED_WHERE_A_WORKERS_SESSION_ENDS_AT_ITS_START,
+        "-n",
+        "1",
+        "--max-worker-restart",
+        "0",
+    )
+
+    assert result.ret == pytest.ExitCode.TESTS_FAILED
+    output = result.stdout.str()
+    named = f"in xdist worker gw0, {_AT_SESSION_START}, and the refusal"
+    assert output.count(named) == 1, output
+    assert _AFTER_THE_HAND_OFF not in output
+    assert not (fake_real_home / ".apothem").exists()
+
+
+#: In an xdist worker only: a report hook that absorbs the refusal at the
+#: first probe test's teardown report, which the second test's setup holds
+#: as made between two tests; a finish hook that absorbs it again when the
+#: last test is done; and a plain session-finish hook that then ends that
+#: worker's process with ``os._exit(0)``, as a crash or a kill while it is
+#: idle would, before it hands anything to the controller. The worker is
+#: told apart by its config, as below.
+_ABSORBED_IN_A_WORKER_THAT_THEN_ENDS = """
+
+CONFIGS = []
+ABSORBED = []
+
+
+def pytest_configure(config):
+    CONFIGS.append(config)
+
+
+def _in_a_worker():
+    return hasattr(CONFIGS[-1], "workerinput")
+
+
+def pytest_runtest_logreport(report):
+    if (
+        _in_a_worker()
+        and report.when == "teardown"
+        and report.nodeid.endswith("test_fixture_free")
+    ):
+        _absorb()
+        ABSORBED.append(report.nodeid)
+
+
+def pytest_runtest_logfinish(nodeid, location):
+    if _in_a_worker() and nodeid.endswith("test_with_tmp_path"):
+        _absorb()
+
+
+def pytest_sessionfinish(session):
+    if _in_a_worker() and ABSORBED:
+        os._exit(0)
+"""
+
+#: The same hooks, in a worker that goes on to hand its refusals over.
+_ABSORBED_IN_A_WORKER_THAT_HANDS_THEM_OVER = (
+    _ABSORBED_IN_A_WORKER_THAT_THEN_ENDS.replace("os._exit(0)", "pass")
+)
+
+#: Where the worker of those hooks found each refusal.
+_HELD_BY_A_WORKER = (
+    "between two tests, before test_probe.py::test_with_tmp_path",
+    "after the last test",
+)
+
+
+def case_a_worker_that_ends_before_it_hands_its_refusals_over_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """The worker writes each refusal to its file as it holds it.
+
+    ``--dist loadfile`` runs both probe tests in one worker. It ends in its
+    session finish, before it hands what it holds to the controller, so
+    xdist reports it down but fails no test, since none was running on it.
+    The controller reads its file and fails the run on both refusals: the
+    one held between the two tests, and the one logged after the last test,
+    which the worker holds when its session finish starts. A worker that
+    hands the same refusals over has each reported once, not again from
+    its file.
+    """
+    args = ("-n", "2", "--dist", "loadfile", "--max-worker-restart", "0")
+    result = _run_absorbing(
+        pytester, fake_real_home, _ABSORBED_IN_A_WORKER_THAT_THEN_ENDS, *args
+    )
+
+    result.assert_outcomes(passed=len(_PROBE_TESTS))
+    assert result.ret == pytest.ExitCode.TESTS_FAILED, result.stdout.str()
+    output = " ".join(result.stdout.str().split())
+    crashed = re.search(r"worker (gw\d) crashed", output)
+    assert crashed is not None, output
+    for where in _HELD_BY_A_WORKER:
+        named = f"outside any test, in xdist worker {crashed[1]}, {where}, and"
+        assert output.count(named) == 1, output
+    assert _AFTER_THE_HAND_OFF not in output
+    handed = _run_absorbing(
+        pytester, fake_real_home, _ABSORBED_IN_A_WORKER_THAT_HANDS_THEM_OVER, *args
+    )
+    handed.assert_outcomes(passed=len(_PROBE_TESTS))
+    assert handed.ret == pytest.ExitCode.TESTS_FAILED, handed.stdout.str()
+    output = " ".join(handed.stdout.str().split())
+    assert "crashed" not in output, output
+    for where in _HELD_BY_A_WORKER:
+        named = rf"in xdist worker gw\d, {re.escape(where)}, and"
+        assert len(re.findall(named, output)) == 1, output
+    assert not (fake_real_home / ".apothem").exists()
+
+
+#: The same hooks, with a session-finish wrapper in place of the hook that
+#: ends the worker: in a worker that absorbed a refusal, it runs ``STOP``
+#: before its ``yield``, so no implementation it encloses runs.
+_ABSORBED_IN_A_WORKER_WHOSE_WRAPPER_STOPS = (
+    _ABSORBED_IN_A_WORKER_THAT_THEN_ENDS.replace(
+        """
+def pytest_sessionfinish(session):
+    if _in_a_worker() and ABSORBED:
+        os._exit(0)
+""",
+        """
+@pytest.hookimpl(wrapper=True)
+def pytest_sessionfinish(session):
+    if _in_a_worker() and ABSORBED:
+        STOP
+    return (yield)
+""",
+    )
+)
+
+
+def case_a_worker_whose_wrapper_stops_its_session_finish_still_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """The worker's output reaches the controller without the hand-off in it.
+
+    pytest registers a probe conftest in the worker before xdist's worker
+    plugin, so xdist's session-finish wrapper encloses the conftest's and
+    still sends the worker's output, and the conftest's wrapper encloses the
+    guard's ``trylast`` one, which never starts when the conftest's raises
+    or calls ``pytest.exit`` before its ``yield``. The controller then
+    reports what the worker wrote to its file, each refusal once.
+    """
+    args = ("-n", "2", "--dist", "loadfile", "--max-worker-restart", "0")
+    for stop in ('raise RuntimeError("probe")', 'pytest.exit("probe", returncode=0)'):
+        hooks = _ABSORBED_IN_A_WORKER_WHOSE_WRAPPER_STOPS.replace("STOP", stop)
+
+        result = _run_absorbing(pytester, fake_real_home, hooks, *args)
+
+        assert result.ret == pytest.ExitCode.TESTS_FAILED, result.stdout.str()
+        output = " ".join(result.stdout.str().split())
+        for where in _HELD_BY_A_WORKER:
+            named = rf"in xdist worker gw\d, {re.escape(where)}, and"
+            assert len(re.findall(named, output)) == 1, output
+        assert _AFTER_THE_HAND_OFF not in output
+    assert not (fake_real_home / ".apothem").exists()
+
+
+#: Where the probe hooks below find the file an xdist worker writes its late
+#: refusals to, in ``config.workerinput``.
+_LATE_FILE_KEY = "apothem-real-home-late-refusals"
+
+#: An unconfigure hook that leaves the file an xdist worker writes its late
+#: refusals to empty, as a worker stopped after it created the file would.
+_AN_EMPTY_LATE_FILE = f"""
+
+def pytest_unconfigure(config):
+    if hasattr(config, "workerinput"):
+        open(config.workerinput[{_LATE_FILE_KEY!r}], "a").close()
+"""
+
+
+def case_an_empty_late_file_a_worker_left_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """A worker creates the file only to write a refusal it found.
+
+    An empty one means it was stopped while it wrote, so the run fails, and
+    the report names the worker and the file.
+    """
+    pytester.makeconftest(_STAR_IMPORT + _AN_EMPTY_LATE_FILE)
+
+    result = _run(pytester, "-n", "1")
+
+    result.assert_outcomes(passed=len(_PROBE_TESTS))
+    assert result.ret == pytest.ExitCode.TESTS_FAILED
+    output = " ".join(result.stdout.str().split())
+    assert "outside any test, in xdist worker gw0, and the refusal" in output
+    assert "gw0.jsonl is empty: the worker creates it only to write" in output
+    assert not (fake_real_home / ".apothem").exists()
+
+
+#: An unconfigure hook that leaves the start of a line in the file an xdist
+#: worker writes its late refusals to, as a worker stopped while it wrote
+#: the line would.
+_A_CUT_LATE_LINE = f"""
+
+def pytest_unconfigure(config):
+    if hasattr(config, "workerinput"):
+        with open(config.workerinput[{_LATE_FILE_KEY!r}], "a") as stream:
+            stream.write('{{"where": "probe", "messa')
+"""
+
+#: An unconfigure hook that puts a folder where an xdist worker writes its
+#: late refusals, so the controller cannot read that file.
+_A_FOLDER_IN_PLACE_OF_THE_LATE_FILE = f"""
+
+def pytest_unconfigure(config):
+    if hasattr(config, "workerinput"):
+        import os
+
+        os.mkdir(config.workerinput[{_LATE_FILE_KEY!r}])
+"""
+
+
+def case_a_cut_line_in_a_workers_late_file_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """A line the controller cannot read is reported whole, for the worker."""
+    pytester.makeconftest(_STAR_IMPORT + _A_CUT_LATE_LINE)
+
+    result = _run(pytester, "-n", "1")
+
+    result.assert_outcomes(passed=len(_PROBE_TESTS))
+    assert result.ret == pytest.ExitCode.TESTS_FAILED
+    output = " ".join(result.stdout.str().split())
+    named = "outside any test, in xdist worker gw0, and the refusal was not raised:"
+    assert f'{named} - {{"where": "probe", "messa' in output, output
+
+
+def case_a_workers_late_file_the_controller_cannot_read_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """The worker made it only to write a refusal, so the run fails on it."""
+    pytester.makeconftest(_STAR_IMPORT + _A_FOLDER_IN_PLACE_OF_THE_LATE_FILE)
+
+    result = _run(pytester, "-n", "1")
+
+    result.assert_outcomes(passed=len(_PROBE_TESTS))
+    assert result.ret == pytest.ExitCode.TESTS_FAILED
+    output = " ".join(result.stdout.str().split())
+    named = "outside any test, in xdist worker gw0, and the refusal was not raised:"
+    assert f"{named} - the guard could not read " in output, output
+    assert "gw0.jsonl" in output
+
+
+#: Protects the fake real home when the probe conftest is imported, before the
+#: xdist controller starts its workers.
+_PROTECTED_AT_IMPORT = """
+
+home_write_guard.also_protect_home({home!r})
+"""
+
+
+def case_an_xdist_controller_makes_no_folder_in_a_protected_temporary_folder(
+    pytester: pytest.Pytester, fake_real_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Apothem would refuse a write into it, so the guard writes nothing there.
+
+    The workers then have no file for what they find after the hand-off and
+    write it to ``stderr`` instead, and the run passes, as it did before the
+    file.
+    """
+    temp = fake_real_home / ".apothem" / "temp"
+    temp.mkdir(parents=True)
+    monkeypatch.setattr(tempfile, "tempdir", str(temp))
+
+    result = _run_absorbing(
+        pytester,
+        fake_real_home,
+        _PROTECTED_AT_IMPORT.format(home=str(fake_real_home))
+        + _ABSORBED_AT_A_WORKERS_UNCONFIGURE,
+        "-n",
+        "2",
+    )
+
+    result.assert_outcomes(passed=len(_PROBE_TESTS))
+    assert result.ret == pytest.ExitCode.OK
+    assert "refused" not in result.stdout.str()
+    assert list(temp.iterdir()) == []
+
+
+#: A session-finish hook that pytest calls after the guard's own, in a
+#: conftest that pytest registers during collection, after the guard. It
+#: absorbs the refusal in an xdist worker only.
+_ABSORBED_LAST_AT_A_WORKERS_SESSION_FINISH = """
+
+@pytest.hookimpl(trylast=True)
+def pytest_sessionfinish(session):
+    if hasattr(session.config, "workerinput"):
+        _absorb()
+"""
+
+
+def case_a_later_conftests_refusal_at_a_workers_session_finish_fails_the_run(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """A ``trylast`` hook of a conftest found during collection runs last.
+
+    The worker hands what it holds to the controller after it all the same.
+    """
+    pytester.makeconftest(_STAR_IMPORT)
+    sub = pytester.mkdir("sub")
+    (sub / "conftest.py").write_text(
+        "import pytest\n"
+        + _ABSORB_ONE.format(home=str(fake_real_home))
+        + _ABSORBED_LAST_AT_A_WORKERS_SESSION_FINISH,
+        encoding="utf-8",
+    )
+
+    result = _run(pytester, "-n", "2")
+
+    _assert_the_run_failed_on_it(
+        result, fake_real_home, "in xdist worker gw?, after the last test"
+    )
+
+
+def case_an_interrupted_xdist_workers_refusal_is_reported_once(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """xdist reports a worker that stopped on Ctrl-C down twice."""
+    pytester.makepyfile(test_probe="def test_stops():\n    raise KeyboardInterrupt\n")
+
+    result = _run_absorbing(
+        pytester,
+        fake_real_home,
+        _ABSORBED_AT_SESSION_START,
+        "-n",
+        "1",
+        "--max-worker-restart",
+        "0",
+    )
+
+    assert result.ret == pytest.ExitCode.INTERRUPTED
+    output = result.stdout.str()
+    assert output.count(f"in xdist worker gw0, {_AT_SESSION_START}") == 1, output
+    assert not (fake_real_home / ".apothem").exists()
+
+
+#: A conftest hook that absorbs the refusal in the xdist controller only,
+#: for each test a worker reports. The controller is told apart by its config,
+#: which has no ``workerinput``, not by ``PYTEST_XDIST_WORKER``: the pytester
+#: session runs in the process of the case, which has that variable when the
+#: cases themselves run in an xdist worker.
+_ABSORBED_IN_THE_CONTROLLER_DURING_THE_RUN = """
+
+CONFIGS = []
+
+
+def pytest_configure(config):
+    CONFIGS.append(config)
+
+
+def pytest_runtest_logreport(report):
+    if not hasattr(CONFIGS[-1], "workerinput") and report.when == "call":
+        _absorb()
+"""
+
+
+def case_an_xdist_controllers_refusal_during_the_run_is_named_for_it(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """The controller runs no test, so not after the last test."""
+    result = _run_absorbing(
+        pytester, fake_real_home, _ABSORBED_IN_THE_CONTROLLER_DURING_THE_RUN, "-n", "2"
+    )
+
+    _assert_the_run_failed_on_it(
+        result, fake_real_home, "in the xdist controller, during the test run"
+    )
+    assert "after the last test" not in result.stdout.str()
+
+
+def case_a_passing_session_under_xdist_exits_zero(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    pytester.makeconftest(_STAR_IMPORT)
+
+    result = _run(pytester, "-n", "2")
+
+    result.assert_outcomes(passed=len(_PROBE_TESTS))
+    assert result.ret == pytest.ExitCode.OK
+    assert "refused" not in result.stdout.str()
+
+
+#: A conftest hook that absorbs the refusal when the session starts.
+_ABSORBED_AT_SESSION_START = """
+
+def pytest_sessionstart(session):
+    _absorb()
+"""
+
+#: A conftest collection hook that absorbs the refusal before pytest's own
+#: collects anything.
+_ABSORBED_BEFORE_COLLECTION = """
+
+def pytest_collection(session):
+    _absorb()
+"""
+
+#: A conftest hook that absorbs the refusal after the last collect report.
+_ABSORBED_AFTER_COLLECTION = """
+
+def pytest_collection_modifyitems(session, config, items):
+    _absorb()
+"""
+
+#: A test-loop wrapper that absorbs the refusal before the first test.
+_ABSORBED_BEFORE_THE_TEST_LOOP = """
+
+@pytest.hookimpl(wrapper=True)
+def pytest_runtestloop(session):
+    _absorb()
+    return (yield)
+"""
+
+_AT_SESSION_START = "at the session start, before collection"
+_BEFORE_THE_FIRST_TEST = "after collection, before the first test"
+
+
+def _assert_nothing_collected_failed(result: pytest.RunResult) -> None:
+    output = result.stdout.str()
+    assert "ERROR collecting" not in output
+    assert "found no collectors" not in output
+    assert "while pytest collected" not in output
+
+
+def case_a_refusal_absorbed_at_session_start_fails_the_run_after_the_tests(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """Failing the session's collection would drop every test it collected."""
+    result = _run_absorbing(pytester, fake_real_home, _ABSORBED_AT_SESSION_START)
+
+    _assert_the_run_failed_on_it(result, fake_real_home, _AT_SESSION_START)
+    _assert_nothing_collected_failed(result)
+
+
+def case_a_refusal_absorbed_before_collection_fails_the_run_after_the_tests(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    result = _run_absorbing(pytester, fake_real_home, _ABSORBED_BEFORE_COLLECTION)
+
+    _assert_the_run_failed_on_it(result, fake_real_home, _AT_SESSION_START)
+    _assert_nothing_collected_failed(result)
+
+
+def case_a_refusal_absorbed_after_collection_fails_the_run_not_the_first_test(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    result = _run_absorbing(pytester, fake_real_home, _ABSORBED_AFTER_COLLECTION)
+
+    _assert_the_run_failed_on_it(result, fake_real_home, _BEFORE_THE_FIRST_TEST)
+
+
+#: A collection-finish hook that absorbs the refusal. pytest calls it also
+#: when the collection stops on an error.
+_ABSORBED_AT_COLLECTION_FINISH = """
+
+def pytest_collection_finish(session):
+    _absorb()
+"""
+
+
+def case_a_refusal_absorbed_at_collection_finish_is_named_when_no_test_runs(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """A path that does not exist stops the collection: no test loop starts."""
+    result = _run_absorbing(
+        pytester, fake_real_home, _ABSORBED_AT_COLLECTION_FINISH, "does_not_exist.py"
+    )
+
+    assert result.ret == pytest.ExitCode.USAGE_ERROR
+    result.stdout.fnmatch_lines(
+        [f"*outside any test, {_BEFORE_THE_FIRST_TEST}, and the refusal*"]
+    )
+    assert "after the last test" not in result.stdout.str()
+    assert not (fake_real_home / ".apothem").exists()
+
+
+def case_a_refusal_absorbed_before_the_test_loop_fails_the_run_not_the_first_test(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    result = _run_absorbing(pytester, fake_real_home, _ABSORBED_BEFORE_THE_TEST_LOOP)
+
+    _assert_the_run_failed_on_it(result, fake_real_home, _BEFORE_THE_FIRST_TEST)
+
+
+#: A conftest hook that absorbs the refusal once, at the first test's teardown
+#: report, after which that test is done.
+_ABSORBED_AT_A_TEARDOWN_REPORT = """
+
+def pytest_runtest_logreport(report):
+    if report.when == "teardown" and report.nodeid.endswith("test_fixture_free"):
+        _absorb()
+"""
+
+#: A plain test-loop hook, which pytest calls before its own, that absorbs the
+#: refusal and lets pytest's own run the tests.
+_ABSORBED_IN_A_PLAIN_TEST_LOOP = """
+
+def pytest_runtestloop(session):
+    _absorb()
+"""
+
+
+def case_a_refusal_absorbed_between_two_tests_fails_the_run_not_the_next_test(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    result = _run_absorbing(pytester, fake_real_home, _ABSORBED_AT_A_TEARDOWN_REPORT)
+
+    _assert_the_run_failed_on_it(
+        result,
+        fake_real_home,
+        "between two tests, before test_probe.py::test_with_tmp_path",
+    )
+
+
+def case_a_refusal_absorbed_in_a_plain_test_loop_fails_the_run_not_the_first_test(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    result = _run_absorbing(pytester, fake_real_home, _ABSORBED_IN_A_PLAIN_TEST_LOOP)
+
+    _assert_the_run_failed_on_it(result, fake_real_home, _BEFORE_THE_FIRST_TEST)
+
+
+#: How a refusal from the test loop is named when the loop ran no test.
+_IN_A_LOOP_WITHOUT_TESTS = "after collection, in a test loop that ran no test"
+
+
+def case_a_refusal_absorbed_in_a_plain_test_loop_is_named_when_no_test_runs(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """``--co`` runs no test, and neither does a run that deselects every test.
+
+    No test's setup takes the refusal, so the loop names it when it ends,
+    not as made after the last test.
+    """
+    for args in (["--co"], ["-k", "no_such_test"]):
+        result = _run_absorbing(
+            pytester, fake_real_home, _ABSORBED_IN_A_PLAIN_TEST_LOOP, *args
+        )
+
+        assert result.ret == pytest.ExitCode.TESTS_FAILED, args
+        result.stdout.fnmatch_lines(
+            [f"*outside any test, {_IN_A_LOOP_WITHOUT_TESTS}, and the refusal*"]
+        )
+        assert "after the last test" not in result.stdout.str(), args
+        assert not (fake_real_home / ".apothem").exists()
+
+
+def case_a_session_start_refusal_fails_a_run_that_collects_no_test(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """The exit code says tests failed, not that none was collected."""
+    pytester.makepyfile(test_probe="")
+
+    result = _run_absorbing(pytester, fake_real_home, _ABSORBED_AT_SESSION_START)
+
+    assert result.ret == pytest.ExitCode.TESTS_FAILED
+    result.stdout.fnmatch_lines(["*collected 0 items*"])
+    result.stdout.fnmatch_lines([f"*outside any test, {_AT_SESSION_START}, and*"])
+    assert not (fake_real_home / ".apothem").exists()
+
+
+def case_a_session_start_refusal_under_xdist_is_named_where_it_happened(
+    pytester: pytest.Pytester, fake_real_home: Path
+) -> None:
+    """The controller collects nothing; each worker sends its own refusal."""
+    result = _run_absorbing(
+        pytester, fake_real_home, _ABSORBED_AT_SESSION_START, "-n", "2"
+    )
+
+    _assert_the_run_failed_on_it(result, fake_real_home, _AT_SESSION_START)
+    _assert_nothing_collected_failed(result)
+    output = result.stdout.str()
+    assert output.count(f", {_AT_SESSION_START}, and the refusal") == 3, output
+    assert output.count(f"in xdist worker gw0, {_AT_SESSION_START}") == 1, output
+    assert output.count(f"in xdist worker gw1, {_AT_SESSION_START}") == 1, output
+    assert "after the last test" not in output

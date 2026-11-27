@@ -34,6 +34,7 @@ from typing import Final, cast
 import yaml
 from jsonschema import Draft202012Validator, FormatChecker
 
+from apothem.lib import home_write_guard
 from apothem.lib.atomic_io import (
     advisory_lock,
     append_line_durably,
@@ -301,6 +302,7 @@ class LearningStore:
         Args:
             signal: An already-validated signal to persist verbatim.
         """
+        home_write_guard.refuse_real_home_write(self._learning_dir, operation="create")
         self._learning_dir.mkdir(parents=True, exist_ok=True)
         # Hold the advisory lock around the durable O_APPEND so concurrent
         # captures never tear a single JSONL record or interleave bytes.
@@ -534,6 +536,7 @@ def promote(
     _validate_skill_frontmatter(frontmatter)
 
     skill_dir = skills_dir / pattern.id
+    home_write_guard.refuse_real_home_write(skill_dir, operation="create")
     skill_dir.mkdir(parents=True, exist_ok=True)
     skill_path = skill_dir / _SKILL_FILENAME
 

@@ -53,6 +53,95 @@ lorsque le projet n'a pas encore de répertoire `.github/workflows/`, et le
 validateur des sujets de commit également lorsque la racine n'a aucun
 historique de commits.
 
+Un projet peut arriver avec des fichiers créés par quelqu'un d'autre, dans
+une archive ou un dossier partagé ; chaque validateur `--all` n'ouvre et ne
+liste donc que des fichiers ordinaires et des dossiers réels qu'il atteint en
+passant par des dossiers réels sous la racine. Il ne suit jamais un lien
+symbolique ni, sous Windows, une jonction, et à tout niveau sous la racine il
+traite chacun de ces éléments comme absent :
+
+- un lien, même un lien qui pointe dans la racine. Un parcours ou une liste de
+  dossier l'ignore, si bien que sa cible n'est vérifiée que là où le
+  validateur l'atteint par son propre chemin ;
+- un tube nommé, un périphérique ou un socket, où une lecture attendrait ou ne
+  finirait jamais ;
+- sous Windows, un nom qui se termine par un point ou une espace, car Windows
+  ouvrirait une autre entrée sous ce nom.
+
+Quelques vérifications utilisent encore un lien sans y entrer :
+
+- pour un fichier fixe qui est un lien symbolique, comme un `CLAUDE.md` qui
+  pointe vers un autre fichier, le gate lit le texte du lien lui-même et
+  n'ouvre le fichier nommé que s'il s'agit d'un fichier ordinaire dans le
+  projet, atteint par des dossiers réels. Un lien `README.md` propre à un
+  dossier compte de la même façon. Un lien absolu compte lorsqu'il est écrit à
+  travers le dossier du projet tel qu'il se résout, ou sous Windows à travers
+  le même chemin avec une autre casse ; un validateur lancé seul accepte aussi
+  le dossier tel que vous l'avez saisi, sauf si ce chemin contient `..`, alors
+  que le gate résout le dossier avant de lancer chaque validateur. Un
+  `.gitattributes` lié compte toujours comme absent, car git ne le lit pas ;
+- la vérification des plans égarés de `no-global-plans-grep` signale par son
+  nom un dossier de plans ou un dossier `.apothem` qui est un lien, où que
+  mène ce lien ;
+- `no-toplevel-docs-grep` signale par son nom un lien `docs` à la racine ;
+- `naming-grep` vérifie le nom propre d'un lien.
+
+Le rapport de chaque validateur liste sous `skipped_links` les liens et les
+fichiers spéciaux qu'il a laissés de côté, si bien qu'un lien ne cache jamais un
+fichier sans laisser de trace. Il y liste aussi un dossier qu'il n'a pas pu
+lister (pas d'accès, un chemin trop long, une erreur de lecture) et l'entrée
+`.git` d'un dossier qu'il a ignoré comme checkout imbriqué lorsque cette entrée
+est un lien ou un fichier spécial ; le dossier lui-même est listé sous
+`skipped_checkouts`, décrit plus bas. Un validateur qui réussit quand son dossier
+manque, comme les validateurs de workflows, ne réussit pas quand ce dossier est
+un lien : les fichiers peuvent se trouver derrière, donc l'exécution échoue
+comme une exécution qui n'a rien vérifié. Un lien physique est un fichier
+ordinaire et se lit comme tel. Les validateurs `--all` examinent chaque niveau
+quand ils l'atteignent, puis ouvrent le fichier par son nom : un second
+utilisateur qui peut écrire dans le projet pendant que le gate tourne peut donc
+remplacer un fichier ou un dossier déjà vérifié par un lien ou un tube nommé
+avant son ouverture, ou faire attendre une lecture jusqu'à la limite de temps ;
+le gate ne protège pas contre cela. `--all-perwrite` ouvre le dernier niveau
+sans le suivre, mais ses dossiers peuvent toujours être remplacés. Dans `--all`
+et `--all-perwrite`, le gate lui-même n'ouvre que des fichiers ordinaires dans
+la racine, vérifie chaque dossier du chemin avec `lstat`, y compris chaque
+chemin que git liste, et ne lit jamais à l'intérieur d'une entrée `.git`. Avant
+d'exécuter git, les trois validateurs `--all` qui exécutent git, ainsi que les
+deux vérifications `--staged`, examinent avec `lstat` l'entrée `.git` de la
+racine et de chaque dossier au-dessus que git parcourt, tel que l'arbre est à
+cet instant ; si l'une d'elles est un lien, ou ne peut pas être examinée, ils
+n'exécutent pas git. Cela refuse aussi des projets que git traiterait sans
+risque, comme tout projet sous un dossier personnel dont le `.git` est un lien,
+même un projet doté de son propre dépôt : c'est le coût voulu d'une règle
+simple. Les trois validateurs `--all` exécutent git sans `GIT_DIR` ni les autres
+variables qui nomment le dépôt, ses stockages ou son index ; les vérifications
+`--staged` gardent le `GIT_DIR` d'un hook. Le dépôt que git lit ensuite n'est
+pas vérifié : une ligne `gitdir:`, `commondir`, des alternates, `core.worktree`,
+un include ou un lien dans le dossier git peuvent en nommer un autre, et git les
+suit, si bien que git peut atteindre un chemin réseau ou attendre jusqu'à sa
+limite de temps. Le gate n'utilise la sortie de git que comme noms, modes,
+lettres d'état, objet du dernier commit, heures de commit et quelques réglages,
+et n'ouvre jamais un chemin affiché par git sans vérifier chaque niveau dans la
+racine. Lorsqu'un lien est trouvé, chacun des trois validateurs `--all` le liste
+sous `skipped_links` (relativement à la racine s'il s'y trouve, par son chemin
+complet s'il est au-dessus). `conventional-commit-grep` signale alors
+`not-a-git-repo`, comme en dehors d'un checkout, mais ne réussit pas : il donne
+un `check_error` qui nomme le lien. `no-global-plans-grep` signale le lien comme
+constat et échoue, et la vérification des fichiers compagnons saute son test de
+fraîcheur, comme sans historique. `--all-perwrite` ne liste pas non plus les
+fichiers suivis : il échoue avec un `check_error` qui nomme le lien, tout comme
+les deux vérifications `--staged`, qui ne nomment un lien que dans
+`check_error`, ou y disent que l'entrée `.git` du dossier où elles tournent est
+un lien : elles lisent le dépôt que nomme le `GIT_DIR` d'un hook mais refusent
+quand même un lien sur le chemin de recherche depuis le dossier où elles
+tournent. Une entrée `.git` que le gate ne peut pas examiner (un chemin trop
+long, un partage injoignable, pas d'accès) n'est pas un lien et n'apparaît pas
+sous `skipped_links` : `conventional-commit-grep` échoue avec le statut
+`git-failed` et un `check_error` ; la vérification des fichiers compagnons,
+`--all-perwrite` et les deux vérifications `--staged` échouent avec un
+`check_error` qui dit que l'entrée n'a pas pu être examinée, et
+`no-global-plans-grep` la signale comme constat.
+
 Six validateurs partent de la racine du dépôt et parcourent toute
 l'arborescence à la recherche des fichiers qu'ils vérifient :
 
@@ -66,13 +155,21 @@ reference-token-grep
 ```
 
 Ceux-ci ignorent les checkouts git imbriqués, tels que les worktrees, les
-sous-modules et les clones imbriqués, et ignorent les répertoires qui
+sous-modules et les clones imbriqués (un dossier dont le fichier ou le dossier
+`.git` contient ou nomme un dépôt ; un simple fichier `.git` ou un dossier
+`.git` vide ne masque pas son dossier), et ignorent les répertoires qui
 contiennent des dépendances, des environnements virtuels, des caches ou des
-sorties de build, tels que `node_modules`, `venv` et `dist`. La vérification
-des plans égarés de `no-global-plans-grep` s'arrête également à un checkout
-imbriqué. Une exécution de l'un d'eux rend compte du checkout sur lequel elle a
-été pointée, et de rien d'autre. Un validateur qui lit un dossier fixe, tel que
-`naming-grep` sous `src/apothem/`, lit tout ce qui se trouve sous ce dossier.
+sorties de build, tels que `node_modules`, `venv` et `dist`. La vérification des
+plans égarés de `no-global-plans-grep` s'arrête également à un checkout
+imbriqué. Chaque dossier ignoré comme checkout imbriqué est listé dans le
+rapport sous `skipped_checkouts`, quoi que nomme son entrée `.git`, car une
+seule ligne `gitdir:` peut faire ignorer n'importe quel dossier à git. Cette
+liste ne change jamais le verdict, et un dossier ignoré ainsi n'est pas
+vérifié ; les dossiers ignorés par leur nom, tels que `node_modules`, n'y
+figurent pas. Une exécution de l'un d'eux rend compte du checkout sur
+lequel elle a été pointée, et de rien d'autre. Un validateur qui lit un dossier
+fixe, tel que `naming-grep` sous `src/apothem/`, lit tout ce qui se trouve sous
+ce dossier.
 
 ## Barres du portail
 

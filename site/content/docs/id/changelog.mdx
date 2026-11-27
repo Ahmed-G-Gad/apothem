@@ -12,8 +12,6 @@ satu-satunya sumber kebenaran.
 
 {/* apothem:changelog:start */}
 
-# Changelog — Apothem
-
 All notable changes to this project are documented in this file.
 
 This changelog follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
@@ -23,6 +21,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- **CI checks the docs sidebar of every language and the built pages.** A
+  new step runs `npm run ia:check`, which fails when a sidebar list, English
+  or translated, differs from the English page order the site's list script
+  writes. Another runs `npm run check:built-docs` after the docs build, which
+  fails when a sidebar section cannot be opened and closed from a button with
+  its state exposed, or a page shows a literal `**` or backtick outside code,
+  and lists every match.
 - **The CI metrics job reuses the coverage shards' data instead of running the
   test suite again.** The `ci.yml` metrics job ran the whole suite under
   coverage on one runner in 18 to 30 minutes, and its 30-minute limit cancelled
@@ -46,9 +51,127 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   whose distinct-word counts rule out a match, with the same findings as before.
   A full `gate --all .` on this repository went from about 100 seconds to about
   12 on Windows.
+- **Apothem refuses to write into the real home while pytest runs.** While
+  `PYTEST_CURRENT_TEST` is set and not empty (a test), or `PYTEST_VERSION`
+  holds the running pytest's version (the whole session: collection,
+  module-level code and session hooks), a write, removal, copy, rename
+  or lock file in a protected path of the account's home stops with
+  `RealHomeWriteError` before anything changes. The protected paths
+  are `~/.apothem`, `~/.config/apothem`, each tool folder the harness
+  registry names in the home (`~/.claude`, `~/.codex`, `~/.agents`,
+  `~/.config/opencode`, `~/.gemini` and the rest), and each path outside
+  those folders that the propagation manifest changes in the home: today that
+  is `~/.antigravity/profile.yaml`, a file an earlier release wrote that the
+  Antigravity stale sweep removes. The home is the one the operating system
+  records for the account, not `HOME`. Reads, dry runs and previews still
+  work, and outside pytest nothing is refused unless the environment carries
+  a `PYTEST_CURRENT_TEST` that is not empty, or the installed pytest's exact
+  version in `PYTEST_VERSION` (a shell or a CI job may export it to pin what
+  it installs). A `PYTEST_VERSION` with any other value, such as a pin like
+  `9.1` for `9.1.0`, does not count, nor does an empty `PYTEST_CURRENT_TEST`,
+  and the error names the variable that turned the refusal on and the value
+  it holds. A project-scope install, update, uninstall or rollback whose
+  project root is the home itself is refused before it writes anything. A
+  data home right in the home, under a name the profile chose, or one that is
+  a link to a folder right in the home or to the home itself (also through a
+  chain of links), is refused before it is created and before its stores are
+  removed: an install or update has written the project's files by then and
+  undoes those writes (recording a rollback), and an uninstall has removed
+  them by then and records itself unfinished. Some passes check their paths
+  before the first change, so a refusal there leaves everything as it was:
+  a stale sweep every stale path; a rollback every path its install record
+  names, the data stores it would remove and the user-level folders in the
+  home it would tidy last; a rollback and an uninstall the backup root and
+  the ledger; and an OpenClaw uninstall `openclaw.json` and every workspace's
+  rules file, one outside `~/.openclaw` included. The stale sweep now also
+  decides which stale paths it keeps (a link, a path reached through one, a
+  live folder under another name) before it removes the first, in every run;
+  it never removes a link, so it keeps the same paths as before. Links and
+  junctions into a protected folder count; on Windows so do letter case, short
+  (8.3) names, the `\\?\`, `\\.\` and `\??\` prefixes, loopback admin shares
+  (IPv6 included), shares reached by the machine's own addresses or through
+  a mapped drive, alternate data streams and device paths behind a prefix
+  (`GLOBALROOT\Device\HarddiskVolume2`, `Volume{GUID}`); on macOS letter case,
+  Unicode normalization and the `/System/Volumes/Data` spelling of a path.
+  Only the string rules make no network contact: a share path is checked by
+  asking its host. The CLI raises the error as it is. A refused uninstall
+  records an unfinished uninstall only when it had already changed files
+  outside the protected folders, in a step before the shared removal too,
+  so the backups of those files stay referenced. The test suite fails a test
+  after which a refusal was absorbed in the test's own process, also when the
+  test is marked `xfail`; one absorbed outside any test fails the collection
+  of the node pytest was collecting then, or else the run when the session
+  finishes, named for where it happened, also when a hook then ends the run
+  with `pytest.exit(returncode=0)` or `sys.exit(0)` (or, on any system, a code
+  a POSIX system cuts to 0 or 5, such as 256), also after another hook ended
+  the session finish with `sys.exit` or an exception, and also when a worker
+  process of a parallel run absorbs it, before or after it handed its refusals
+  to the main process: a worker writes each refusal, as soon as it holds it,
+  to a file the main process reads, so one it held before it crashed or was
+  stopped short of that hand-off, or before a session-finish hook stopped it
+  there, still fails the run. Three cases still show only on `stderr` and
+  leave the exit code as it is: one absorbed after the `yield` of a `tryfirst`
+  `pytest_unconfigure` wrapper that pytest registered after the guard, one
+  absorbed in a cleanup registered with `config.add_cleanup` (each unless a
+  passing `sys.exit` then ends the run), and one a worker absorbs but neither
+  hands over nor writes to that file, because the worker ended or was stopped
+  first (a session-finish hook absorbed it and then crashed the worker, say)
+  or because that file could not be made or written. At the end of the run the
+  main process tells each worker to exit; a worker still running Python code 5
+  seconds later is interrupted (on Windows, not one blocked in a sleep or
+  another call), and any worker still running after 10 seconds is stopped. The
+  guard cannot change the exit code of a run that ends through `os._exit` in
+  the main process (in a hook, a cleanup or an `atexit` handler), through a
+  `tryfirst` `pytest_cmdline_main` wrapper that pytest registered after the
+  guard, or through a `pytest_cmdline_main` hook that returns before any
+  session runs; with `os._exit` the guard's terminal report can be lost too,
+  and in the first and the last case a refusal the guard has not reported yet
+  shows only as its `stderr` line. With no system record of the account's home
+  (no `passwd` entry), the home is not protected. A test that must run a real
+  install starts Apothem without `PYTEST_CURRENT_TEST` and `PYTEST_VERSION` in
+  the child's environment. `tests/README.md` lists what the refusal does not
+  cover, such as a bind mount of the home, a refusal absorbed in a child
+  process and a folder swapped for a link between the check and the write.
 
 ### Fixed
 
+- **The documentation sidebar shows at full width again, with each page
+  listed once, in every language.** On every tablet and desktop page the
+  sidebar had collapsed to a strip a few pixels wide, so its links could not
+  be read and the header text overlapped. It is back at its full width. Each
+  section's title is now the link to its overview page, instead of the title
+  followed by the same page under a near-identical name, and a separate button
+  beside it opens and closes the section from the keyboard and tells a screen
+  reader whether it is open. A screen reader names that button "show or hide
+  pages" after the section name, in the page's language, so it is not heard
+  as a second copy of the link. A section with a single page, such as
+  "Conformity gate", is one link. The blog posts are no longer listed a second
+  time inside an extra "Posts" folder, and the "Page not found" page is no
+  longer listed. The sidebar of every language lists the same pages in the
+  same order as the English one: the `backups` command, the evals guide and
+  the OpenSSF Best Practices page were missing from their place in the
+  translated sidebars. Two entries with the same name, "CLI reference", are
+  now "CLI overview" and "CLI reference", and the `CLAUDE.md` page title no
+  longer shows stray backtick characters.
+- **Docs page text shows as written.** The fields at the top of each harness
+  page, each command page and the positioning page, the plan-integrity
+  criteria on the cross-cutting mandates page and the sign-off fields of the
+  deployment checklist show one per line instead of running together. The
+  changelog and three architecture pages no longer repeat their title as a
+  second top-level heading. Backtick and asterisk characters no longer show as
+  literal text in four command-page summaries, the quick start's "The apothem
+  command" box, bold phrases in the Japanese, Korean and Simplified Chinese
+  pages, and the cut-off descriptions in the rules, commands and helpers
+  tables; a cut no longer leaves half a link, an unclosed emphasis, bold or
+  strikethrough marker, or an open parenthesis either. The
+  summaries of four command pages and the raw Cursor comparison say which file
+  or folder a path names, so it reads as part of the sentence.
+- **The release version bumper stops early when the docs packages are not
+  installed.** The docs reference generator now reads Markdown with packages
+  that `site/package.json` declares. `scripts/release/bump_version.py` checks
+  for `site/node_modules` before it changes any file and, when the folder is
+  missing, stops and names the fix, `npm ci --prefix site`. The generator run
+  on its own also stops before writing any page and names the same command.
 - **The OpenSSF Best Practices page matches the registered entry.** Apothem
   is registered on bestpractices.dev as project 16427 and has held the passing
   badge since 2026-11-08; the page says so, and so does the Scorecard posture
@@ -72,11 +195,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   that is not UTF-8 (only an index made on another system holds one), so
   `semver-stability-grep --staged` reports a `check_error` for it and does not
   pass, and `--all-perwrite` counts such a file as `missing` without reading
-  it. The history read of `agents-md-coverage-grep` still gets a name with a
-  control character in git's quoted form, and a byte that is not UTF-8 as the
-  replacement character. Both `--staged` checks read the staged names from the
-  top of the work tree whatever your `diff.relative` setting is: with it on, a
-  run from a subfolder got names the check could not use, and it passed.
+  it. The history read of `agents-md-coverage-grep` reads each name byte for
+  byte too, so a name git would quote, one with a quote, a backslash or a
+  control character, keeps its commit time. Both `--staged` checks read the
+  staged names from the top of the work tree whatever your `diff.relative`
+  setting is: with it on, a run from a subfolder got names the check could not
+  use, and it passed.
   Both `--staged` checks, and `agents-md-coverage-grep` on a subfolder, now
   look for the checkout in the folders above the one they run in, up to where
   git stops looking (a `GIT_CEILING_DIRECTORIES` folder, or another file
@@ -128,6 +252,55 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   the canon and passed it, while a run on the whole repository reported it;
   only the `AGENTS.md` at the top of the repository is the canon now, so both
   runs agree for a subfolder that has a README of its own.
+- **An uninstall that stops part way is recorded and reported like one that
+  ran all its steps.** An uninstall that an unexpected error (an exception,
+  such as a backup that cannot be written) or `Ctrl+C` stops in the step that
+  removes what the install record lists appends an `uninstall-incomplete`
+  record, also when it had changed nothing, so running it again finishes the
+  job. One stopped before that step appends the record only when a step
+  before the one that stopped had changed or backed up a file: an Open-Claw
+  uninstall stopped at `openclaw.json` appends it when its rules-file step had
+  taken Apothem's block out of a workspace's rules file, and nothing when that
+  step changed nothing (also when it found Apothem's rules file behind a
+  link). One stopped inside that rules-file step, or inside the older-layout
+  sweep of Antigravity or Kimi Code, appends nothing and exits `1`, whatever
+  the step had changed, as it reports nothing the step did; the backups that
+  step took stay under `~/.apothem/backups/` with no record. A rules-file step
+  that reports an error instead (a rules file it cannot rewrite, or an
+  `openclaw.json` with comments) is a failed step: the uninstall records
+  itself unfinished with that step's backups, prints `did not finish:` and
+  exits `2` when that step had changed a file or found Apothem's rules file
+  behind a link, otherwise `1`. An uninstall that stops after taking
+  Apothem's entries out of a file such as `openclaw.json` exits `2` with
+  `uninstall stopped after removing files`, as one that removed files does;
+  one stopped by `Ctrl+C` prints `Aborted!` and exits `1`. A stopped uninstall
+  now also reports what it found that leaves it unfinished: each step that
+  failed before it stopped, each link keeping Apothem's own files in place,
+  the files of an earlier release's install that differ from what this
+  release writes, the files of an install with no record, a file that holds
+  two different blocks between Apothem's markers and a file with marker lines
+  Apothem cannot tell from your text. Each gets a `✗ <harness> uninstall did
+  not finish:` line and is added to the end of its `results` row's message;
+  the line for the files of an earlier release's install or of an install
+  with no record also says how to fix, before `apothem update`, each file the
+  uninstall left with Apothem's markers in it. An install with no record also
+  gets its `Note:` line, with the check of the `--project` folder before
+  `apothem update`, and the row's `kept_reason`.
+  When the reasons, the steps that failed before the stop included, name one
+  link, that row carries it in `detail.symlink` and `detail.leads_to`, as
+  does the row of an uninstall refused because a link leads its folder out of
+  your home directory. Such a link, or such files, make it exit `2`, also when
+  it removed nothing. Its warnings also name a link its steps left in place,
+  as for one that ran all its steps. An error that stops the settings-file
+  step of Hermes, Open-Claw, OpenCode or Qwen Code now reads `uninstall
+  stopped: <error>`, as one in a later step does. So does an error in the step
+  OpenCode's uninstall takes after the one that removes what the install
+  record lists, which closes an install recorded under another spelling of its
+  folder: the uninstall exits `2`, as it had removed files, and that install
+  stays recorded. A later run does not close it yet: OpenCode then reads as
+  not installed, so the uninstall skips it. Installing OpenCode at the folder
+  again, with a profile outside the linked folder, and then uninstalling it
+  closes that install.
 
 ### Security
 
@@ -363,6 +536,31 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   with the status `git-failed` and a `check_error`, the companion coverage
   check and `--all-perwrite` fail with a `check_error` that says the entry
   could not be looked at, and `no-global-plans-grep` reports it as a finding.
+- **The two `--staged` checks follow the same rule for a `.git` link, and a
+  skipped folder is always named.** `production-ready-pr-grep --staged` and
+  `semver-stability-grep --staged` ran git in the current folder without
+  looking at its `.git` entry, so a `.git` link there, or in a folder above it
+  that git searches, made them read another repository's staged names and
+  files. They now look first and fail with a `check_error` that names the link,
+  says the `.git` entry in the folder they run in is a link, or says the entry
+  could not be looked at, without running git; they still read the repository
+  a hook's `GIT_DIR` names, but a project whose own `.git` is a link now fails
+  them, even in a hook. `conventional-commit-grep` keeps
+  the status `not-a-git-repo` for a `.git` link but now gives a `check_error`
+  that names it. A folder whose `.git` entry is a link, a dangling one
+  included, was left out of every tree walk as a nested checkout with nothing
+  in the report; `skipped_links` now names that `.git` entry, in the walk and
+  in the stray-plans check of `no-global-plans-grep`. A plain `.git` file or
+  an empty `.git` folder, which git does not take for a repository, also hid
+  its folder from both; such a folder is now checked. `skipped_links` also
+  names a folder the walk cannot list (no access, a path too long, a read
+  error), where before it read as empty. Every folder a walk or the
+  stray-plans check skips as a nested checkout is now listed under a new
+  `skipped_checkouts` key, whatever its `.git` entry names, since one
+  `gitdir:` line can hide any folder; the list never changes the verdict. The `--all` validators still check each level
+  and then open a file by name, so someone writing to the project while the
+  gate runs can swap a checked entry for a link or a named pipe, or make a
+  read wait until the time limit; the usage page now says so.
 
 ## [1.6.0] - 2026-11-26
 

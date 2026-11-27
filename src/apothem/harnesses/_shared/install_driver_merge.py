@@ -241,7 +241,7 @@ def apply_operator_owned_content(
     """
     write_allowed = _write_boundary(allowed_root, install_root)
     target_error = _validate_target_path(
-        target, allowed_root=write_allowed, operation="write_text"
+        target, allowed_root=write_allowed, operation="write_text", mutating=not dry_run
     )
     if target_error is not None:
         return target_error

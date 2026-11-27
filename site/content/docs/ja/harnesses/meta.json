@@ -1,7 +1,6 @@
 {
   "title": "ハーネスアダプター",
   "pages": [
-    "index",
     "claude-code",
     "cursor",
     "gemini-cli",

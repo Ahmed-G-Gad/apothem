@@ -1,7 +1,6 @@
 {
   "title": "Руководства по эксплуатации",
   "pages": [
-    "index",
     "release-cycle",
     "deployment-checklist",
     "release-recovery",

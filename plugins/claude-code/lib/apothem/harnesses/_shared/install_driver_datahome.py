@@ -11,7 +11,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from apothem.lib import install_ledger
+from apothem.lib import home_write_guard, install_ledger
 from apothem.lib.data_home import DataHome, DataHomeError, resolve_shared_data_home
 from apothem.lib.harness_registry import SUPPORTED_PACKAGE_KEYS, get_harness_entry
 from apothem.lib.shell_quote import shell_quoted
@@ -268,28 +268,22 @@ def _remove_data_home(
 
     Returns ``None`` when no data store exists (nothing to remove) or the home
     path falls outside the write boundary (see :func:`_store_boundary`).
+
+    While a pytest test runs, stores in the account's real home (in a
+    protected folder, or in a data home right in the home under any name)
+    are refused with :class:`~apothem.lib.home_write_guard.RealHomeWriteError`
+    just before their backup and removal, so a pass that keeps a shared home
+    raises nothing.
     """
     if home is None:
         home = _data_home_for(None, root=root)
     if not home.exists():
         return None
     boundary = _store_boundary(home, allowed_root=allowed_root)
-    if (
-        _validate_target_path(home, allowed_root=boundary, operation="remove_data_home")
-        is not None
-    ):
+    if not _removable(home, boundary):
         return None
 
-    # Last-harness guard: retain the shared home while another harness still
-    # references it. An uncertain ledger read raises and is caught here, falling
-    # back to RETAIN — the safe default that never risks shared-data loss.
-    try:
-        retain = _other_harness_shares_home(
-            current_harness=harness_name, shared_home=home, current_root=root
-        )
-    except Exception:  # pragma: no cover - defensive: ledger read is robust
-        retain = True
-    if retain:
+    if _retained(harness_name, root=root, home=home):
         try:
             holder = _holder(
                 current_harness=harness_name, shared_home=home, current_root=root
@@ -313,15 +307,12 @@ def _remove_data_home(
             + (f" ({holder[0]} installed at {holder[1]})" if holder else ""),
         )
 
-    spec = DataHome.from_root(home)
     backups: list[Path] = []
     kept: list[Path] = []
-    removed_any = False
-    # plans/ is intentionally excluded — operator planning state is never
-    # auto-removed by uninstall.
-    for child in (spec.memory, spec.contexts, spec.learning):
-        if not child.exists():
-            continue
+    present = _refuse_store_removal(home)
+    if not present:
+        return None
+    for child in present:
         backup = backup_existing(
             child,
             install_root=root,
@@ -331,9 +322,6 @@ def _remove_data_home(
         if backup is not None:
             backups.append(backup)
         kept.extend(_remove_tree_keeping_links(child))
-        removed_any = True
-    if not removed_any:
-        return None
     return _result(
         "updated",
         "remove_data_home",
@@ -342,3 +330,63 @@ def _remove_data_home(
         backup_path=backups[0] if backups else None,
         detail=kept_links_detail(kept),
     )
+
+
+def _removable(home: Path, boundary: Path) -> bool:
+    """Return True when *home* is inside *boundary* and reached through no link."""
+    return (
+        _validate_target_path(
+            home, allowed_root=boundary, operation="remove_data_home", mutating=False
+        )
+        is None
+    )
+
+
+def _retained(harness_name: str, *, root: Path, home: Path) -> bool:
+    """Return True when another installed harness still shares *home*.
+
+    An uncertain ledger read keeps the home, the safe default that never
+    risks shared-data loss.
+    """
+    try:
+        return _other_harness_shares_home(
+            current_harness=harness_name, shared_home=home, current_root=root
+        )
+    except Exception:  # pragma: no cover - defensive: ledger read is robust
+        return True
+
+
+def _refuse_store_removal(home: Path) -> list[Path]:
+    """Return the data stores present in *home*, refusing them in the real home.
+
+    ``plans/`` is never among them: operator planning state is never removed.
+    """
+    spec = DataHome.from_root(home)
+    stores = (spec.memory, spec.contexts, spec.learning)
+    present = [child for child in stores if child.exists()]
+    if present:
+        home_write_guard.refuse_real_home_write(
+            *present, operation="apply 'remove_data_home' to", tree=True
+        )
+        home_write_guard.refuse_data_home_in_home(
+            home, operation="apply 'remove_data_home' to"
+        )
+    return present
+
+
+def refuse_data_home_removal(
+    harness_name: str, *, root: Path, allowed_root: Path, home: Path
+) -> None:
+    """Raise the refusal :func:`_remove_data_home` would raise, changing nothing.
+
+    A pass that removes the stores last (rollback) calls this before its first
+    change, so a refusal of the real-home guard comes before anything changes.
+    A home that is absent, out of bounds or kept for another harness raises
+    nothing, as its removal would not.
+    """
+    if not home.exists():
+        return
+    if _removable(home, _store_boundary(home, allowed_root=allowed_root)) and not (
+        _retained(harness_name, root=root, home=home)
+    ):
+        _refuse_store_removal(home)

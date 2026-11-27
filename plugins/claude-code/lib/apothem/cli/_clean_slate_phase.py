@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING
 
 import apothem.cli as _pkg
 from apothem.cli._helpers import _CliUserError, _refuse_profile_outside_home
+from apothem.lib import home_write_guard
 from apothem.lib.atomic_io import write_bytes_atomically
 from apothem.lib.clean_slate import (
     CleanSlateError,
@@ -239,6 +240,8 @@ def _restore_profile(
         return False
     try:
         write_bytes_atomically(run.profile_path, profile_bytes)
+    except home_write_guard.RealHomeWriteError:
+        raise  # a refusal during a test, not a failed restore
     except OSError as exc:
         _restore_failed(
             run,

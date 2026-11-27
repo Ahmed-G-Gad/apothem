@@ -1,7 +1,6 @@
 {
   "title": "インストール",
   "pages": [
-    "index",
     "quickstart",
     "concepts",
     "harness-setup",

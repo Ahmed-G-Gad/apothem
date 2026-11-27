@@ -19,7 +19,10 @@ derive from it rather than re-declaring it.
   locale for client components mounted above the per-locale i18n provider (the
   search dialog), and `documentLocaleFromPathname` maps it to the `<html lang>` and
   `dir` that `components/document-locale.tsx` applies after client-side
-  navigation; `i18n.test.mjs` covers both (run by `npm test`). **This file is the single source of truth for the
+  navigation. `SIDEBAR_TOGGLE_HINT` holds, per routed locale, the hidden
+  "show or hide pages" text that names each sidebar section's open/close button
+  (`components/sidebar-folder.tsx`). `i18n.test.mjs` covers all three, including
+  a string for every routed locale (run by `npm test`). **This file is the single source of truth for the
   routed-locale set** — build scripts (`build-llms-txt.mjs`,
   `check-search-index-sizes.mjs`, `export-to-dist.mjs`) re-parse it and fail on
   drift rather than hard-coding a divergent copy.
@@ -34,6 +37,17 @@ derive from it rather than re-declaring it.
   the page; it also holds the light and dark `--background`, `--foreground`,
   `--primary` and `--ring` variables to the `assets/design-tokens.css` steps
   they mirror (run by `npm test`).
+- **`hidden-pages.mjs`** — the root docs pages left out of the sidebar on
+  purpose (the 404 page). `scripts/author-ia.mjs` keeps them out of the root
+  `meta.json`, and `page-tree.ts` turns their previous/next footer off.
+- **`page-tree.ts`** — the sidebar page-tree clean-up the content loader in
+  `source.ts` applies: a section whose only page is its overview shows as one
+  plain link instead of a folder with an empty list. Its `node --test` check is
+  `page-tree.test.mjs` (run by `npm test`).
+- **`sidebar-width.test.mjs`** — holds the docs sidebar width that
+  `app/global.css` sets through the `nav` landmark wrapper equal to the width
+  Fumadocs sets, and checks the wrapper still has the shape that rule matches
+  (run by `npm test`).
 - **`hreflang.ts`** — builds the per-page `alternates` (hreflang) set from a
   locale-agnostic path, emitting the `en` self-link, `x-default`, and one
   alternate per routed locale that carries a version of the page.
@@ -78,7 +92,8 @@ derive from it rather than re-declaring it.
 ## Working in this folder
 
 New `.ts` / `.mjs` files begin with the `// SPDX-License-Identifier: MIT` header.
-When you add or remove a routed locale, change it in `i18n.ts` only — the parity
+When you add or remove a routed locale, change it in `i18n.ts` only (and add its
+`SIDEBAR_TOGGLE_HINT` string) — the parity
 assertions in the sibling build scripts turn any un-mirrored copy into a loud
 build failure, which is the intended safety net; do not defeat it by editing the
 hard-coded copies to match without keeping the assertion.

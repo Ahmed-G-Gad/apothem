@@ -1,12 +1,12 @@
 {
   "title": "Справочник CLI",
   "pages": [
-    "index",
     "quickstart",
     "install",
     "uninstall",
     "update",
     "rollback",
+    "backups",
     "verify",
     "status",
     "diff",

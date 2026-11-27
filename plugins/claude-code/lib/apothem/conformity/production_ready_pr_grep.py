@@ -42,6 +42,7 @@ from apothem.conformity._grep_base import (
     in_checkout,
     make_parser,
     parse_path_input,
+    refuse_linked_git,
 )
 
 # Per-class path patterns. Patterns are inclusive — a file matching
@@ -146,8 +147,16 @@ def _staged_paths() -> list[str]:
     ``GIT_TIMEOUT_SECONDS`` (the repository's own configuration can make git
     wait for ever), and :class:`~apothem.conformity._grep_base.GitFailedError`
     when git fails inside a checkout (a ``.git`` entry in the current folder or
-    one above it): a change set that was not read is not an empty one.
+    one above it): a change set that was not read is not an empty one. Raises
+    :class:`~apothem.conformity._grep_base.GitEntryLinkedError`, without
+    running git, when a ``.git`` entry in the current folder or one above it
+    that git searches is a link (a hook's ``GIT_DIR`` is kept, so the refusal
+    does not say where git would go), and
+    :class:`~apothem.conformity._grep_base.GitEntryUnreadableError` when
+    one could not be looked at (see
+    :func:`~apothem.conformity._grep_base.refuse_linked_git`).
     """
+    refuse_linked_git(Path.cwd())
     try:
         result = run_git(
             ["diff", "--cached", "--name-only", "-z"],

@@ -1,7 +1,6 @@
 {
   "title": "パイプラインコマンド",
   "pages": [
-    "index",
     "plan",
     "plan-spec",
     "plan-generate",

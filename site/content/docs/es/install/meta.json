@@ -1,7 +1,6 @@
 {
   "title": "Instalación",
   "pages": [
-    "index",
     "quickstart",
     "concepts",
     "harness-setup",

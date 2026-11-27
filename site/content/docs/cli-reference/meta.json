@@ -1,7 +1,6 @@
 {
   "title": "CLI reference",
   "pages": [
-    "index",
     "quickstart",
     "install",
     "uninstall",

@@ -8,6 +8,8 @@ a manifest entry's target hold something only Apothem produces
 files still in place (:func:`_unfinished_here`)? An install or update asks a
 third before it merges Apothem's block into a file: does an install record
 list that file (:func:`entry_prior`)? All three read the record the same way.
+A verify or detect also asks whether a native config still parses
+(:func:`_native_config_parses`): one that does not reads as not installed.
 """
 
 from __future__ import annotations
@@ -15,6 +17,8 @@ from __future__ import annotations
 import contextlib
 from collections.abc import Callable
 from pathlib import Path
+
+import yaml
 
 from apothem.lib import install_ledger
 from apothem.lib.harness_materializer import (
@@ -31,6 +35,34 @@ from .install_driver_outcome import end_other_spellings, last_uninstall_finished
 from .install_driver_ownership import LEGACY_OWNERSHIP, PriorOwnership, prior_ownership
 from .install_driver_pathsafety import _APOTHEM_SUBTREE, _holds_content
 from .install_driver_written import still_written
+
+
+def _native_config_parses(target: Path) -> bool:
+    """Return True unless *target* is a structurally invalid JSON/YAML file.
+
+    Only ``.json``/``.yaml``/``.yml`` targets are parsed; other suffixes (e.g.
+    Markdown anchors) pass trivially. A ``.json`` target may be JSONC or JSON5
+    (OpenCode and OpenClaw read those dialects, and install leaves such a file
+    in place when it has nothing to change). A present-but-corrupt config reads
+    as not-installed.
+    """
+    from apothem.lib import lenient_json
+
+    suffix = target.suffix.lower()
+    if suffix not in {".json", ".yaml", ".yml"}:
+        return True
+    try:
+        text = target.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return False
+    try:
+        if suffix == ".json":
+            lenient_json.loads(text)
+        else:
+            yaml.safe_load(text)
+    except (lenient_json.LenientJSONError, yaml.YAMLError):
+        return False
+    return True
 
 
 def listed_in_record(harness_name: str, root: Path, target: Path) -> bool:
@@ -162,7 +194,13 @@ def _unfinished_here(harness_name: str, root: Path) -> bool:
     its records under the folder's other spellings list count too. With
     nothing Apothem wrote left, the install is closed by an ``uninstall``, and
     so is the install under each of those spellings (see
-    :func:`end_other_spellings`), as a finished uninstall closes them.
+    :func:`end_other_spellings`), as a finished uninstall closes them. This
+    is a check (status, verify, detect), so closing is a side effect it
+    never fails on: an error writing a record leaves the uninstall unfinished,
+    to close on a later check, and a refusal of the real-home guard is
+    dropped here too, quietly, while the guard logs it for the test run to
+    report (see :func:`apothem.lib.home_write_guard.refusals`). An uninstall
+    that ends those spellings itself raises the refusal instead.
     """
     try:
         unfinished = install_ledger.unfinished_uninstall(harness_name, root=root)

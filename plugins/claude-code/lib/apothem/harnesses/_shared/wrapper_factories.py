@@ -27,7 +27,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from apothem.lib import install_ledger
+from apothem.lib import home_write_guard, install_ledger
 from apothem.lib.harness_registry import package_key_for_public_id
 from apothem.lib.install_ledger import (
     OwnedEntry,
@@ -49,10 +49,12 @@ from .install_driver import (
     MaterializationResult,
     MaterializationRun,
 )
+from .install_driver_backup import refuse_bookkeeping_in_real_home
 from .install_driver_blocks import stray_begin_install_warnings
 from .install_driver_outcome import record_uninstall
 from .install_driver_ownership import RelocatedFn
 from .install_driver_shared import shared_scope
+from .install_driver_written import kept_file_warnings
 
 # Lifecycle-delegate closure signatures shared by the class factories below.
 _ProjectInstallFn = Callable[..., MaterializationRun]
@@ -600,6 +602,9 @@ def make_project_scope_uninstall(
             harness_name,
             project if project is not None else output_path.parents[_depth],
         )
+        home_write_guard.refuse_project_root_at_home(
+            project_root, operation="uninstall"
+        )
         if moving is not None:
             move_install(harness_name, moving, project_root)
         return MaterializationRun(
@@ -647,6 +652,49 @@ def _retired_at_uninstall(retired_fn: _RetiredFn | None) -> tuple[OwnedEntry, ..
     return retired_fn(profile)
 
 
+def _record_stopped_prepass(
+    harness_name: str, root: Path, done: tuple[MaterializationResult, ...]
+) -> MaterializationRun | None:
+    """Record an unfinished uninstall when the pre-pass *done* changed a file.
+
+    Called while the native-config step raises (a refusal of the real-home
+    guard, any other error, or a stop such as Ctrl-C), in every run, not only
+    while pytest runs, so the backups the pre-pass took stay referenced.
+    Returns the run so far, for the caller to raise as a stopped uninstall:
+    *done*, a warning that names the ledger when appending the record fails,
+    and the files a removal in *done* kept. Returns ``None`` when *done*
+    changed nothing and took no backup: no record is due, and the ledger stays
+    as it was. A stop in the shared pass, by contrast, is recorded even then
+    (see :func:`install_driver.run_uninstall`).
+
+    Only an :class:`OSError` or a
+    :class:`~apothem.lib.install_ledger.LedgerError` that escapes writing the
+    record is dropped, with no warning, so the caller's error still
+    propagates: a refusal of the record (the guard's error is an
+    :class:`OSError`), or a failure to read the install record or the
+    ledger. Any other error raised there (a ``TypeError``, say, or Ctrl-C)
+    is not caught: it propagates in place of the caller's error, which
+    Python chains to it as its context, and the caller raises no stopped
+    uninstall, so no run reaches the CLI.
+    """
+    if not any(result.changed or result.backup_path is not None for result in done):
+        return None
+    unrecorded: list[MaterializationResult] = []
+    with contextlib.suppress(OSError, install_ledger.LedgerError):
+        unrecorded = record_uninstall(
+            harness_name,
+            root,
+            install_ledger.current_install_record(harness_name, root=root),
+            list(done),
+            finished=False,
+            own=[],
+        )
+    results = [*done, *unrecorded]
+    return MaterializationRun(
+        harness_name, False, (*results, *kept_file_warnings(results))
+    )
+
+
 def make_native_config_uninstall(
     harness_name: str,
     materialize_fn: _MaterializeFn,
@@ -684,11 +732,27 @@ def make_native_config_uninstall(
     uninstall, after the fix, does the whole job. Otherwise its results join
     the uninstall's: their paths are not handled again, and a ``blocked``
     warning (Apothem's file behind a link) leaves the uninstall unfinished
-    like any other.
+    like any other. When the native-config step stops after *before_fn*
+    changed files elsewhere, whatever stopped it (a refusal of the real-home
+    guard, any other error, or Ctrl-C), the uninstall is recorded unfinished
+    with their backups first, in every run, not only while pytest runs (the
+    shared driver does the same for an error later on). When *before_fn*
+    changed nothing and took no backup, nothing is recorded, also when it found
+    Apothem's file behind a link, so the ledger stays as it was; a stop in the
+    shared pass is recorded even then. Either way an ordinary error is raised
+    as a :class:`MaterializationError` that carries *before_fn*'s results, with
+    the error as its cause, as the shared driver raises one: the CLI reports
+    what *before_fn* removed (a partial uninstall, exit 2) or found (Apothem's
+    file behind a link, say) with the error, and the same error reads the same
+    with or without such results. A refusal and Ctrl-C are always raised as
+    they are. An exception inside *before_fn* itself records nothing: the files
+    it changed before it keep their backups, but no record names them. A backup
+    root or ledger in a protected folder is refused before *before_fn* runs.
     """
 
     @install_driver.backup_session()
     def uninstall(output_path: Path) -> MaterializationRun:
+        refuse_bookkeeping_in_real_home(harness_name, operation="uninstall")
         before = before_fn(output_path) if before_fn is not None else ()
         if any(result.outcome == "error" for result in before):
             # Something the operator has to clear by hand: stop before the
@@ -698,7 +762,7 @@ def make_native_config_uninstall(
             # keeps them, and the next run continues from the same install.
             root = output_path.parent
             unrecorded: list[MaterializationResult] = []
-            with contextlib.suppress(OSError, install_ledger.LedgerError):
+            try:
                 unrecorded = record_uninstall(
                     harness_name,
                     root,
@@ -707,19 +771,39 @@ def make_native_config_uninstall(
                     finished=False,
                     own=[],
                 )
+            except home_write_guard.RealHomeWriteError:
+                raise  # a refusal during a test, not a ledger problem
+            except (OSError, install_ledger.LedgerError):
+                unrecorded = []
             return MaterializationRun(
                 harness=harness_name, dry_run=False, results=(*before, *unrecorded)
             )
-        native = install_driver.surgically_remove_materialized_config(
-            output_path,
-            materialize_fn({}),
-            install_root=output_path.parent,
-            harness_name=harness_name,
-            allowed_root=_native_allowed_root(output_path),
-            apothem_keys=apothem_keys,
-            retired=_retired_at_uninstall(retired_fn),
-            relocated=relocated_fn,
-        )
+        try:
+            native = install_driver.surgically_remove_materialized_config(
+                output_path,
+                materialize_fn({}),
+                install_root=output_path.parent,
+                harness_name=harness_name,
+                allowed_root=_native_allowed_root(output_path),
+                apothem_keys=apothem_keys,
+                retired=_retired_at_uninstall(retired_fn),
+                relocated=relocated_fn,
+            )
+        except BaseException as exc:
+            stopped = _record_stopped_prepass(harness_name, output_path.parent, before)
+            if not isinstance(exc, Exception) or isinstance(
+                exc, home_write_guard.RealHomeWriteError
+            ):
+                raise
+            if stopped is None:
+                # before_fn changed nothing, so no record is due; its results
+                # (Apothem's file behind a link, say, or none) still go out.
+                stopped = MaterializationRun(harness_name, False, before)
+            # Hand the CLI what before_fn removed or found, so it reports it
+            # with the error, as run_uninstall does for its own pass. Every
+            # ordinary error goes out this way, so the same error reads the
+            # same whether or not before_fn found something.
+            raise MaterializationError(f"uninstall stopped: {exc}", stopped) from exc
         prior = (*before, *((native,) if native is not None else ()))
         removed = install_driver.run_uninstall(
             harness_name, harness_root=output_path.parent, prior_results=prior

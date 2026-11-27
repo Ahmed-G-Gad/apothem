@@ -1,7 +1,6 @@
 {
   "title": "पाइपलाइन कमांड",
   "pages": [
-    "index",
     "plan",
     "plan-spec",
     "plan-generate",

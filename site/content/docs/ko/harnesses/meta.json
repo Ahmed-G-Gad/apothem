@@ -1,7 +1,6 @@
 {
   "title": "하니스 어댑터",
   "pages": [
-    "index",
     "claude-code",
     "cursor",
     "gemini-cli",

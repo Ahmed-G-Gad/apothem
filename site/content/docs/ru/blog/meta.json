@@ -1,10 +1,10 @@
 {
   "title": "Блог",
   "pages": [
-    "index",
     "posts/v1-6-0-release",
     "posts/multi-harness-adapter-design",
     "posts/cross-harness-convention-convergence",
+    "!posts",
     "..."
   ]
 }

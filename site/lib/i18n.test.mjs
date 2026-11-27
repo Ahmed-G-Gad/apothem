@@ -12,7 +12,9 @@ import { describe, it } from 'node:test';
 import {
 	COHORT_LOCALES,
 	DEFAULT_LOCALE,
+	ROUTED_LOCALES,
 	ROUTED_NON_DEFAULT_LOCALES,
+	SIDEBAR_TOGGLE_HINT,
 	documentLocaleFromPathname,
 	localeFromPathname,
 } from './i18n.ts';
@@ -60,6 +62,21 @@ describe('documentLocaleFromPathname', () => {
 		for (const locale of COHORT_LOCALES) {
 			const pathname = locale.path ? `/${locale.path}/docs` : '/docs';
 			assert.deepEqual(documentLocaleFromPathname(pathname), { lang: locale.code, dir: locale.dir });
+		}
+	});
+});
+
+describe('SIDEBAR_TOGGLE_HINT', () => {
+	it('has a string for every routed locale and no other', () => {
+		assert.deepEqual(Object.keys(SIDEBAR_TOGGLE_HINT).sort(), [...ROUTED_LOCALES].sort());
+		for (const locale of ROUTED_LOCALES) {
+			assert.ok(SIDEBAR_TOGGLE_HINT[locale].trim().length > 0, locale);
+		}
+	});
+
+	it('translates the string on every non-English locale', () => {
+		for (const locale of ROUTED_NON_DEFAULT_LOCALES) {
+			assert.notEqual(SIDEBAR_TOGGLE_HINT[locale], SIDEBAR_TOGGLE_HINT[DEFAULT_LOCALE], locale);
 		}
 	});
 });

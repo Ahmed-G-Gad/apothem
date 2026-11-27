@@ -24,9 +24,25 @@
 //      void element and is preserved verbatim.
 
 import { spawnSync } from 'node:child_process';
-import { mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+// The excerpt cutter parses Markdown with packages from site/node_modules.
+// Load it here so a checkout without them stops before any page is written,
+// with a message that names the fix.
+let cutAtWord;
+try {
+	({ cutAtWord } = await import('./cut-at-word.mjs'));
+} catch (error) {
+	if (error?.code !== 'ERR_MODULE_NOT_FOUND') throw error;
+	process.stderr.write(
+		'update-reference-inventory: the Markdown packages in site/node_modules are missing.\n' +
+			'Run `npm ci --prefix site` from the repository root, then run this script again.\n' +
+			`(${error.message})\n`,
+	);
+	process.exit(1);
+}
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const SITE_ROOT = join(SCRIPT_DIR, '..');
@@ -134,7 +150,8 @@ function unquote(value) {
 	return value;
 }
 
-function excerpt(body) {
+// The opening paragraph of a page body as one line, before any cut.
+function excerptSource(body) {
 	const lines = [];
 	for (const line of body.split(/\r?\n/)) {
 		const trimmed = line.trim();
@@ -144,7 +161,11 @@ function excerpt(body) {
 		}
 		lines.push(trimmed);
 	}
-	return lines.join(' ').slice(0, 180);
+	return lines.join(' ');
+}
+
+function excerpt(body) {
+	return cutAtWord(excerptSource(body), 180);
 }
 
 function displayName(path, frontmatter) {
@@ -567,8 +588,13 @@ function changelogBody() {
 	const raw = readFileSync(CHANGELOG_SOURCE, 'utf8');
 	// Drop the leading license-header comment so the page prose never carries
 	// a bare license token (the REUSE lint treats a literal tag in body text
-	// as a stray license declaration).
-	return raw.replace(/^\s*<!--[\s\S]*?-->\s*/, '').trim();
+	// as a stray license declaration). Drop the H1 too, as for the roadmap: the
+	// page title comes from the MDX frontmatter, and a second H1 in the body
+	// left the page with two top-level headings.
+	return raw
+		.replace(/^\s*<!--[\s\S]*?-->\s*/, '')
+		.replace(/^# [^\n]*\n/, '')
+		.trim();
 }
 
 function injectChangelog(target) {
@@ -872,15 +898,18 @@ function pipelineNavPages(commands) {
 	for (const name of sorted) if (/-(audit|review)$/.test(name)) take(name);
 	take('fortress');
 	for (const name of sorted) take(name);
-	return ['index', ...ordered, '...'];
+	// No `index` entry: the folder title links to the overview page, as in every
+	// other section (see author-ia.mjs), rather than repeating it as a child.
+	return [...ordered, '...'];
 }
 
 // The first sentence of a description, cut on a word boundary when long.
+function sentenceSource(text) {
+	return text.split(/(?<=[.!?])\s+(?=[A-Z/`])/)[0].trim();
+}
+
 function firstSentence(text, limit = 160) {
-	const sentence = text.split(/(?<=[.!?])\s+(?=[A-Z/`])/)[0].trim();
-	if (sentence.length <= limit) return sentence;
-	const cut = sentence.slice(0, limit);
-	return `${cut.slice(0, cut.lastIndexOf(' '))} …`;
+	return cutAtWord(sentenceSource(text), limit);
 }
 
 // The pipeline overview's index of every command, in nav order.
@@ -916,49 +945,88 @@ function writePipelineNav(pages) {
 	return count;
 }
 
-let changed = 0;
-for (const config of SOURCES) {
-	mkdirSync(dirname(config.target), { recursive: true });
-	const block = generateBlock(config);
-	changed += injectAcrossLocales(config.target, block);
-}
-
-for (const config of GENERATED_SOURCES) {
-	mkdirSync(dirname(config.target), { recursive: true });
-	if (config.target.endsWith(`reference${sep}profile-fields.mdx`)) {
-		ensureProfileFieldsPage(config.target);
+// Every text this script passes to cutAtWord, with its limit, for the
+// cut-at-word tests: the opening paragraph of every source file (180), the
+// body excerpt of a command with no description (180) and the first sentence
+// of every command summary (160). Reads only.
+export function cutInputs() {
+	const inputs = [];
+	const files = SOURCES.flatMap((config) =>
+		walk(config.sourceDir, config.recursive).filter((path) => (config.match ? config.match(path) : true)),
+	);
+	for (const path of files) {
+		const { body } = parseFrontmatter(readFileSync(path, 'utf8'));
+		inputs.push({ text: excerptSource(body), limit: 180 });
 	}
-	const block = config.generate();
-	changed += injectAcrossLocales(config.target, block);
+	for (const { frontmatter, body } of commandDefinitions()) {
+		// commandPage() falls back to the 180-limit body excerpt when the
+		// frontmatter has no description.
+		if (!frontmatter.description) inputs.push({ text: excerptSource(body), limit: 180 });
+		inputs.push({ text: sentenceSource(frontmatter.description || excerpt(body)), limit: 160 });
+	}
+	return inputs.filter((input) => input.text);
 }
 
-if (injectChangelog(CHANGELOG_TARGET)) changed += 1;
-// Locale changelog copies carry the same markers; missing markers skip the
-// copy rather than throwing, since only the English shell is mandatory.
-for (const locale of LOCALE_DIRS) {
-	const localeChangelog = join(DOCS_ROOT, locale, 'changelog.mdx');
-	let existing;
+function main() {
+	let changed = 0;
+	for (const config of SOURCES) {
+		mkdirSync(dirname(config.target), { recursive: true });
+		const block = generateBlock(config);
+		changed += injectAcrossLocales(config.target, block);
+	}
+
+	for (const config of GENERATED_SOURCES) {
+		mkdirSync(dirname(config.target), { recursive: true });
+		if (config.target.endsWith(`reference${sep}profile-fields.mdx`)) {
+			ensureProfileFieldsPage(config.target);
+		}
+		const block = config.generate();
+		changed += injectAcrossLocales(config.target, block);
+	}
+
+	if (injectChangelog(CHANGELOG_TARGET)) changed += 1;
+	// Locale changelog copies carry the same markers; missing markers skip the
+	// copy rather than throwing, since only the English shell is mandatory.
+	for (const locale of LOCALE_DIRS) {
+		const localeChangelog = join(DOCS_ROOT, locale, 'changelog.mdx');
+		let existing;
+		try {
+			existing = readFileSync(localeChangelog, 'utf8');
+		} catch {
+			continue;
+		}
+		if (!existing.includes(CHANGELOG_START)) continue;
+		if (injectChangelog(localeChangelog)) changed += 1;
+	}
+
+	if (injectRoadmap(ROADMAP_TARGET)) changed += 1;
+
+	const commands = commandDefinitions();
+	const pipelinePages = pipelineNavPages(commands);
+	changed += writeCommandPages(commands);
+	changed += writePipelineNav(pipelinePages);
+	changed += injectAcrossLocales(
+		join(PIPELINE_DIR, 'index.mdx'),
+		commandIndexBlock(commands, pipelinePages),
+	);
+
+	// Inventories: the walked sources, the emitter-backed blocks, the changelog,
+	// the roadmap, the command pages, the command nav and the command index.
+	const total = SOURCES.length + GENERATED_SOURCES.length + 5;
+	process.stdout.write(`update-reference-inventory: refreshed ${total} inventories; changed ${changed} pages.\n`);
+}
+
+// Run only as a script, so the tests can import cutInputs without writing pages.
+function runAsScript() {
+	if (!process.argv[1]) return false;
 	try {
-		existing = readFileSync(localeChangelog, 'utf8');
+		const fold = (path) => (process.platform === 'win32' ? path.toLowerCase() : path);
+		return fold(realpathSync(process.argv[1])) === fold(realpathSync(fileURLToPath(import.meta.url)));
 	} catch {
-		continue;
+		return false;
 	}
-	if (!existing.includes(CHANGELOG_START)) continue;
-	if (injectChangelog(localeChangelog)) changed += 1;
 }
 
-if (injectRoadmap(ROADMAP_TARGET)) changed += 1;
-
-const commands = commandDefinitions();
-const pipelinePages = pipelineNavPages(commands);
-changed += writeCommandPages(commands);
-changed += writePipelineNav(pipelinePages);
-changed += injectAcrossLocales(
-	join(PIPELINE_DIR, 'index.mdx'),
-	commandIndexBlock(commands, pipelinePages),
-);
-
-// Inventories: the walked sources, the emitter-backed blocks, the changelog,
-// the roadmap, the command pages, the command nav and the command index.
-const total = SOURCES.length + GENERATED_SOURCES.length + 5;
-process.stdout.write(`update-reference-inventory: refreshed ${total} inventories; changed ${changed} pages.\n`);
+if (runAsScript()) {
+	main();
+}

@@ -5,7 +5,8 @@
 An adapter's uninstall returns a ``MaterializationRun``. A warning in it (a
 link left in place) prints in plain output and rides the JSON ``warnings``
 array; an error in it (a leftover folder that could not be removed) fails the
-harness instead of printing "Uninstalled".
+harness instead of printing "Uninstalled". A link a failed step names is
+named on the harness row, also when the uninstall stopped after that step.
 """
 
 from __future__ import annotations
@@ -18,7 +19,10 @@ import pytest
 from click.testing import CliRunner
 
 from apothem import cli
-from apothem.harnesses._shared.install_driver import MaterializationRun
+from apothem.harnesses._shared.install_driver import (
+    MaterializationError,
+    MaterializationRun,
+)
 from apothem.harnesses._shared.install_driver_types import _result
 
 
@@ -119,3 +123,90 @@ def test_warnings_for_one_link_print_as_one_line(
     assert plain.exit_code == 0  # type: ignore[attr-defined]
     assert plain.output.count("Warning:") == 1  # type: ignore[attr-defined]
     assert "3 paths reached through the link /old" in plain.output  # type: ignore[attr-defined]
+
+
+class _RefusedAtALink(_Adapter):
+    """An uninstall whose one step was refused at a link, with nothing behind it.
+
+    With the outcome ``stopped`` it then stops with an error, carrying that
+    step in its run.
+    """
+
+    def uninstall(self) -> MaterializationRun:
+        refused = _result(
+            "error",
+            "remove_existing",
+            Path("/old/skills"),
+            "target escapes the allowed materialization root",
+            detail={"symlink": "/old", "leads_to": "/elsewhere"},
+        )
+        run = MaterializationRun(harness="alpha", dry_run=False, results=(refused,))
+        if self._outcome == "stopped":
+            raise MaterializationError("uninstall stopped: disk full", run)
+        return run
+
+
+@pytest.mark.parametrize("outcome", ["finished", "stopped"])
+def test_the_row_names_the_link_a_failed_step_names(
+    monkeypatch: pytest.MonkeyPatch, outcome: str
+) -> None:
+    # The harness row names the only link the failed steps name, whether the
+    # uninstall ran all its steps or stopped after that one.
+    _select(monkeypatch, _RefusedAtALink(outcome))
+
+    as_json = _run("--format", "json")
+
+    envelope = json.loads(as_json.output)  # type: ignore[attr-defined]
+    row, step = envelope["results"]
+    assert as_json.exit_code == cli._EXIT_EXPECTED  # type: ignore[attr-defined]
+    assert row["detail"] == {"symlink": "/old", "leads_to": "/elsewhere"}
+    assert step["detail"]["symlink"] == "/old"
+
+
+@pytest.mark.parametrize("outcome", ["finished", "stopped"])
+def test_a_failed_step_gets_its_line_with_the_link_and_the_fix(
+    monkeypatch: pytest.MonkeyPatch, outcome: str
+) -> None:
+    # A step refused at a link gets a "did not finish" line that names the
+    # link, where it leads and the fix, whether the uninstall ran all its
+    # steps or stopped after that one; the row's message ends with it too.
+    _select(monkeypatch, _RefusedAtALink(outcome))
+
+    plain = _run("--no-color")
+    as_json = _run("--format", "json")
+
+    stderr = " ".join(plain.stderr.split())  # type: ignore[attr-defined]
+    named = "target escapes the allowed materialization root: /old is a link to"
+    assert plain.exit_code == cli._EXIT_EXPECTED  # type: ignore[attr-defined]
+    assert f"✗ alpha uninstall did not finish: {named}" in stderr, stderr
+    if outcome == "stopped":
+        assert "✗ alpha uninstall failed: uninstall stopped: disk full" in stderr
+    row = json.loads(as_json.output)["results"][0]  # type: ignore[attr-defined]
+    assert named in row["message"], row
+
+
+class _StoppedRepeatingAStep(_Adapter):
+    """An uninstall whose stop's text holds an earlier failed step's message."""
+
+    def uninstall(self) -> MaterializationRun:
+        failed = _result("error", "remove_existing", Path("/h/.x/agents"), "disk full")
+        run = MaterializationRun(harness="alpha", dry_run=False, results=(failed,))
+        raise MaterializationError(
+            "uninstall stopped: [Errno 28] disk full on /h/.x/skills", run
+        )
+
+
+def test_a_stop_whose_text_holds_a_failed_step_still_reports_the_step(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Only the refused step a link refusal repeats is left out; a failed step
+    # whose message the stop's text merely contains keeps its line.
+    _select(monkeypatch, _StoppedRepeatingAStep("error"))
+
+    plain = _run("--no-color")
+    as_json = _run("--format", "json")
+
+    stderr = " ".join(plain.stderr.split())  # type: ignore[attr-defined]
+    assert "✗ alpha uninstall did not finish: disk full" in stderr, stderr
+    row = json.loads(as_json.output)["results"][0]  # type: ignore[attr-defined]
+    assert row["message"].count("disk full") == 2, row
