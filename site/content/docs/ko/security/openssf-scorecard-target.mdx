@@ -17,7 +17,7 @@ Apothem은 OpenSSF Scorecard 최고 점수를 목표로 하면서, Scorecard가 
 | **Binary-Artifacts** | [binary-artifacts-sweep.md](/docs/security/binary-artifacts-sweep) | 소스에서 추적되는 실행 가능 바이너리는 0개입니다. 생성된 배포 아카이브는 `dist/`에 머뭅니다. |
 | **Branch-Protection** | [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) | 공개 릴리스 승격 전에 `main`이 보호됩니다. 새 릴리스 커밋이 반영된 후에는 강제 푸시와 삭제가 차단됩니다. |
 | **CI-Tests** | [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | Pytest 매트릭스, ruff, mypy, Trivy, 문서 빌드, 패키징 스모크 검사. |
-| **CII-Best-Practices** | OpenSSF Best Practices 등록 | OpenSSF Best Practices 사이트에서 메인테이너 측 등록이 필요합니다. 이는 저장소 파일만으로는 완료할 수 없습니다. |
+| **CII-Best-Practices** | OpenSSF Best Practices 등록 | 프로젝트는 bestpractices.dev에 [프로젝트 16427](https://www.bestpractices.dev/en/projects/16427)로 등록되어 있으며 2026-11-08부터 passing 배지를 보유하고 있고, 이 검사는 이를 반영합니다. |
 | **Code-Review** | 브랜치 보호 + CODEOWNERS | 저장소 관리자를 제외한 모든 사람에게 `main`에 대한 풀 리퀘스트가 필수이며, 프로젝트에 메인테이너가 한 명인 동안 브랜치 보호는 승인 검토 0건을 요구합니다([branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) 참조). 검토된 PR이 생기기 전까지 Scorecard 이력은 제한적으로 남습니다. |
 | **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | 새로운 단독 메인테이너 프로젝트는 여러 조직에 걸친 기여 이력을 만들어 낼 수 없습니다. 이 항목은 기여자가 합류하면서 자연스럽게 개선됩니다. |
 | **Dangerous-Workflow** | 워크플로 감사 | `pull_request_target`이 없습니다. Actions는 SHA로 고정되고 명시적 권한으로 범위가 한정됩니다. |

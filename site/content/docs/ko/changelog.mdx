@@ -48,6 +48,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **The OpenSSF Best Practices page matches the registered entry.** The page
+  said Apothem was not yet registered; it is registered as project 16427 and
+  has held the passing badge since 2026-11-08, and the Scorecard posture page
+  says the same in every language. The registration steps are replaced by
+  steps to keep the entry current. `release_notes_vulns` now reads N/A until
+  v1.6.0 and its three advisories are published, as the entry does, so the
+  MUST row counts 39 Met and 4 N/A. The test-file count, alert dates, release
+  history, issue-tracker and reporting-channel wording are current, the
+  dynamic-analysis answers name the daily and per-pull-request fuzzing, and
+  the criteria source links point at the badge repository's new address.
 - **The conformity gate reads every byte of a path name, and a failed
   `git diff` does not pass from a subfolder.** The gate read git's lists of
   path names as text, which turned a carriage return in a name into a line

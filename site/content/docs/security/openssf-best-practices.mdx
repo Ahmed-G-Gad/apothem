@@ -6,34 +6,33 @@ description: "Apothem's answers to the OpenSSF Best Practices passing criteria, 
 
 The [OpenSSF Best Practices badge](https://www.bestpractices.dev/) (formerly the CII Best Practices badge) is a self-assessment: a project answers a fixed list of criteria on bestpractices.dev, and the site awards the passing badge when every answer meets the rule for its level. OpenSSF Scorecard's CII-Best-Practices check reads the result, so this page also backs that row on the [Scorecard posture](/docs/security/openssf-scorecard-target) page.
 
-This page is the answer sheet. It lists every passing-level criterion, the answer Apothem gives, a one-line justification, and the file or page that shows it. The criteria were taken from the [live passing criteria](https://www.bestpractices.dev/en/criteria/0) and the [criteria source](https://github.com/coreinfrastructure/best-practices-badge/blob/main/criteria/criteria.yml) on 2026-11-07: 67 criteria, of which 43 are MUST, 10 are SHOULD and 14 are SUGGESTED.
+This page is the answer sheet. It lists every passing-level criterion, the answer Apothem gives, a one-line justification, and the file or page that shows it. The criteria were taken from the [live passing criteria](https://www.bestpractices.dev/en/criteria/0) and the [criteria source](https://github.com/ossf/best-practices-badge/blob/main/criteria/criteria.yml) on 2026-11-07 and checked again on 2026-11-27: 67 criteria, of which 43 are MUST, 10 are SHOULD and 14 are SUGGESTED.
 
 ## Status
 
-Apothem is not yet registered on bestpractices.dev, so it has no badge yet. The answers below cover every passing criterion:
+Apothem is registered on bestpractices.dev as [project 16427](https://www.bestpractices.dev/en/projects/16427) and has held the passing badge since 2026-11-08. The entry also counts 13% of the silver criteria as met. The answers below cover every passing criterion:
 
 | Level | Met | N/A | Unmet |
 |---|---|---|---|
-| MUST (43) | 40 | 3 | 0 |
+| MUST (43) | 39 | 4 | 0 |
 | SHOULD (10) | 8 | 1 | 1 |
 | SUGGESTED (14) | 13 | 1 | 0 |
 
-The passing badge needs every MUST criterion Met, every SHOULD criterion Met or Unmet with a reason, and every SUGGESTED criterion answered Met or Unmet. An N/A answer counts as Met, and only criteria that allow it take one; the one N/A among the SUGGESTED criteria, `dynamic_analysis_unsafe`, is one of them. With these answers the project qualifies.
+The passing badge needs every MUST criterion Met, every SHOULD criterion Met or Unmet with a reason, and every SUGGESTED criterion answered Met or Unmet. An N/A answer counts as Met, and only criteria that allow it take one; the one N/A among the SUGGESTED criteria, `dynamic_analysis_unsafe`, is one of them. With these answers the project holds the passing badge.
 
-Three MUST answers depend on facts only the maintainer can confirm, and they are marked "maintainer confirms" in the tables: `vulnerability_report_response` (no report arrived by email) and `know_secure_design` and `know_common_errors` (the developers' own knowledge). They count in the table above as the answer shown. The one Unmet SHOULD criterion, `crypto_weaknesses`, carries its reason in the table and in [Remaining gaps](#remaining-gaps).
+One MUST answer changes with the next release. `release_notes_vulns` is N/A today, because no published release has yet fixed a publicly known vulnerability. Once the next release and its three advisories are published, that answer becomes Met and the MUST row reads 40 Met, 3 N/A, 0 Unmet.
 
-## Register the project
+Three MUST answers rest on facts only the maintainer can confirm, and they are marked "maintainer confirms" in the tables: `vulnerability_report_response` (no report arrived by email in the last 6 months) and `know_secure_design` and `know_common_errors` (the developers' own knowledge). The maintainer confirmed them when registering on 2026-11-08 and re-confirms `vulnerability_report_response` whenever the entry is updated. They count in the table above as the answer shown. The one Unmet SHOULD criterion, `crypto_weaknesses`, carries its reason in the table and in [Remaining gaps](#remaining-gaps).
 
-Registration is done by the maintainer in one sitting:
+## Keep the entry current
 
-1. Sign in at [bestpractices.dev](https://www.bestpractices.dev/en/login) with the GitHub account that owns the repository.
-2. Choose **Get Your Badge Now!** and enter the repository URL, `https://github.com/ahmed-g-gad/apothem`. The site fills in some answers on its own; check each one against the tables below.
-3. Work through the six sections (Basics, Change Control, Reporting, Quality, Security, Analysis). For each criterion, choose the answer in the **Answer** column, paste the **Justification**, and add the **Evidence** link. Eight Met answers must carry a URL in the justification text: `contribution`, `contribution_requirements`, `license_location`, `release_notes`, `report_process`, `report_archive`, `vulnerability_report_process` and `vulnerability_report_private`. Their justifications below already include it.
-4. Before answering `vulnerability_report_response`, confirm that no vulnerability report reached the email address in SECURITY.md in the last 6 months. If one did, answer Met and give the time to the first response, which must be 14 days or less.
-5. Answer `know_secure_design` and `know_common_errors` only after confirming they describe the maintainer's own knowledge; the site asks about the people who develop the project, and the linked files are the supporting evidence.
-6. Save each section. When the site shows 100% for the passing level, copy the badge Markdown it offers and add the badge to the README header next to the Scorecard badge, with its row in the [Badge policy](/docs/governance/badge-policy) table.
+The project is registered as [project 16427](https://www.bestpractices.dev/en/projects/16427). To change an answer, the maintainer signs in with the GitHub account that owns the repository, opens the project's edit page, and changes the answer in the matching section (Basics, Change Control, Reporting, Quality, Security, Analysis). Eight Met answers must carry a URL in the justification text: `contribution`, `contribution_requirements`, `license_location`, `release_notes`, `report_process`, `report_archive`, `vulnerability_report_process` and `vulnerability_report_private`. Their justifications below already include it.
 
-Scorecard reads the badge level through the bestpractices.dev API on its next run. Its CII-Best-Practices check scores a registered project that is still in progress at 2, a passing badge at 5, silver at 7 and gold at 10; gold needs more than one developer.
+1. When the next release and the advisories it fixes, GHSA-qpmp-8g2h-296c, GHSA-799g-h543-w5gg and GHSA-4rh9-7m5x-94j9, are published, change `release_notes_vulns` from N/A to Met with the justification given for it in the table below.
+2. Before saving, re-confirm that no vulnerability report reached the email address in SECURITY.md in the last 6 months. If one did, answer `vulnerability_report_response` Met and give the time to the first response, which must be 14 days or less.
+3. Add the badge to the README header next to the Scorecard badge, `[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/16427/badge)](https://www.bestpractices.dev/projects/16427)`, with its row in the [Badge policy](/docs/governance/badge-policy) table.
+
+Scorecard reads the badge level through the bestpractices.dev API on each run and now reports the passing badge. Its CII-Best-Practices check scores a registered project that is still in progress at 2, a passing badge at 5, silver at 7 and gold at 10; gold needs more than one developer.
 
 ## Answers
 
@@ -68,7 +67,7 @@ Scorecard reads the badge level through the bestpractices.dev API on its next ru
 | `sites_https` | MUST | Met | The home page https://apothem.ahmedgad.com/ is served over HTTPS and its plain-HTTP address redirects to HTTPS (301); the repository is on github.com and the downloads come from GitHub Releases, npmjs.com, and https://apothem.ahmedgad.com/install.sh, all over HTTPS. | [/](https://apothem.ahmedgad.com/) |
 | `discussion` | MUST | Met | GitHub Issues, Pull Requests and GitHub Discussions are open to anyone with a free GitHub account; they are searchable, every topic has its own URL, and a browser is all that is needed. | [discussions](https://github.com/ahmed-g-gad/apothem/discussions) |
 | `english` | SHOULD | Met | The main documentation (README, CONTRIBUTING, SECURITY, the docs site) is written in English, with translations as extras, and issues and pull requests are taken and handled in English. | [/docs](/docs) |
-| `maintained` | MUST | Met | The project is active: releases ship every few days to weeks, pull requests are merged each week, issues get closed, and SECURITY.md commits to acknowledging vulnerability reports within 48 hours. | [releases](https://github.com/ahmed-g-gad/apothem/releases) |
+| `maintained` | MUST | Met | The project is active: nine releases between 2026-07-07 and 2026-10-28, with the next one prepared on main; pull requests are merged every week; and SECURITY.md commits to acknowledging vulnerability reports within 48 hours. | [releases](https://github.com/ahmed-g-gad/apothem/releases) |
 
 ### Change Control: Public version-controlled source repository
 
@@ -92,7 +91,7 @@ Scorecard reads the badge level through the bestpractices.dev API on its next ru
 | Criterion | Level | Answer | Justification | Evidence |
 |---|---|---|---|---|
 | `release_notes` | MUST | Met | CHANGELOG.md (https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md) and each GitHub Release have hand-written notes for every version, not raw git log output, grouped under headings such as Added and Security. | [CHANGELOG.md](https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md) |
-| `release_notes_vulns` | MUST | Met | The release notes name each advisory a release fixes. The CHANGELOG.md section (https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md) of the release that fixed GHSA-qpmp-8g2h-296c, GHSA-799g-h543-w5gg and GHSA-4rh9-7m5x-94j9 names all three, and that release's GitHub Release carries the same notes. Earlier releases' notes name each dependency advisory they took in the same way. | [CHANGELOG.md](https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md) |
+| `release_notes_vulns` | MUST | N/A until the next release is published | No release so far has fixed a publicly known vulnerability with a CVE or a published advisory. Release notes will name the CVE or advisory ID of any that a future release fixes (https://github.com/ahmed-g-gad/apothem/security/advisories). Once the next release's GitHub Release and the three advisories are published, the answer becomes Met with: "The release notes name each advisory a release fixes: the CHANGELOG.md section (https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md) and the GitHub Release of the release that fixed GHSA-qpmp-8g2h-296c, GHSA-799g-h543-w5gg and GHSA-4rh9-7m5x-94j9 name all three." | [CHANGELOG.md](https://github.com/ahmed-g-gad/apothem/blob/main/CHANGELOG.md) |
 
 ### Reporting: Bug-reporting process
 
@@ -100,7 +99,7 @@ Scorecard reads the badge level through the bestpractices.dev API on its next ru
 |---|---|---|---|---|
 | `report_process` | MUST | Met | Users report bugs through GitHub Issues with a bug-report form, and SUPPORT.md and CONTRIBUTING.md send bug reports there: https://github.com/ahmed-g-gad/apothem/blob/main/SUPPORT.md | [SUPPORT.md](https://github.com/ahmed-g-gad/apothem/blob/main/SUPPORT.md) |
 | `report_tracker` | SHOULD | Met | The project tracks individual issues in its public GitHub issue tracker, with issue forms for bugs, feature requests, documentation, and questions. | [issues](https://github.com/ahmed-g-gad/apothem/issues) |
-| `report_responses` | MUST | Met | No user outside the project has filed a bug report yet; every issue on the tracker has been handled and closed, and SUPPORT.md commits to triage within 7 days. | [issues?q=is%3Aissue](https://github.com/ahmed-g-gad/apothem/issues?q=is%3Aissue) |
+| `report_responses` | MUST | Met | No user outside the project has filed a bug report yet; the tracker holds only the maintainer's own issues and the scheduled vendor-address check's reports, and SUPPORT.md commits to triage within 7 days. | [issues?q=is%3Aissue](https://github.com/ahmed-g-gad/apothem/issues?q=is%3Aissue) |
 | `enhancement_responses` | SHOULD | Met | No enhancement request from outside the project has been filed yet, so none is unanswered; the feature-request form and the 7-day triage commitment are in place. | [issues?q=is%3Aissue](https://github.com/ahmed-g-gad/apothem/issues?q=is%3Aissue) |
 | `report_archive` | MUST | Met | The public GitHub issue tracker (https://github.com/ahmed-g-gad/apothem/issues?q=is%3Aissue) and GitHub Discussions keep every report and reply, including closed ones, and anyone can search them. | [issues?q=is%3Aissue](https://github.com/ahmed-g-gad/apothem/issues?q=is%3Aissue) |
 
@@ -108,9 +107,9 @@ Scorecard reads the badge level through the bestpractices.dev API on its next ru
 
 | Criterion | Level | Answer | Justification | Evidence |
 |---|---|---|---|---|
-| `vulnerability_report_process` | MUST | Met | The security page on the project site (https://apothem.ahmedgad.com/docs/security) and SECURITY.md both tell reporters to use GitHub Private Vulnerability Reporting on the Security tab, with email to me@ahmedgad.com as a second channel. | [/docs/security](/docs/security) |
+| `vulnerability_report_process` | MUST | Met | The security page on the project site (https://apothem.ahmedgad.com/docs/security) tells reporters to use GitHub Private Vulnerability Reporting on the Security tab and links SECURITY.md, which gives the same channel and email to me@ahmedgad.com as a second one. | [/docs/security](/docs/security) |
 | `vulnerability_report_private` | MUST | Met | SECURITY.md (https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#reporting-a-vulnerability) tells reporters to send private reports through GitHub Private Vulnerability Reporting, a web form over HTTPS that opens a workspace only the reporter and the maintainer can see; the feature is turned on. | [SECURITY.md#reporting-a-vulnerability](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#reporting-a-vulnerability) |
-| `vulnerability_report_response` | MUST | N/A, maintainer confirms | No vulnerability report from outside the project reached GitHub Private Vulnerability Reporting in the last 6 months; the maintainer confirms at registration that none arrived by email either. SECURITY.md commits to acknowledging a report within 48 hours. | [SECURITY.md#response-timeline](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#response-timeline) |
+| `vulnerability_report_response` | MUST | N/A, maintainer confirms | No vulnerability report from outside the project reached GitHub Private Vulnerability Reporting in the last 6 months; the maintainer confirmed at registration that none arrived by email either, and re-confirms it whenever the entry is updated. SECURITY.md commits to acknowledging a report within 48 hours. | [SECURITY.md#response-timeline](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#response-timeline) |
 
 ### Quality: Working build system
 
@@ -124,7 +123,7 @@ Scorecard reads the badge level through the bestpractices.dev API on its next ru
 
 | Criterion | Level | Answer | Justification | Evidence |
 |---|---|---|---|---|
-| `test` | MUST | Met | The MIT-licensed repository includes a pytest suite under tests/ (444 test_*.py files), and CONTRIBUTING.md and the CI workflow show how to run it (`make test` / `python -m pytest`). | [CONTRIBUTING.md#routine-verification](https://github.com/ahmed-g-gad/apothem/blob/main/CONTRIBUTING.md#routine-verification) |
+| `test` | MUST | Met | The MIT-licensed repository includes a pytest suite under tests/ (503 test_*.py files), and CONTRIBUTING.md and the CI workflow show how to run it (`make test` / `python -m pytest`). | [CONTRIBUTING.md#routine-verification](https://github.com/ahmed-g-gad/apothem/blob/main/CONTRIBUTING.md#routine-verification) |
 | `test_invocation` | SHOULD | Met | The suite runs with the standard Python invocation `pytest` / `python -m pytest`, configured in pyproject.toml, and with `make test`. | [pyproject.toml](https://github.com/ahmed-g-gad/apothem/blob/main/pyproject.toml) |
 | `test_most` | SUGGESTED | Met | CI measures line plus branch coverage and fails below set floors: 80% for the engine, 81% for the conformity package and 70% for the audit package, so most code and branches are exercised. | [/docs/developer-guide](/docs/developer-guide) |
 | `test_continuous_integration` | SUGGESTED | Met | GitHub Actions CI runs the pytest suite across an OS by Python 3.10-3.14 matrix plus a coverage job on pushes and pull requests to main that touch the source, tests, scripts, site or workflow paths, and its runs are public. | [.github/workflows/ci.yml](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) |
@@ -149,8 +148,8 @@ Scorecard reads the badge level through the bestpractices.dev API on its next ru
 
 | Criterion | Level | Answer | Justification | Evidence |
 |---|---|---|---|---|
-| `know_secure_design` | MUST | Met, maintainer confirms | The maintainer confirms this at registration. The shipped design shows the principles: a threat model, a deny floor no allow-list widens, validation before any write, writes limited to harness directories, fail-closed signature checks, and read-only default workflow permissions. | [/docs/security#threat-model](/docs/security#threat-model) |
-| `know_common_errors` | MUST | Met, maintainer confirms | The maintainer confirms this at registration. The code guards against the error classes that apply to a CLI that writes files: write targets are checked for path traversal and symlink crossings (with property tests), YAML is read with a safe loader, and diagnostics redact secret-like values; CI runs bandit, the ruff S rules and CodeQL security-extended. | [src/apothem/harnesses/_shared/install_driver_pathsafety.py](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/harnesses/_shared/install_driver_pathsafety.py) |
+| `know_secure_design` | MUST | Met, maintainer confirms | The maintainer confirmed this at registration. The shipped design shows the principles: a threat model, a deny floor no allow-list widens, validation before any write, writes limited to harness directories, fail-closed signature checks, and read-only default workflow permissions. | [/docs/security#threat-model](/docs/security#threat-model) |
+| `know_common_errors` | MUST | Met, maintainer confirms | The maintainer confirmed this at registration. The code guards against the error classes that apply to a CLI that writes files: write targets are checked for path traversal and symlink crossings (with property tests), YAML is read with a safe loader, and diagnostics redact secret-like values; CI runs bandit, the ruff S rules and CodeQL security-extended. | [src/apothem/harnesses/_shared/install_driver_pathsafety.py](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/harnesses/_shared/install_driver_pathsafety.py) |
 
 ### Security: Use basic good cryptographic practices
 
@@ -177,8 +176,8 @@ Scorecard reads the badge level through the bestpractices.dev API on its next ru
 
 | Criterion | Level | Answer | Justification | Evidence |
 |---|---|---|---|---|
-| `vulnerabilities_fixed_60_days` | MUST | Met | No vulnerability of medium or higher severity has been publicly known and unpatched for more than 60 days: on 2026-11-08, Dependabot and code scanning showed 0 open alerts. | [security](https://github.com/ahmed-g-gad/apothem/security) |
-| `vulnerabilities_critical_fixed` | SHOULD | Met | Critical dependency alerts have been fixed quickly; the two critical Next.js alerts of 2026-10-23 in the docs-site build were closed within two days. | [SECURITY.md#response-timeline](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#response-timeline) |
+| `vulnerabilities_fixed_60_days` | MUST | Met | No vulnerability of medium or higher severity has been publicly known and unpatched for more than 60 days. On 2026-11-27, Dependabot, code scanning and secret scanning show 0 open alerts. The project's own advisories GHSA-799g-h543-w5gg and GHSA-4rh9-7m5x-94j9 (high, named in the public changelog since 2026-11-09) and GHSA-qpmp-8g2h-296c (medium, since 2026-11-25) are fixed on main and ship in the next release, which must be published before 2027-01-08 to keep this answer Met. | [security](https://github.com/ahmed-g-gad/apothem/security) |
+| `vulnerabilities_critical_fixed` | SHOULD | Met | All six critical alerts so far were in the docs-site build's Next.js dependency, and each was fixed: the four of 2026-09-11 on 2026-09-29, and the two of 2026-10-23 within two days, on 2026-10-25. No critical alert is open on 2026-11-27. | [security](https://github.com/ahmed-g-gad/apothem/security) |
 
 ### Security: Other security issues
 
@@ -192,32 +191,33 @@ Scorecard reads the badge level through the bestpractices.dev API on its next ru
 |---|---|---|---|---|
 | `static_analysis` | MUST | Met | CodeQL (security-extended suite, Python and Actions), bandit, ruff with the flake8-bandit S rules, mypy and zizmor run in CI on pushes and pull requests to main that touch the listed source and workflow paths, so the code of every release commit is analyzed before the tag is pushed. | [.github/workflows/codeql.yml](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/codeql.yml) |
 | `static_analysis_common_vulnerabilities` | SUGGESTED | Met | CodeQL runs the security-extended query suite, and bandit plus ruff's S (flake8-bandit) rules check for common Python security flaws such as injection, unsafe subprocess calls and unsafe deserialization. | [.github/codeql/codeql-config.yml](https://github.com/ahmed-g-gad/apothem/blob/main/.github/codeql/codeql-config.yml) |
-| `static_analysis_fixed` | MUST | Met | No code-scanning alert is open on 2026-11-08; recent high and medium findings were fixed within two days, and each dismissed alert carries a written reason (a design choice recorded on the Scorecard posture page, or a Scorecard check that cannot pass yet), none an exploitable flaw. | [/docs/security/openssf-scorecard-target#score-interpretation](/docs/security/openssf-scorecard-target#score-interpretation) |
+| `static_analysis_fixed` | MUST | Met | No code-scanning alert is open on 2026-11-27; recent high and medium findings were fixed within two days, and each of the six dismissed alerts carries a written reason (a design choice recorded on the Scorecard posture page, or a Scorecard check that cannot pass yet), none an exploitable flaw. | [/docs/security/openssf-scorecard-target#score-interpretation](/docs/security/openssf-scorecard-target#score-interpretation) |
 | `static_analysis_often` | SUGGESTED | Met | Bandit, ruff and mypy run in CI on pushes and pull requests to main that touch the listed paths, and CodeQL runs on pushes and pull requests that touch src/ or the workflows, plus a weekly scheduled re-analysis. | [.github/workflows/ci.yml](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) |
 
 ### Analysis: Dynamic code analysis
 
 | Criterion | Level | Answer | Justification | Evidence |
 |---|---|---|---|---|
-| `dynamic_analysis` | SUGGESTED | Met | CI runs the Hypothesis property-based tests in tests/property/, which execute the engine's parsers, merge, path-safety and profile loader with varied generated inputs, before any release tag is pushed. | [tree/main/tests/property](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) |
+| `dynamic_analysis` | SUGGESTED | Met | CI runs the Hypothesis property-based tests in tests/property/, which execute the engine's parsers, merge, path-safety, settings ownership and profile loader with varied generated inputs, and ClusterFuzzLite fuzzes the five Atheris targets in tests/fuzz/ (the JSONC/JSON5 reader, the hook-file merge, the profile loader, the install ledger and the frontmatter probe) for five minutes on every pull request that touches the engine and for fifteen minutes every day, so every release commit is dynamically analyzed before its tag is pushed. | [.github/workflows/fuzzing.yml](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/fuzzing.yml) |
 | `dynamic_analysis_unsafe` | SUGGESTED | N/A | Apothem is written in Python, with JavaScript for the npm shim and VS Code extension, and ships no C, C++ or other memory-unsafe code, including in its vendored pure-Python dependencies. | [tree/main/src/apothem](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem) |
 | `dynamic_analysis_enable_assertions` | SUGGESTED | Met | The pytest and Hypothesis suites run in CI on a normal Python interpreter without -O, with pytest assertion rewriting, so all assert-based checks in the tests and property tests are active, while production code carries no assert statements. | [pyproject.toml](https://github.com/ahmed-g-gad/apothem/blob/main/pyproject.toml) |
-| `dynamic_analysis_fixed` | MUST | Met | No vulnerability of medium or higher severity found by the property tests or any other test run is left unfixed. | [tree/main/tests/property](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) |
+| `dynamic_analysis_fixed` | MUST | Met | No vulnerability of medium or higher severity found by the property tests, the ClusterFuzzLite fuzzing or any other test run is left unfixed; a pull request whose fuzzing run finds a crash fails until the crash is fixed. | [.github/workflows/fuzzing.yml](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/fuzzing.yml) |
 
 ## Remaining gaps
 
 These items are not blockers for the passing badge, and they need more than a statement in a repository file:
 
 - **`crypto_weaknesses` (SHOULD, Unmet).** The signed tag that the one-shot installers and the update scripts check names the release commit by a SHA-1 object ID, because the repository uses Git's SHA-1 object format, and the scripts pin the maintainer key by its OpenPGP v4 fingerprint, a SHA-1 hash; forging that pin would take a SHA-1 second preimage, not a collision. An install without cosign, and every install or update over an existing Apothem clone, installs a checkout of that commit, where every installed file rests on SHA-1. With cosign installed and no existing Apothem clone, the installed files rest on SHA-256 (the signed `SHA256SUMS`, checked by cosign against the tag's commit, and the archive digest), but the link from the maintainer's signed tag to that commit still rests on SHA-1. The gap stays open because the scripts check no maintainer-signed SHA-256 digest when they install a checkout, and the repository still uses Git's SHA-1 object format. Meeting the criterion needs a SHA-256 digest that the maintainer signs, checked on every default path, or a repository in Git's SHA-256 object format on a host that offers one, together with a way to pin the maintainer key that does not rest on SHA-1.
-- **README badge.** The badge itself can be added to the README only after registration gives the project its bestpractices.dev ID. It is a third-party registry badge, so the change also adds its row to the per-badge table on the [Badge policy](/docs/governance/badge-policy) page.
+- **README badge.** Registration gave the project ID 16427, and the passing badge is not yet in the README header. Add `[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/16427/badge)](https://www.bestpractices.dev/projects/16427)` next to the Scorecard badge. It is a third-party registry badge, so the change also adds its row to the per-badge table on the [Badge policy](/docs/governance/badge-policy) page.
 
 ## Keep the answers current
 
-Re-check this page when a change touches one of the linked files, and when bestpractices.dev changes its passing criteria. The live criteria page and the `criteria.yml` file in the badge repository are the sources to compare against.
+Re-check this page when a change touches one of the linked files, when a release is published, and when bestpractices.dev changes its passing criteria. Then copy any changed answer into the project's entry at https://www.bestpractices.dev/en/projects/16427 so the entry and this page match. The live criteria page and the [`criteria.yml` file](https://github.com/ossf/best-practices-badge/blob/main/criteria/criteria.yml) in the badge repository are the sources to compare against.
 
 ## References
 
 - [OpenSSF Best Practices badge](https://www.bestpractices.dev/) — the site where projects register and answer the criteria
 - [Passing criteria](https://www.bestpractices.dev/en/criteria/0) — the live list for the passing level
-- [Criteria source](https://github.com/coreinfrastructure/best-practices-badge/blob/main/criteria/criteria.yml) — the machine-readable list and its rules
+- [Criteria source](https://github.com/ossf/best-practices-badge/blob/main/criteria/criteria.yml) — the machine-readable list and its rules
+- [Apothem on bestpractices.dev](https://www.bestpractices.dev/en/projects/16427) — the project's registered entry and its passing badge
 - [Scorecard CII-Best-Practices check](https://github.com/ossf/scorecard/blob/main/docs/checks.md#cii-best-practices) — how Scorecard scores the badge level

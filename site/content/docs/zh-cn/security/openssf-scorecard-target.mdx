@@ -17,7 +17,7 @@ Apothem 以 OpenSSF Scorecard 的最高分为目标，同时让公开门面如�
 | **Binary-Artifacts** | [binary-artifacts-sweep.md](/docs/security/binary-artifacts-sweep) | 源码中不跟踪任何可执行二进制文件；生成的分发归档保留在 `dist/` 中。 |
 | **Branch-Protection** | [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) | `main` 在公开发布推广之前即受保护；在新的发布提交落地之后，强制推送与删除均被阻止。 |
 | **CI-Tests** | [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | Pytest 矩阵、ruff、mypy、Trivy、文档构建以及打包冒烟检查。 |
-| **CII-Best-Practices** | OpenSSF Best Practices 注册 | 需要维护者在 OpenSSF Best Practices 站点完成注册；仅凭仓库文件无法完成此项。 |
+| **CII-Best-Practices** | OpenSSF Best Practices 注册 | 项目已在 bestpractices.dev 注册为[项目 16427](https://www.bestpractices.dev/en/projects/16427)，自 2026-11-08 起持有 passing 徽章，本项检查据此计分。 |
 | **Code-Review** | 分支保护 + CODEOWNERS | 除仓库管理员外，所有人向 `main` 提交变更都须经拉取请求；在项目仅有一位维护者期间，分支保护要求 0 个批准评审（参见 [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset)）；在存在经评审的 PR 之前，Scorecard 历史仍然有限。 |
 | **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | 一个新的单人维护者项目无法凭空制造多机构的贡献历史；随着贡献者加入，此项会自然改善。 |
 | **Dangerous-Workflow** | 工作流审计 | 不使用 `pull_request_target`；Actions 按 SHA 固定，并以显式权限限定作用域。 |
