@@ -356,18 +356,21 @@ an earlier release recorded that differ from what this release writes, the
 files of an install with no record, a file that holds two different blocks
 between Apothem's markers, or a file with marker lines Apothem cannot tell from
 your text), a `✗ <harness> uninstall did not finish:` line follows for each
-reason, as above, and the same text is added to the end of the row's message. For an install with no record, the `Note:` line follows them, with
+reason, as above, and the same text is added to the end of the row's
+message. For an install with no record, the `Note:` line follows them, with
 its check of the `--project` folder for a project-scope harness, and the row's
 `detail` has `"kept_reason": "no-record"`, as described in
 [What an uninstall removes](#what-an-uninstall-removes). When those reasons
 and the steps that failed before it name one link, the row carries it in
 `detail.symlink` and the folder it leads to in `detail.leads_to`. It exits `2`
 with `status` `"partial"` when it had removed or changed files first, found
-Apothem's own files behind a link, or kept files of an earlier release's
-install or of an install with no record, or when another harness was removed,
-otherwise `1`. An unexpected error (an exception, such as a backup that cannot
-be written) inside the first step of an Open-Claw, Antigravity or Kimi Code
-uninstall reports nothing that step did (see
+Apothem's own files behind a link, kept files of an earlier release's install
+or of an install with no record, or left a file that holds two different
+blocks between Apothem's markers or marker lines Apothem cannot tell from your
+text, or when another harness was removed, otherwise `1`. An unexpected error
+(an exception, such as a backup that cannot be written) inside the first step
+of an Open-Claw, Antigravity or Kimi Code uninstall reports nothing that step
+did (see
 [An uninstall that did not finish](#an-uninstall-that-did-not-finish)): the
 uninstall prints `failed:` and exits `1` (`2` when another harness was
 removed), whatever the step had changed. When Open-Claw's rules-file step

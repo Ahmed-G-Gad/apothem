@@ -224,7 +224,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   link, that row carries it in `detail.symlink` and `detail.leads_to`, as
   does the row of an uninstall refused because a link leads its folder out of
   your home directory. Such a link, or such files, make it exit `2`, also when
-  it removed nothing. An error that stops the settings-file step of Hermes,
+  it removed nothing. Its warnings also name a link its steps left in place,
+  as for one that ran all its steps. An error that stops the settings-file
+  step of Hermes,
   Open-Claw, OpenCode or Qwen Code now reads `uninstall stopped: <error>`, as
   one in a later step does. So does an error in the step OpenCode's uninstall
   takes after the one that removes what the install record lists, which
