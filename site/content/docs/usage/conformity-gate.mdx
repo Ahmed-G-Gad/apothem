@@ -158,8 +158,15 @@ they reach it, then open the file one level at a time from the root, each
 folder inside the one opened before it, never through a link. So when someone
 who can write to the project swaps a checked file, or a folder above it, for
 a link or a named pipe while the gate runs, the gate does not read through
-the link and does not wait on the pipe: the file counts as missing and the
-swapped entry is listed under `skipped_links`. In `--all` and
+the link and does not wait on the pipe: the file is not read. An `--all`
+validator counts it as missing or unreadable, as it counts a link, and lists
+the swapped entry under `skipped_links`; `--all-perwrite` counts it as a
+`link`, or as `unreadable` when it is swapped again, as described below. On
+Windows one wait remains, as it did for a plain open: a program that can write
+to the project can hold an opportunistic lock on a file and not let go when
+the gate opens it. No way of opening the file avoids that wait, so an `--all`
+validator waits until its 10-minute limit, and `--all-perwrite`, which has no
+such limit, until that program lets go. In `--all` and
 `--all-perwrite`, the gate itself opens only regular files inside the root,
 checking each folder on the way with `lstat`, including every path git lists,
 and never reads inside a `.git` entry. Before they run git, the three `--all`

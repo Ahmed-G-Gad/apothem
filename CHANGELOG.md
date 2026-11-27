@@ -503,12 +503,17 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   the project or for a named pipe: the read took the outside file's content
   or waited until the time limit. `--all-perwrite` already refused a link in
   the file's own place, but opened a file through a folder above it swapped
-  for a link. Every project read now opens the file one level at a time
-  from the root, each folder inside the one opened before it, and no level
-  through a link: a swapped file counts as missing, its entry is listed
-  under `skipped_links`, and the read never waits on a pipe. The `.git` file
-  a nested checkout holds is read the same way. A hard link still reads as
-  an ordinary file.
+  for a link. Every project file a validator reads is now opened one level
+  at a time from the root, each folder inside the one opened before it, and
+  no level through a link, and the read never waits on a pipe. A swapped
+  file is not read: an `--all` validator counts it as missing or unreadable,
+  as it counts a link, and lists its entry under `skipped_links`, and
+  `--all-perwrite` counts it as a `link` or `unreadable`. The `.git` file a
+  nested checkout holds is read the same way, from the root the walk started
+  at. A `.git` link to a regular file now counts as a repository without its
+  `gitdir:` line being read through the link. A hard link still reads as an
+  ordinary file, and on Windows a program that holds an opportunistic lock
+  on a file can still make a read wait, as it could before.
 
 ## [1.6.0] - 2026-11-26
 
