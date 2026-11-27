@@ -2,7 +2,7 @@
 title: "Démarrage rapide"
 description: "Installez Apothem, rédigez un profil, matérialisez votre premier environnement et vérifiez-le — une visite à copier-coller avec la sortie attendue."
 machineTranslated: true
-sourceHash: "7a414de2fdc9eea3"
+sourceHash: "549fab5f56f4cf9e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,9 +35,15 @@ contient tous les noms pris en charge.
 Apothem est distribué comme un runtime autonome — le moteur s'exécute
 directement depuis son arborescence source avec des dépendances vendorisées.
 Une seule commande récupère le code source, place le moteur et matérialise
-votre premier environnement. Elle vérifie d'abord la publication signée ;
-importez donc la clé de signature du mainteneur une seule fois avant la première
-installation, puis vérifiez que l'empreinte affiche `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163` :
+votre premier environnement. Elle vérifie d'abord la publication signée : elle
+contrôle l'étiquette de publication signée à l'aide de la clé du mainteneur et,
+si [cosign](https://docs.sigstore.dev/cosign/system_config/installation/) est
+installé, elle contrôle aussi l'archive de publication signée. Un contrôle en
+échec arrête l'installation avant toute modification de `~/.apothem`, et un
+clone git à cet emplacement dont des fichiers suivis ont été modifiés arrête la
+mise à jour jusqu'à ce que vous validiez ou remisiez ces modifications (commit
+ou stash). Importez la clé de signature du mainteneur une seule fois avant la
+première installation, puis vérifiez que l'empreinte affiche `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163` :
 
 ```bash title="macOS · Linux · WSL2 · BSD — import the key once"
 curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
@@ -58,8 +64,8 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
-L'installateur requiert un Python 3.10+ système, ainsi que `git` et `gpg` pour la
-forme réseau. Il vérifie les prérequis et place le moteur sous `~/.apothem`.
+L'installateur requiert un Python 3.10+ système, ainsi que `git` et `gpg` (et, en option,
+cosign) pour la forme réseau. Il vérifie les prérequis et place le moteur sous `~/.apothem`.
 Lorsque `click` ou `rich` est absent, il installe le paquet avec votre
 confirmation, ou avec `--yes` (`-Yes` sous PowerShell) ou
 `APOTHEM_AUTO_INSTALL_DEPS=1`, et s'arrête sinon avec la commande pip à exécuter
@@ -80,10 +86,18 @@ Recommended first step — the guided setup (profile -> preview -> install):
 
 <Callout title="Première exécution sans profil">
   Si vous n'avez pas encore de profil, l'installateur copie le profil d'exemple
-  vers `~/.config/apothem/profile.yaml` et poursuit : il matérialise votre
-  premier environnement et le vérifie au cours de la même exécution. Les champs
-  d'identité de l'exemple sont des espaces réservés ; l'installation affiche
-  donc une remarque. Faites du profil le vôtre à l'Étape 2, puis appliquez-le
+  (`src/apothem/schemas/profile.example.yaml` dans l'arborescence source) vers
+  `~/.config/apothem/profile.yaml` et poursuit : il matérialise votre
+  premier environnement et le vérifie au cours de la même exécution. L'exemple
+  est un échantillon, pas un profil vierge. Ses champs d'identité sont des
+  espaces réservés ; l'installation affiche donc une remarque. Il contient aussi
+  trois règles d'exemple, deux serveurs MCP d'exemple (`docs` à
+  `https://mcp.example.invalid/docs`, et un serveur `filesystem` lancé avec
+  `npx`), des surcharges par environnement sous `harnesses:`, et une liste qui
+  exclut `antigravity` et `open-claw` de `--harness all`. Un environnement qui
+  reçoit ses serveurs MCP du profil, comme OpenCode ou Qwen Code, obtient les
+  deux serveurs d'exemple dans sa propre configuration. Faites du profil le
+  vôtre à l'Étape 2, en supprimant ce que vous ne voulez pas, puis appliquez-le
   avec `apothem update --harness <name>` comme à l'Étape 5.
 </Callout>
 
@@ -92,10 +106,10 @@ Recommended first step — the guided setup (profile -> preview -> install):
   `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) et ne modifie jamais votre
   `PATH`. Une fois ce répertoire dans `PATH`, vous exécutez directement le moteur
   sous la forme `apothem <command>`. S'il n'est pas encore dans `PATH`,
-  la bannière affiche un repli autonome —
-  `PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>` — qui ne
-  nécessite aucun shim ; faites précéder chaque commande du préfixe exact
-  affiché par votre bannière.
+  la bannière affiche le chemin complet du shim (`~/.local/bin/apothem` par
+  défaut) ou, lorsqu'aucun shim n'a été placé, une commande qui lance le moteur
+  en gardant le dossier courant hors de `sys.path` ; utilisez ce que la bannière
+  a affiché à la place de `apothem` dans chaque commande.
 </Callout>
 
 Le [guide d'installation](/docs/install) couvre les autres voies
@@ -123,8 +137,12 @@ apothem profile show --json
 Le squelette utilise des données d'identité fictives servant d'espaces réservés
 et peut être édité sans risque avant que vous n'installiez la moindre sortie
 d'environnement. `show --json` le relit et affiche le profil validé, avec
-chaque valeur par défaut renseignée, en commençant par `schema_version`. La
-commande l'affiche sur une seule ligne ; il est développé ici :
+chaque valeur par défaut renseignée, en commençant par `schema_version`.
+Pour le squelette qu'écrit `profile init`, elle affiche le document ci-dessous
+sur une seule ligne ; il est développé ici. Si vous avez conservé le profil
+d'exemple copié par l'installateur à l'Étape 1, la sortie affiche plutôt les
+valeurs de l'exemple, y compris ses règles d'exemple, ses serveurs MCP et ses
+surcharges par environnement.
 
 ```json
 {

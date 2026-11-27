@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "Adaptateur d'environnement Apothem pour Cursor (GA)."
 machineTranslated: true
-sourceHash: "817b5e32ce317949"
+sourceHash: "0aa24ff454d74139"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -201,6 +201,10 @@ projet à la place des deux chemins :
 "/path/to/python" -E -s "/path/to/project/.apothem/support/cursor/hooks/dispatch.py" --contract cursor sessionStart
 ```
 
+`-E -s` fait ignorer à Python `PYTHONPATH` et les autres variables `PYTHON*`
+et lui fait sauter vos site-packages utilisateur ; aucun fichier du projet ne
+peut donc se charger dans le hook.
+
 Sur un hôte Windows, la commande commence par `& `, l'opérateur d'appel de
 PowerShell, car l'application de bureau de Cursor exécute les commandes de hooks
 via PowerShell, où une ligne qui commence par un chemin de programme entre
@@ -265,8 +269,9 @@ texte que vous ajoutez après le bloc est conservé à chaque synchronisation.
 
 ## Notes de compatibilité
 
-Cursor 0.45+ prend en charge des instructions au niveau du projet via
-`.cursor/rules/`. L'adaptateur écrit par défaut dans le répertoire
+Cursor lit les instructions au niveau du projet depuis `.cursor/rules/`, selon
+la [documentation des règles de Cursor](https://cursor.com/docs/rules).
+L'adaptateur écrit par défaut dans le répertoire
 `.cursor/rules/` de portée projet ; Cursor ne documente aucun chemin de règles
 globales utilisateur sous forme de fichiers que cet adaptateur pourrait gérer.
 
@@ -378,8 +383,18 @@ d'être supprimé.
 ## Portail de conformité
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Exécutez-le depuis le dossier de votre projet. Sous Windows, utilisez `python`
+à la place de `python3` et le chemin complet, car Windows PowerShell et cmd ne
+développent pas `~` :
+`$HOME\.apothem\src\apothem\conformity\gate.py` dans PowerShell, ou
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` dans cmd. Ce chemin est
+celui où le programme d'installation place le moteur, et `-E -s` tient votre
+`PYTHONPATH` et vos site-packages utilisateur à l'écart du portail ;
+[Portail de conformité](/docs/conformity-gate) explique les deux, ainsi que les
+autres installations.
 
 ## Dépannage
 

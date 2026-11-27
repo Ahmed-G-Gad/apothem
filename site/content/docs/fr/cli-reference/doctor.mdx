@@ -2,7 +2,7 @@
 title: "doctor"
 description: "Référence de la CLI pour la commande apothem doctor."
 machineTranslated: true
-sourceHash: "9336c060509b05e7"
+sourceHash: "78a7cea770c98762"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,19 +28,176 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   machine dotée d'un seul environnement en bonne santé réussit donc la
   vérification. Les environnements à portée de projet sont vérifiés lorsque
   `--project` nomme leur racine ; sans cette option, ils sont signalés comme
-  `needs_project`.
+  `needs_project`. Un fichier contenant des lignes de marqueur qu'Apothem ne
+  peut pas distinguer de votre texte compte comme une installation tant que le
+  journal d'installation ne peut pas être lu ; un tel environnement est donc
+  vérifié au lieu d'être signalé comme `not_installed`. Doctor nomme un journal
+  qu'il ne peut pas lire dans une vérification `ledger.unreadable` là où il lit
+  ce journal pour démarrer les hooks de l'environnement (voir **Runtime des
+  hooks** ci-dessous) : pour un environnement qui passe la vérification, et pour
+  un environnement dont la vérification en échec nomme des fichiers portant des
+  marqueurs Apothem (`harness.stray_begin`). Sa correction indique de mettre de
+  côté un journal endommagé et d'exécuter `update`, ou, pour un journal que
+  doctor ne peut pas ouvrir (parce qu'un autre programme le garde ouvert, par
+  exemple), de rendre ce fichier lisible. Un environnement dont la vérification
+  échoue pour une autre raison reçoit la vérification `harness.verify_failed` et
+  aucune vérification de hook, donc aucune vérification `ledger.unreadable` non
+  plus.
 - **Vérification.** Chaque environnement installé doit réussir la même
-  vérification que [`verify`](/docs/cli-reference/verify).
-- **Runtime des hooks.** Pour chaque environnement vérifié, doctor lit les
-  fichiers écrits par sa dernière installation, trouve les commandes de hook
-  qu'Apothem y a enregistrées, et démarre une fois chaque interpréteur et chaque
-  script de hook avec une charge utile sans effet (les arguments enregistrés
-  plus `--help`, `{}` sur stdin, un répertoire de travail temporaire, et
-  `PYTHONPATH` retiré). Rien n'est écrit. Un interpréteur manquant, un script
-  manquant ou un plantage au moment de l'import fait échouer la vérification.
+  vérification que [`verify`](/docs/cli-reference/verify). Lorsqu'un fichier
+  contient un marqueur BEGIN d'Apothem sans marqueur END, la vérification en
+  échec est `harness.stray_begin`, et sa correction nomme chacun de ces fichiers
+  et la ligne du marqueur, donne des étapes numérotées qui modifient cette ligne
+  et toutes les autres lignes de marqueur BEGIN sauf celle qui ouvre le bloc
+  d'Apothem (un mot ajouté dans chaque commentaire), et indique de ne pas
+  rajouter plutôt le marqueur END, ce qui laisserait deux blocs Apothem dès
+  qu'une installation ou une mise à jour aurait écrit le bloc d'Apothem à part :
+  une mise à jour seule ne le corrige pas
+  (voir
+  [Dépannage](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
+  Un fichier qui contient deux blocs entiers ou plus entre les marqueurs
+  d'Apothem, ou dont Apothem ne peut pas distinguer les paires de marqueurs de
+  votre texte, par exemple son bloc placé à l'intérieur de l'un de vos blocs de
+  code, échoue à la même vérification : son message indique que le fichier
+  contient « Apothem markers to fix by hand », et sa correction nomme chaque bloc
+  par ses lignes (voir
+  [Un fichier contient deux blocs entre les marqueurs d'Apothem](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)),
+  ou chaque paire de marqueurs, avec l'emplacement de ses lignes et la manière de
+  la corriger, ainsi que chaque marqueur BEGIN qui n'ouvre aucune paire de
+  marqueurs (voir
+  [Apothem ne distingue pas son bloc de votre texte](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+  Pour un fichier de règles OpenClaw, la correction indique, comme la note de
+  vérification, que la prochaine mise à jour écrit le bloc d'Apothem si le
+  fichier respecte alors la limite par fichier d'OpenClaw, limite à laquelle
+  s'impute l'ancien texte d'Apothem que vous conservez.
+- **Runtime des hooks.** Pour chaque environnement vérifié, et pour chaque
+  environnement qu'un tel marqueur fait échouer, doctor lit les fichiers écrits
+  par l'installation qu'il vérifie : l'installation dans le propre dossier de
+  l'environnement (un `CODEX_HOME` défini là où doctor s'exécute est ce dossier),
+  ou, pour un environnement à portée de projet, dans le dossier `--project`. Une
+  installation dans un autre dossier, comme un `CODEX_HOME` vers lequel doctor
+  n'est pas dirigé ou un projet que vous avez supprimé depuis, n'est pas
+  utilisée à sa place. doctor trouve les commandes de hook qu'Apothem a
+  enregistrées dans les fichiers JSON parmi eux, et démarre une fois chaque
+  interpréteur et chaque script de hook avec une charge utile sans effet (les
+  arguments enregistrés plus `--help`, `{}` sur stdin, un répertoire de travail
+  temporaire, et `PYTHONPATH` retiré). Rien n'est écrit. Un interpréteur
+  manquant, un script manquant ou un plantage au moment de l'import fait échouer
+  la vérification. Lorsqu'un hook a une ligne de commande distincte pour chaque
+  système, doctor démarre celle que l'outil exécute sur cette machine : une
+  ligne `powershell` ou `commandWindows` sous Windows et une ligne `bash` sous
+  macOS et Linux, pour un outil qui lit cette clé. Pour un outil qui ne lit que
+  `command`, c'est sa ligne `command` qui est démarrée. Doctor ne lit que les
+  clés que l'outil lui-même lit, et une liste `args` uniquement pour un outil
+  qui exécute sa commande avec une telle liste ; une ligne ou une liste
+  conservée sous une autre clé n'est donc ni démarrée ni comptée. Doctor démarre
+  le programme lui-même, sans shell ; sous Windows, il omet donc le `&` par
+  lequel commence une ligne écrite pour PowerShell. Un hook enregistré hors d'un
+  fichier JSON n'est pas démarré et n'est pas compté dans `N started`.
+  L'enregistrement d'installation est retrouvé quelle que soit l'orthographe de
+  ce dossier, par exemple une autre casse sous Windows. Lorsque le journal
+  d'installation n'a aucun enregistrement pour ce dossier, la vérification n'est
+  pas exécutée : le rapport affiche `not checked`, sa dernière ligne nomme les
+  environnements dont les commandes de hook n'ont pas été vérifiées au lieu de
+  `All checks passed` (elle indique « some hook commands » pour un environnement
+  qui en a aussi démarré d'autres qui ont réussi), et la sortie JSON porte une
+  vérification `hook.unchecked`.
+- **Fichiers de hook de projet.** Toute personne qui peut faire un commit dans
+  un projet peut en modifier les fichiers ; pour un environnement à portée de
+  projet, doctor ne démarre donc une commande de hook que lorsque tout ce
+  qu'elle exécute est connu. Il lit l'enregistrement d'installation du projet
+  que `--project` nomme, ne prend les commandes de hook qu'aux endroits où
+  l'outil les lit (au plus 100 depuis un même fichier ; au-delà, une ligne
+  `hook.unchecked` nomme le fichier et les autres ne sont pas démarrées), et ne
+  démarre une commande que lorsque son interpréteur est celui que cette
+  installation a enregistré (sauf s'il se trouve à l'intérieur du projet, où
+  d'autres peuvent le modifier) ou le Python sous lequel Apothem lui-même
+  s'exécute, que les options placées avant le script n'exécutent aucun code
+  (comme `-E` et `-s`), que le script est le script de hook écrit par cette
+  installation, dans un dossier dont les fichiers correspondent toujours aux
+  sommes de contrôle SHA-256 enregistrées par l'installation et qui ne contient
+  aucun autre fichier Python ni aucun lien, et que les arguments qui le suivent
+  sont ceux qu'Apothem écrit. Doctor démarre alors ces chemins connus plutôt que
+  le texte qu'il a lu, et ne recherche aucun autre chemin nommé par une commande
+  de hook. Un interpréteur ou un script de hook enregistré qui a disparu fait
+  échouer la vérification sans que rien ne soit démarré ; pour un script de hook
+  manquant, la correction exécute `update` pour remettre les scripts en place.
+  Doctor ne démarre aucune autre commande de hook de projet, et signale
+  chacune, avec la raison, comme `hook.unchecked` (info, pas un échec, marquée
+  `!` dans la sortie texte). Il en va de même pour une commande dont doctor ne
+  peut pas rechercher les chemins connus, par exemple une commande située dans
+  un dossier que vous ne pouvez pas ouvrir. Un interpréteur enregistré à
+  l'intérieur du projet n'est pas démarré, puisque d'autres peuvent le
+  modifier, sauf si doctor lui-même s'exécute sous cet interpréteur : la
+  correction exécute `update` depuis un dossier hors du projet, avec un Apothem
+  qui s'exécute sous un Python hors du projet, lequel enregistre ce Python à la
+  place. Un Apothem installé dans l'environnement propre du projet ne peut pas
+  faire cela ; utilisez-en un installé hors de celui-ci. Si l'environnement
+  virtuel du projet est actif, désactivez-le d'abord : tant qu'il est actif, son
+  Python arrive en premier dans votre `PATH`, et la commande npx s'exécuterait
+  sous lui et l'enregistrerait de nouveau. Pour choisir le Python sous lequel la
+  commande npx s'exécute, définissez `APOTHEM_PYTHON` sur son chemin. Un chemin
+  qui n'est pas un Python 3.10 ou ultérieur fonctionnel est ignoré sans message
+  et le `PATH` est parcouru à la place ; exécutez donc de nouveau doctor pour
+  vérifier que la ligne a disparu. La mise à jour s'exécute depuis l'extérieur
+  du projet parce que `python -m apothem`, exécuté dans le dossier du projet,
+  démarrerait un dossier nommé `apothem` qui y aurait été committé au lieu
+  d'Apothem. Les hooks installés par une version antérieure, qui n'a enregistré
+  aucun interpréteur ou aucune somme de contrôle, restent non vérifiés jusqu'à
+  ce que vous exécutiez `update` avec les mêmes options que lors de
+  l'installation.
+- **Fichiers de hook que la vérification ne lit pas.** La vérification des hooks
+  ne lit aucun fichier de hook de plus de 4 Mo ni rien d'autre qu'un fichier
+  ordinaire (un tube ou un périphérique, par exemple). Chacun de ces fichiers
+  reçoit une ligne `hook.unchecked` qui le nomme, qu'il ne contienne que des
+  hooks ou qu'il soit un fichier de paramètres dans lequel les hooks sont
+  fusionnés, et qu'il se trouve dans un projet ou sous votre dossier personnel.
+  Une mise à jour conserve tel quel un fichier trop volumineux ou non ordinaire ;
+  sa correction indique donc de réduire le fichier sous 4 Mo ou de le remplacer
+  par un fichier ordinaire, puis d'exécuter de nouveau doctor. Un fichier depuis
+  lequel l'outil n'exécute aucun hook ne reçoit aucune ligne : le fichier de
+  paramètres d'un outil dont Apothem ne conserve les hooks que dans son dossier
+  de support, ou une copie conservée sous `.apothem/support`.
+  Un fichier sous votre dossier personnel est lu à travers un lien, puisqu'il
+  vous appartient. Dans un projet, la vérification ne lit aucun fichier de hook
+  qu'elle atteint à travers un lien, comme un dossier de paramètres remplacé par
+  un lien vers un dossier hors du projet. Chacun de ces fichiers reçoit une ligne
+  `hook.unchecked`, qu'il ne contienne que des hooks ou qu'il soit un fichier de
+  paramètres dans lequel les hooks sont fusionnés. La ligne nomme le fichier et
+  le lien, qui peut être le fichier lui-même ou l'un de ses dossiers. La
+  correction indique de vérifier où mène le lien : remplacez un lien que vous
+  avez créé par une copie réelle du dossier ou du fichier vers lequel il mène et
+  vérifiez les commandes de hook qu'il contient, ou supprimez un lien que vous
+  n'avez pas créé et exécutez la commande `update` par laquelle se termine la
+  correction. Dans les deux cas, seul le lien lui-même est supprimé, pas le
+  dossier ou le fichier vers lequel il mène. Une commande de hook dont le script
+  de hook est atteint à travers un lien n'est pas démarrée ; sa ligne nomme le
+  script et le lien, qui peut être le script lui-même ou l'un de ses dossiers,
+  et sa correction est la même, sauf qu'il n'y a pas de commandes de hook à
+  vérifier. Un script de hook que l'installation a enregistré hors du projet
+  n'est pas démarré non plus, et sa ligne le dit. Un lien, ou un fichier Python
+  que l'installation n'a pas écrit, dans le dossier du script de hook laisse
+  aussi la commande non démarrée. Une mise à jour conserve l'un comme l'autre ;
+  la correction indique donc de supprimer l'entrée que nomme la ligne (pour un
+  lien, uniquement le lien lui-même ; déplacez vos propres scripts ailleurs),
+  puis d'exécuter de nouveau doctor. Si le lien a pris la place d'un dossier
+  écrit par l'installation, l'exécution suivante signale ce dossier comme
+  manquant, et l'exécution de `update` le remet en place. Un dossier de projet
+  que la vérification ne peut pas ouvrir reçoit aussi une ligne, et sa
+  correction indique de donner à votre compte l'autorisation de l'ouvrir. Sous
+  Windows, qui ne permet pas d'ouvrir un fichier tout en refusant un lien, la
+  vérification du lien est faite juste avant l'ouverture du fichier. Un script
+  de hook de plus de 4 Mo compte comme modifié depuis l'installation, puisque
+  aucun script écrit par Apothem n'est aussi volumineux.
 
-Chaque vérification en échec nomme une correction. Quitte avec 0 lorsqu'aucune
-vérification n'échoue, et avec 1 sinon.
+Chaque vérification en échec nomme une correction. Une correction qui exécute
+`update` se termine par la commande, après un deux-points. Pour un environnement
+à portée de projet, la commande nomme `--project` avec le dossier entre
+guillemets pour le shell, comme
+[`uninstall`](/docs/cli-reference/uninstall) met ses étapes entre guillemets.
+Lorsque ces guillemets ne peuvent pas porter le dossier, la correction donne
+`--project` en toutes lettres et se termine par le dossier tel quel. Quitte avec
+0 lorsqu'aucune vérification n'échoue, et avec 1 sinon.
 
 ## Sortie JSON
 
@@ -53,11 +210,13 @@ et `profile_error` lorsque le profil est invalide) et ajoute :
 - `project` — la racine `--project` résolue, ou `null`.
 - `harnesses[].status` — `ok`, `not_installed`, `needs_project`,
   `verify_failed`, `hook_failed` ou `error` ; plus `verified` et `hooks`
-  (`{"probed": N, "failed": [...]}`, ou `null` lorsqu'aucun enregistrement
-  d'installation n'existe).
+  (`{"probed": N, "failed": [...]}`, ou `null` lorsque le dossier vérifié n'a
+  aucun enregistrement d'installation, que le journal d'installation ne peut pas
+  être lu, ou que doctor n'a pas pu terminer la vérification des commandes de
+  hook ; une vérification `hook.unchecked` en indique la raison).
 - `checks` — un enregistrement par vérification : `code` (par exemple
-  `harness.verify_failed`, `hook.start_failed`, `ledger.unreadable` ou un code
-  `profile.*`), `status` (`pass`, `fail` ou `info`), `harness`, `message` et
+  `harness.verify_failed`, `harness.stray_begin`, `hook.start_failed`,
+  `hook.unchecked`, `ledger.unreadable` ou un code `profile.*`), `status` (`pass`, `fail` ou `info`), `harness`, `message` et
   `fix`.
 
 ```json
@@ -105,7 +264,7 @@ une machine, adapté à un acheminement par pipe vers d'autres outils.
 | Code | Signification |
 |---|---|
 | 0 | Toutes les vérifications ont réussi (y compris lorsqu'aucun environnement n'est encore installé) |
-| 1 | Un environnement installé ne passe pas la vérification, une commande de hook enregistrée ne peut pas démarrer, un adaptateur n'a pas pu être chargé ou sondé, ou un profil présent a échoué à la validation du schéma |
+| 1 | Un environnement installé ne passe pas la vérification, une commande de hook enregistrée ne peut pas démarrer, un journal d'installation ne peut pas être lu, un adaptateur n'a pas pu être chargé ou sondé, ou un profil présent a échoué à la validation du schéma |
 | 64 | Erreur d'utilisation : une option ou une commande inconnue, ou une valeur d'option manquante ou invalide. Sous `--json`, l'erreur est une enveloppe JSON avec le code `cli.usage`. |
 
 ## Voir aussi

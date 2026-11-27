@@ -2,7 +2,7 @@
 title: "Schéma du profil partagé"
 description: "Schéma du YAML du profil partagé d'Apothem."
 machineTranslated: true
-sourceHash: "574a594762c4f468"
+sourceHash: "cdd83bde9f17392d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,13 +33,17 @@ d'identité d'espace réservé que l'opérateur est censé personnaliser — et 
 valide avant de signaler le succès :
 
 ```yaml
+# yaml-language-server: $schema=https://apothem.ahmedgad.com/schemas/profile.schema.json
+schema_version: 1
 identity:
-  name: "Example User"
-  email: "dev@example.invalid"
-  github: "example-user"
+  name: Example User
+  email: dev@example.invalid
+  github: example-user
 ```
 
-La commande affiche un rappel de personnalisation nommant ces champs. Si une
+La première ligne indique le schéma aux éditeurs qui prennent en charge YAML ;
+`schema_version: 1` est la version du schéma de profil. La commande affiche un
+rappel de personnalisation nommant les champs d'identité. Si une
 identité encore au stade d'espace réservé atteint plus tard `install` ou
 `update`, ces commandes affichent une note informative et poursuivent — Apothem
 ne fabrique jamais ni ne se bloque sur une identité d'espace réservé.
@@ -48,6 +52,7 @@ ne fabrique jamais ni ne se bloque sur une identité d'espace réservé.
 
 | Champ | Obligatoire | Par défaut | Notes |
 | --- | --- | --- | --- |
+| `schema_version` | Non | lu comme `1` | Version du schéma de profil ; `profile init` écrit `1`. Une version plus récente que celle prise en charge par le moteur est rejetée. |
 | `identity.name` | Oui | aucun | Nom d'affichage de l'opérateur non vide. |
 | `identity.role` | Non | `senior software engineer` | Texte de rôle partagé. |
 | `identity.email` | Non | omis | Doit être au format e-mail lorsqu'il est présent. |
@@ -59,8 +64,13 @@ ne fabrique jamais ni ne se bloque sur une identité d'espace réservé.
 | `preferences.test_framework` | Non | omis | Chaîne non vide lorsqu'elle est présente. |
 | `rules` | Non | `[]` | Chaînes non vides uniques ; les sauts de ligne se normalisent en LF. |
 | `seriousness` | Non | `PERSONAL_USE` | L'un de `EXPLORING`, `PERSONAL_USE`, `SHARED`, `PUBLIC_LAUNCH`. |
+| `enforcement.*` | Non | `false` pour chacun | Bascules à activer explicitement : `sprints`, `agent_teams`, `multitasking`, `continuous_execution`, `learning_loop`. |
+| `mcp_servers` | Non | `{}` | Serveurs MCP indexés par nom de serveur. Chacun définit `transport` (`stdio`, `http`, `sse` ou `streamable-http`) : un serveur `stdio` nécessite `command`, les autres nécessitent `url`. |
+| `agent_mcp_servers` | Non | `{}` | Pour chaque assistant, indexé par son nom, les serveurs MCP qu'il peut appeler. Lu par les installations de Claude Code et de Gemini CLI. |
 | `harnesses` | Non | `{}` | Surcharges par environnement indexées par l'ID d'environnement pris en charge. |
 | `exclude_harnesses` | Non | `[]` | IDs d'environnement pris en charge exclus de `--harness all`. |
+| `workspace.directory_name` | Non | `.apothem` | Nom du dossier de travail partagé ; un seul composant de chemin. |
+| `workspace.scope` | Non | `project-local` | `project-local` (sous la racine du projet) ou `user-home` (sous votre répertoire personnel). |
 
 ## Clés d'environnement
 

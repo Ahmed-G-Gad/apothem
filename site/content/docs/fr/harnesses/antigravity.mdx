@@ -2,15 +2,15 @@
 title: "Antigravity"
 description: "Adaptateur d'environnement Apothem pour Antigravity (préversion)."
 machineTranslated: true
-sourceHash: "a97b457853f5e1e2"
+sourceHash: "c5d8a954306518e0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-- **Éditeur :** Antigravity
+- **Éditeur :** Google
 - **Nom d'installation :** `antigravity`
 - **Statut :** Préversion
 - **Configuration native :** `~/.gemini/GEMINI.md` plus
-  `~/.gemini/antigravity-cli/plugins/apothem/`
+  `~/.gemini/config/plugins/apothem/`
 
 ## Installation
 
@@ -19,21 +19,41 @@ apothem install --harness antigravity
 ```
 
 L'adaptateur rend le profil partagé dans `~/.gemini/GEMINI.md` et installe les
-cohortes de support Apothem sous la forme d'un plugin de la CLI Antigravity.
+cohortes de support Apothem sous la forme d'un plugin Antigravity. Le dossier du
+plugin est partagé par la CLI, l'App et l'IDE Antigravity ; les trois chargent
+donc le plugin.
 
 **Fichiers écrits :** `~/.gemini/GEMINI.md`,
-`~/.gemini/antigravity-cli/plugins/apothem/plugin.json`,
-`~/.gemini/antigravity-cli/plugins/apothem/skills/`,
-`~/.gemini/antigravity-cli/plugins/apothem/rules/`,
+`~/.gemini/config/plugins/apothem/plugin.json`,
+`~/.gemini/config/plugins/apothem/skills/`,
+`~/.gemini/config/plugins/apothem/rules/`,
 les définitions d'auxiliaires locaux converties à l'intérieur du plugin,
-`~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/templates/` et
-`~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/hooks/`.
+`~/.gemini/config/plugins/apothem/.apothem/support/templates/` et
+`~/.gemini/config/plugins/apothem/.apothem/support/hooks/`. L'installation crée
+aussi le dossier de données d'Apothem, `~/.gemini/.apothem/` par défaut, avec
+`contexts/`, `learning/`, `memory/` et `plans/` à l'intérieur.
 
 Le bloc Apothem de `~/.gemini/GEMINI.md` se termine par une section consacrée
 aux fichiers de support Apothem, qui nomme le répertoire absolu par rapport
 auquel se résout chaque citation de style dépôt : `rules/<name>.md` sous le
 `rules/` du plugin, et `templates/...` et `hooks/...` sous le
 `.apothem/support/` du plugin.
+
+**Dossier du plugin.** Antigravity charge un plugin depuis
+`~/.gemini/config/plugins/<name>/` sans étape d'enregistrement
+([documentation des plugins d'Antigravity](https://antigravity.google/docs/plugins)),
+et l'adaptateur y écrit le plugin Apothem. Les versions actuelles de la CLI
+chargent les plugins depuis ce dossier ; la CLI se met à jour elle-même : si vous
+avez désactivé les mises à jour avec `AGY_CLI_DISABLE_AUTO_UPDATE=true`,
+mettez-la à jour avant de compter sur le plugin. L'App et l'IDE Antigravity
+chargent le même dossier ; le plugin Apothem, avec ses règles toujours actives,
+ses skills et ses définitions d'auxiliaires, s'applique donc dans les trois.
+Antigravity ne documente aucun interrupteur par outil pour un plugin :
+`plugin.json` n'a aucun champ qui limite un plugin à l'un d'eux. Une version
+antérieure d'Apothem écrivait le plugin dans
+`~/.gemini/antigravity-cli/plugins/apothem/`, dans le dossier de données propre à
+la CLI ; une installation ou une mise à jour par-dessus une telle installation
+sauvegarde ce dossier puis le supprime (voir [Désinstallation](#désinstallation)).
 
 **Règles du plugin.** Antigravity écarte tout fichier du répertoire `rules/`
 d'un plugin qui ne commence pas par un `trigger` valide
@@ -50,8 +70,12 @@ jetons entre les règles toujours actives et, au-delà de ce budget, transforme
 les plus volumineuses en pointeurs à la demande ; les cinq règles totalisent
 environ 11 000 jetons, de sorte qu'aucune n'est transformée en pointeur.
 
-**Manifeste du plugin.** `plugin.json` ne porte que `name` et `description`, les
-deux clés qu'admet le schéma de plugin d'Antigravity.
+**Manifeste du plugin.** `plugin.json` ne porte que `name` et `description`. Le
+schéma de plugin publié sur la page
+[Build plugins](https://antigravity.google/docs/build-plugins) d'Antigravity exige
+`name`, liste aussi des clés telles que `displayName`, `version` et `author`, et
+n'admet aucune autre clé ; `agy plugin validate` signale donc une clé qu'il ne
+liste pas.
 
 **Auxiliaires du plugin.** Les définitions d'auxiliaires du répertoire `agents/`
 du plugin portent `name` et `description`. La liste `tools` d'Antigravity
@@ -63,9 +87,11 @@ abandonnent l'étiquette « lecture seule ».
 
 **Ancre utilisateur partagée.** `~/.gemini/GEMINI.md` est aussi l'ancre de
 portée utilisateur des outils de la famille Gemini. L'adaptateur Antigravity
-conserve son matériel Apothem supplémentaire à l'intérieur du plugin `apothem`
-sous `~/.gemini/antigravity-cli/plugins/`, de sorte qu'il ne s'approprie pas les
-répertoires de projet génériques de Gemini CLI. Comme plus d'un outil charge
+conserve ses règles, skills, définitions d'auxiliaires, templates et fichiers de
+hooks à l'intérieur du plugin `apothem` sous `~/.gemini/config/plugins/`, de
+sorte qu'il ne s'approprie pas les répertoires de projet génériques de Gemini
+CLI. Le dossier de données d'Apothem se trouve hors du plugin, à
+`~/.gemini/.apothem/` par défaut. Comme plus d'un outil charge
 `~/.gemini/GEMINI.md`, le bloc Apothem qui s'y trouve est rédigé comme une
 consigne globale qui ne désigne aucun outil unique comme son lecteur.
 
@@ -94,10 +120,16 @@ apothem verify --harness antigravity
 
 La commande verify confirme que :
 
-1. Le fichier de contexte natif existe au chemin attendu.
-2. Le manifeste de plugin `plugin.json` existe, n'est pas vide et s'analyse
-   comme du JSON. La vérification ne contrôle pas le nom du plugin ; inspectez
+1. Le fichier de contexte natif, `~/.gemini/GEMINI.md`, existe et n'est pas vide.
+2. Chaque cible gérée du dossier du plugin est en place : le manifeste de plugin
+   `plugin.json` existe, n'est pas vide et s'analyse comme du JSON, et les
+   dossiers `skills/`, `rules/`, `agents/`, `.apothem/support/templates/` et
+   `.apothem/support/hooks/` du plugin existent. Un dossier manquant fait échouer
+   la vérification. La vérification ne contrôle pas le nom du plugin ; inspectez
    ce champ vous-même après l'avoir modifié.
+
+Ajoutez `--profile PATH` pour confirmer aussi que les fichiers installés
+correspondent à ce profil.
 
 ## Mise à jour
 
@@ -118,18 +150,73 @@ apothem uninstall --harness antigravity
 Supprime le bloc Apothem de `~/.gemini/GEMINI.md` et conserve tout autre texte
 qui s'y trouve. Le fichier n'est supprimé que lorsqu'il n'y reste plus rien
 d'autre. Supprime aussi les clés d'Apothem de `plugin.json` dans le dossier du
-plugin `~/.gemini/antigravity-cli/plugins/apothem/` et conserve les vôtres, et
-supprime les fichiers Apothem des sous-dossiers `skills/`, `rules/`, `agents/`
-et `.apothem/support/` de ce dossier ; les autres fichiers qui s'y trouvent
-restent en place. Chaque fichier est sauvegardé sous `~/.apothem/backups/` avant
+plugin `~/.gemini/config/plugins/apothem/` et conserve les vôtres, et supprime
+les fichiers Apothem des sous-dossiers `skills/`, `rules/`, `agents/` et
+`.apothem/support/` de ce dossier ; les autres fichiers qui s'y trouvent restent
+en place. Les stockages `memory/`, `contexts/` et `learning/` du dossier de
+données sont aussi supprimés, sauf si une autre installation d'Apothem les
+utilise encore. Chaque fichier est sauvegardé sous `~/.apothem/backups/` avant
 d'être modifié ou supprimé. Le YAML du profil partagé et le moteur Apothem ne
 sont pas affectés.
+
+Une installation réalisée par une version antérieure place le plugin dans
+`~/.gemini/antigravity-cli/plugins/apothem/`, dans le dossier de données propre à
+la CLI. Une installation, une mise à jour ou une désinstallation par-dessus une
+telle installation sauvegarde ce dossier sous `~/.apothem/backups/` puis le
+supprime, y compris les fichiers à vous qu'il contient. Un lien symbolique ou une
+jonction Windows situé à ce chemin, au-dessus ou à l'intérieur du dossier est
+laissé en place, avec un avertissement qui le nomme, et rien de ce vers quoi il
+pointe n'est modifié ni sauvegardé. Un lien situé à ce chemin qui pointe vers le
+dossier actuel du plugin est laissé en place à chaque exécution, avec un
+avertissement : il subsiste après une désinstallation ; supprimez-le donc
+vous-même lorsque plus rien n'utilise l'ancien chemin. Une désinstallation
+supprime donc le dossier antérieur et, du dossier actuel, uniquement les fichiers
+Apothem décrits ci-dessus. Elle affiche chaque avertissement, et signale un échec
+plutôt qu'une réussite lorsque la suppression du dossier antérieur échoue.
+
+Chaque installation, mise à jour et désinstallation sauvegarde aussi
+`~/.antigravity/profile.yaml` sous `~/.apothem/backups/`, puis le supprime.
+Aucune version d'Apothem n'écrit ce fichier ; déplacez donc tout fichier à vous
+qui s'y trouverait avant d'exécuter l'une de ces commandes.
+
+L'installation, la mise à jour et la désinstallation ne touchent jamais
+`~/.gemini/antigravity/`, le dossier de données de l'App Antigravity. (Celui de
+la CLI est `~/.gemini/antigravity-cli/` et celui de l'IDE est
+`~/.gemini/antigravity-ide/`.) Le dossier de l'App contient ses jetons de
+connexion aux serveurs MCP (`mcp_oauth_tokens.json`), ses transcriptions de
+session (`brain/`), l'ancien dossier global de skills (`skills/`) et
+`sidecar_data/`. Les versions antérieures traitaient ce dossier comme une
+disposition qu'Apothem utilisait avant sa première version : elles le
+sauvegardaient sous `~/.apothem/backups/` et le supprimaient à chaque
+installation et mise à jour. Les paramètres et l'historique de session propres à
+la CLI, dans `~/.gemini/antigravity-cli/`, n'étaient pas affectés.
+
+Si une connexion de l'App, une transcription de session ou un skill à vous a
+disparu, les copies se trouvent dans
+`~/.apothem/backups/<timestamp>/antigravity/.gemini/antigravity/` : un ensemble
+pour chaque installation ou mise à jour antérieure qui a trouvé le dossier,
+chacun contenant le dossier tel qu'il était alors. Apothem ne conserve que les
+10 ensembles de sauvegarde Antigravity les plus récents ; les copies issues
+d'installations plus anciennes ont donc peut-être déjà disparu, et la prochaine
+installation, mise à jour, désinstallation ou le prochain rollback en élague de
+nouveau. Copiez d'abord hors de `~/.apothem/backups/` les ensembles dont vous
+avez besoin.
 
 ## Portail de conformité
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Exécutez-le depuis le dossier de votre projet. Sous Windows, utilisez `python` à
+la place de `python3` et le chemin complet, car Windows PowerShell et cmd ne
+développent pas `~` :
+`$HOME\.apothem\src\apothem\conformity\gate.py` dans PowerShell, ou
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` dans cmd. Ce chemin est
+l'emplacement où l'installateur place le moteur, et `-E -s` tient votre
+`PYTHONPATH` et vos site-packages utilisateur à l'écart du portail ;
+[Portail de conformité](/docs/conformity-gate) explique les deux, ainsi que les
+autres installations.
 
 ## Dépannage
 

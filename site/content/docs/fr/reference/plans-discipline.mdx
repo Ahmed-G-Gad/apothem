@@ -2,7 +2,7 @@
 title: "Discipline des plans — Mémoire de travail éphémère et locale au projet"
 description: "Gérez la mémoire de travail éphémère et locale au projet dans .apothem/plans/ (un arbre hérité .plans/ se met à niveau via apothem migrate-workspace) avec un schéma de frontmatter, des transitions de cycle de vie, la promotion vers des ADR et l'application via des hooks et des validateurs."
 machineTranslated: true
-sourceHash: "175d0e7730335ebd"
+sourceHash: "78ba9223bd5803ab"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -137,12 +137,12 @@ Lorsque la confiance est `high` pour de nombreux plans, le prompt offre une comm
 Tout projet qui adopte cet écosystème **DOIT** ajouter le bloc suivant à son `.gitignore` :
 
 ```text
-# Répertoire de travail Apothem (état partagé local au projet : plans, mémoire,
-# apprentissage, contextes ; gitignored — jamais versionné). Le seul emplacement
-# canonique des plans est `.apothem/plans/`.
-# Voir : <repo-url>/blob/main/site/content/docs/reference/plans-discipline.mdx
-# Ignorez le CONTENU de ce répertoire (pas le répertoire) pour que la
-# négation `.keep` ci-dessous prenne effet.
+# Apothem working directory (project-local shared state: plans, memory,
+# learning, contexts; gitignored — never committed). The sole canonical plans
+# home is `.apothem/plans/`.
+# See: <repo-url>/blob/main/site/content/docs/reference/plans-discipline.mdx
+# Ignore the CONTENTS of this directory (not the directory) so the
+# `.keep` negation below can take effect.
 .apothem/*
 !.apothem/.keep
 ```
@@ -155,7 +155,7 @@ L'exemption optionnelle `.keep` préserve l'existence du répertoire dans les ou
 
 La discipline doit survivre à chaque session future. Les surfaces d'application suivantes sont obligatoires et sont encodées dans l'écosystème publié :
 
-1. **`AGENTS.md` et surfaces d'instruction miroir** — bloc de comportement obligatoire de niveau supérieur déclarant : *« Les artefacts de planification sont écrits dans `<project-root>/.apothem/plans/` — le seul emplacement canonique des plans (un arbre hérité `<project-root>/.plans/` se met à niveau via `apothem migrate-workspace`) — jamais dans un répertoire de configuration de l'environnement (par exemple `~/.codex/` ou `~/.claude/`) et jamais à un emplacement global. Cette règle n'est pas négociable ; citez §3 de la spécification du projet à chaque décision connexe. »* Ce bloc est détecté par le validateur `plans-discipline-language`.
+1. **`AGENTS.md` et surfaces d'instruction miroir** — bloc de comportement obligatoire de niveau supérieur déclarant : *« Les artefacts de planification sont écrits dans `<project-root>/.apothem/plans/` — le seul emplacement canonique des plans. Un arbre hérité `<project-root>/.plans/` n'est plus canonique ; les opérateurs mettent à niveau un arbre existant via `apothem migrate-workspace`. Ils ne sont jamais écrits dans un répertoire de configuration de l'environnement (par exemple `~/.codex/` ou `~/.claude/`) ni à un emplacement global. Cette règle n'est pas négociable ; le §2 de `site/content/docs/reference/plans-discipline.mdx` l'énonce en entier. »* Ce bloc est détecté par le validateur `plans-discipline-language`.
 2. **Fichier d'instructions dans le dépôt par environnement** — reflète la même directive dans le cadrage approprié à la surface d'instruction de cet environnement (§4 *Discipline des plans*) ; détecté par le même validateur sur chaque surface d'environnement enregistrée.
 3. **Output-style par défaut** — lorsqu'une réponse produirait un contenu en forme de plan (stratégie à plusieurs étapes, décomposition, déroulé de conception, journal de débogage), le style achemine l'artefact vers une écriture `.apothem/plans/` locale au projet plutôt que de l'imprimer-et-le-jeter en ligne. Le style instruit explicitement : *« Si aucune racine de projet n'est repérable, arrêtez-vous avec une enquête structurée demandant à l'opérateur où planifier. »*
 4. **Chaque prompt de travailleur délégué** — porte une strophe *Surface de sortie* nommant `.apothem/plans/` comme destination de tout artefact de planification, et une strophe *Anti-pattern* nommant les répertoires de plans locaux à l'environnement comme interdits.
