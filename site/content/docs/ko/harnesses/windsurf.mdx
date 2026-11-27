@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "Windsurf(GA)를 위한 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "26f3db9f3fdef394"
+sourceHash: "6ddfbde9bafb1d18"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -177,6 +177,9 @@ Apothem은 Devin에 `PreToolUse` 가드를 등록하지 않습니다. Devin의 �
 ```text
 "/path/to/python" -E -s "/path/to/project/.apothem/support/windsurf/hooks/dispatch.py" --contract devin SessionStart
 ```
+
+`-E -s`는 Python이 `PYTHONPATH`와 다른 `PYTHON*` 변수를 무시하고 사용자
+site-packages를 건너뛰게 하므로, 프로젝트의 어떤 파일도 훅에 로드될 수 없습니다.
 
 `--contract devin`은 Devin의 소문자 도구 이름(`exec`, `write`, `edit`, `read`,
 `grep`, `glob`)을 Apothem의 핸들러가 검사하는 이름으로 매핑하고, 출력은 Claude
@@ -364,8 +367,16 @@ apothem uninstall --harness windsurf --project /path/to/project
 ## 적합성 게이트
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+프로젝트 폴더에서 실행하세요. Windows에서는 `python3` 대신 `python`과 전체 경로를
+사용하세요. Windows PowerShell과 cmd는 `~`를 확장하지 않기 때문입니다.
+PowerShell에서는 `$HOME\.apothem\src\apothem\conformity\gate.py`, cmd에서는
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`입니다. 이 경로는
+설치 프로그램이 엔진을 두는 곳이며, `-E -s`는 여러분의 `PYTHONPATH`와 사용자
+site-packages가 게이트에 닿지 않게 합니다. [적합성 게이트](/docs/conformity-gate)에서
+둘 다와 다른 설치 방식을 설명합니다.
 
 ## 문제 해결
 

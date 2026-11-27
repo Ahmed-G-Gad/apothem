@@ -2,7 +2,7 @@
 title: "GLM (Z.ai)"
 description: "कॉन्फ़िगर करने योग्य मॉडल बैकएंड के रूप में GLM (Z.ai) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "026e29a055db8a67"
+sourceHash: "fcd06518f021542b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,7 +33,9 @@ apothem install --harness glm --project /path/to/project
 अडैप्टर एक प्रोजेक्ट-स्कोप प्रदाता फ़ाइल लिखता है जो GLM बैकएंड एंडपॉइंट और
 ऑपरेटर द्वारा कॉन्फ़िगर करने योग्य प्लेसहोल्डर दर्ज करती है।
 
-**लिखी गई फ़ाइलें:** `<project>/.apothem/providers/glm.toml`
+**लिखी गई फ़ाइलें:** `<project>/.apothem/providers/glm.toml`, साथ ही वह
+डेटा फ़ोल्डर जो हर प्रोजेक्ट इंस्टॉल बनाता है, डिफ़ॉल्ट रूप से `.apothem/`
+(`contexts/`, `learning/`, `memory/`, `plans/`)।
 
 ## प्रोफ़ाइल-से-नेटिव-कॉन्फ़िग मैपिंग
 
@@ -72,8 +74,9 @@ Apothem इनमें से कोई भी मान पिन नहीं
 ## संगतता टिप्पणियाँ
 
 GLM बैकएंड नियमों, कमांडों, स्किल, या हुक के लिए कोई सतह उजागर नहीं करता, इसलिए
-अडैप्टर केवल बैकएंड प्रदाता फ़ाइल लिखता है और कुछ नहीं। Apothem ने जाँच नहीं की है कि
-ZCode ऐसी सतहें उजागर करता है या नहीं। आपकी Z.ai कुंजी और आपके मॉडल-ID विकल्प
+अडैप्टर बैकएंड प्रदाता फ़ाइल लिखता है और इनमें से कुछ नहीं। Apothem ने जाँच नहीं की है कि
+ZCode ऐसी सतहें उजागर करता है या नहीं। हर प्रोजेक्ट इंस्टॉल की तरह, GLM इंस्टॉल भी
+Apothem डेटा फ़ोल्डर बनाता है, डिफ़ॉल्ट रूप से `<project>/.apothem/`। आपकी Z.ai कुंजी और आपके मॉडल-ID विकल्प
 ऑपरेटर-स्वामित्व में रहते हैं। अडैप्टर जिन विक्रेता सतह परिपाटियों पर निर्भर करता
 है, वे `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md` पर पिन की गई हैं, और
 उनका स्नैपशॉट लाइव Z.ai दस्तावेज़ के विरुद्ध लिया गया है।
@@ -124,8 +127,16 @@ apothem uninstall --harness glm --project /path/to/project
 ## अनुरूपता गेट
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+इसे अपने प्रोजेक्ट फ़ोल्डर से चलाएँ। Windows पर, `python3` के स्थान पर `python` का
+और पूरे पथ का उपयोग करें, क्योंकि Windows PowerShell और cmd `~` का विस्तार नहीं करते:
+PowerShell में `$HOME\.apothem\src\apothem\conformity\gate.py`, या cmd में
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`। यह पथ वह जगह है
+जहाँ इंस्टॉलर इंजन रखता है, और `-E -s` आपके `PYTHONPATH` और उपयोगकर्ता
+site-packages को गेट से बाहर रखता है; [अनुरूपता गेट](/docs/conformity-gate)
+दोनों को और अन्य इंस्टॉल को समझाता है।
 
 ## समस्या निवारण
 

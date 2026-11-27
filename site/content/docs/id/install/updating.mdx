@@ -2,9 +2,22 @@
 title: "Pemutakhiran"
 description: "Mutakhirkan Apothem dan adaptor harness."
 machineTranslated: true
-sourceHash: "04ad375058d55ffd"
+sourceHash: "9a8965434be8f7a4"
 ---
 {/* SPDX-License-Identifier: MIT */}
+
+<Callout title="Memutakhirkan dari rilis sebelumnya? Simpan cadangan Anda terlebih dahulu">
+  Pada rilis sebelumnya (changelog menyebutkannya), setiap instalasi dan
+  pemutakhiran menghapus beberapa folder yang menyimpan berkas milik Anda
+  sendiri, seperti slash command dan skrip hook Claude Code, setelah menyalinnya
+  ke `~/.apothem/backups/`. Sebagian besar rilis tersebut hanya menyimpan 10 set
+  cadangan terbaru per harness, sehingga setiap eksekusi berikutnya dari salah
+  satu rilis itu dapat menghapus set tertua, yang mungkin menyimpan satu-satunya
+  salinan Anda. Sebelum Anda menjalankan Apothem lagi, salin
+  `~/.apothem/backups/` ke tempat lain.
+  [Changelog](/docs/changelog#data-loss-in-earlier-releases-recover-your-files)
+  mencantumkan setiap folder yang terdampak dan cara menyalin kembali berkas Anda.
+</Callout>
 
 ## Mutakhirkan plugin Claude Code
 
@@ -18,10 +31,30 @@ di dalam Claude Code:
 Buka `/plugin`, pilih **apothem**, dan pilih aksi pemutakhiran saat versi plugin
 yang lebih baru tercantum.
 
+## Mutakhirkan ekstensi VS Code
+
+Ekstensi menjalankan versi engine yang dikirimkan bersamanya. Runner bawaannya
+adalah `npx @ahmed-g-gad/apothem@<extension version>`, sehingga Anda mendapatkan
+engine baru hanya ketika ekstensi itu sendiri dimutakhirkan.
+
+VS Code memeriksa pembaruan ekstensi dan memasangnya sendiri, sebagaimana
+dijelaskan dokumentasi
+[pembaruan otomatis ekstensi](https://code.visualstudio.com/docs/configure/extensions/extension-marketplace#_extension-auto-update)-nya.
+Secara bawaan, VS Code menunggu 12 jam setelah sebuah pembaruan dipublikasikan.
+Untuk memasangnya segera, pilih tombol **Update** milik ekstensi di tampilan
+Extensions. Jika Anda mematikan pembaruan otomatis, jalankan perintah
+**Show Extension Updates** lalu pilih **Update**, atau jalankan
+**Update All Extensions**.
+
+VS Code mematikan pembaruan otomatis untuk ekstensi yang dipasang dari berkas
+`.vsix`. Jika Anda memasang `apothem.vsix`, pasang `apothem.vsix` yang
+dilampirkan pada [GitHub Release](https://github.com/ahmed-g-gad/apothem/releases)
+yang lebih baru dengan cara yang sama.
+
 ## npx selalu menjalankan rilis terkini
 
 `npx @ahmed-g-gad/apothem` me-resolve paket terkini yang dipublikasikan pada setiap
-jalankan, sehingga tidak ada yang perlu dimutakhirkan. Saat cache npx yang basi menyajikan salinan
+eksekusi, sehingga tidak ada yang perlu dimutakhirkan. Saat cache npx yang basi menyajikan salinan
 lama, sematkan dist-tag secara eksplisit:
 
 ```bash
@@ -30,8 +63,10 @@ npx @ahmed-g-gad/apothem@latest --version
 
 ## Mutakhirkan penyiapan berbasis-installer
 
-Jalankan ulang installer — bersifat idempoten dan melakukan checkout tag rilis pada pohon yang ada —
-atau jalankan skrip pemutakhiran khusus:
+Jalankan ulang installer — bersifat idempoten: installer mengambil (fetch) klon
+git yang sudah ada, memeriksa tag rilis baru, dan baru setelah itu men-checkout
+klon tersebut, serta memutakhirkan instalasi dari arsip rilis — atau jalankan
+skrip pemutakhiran khusus, yang bekerja pada klon git:
 
 ```bash title="macOS · Linux · WSL2 · BSD"
 bash scripts/installer/update.sh
@@ -41,7 +76,130 @@ bash scripts/installer/update.sh
 pwsh -NoProfile -File scripts/installer/update.ps1
 ```
 
-Skrip pemutakhiran men-checkout ulang pohon sumber di `APOTHEM_HOME` (bawaan `~/.apothem`) ke `APOTHEM_REF`: jika tidak disetel, ia me-resolve tag rilis `vMAJOR.MINOR.PATCH` bertanda tangan terbaru; sebuah nilai tag mematoknya; dan `main` memilih cabang yang bergerak hanya ketika `APOTHEM_ALLOW_UNVERIFIED=1` juga disetel. Tanpa penggantian tersebut, pemutakhiran men-checkout ref lalu membatalkan proses sebelum mematerialisasi ulang, karena cabang bukan tag rilis yang ditandatangani. Ia memverifikasi tanda tangan tag dengan `git verify-tag` sebelum mematerialisasi ulang; tag yang tidak ditandatangani atau telah diubah membatalkan proses, kecuali `APOTHEM_ALLOW_UNVERIFIED=1` menurunkan pembatalan tersebut menjadi peringatan. Tag bertanda tangan yang kunci publik maintainer-nya tidak ada di keyring lokal membatalkan proses dengan panduan impor kunci yang mengarah ke fingerprint yang dipublikasikan di [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md). Kemudian ia mematerialisasi ulang harness yang dinamai oleh `APOTHEM_HARNESS` dengan menjalankan `apothem update` dari pohon yang disegarkan (harness bawaannya mengikuti tabel [variabel lingkungan installer](/docs/how-to/installer-environment-variables)). Ia memerlukan pemasangan sebelumnya: ketika tidak ada pohon di `APOTHEM_HOME` dan `APOTHEM_SOURCE` tidak disetel, ia keluar dengan pesan yang mengarahkan Anda ke installer terlebih dahulu.
+Skrip pemutakhiran memindahkan pohon sumber di `APOTHEM_HOME` (bawaan
+`~/.apothem`) ke `APOTHEM_REF`: jika tidak disetel, ia me-resolve tag rilis
+`vMAJOR.MINOR.PATCH` bertanda tangan terbaru; sebuah nilai tag mematoknya; dan
+`main` memilih cabang yang bergerak hanya ketika `APOTHEM_ALLOW_UNVERIFIED=1`
+juga disetel. Tanpa penggantian tersebut, pemutakhiran membatalkan proses
+sebelum men-checkout apa pun atau mematerialisasi ulang, karena cabang bukan
+tag rilis yang ditandatangani. Ia mengambil ref terlebih dahulu dan memverifikasi
+tanda tangan tag dengan `git verify-tag` sebelum checkout, sehingga pemeriksaan
+yang gagal membiarkan klon pada versi sebelumnya. Tanda tangan harus dibuat
+dengan kunci maintainer yang dipublikasikan di SECURITY.md, dan tag bertanda
+tangan harus merupakan tag yang dinamai untuk rilis tersebut; tag yang tidak
+ditandatangani atau telah diubah, atau yang ditandatangani dengan kunci lain
+mana pun, membatalkan proses kecuali `APOTHEM_ALLOW_UNVERIFIED=1` menurunkan
+pembatalan tersebut menjadi peringatan (variabel itu tidak melewati pemeriksaan
+bahwa tag bertanda tangan adalah tag rilis). Karena variabel itu meloloskan tag
+yang tidak ditandatangani, atau yang ditandatangani dengan kunci lain,
+pemeriksaan ini hanya melindungi tag yang membawa tanda tangan kunci maintainer.
+Dengan ref non-rilis seperti `main`, klon mengikuti salinan cabang tersebut di
+origin. Checkout tidak pernah membuang perubahan lokal: klon dengan perubahan
+pada berkas yang dilacak menghentikan pemutakhiran, lalu Anda meng-commit atau
+men-stash perubahan itu dan menjalankan ulang. Sebelum mengambil, pemutakhiran
+juga berhenti ketika ada berkas yang ditandai assume-unchanged atau
+skip-worktree (git tidak akan melihat perubahannya), ketika work tree klon
+bukan `APOTHEM_HOME`, ketika klon menyimpan submodule, ketika
+`.git/info/attributes` menyebutkan filter atau driver diff (`filter=` atau
+`diff=`), ketika berkas itu atau sebuah berkas konfigurasi bukan berkas biasa,
+ketika klon meminjam objek dari repositori lain (`objects/info/alternates`),
+atau ketika `.git/config` atau `.git/config.worktree` milik klon menyimpan
+setelan selain yang ditulis `git clone` dan `git init` di sana untuk klon
+penuh, setelan cabang (`remote` dan `pushremote` sebuah cabang harus
+`origin`), `user.name`, `user.email`, `maintenance.auto`,
+`maintenance.strategy`, `pull.rebase`, dan `pull.ff`. Klon parsial, yang dibuat
+dengan `--filter`, juga berhenti di sana. Pesannya menyebutkan setelan tersebut
+dan berkas tempatnya berada, dan
+[Pemecahan masalah](/docs/install/troubleshooting#the-installer-stops-the-existing-clone-is-set-up-in-a-way-the-update-would-trust)
+mencantumkan setelan yang diterima. Pemutakhiran juga berhenti, sebelum
+mengambil, pada berkas `.gitattributes` di work tree yang tidak dilacak git,
+yang berbeda dari salinan yang di-commit, atau yang salinan ter-commit-nya
+tidak dapat dibaca git atau menyebutkan filter atau driver diff (salinan di
+work tree juga dibaca), pada repositori git di dalam klon yang tidak dilacak
+git, di luar folder data milik engine sendiri seperti `backups` (git akan
+membaca berkas `.gitattributes` di dalamnya), dan pada berkas di bawah `src`
+(dengan ejaan huruf apa pun) yang tidak dilacak git, karena engine dapat
+memuatnya. Setelah checkout, ia menghapus folder cache Python (`__pycache__`)
+di bawah `src` sebelum engine berjalan dari klon. Hook git milik klon tidak
+pernah berjalan selama pemutakhiran, dan klon dari proyek selain Apothem sama
+sekali tidak dimutakhirkan. Pemutakhiran menyetel `GIT_NO_REPLACE_OBJECTS=1`,
+`GIT_NO_LAZY_FETCH=1`, `GIT_ALLOW_PROTOCOL`, dan `GIT_ATTR_NOSYSTEM=1` untuk
+eksekusinya, dan git tidak membaca berkas atribut apa pun di luar klon (lihat
+[variabel lingkungan installer](/docs/how-to/installer-environment-variables#the-installer-variables)).
+Setiap eksekusi memegang sebuah kunci, `<APOTHEM_HOME>.lock`, sepanjang
+durasinya, sehingga instalasi, pemutakhiran, atau pencopotan kedua pada
+`APOTHEM_HOME` yang sama berhenti; lihat
+[Pemecahan masalah](/docs/install/troubleshooting#the-installer-stops-another-run-holds-the-lock)
+ketika sebuah kunci tertinggal. Tag bertanda tangan yang kunci publik
+maintainer-nya tidak ada di keyring lokal membatalkan proses dengan panduan
+impor kunci yang mengarah ke fingerprint yang dipublikasikan di
+[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
+Kemudian ia mematerialisasi ulang harness yang dinamai oleh `APOTHEM_HARNESS`
+dengan menjalankan `apothem update` dari pohon yang disegarkan (harness
+bawaannya mengikuti tabel
+[variabel lingkungan installer](/docs/how-to/installer-environment-variables)).
+Ia memerlukan pemasangan sebelumnya: ketika tidak ada pohon di `APOTHEM_HOME`
+dan `APOTHEM_SOURCE` tidak disetel, ia keluar dengan pesan yang mengarahkan
+Anda ke installer terlebih dahulu.
+
+Skrip pemutakhiran hanya bekerja pada klon git. Instalasi yang dibuat dengan
+cosign, atau dengan `APOTHEM_VERIFY=checksum`, menempatkan arsip rilis sebagai
+gantinya, sehingga skrip pemutakhiran berhenti dan meminta Anda menjalankan
+ulang installer dengan cosign dan `gpg` di `PATH`. Jalankan ulang itu menukar
+masuk rilis baru dan mempertahankan setiap berkas yang tidak dikirimkannya,
+termasuk cadangan dan ledger instalasi milik engine. Tanpa cosign, jalankan
+ulang installer dengan `--yes` (`-Yes` di Windows): installer mengalihkan
+instalasi arsip menjadi klon git yang diperiksa terhadap kunci maintainer, dan
+mempertahankan semua yang bukan bagian dari pohon sumber, termasuk cadangan,
+ledger, rencana, dan memori. `APOTHEM_VERIFY=checksum` juga memutakhirkan arsip
+di tempat dan memerlukan `APOTHEM_ALLOW_UNVERIFIED=1`. Mode checksum tidak
+memverifikasi rilis. SHA256SUMS berasal dari rilis yang sama dengan arsipnya,
+sehingga kecocokan hanya menunjukkan bahwa unduhan tidak rusak; siapa pun yang
+dapat mengubah berkas rilis dapat mengubah keduanya.
+
+### Ketika engine membiarkan sebuah berkas apa adanya
+
+Engine dapat membiarkan berkas yang menyimpan blok Apothem (misalnya
+`CLAUDE.md` atau `AGENTS.md`) apa adanya karena baris penanda Apothem-nya:
+misalnya, ketika berkas itu menyimpan dua blok utuh di antara penanda Apothem.
+Engine kemudian menulis semua yang lain, mencetak peringatan yang menyebutkan
+berkas tersebut dan cara memperbaikinya, dan berakhir sebagai parsial dengan
+kode keluar `2`. Engine juga berakhir sebagai parsial ketika berhenti setelah
+menulis sesuatu: misalnya, ketika satu alat gagal setelah alat sebelumnya dalam
+eksekusi `APOTHEM_HARNESS=all` sudah menulis berkasnya. Galatnya menyebutkan
+apa yang gagal, dan setiap alat yang selesai sebelumnya memiliki barisnya
+sendiri di atas galat tersebut. Installer dan skrip pemutakhiran kemudian
+mencetak satu baris lagi:
+
+```text
+! The engine ended as partial (exit code 2): its messages above name the files it left as they are, or the error that stopped it. Fix what they name, then run 'apothem update --harness claude-code' again.
+```
+
+Keduanya menyelesaikan eksekusi seperti setelah keberhasilan penuh: installer
+tetap menjalankan verify, menempatkan perintah `apothem`, dan mencetak banner
+penutupnya, dan skrip pemutakhiran tetap mencetak "Update complete." sebagai
+baris terakhirnya. Setiap skrip kemudian berakhir dengan kode keluar `2`.
+Jalankan PowerShell lewat pipa (`irm ... | iex`) sebagai gantinya membiarkan
+`$LASTEXITCODE` bernilai `2`, sehingga sesi PowerShell Anda tetap terbuka.
+Jalankan sekali-pakai `pwsh -Command "irm ... | iex"` (atau `powershell -c`)
+melaporkan eksekusi parsial hanya melalui `$LASTEXITCODE`, sehingga prosesnya
+sendiri keluar dengan `0`. Ketika job CI atau skrip memerlukan kode tersebut,
+akhiri perintah dengan `; exit $LASTEXITCODE`, atau jalankan skrip melalui
+jalurnya dengan `-File`. Dari PowerShell, bash, atau shell POSIX lain, letakkan
+perintah itu dalam tanda kutip tunggal. Dalam tanda kutip ganda, shell pemanggil
+memasukkan `$LASTEXITCODE` miliknya sendiri sebelum proses baru dimulai (shell
+POSIX memasukkan string kosong), sehingga proses tidak keluar dengan kode dari
+eksekusi tersebut. Dari cmd.exe, tanda kutip ganda tidak masalah. Dry run
+installer (`--dry-run`, atau `-DryRun` di Windows) tidak menulis apa pun,
+sehingga engine tidak mengakhirinya sebagai parsial. Perbaiki apa yang
+disebutkan pesan engine. Untuk sebuah berkas, pertahankan teks Anda sendiri
+(lihat
+[Sebuah berkas menyimpan dua blok di antara penanda Apothem](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)
+dan
+[Apothem tidak dapat membedakan bloknya dari teks Anda](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)),
+lalu jalankan lagi `apothem update --harness <name>`, atau skrip pemutakhiran,
+untuk setiap alat yang dibiarkan belum selesai oleh eksekusi itu. Kode keluar
+bukan nol lainnya dari engine menghentikan skrip di situ.
 
 ## Materialisasi-ulang keluaran harness
 
@@ -62,7 +220,7 @@ yang dapat dibaca mesin tanpa penulisan ke sistem berkas.
 
 `apothem update` hanya memutakhirkan keluaran harness. CLI tidak mengimplementasikan
 `update --self`, `update --check`, atau `update --apply`; mutakhirkan engine
-itu sendiri melalui kanal yang Anda gunakan saat instalasi — alur `/plugin`, sebuah jalankan
+itu sendiri melalui kanal yang Anda gunakan saat instalasi — alur `/plugin`, sebuah eksekusi
 `npx` yang segar, atau skrip installer/pemutakhiran di atas.
 
 ## Periksa versi engine

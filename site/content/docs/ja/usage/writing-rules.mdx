@@ -2,7 +2,7 @@
 title: "ルールの記述"
 description: "Apothem の振る舞いのルールを作成し、スコープを定め、保守します。"
 machineTranslated: true
-sourceHash: "bc1f3351f9a5fd2c"
+sourceHash: "a7a12b4db14fbfe9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -60,10 +60,16 @@ apothem update --harness cursor --project /path/to/project
 
 ## ルールの検証
 
-書いたルールファイルに対して frontmatter バリデーターを実行します。Apothem のチェックアウトからは、`PYTHONPATH=src` でパッケージをインポート可能にします。スクリプトでインストールした後は、その代わりに `PYTHONPATH="$HOME/.apothem/src"` を使います。
+書いたルールファイルに対して frontmatter バリデーターを実行します。Apothem のチェックアウトのルートからは、`PYTHONPATH=src` でパッケージをインポート可能にします（`python -m` は現在のフォルダーのモジュールを先に読み込むため、信頼できるフォルダーを使ってください）。
 
 ```bash
 PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep src/apothem/rules/<rule>.md
+```
+
+スクリプトでインストールした後は、ゲートをスクリプトパスから `-E -s` 付きで実行します（理由は[コンフォーミティゲート](/docs/conformity-gate)で説明しています）。
+
+```bash
+python3 -E -s "$HOME/.apothem/src/apothem/conformity/gate.py" --check frontmatter-grep <rule>.md
 ```
 
 `frontmatter-grep` のような書き込みごとのチェックは、チェック対象のファイルを受け取るか、`--stdin` で標準入力から内容を読み取ります。どちらも指定しない場合は標準入力からの入力を待ちます。スタンドアロンのチェックは、代わりにルートディレクトリを受け取ります（`--check naming-grep .` のように）。

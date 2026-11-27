@@ -2,7 +2,7 @@
 title: "아티팩트 스키마 명세"
 description: "Apothem 소스 트리의 모든 아티팩트 타입에 대한 정식 YAML 프런트매터 스키마와 필수 필드, 그리고 클래스별 템플릿과 검증 규칙입니다."
 machineTranslated: true
-sourceHash: "2d46a5bcd2d249ba"
+sourceHash: "3fbf2c23ed47249f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -304,7 +304,7 @@ Python 구현.
 | `matcher` | string | 도구 이름 패턴(도구와 무관한 이벤트에는 `"*"`) | `"Write"` |
 | `hooks[].type` | 리터럴 `"command"` | 현재 지원되는 유일한 훅 핸들러 유형 | `"command"` |
 | `hooks[].command` | string | 실행 가능한 명령. Apothem은 설치 시 해석되는 `${PYTHON_BIN}` 자리표시자를 사용 | `"${PYTHON_BIN}"` |
-| `hooks[].args` | 문자열 배열 | exec 형식 인수: `${HARNESS_ROOT}/.apothem/support/` 아래의 스크립트 경로, 그다음 그 인수들 | `["-E", "-s", "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
+| `hooks[].args` | 문자열 배열 | exec 형식 인수: `-E`와 `-s`(Python이 `PYTHON*` 변수와 사용자 site-packages를 읽지 않음), `${HARNESS_ROOT}/.apothem/support/` 아래의 스크립트 경로, 그다음 그 인수들 | `["-E", "-s", "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
 | `hooks[].timeout` | 정수(초) | 호스트가 훅을 종료하기 전까지의 최대 실행 시간 | `30` |
 | `hooks[].statusMessage` | string | 호스트 UI에 표시되는 짧은 레이블 | `"Session start"` |
 

@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "Kimi Code（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "88671d55a3315922"
+sourceHash: "0ae31afd4f1fbbbd"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,7 +21,7 @@ apothem install --harness kimi-code --project /path/to/project
 スキルと、スキルとしてラップされたコマンドを、Kimi Code のネイティブなプロジェクトスキルディレクトリである `<project>/.kimi-code/skills/` にインストールし、Apothem のヘルパーを Kimi Code サブエージェントとして `<project>/.kimi-code/agents/` にインストールします（[サブエージェント](#サブエージェント)を参照）。
 その他のコホートは、`<project>/.kimi-code/.apothem/support/` にある Apothem 所有のサポートツリー配下にとどまります。
 プロジェクトの `AGENTS.md` は Kimi Code 以外にも多くのコーディングツールに読み込まれるため、このブロックは、単一のツールを読み手として名指ししない、プロジェクト全体のガイダンスとして書かれます。
-それらのツールの一部は、一部のプロジェクトでしかこれを読み込みません。
+それらのツールの一部は、一部のプロジェクト、バージョン、設定でしかこれを読み込みません。
 たとえば、プロジェクトにそのツール独自の命令ファイルがない場合にだけ読み込みます。
 インストールのメモは、そのようなツールそれぞれを、その条件を添えて挙げます（[ハーネスレジストリ](/docs/reference/harness-registry#shared-roots)がそれらを一覧にしています）。
 
@@ -31,7 +31,8 @@ Kimi Code は、作業ディレクトリから上方向に探索して `.git` �
 
 **書き込まれるファイル：** `<project>/AGENTS.md`（管理ブロック）、`<project>/.kimi-code/skills/` 配下のスキルとコマンド（スキルとして）、
 Apothem の各ヘルパーにつき 1 つの `<project>/.kimi-code/agents/<name>.md`、そして
-`<project>/.kimi-code/.apothem/support/` 配下のフック、ルール、テンプレートの各コホート。
+`<project>/.kimi-code/.apothem/support/` 配下のフック、ルール、テンプレートの各コホート、
+そしてプロジェクトへのインストールが毎回作成するデータフォルダー（デフォルトは `<project>/.apothem/`。`contexts/`、`learning/`、`memory/`、`plans/`）。
 
 ## サブエージェント
 
@@ -124,6 +125,7 @@ apothem update --harness kimi-code --project /path/to/project
 スキルが `.kimi-code/skills/` に移る前に行われたインストールに対する更新は、古い `<project>/.kimi-code/.apothem/support/skills/` ディレクトリを削除するため、各スキルは 1 つだけ存在します。
 ヘルパーが `.kimi-code/agents/` に移る前のインストールに対する更新は、同じように古い `<project>/.kimi-code/.apothem/support/agents/` ディレクトリを削除します。
 削除される各ディレクトリのタイムスタンプ付きコピーが、先に `~/.apothem/backups/` 配下に保存されます。
+この 2 つの古いディレクトリにあるあなた自身のファイルも一緒に削除されます。そのバックアップは、ハーネスの新しいバックアップセットが 10 個できた時点で削除されるため、自分のファイルは別の場所に置いてください。
 
 ## アンインストール
 
@@ -140,8 +142,16 @@ apothem uninstall --harness kimi-code --project /path/to/project
 ## コンフォーミティゲート
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+プロジェクトのフォルダーから実行します。Windows では、`python3` の代わりに `python` を使い、
+フルパスを指定します。Windows PowerShell と cmd は `~` を展開しないためです。
+PowerShell では `$HOME\.apothem\src\apothem\conformity\gate.py`、
+cmd では `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` です。このパスは
+インストーラーがエンジンを置く場所で、`-E -s` はあなたの `PYTHONPATH` とユーザーの
+site-packages をゲートから締め出します。両者とその他のインストールについては
+[コンフォーミティゲート](/docs/conformity-gate)で説明しています。
 
 ## トラブルシューティング
 

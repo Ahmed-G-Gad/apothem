@@ -2,7 +2,7 @@
 title: "Pemecahan masalah"
 description: "Solusi untuk kegagalan instalasi dan masalah runtime Apothem yang umum di seluruh jalur plugin, npx, dan pemasang."
 machineTranslated: true
-sourceHash: "218cead5defe61ff"
+sourceHash: "35f716910f462ed6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -45,18 +45,15 @@ jalankan ulang.
 ### `apothem` tidak ditemukan setelah menjalankan pemasang
 
 Pemasang menempatkan pohon sumber di `~/.apothem` dan menulis shim `apothem` ke
-`~/.local/bin` secara bawaan (POSIX) atau `%LOCALAPPDATA%\Microsoft\WindowsApps`
-(Windows). Pemasang tidak menyunting `PATH` Anda. Jika `apothem` tidak
+`~/.local/bin` secara bawaan (POSIX) atau
+`%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows); `APOTHEM_BIN_DIR` mengubah
+folder itu. Pemasang tidak menyunting `PATH` Anda. Jika `apothem` tidak
 ditemukan, direktori itu tidak ada di `PATH`; tambahkan direktori tersebut, atau
-gunakan bentuk `PYTHONPATH` di bawah sampai Anda melakukannya. Jalankan mesin
-melalui pemanggilan yang dicetak pemasang saat selesai:
-
-```bash
-PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
-```
-
-atau gunakan bentuk npx (`npx @ahmed-g-gad/apothem <command>`), yang tidak
-memerlukan entri `PATH`.
+jalankan shim melalui path lengkapnya. Pemasang mencetak path itu saat selesai.
+Ketika pemasang tidak menulis shim, ia mencetak perintah yang memulai mesin
+dengan folder saat ini dijauhkan dari `sys.path`; salin perintah itu dari
+banner. Bentuk npx (`npx @ahmed-g-gad/apothem <command>`) tidak memerlukan
+entri `PATH`.
 
 ### `/plugin marketplace add` gagal
 
@@ -97,9 +94,10 @@ npx @ahmed-g-gad/apothem@latest --version
 
 ### Pemasang berhenti: kunci publik pemelihara tidak ada di keyring lokal
 
-Pemasang memverifikasi tag rilis yang ditandatangani dan berhenti ketika kunci
-penandatanganan tidak ada di keyring Anda. Impor sekali, periksa bahwa sidik jari
-menunjukkan `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`, lalu jalankan
+Setiap instalasi lewat jaringan memverifikasi tag rilis yang ditandatangani,
+dengan atau tanpa cosign, dan berhenti ketika kunci penandatanganan tidak ada di
+keyring Anda. Impor sekali, periksa bahwa sidik jari menunjukkan
+`5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`, lalu jalankan
 pemasang lagi:
 
 ```bash title="macOS · Linux · WSL2 · BSD — import the key once"
@@ -112,9 +110,542 @@ gpg --fingerprint 70396FED9C634163
 ```
 
 Di Windows, impor melalui `bash` Git seperti yang ditunjukkan: `git verify-tag` membaca
-keyring dari `gpg` yang disertakan dengan Git for Windows. Host tanpa `gpg` dapat
-melakukan instalasi dengan `APOTHEM_VERIFY=checksum`, yang memeriksa digest arsip
-rilis alih-alih tanda tangan tag.
+keyring dari `gpg` yang disertakan dengan Git for Windows. Memasang
+[cosign](https://docs.sigstore.dev/cosign/system_config/installation/) tidak
+menggantikan impor kunci: dengan cosign di `PATH`, pemasang memeriksa arsip
+rilis yang ditandatangani selain tag. Host tanpa `gpg` dapat melakukan instalasi
+dengan `APOTHEM_VERIFY=checksum` dan `APOTHEM_ALLOW_UNVERIFIED=1`, tetapi mode
+itu tidak memverifikasi rilis (lihat
+[Pemasang berhenti: mode checksum memerlukan variabel kedua](#the-installer-stops-checksum-mode-needs-a-second-variable)).
+
+### Pemasang berhenti: gpg tidak ditemukan
+
+Pasang GnuPG, atau di Windows pasang Git for Windows, yang menyertakan `gpg`
+yang dijalankan `git verify-tag`. Lalu impor kunci pemelihara seperti yang
+ditunjukkan di atas dan jalankan pemasang lagi.
+
+### Pemasang berhenti: tag tidak ditandatangani dengan kunci pemelihara
+
+Pesannya berbunyi "Tag ... is signed by the key ..." dan menyebutkan kunci yang
+menandatanganinya. Tanda tangan tag itu sah, tetapi kunci tersebut bukan kunci
+yang dipublikasikan
+[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#maintainer-signing-key).
+Tag rilis Apothem hanya ditandatangani dengan kunci itu, jadi anggap ini sebagai
+kemungkinan perusakan: jangan memasang, dan laporkan melalui saluran di
+SECURITY.md. Fork yang ditandatangani dengan kuncinya sendiri memang diharapkan
+berhenti di sini.
+
+### Pemasang berhenti: cosign tidak dapat mengonfirmasi tanda tangan rilis
+
+Baca dulu teks `cosign said:` di akhir pesan.
+
+- Galat jaringan, proksi, atau trusted root berarti cosign tidak dapat
+  menjangkau Sigstore. Coba lagi saat Anda daring, tingkatkan cosign, atau
+  pasang dengan `APOTHEM_VERIFY=signature`, yang memeriksa tag rilis hanya
+  terhadap kunci pemelihara.
+- Fork yang disetel melalui `APOTHEM_REPO` memang diharapkan berhenti di sini:
+  pemasang hanya menerima workflow rilis milik Apothem sendiri.
+- "expected GitHub Workflow SHA not found in certificate" berarti sertifikat
+  yang diverifikasi cosign diterbitkan untuk proses pada commit yang berbeda
+  dari commit yang ditunjuk tag bertanda tangan, sehingga sertifikat itu tidak
+  mengikat `SHA256SUMS` ke commit tersebut. Jangan memasang; laporkan melalui
+  saluran di
+  [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
+- Ketidakcocokan identitas atau tanda tangan pada rilis Apothem sendiri berarti
+  `SHA256SUMS` tidak ditandatangani oleh workflow rilis Apothem untuk tag ini.
+  Jangan memasang; laporkan melalui saluran di
+  [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
+
+Ketika pemasang justru mengatakan bahwa ia tidak dapat mengunduh bundle, periksa
+koneksi Anda; jika rilis tidak memublikasikan bundle, pasang dengan
+`APOTHEM_VERIFY=signature`.
+
+### Pemasang berhenti: tag bertanda tangan bukan tag rilis
+
+Pesannya berbunyi "the signed tag object is not the vX.Y.Z release tag". Tag
+itu membawa tanda tangan kunci pemelihara, tetapi objek yang ditandatangani
+menyebutkan tag lain, sehingga tag bertanda tangan untuk rilis lain telah
+diarahkan ulang ke nama ini. Anggap ini sebagai kemungkinan perusakan: jangan
+memasang, dan laporkan melalui saluran di
+[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
+`APOTHEM_ALLOW_UNVERIFIED=1` tidak melewati pemeriksaan ini, tetapi variabel itu
+meloloskan tag yang tidak ditandatangani, atau yang ditandatangani kunci lain,
+sehingga pemeriksaan ini hanya melindungi tag yang membawa tanda tangan kunci
+pemelihara.
+
+### Pemasang berhenti: mode checksum memerlukan variabel kedua [#the-installer-stops-checksum-mode-needs-a-second-variable]
+
+Mode checksum tidak memverifikasi rilis. SHA256SUMS berasal dari rilis yang
+sama dengan arsipnya, sehingga kecocokan hanya menunjukkan bahwa unduhan tidak
+rusak; siapa pun yang dapat mengubah berkas rilis dapat mengubah keduanya. Karena
+itu `APOTHEM_VERIFY=checksum` hanya berjalan ketika `APOTHEM_ALLOW_UNVERIFIED=1`
+juga disetel. Setel keduanya jika Anda menerima hal itu, atau pasang `gpg` (dan
+cosign) lalu jalankan tanpa `APOTHEM_VERIFY=checksum`.
+
+### Pemasang berhenti: folder di APOTHEM_HOME bukan instalasi Apothem
+
+Pemasang tidak mengganti folder yang berisi sesuatu selain instalasi Apothem.
+Pindahkan folder itu, arahkan `APOTHEM_HOME` ke folder lain, atau jalankan ulang
+dengan `--yes` (`-Yes` pada PowerShell). Dengan `--yes`, pemasang memindahkan
+seluruh folder, tanpa diubah, ke folder baru,
+`<APOTHEM_HOME>.before-apothem-<time>`, di sampingnya (folder itu tetap memakai
+namanya sendiri di dalamnya), menyebutkan lokasinya, dan memasang dari awal.
+Klon git dari proyek lain juga terhitung sebagai folder seperti itu. Jika
+`<APOTHEM_HOME>.before-apothem-<time>` dan nama yang sama dengan tambahan ID
+proses pemasang keduanya sudah ada, pemasang berhenti dengan "Could not move the
+existing ... aside; nothing was changed" sebelum apa pun dipindahkan; ganti nama
+atau hapus salah satunya lalu jalankan ulang.
+
+### Pemasang berhenti: APOTHEM_HOME adalah tautan simbolik
+
+Pesannya berbunyi "is a symbolic link" (di Windows, tautan simbolik atau
+junction). Mengganti folder akan mengganti tautannya, bukan folder yang
+ditujunya, sehingga pemasang menolak. Setel `APOTHEM_HOME` ke folder yang dituju
+tautan itu, lalu jalankan ulang. Klon git yang sudah ada di balik tautan tetap
+diperbarui di tempat.
+
+### Pemasang berhenti: klon git menyimpan pekerjaan lokal
+
+Mengganti klon git dengan arsip rilis memerlukan `--yes`, dan pemasang tetap
+menolak bahkan saat itu selama klon menyimpan pekerjaan lokal yang akan hilang:
+perubahan pada berkas terlacak, stash, commit yang tidak ada di remote, atau
+berkas tak terlacak di pohon sumber klon. Commit dan push pekerjaan itu, atau
+pindahkan ke tempat lain, lalu jalankan ulang. Pemeriksaan ini juga berjalan
+dengan `--dry-run`. Ketika klon tidak memiliki pekerjaan seperti itu, `--yes`
+menggantinya dan menyimpan pohon milik klon di
+`<APOTHEM_HOME>.before-apothem-<time>/<name>`, dengan `<name>` adalah bagian
+terakhir dari `APOTHEM_HOME`; pemasang mencetak path itu, dan Anda menghapus
+folder tersebut setelah tidak lagi memerlukannya.
+
+### Pemasang berhenti: klon yang ada disiapkan dengan cara yang akan dipercaya pembaruan [#the-installer-stops-the-existing-clone-is-set-up-in-a-way-the-update-would-trust]
+
+Sebelum mengambil data ke klon yang ada, pemasang (dan skrip pembaruan)
+memeriksa cara klon itu disiapkan. `--dry-run` juga melakukan pemeriksaan ini.
+"has changes to tracked files" juga muncul ketika berkas ditandai
+assume-unchanged atau skip-worktree, yang menyembunyikan perubahannya dari git:
+jalankan `git update-index --no-assume-unchanged <file>` atau
+`git update-index --no-skip-worktree <file>`, lalu commit atau stash perubahan
+itu. "is not the work tree of its git clone" berarti git tidak menemukan work
+tree di `APOTHEM_HOME`, seperti ketika konfigurasi git klon menyetel `core.bare`
+ke `true`: setel ke `false` agar klon melakukan checkout ke `APOTHEM_HOME`.
+Pengaturan `core.worktree`, yang akan mengirim checkout ke folder lain,
+dilaporkan sebagai pengaturan yang tidak diterima pembaruan di tempat (di bawah).
+
+"own git config sets `<key>`, which an update in place does not accept in a
+clone's own config" menyebutkan pengaturan di `.git/config` milik klon, atau di
+`.git/config.worktree` bila klon memilikinya. Pembaruan di tempat hanya menerima
+pengaturan berikut di sana (bagian dan kunci dibandingkan tanpa memperhatikan
+huruf besar-kecil):
+
+- pengaturan yang ditulis `git clone` dan `git init` untuk klon penuh:
+  `core.repositoryformatversion`, `core.filemode`, `core.bare`,
+  `core.logallrefupdates`, `core.symlinks`, `core.ignorecase`,
+  `core.precomposeunicode`, `core.longpaths`, `extensions.objectformat`,
+  `extensions.refstorage` (hanya dengan nilai `files` atau `reftable`),
+  `extensions.worktreeconfig`, `remote.origin.url`, `remote.origin.fetch` dan
+  `remote.origin.tagopt`;
+- pengaturan branch, `branch.<name>.<key>`, yang ditambahkan git dan editor,
+  kecuali bahwa `branch.<name>.remote` dan `branch.<name>.pushremote` harus
+  tepat `origin`;
+- `user.name`, `user.email`, `maintenance.auto`, `maintenance.strategy`,
+  `pull.rebase` dan `pull.ff`.
+
+Pengaturan lain apa pun menghentikan pembaruan, karena dapat membuat git
+menjalankan program, membaca pengaturan, hook, atribut, atau objek dari tempat
+lain, atau terhubung ke tempat lain. Klon yang dibuat dengan `--mirror`,
+`--sparse`, `--recurse-submodules` atau dengan remote yang tidak bernama
+`origin` juga berhenti di sini, begitu pula klon parsial yang dibuat dengan
+`--filter`: pesannya menyebutkan `remote.origin.promisor`, karena git akan
+mengambil objek yang hilang dari remote dengan sendirinya saat membaca klon.
+Klon ulang tanpa `--filter`. Hapus pengaturan dari berkas yang disebutkan pesan,
+misalnya `git config --file ~/.apothem/.git/config --unset-all <key>`, lalu
+jalankan ulang. `--unset-all` juga menghapus pengaturan yang muncul lebih dari
+sekali. Untuk `remote` atau `pushremote` sebuah branch, setel ke `origin`
+sebagai gantinya, misalnya
+`git config --file ~/.apothem/.git/config branch.main.remote origin`. "own git
+attributes name a filter or diff driver" menyebutkan `.git/info/attributes`:
+hapus pengaturan `filter=` atau `diff=`. git menjalankan filter saat membaca
+berkas, dan `git diff` menjalankan konversi teks driver diff (`textconv`),
+sehingga driver yang didefinisikan konfigurasi git Anda sendiri atau konfigurasi
+sistem akan berjalan pada berkas klon.
+
+"which is not a plain file" menyebutkan `.git/info/attributes`, `.git/config`
+atau `.git/config.worktree` ketika itu berupa folder, named pipe atau berkas
+khusus lain, atau, di Windows, sebuah tautan. git dapat membaca teks lain dari
+berkas seperti itu daripada yang dibaca pemeriksaan. Ganti dengan berkas biasa,
+atau hapus, lalu jalankan ulang.
+
+"has a setting whose name holds a line break" berarti nama bagian di berkas yang
+disebutkan pesan memuat carriage return. git tidak pernah menulisnya, dan
+pembaca dapat menganggap nama itu sebagai dua pengaturan. Buka berkas di editor
+teks, hapus bagian itu, lalu jalankan ulang.
+
+"borrows objects from another repository" berarti klon memiliki berkas
+`objects/info/alternates` atau `objects/info/http-alternates`, seperti klon yang
+dibuat dengan `--reference` atau `--shared`. git kemudian akan membaca objek dari
+repositori lain itu, di bawah pengaturan yang tidak diperiksa pemasang.
+Jalankan `git -C ~/.apothem repack -a -d` untuk menyalin objek ke dalam klon,
+hapus berkas yang disebutkan pesan, lalu jalankan ulang.
+
+"keeps submodule repositories in ..." dan "holds a submodule at ..." berarti
+klon memiliki submodule, disimpan di folder yang disebutkan pesan pertama atau
+tercatat di indeksnya pada path yang disebutkan pesan kedua. Pohon rilis tidak
+memilikinya, dan git akan berjalan di dalam submodule, yang pengaturannya
+sendiri tidak diperiksa pemasang. Hapus submodule dan folder itu dari klon,
+atau pindahkan klon, lalu jalankan ulang. Mengganti klon dengan `--yes` juga
+melakukan pemeriksaan ini, sebelum `git status` mencari pekerjaan lokal. Hook
+git milik klon tidak pernah berjalan selama pembaruan.
+
+### Pemasang berhenti: berkas .gitattributes di klon tidak terlacak, berubah, atau menyebutkan driver
+
+git menerapkan berkas `.gitattributes` di work tree saat membandingkan dan
+melakukan checkout berkas, dan berkas seperti itu dapat membuat git menjalankan
+program. Sebelum perintah-perintah itu, pemasang dan skrip pembaruan berhenti
+pada berkas `.gitattributes` yang bukan versi yang di-commit, di folder mana pun
+dari klon dan dengan campuran huruf kapital apa pun pada namanya, serta pada
+repositori git di dalam klon yang tidak dilacak git, karena git juga akan
+membaca berkas `.gitattributes` di dalamnya. `--dry-run` dan `--yes` juga
+melakukan pemeriksaan ini. Pemeriksaan ini tidak membaca folder data milik mesin
+sendiri (`backups`, `state`, `plans`, `memory`, `contexts`, `learning` dan
+`providers`), tempat rilis mana pun tidak menulis, kecuali klon melacak berkas
+di sana.
+
+- "has a .gitattributes file that git does not track, at ..." menyebutkan
+  berkas yang tidak dilacak git, termasuk berkas yang diabaikan dan berkas di
+  folder tak terlacak. Hapus berkas itu, lalu jalankan ulang.
+- "has a changed .gitattributes file at ..." menyebutkan berkas terlacak yang
+  isinya berbeda dari salinan yang di-commit, yang perubahannya sudah di-stage,
+  atau yang berupa tautan atau folder. Jika Anda yang membuat perubahan itu,
+  kembalikan salinan yang di-commit, misalnya dengan
+  `git -C ~/.apothem checkout HEAD -- <path>`, lalu jalankan ulang.
+- "has a .gitattributes file at ... that names a filter or diff driver
+  (filter= or diff=)" menyebutkan berkas terlacak yang salinan committed-nya,
+  atau salinannya di work tree, menyebutkan driver di luar komentar, termasuk
+  makro (baris `[attr]`) yang menyebutkannya. git akan menjalankan driver itu,
+  yang mungkin didefinisikan konfigurasi git Anda sendiri atau konfigurasi
+  sistem, saat membaca klon. Hapus pengaturan itu, commit perubahannya, lalu
+  jalankan ulang. Makro yang hanya didefinisikan berkas atribut Anda sendiri
+  atau berkas atribut sistem tidak dihitung: selama proses berjalan git tidak
+  membaca berkas atribut di luar klon, sehingga makro seperti itu tidak
+  menyebutkan driver di sana.
+- "has a .gitattributes file at ... whose committed copy git could not read"
+  berarti salinan di folder git klon hilang atau rusak, atau byte-nya tidak
+  cocok dengan ID-nya, yang tidak diperiksa git saat membacanya. Pemasang
+  kemudian tidak dapat memeriksa isi berkas itu, sementara git tetap akan
+  menerapkan salinan di work tree. Jalankan `git -C ~/.apothem fsck` untuk
+  melihat apa yang rusak, perbaiki klon atau pindahkan dan pasang dari awal,
+  lalu jalankan ulang.
+- "Could not run git to read the committed .gitattributes files in ..." hanya
+  berasal dari `install.ps1` dan `update.ps1`. Di sesi PowerShell Anda, `git`
+  adalah fungsi atau skrip, misalnya pembungkus di profil Anda, dan tidak ada
+  program git di `PATH` yang dapat dipakai pemasang untuk membaca berkas itu.
+  Tambahkan folder git ke `PATH`, sehingga `Get-Command git -CommandType Application`
+  menemukannya, lalu jalankan ulang.
+- "holds a git repository that git does not track, at ..." menyebutkan folder
+  dengan `.git` miliknya sendiri. git tidak mencantumkan apa pun di dalam folder
+  seperti itu, sehingga berkas `.gitattributes` di sana tidak terlihat, namun
+  git menerapkannya pada berkas yang ditulis pembaruan di sana. Pohon rilis
+  tidak memilikinya. Pindahkan folder itu keluar dari klon, lalu jalankan ulang.
+
+Jika bukan Anda yang membuat berkas atau perubahan itu, orang lain dapat menulis
+ke klon: pindahkan klon, pasang dari awal, dan pastikan `APOTHEM_HOME` adalah
+folder yang hanya dapat Anda tulis.
+
+### Pemasang berhenti: berkas di bawah src yang tidak dilacak git
+
+Pesannya berbunyi "has files under src that git does not track, and the engine
+could load them:" dan mencantumkan setiap berkas (20 pertama, lalu berapa banyak
+lagi). Mesin berjalan dari folder `src` milik klon, sehingga berkas tambahan di
+sana dapat berjalan sebagai bagian darinya. Berkas yang diabaikan dihitung,
+begitu pula berkas `.pyc` di samping sumber. Folder bernama `Src` atau `SRC`
+dihitung sebagai `src`, karena Windows dan macOS menemukannya dengan nama itu.
+`pip install` editable dari klon menulis `src/apothem.egg-info`, dan pengelola
+berkas dapat menulis `.DS_Store` atau `desktop.ini`. Pindahkan berkas-berkas itu
+keluar dari `~/.apothem/src`, lalu jalankan ulang; tidak ada yang diubah.
+Pemeriksaan berjalan sebelum pengambilan, pada pembaruan di tempat dan pada dry
+run. Folder cache Python (`__pycache__`) tidak dihitung: setelah checkout, dan
+sebelum mesin pertama kali berjalan dari klon, pembaruan menghapus setiap folder
+`__pycache__` di bawah `src`, sehingga tidak ada bytecode cache dari sebelum
+pembaruan yang dimuat.
+
+"Could not remove the Python cache folders (__pycache__) under ..." berarti
+penghapusan itu gagal, misalnya karena berkas di salah satunya milik pengguna
+lain atau, di Windows, sedang terbuka di program lain. Klon sudah di-checkout ke
+rilis baru. Hapus folder-folder itu sendiri, lalu jalankan ulang.
+
+### Pemasang berhenti: proses lain memegang kunci [#the-installer-stops-another-run-holds-the-lock]
+
+Setiap proses skrip install, update, dan uninstall memegang kunci di samping
+`APOTHEM_HOME` (`<APOTHEM_HOME>.lock`, jadi `~/.apothem.lock` secara bawaan)
+selama berjalan; perintah `apothem install`, `apothem update` dan
+`apothem uninstall` tidak mengambilnya. Pesan "Another Apothem install, update or
+uninstall is running on ..." berarti proses kedua mendapati kunci itu sedang
+dipegang. Tunggu proses lain selesai, lalu jalankan ulang. Jika tidak ada yang
+berjalan, hapus kunci yang disebutkan pesan, lalu jalankan ulang.
+
+- "was left by an Apothem run that did not finish (process N is no longer
+  running)" dan "exists but names no running process" berarti sebuah proses
+  dihentikan paksa sebelum dapat melepas kunci. Pastikan tidak ada install,
+  update, atau uninstall Apothem yang berjalan, hapus kunci, dan jalankan ulang.
+  Pemasang tidak pernah menghapusnya untuk Anda. Di POSIX kunci berupa folder
+  (`rm -rf ~/.apothem.lock`); di Windows PowerShell kunci berupa berkas yang
+  dihapus Windows ketika prosesnya berakhir.
+- "is the lock file of an Apothem PowerShell run" berasal dari skrip POSIX di
+  bawah Git Bash, MSYS2, Cygwin atau WSL yang menemukan berkas yang dipegang
+  proses PowerShell. Windows menghapus berkas itu ketika proses berakhir dan
+  tidak mengizinkan siapa pun menghapusnya selama proses masih aktif. Tunggu
+  proses itu selesai. Jika tidak ada install, update, atau uninstall Apothem
+  yang berjalan, hapus berkas itu, lalu jalankan ulang. Di sistem lain pesannya
+  berbunyi "is a file where the Apothem lock folder belongs": hapus berkas itu
+  jika tidak ada proses yang aktif, lalu jalankan ulang.
+- "was made by an Apothem run in another environment" berarti folder kunci
+  menyebutkan proses di lingkungan lain, seperti WSL ketika proses berjalan di
+  bawah Git Bash, Git Bash ketika berjalan di bawah WSL atau MSYS2, atau
+  container lain. Proses itu tidak dapat diperiksa dari sini. Tunggu proses itu
+  selesai; hapus kunci hanya jika tidak ada install, update, atau uninstall
+  Apothem yang berjalan di mana pun.
+- Skrip POSIX menghitung proses milik pengguna lain, seperti proses di bawah
+  `sudo`, sebagai sedang berjalan, sehingga kuncinya terbaca sebagai dipegang.
+  PowerShell tidak dapat memeriksa ID proses dari folder kunci yang dibuat skrip
+  POSIX (misalnya di bawah Git Bash), sehingga ia juga melaporkan kunci itu
+  sebagai dipegang.
+- Ketika `APOTHEM_HOME` adalah tautan simbolik (atau, di Windows, junction),
+  skrip POSIX dan PowerShell mengambil kunci di samping folder yang dituju
+  tautan, sehingga proses melalui tautan dan proses melalui folder itu saling
+  menghentikan; pesannya menyebutkan kunci tersebut.
+- "Could not create the lock ... Check that you can write to ..." berarti Anda
+  tidak dapat menulis ke folder yang disebutkan pesan: folder yang menampung
+  `APOTHEM_HOME` atau, ketika `APOTHEM_HOME` adalah tautan, folder yang menampung
+  folder yang ditujunya. Setiap proses perlu menulis di sana, termasuk pembaruan
+  di tempat, uninstall, dan dry run.
+
+### Pemasang berhenti: proses sebelumnya meninggalkan folder di samping APOTHEM_HOME [#the-installer-stops-an-earlier-run-left-folders-beside-apothem_home]
+
+Pesannya berbunyi "An earlier run was stopped part-way and left these
+folders beside ..." dan mencantumkan setiap folder beserta isinya. Ctrl+C dan
+sinyal terminasi ditangkap dan proses membersihkan diri; penghentian paksa atau
+listrik padam saat pertukaran tidak, dan dapat meninggalkan:
+
+- `.apothem-old.<name>.*`: instalasi sebelumnya yang sedang diganti, di folder
+  `home`-nya. Ketika folder `home` itu menampung klon git dan `APOTHEM_HOME`
+  sudah ada di tempatnya (seperti setelah instalasi baru dipindahkan masuk),
+  barisnya justru mengatakan bahwa folder itu menampung pohon klon, yang sedang
+  disimpan proses tersebut: pindahkan ke folder milik Anda sendiri jika Anda
+  masih memerlukannya. Ketika folder `home` tidak menampung instalasi Apothem
+  dan `APOTHEM_HOME` sudah ada di tempatnya, barisnya mengatakan demikian:
+  sebuah folder muncul di sana saat proses sedang memindahkan instalasi
+  sebelumnya, proses mengembalikan instalasi itu dan membiarkan folder tersebut.
+  Periksa isinya sebelum Anda menghapusnya.
+- `.apothem-extract.<name>.*` atau `.apothem-clone.<name>.*`: sumber baru yang
+  sedang dipasang. Ketika proses sudah memindahkan entri `APOTHEM_HOME` ke
+  dalamnya, barisnya menyebutkan setiap entri: data mesin seperti `backups` dan
+  `state`, serta berkas atau folder lain yang ada di sana.
+- `<APOTHEM_HOME>.before-apothem-<time>`: dicantumkan hanya ketika
+  `APOTHEM_HOME` sendiri tidak ada. Folder ini menampung isi `APOTHEM_HOME`
+  sebelumnya, di folder yang dinamai menurut bagian terakhir `APOTHEM_HOME`,
+  atau langsung di dalamnya untuk folder yang dibuat pemasang sebelumnya;
+  barisnya menyebutkan yang mana.
+
+`<name>` adalah bagian terakhir `APOTHEM_HOME` (`.apothem` secara bawaan),
+sehingga folder milik `APOTHEM_HOME` lain di folder induk yang sama, yang mungkin
+sedang dipakai proses pada home itu, tidak dicantumkan. Di Windows dan macOS,
+`<name>` yang hanya berbeda pada huruf kapital dihitung sebagai milik home ini,
+karena `APP` dan `app` menamai folder yang sama di sana secara bawaan. Aturan ini
+mengikuti sistem operasi, bukan sistem berkas: di bawah WSL, bahkan pada drive
+Windows, nama yang berbeda huruf kapitalnya adalah home yang berbeda, sedangkan
+pada volume macOS atau folder Windows yang peka huruf besar-kecil nama-nama itu
+tetap dihitung sebagai satu, sehingga home lain di sana yang namanya hanya
+berbeda pada huruf kapital juga dicantumkan. Folder yang namanya tidak memiliki
+bagian `<name>` dibuat oleh pemasang sebelumnya yang tidak mencatat home; folder
+itu dicantumkan dengan catatan bahwa ia mungkin milik home Apothem mana pun di
+folder tersebut, dan barisnya mengatakan bahwa entri dipindahkan dari home yang
+menjadi tujuan pembuatannya. Untuk folder seperti itu yang dibuat oleh instalasi
+klon, barisnya hanya menyebutkan data mesin yang ditemukannya, jadi periksa
+isinya untuk hal lain. Hanya folder yang dihitung: berkas atau tautan dengan nama
+seperti itu tidak dicantumkan. Folder yang tidak dapat dibaca pemasang
+dicantumkan sebagai "could not be read".
+
+Tidak ada yang diubah dan tidak ada yang dihapus. Jika `APOTHEM_HOME` tidak ada,
+pindahkan instalasi sebelumnya kembali ke sana terlebih dahulu. Lalu pindahkan
+setiap entri yang disebutkan daftar sebagai dipindahkan ke sumber baru kembali
+ke home asalnya (periksa dulu home mana untuk folder yang bercatatan), hapus
+folder yang dicantumkan, dan jalankan ulang. Pemeriksaan berjalan untuk
+instalasi yang diambil dari jaringan, termasuk dry run; pemeriksaan tidak
+berjalan untuk instalasi dari checkout Anda sendiri, juga tidak untuk pembaruan
+atau uninstall.
+
+### Pemasang berhenti: pengguna lain memiliki klon
+
+Pesannya berbunyi "is owned by someone else, so git refuses to work in it
+(git reports "dubious ownership")". git tidak akan membaca klon yang dimiliki
+pengguna lain. Jalankan pemasang sebagai pengguna yang memiliki `APOTHEM_HOME`,
+ambil alih kepemilikan folder itu, atau arahkan `APOTHEM_HOME` ke folder milik
+Anda, lalu jalankan ulang. Pemasang tidak menambahkan folder itu ke daftar
+`safe.directory` git. Kegagalan lain apa pun dari perintah git pertama itu
+berbunyi "git could not read the clone at ..." diikuti baris penjelasan pertama
+dari git sendiri.
+
+### Pemasang memperingatkan: pengguna lain dapat mengubah APOTHEM_HOME [#the-installer-warns-other-users-can-change-apothem_home]
+
+Skrip install dan update, termasuk dry run, memperingatkan ketika pengguna selain
+Anda dapat menulis ke `APOTHEM_HOME` atau folder yang menampungnya, atau
+memiliki salah satunya, karena mereka kemudian dapat mengubah kode yang
+dijalankan perintah `apothem` sebagai Anda; proses yang melewati pemeriksaan ini
+dicantumkan di bawah. Proses tetap berlanjut; peringatannya menyebutkan folder,
+siapa yang dapat menulis ke folder itu atau memilikinya, dan perbaikannya.
+Peringatan dimulai dengan salah satu dari:
+
+- "Other users can change the code Apothem runs as you", ketika mereka dapat
+  menulis ke `APOTHEM_HOME`, atau ketika `APOTHEM_HOME` atau folder yang
+  menampungnya milik orang lain (pesannya kemudian menyebutkan siapa memiliki
+  folder mana). Ketika `APOTHEM_HOME` adalah tautan, pesannya menyebutkan folder
+  yang dituju tautan itu.
+- "Other users can replace ...", ketika mereka dapat menulis ke folder yang
+  menampung `APOTHEM_HOME` (atau menampung tautan ke sana), sehingga dapat
+  mengganti nama atau menghapusnya.
+- "A new ... would let", ketika `APOTHEM_HOME` belum ada dan folder baru di sana
+  akan terbuka bagi orang lain.
+
+Instalasi dari checkout lokal tidak diperiksa, baik `APOTHEM_SOURCE` menyebutkan
+checkout itu maupun Anda menjalankan `scripts/installer/install.sh` atau
+`install.ps1` milik checkout itu sendiri. Skrip pembaruan melewati pemeriksaan
+hanya ketika `APOTHEM_SOURCE` disetel. Jika peringatan menyebutkan grup yang
+sengaja Anda bagi dengan orang-orang yang Anda percayai untuk mengubah kode,
+Anda dapat mengabaikannya.
+
+Pemeriksaan membaca izin `APOTHEM_HOME` dan folder yang menampungnya, bukan izin
+setiap berkas di dalamnya.
+
+Di Linux dan macOS, peringatan menyebutkan "all users" atau "the group" yang
+ditemukannya pada bit izin folder, serta setiap pengguna atau grup yang diberi
+izin tulis oleh daftar akses (ACL), yang dibacanya dengan `getfacl` bila alat
+itu terpasang. Dengan daftar akses, bit grup yang ditampilkan `ls` adalah mask
+daftar itu, sehingga ketika `getfacl` mencantumkan entri milik grup itu sendiri
+(`group::`), entri itulah yang menentukan apakah grup disebutkan; tanpa
+`getfacl`, grup yang disebutkan mungkin grup yang diizinkan menulis oleh mask
+tetapi tidak oleh entrinya sendiri. Peringatan tidak pernah menyebutkan Anda,
+pengguna root, atau grup dengan nama pengguna Anda sendiri (grup Anda sendiri).
+Nama yang ditulis `getfacl` dengan escape, seperti akun domain `CORP\alice`,
+dihitung sebagai nama yang diwakilinya. Untuk memperbaikinya, jalankan perintah
+yang diberikan pesan (di Linux perintah itu juga mencabut akses tulis dari
+setiap pengguna dan grup yang disebutkan daftar akses):
+
+```bash
+chmod go-w "$HOME/.apothem"
+```
+
+Berkas yang dibuat di bawah pengaturan yang sama juga dapat ditulis: `chmod -R go-w`
+pada folder itu memperbaikinya juga. Jika orang lain perlu menulis ke folder yang
+menampung `APOTHEM_HOME`, seperti `/tmp`, setel sticky bit-nya dengan `chmod +t`
+agar mereka tidak dapat mengganti nama atau menghapus apa yang Anda taruh di
+sana, atau pindahkan `APOTHEM_HOME`. Untuk instalasi baru, peringatan melaporkan
+umask Anda: jalankan `umask 022` lalu jalankan pemasang lagi. Di WSL, simpan
+`APOTHEM_HOME` di home Linux Anda, bukan di bawah `/mnt/c`, tempat setiap berkas
+tampak dapat ditulis semua pengguna.
+
+Ketika pesan mengatakan seorang pengguna "owns" folder itu, pengguna tersebut
+dapat mengubahnya apa pun kata izinnya, dan hanya root yang dapat menjadikan Anda
+pemiliknya. Folder milik root tidak masalah. Pindahkan `APOTHEM_HOME` ke folder
+milik Anda.
+
+Di Windows, peringatan menyebutkan setiap akun atau grup yang diizinkan entri
+izin untuk mengubah folder, sebagaimana tab Security folder itu menamainya:
+Users, Authenticated Users, Everyone, INTERACTIVE (semua orang yang masuk di
+komputer itu atau melalui Remote Desktop, yang dapat mengubah apa yang dibuat di
+`C:\Users\Public`), Guests, atau grup yang dibuat organisasi Anda atau program
+lain. Peringatan tidak pernah menyebutkan Anda, sesi masuk Anda sendiri, SYSTEM,
+Administrators, TrustedInstaller, CREATOR OWNER atau OWNER RIGHTS; dua yang
+terakhir mewakili siapa pun yang membuat atau memiliki suatu item, dan pemilik
+yang merupakan orang lain mendapat pesan tersendiri. Ketika folder milik akun
+lain, pesannya mengatakan demikian dan meminta Anda memindahkan `APOTHEM_HOME` ke
+folder pengguna Anda. Ketika pesan menambahkan "access that folders made at the
+root of a drive inherit from the drive's default permissions", folder itu berada
+di root sebuah drive, seperti `C:\apothem`: Windows mengizinkan setiap pengguna
+yang masuk menambah dan mengubah folder yang dibuat di sana. Perbaikan paling
+sederhana adalah memindahkan `APOTHEM_HOME` ke folder pengguna Anda
+(`%USERPROFILE%`), seperti `~\.apothem` bawaan. Untuk mempertahankan folder di
+tempatnya, matikan pewarisan, beri diri Anda kendali penuh, lalu hapus grup yang
+disebutkan peringatan. Untuk folder di root drive, itu adalah Authenticated
+Users di Windows 10 dan 11 dan Users di Windows Server; perintah di bawah
+menghapus keduanya:
+
+```powershell
+icacls "C:\apothem" /inheritance:d
+icacls "C:\apothem" /grant:r "${env:USERNAME}:(OI)(CI)F"
+icacls "C:\apothem" /remove:g *S-1-5-11 *S-1-5-32-545 *S-1-1-0 *S-1-5-4
+```
+
+Beri diri Anda akses sebelum menghapus grup: entri yang Anda hapus bisa jadi
+satu-satunya cara Anda menulis ke folder itu. Nama `*S-...` adalah security ID
+grup-grup itu (Authenticated Users, Users, Everyone dan INTERACTIVE), yang
+berfungsi di setiap bahasa Windows. Hapus nama lain yang diberikan peringatan
+pada baris `icacls` tersendiri, di dalam tanda kutip: nama yang tidak dapat
+ditemukan `icacls` menghentikan seluruh baris, yang kemudian tidak menghapus apa
+pun dan tetap mencetak "Successfully processed 0 files". Nama yang terdiri dari
+`S-` dan angka adalah security ID akun yang tidak dapat dicari Windows, seperti
+akun yang sudah dihapus atau sesi masuk lain: taruh `*` di depannya, dan jika
+`icacls` tetap tidak menghapus apa pun, hapus melalui Properties > Security >
+Advanced pada folder itu. Anda juga dapat melakukan setiap perubahan di sana.
+Ketika peringatan menyangkut folder yang menampung `APOTHEM_HOME`, lakukan
+perubahan di sana, atau pindahkan `APOTHEM_HOME`. Tautan atau junction di
+`APOTHEM_HOME` mengambil izinnya dari folder itu, sehingga orang lain yang dapat
+mengubah folder itu dapat menghapus tautan dan membuat tautan mereka sendiri.
+
+`install.sh` dan `update.sh` tidak memeriksa di bawah Git Bash, MSYS2 atau
+Cygwin, tempat bit izin dibentuk dari izin Windows, sehingga keduanya tidak
+memberi peringatan di sana. Di Windows, jalankan `install.ps1` atau `update.ps1`,
+yang membaca izin Windows, agar folder diperiksa.
+
+### Pemasang berhenti: klon yang ada tidak dapat diperbarui
+
+Pemasang mengambil data ke klon yang ada dan memeriksa tag baru sebelum
+melakukan checkout klon, sehingga pemeriksaan yang gagal membiarkan klon seperti
+semula. Dua pesan lain menghentikan pembaruan sebelum checkout. "Could not fetch"
+biasanya berarti tag lokal berbeda dari tag di origin: hapus dengan
+`git -C ~/.apothem tag -d <tag>` dan jalankan ulang. "has changes to tracked files.
+Commit or stash them, then re-run." berarti klon memiliki perubahan yang belum
+di-commit pada berkas yang dilacak git: commit atau stash perubahan itu, lalu
+jalankan ulang. Pemeriksaan mengabaikan pengaturan akhir baris (`eol` dan
+`text`) di berkas atribut git Anda sendiri atau milik sistem, sehingga klon yang
+tidak pernah Anda ubah dapat dilaporkan dengan cara ini: jalankan
+`git -C ~/.apothem status` sekali, lalu jalankan ulang. Dry run tidak memeriksa
+perubahan biasa yang belum di-commit, karena tidak mengambil data ke klon, tetapi
+berhenti dengan pesan yang sama ketika berkas ditandai assume-unchanged atau
+skip-worktree (lihat bagian penyiapan klon di atas). "Could not check out"
+berarti checkout masih akan menimpa perubahan lokal. Pemasang tidak pernah
+membuang perubahan lokal. Untuk ref non-rilis seperti `main`, klon yang ada
+mengikuti salinan branch itu di origin.
+
+### Pemasang atau skrip pembaruan berakhir dengan kode keluar 2
+
+Mesin berakhir sebagai parsial. Entah mesin membiarkan apa adanya sebuah berkas
+yang memuat blok Apothem karena baris penanda Apothem-nya, dan menulis sisanya,
+atau mesin berhenti setelah menulis sesuatu, misalnya ketika satu alat gagal
+setelah alat sebelumnya dalam proses `APOTHEM_HARNESS=all`. Pesan-pesannya
+menyebutkan berkas itu, atau menampilkan galat yang menghentikannya, dan skrip
+menambahkan satu baris yang dimulai dengan "The engine ended as partial (exit
+code 2)." Pemasang tetap menjalankan verify, menempatkan perintah `apothem` dan
+mencetak banner-nya, dan skrip pembaruan tetap mencetak baris terakhirnya.
+Proses PowerShell yang dipipakan (`irm ... | iex`) membiarkan `$LASTEXITCODE`
+bernilai `2` dan sesi Anda tetap terbuka. Perintah sekali jalan
+`pwsh -Command "irm ... | iex"` (atau `powershell -c`) melaporkan proses parsial
+hanya melalui `$LASTEXITCODE` dan keluar dengan `0`: untuk mendapatkan kode
+keluar `2` dari proses, akhiri perintah dengan `; exit $LASTEXITCODE`, atau
+jalankan skrip melalui path-nya dengan `-File`. Dari PowerShell, bash, atau shell
+POSIX lain, taruh perintah itu dalam tanda kutip tunggal. Dalam tanda kutip
+ganda, shell pemanggil memasukkan `$LASTEXITCODE` miliknya sendiri sebelum proses
+baru dimulai (shell POSIX memasukkan string kosong), sehingga proses tidak keluar
+dengan kode milik proses tersebut. Dari cmd.exe, tanda kutip ganda tidak
+masalah. Dry run tidak menulis apa pun, sehingga tidak berakhir sebagai parsial.
+Perbaiki apa yang disebutkan pesan. Untuk sebuah berkas, pertahankan teks Anda
+sendiri (lihat
+[Sebuah berkas memuat dua blok di antara penanda Apothem](#a-file-holds-two-blocks-between-apothems-markers)
+dan
+[Apothem tidak dapat membedakan bloknya dari teks Anda](#apothem-cannot-tell-its-block-from-your-text)),
+lalu jalankan `apothem update --harness <name>` lagi untuk setiap alat yang
+dibiarkan belum selesai oleh proses itu.
+[Ketika mesin membiarkan berkas apa adanya](/docs/install/updating#when-the-engine-leaves-a-file-as-it-is)
+menjelaskan keseluruhan prosesnya.
 
 ### irm / iex diblokir di Windows
 
@@ -125,6 +656,56 @@ Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
+### Pemasang mengabaikan checkout di folder saat ini
+
+Ini disengaja. One-liner yang dipipakan (`curl ... | sh`, `irm ... | iex`) tidak
+pernah memakai pohon lokal, dan tidak pernah mencari di folder saat ini atau
+folder induknya: ia mengambil dan memverifikasi rilis. Untuk memasang dari
+checkout, jalankan `scripts/installer/install.sh` (atau `install.ps1`) milik
+checkout itu melalui path-nya, dari folder mana pun (misalnya
+`sh ~/src/apothem/scripts/installer/install.sh`), atau setel `APOTHEM_SOURCE` ke
+checkout itu. Beri skrip path yang memuat bagian folder:
+`sh scripts/installer/install.sh` atau `sh ./scripts/installer/install.sh`
+berfungsi, tetapi `sh install.sh` tanpa bagian folder tidak dihitung sebagai
+berjalan dari checkout, sehingga pemasang mencetak "Not using a checkout: to
+install from one, run this script as ./install.sh or by its full path, or set
+APOTHEM_SOURCE." lalu mengambil dan memverifikasi rilis sebagai gantinya. Skrip
+yang dimulai melalui `sh -c` juga tidak diperlakukan sebagai checkout, pada shell
+yang menandai proses `-c`. dash tidak menandainya, sehingga di bawah dash
+`sh -c "<script>" ./install.sh` yang dimulai dari folder bernama
+`scripts/installer` di dalam pohon sumber memakai pohon itu: mulai teks skrip
+dengan cara itu hanya dari folder yang Anda percayai. Dengan cara yang sama,
+salinan `install.sh` yang Anda simpan ke folder `scripts/installer` milik pohon
+sumber lain dan jalankan di sana melalui path menjadi pemasang milik pohon itu dan
+memasangnya. Simpan skrip yang diunduh ke folder kosong. `install.sh` mengikuti
+symlink ke berkas aslinya dan memakai checkout yang menampungnya. `install.ps1`
+melakukan sebaliknya: ia menolak checkout yang dicapainya melalui symlink atau
+junction, mencetak catatan satu baris, dan menempuh jalur yang diambil dan
+diverifikasi. Jalankan dari folder aslinya, atau setel `APOTHEM_SOURCE`. Pemasang,
+perintah `apothem`, peluncur npm, dan hook juga menjauhkan folder saat ini dari
+jalur pencarian modul Python, sehingga berkas bernama `click.py` di folder tempat
+Anda bekerja tidak berpengaruh pada mereka. Perintah `python -m apothem` yang Anda
+ketik sendiri tidak demikian: `-m` membaca modul dari folder saat ini terlebih
+dahulu, jadi jalankan hanya dari folder yang Anda percayai.
+
+### Perintah `apothem` lama masih melihat folder saat ini
+
+Rilis sebelumnya menulis shim perintah `apothem` yang memulai Python dengan cara
+yang membiarkan folder saat ini membayangi modul mesin. Pembaruan tidak menulis
+ulang shim itu. Jalankan pemasang (`install.sh` atau `install.ps1`) lagi untuk
+menggantinya. Pencopot pemasangan menghapus shim lama maupun yang baru.
+
+### Git Bash: entri PYTHONPATH `/c/...` saya diabaikan
+
+Di bawah Git Bash pemasang biasanya menjalankan Python Windows, dan Python
+Windows membaca `PYTHONPATH` sebagai path Windows yang dipisahkan `;`. Skrip sh
+dan shim `apothem` yang ditulisnya hanya mempertahankan path drive dan jaringan
+dari `PYTHONPATH` Anda untuk Python itu, sehingga entri bergaya POSIX seperti
+`/c/Users/me/lib` dibuang. Tulis entri itu sebagai path drive, `C:\Users\me\lib`
+atau `C:/Users/me/lib`, dan pisahkan entri dengan `;`. Python POSIX, seperti
+`python3` milik Cygwin atau MSYS2 sendiri, membaca path yang dipisahkan `:` dan
+dimulai dengan `/`, dan skrip mempertahankan path itu untuknya.
+
 ## Masalah runtime
 
 ### apothem install tidak menemukan harness
@@ -134,12 +715,488 @@ Jalankan apothem doctor untuk membaca tabel Harness Status-nya, yang memiliki sa
 ### apothem verify melaporkan adapter yang gagal
 
 Jalankan ulang apothem install untuk mematerialisasikan ulang adapter. Jika masalah berlanjut, periksa
-halaman khusus adapter di bawah [Adapter Harness](/docs/harnesses).
+halaman khusus adapter di bawah [Adapter Harness](/docs/harnesses). Jika instalasi
+memperingatkan tentang penanda BEGIN tanpa END, atau baris yang gagal menyebutkan
+berkas yang memuatnya, menjalankannya ulang tidak membantu; lihat
+[Sebuah berkas memiliki penanda BEGIN Apothem tanpa penanda END](#a-file-has-an-apothem-begin-marker-with-no-end-marker).
+Jika peringatan atau baris itu mengatakan bahwa sebuah berkas memuat dua blok
+utuh atau lebih di antara penanda Apothem, lihat
+[Sebuah berkas memuat dua blok di antara penanda Apothem](#a-file-holds-two-blocks-between-apothems-markers).
+Jika dikatakan bahwa Apothem tidak dapat membedakan apakah baris penanda di
+sebuah berkas menandai bloknya atau teks Anda, lihat
+[Apothem tidak dapat membedakan bloknya dari teks Anda](#apothem-cannot-tell-its-block-from-your-text).
+
+### Sebuah berkas memiliki penanda BEGIN Apothem tanpa penanda END [#a-file-has-an-apothem-begin-marker-with-no-end-marker]
+
+Apothem menyimpan teksnya sendiri dalam blok yang membentang dari penanda
+`<!-- BEGIN APOTHEM MANAGED BLOCK -->` sampai penanda
+`<!-- END APOTHEM MANAGED BLOCK -->` berikutnya. Jika penanda END hilang (suntingan
+manual atau merge yang membuang baris itu), atau penanda BEGIN milik Anda berada
+di luar blok utuh, tidak ada yang menunjukkan di mana teks Apothem berhenti dan
+teks Anda dimulai. Jadi Apothem tidak pernah memotong teks setelah penanda itu:
+
+- `apothem install` dan `apothem update` membiarkannya apa adanya, menulis blok
+  Apothem terpisah darinya, dan mencetak peringatan yang menyebutkan berkas dan
+  baris penanda itu, dengan langkah bernomor yang mengubah baris tersebut (lihat
+  di bawah). Peringatan itu juga mengatakan agar tidak menambahkan kembali
+  penanda END sebagai gantinya: dengan blok Apothem ditulis terpisah darinya,
+  berkas kemudian akan memuat dua blok Apothem, yang dibiarkan apa adanya oleh
+  install dan update. Dry run membaca berkas sebelum apa pun ditulis, sehingga
+  ketika berkas belum memuat blok utuh, peringatannya mengatakan bahwa jika Anda
+  menambahkan kembali penanda END sebagai gantinya, tidak boleh ada baris milik
+  Anda di antara kedua penanda, karena proses berikutnya mengganti atau
+  mengeluarkan setiap baris di antara keduanya, dan agar tidak menambahkannya
+  kembali sama sekali setelah install atau update menulis blok Apothem terpisah
+  dari penanda itu. Sampai saat itu, menaruhnya kembali tepat di bawah teks
+  Apothem lama, di atas baris Anda sendiri, menyisakan satu blok utuh, yang
+  ditulis ulang oleh pembaruan berikutnya.
+- `apothem uninstall` mengeluarkan seluruh blok Apothem, membiarkan sisanya apa
+  adanya, dan menyebutkan berkas dan baris penanda itu, dengan langkah bernomor
+  yang sama: instalasi membiarkan penanda itu apa adanya, dan alat tetap membaca
+  teks di bawahnya.
+- `apothem verify` dan `apothem doctor` gagal dan menyebutkan berkas dan baris
+  penanda itu, dengan langkah bernomor yang sama, sampai penanda liar itu
+  diubah; untuk berkas yang ditulis instalasi saat ini,
+  `apothem status --profile` juga menampilkan drift sampai saat itu.
+  Menjalankan `apothem install` lagi tidak menghapusnya. Hanya berkas tempat
+  Apothem menyimpan blok untuk harness itu yang dihitung, sehingga penanda di
+  berkas milik Anda sendiri tidak membuatnya gagal.
+
+Selama catatan instalasi mencantumkan berkas yang tidak memuat blok utuh tetapi
+memuat pasangan penanda di dalam kode, seperti contoh penanda yang Anda kutip
+dalam blok kode, install, update, dan uninstall membiarkan seluruh berkas itu apa
+adanya: pasangan itu mungkin blok Apothem di dalam blok kode milik Anda.
+Peringatan mereka, seperti catatan `apothem verify`, menyebutkan penanda BEGIN
+itu terlebih dahulu, lalu setiap pasangan, dan uninstall tetap belum selesai
+(lihat
+[Apothem tidak dapat membedakan bloknya dari teks Anda](#apothem-cannot-tell-its-block-from-your-text)).
+Tanpa catatan instalasi, pasangan yang Anda kutip dalam kode adalah teks Anda,
+dan install serta update menulis blok Apothem terpisah dari penanda liar itu.
+Penanda END yang Anda kutip sendirian dalam kode lebih ke bawah, tanpa pasangan
+penanda setelahnya, berbeda: penanda itu menutup penanda BEGIN tersebut, sehingga
+pembaruan mengganti baris-baris di antara keduanya sebagai blok Apothem, dan
+uninstall menghapusnya.
+
+Apothem membaca penanda hanya sebagai baris tersendiri di luar kode, seperti
+yang dilakukan penampil Markdown, sehingga penanda yang Anda kutip dalam kalimat,
+dalam blok kode berpagar, atau dalam kode yang diindentasi empat kolom melewati
+item daftarnya (atau margin) setelah baris kosong tidak dianggap sebagai
+penanda, begitu pula penanda BEGIN dan END yang Anda kutip dalam dua blok kode
+terpisah. Pagar kode yang Anda biarkan terbuka sampai akhir berkas dibaca sebagai
+teks, berapa pun jumlahnya, kecuali penanda BEGIN di luar kode di atasnya
+memiliki penanda END di dalam kode dan pasangan penanda lain menyusul keduanya.
+Penanda di dalam blok HTML atau block quote, atau setelah item daftar yang
+teksnya berlanjut di margin kiri, masih dapat dibaca berbeda dari penampil
+Markdown.
+
+Setiap nomor baris yang diberikan peringatan ini menghitung baris sebagaimana
+Apothem membaca berkas: sebuah baris berakhir pada CRLF, pada LF, atau pada CR
+yang berdiri sendiri. Dalam berkas yang disimpan dengan akhiran CR, atau dengan
+satu CR liar di dalam sebuah baris, hitung baris dengan cara yang sama sebelum
+Anda mengubah baris yang disebutkan peringatan.
+
+Untuk memperbaikinya, ikuti langkah bernomor dalam peringatan, misalnya
+"Fix A, if lines 77 to 148 are Apothem's block: A1. Change line 3: add a word
+inside its comment." Baris 3 adalah penanda BEGIN liar: yang tidak memiliki
+penanda END sebelum penanda BEGIN berikutnya, atau tidak memilikinya sama sekali.
+Tambahkan sebuah kata tepat sebelum `-->` penutupnya, seperti dalam
+`<!-- BEGIN APOTHEM MANAGED BLOCK (example) -->`, dan baris itu tidak lagi dibaca
+sebagai penanda. Itu tidak menambah atau menghapus baris, sehingga tidak ada hal
+lain di berkas yang terbaca berbeda, dan baris BEGIN yang membuka blok Apothem
+saat ini tetap apa adanya. Perbaikan itu juga mengubah setiap baris penanda BEGIN
+lain di berkas, termasuk yang Anda kutip dalam blok kode, satu langkah untuk
+masing-masing, dari bawah berkas ke atas (lihat
+[Mengikuti perbaikan bernomor](#follow-a-numbered-fix)): penanda BEGIN kutipan
+yang dibiarkan apa adanya dapat berpasangan dengan penanda END di bawahnya
+setelah uninstall mengeluarkan blok Apothem. Ketika tata letak berkas tidak
+menunjukkan bahwa blok Apothem tetap utuh setelah baris-baris itu diubah (misalnya
+blok kode milik Anda yang tidak ditutup baris mana pun menampungnya), perbaikan
+mengubah setiap baris penanda BEGIN di berkas, termasuk milik blok itu, misalnya
+"Fix A: A1. Below line 6, add a line of 3 backticks. A2. Change line 3: add a
+word inside its comment. A3. Change line 2: add a word inside its comment.
+Apothem then reads none of these lines as its markers, and the next update
+writes its block at the end of the file." Ketika berkas berakhir di dalam blok
+kode yang tidak ditutup baris mana pun, seperti di sini, perbaikan pertama-tama
+menambahkan baris penutup blok kode itu di bawah baris terakhir, sehingga blok
+yang ditulis pembaruan berikutnya di sana bukan kode. Teks Apothem lama di bawah
+baris penanda yang Anda ubah, yang mengulang aturan Apothem, kemudian menjadi
+milik Anda untuk dihapus secara manual. Jangan menambahkan kembali penanda END
+sebagai ganti mengubah baris penanda: setelah install atau update menulis blok
+Apothem terpisah darinya, berkas kemudian akan memuat dua blok Apothem (lihat
+[Sebuah berkas memuat dua blok di antara penanda Apothem](#a-file-holds-two-blocks-between-apothems-markers)).
+Setelah Anda mengubah baris penanda, penanda END di bawahnya tidak berpasangan
+dengan apa pun. Lalu jalankan `apothem update`, yang menulis kembali blok Apothem
+jika berkas tidak lagi memuatnya, dan jalankan `apothem verify` lagi. Penanda
+BEGIN yang penanda END-nya berada di dalam kode, dengan pasangan penanda lain
+setelah keduanya, mendapat peringatan berbeda; lihat
+[Apothem tidak dapat membedakan bloknya dari teks Anda](#apothem-cannot-tell-its-block-from-your-text).
+
+### Sebuah berkas memuat dua blok di antara penanda Apothem [#a-file-holds-two-blocks-between-apothems-markers]
+
+Apothem menulis satu blok per berkas. Sebuah berkas tetap dapat berakhir dengan
+dua blok utuh: blok lama yang penanda END-nya Anda taruh kembali setelah
+pembaruan menulis blok baru di bawahnya, pasangan penanda milik Anda di luar kode
+(misalnya contoh yang Anda kutip), atau blok yang Anda tempelkan untuk kedua
+kalinya. Apothem kemudian tidak dapat membedakan mana yang miliknya sendiri:
+
+- `apothem install` dan `apothem update` membiarkan berkas apa adanya dan
+  mencetak peringatan yang menyebutkan setiap blok berdasarkan barisnya, misalnya
+  "holds 2 whole blocks between Apothem's markers (lines 1 to 32, and lines 36
+  to 67)". Proses berakhir sebagai parsial: sebagai ganti baris `✓` ia mencetak
+  baris `✗` yang menyebutkan berkas itu, `status` pada `--format json`-nya
+  adalah `"partial"`, dan ia keluar dengan kode `2`, sampai Anda memperbaiki
+  berkas itu. Dalam dry run peringatannya mengatakan Apothem "would leave the
+  file as it is".
+- `apothem verify`, dengan atau tanpa `--profile`, dan `apothem doctor` gagal dan
+  menyebutkan berkas itu beserta setiap blok (pemeriksaan doctor adalah
+  `harness.stray_begin`, dan pesannya mengatakan berkas itu memuat "Apothem
+  markers to fix by hand") sampai Anda memperbaiki berkas itu; untuk berkas yang
+  ditulis instalasi saat ini, `apothem status --profile` juga menampilkan drift
+  sampai saat itu.
+- `apothem uninstall` mengeluarkan blok-blok yang merupakan salinan persis satu
+  sama lain (misalnya blok yang ditempelkan dua kali). Ketika blok yang berbeda
+  akan tersisa, ia membiarkan berkas apa adanya, mencetak peringatan yang sama,
+  yang diakhiri dengan "then run the uninstall again", dan tetap belum selesai
+  (kode keluar `2`) sampai Anda memperbaikinya (lihat
+  [Pencopotan yang tidak selesai](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish)).
+  Tanpa catatan instalasi, ia juga membiarkan apa adanya `CLAUDE.md` milik Claude
+  Code atau dokumen profil yang memuat dua blok, dan peringatannya menyebutkan
+  setiap blok dengan cara yang sama. Peringatan itu mengatakan agar menjalankan
+  `apothem update`, lalu `apothem uninstall` lagi, setelah perbaikan, dan tidak
+  menghentikan uninstall. Proses uninstall kemudian menyebutkan baris penanda
+  milik Anda di sekitar blok Apothem sebelum mengeluarkan blok itu.
+
+Peringatan kemudian memberikan satu perbaikan bernomor untuk setiap blok, untuk
+kasus bahwa blok itu adalah blok Apothem, misalnya "Fix A, if lines 1 to 32 are
+Apothem's block: A1. Change line 36: add a word inside its comment. Lines 1 to
+32 are then the one block in the file." (lihat
+[Mengikuti perbaikan bernomor](#follow-a-numbered-fix)). Sebuah perbaikan
+mengubah baris penanda BEGIN dari setiap blok lain; penanda END tanpa penanda
+BEGIN di atasnya tidak berpasangan dengan apa pun. Blok yang kasusnya tidak
+ditunjukkan tata letak berkas (misalnya blok di bawah blok yang menampung blok
+kode) tidak mendapat perbaikan tersendiri, dan satu perbaikan lagi, "in any
+other case", kemudian mengubah setiap baris penanda BEGIN di berkas. Buka berkas
+yang disebutkan pada baris yang diberikan peringatan:
+
+1. Pilih perbaikan untuk blok yang memuat aturan Apothem. Dalam berkas yang
+   diawali frontmatter Apothem, itu adalah blok tepat di bawahnya: uninstall
+   mengeluarkan frontmatter itu hanya bersama blok tepat di bawahnya.
+2. Lakukan langkah-langkah perbaikan itu sesuai urutan yang diberikan. Setiap
+   langkah mengubah baris penanda BEGIN di tempatnya, sehingga teks di bawahnya
+   tetap ada: pasangan penanda milik Anda mempertahankan contoh Anda, dan teks
+   blok Apothem yang lebih lama atau yang ditempelkan, sampai baris penanda
+   END-nya, kemudian menjadi milik Anda untuk dihapus secara manual. Setiap
+   perbaikan berlaku untuk pembaruan berikutnya maupun untuk uninstall. Jangan
+   menghapus blok Apothem demi mempertahankan pasangan milik Anda: uninstall
+   berikutnya kemudian akan mengeluarkan pasangan Anda sebagai satu-satunya blok
+   yang tersisa. Jangan pula memindahkan pasangan milik Anda ke dalam blok kode:
+   setelah blok Apothem sendiri tidak lagi utuh (misalnya penanda END-nya
+   hilang), pasangan penanda di dalam kode mencegah install dan update menulis
+   blok Apothem selama catatan instalasi mencantumkan berkas itu (lihat
+   [Apothem tidak dapat membedakan bloknya dari teks Anda](#apothem-cannot-tell-its-block-from-your-text)).
+3. Jalankan `apothem update`, lalu `apothem verify` lagi. Setelah uninstall yang
+   tidak selesai, jalankan `apothem uninstall` lagi sebagai gantinya.
+
+Penanda BEGIN di atas blok Apothem dan penanda END di bawahnya membentuk blok
+kedua yang baru tampak setelah blok Apothem dikeluarkan. Peringatan uninstall
+kemudian menyebutkan blok Apothem dan kedua baris penanda itu, misalnya "once the
+block from line 5 to line 36 is out, the BEGIN marker at line 2 and the END
+marker at line 39 make another", dan mengatakan "Do not delete the block from
+line 5 to line 36": proses berikutnya kemudian akan membaca baris 2 sampai 39
+sebagai blok Apothem, dan mengganti atau mengeluarkan apa yang ada di antaranya.
+Satu-satunya perbaikannya mengubah baris penanda BEGIN itu sebagai gantinya,
+dengan mempertahankan teks Anda sendiri, misalnya "Fix A, if lines 5 to 36 are
+Apothem's block: A1. Change line 2: add a word inside its comment. Lines 5 to 36
+are then the one block in the file."; lalu jalankan uninstall lagi. Penanda END
+di bawahnya kemudian tidak berpasangan dengan apa pun, sehingga dapat tetap ada,
+misalnya sebagai contoh yang Anda kutip dalam blok kode. Jangan menaruh kedua
+baris itu dalam satu blok kode: blok kode itu akan menampung blok Apothem juga.
+Jika penanda BEGIN itu adalah sisa blok Apothem yang lebih lama, teks Apothem lama
+di bawahnya kemudian menjadi milik Anda untuk dihapus secara manual.
+`apothem update` juga tidak memperbaiki berkas seperti itu, dan `apothem verify`
+gagal sampai Anda memperbaikinya.
+
+### Apothem tidak dapat membedakan bloknya dari teks Anda [#apothem-cannot-tell-its-block-from-your-text]
+
+Peringatan menyebutkan berkas dan mengatakan "Apothem cannot tell whether the
+marker lines in this file mark its block or text of yours". Anda melihatnya ketika
+pagar kode di atas blok Apothem dibiarkan terbuka dan pagar yang Anda tambahkan
+lebih ke bawah menutupnya: blok itu kemudian berada di dalam blok kode milik
+Anda. Penampil Markdown menampilkan baris-baris itu sebagai kode, dan baris yang
+sama bisa jadi pasangan penanda yang Anda kutip sebagai contoh, sehingga Apothem
+tidak dapat membedakan apakah itu bloknya atau teks Anda. Hal yang sama berlaku
+untuk pasangan dalam kode yang diindentasi atau diindentasi di bawah paragraf,
+dan untuk penanda BEGIN di luar kode yang penanda END-nya berada di dalam kode
+sementara pasangan penanda lain menyusul: salah satu pasangan itu bisa jadi blok
+Apothem. Baris penutup di dalam blok Apothem sendiri juga dapat menutup blok kode
+milik Anda yang dibiarkan terbuka di atasnya (lihat di bawah).
+
+Peringatan menyebutkan setiap pasangan penanda di berkas berdasarkan baris kedua
+penandanya dan mengatakan di mana keduanya terbaca, misalnya "The BEGIN marker at
+line 6 and the END marker at line 38 sit inside a code block that opens at line
+3." Peringatan juga menyebutkan setiap penanda BEGIN di luar kode yang tidak
+memulai pasangan penanda, misalnya "The BEGIN marker at line 1 starts no marker
+pair: its END marker is gone, or the marker is yours." Lalu muncul perbaikan
+bernomor, dalam peringatan `apothem install`, `apothem update` dan
+`apothem uninstall`, catatan `apothem verify` dan perbaikan yang dicetak
+`apothem doctor`, misalnya "Fix A: A1. Change line 6: add a word inside its
+comment. Apothem then reads none of these lines as its markers, and the next
+update writes its block at the end of the file." Pasangan yang kedua baris
+penandanya terbaca di luar kode (pasangan setelah penanda BEGIN yang penanda
+END-nya berada di dalam kode) mendapat perbaikan tersendiri, untuk kasus bahwa
+pasangan itu adalah blok Apothem, ketika tata letak berkas menunjukkan bahwa
+pasangan itu kemudian terbaca sebagai satu-satunya blok utuh; perbaikan terakhir,
+"in any other case" bila ada perbaikan lain sebelumnya, mengubah setiap baris
+penanda BEGIN di berkas. Lihat
+[Mengikuti perbaikan bernomor](#follow-a-numbered-fix) untuk cara membacanya.
+
+Selama catatan instalasi mencantumkan berkas itu (sampai uninstall selesai;
+ledger instalasi yang tidak dapat dibaca dihitung sebagai catatan; catatan yang
+dibuat di bawah ejaan lain dari folder itu, seperti home Anda yang dicapai
+melalui tautan, juga dihitung, sebagaimana untuk uninstall, ketika ejaan yang
+Anda pakai memiliki instalasinya sendiri yang masih ada dan alat itu menulis
+[folder bersama di direktori home Anda](/docs/cli-reference/install#folders-in-your-home-directory)),
+`apothem install` dan `apothem update` tidak mengubah apa pun di dalamnya dan
+mencetak peringatan itu; dalam dry run dikatakan Apothem "would leave the file as
+it is". Untuk penanda BEGIN di luar kode yang penanda END-nya berada di dalam
+kode dengan pasangan penanda lain setelah keduanya, mereka melakukannya dengan
+atau tanpa catatan. Setiap proses seperti itu berakhir sebagai parsial: sebagai
+ganti baris `✓` ia mencetak baris `✗` yang menyebutkan berkas itu, `status` pada
+`--format json`-nya adalah `"partial"`, dan ia keluar dengan kode `2`.
+Peringatannya mengatakan demikian: "Until you fix these marker lines as this text
+says, install and update leave this file as it is and end as partial (exit code
+2)." Peringatan dari proses yang menulis berkas itu, dan karenanya berakhir
+sukses, memulai kalimat itu dengan "From the next run on, until you fix these
+marker lines". Hal itu berlangsung selama baris penanda tetap apa adanya,
+termasuk contoh penanda milik Anda dalam blok kode: pasangan seperti itu mungkin
+blok Apothem di dalam blok kode milik Anda, sehingga peringatan menambahkan bahwa
+contoh Anda menahan berkas dengan cara yang sama sampai Anda mengubah baris
+penanda BEGIN-nya, misalnya dengan menambahkan sebuah kata di dalam komentarnya,
+seperti dalam `<!-- BEGIN APOTHEM MANAGED BLOCK (example) -->`. Untuk pasangan
+yang baris penandanya terbaca sebagai bagian dari paragraf di atasnya, peringatan
+menyebut pasangan itu "a marker example of yours that reads as part of a
+paragraph". Tidak ada hal lain yang mengakhirinya: uninstall juga tidak selesai
+selama pasangan itu ada. Penanda BEGIN di luar kode yang tidak memulai pasangan
+tidak mengubah hal itu, bahkan ketika setiap pasangan penanda di berkas dikutip
+dalam kode di bawahnya: penanda itu mungkin sisa blok Apothem setelah penanda
+END-nya hilang, tetapi pasangan di dalam kode mungkin blok Apothem di dalam blok
+kode milik Anda. Peringatan menyebutkan penanda BEGIN seperti itu terlebih
+dahulu, dan setiap perbaikan mengubahnya. Catatan `apothem verify` dan perbaikan
+yang dicetak `apothem doctor` memberikan kalimat yang sama tentang berakhir
+sebagai parsial hanya ketika install dan update akan membiarkan berkas apa
+adanya: tanpa catatan instalasi, pasangan penanda yang Anda kutip dalam kode
+tidak menahan berkas (lihat di bawah), kecuali pasangan itu memuat persis blok
+yang ditulis instalasi. Catatan dan perbaikan itu tidak memeriksa blok tersebut,
+sehingga untuk pasangan seperti itu keduanya menghilangkan kalimat tersebut;
+pembaruan berikutnya membiarkan berkas apa adanya, berakhir sebagai parsial, dan
+mengatakannya.
+
+Apothem menutup blok kode yang dibuka aturan di profil Anda dan tidak pernah
+ditutup, di akhir blok yang ditulisnya, sehingga penanda END blok itu tidak
+pernah berada di dalam kode. Blok yang ditulis rilis sebelumnya dari aturan
+seperti itu tidak memiliki baris penutup. Dengan pasangan penanda milik Anda
+setelahnya, install dan update membiarkan berkas apa adanya. Tidak ada perbaikan
+yang mempertahankan blok lama itu: baris milik Anda di bawahnya menutup blok kode
+yang dibuka aturannya, dan setelah pembaruan berikutnya mengganti blok itu, baris
+tersebut akan membuka blok kode di atas teks Anda. Perbaikan untuk kasus bahwa
+pasangan setelahnya adalah blok Apothem mengubah baris penanda BEGIN blok lama
+itu, misalnya "Fix A, if lines 8 to 10 are Apothem's block: A1. Change line 1:
+add a word inside its comment.", dan perbaikan terakhir mengubah setiap baris
+penanda BEGIN; teks blok lama itu kemudian menjadi milik Anda untuk dihapus
+secara manual.
+
+Baris penutup itu, atau baris penutup blok kode yang ditulis aturan di profil
+Anda, juga dapat menutup blok kode milik Anda yang terbuka di atas blok Apothem
+dan tidak pernah ditutup, misalnya di akhir catatan Anda. Blok itu kemudian
+terbaca sebagai kode mulai dari penanda BEGIN-nya. Install atau update yang
+menulisnya langsung mencetak peringatan, tanpa mengatakan bahwa berkas dibiarkan
+apa adanya, misalnya "The BEGIN marker at line 6 sits inside a code block that
+opens at line 3, and the END marker at line 44 is outside code." Perbaikannya
+mengubah baris penanda BEGIN itu, seperti dalam "Fix A: A1. Change line 6: add a
+word inside its comment.": pembaruan berikutnya menulis blok Apothem di akhir
+berkas, di bawah baris yang menutup blok kode Anda, dan blok lama menjadi milik
+Anda untuk dihapus secara manual. Dry run membaca berkas sebelum apa pun
+ditulis, sehingga tidak menunjukkan bahwa blok akan terbaca sebagai kode setelah
+ditulis. Menghapus blok itu sebagai gantinya tidak membantu: pembaruan berikutnya
+menulisnya lagi di bawah blok kode terbuka yang sama. Pembaruan yang menulis
+bloknya di bawah blok lama yang kehilangan penanda END-nya, tempat sebuah aturan
+membiarkan blok kode terbuka, mendapat peringatan yang sama; peringatan itu juga
+menyebutkan penanda BEGIN lama tersebut, dan setiap perbaikan mengubahnya.
+
+Sampai Anda memperbaiki berkas itu, `apothem verify` gagal dan `apothem doctor`
+melaporkannya (sebagai `harness.stray_begin`); untuk berkas yang ditulis
+instalasi saat ini, `apothem status --profile` juga menampilkan drift. Tanpa
+catatan instalasi, verify dan doctor tidak memeriksa `CLAUDE.md` atau dokumen
+profil: hanya catatan yang menunjukkan bahwa instalasi menulis berkas-berkas
+itu. Verify OpenClaw tetap memeriksa berkas aturan di setiap workspace yang
+ditemukannya, dan gagal tanpa menyebutkan berkas itu.
+
+Dengan catatan instalasi, `apothem uninstall` membiarkan berkas apa adanya,
+menghapus sisa instalasi, dan tetap belum selesai (kode keluar `2`, termasuk
+pada proses kedua) sampai Anda memperbaiki berkas itu: catatan instalasi tetap
+ada, sehingga instalasi berikutnya tetap membiarkan berkas apa adanya, dan
+uninstall berikutnya menyebutkannya lagi. Peringatannya memberikan perbaikan
+bernomor dengan cara yang sama dan diakhiri dengan "Then run the uninstall
+again.", misalnya "Fix A: A1. Change line 6: add a word inside its comment.
+Apothem then finds no block of its own in this file." Pasangan penanda apa pun
+yang tersisa di berkas seperti itu membuat uninstall tetap belum selesai,
+termasuk milik Anda, sehingga setiap perbaikan mengubah baris penanda BEGIN dari
+setiap pasangan yang tidak disebutnya blok Apothem. Baris
+`✗ <harness> uninstall did not finish:`-nya berlanjut "1 file(s) hold marker
+lines Apothem cannot tell from your text, so Apothem left them as they are; fix
+the marker lines each warning names, keeping your own text, then run apothem
+uninstall again". Tanpa catatan instalasi, hanya penanda BEGIN di luar kode yang
+penanda END-nya berada di dalam kode, dengan pasangan penanda lain setelah
+keduanya, yang mendapat peringatan, dan uninstall tetap belum selesai (kode
+keluar `2`) untuknya dan untuk path yang tidak ditunjukkan catatan mana pun
+(lihat
+[Pencopotan yang tidak selesai](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish)).
+
+Lakukan setiap langkah dari perbaikan yang Anda pilih. Jika Anda hanya menghapus
+blok Apothem dan membiarkan penanda BEGIN milik Anda di atas penanda END yang
+Anda kutip dalam kode, tanpa pasangan penanda setelah keduanya, kedua penanda
+itu terbaca sebagai blok Apothem: uninstall yang Anda jalankan lagi mengeluarkan
+baris-baris di antara keduanya, dan install atau update berikutnya
+menggantinya.
+
+Tanpa catatan instalasi, pasangan penanda yang Anda kutip dalam kode adalah teks
+Anda: instalasi menambahkan bloknya setelah pasangan itu (dalam berkas aturan
+yang ditulis Apothem dengan frontmatter, frontmatter dan blok itu justru
+ditaruh di atas), kecuali pasangan itu memuat persis blok yang ditulis instalasi,
+dan dalam hal itu instalasi membiarkan berkas apa adanya dan mencetak
+peringatan. Jadi jika catatan instalasi hilang (misalnya ledger dihapus), hapus
+blok Apothem dari blok kode Anda secara manual: instalasi berikutnya
+memperlakukannya sebagai teks Anda.
+
+Untuk memperbaikinya, buka berkas yang disebutkan pada baris yang diberikan
+peringatan. Tentukan kasus mana yang benar: apakah baris yang disebutkan suatu
+perbaikan adalah blok Apothem, dengan aturan Apothem di antara penandanya, atau
+contoh milik Anda. Lakukan langkah-langkah perbaikan itu, sesuai urutan yang
+diberikan, dan tidak ada langkah lain (lihat
+[Mengikuti perbaikan bernomor](#follow-a-numbered-fix)). Lalu jalankan
+`apothem update`, lalu `apothem verify` lagi. Setelah uninstall yang tidak
+selesai, jalankan `apothem uninstall` lagi sebagai gantinya.
+
+### Mengikuti perbaikan bernomor [#follow-a-numbered-fix]
+
+Peringatan untuk berkas yang baris penandanya tidak dapat ditempatkan Apothem,
+untuk berkas dengan dua blok utuh atau lebih, untuk penanda BEGIN tanpa penanda
+END, dan untuk blok Apothem yang dibiarkan oleh uninstall tanpa catatan
+instalasi, memberikan setiap perbaikan sebagai langkah bernomor di bawah label
+yang menyebutkan kasusnya, misalnya "Fix A, if lines 6 to 38 are Apothem's
+block:", atau "Fix A:" untuk perbaikan yang berlaku baris mana pun yang
+merupakan milik Apothem. Langkah perbaikan A adalah "A1.", "A2." dan seterusnya,
+langkah perbaikan B "B1.", "B2.", dalam satu paragraf, dan perbaikan diakhiri
+dengan apa yang kemudian dilakukan proses berikutnya. Lakukan langkah-langkah
+dari satu perbaikan saja.
+
+Setiap nomor baris dalam sebuah langkah adalah nomor baris di berkas sebagaimana
+adanya ketika peringatan dicetak, dihitung seperti Apothem menghitung baris
+(lihat
+[Sebuah berkas memiliki penanda BEGIN Apothem tanpa penanda END](#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
+Langkah-langkahnya berjalan dari bawah berkas ke atas, sesuai urutan yang
+diberikan. Setiap langkah adalah salah satu dari berikut ini, kata demi kata, dan
+diakhiri dengan titik:
+
+| Langkah | Yang harus dilakukan |
+| --- | --- |
+| `Change line N: add a word inside its comment.` | Tambahkan sebuah kata ke baris N tepat sebelum `-->` penutupnya, seperti dalam `<!-- BEGIN APOTHEM MANAGED BLOCK (example) -->`. Baris itu tetap di tempatnya dan tidak lagi terbaca sebagai penanda. |
+| `Below line N, add a line of 3 backticks.` | Tambahkan baris baru tepat di bawah baris N, baris terakhir berkas, yang berisi karakter backtick sebanyak itu, atau karakter tilde untuk `tildes`, dan tidak ada yang lain. Dengan `, indented 2 spaces` sebelum titik, taruh spasi sebanyak itu di depannya; tanpa itu, mulai baris di margin kiri. |
+
+Setiap langkah `Change line` mengubah baris penanda BEGIN di tempatnya. Setiap
+blok Apothem, pasangan penanda, dan penanda liar dimulai pada penanda BEGIN, dan
+penanda END hanya berpasangan dengan penanda BEGIN tepat di atasnya, sehingga
+penanda END tanpa penanda BEGIN di atasnya tidak menandai apa pun, dan penanda
+yang Anda kutip tetap menjadi teks Anda apa adanya. Baris yang diubah tetap
+merupakan komentar HTML pada barisnya sendiri: tidak ada baris yang berpindah,
+dan penampil Markdown membaca setiap baris lain seperti sebelumnya.
+
+Perbaikan yang mempertahankan sebuah blok mengubah setiap baris penanda BEGIN
+lain di berkas. Peringatan memberikannya hanya ketika tata letak berkas
+menunjukkan bahwa blok itu kemudian terbaca sebagai satu-satunya blok utuh: tidak
+ada blok kode milik Anda yang berlanjut sampai akhir berkas yang menampungnya,
+dan tidak ada baris dari baris pertama yang diubah sampai ke blok itu yang
+mengubah cara penanda BEGIN-nya terbaca. Perbaikan itu diakhiri dengan "The next
+update then replaces Apothem's block", "Lines 1 to 32 are then the one block in
+the file", atau, untuk uninstall, "The uninstall run again then takes Apothem's
+block out". Perbaikan yang tidak mempertahankan blok mana pun mengubah setiap
+baris penanda BEGIN di berkas dan diakhiri dengan "Apothem then reads none of
+these lines as its markers, and the next update writes its block at the end of
+the file", atau, untuk uninstall, "Apothem then finds no block of its own in
+this file". Bagaimanapun juga, teks Apothem lama di bawah baris yang Anda ubah,
+beserta baris penanda END-nya, kemudian menjadi milik Anda untuk dihapus secara
+manual.
+
+Blok kode milik Anda yang tidak ditutup baris mana pun berlanjut sampai akhir
+berkas di penampil Markdown, tetapi Apothem membaca baris pembukanya sebagai
+teks. Blok kode di aturan profil Anda akan menutupnya, dan penanda BEGIN blok
+Apothem kemudian akan terbaca sebagai kode. Jadi ketika berkas Anda berakhir di
+dalam blok kode seperti itu, perbaikan yang tidak menyisakan blok Apothem di
+berkas pertama-tama menambahkan baris penutup blok kode itu di bawah baris
+terakhir, seperti dalam "A1. Below line 7, add a line of 3 backticks.": install
+atau update berikutnya menambahkan bloknya di akhir berkas, setelah baris itu.
+Tidak ada perbaikan yang mempertahankan blok yang ditampung blok kode seperti
+itu.
+
+Apothem membaca pagar kode di dalam blok HTML, seperti komentar yang dibuka
+dengan `<!--` dan berakhir di baris berikutnya, sebagaimana membaca pagar kode
+lainnya, dan baris teks item daftar yang berlanjut di margin kiri mengakhiri item
+itu bagi Apothem. Penampil Markdown tidak melakukan keduanya. Ketika sebuah baris
+di atas blok kode tempat berkas Anda berakhir dapat memulai blok HTML (setiap
+baris yang dimulai dengan tag dihitung, kecuali tautan dalam kurung sudut, tag
+pada baris tepat di bawah baris teks biasa, dan HTML di dalam blok kode), atau
+teks item daftar berlanjut di margin kiri di atasnya dan diikuti baris yang
+diindentasi, baris penutup itu justru dapat memulai blok kode di penampil. Maka
+perbaikan itu tidak memberikan langkah bernomor: ia mengatakan "Apothem cannot
+give numbered steps for this fix" dan menyebutkan baris yang membuka blok kode.
+Sunting berkas secara manual agar baris itu tidak membuka blok kode, atau agar
+blok kode ditutup di tempat penampil Anda menunjukkan akhirnya; peringatan
+berikutnya untuk berkas itu kemudian memberikan langkah bernomor.
 
 ### Hook tidak terpicu di Claude Code
 
 Pastikan Apothem terhubung dengan memeriksa ~/.claude/settings.json untuk entri hook.
 Jika berkas itu tidak memuat hook tersebut, jalankan apothem install lagi.
+
+### OpenCode tidak memuat aturan Apothem
+
+`apothem install`, `apothem update` dan `apothem verify` mencetak catatan ketika
+berkas milik Anda di folder konfigurasi OpenCode mencegah OpenCode 1 memuat
+daftar `instructions` yang ditulis Apothem di `opencode.json`:
+
+- `opencode.jsonc` dengan daftar `instructions` miliknya sendiri, bahkan yang
+  kosong, menggantikan daftar Apothem. Hapus kunci itu, atau pindahkan entrinya
+  ke daftar di `opencode.json`, tempat instalasi mempertahankan entri yang tidak
+  ditulisnya.
+- `config.json`, `opencode.json` atau `opencode.jsonc` di sana yang tidak dapat
+  dibaca atau di-parse OpenCode 1 menghentikan OpenCode 1 memuat konfigurasinya
+  sama sekali. Begitu pula berkas yang tingkat teratasnya bukan objek, yang nilai
+  `instructions`-nya bukan daftar teks, atau yang `{file:path}`-nya menyebutkan
+  berkas yang tidak dapat dibaca OpenCode 1, serta folder dengan salah satu nama
+  itu. Perbaiki berkas itu agar menjadi satu objek JSON dengan hanya tambahan
+  komentar dan koma di akhir, dengan `instructions` sebagai daftar teks, atau
+  pindahkan keluar dari folder itu. Ketika catatan mengatakan berkas itu rusak
+  setelah OpenCode 1 memasukkan nilai `{env:NAME}`-nya, ubah variabel itu agar
+  nilainya tidak memuat backslash, tanda kutip ganda, atau karakter kontrol,
+  misalnya path Windows yang ditulis dengan garis miring. Ketika catatan
+  mengatakan Apothem menulis `{env:NAME}` itu untuk server MCP di profil Anda,
+  pembaruan menulis kembali referensi yang dihapus dari berkas, jadi ubah
+  variabel itu atau, untuk mempertahankannya apa adanya, nyatakan ulang server
+  itu di bawah `harnesses.opencode.mcp_servers.<name>` dengan nilai yang disimpan
+  dalam berkas dan ditulis sebagai `{file:path}` yang menyebutkannya. Ketika
+  catatan menyebutkan masalah kedua pada berkas itu, perbaiki juga. Ketika
+  dikatakan Apothem tidak dapat memastikan apakah OpenCode 1 dapat membaca berkas
+  yang disebutkan `{file:path}`, pastikan berkas itu juga dapat dibaca.
+
+Catatan-catatan ini menyangkut OpenCode 1. OpenCode 2 membaca kedua daftar dan
+tidak membaca `config.json`. Ia melewati berkas yang tidak dapat di-parse-nya
+atau yang tingkat teratasnya bukan objek, yang untuk `opencode.json` berarti ia
+juga melewatkan aturan; sebuah catatan mengatakan apa yang dilakukan OpenCode 2
+dengan berkasnya bila hal itu diketahui. Catatan-catatan itu tidak mengubah
+berkas atau kode keluar apa pun. Ketika install atau update sama sekali tidak
+dapat mem-parse `opencode.json`, keduanya berhenti dengan galat
+`config.unparseable` sebagai gantinya. Lihat
+[OpenCode](/docs/harnesses/opencode) untuk detailnya.
 
 ## Mendapatkan bantuan
 

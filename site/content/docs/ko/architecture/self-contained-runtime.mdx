@@ -2,7 +2,7 @@
 title: "자체 완결형 런타임"
 description: "Apothem 엔진이 어떤 체크아웃에서든 실행되는 방식입니다. 벤더링된 종속성, PYTHONPATH=src 호출 모델, 플러그인 트리 부트스트랩을 다룹니다."
 machineTranslated: true
-sourceHash: "df04c51efc417e4a"
+sourceHash: "dc1f19f84eb15409"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -51,33 +51,51 @@ Apothem은 의도적으로 `pyproject.toml`에 콘솔 스크립트를 선언하�
 
 | 표면 | 호출 | 맥락 |
 | ------- | ---------- | ------- |
-| 엔진 CLI | `python -m apothem <command>` | `src/`가 `PYTHONPATH`에 있는 소스 트리(체크아웃, npx 캐시, 플러그인 트리) |
+| 엔진 CLI | `apothem <command>`; 체크아웃에서는 `PYTHONPATH=src python -m apothem <command>` | 설치 프로그램의 `apothem` 심과 npm 런처는 현재 폴더를 `sys.path`에서 제외한 채 소스 트리에서 패키지를 실행합니다. `-m` 형식은 신뢰하는 체크아웃용입니다 |
 | 훅 런타임 | `<resolved CPython> -E -s "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Claude Code용 머티리얼라이즈 결과: 하니스 루트의 공유 `.apothem/support/` 트리 아래에 있는 사본을 절대 경로로 호출 |
 
-- `python -m apothem`은 `src/apothem/__main__.py`를 실행합니다. 이 파일은
+- 엔진의 진입점인 `src/apothem/__main__.py`는
   `src/apothem/_vendor`를 `sys.path`에 넣고, `click`과 `rich`를 임포트할 수
   있는지 확인한 다음, Click 명령 그룹인 `apothem.cli:main`을 호출합니다.
+  `python -m apothem`은 이를 직접 실행합니다. `apothem` 심과 npm 런처는
+  먼저 현재 폴더를 `sys.path`에서 제거하는 `-c` 프로그램에서 `runpy`를 통해
+  이를 실행합니다.
 - 머티리얼라이즈된 `settings.json` / `hooks.json`의 훅 항목은 디스패처를
   (Claude Code의 경우 `<harness-root>/.apothem/support/conformity/gate.py`의
-  적합성 게이트도) 절대 스크립트 경로로 호출합니다. 둘 다 자신의 `sys.path`를
+  적합성 게이트도) 절대 스크립트 경로로 호출하며, 이때 Python을 `-E -s`로
+  시작하므로 어떤 `PYTHON*` 변수도, 사용자 site-packages도 훅에 닿지 않습니다.
+  둘 다 자신의 `sys.path`를
   스스로 부트스트랩하는 독립 표준 라이브러리 스크립트이며, 게이트의 스키마
   픽스처는 게이트 옆 `<harness-root>/.apothem/support/schemas/`에 함께
-  놓입니다. 따라서 훅은 **호스트에 임포트할 수 있는 `apothem` 패키지가
-  없어도** 실행됩니다. 템플릿에는 `${HARNESS_ROOT}` 토큰이 들어 있으며,
+  놓입니다. 따라서 훅은 <strong>호스트에 임포트할 수 있는 <code>apothem</code> 패키지가
+  없어도</strong> 실행됩니다. 템플릿에는 `${HARNESS_ROOT}` 토큰이 들어 있으며,
   `apothem install`이 이를 슬래시(/) 구분 형식의 실제 하니스 루트 경로로
   렌더링합니다.
 - 소스 체크아웃에서는 모듈 형식인
   `python -m apothem.hooks.dispatch`와
   `python -m apothem.conformity.gate`가 개발용으로 같은 코드를 실행합니다.
 
-체크아웃의 `src/` 디렉터리를 `PYTHONPATH` 앞에 추가하면 패키지 디렉터리를
-임포트할 수 있게 됩니다.
+체크아웃에서는 체크아웃의 `src/` 디렉터리를 `PYTHONPATH` 앞에 추가하면 패키지
+디렉터리를 임포트할 수 있게 됩니다.
 
 ```bash
 PYTHONPATH=src python -m apothem <command>    # from the checkout root
 ```
 
-`apothem` 런처가 PATH에 없으면, `install.sh`는 완료 시 이 형식을 출력합니다. 이 형식에서는 벤더링된 디렉터리가 `src/`보다 앞에 오며, `python` 대신 설치 프로그램이 해석한 CPython이 쓰입니다. `install.ps1`은 같은 두 설정을 PowerShell 형식으로 출력합니다. 그 형식은 벤더링된 디렉터리와 `src/` 디렉터리를 `;`로 잇는 `$env:PYTHONPATH` 할당과, 그다음 `& '<CPython>' -m apothem <command>`입니다.
+`-m`은 현재 폴더의 모듈을 먼저 읽으므로, 이 형식은 체크아웃 루트나 신뢰하는
+다른 폴더에서만 실행하세요.
+
+설치 프로그램은 `-m` 명령을 절대 출력하지 않습니다. 완료 시점에 `apothem`
+명령이 `PATH`에 없으면, `install.sh`와 `install.ps1`은 자신이 배치한 `apothem`
+심의 전체 경로를 출력합니다. 심을 배치할 수 없었던 경우에는 그 대신 자체
+완결형 명령을 출력합니다. `install.sh`는
+`PYTHONSAFEPATH=1 PYTHONPATH='<vendor>:<src>' '<CPython>' -c '<program>'`
+뒤에 명령을 붙여 출력합니다. `install.ps1`은 `PYTHONSAFEPATH`와 `PYTHONPATH`
+(벤더링된 폴더와 `src/` 폴더를 `;`로 이은 값)를 `& '<CPython>' -c "<program>"`
+한 번의 실행 동안 설정한 다음 둘 다 원래대로 되돌리는 PowerShell 블록을
+출력합니다. 이 프로그램은 현재 폴더를 `sys.path`에서 제거하고 `apothem`
+패키지를 실행합니다. `PYTHONSAFEPATH=1`은 Python 3.11 이상이 애초에 그 폴더를
+추가하지 않도록 합니다.
 
 ## 플러그인 트리 부트스트랩
 
@@ -96,8 +114,8 @@ Claude Code 플러그인은 `PYTHONPATH`에 의존하지 않고 엔진을
 `click` / `rich` 전제 조건 설치 제안을 제외하면 `site-packages`에 설치되는
 Python 패키지는 없습니다. 클론은 런타임이 절대 임포트하지 않는 테스트 스위트와
 문서 사이트까지 포함한 전체 저장소이며, 여기에는 의도된 이유가 두 가지
-있습니다. 첫째, 엔진은 규칙, 스킬, 명령, 템플릿 같은 **코호트를 트리에서 각
-하니스로 직접 머티리얼라이즈**하므로, 트리는 단순한 런타임이 아니라 살아 있는
+있습니다. 첫째, 엔진은 규칙, 스킬, 명령, 템플릿 같은 <strong>코호트를 트리에서 각
+하니스로 직접 머티리얼라이즈</strong>하므로, 트리는 단순한 런타임이 아니라 살아 있는
 진실의 출처입니다. 둘째, `.git` 디렉터리가 그대로 남아 있으므로
 `apothem update`가 다시 내려받는 대신 기존 클론에서 릴리스 태그를 체크아웃합니다.
 
@@ -122,5 +140,5 @@ Python 패키지는 없습니다. 클론은 런타임이 절대 임포트하지 
 
 ## 권장 다음 단계
 
-체크아웃의 `src/` 디렉터리를 `PYTHONPATH`에 둔 상태에서 **`python -m apothem --help`를
-실행**하여, 자체 완결형 CLI 경로가 여러분의 호스트에서 해석되는지 확인하세요.
+Apothem 체크아웃의 루트에서 <strong><code>PYTHONPATH=src python -m apothem --help</code>를
+실행</strong>하여, 자체 완결형 CLI 경로가 여러분의 호스트에서 해석되는지 확인하세요.

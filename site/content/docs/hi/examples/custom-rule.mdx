@@ -2,7 +2,7 @@
 title: "कस्टम नियम"
 description: "अपनी परियोजना के लिए एक कस्टम सदैव-सक्रिय नियम लिखना।"
 machineTranslated: true
-sourceHash: "0b22ce8bce931d04"
+sourceHash: "69efcab14f844e72"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,14 +35,14 @@ When in doubt, err on the side of more hyphens.
 
 ## नियम सही रूप में बना है, इसकी पुष्टि करें
 
-अभी लिखी गई नियम फ़ाइल पर frontmatter वैलिडेटर चलाएँ। Apothem चेकआउट से पहली कमांड का उपयोग करें, जहाँ `PYTHONPATH=src` पैकेज को आयात-योग्य बनाता है। स्क्रिप्ट इंस्टॉल के बाद दूसरी कमांड का उपयोग करें, जहाँ स्रोत `$HOME/.apothem/src` के अंतर्गत रहता है:
+अभी लिखी गई नियम फ़ाइल पर frontmatter वैलिडेटर चलाएँ। Apothem चेकआउट के रूट से पहली कमांड का उपयोग करें, जहाँ `PYTHONPATH=src` पैकेज को आयात-योग्य बनाता है (`python -m` मॉड्यूल पहले वर्तमान फ़ोल्डर से पढ़ता है, इसलिए ऐसे फ़ोल्डर का उपयोग करें जिस पर आपको भरोसा है)। स्क्रिप्ट इंस्टॉल के बाद दूसरी कमांड का उपयोग करें, जहाँ स्रोत `$HOME/.apothem/src` के अंतर्गत रहता है और गेट अपने स्क्रिप्ट पथ से `-E -s` के साथ चलता है, ताकि न `PYTHONPATH` और न ही आपके उपयोगकर्ता site-packages उस तक पहुँचें:
 
 ```bash
 # From an Apothem checkout
 PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
 
 # After a script install
-PYTHONPATH="$HOME/.apothem/src" python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
+python3 -E -s "$HOME/.apothem/src/apothem/conformity/gate.py" --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
 ```
 
 सही रूप में बना नियम एक साफ़ पास रिपोर्ट करता है:

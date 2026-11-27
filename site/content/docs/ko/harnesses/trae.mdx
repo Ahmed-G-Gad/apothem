@@ -2,7 +2,7 @@
 title: "Trae"
 description: "Trae(GA)를 위한 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "97ae18e3fc9b0b70"
+sourceHash: "1c892ed70350c956"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -48,7 +48,7 @@ apothem install --harness trae --project /path/to/project
   스킬이 가는 위치는 바꾸지 않습니다.
 - 설치는 저장소에 스킬이나 규칙 파일을 추가하지 않습니다. 프로젝트에는
   규칙 파일과 `.trae/agents/`의 서브에이전트 파일, 그리고 모든 프로젝트 설치가
-  만드는 `.apothem/` 데이터 폴더가 생깁니다.
+  만드는 데이터 폴더(기본값 `.apothem/`)가 생깁니다.
 - 홈 폴더가 먼저 작성됩니다. 예를 들어 경로상의 폴더가 홈 디렉터리 밖으로
   나가는 링크이거나(홈 안에 머무는 링크는 따라갑니다) 쓸 수 없어서 이 작업이
   실패하면, 설치는 프로젝트에서 무엇이든 변경되기 전에 오류와 함께 중단됩니다.
@@ -195,8 +195,16 @@ apothem uninstall --harness trae --project /path/to/project
 ## 적합성 게이트
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+프로젝트 폴더에서 실행하세요. Windows에서는 `python3` 대신 `python`과 전체 경로를
+사용하세요. Windows PowerShell과 cmd는 `~`를 확장하지 않기 때문입니다.
+PowerShell에서는 `$HOME\.apothem\src\apothem\conformity\gate.py`, cmd에서는
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`입니다. 이 경로는
+설치 프로그램이 엔진을 두는 곳이며, `-E -s`는 여러분의 `PYTHONPATH`와 사용자
+site-packages가 게이트에 닿지 않게 합니다. [적합성 게이트](/docs/conformity-gate)에서
+둘 다와 다른 설치 방식을 설명합니다.
 
 ## 문제 해결
 

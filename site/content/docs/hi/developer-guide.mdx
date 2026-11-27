@@ -2,7 +2,7 @@
 title: "Apothem में योगदान — डेवलपर मार्गदर्शिका"
 description: "कैनोनिकल स्कीमा, फ़्रंटमैटर आवश्यकताओं और सत्यापन प्रक्रियाओं के साथ नियम, कमांड, हेल्पर, स्किल और हुक लिखकर Apothem इकोसिस्टम का रखरखाव और विस्तार करें।"
 machineTranslated: true
-sourceHash: "82cbd13f4a28f8cb"
+sourceHash: "a2dea5f7e64b7fbc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -61,7 +61,10 @@ sourceHash: "82cbd13f4a28f8cb"
 
 साझा इंस्टॉल ड्राइवर पहला लेखन होने से पहले हर स्रोत और लक्ष्य का सत्यापन करता
 है। यह लुप्त मैनिफ़ेस्ट स्रोतों, लक्ष्य ट्रैवर्सल, चयनित रूट के बाहर के लक्ष्य
-पथों, और सिमलिंक क्रॉसिंग को अस्वीकार करता है। ड्राई-रन वही सत्यापन निष्पादित
+पथों, और सिमलिंक क्रॉसिंग को अस्वीकार करता है; Windows जंक्शन को सिमलिंक की तरह
+जाँचा जाता है। अपवाद वे लिंक हैं जो डॉटफ़ाइल मैनेजर `~/.config` पर, या किसी साझा
+स्किल, नियम या टेम्पलेट फ़ोल्डर पर या उसके ऊपर बनाते हैं, जिनका अनुसरण तब तक किया
+जाता है जब तक वे होम के भीतर रहते हैं। ड्राई-रन वही सत्यापन निष्पादित
 करते हैं और कोई फ़ाइल बनाए बिना संरचित `skipped` या `unchanged` परिणाम लौटाते हैं।
 
 ## रिडैक्शन और उदाहरण डेटा
@@ -127,7 +130,9 @@ sourceHash: "82cbd13f4a28f8cb"
 - **हुक:** फ़ोल्डर `src/apothem/hooks/` के अंदर। सभी इवेंट हैंडलर Python में हैं। Claude Code
   `settings.json` टेम्पलेट का हर हुक कमांड exec रूप का उपयोग करता है: `command`
   इंस्टॉल के समय हल होने वाला इंटरप्रेटर प्लेसहोल्डर `${PYTHON_BIN}` है, और
-  `args` में स्क्रिप्ट पथ तथा उसके आर्ग्युमेंट होते हैं। वह टेम्पलेट
+  `args` में `-E`, `-s`, स्क्रिप्ट पथ तथा उसके आर्ग्युमेंट होते हैं। ये दोनों फ़्लैग
+  `PYTHONPATH`, अन्य `PYTHON*` वेरिएबल और उपयोगकर्ता के site-packages को हर हुक से
+  बाहर रखते हैं; आप जो भी हुक जोड़ें उस पर इन्हें बनाए रखें। वह टेम्पलेट
   `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` और
   `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` को निरपेक्ष पथ से चलाता है, इसलिए
   इंस्टॉल की गई प्रति को आयात-योग्य `apothem` पैकेज की आवश्यकता नहीं होती। Claude Code प्लगइन
@@ -648,12 +653,162 @@ Python फ़ाइलों के लिए `Ruff` फ़ॉर्मेटर
 ```bash
 python -m pytest                      # unit, integration, property, conformity, scripts
 python -m pytest tests/property       # Hypothesis properties (profile loader, frontmatter, merge)
+python -m pytest tests/fuzz           # replay each fuzz target's seed inputs (no Atheris needed)
 ```
+
+`tests/fuzz/` के फ़ज़ टारगेट CI में Atheris के अंतर्गत चलते हैं। अपनी मशीन पर किसी
+एक को फ़ज़ करने के लिए (Linux या macOS, Python 3.11 या बाद का), Atheris इंस्टॉल
+करें, चेकआउट को पथ पर रखें, और टारगेट को उसके सीड की एक प्रति की ओर इंगित करें:
+
+```bash
+python -m pip install atheris
+export PYTHONPATH="$PWD/src:$PWD/src/apothem/_vendor"
+mkdir -p /tmp/corpus && cp tests/fuzz/seeds/lenient-json/*.txt /tmp/corpus/
+python tests/fuzz/fuzz_lenient_json.py -max_total_time=60 /tmp/corpus
+```
+
+`tests/fuzz/README.md` टारगेट सूचीबद्ध करता है और बताता है कि जब कोई टारगेट क्रैश
+पाए तो क्या करें।
 
 सूट हर्मेटिक है: यह तब भी पास होता है जब चेकआउट `$TMPDIR` के अंतर्गत हो और
 `PATH` पर ऐसा `python` हो जिसमें CLI पूर्वापेक्षाएँ न हों, क्योंकि इंटीग्रेशन
 परीक्षण उसी इंटरप्रेटर को चलाते हैं जो pytest चलाता है, और नेस्टेड अस्थायी तथा
 स्रोत पथों को सबसे-लंबे-पहले क्रम में टोकनाइज़ करते हैं।
+
+### परीक्षण कभी आपका वास्तविक होम नहीं लिखते
+
+कोई प्रोब स्क्रिप्ट या स्वचालित सहायक कभी भी Apothem के इंस्टॉलर या अडैप्टर आपके
+वास्तविक होम के विरुद्ध नहीं चलाना चाहिए। व्यवहार को `tests/` के अंतर्गत किसी
+परीक्षण के भीतर चलाएँ, जहाँ `tests/conftest.py` होम, इंस्टॉल लेजर और बैकअप रूट को
+अस्थायी फ़ोल्डरों की ओर इंगित करता है।
+
+pytest चलते समय Apothem स्वयं भी इन लेखनों को अस्वीकार करता है, इसलिए `tests/` से
+बाहर कॉपी की गई और `tests/conftest.py` के बिना चलाई गई परीक्षण फ़ाइल Apothem के
+ज़रिए वास्तविक होम तक नहीं पहुँच सकती। जब तक `PYTEST_CURRENT_TEST` सेट है और खाली
+नहीं है (एक परीक्षण), या `PYTEST_VERSION` में चल रहे pytest का संस्करण है (पूरा
+सेशन, संग्रह और सेशन हुक सहित), तब तक खाते के `~/.apothem`, `~/.config/apothem`,
+होम में हार्नेस रजिस्ट्री द्वारा बताए गए किसी टूल फ़ोल्डर (`~/.claude`, `~/.qwen`,
+`~/.config/opencode` और शेष) या उन फ़ोल्डरों के बाहर की किसी ऐसी फ़ाइल में जिसे
+प्रसार मैनिफ़ेस्ट बदलता है (किसी पिछली रिलीज़ द्वारा लिखी गई
+`~/.antigravity/profile.yaml`) कोई लेखन, हटाना, कॉपी, नाम बदलना या लॉक फ़ाइल कुछ भी
+बदलने से पहले रुक जाता है, इस तरह की त्रुटि के साथ:
+
+```text
+RealHomeWriteError: Apothem refused to create the lock file
+C:\Users\you\.apothem\state\codex\<id>.install.lock: it is inside or holds
+C:\Users\you\.apothem, a protected path in this account's real home, while a
+pytest test is running (PYTEST_CURRENT_TEST is set:
+test_probe.py::test_install (call)). Nothing in C:\Users\you\.apothem was
+changed. ...
+```
+
+किसी अन्य मान वाला `PYTEST_VERSION`, जैसे `8.2` जैसा पिन जिसे कोई शेल या CI जॉब
+निर्यात करता है, नहीं गिना जाता, और न ही खाली `PYTEST_CURRENT_TEST`। किसी भी
+परीक्षण के बाहर त्रुटि परीक्षण के स्थान पर `PYTEST_VERSION holds
+the version of the pytest imported in this process, <version>, outside any
+test` कहती है; यह दावा नहीं करती कि कोई pytest सेशन चल रहा है, क्योंकि कोई
+प्रक्रिया pytest को बिना चलाए आयात कर सकती है। जिस `PYTEST_VERSION` को कोई शेल या
+CI जॉब इंस्टॉल किए गए pytest के सटीक संस्करण के साथ निर्यात करता है, वह फिर भी गिना
+जाता है, pytest के बाहर भी, और जिस प्रक्रिया ने pytest आयात नहीं किया है उसमें तब
+त्रुटि `PYTEST_VERSION holds the installed pytest's
+version, <version>, though no pytest runs in this process` कहती है।
+
+जिस प्रोजेक्ट-स्कोप इंस्टॉल, अपडेट, अनइंस्टॉल या रोलबैक का प्रोजेक्ट रूट स्वयं खाते का
+होम है, उसे भी उसी तरह, कुछ भी लिखने से पहले, अस्वीकार किया जाता है: अन्यथा उसकी
+प्रोजेक्ट फ़ाइलें सीधे होम में आ जातीं। होम के भीतर का प्रोजेक्ट फ़ोल्डर अनुमत रहता
+है। ठीक होम में स्थित डेटा होम भी अस्वीकार किया जाता है, प्रोफ़ाइल उसे कोई भी नाम दे
+(`workspace.scope: user-home` अपने स्वयं के `directory_name` के साथ), उसके बनाए
+जाने से पहले और उसके स्टोर हटाए जाने से पहले। जो डेटा होम ठीक होम में स्थित किसी
+फ़ोल्डर का लिंक (Windows पर जंक्शन) है, उसे भी उसी तरह अस्वीकार किया जाता है, और
+उसे भी जो सीधे या लिंकों की श्रृंखला के ज़रिए स्वयं होम तक ले जाता है, जिसके स्टोर
+ठीक होम में आ जाते।
+
+किसी संरक्षित फ़ोल्डर की ये वर्तनियाँ गिनी जाती हैं: उसमें जाने वाला लिंक या
+जंक्शन, और परीक्षण के दौरान लिंक से बदला गया फ़ोल्डर। Windows पर अक्षरों का केस,
+छोटे (8.3) नाम, `\\?\`, `\\.\` और `\??\` उपसर्ग, `\\localhost\C$` या `\\--1.ipv6-literal.net\C$` जैसा लूपबैक एडमिन शेयर, मशीन के अपने किसी पते से या
+मैप की गई ड्राइव के ज़रिए पहुँचा गया शेयर, और वैकल्पिक डेटा स्ट्रीम
+(`.apothem:name`) भी गिने जाते हैं, और उनमें से किसी उपसर्ग के पीछे का डिवाइस पथ
+(`GLOBALROOT\Device\HarddiskVolume2` या `Volume{GUID}`) भी।
+macOS पर अक्षरों का केस और Unicode नॉर्मलाइज़ेशन भी अनदेखे किए जाते हैं, और
+`/System/Volumes/Data/<path>` को `/<path>` के रूप में पढ़ा जाता है। केवल ये स्ट्रिंग
+नियम कोई नेटवर्क संपर्क नहीं करते: शेयर पथ, या मैप की गई ड्राइव पर का पथ, शेयर के
+होस्ट से पूछकर जाँचा जाता है। `tests/README.md` उन वर्तनियों को सूचीबद्ध करता है जिन्हें
+जाँच नहीं देखती, जैसे किसी संरक्षित फ़ोल्डर की फ़ाइल का हार्ड लिंक, होम का बाइंड
+माउंट और केस-असंवेदी Linux माउंट।
+
+CLI त्रुटि को जैसी है वैसी उठाता है, अनइंस्टॉल के लिए भी। कुछ पास पहले परिवर्तन से
+पहले अपने पथ जाँचते हैं, इसलिए वहाँ अस्वीकृति सब कुछ वैसा ही छोड़ देती है। स्टेल
+स्वीप हर स्टेल पथ जाँचता है। रोलबैक हर वह पथ जाँचता है जिसे उसका इंस्टॉल रिकॉर्ड
+बताता है (वह भी जिसे वह अपनी जगह छोड़ देता), वे डेटा स्टोर जिन्हें वह हटाता और होम के
+वे उपयोगकर्ता-स्तर फ़ोल्डर जिन्हें वह अंत में व्यवस्थित करता। रोलबैक और अनइंस्टॉल बैकअप
+रूट और लेजर जाँचते हैं, और OpenClaw अनइंस्टॉल `openclaw.json` और हर वर्कस्पेस नियम
+फ़ाइल भी जाँचता है। अस्वीकृत अनइंस्टॉल लेजर में एक अधूरा अनइंस्टॉल केवल तब दर्ज करता है
+जब उसने संरक्षित फ़ोल्डरों के बाहर की फ़ाइलें पहले ही बदल दी हों, साझा हटाने से पहले के
+किसी चरण में भी (जैसे नेटिव-कॉन्फ़िग अनइंस्टॉल का पहला चरण), ताकि उन फ़ाइलों के बैकअप
+संदर्भित बने रहें। कुछ आंतरिक कॉलर जानबूझकर त्रुटि को सोख लेते हैं (उदाहरण के लिए
+सर्वोत्तम-प्रयास लेजर पंक्ति), इसलिए हर अस्वीकृति लॉग भी की जाती है, और
+`tests/conftest.py` उस परीक्षण को विफल करता है जिसके बाद कोई अस्वीकृति लॉग हुई, तब
+भी जब परीक्षण `xfail` चिह्नित हो। pytest द्वारा किसी नोड का संग्रह करते समय किसी भी
+परीक्षण के बाहर लॉग हुई अस्वीकृति उस नोड का संग्रह विफल करती है। किसी भी परीक्षण के
+बाहर लॉग हुई कोई अन्य अस्वीकृति, सेशन की शुरुआत में, दो संग्रह रिपोर्टों के बीच, संग्रह
+के बाद, दो परीक्षणों के बीच, अंतिम परीक्षण के बाद, सारांश में या
+`pytest_unconfigure` में, सेशन समाप्त होने पर रिपोर्ट की जाती है, जहाँ हुई उसके नाम
+से, और रन को विफल करती है, तब भी जब कोई हुक फिर रन को
+`pytest.exit(returncode=0)` या `sys.exit(0)` से समाप्त करता है (या, किसी भी सिस्टम
+पर, ऐसा कोड जिसे POSIX सिस्टम 0 या 5 तक काट देता है, जैसे 256), तब भी जब किसी अन्य
+हुक ने सेशन समाप्ति को `sys.exit` या किसी अपवाद से समाप्त किया, और तब भी जब कोई
+समानांतर वर्कर (`-n`) उसे लॉग करता है, अपनी अस्वीकृतियाँ मुख्य प्रक्रिया को सौंपने से
+पहले या बाद में। वर्कर हर अस्वीकृति को, जैसे ही वह उसके पास होती है, एक ऐसी फ़ाइल में
+लिखता है जिसे मुख्य प्रक्रिया पढ़ती है, इसलिए जो अस्वीकृति उसके पास उस सौंपने से पहले
+क्रैश होने या रोके जाने से पहले थी, या सेशन-समाप्ति हुक द्वारा वहाँ रोके जाने से पहले
+थी, वह फिर भी रन को विफल करती है। तीन मामले अब भी केवल `stderr` पर दिखते हैं और निकास
+कोड को वैसा ही छोड़ते हैं: वह जो किसी ऐसे `tryfirst` `pytest_unconfigure` रैपर के
+`yield` के बाद लॉग हुई जिसे pytest ने गार्ड के बाद पंजीकृत किया, वह जो
+`config.add_cleanup` से पंजीकृत किसी क्लीनअप में लॉग हुई (प्रत्येक तब तक जब तक कोई
+पास होने वाला `sys.exit` फिर रन समाप्त न करे, या किसी ने उससे पहले सेशन समाप्ति समाप्त
+न की हो), और वह जिसे कोई वर्कर लॉग करता है पर न सौंपता है न उस फ़ाइल में लिखता है,
+क्योंकि वर्कर पहले समाप्त हो गया या रोक दिया गया (उदाहरण के लिए किसी सेशन-समाप्ति हुक
+ने उसे लॉग किया और फिर वर्कर को क्रैश कर दिया) या क्योंकि वह फ़ाइल बनाई या लिखी नहीं जा
+सकी (जब वर्कर का उसमें अंतिम लेखन बीच में विफल होता है, तो फ़ाइल तक पहुँचा हिस्सा बना
+रहता है, और मुख्य प्रक्रिया उस पर रन को विफल करती है, जैसा तब करती है जब उस लेखन ने
+फ़ाइल खाली छोड़ दी, जब तक कि सौंपने के बगल में लिखी प्रति ने उसे पहले ही खाली न छोड़
+दिया हो और मुख्य प्रक्रिया ने वर्कर का आउटपुट ले लिया हो)। उस अंतिम मामले में आउटपुट में
+केवल वे अस्वीकृतियाँ होती हैं जो वर्कर ने सौंपीं: जो उसे सौंपने के बाद मिलती है, जिसका
+लेखन फ़ाइल को फिर से खाली छोड़ देता है, वह केवल वर्कर के `stderr` पर दिखती है, और कहीं
+नहीं जब वर्कर उस लेखन के दौरान क्रैश हो जाता है; रन फिर भी उसके द्वारा सौंपी गई
+अस्वीकृतियों पर विफल होता है। रन के अंत में मुख्य प्रक्रिया
+हर वर्कर को बाहर निकलने के लिए कहती है; जो वर्कर 5 सेकंड बाद भी Python कोड चला रहा हो
+उसे बाधित किया जाता है (Windows पर, किसी sleep या अन्य कॉल में अवरुद्ध वर्कर को नहीं),
+और जो भी वर्कर 10 सेकंड बाद भी चल रहा हो उसे रोक दिया जाता है। गार्ड उस रन का निकास
+कोड नहीं बदल सकता जो मुख्य प्रक्रिया में `os._exit` के ज़रिए समाप्त होता है (किसी हुक,
+क्लीनअप या `atexit` हैंडलर में), किसी ऐसे `tryfirst` `pytest_cmdline_main` रैपर के
+ज़रिए जिसे pytest ने गार्ड के बाद पंजीकृत किया, या किसी ऐसे `pytest_cmdline_main`
+हुक के ज़रिए जो कोई सेशन चलने से पहले लौट आता है; `os._exit` के साथ गार्ड की टर्मिनल
+रिपोर्ट भी खो सकती है, और पहले तथा अंतिम मामले में जो अस्वीकृति गार्ड ने अभी तक
+रिपोर्ट नहीं की वह केवल अपनी `stderr` पंक्ति के रूप में दिखती है। लॉग प्रति प्रक्रिया
+रखा जाता है: जिस अस्वीकृति को कोई चाइल्ड Apothem प्रक्रिया सोख लेती है वह केवल चाइल्ड
+के `stderr` पर एक पंक्ति के रूप में दिखती है, और उसके लिए परीक्षण विफल नहीं होता।
+
+होम वह है जिसे ऑपरेटिंग सिस्टम खाते के लिए दर्ज करता है, न कि `HOME` या
+`USERPROFILE`। पठन, ड्राई रन और पूर्वावलोकन फिर भी काम करते हैं; जो एक स्थिति जाँच
+लेजर में पूर्ण अनइंस्टॉल दर्ज करती है वह एक लेखन है, इसलिए उसे चुपचाप अस्वीकार करके
+रिपोर्ट किया जाता है। जिस परीक्षण को जानबूझकर वास्तविक इंस्टॉल चलाना हो, वह चाइल्ड के
+एनवायरनमेंट में `PYTEST_CURRENT_TEST` और `PYTEST_VERSION` के बिना Apothem शुरू
+करता है।
+
+अस्वीकृति उन फ़ोल्डरों को कवर नहीं करती जिन्हें `CODEX_HOME`, `CLAUDE_CONFIG_DIR`
+या `XDG_CONFIG_HOME` उनके डिफ़ॉल्ट नामों से दूर ले जाते हैं, होम के बाहर या उसके भीतर
+(`XDG_CONFIG_HOME=~/xdg` OpenCode के फ़ोल्डर को `~/xdg/opencode` पर रखता है), हुक
+स्थिति फ़ोल्डर, या ऐसे प्रोग्राम जो Python नहीं हैं, जैसे शेल इंस्टॉलर। जाँच लेखन से
+पहले, पथ द्वारा, चलती है, इसलिए दोनों के बीच लिंक से बदला गया फ़ोल्डर नहीं देखा जाता।
+जब सिस्टम के पास खाते के होम का कोई रिकॉर्ड नहीं होता (बिना `passwd` प्रविष्टि वाला
+कंटेनर उपयोगकर्ता), तो खाते का होम बिल्कुल संरक्षित नहीं होता। जो चेकआउट किसी
+संरक्षित फ़ोल्डर के भीतर है (जैसे `~/.claude` के अंतर्गत), परीक्षणों के दौरान उसके
+Apothem लेखन अस्वीकार किए जाते हैं।
+अस्वीकृति pytest के बाहर कुछ नहीं करती, अर्थात जब एनवायरनमेंट में न तो खाली न होने
+वाला `PYTEST_CURRENT_TEST` हो और न ही `PYTEST_VERSION` में इंस्टॉल किए गए pytest
+का संस्करण, यही कारण है कि ऊपर का नियम फिर भी लागू होता है।
+`tests/README.md` हर कमी सूचीबद्ध करता है।
 
 ### प्रति पैकेज कवरेज
 
@@ -674,7 +829,7 @@ CI तीन पैकेजों को मापता है और प्�
 स्थानीय रूप से जाँचने के लिए:
 
 ```bash
-python -m pytest --cov=src/apothem --cov-report=json:coverage.json
+python -m pytest --cov=src/apothem --cov-fail-under=0 --cov-report=json:coverage.json
 python scripts/dev/collect_metrics.py --coverage-json coverage.json --check-floors \
   --skip-hooks --skip-coldstart --harness zed
 ```
@@ -682,7 +837,8 @@ python scripts/dev/collect_metrics.py --coverage-json coverage.json --check-floo
 ### मेट्रिक्स आर्टिफ़ैक्ट
 
 CI का `metrics` जॉब हर पुश और पुल रिक्वेस्ट पर `scripts/dev/collect_metrics.py`
-चलाता है और `metrics.json` (`schema_version: 1`) अपलोड करता है। `null` वाले हर
+चलाता है, जब दोनों कवरेज शार्ड पास हो जाएँ, उनके द्वारा मापे गए कवरेज डेटा का
+उपयोग करते हुए, और `metrics.json` (`schema_version: 1`) अपलोड करता है। `null` वाले हर
 मान का कारण `nulls` के अंतर्गत दर्ज होता है।
 
 | कुंजी | यह क्या मापती है |
@@ -699,13 +855,25 @@ CI का `metrics` जॉब हर पुश और पुल रिक्व�
 
 ```text
 antigravity     ~/.gemini/{GEMINI,AGENTS}.md, ~/.gemini/config/{GEMINI,AGENTS}.md,
-                ~/.gemini/config/rules/*.md with trigger: always_on, project
-                GEMINI.md and AGENTS.md. The plugin rules/ folder is not a
-                documented launch surface.
+                ~/.gemini/config/rules/*.md with trigger: always_on, and in the
+                project GEMINI.md, AGENTS.md, .agents/{GEMINI,AGENTS}.md and
+                .agents/rules/*.md with trigger: always_on, plus, for each
+                plugin in ~/.gemini/config/plugins/ with a plugin.json not
+                marked disabled: true, its rules/AGENTS.md (else
+                rules/GEMINI.md) and its rules/*.md with trigger: always_on.
+                A rule file counts only when its first line opens the
+                frontmatter. Each file counted up to 24,000 bytes. @ includes
+                are not expanded, the user's own plugin on/off choice is not
+                read, and the 20,000-token budget across always-on rules is
+                not modeled.
 claude-code     ~/.claude/CLAUDE.md and ~/.claude/rules/**/*.md without paths:
-                frontmatter, plus the project equivalents.
-codebuddy       .codebuddy/rules/**/*.md (project and home) unless
-                alwaysApply: false, plus CODEBUDDY.md.
+                frontmatter, plus the project equivalents and CLAUDE.local.md;
+                the project AGENTS.md and .claude/AGENTS.md only when the
+                project has no CLAUDE.md, .claude/CLAUDE.md or CLAUDE.local.md.
+codebuddy       .codebuddy/rules/**/*.md (project and home) unless enabled:
+                false or alwaysApply: false, ~/.codebuddy/CODEBUDDY.md, the
+                project CODEBUDDY.local.md, and the first of CODEBUDDY.md and
+                .codebuddy/CODEBUDDY.md, else AGENTS.md.
 codex           The first non-empty of ~/.codex/AGENTS.override.md and
                 ~/.codex/AGENTS.md, plus the first of AGENTS.override.md,
                 AGENTS.md and the project_doc_fallback_filenames names that
@@ -714,16 +882,26 @@ codex           The first non-empty of ~/.codex/AGENTS.override.md and
 cursor          .cursor/rules/**/*.mdc with alwaysApply: true, and AGENTS.md.
 gemini-cli      ~/.gemini/GEMINI.md and the project GEMINI.md.
 github-copilot  .github/copilot-instructions.md and the project AGENTS.md.
-hermes          ~/.hermes/SOUL.md, plus the first of these kinds in the project
-                with a non-empty file (Hermes loads one): .hermes.md or
-                HERMES.md (the first of the two that exists is the only
-                candidate), AGENTS.override.md or AGENTS.md, CLAUDE.md, then
-                .cursorrules with .cursor/rules/*.mdc. The support tree and
-                apothem/rules/ are not launch surfaces.
-kimi-code       ~/.kimi-code/AGENTS.md, project AGENTS.md and .kimi-code/AGENTS.md.
+hermes          ~/.hermes/SOUL.md when it holds text, plus the first of these
+                kinds in the project with a non-empty file (Hermes loads one):
+                .hermes.md or HERMES.md (the first of the two that exists is
+                the only candidate), AGENTS.override.md or AGENTS.md,
+                CLAUDE.md, then .cursorrules with .cursor/rules/*.mdc. The
+                support tree and apothem/rules/ are not launch surfaces.
+kimi-code       ~/.kimi-code/AGENTS.md, the first non-empty of
+                ~/.agents/AGENTS.md and ~/.agents/agents.md, and the project
+                .kimi-code/AGENTS.md and AGENTS.md; blank files load nothing.
+                Kimi also reads AGENTS.md in each folder from the git root
+                down; the scratch project has no .git, so only its root is
+                read.
 kiro            .kiro/steering/**/*.md with inclusion: always or no inclusion
                 key, and the project AGENTS.md.
-open-claw       Workspace bootstrap files ~/.openclaw/workspace/*.md.
+open-claw       The non-blank bootstrap files in ~/.openclaw/workspace/, in
+                order: AGENTS.md, SOUL.md, IDENTITY.md, USER.md, BOOTSTRAP.md,
+                MEMORY.md; each up to 20,000 characters (USER.md 4,000),
+                60,000 in all. Approximate: OpenClaw's own trimming,
+                head-and-tail truncation, missing-file markers and per-session
+                filtering are not modeled.
 opencode        ~/.config/opencode/AGENTS.md, the project AGENTS.md, and every
                 file the instructions globs in opencode.json match.
 qwen-code       The context files named by context.fileName in

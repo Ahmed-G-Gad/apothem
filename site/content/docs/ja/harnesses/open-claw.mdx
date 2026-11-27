@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "Open-Claw（プレビュー）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "4c7b4673820f1fa6"
+sourceHash: "057bb9c3bebcd657"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,39 +17,127 @@ sourceHash: "4c7b4673820f1fa6"
 apothem install --harness open-claw
 ```
 
-アダプターは OpenClaw のユーザーグローバル設定ファイルを書き込み、共有プロファイルをプロファイルドキュメントへ投影し、Apothem のサポートコホートをハーネスルート配下にインストールします。
-OpenClaw のネイティブ設定は JSON であり、マテリアライザーは 1 つのキー `skills.load.extraDirs` をレンダリングし、既存のファイルはその他のキーを保持します。
+アダプターは OpenClaw のユーザーグローバル設定ファイルを書き込み、共有プロファイルをプロファイルドキュメントへ投影し、OpenClaw の各ワークスペースに Apothem のルールファイルを書き込み、Apothem のサポートコホートをハーネスルート配下にインストールします。
+OpenClaw のネイティブ設定は JSON であり、マテリアライザーは 2 つのエントリー、`skills.load.extraDirs` と `bootstrap-extra-files` フックのエントリーをレンダリングし、既存のファイルはその他のキーを保持します。
 
 **書き込まれるファイル：** `~/.openclaw/openclaw.json`、プロファイルドキュメント
-`~/.openclaw/apothem/rules/00-apothem-profile.md`、および
-`~/.openclaw/.apothem/support/` 配下のサポートファイル
+`~/.openclaw/apothem/rules/00-apothem-profile.md`、各ワークスペースのルールファイル
+`<workspace>/apothem/AGENTS.md`、および Apothem のデータフォルダー
+`~/.openclaw/.apothem/`（そのコンテキスト、学習、メモリーの各ストアと、
+`~/.openclaw/.apothem/support/` 配下のサポートファイル）
+
+インストールと更新のたびに、`~/.openclaw/apothem/rules/` 内にある Apothem が置いたのではないファイルはすべて、`~/.apothem/backups/` 配下のバックアップセットに保存されたうえで削除されます。
+そのバックアップは、このハーネスのより新しいバックアップセットが 10 個存在した時点で削除されるため、自分のファイルは別の場所に置いてください。
 
 プロファイルドキュメントは Apothem サポートファイルのセクションで終わります。
 このセクションは、リポジトリ形式の各参照（`rules/<name>.md`、`templates/...`、`hooks/...`）が解決される先の、`~/.openclaw/.apothem/support/` 配下の絶対ディレクトリを示します。
 
 ## プロファイルからネイティブ設定へのマッピング
 
-アダプターは 1 つの設定キーを作成します。
-OpenClaw が読む追加のスキルディレクトリのリストである `skills.load.extraDirs` に `~/.openclaw/.apothem/support/skills` を追加します。これにより OpenClaw はインストールされたスキルを見つけます。
-このエントリーは、あなたがすでに列挙しているエントリーの後に置かれ、あなたの他のキーはそのまま残ります。
-プロファイルのアイデンティティ、プリファレンス、ルールはプロファイルドキュメントに入ります。
-共有のコマンド、スキル、ルール、テンプレート、フックプロンプトは、`~/.openclaw/.apothem/support/` 配下にサポート素材としてインストールされます。
+アダプターは 2 つの設定エントリーを作成します。
+
+- OpenClaw が読む追加のスキルディレクトリのリストである `skills.load.extraDirs` に `~/.openclaw/.apothem/support/skills` を追加します。これにより OpenClaw はインストールされたスキルを見つけます。このエントリーは、あなたがすでに列挙しているエントリーの後に置かれます。
+- `hooks.internal.entries.bootstrap-extra-files` エントリーのパスリストに `apothem/AGENTS.md` を追加します。これにより OpenClaw は Apothem のルールファイルを読み込みます（[ワークスペースごとのルール](#rules-in-each-workspace) を参照）。
+
+あなたの他のキーはそのまま残り、Apothem が `hooks.internal.enabled` を書き込むことはありません。
+プロファイルのアイデンティティ、プリファレンス、ルールは、プロファイルドキュメントと各ワークスペースのルールファイルに入ります。
+共有のコマンド、スキル、ヘルパー定義、ルール、テンプレート、フックプロンプトは、`~/.openclaw/.apothem/support/` 配下にサポート素材としてインストールされます。
 
 ## 互換性に関する注意
 
-プレビュー版のアダプターです。OpenClaw は `skills.load.extraDirs` を通じて Apothem のスキルを読み込みますが、サポートツリーの残りの部分もプロファイルドキュメントも自力では読み込みません。ワークスペースの命令ファイルも設定もそこを指していないため、インストール後の OpenClaw は Apothem のルールと MCP サーバーなしで動作します。
+プレビュー版のアダプターです。OpenClaw は `skills.load.extraDirs` を通じて Apothem のスキルを読み込み、各ワークスペースのルールファイルを通じて Apothem のルールを読み込みます。Apothem から MCP サーバーを読み込むことはありません。
 
-**名前の衝突。** OpenClaw は次のソースからスキルを読み込み（優先順位の高い順）、同じスキル名が複数の場所に現れた場合は最も優先順位の高いソースが勝ちます：ワークスペースの `skills/` フォルダー、ワークスペースの `.agents/skills/` フォルダー、`~/.agents/skills`（デフォルトの状態ディレクトリの場合のみ）、状態ディレクトリの `skills/` フォルダー（デフォルトでは `~/.openclaw/skills`）、ワークショップのスキル、同梱スキルとカストディアンスキル、そして最後に `skills.load.extraDirs` 配下に列挙されたフォルダーとプラグインのスキルです。Apothem のディレクトリは `extraDirs` のエントリーなので、それより前のいずれかのソースにあなたが置いている同じ名前のスキルが OpenClaw に使われ、そのスキルの Apothem のコピーはディスク上で使われないままになります。Apothem は `openclaw.json` と `~/.openclaw/.apothem/support/` 配下にのみ書き込み、それより前のフォルダーには決して書き込まないため、インストール、更新、アンインストールが、あなたがそこに置いているスキルを置き換えることはありません。
+### ワークスペースごとのルール [#rules-in-each-workspace]
 
-`agents.defaults.skills` はスキル名の許可リストです。Apothem はこれを編集しないため、許可リストを使っている場合は、使いたい Apothem のスキルがそこに記載されているか確認してください。`apothem update` は、`openclaw.json` に追加したキーを保持します。MCP サーバーは OpenClaw 設定の `mcp.servers` ブロックに置かれ、`openclaw mcp add` と関連するサブコマンドで管理します。アダプターはそこにエントリを一切書き込みません。（OpenClaw の振る舞いは、[スキル](https://docs.openclaw.ai/tools/skills)、[スキル設定](https://docs.openclaw.ai/tools/skills-config)、[設定拡張](https://docs.openclaw.ai/gateway/config-extensions) のドキュメント（2026-10-24 に確認）、および [MCP CLI](https://docs.openclaw.ai/cli/mcp) のドキュメント（2026-10-02 に確認）に基づきます。）
+OpenClaw はワークスペースの 6 つのファイル、`AGENTS.md`、`SOUL.md`、`IDENTITY.md`、`USER.md`、`BOOTSTRAP.md`、`MEMORY.md` をシステムプロンプトに入れます。
+同梱の `bootstrap-extra-files` フックは、それらの名前のいずれかを持つファイルを追加し、そのパスは各セッションのワークスペースを基準に読まれます。
+Apothem は各ワークスペースに `apothem/AGENTS.md` を書き込み、そのパスをフックのエントリーに記載します。
 
-**`openclaw.json` 内のコメント。** OpenClaw は設定を JSON5 として読み、Apothem はファイルをプレーンな JSON として書き直します。ファイルにコメントやその他の JSON5 構文が含まれていてエントリーがない場合、Apothem はファイルに手を付けず、インストールはそのキーを挙げるメッセージを出して停止します。このエントリーを自分でファイルにマージするか、ファイルをプレーンな JSON に変換してから、再度インストールを実行してください。
+```json
+{
+  "hooks": {
+    "internal": {
+      "entries": {
+        "bootstrap-extra-files": {
+          "enabled": true,
+          "paths": ["apothem/AGENTS.md"]
+        }
+      }
+    }
+  }
+}
+```
+
+このファイルには、プロファイルの管理ブロックと、`~/.openclaw/.apothem/support/` 配下のルールインデックスへのポインターが入っており、そのインデックスを通じてルール一式全体にたどり着けます。
+ファイル名が `AGENTS.md` なので、OpenClaw は cron セッションや、別のセッションが開始するヘルパーセッション（6 つのファイルの一部しか受け取らないセッション）でもこれを読み込みます。
+Apothem はワークスペース自身の `AGENTS.md` を編集することはありません。そのファイルは OpenClaw がテンプレートから作成し、そのワークスペースで作業するアシスタントが編集するものです。
+`apothem` という名前のフォルダーはセットアップ作業とはみなされないため、OpenClaw がまだセットアップしていないワークスペースにも初回実行用のファイルが作られます。
+
+Apothem は、ホームディレクトリ内に存在するすべてのワークスペースにこのファイルを書き込みます。対象は `agents.defaults.workspace`（なければ `OPENCLAW_WORKSPACE_DIR`、それもなければ `~/.openclaw/workspace`）と、各 `agents.entries` エントリーの `workspace`（または、`agents.entries` がない場合に OpenClaw が今も読む旧形式の `agents.list` の各項目のもの）です。
+デフォルトのワークスペースを所有するエントリーは、自身の `workspace` を持たない場合、そのワークスペースを直接使います。所有するのは `default: true` が付いたエントリー（`agents.ownership` が `"explicit"` の場合を除く）、それがなければ唯一のエントリーです。
+自身の `workspace` を持たないその他のエントリーは `<agents.defaults.workspace>/<id>`、それがなければ `~/.openclaw/workspace-<id>` を使います。id は OpenClaw がフォルダー名で綴るとおりに綴られます。つまり小文字にし、英字、数字、`_`、`-` 以外の文字は `-` に置き換えます（そのため `Bob Smith` は `workspace-bob-smith` を使います）。
+
+- まだ存在しないワークスペースは、メッセージなしでスキップされます。OpenClaw がそれを作成すると、`apothem update --harness open-claw` を実行するまで `apothem verify --harness open-claw` は失敗します。
+- 次のものは、それぞれ 1 つの警告を出してスキップされます：ホームディレクトリの外にあるワークスペース、リンク（シンボリックリンクまたは Windows のジャンクション）経由でたどり着くワークスペース、ファイルであるパス、`apothem/AGENTS.md` がフォルダーになっているワークスペース、そして `apothem` フォルダー自体が別のワークスペースであるワークスペース（その `AGENTS.md` はそのワークスペース自身のものになるため）。Apothem はリンクを通じて書き込みや削除を行うことはありません。その後リンクになったワークスペース内のルールファイルはその場に残され、Apothem ブロックを手動で削除するよう求める警告が出ます。
+- ワークスペースが設定から外れた場合、またはファイルがもう収まらない場合（下記のサイズ上限を参照）、次回のインストールまたは更新で、Apothem がそこに書き込んだファイルから Apothem ブロックが取り除かれます。ファイルとその `apothem` フォルダーは、中に他に何も残っていなければ削除されます。ブロックの外にあなたが追加したテキストは残ります。
+
+設定にすでに `bootstrap-extra-files` エントリーがある場合、Apothem はフックが読むリスト、つまり `paths`、`patterns`、`files` のうち最初の空でないものにパスを追加します。
+あなたのリストを隠してしまう 2 つ目のリストを作ることはありません。
+
+**Apothem がフックに手を付けない場合。** 次の場合、インストールはルールファイルを書き込みますが、フックの設定は変更せず、警告を表示します。
+
+- `hooks.internal.enabled` が `false` である：あなたが内部フックをオフにしています。
+- `bootstrap-extra-files` エントリーに `enabled: false` がある。
+- `hooks.internal.enabled` が `true` で、`hooks.internal.entries` 配下にフックが 1 つも指定されていない（かつ `hooks.internal.load.extraDirs` が空である）。このとき OpenClaw は対象となるすべてのフックを読み込み、最初のフックを指定するとそれ以外がオフになってしまいます。使っているフックを指定してから、更新を実行してください。OpenClaw でインストールしたフックパックは OpenClaw 自身の状態データベースに記録されており、Apothem はそれを読まないため、そのようなパックがインストールされている場合でも Apothem はこのケースを同じように扱います。
+- `openclaw.json` にコメントやその他の JSON5 構文が含まれている（[`openclaw.json` 内のコメント](#互換性に関する注意) を参照）。
+
+ルールファイルが両方のサイズ上限内に収まるワークスペースが 1 つもない場合、インストールはファイルを書き込まず、フックのエントリーにもパスを追加しません。
+
+**サイズ上限。** OpenClaw が注入するのは、1 ファイルあたり最大 20,000 文字、合計で最大 60,000 文字です（`agents.defaults.bootstrapMaxChars` と `bootstrapTotalMaxChars`。`agents.entries` のエントリーは独自の値を設定でき、そのワークスペースではその値が優先されます）。
+OpenClaw は文字数を UTF-16 単位で数えるため絵文字は 2 文字と数えられ、Apothem も改行を含めて同じように数えます（Windows の改行は 2 文字と数えられます）。
+デフォルトのプロファイルでは、ルールファイルは数千文字です。
+
+ルールファイルは、6 つのワークスペースファイルと、`bootstrap-extra-files` エントリーの他のファイルの後に読み込まれます。
+ファイルあたりの上限を超えるか、合計の上限が残す余地を超えるワークスペースでは、OpenClaw がファイルを切り詰めるかスキップし、ルールが壊れた状態で届くことになります。そのため Apothem はそこにファイルを書き込まず、警告でその理由を伝え、以前のインストールが残したコピーを取り除きます。
+複数のエントリーが 1 つのワークスペースを共有している場合は、最も小さい上限が適用されます。
+（OpenClaw の振る舞いは、[フック設定](https://docs.openclaw.ai/automation/hooks/configuration)、[同梱フック](https://docs.openclaw.ai/automation/hooks/bundled-hooks)、[ワークスペースとブートストラップ](https://docs.openclaw.ai/gateway/config-agents/workspace-and-bootstrap) のドキュメント（2026-11-09 に確認）に基づきます。）
+
+Apothem ブロックの END マーカーが失われたルールファイルは、BEGIN マーカーの下に古い Apothem のテキストを保持し、更新はその横に Apothem のブロックを書き込むため、その古いテキストはファイルあたりの上限に算入されます。
+上限を超えるルールファイルに、完全なブロックを始めない BEGIN マーカー（END マーカーが失われているか、そのマーカーがあなたのもの）がある場合、警告はそのファイルと、そのような各マーカーを行番号で示します。
+続いて、そのファイルの修正で変更されるすべてのマーカー行を示します。これはそのファイルについての他の警告が示すのと同じ行で、たとえば "change line 3 by adding a word inside its comment"（2 行の場合は "change lines 3 and 9 by adding a word inside each comment" で、コードブロック内に引用した BEGIN マーカーが含まれることもあります）のようになります。
+どの行も閉じていないコードブロックの途中でファイルが終わっている場合は、まずそのコードブロックの閉じ行を追加するよう伝えます。たとえば "add a line of 3 backticks below line 12" です。
+Markdown ビューアーがそのコードブロックを Apothem とは異なるように読む可能性がある場合（その上の行が HTML ブロックを始める可能性がある、またはリスト項目のテキストがその上で左端から続き、その後にインデントされた行が続く場合）、警告は変更すべき行を示しません。Apothem が手順を示せないことを伝え、そのファイルについての他の警告と同様に、コードブロックを開く行を示します（[番号付きの修正に従う](/docs/install/troubleshooting#follow-a-numbered-fix) を参照）。
+そして、あなた自身のテキストは残したまま、マーカーの下の古いテキストを手動で削除するか、プロファイルのカスタムルールを短くするか、上限を引き上げるよう伝えます。
+
+### スキル
+
+**名前の衝突。** OpenClaw は次のソースからスキルを読み込み（優先順位の高い順）、同じスキル名が複数の場所に現れた場合は最も優先順位の高いソースが勝ちます：ワークスペースの `skills/` フォルダー、ワークスペースの `.agents/skills/` フォルダー、`~/.agents/skills`（デフォルトの状態ディレクトリの場合のみ）、状態ディレクトリの `skills/` フォルダー（デフォルトでは `~/.openclaw/skills`）、ワークショップのスキル、同梱スキルとカストディアンスキル、そして `skills.load.extraDirs` 配下に列挙されたフォルダーとプラグインのスキルです。別の実行ワークスペース（自身のワークスペースとは別のフォルダー）で動くセッションは、これらすべての後にそのフォルダーの `skills/` と `.agents/skills/` フォルダーも読むため、そこに置かれた同じ名前のスキルより Apothem のスキルが優先されます。Apothem のディレクトリは `extraDirs` のエントリーなので、それより前のいずれかのソースにあなたが置いている同じ名前のスキルが OpenClaw に使われ、そのスキルの Apothem のコピーはディスク上で使われないままになります。Apothem は `openclaw.json`、`~/.openclaw/apothem/rules/`、`~/.openclaw/.apothem/`、各ワークスペースの `apothem/AGENTS.md` にのみ書き込み、それより前のフォルダーには決して書き込まないため、インストール、更新、アンインストールが、あなたがそこに置いているスキルを置き換えることはありません。
+
+`agents.defaults.skills` はスキル名の許可リストで、`agents.entries.<id>.skills` のリストは、それが属するエントリーについてこれを置き換えます。Apothem はどちらのリストも編集しないため、許可リストを使っている場合は、使いたい Apothem のスキルがそこに記載されているか確認してください。`apothem update` は、`openclaw.json` に追加したキーを保持します。MCP サーバーは OpenClaw 設定の `mcp.servers` ブロックに置かれ、`openclaw mcp add` と関連するサブコマンドで管理します。アダプターはそこにエントリを一切書き込みません。（OpenClaw の振る舞いは、[スキル](https://docs.openclaw.ai/tools/skills)、[スキル設定](https://docs.openclaw.ai/tools/skills-config)、[設定拡張](https://docs.openclaw.ai/gateway/config-extensions)、[MCP CLI](https://docs.openclaw.ai/cli/mcp) のドキュメント（2026-11-03 に確認）に基づきます。）
+
+**`openclaw.json` 内のコメント。** OpenClaw は設定を JSON5 として読み、Apothem はファイルをプレーンな JSON として書き直します。ファイルにコメントやその他の JSON5 構文が含まれている場合、Apothem がそれを書き直すことはありません。
+
+- `skills.load.extraDirs` のエントリーがない場合、インストールは、ファイルにコメントや JSON5 構文が含まれているというメッセージを出して停止します。
+- フックのエントリーだけがない場合、インストールと更新は続行し、ワークスペースのルールファイルを書き込み、何を追加すべきかを伝える警告を表示します（`bootstrap-extra-files` エントリーがすでにリストを使っていれば、パスはそのリストに入ります）。それを追加するまで、`apothem verify` は失敗します。
+- コメントを追加する前に Apothem が書き込んだエントリーはそのまま残り、更新は続行します。サイズ上限やあなたのフック設定によって Apothem のパスをフックのエントリーから外す必要がある場合は、警告がそれを手動で取り除くよう求めます。もう収まらないルールファイルは、それでも取り除かれます。
+
+これらのエントリーを自分でファイルにマージするか、ファイルをプレーンな JSON に変換してから、再度インストールを実行してください。
 
 ```json
 {
   "skills": {
     "load": {
       "extraDirs": ["~/.openclaw/.apothem/support/skills"]
+    }
+  },
+  "hooks": {
+    "internal": {
+      "entries": {
+        "bootstrap-extra-files": {
+          "enabled": true,
+          "paths": ["apothem/AGENTS.md"]
+        }
+      }
     }
   }
 }
@@ -68,7 +156,9 @@ verify コマンドは次のことを確認します。
 1. ネイティブ設定が想定されたパスに存在すること。
 2. 管理対象の各ターゲットが存在すること。管理対象のファイルは空ではなく、JSON または YAML の設定は解析できること。`--profile PATH` を追加すると、インストールされたファイルがそのプロファイルと一致することも確認します。
 3. ネイティブ設定の `skills.load.extraDirs` に `~/.openclaw/.apothem/support/skills` が記載されていること。そのエントリーがないと OpenClaw はインストールされたスキルを読み込みません。`apothem update` がそれを再び追加します。
-4. アダプター固有の検証ルーチンが成功を報告すること。
+4. `bootstrap-extra-files` エントリーが、フックの読むリストに `apothem/AGENTS.md` を記載していること。ただし、あなた自身の設定によって Apothem がそれを登録できない場合を除きます（[ワークスペースごとのルール](#rules-in-each-workspace) を参照）。
+5. Apothem が見つけたすべてのワークスペースに、管理ブロックを含む `apothem/AGENTS.md` があること。インストール後に作成されたワークスペースは、`apothem update` がファイルを書き込むまでこのチェックに失敗します。インストールがファイルのサイズ上限超過を報告したワークスペースは、プロファイルのカスタムルールを短くするか上限を引き上げてから更新を実行するまで、このチェックに失敗します。リンク、ホームディレクトリ外のパス、存在しないワークスペースはチェックされません。ブロックが編集されたルールファイルは `apothem status` が報告します。
+6. Apothem がブロックを保持するファイル（プロファイルドキュメントと各ルールファイル。インストールがもう使っていないワークスペースのものも含む）のいずれにも、完全なブロックを始めない BEGIN マーカー、Apothem のマーカー間にある 2 つ以上の完全なブロック、または Apothem があなたのテキストと区別できないマーカーのペアがないこと。更新はそのようなマーカーを保持するか、そのようなファイルをそのまま残すため、`Note:` 行の指示どおりにファイルを手動で修正するまでチェックは失敗します。ルールファイルはファイルあたりの上限に収まる間だけ書き込まれ、変更したマーカー行の下に残した古い Apothem のテキストはその上限に算入されるため、ノートは、次回の更新が Apothem のブロックを書き込むのは "if the file then fits OpenClaw's per-file limit (bootstrapMaxChars)" の場合だと伝えます。収まらない場合、更新はサイズの警告でそのファイルを示します（[END マーカーのない Apothem の BEGIN マーカーがファイルにある](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)、[Apothem のマーカー間に 2 つのブロックがあるファイル](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)、[Apothem が自分のブロックとあなたのテキストを区別できない](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text) を参照）。
 
 ## 更新
 
@@ -76,7 +166,16 @@ verify コマンドは次のことを確認します。
 apothem update --harness open-claw
 ```
 
-現在の共有プロファイルの状態からプロファイルドキュメントを再導出し、サポートファイルを更新します。`openclaw.json` は、すでに持っているキーを保持し、`skills.load.extraDirs` 内の Apothem のエントリーは、何度更新しても 1 回だけ記載されたままです。
+現在の共有プロファイルの状態からプロファイルドキュメントと各ワークスペースのルールファイルを再導出し、サポートファイルを更新します。`openclaw.json` は、すでに持っているキーを保持し、`skills.load.extraDirs` とフックのエントリー内の Apothem のエントリーは、何度更新しても 1 回だけ記載されたままです。
+各更新は Apothem のパスをフックのエントリーのリストの最後に書き込むため、その後ろにエントリーを置いた場合、パスは末尾に移動します。
+ルールファイルの管理ブロックの外にあなたが追加したテキストは残ります。
+インストールがもう使っていないワークスペースのルールファイルからはブロックが取り除かれます。
+その結果、ファイルに END マーカーのない BEGIN マーカー（あなたの行、または END マーカーが失われた古いブロックの残り）が残る場合、更新はそのファイルとマーカーの行を示し、その行がマーカーとして読まれなくなるように変更する番号付きの手順を添えます。それを変更するまで `apothem verify` は失敗します。
+その下にある古い Apothem のテキストは、その後あなたが手動で削除するものになります。
+そのようなファイルに Apothem のマーカー間の異なるブロックが 2 つある場合、更新はファイルをそのまま残し、各ブロックをその行で示すか、Apothem のブロックとその周りのマーカー行を示します。
+警告の番号付きの修正のいずれかに従ってください。それらの修正は BEGIN マーカー行をその場で変更します。Apothem のブロックを残した場合は、次回のインストール、更新、またはアンインストールがそれを取り除きます。すべての BEGIN マーカー行を変更した場合は、Apothem はそこに自分のブロックを見つけなくなります。
+そのファイル内で Apothem が自分のブロックとあなたのテキストを区別できない場合（たとえば、ブロックがあなたのコードブロックの中にある場合）、更新はそのファイルもそのまま残し、警告が各マーカーのペアとその修正方法を示します。修正すれば、次回のインストール、更新、またはアンインストールが Apothem のブロックを取り除きます（[Apothem が自分のブロックとあなたのテキストを区別できない](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text) を参照）。
+それまでは、`apothem verify` が失敗してそのファイルを示します（[検証](#検証) を参照）。
 `~/.config/apothem/profile.yaml` を編集した後、またはインストール済みの Apothem パッケージをアップグレードした後に実行してください。
 
 ## アンインストール
@@ -85,25 +184,48 @@ apothem update --harness open-claw
 apothem uninstall --harness open-claw
 ```
 
-アダプターが追加したもの、つまり `skills.load.extraDirs` 内のそのエントリー、プロファイルドキュメント、サポートツリーを削除します。
-`openclaw.json` 内のあなた自身のキーは、あなた自身の `extraDirs` のエントリーを含めて残り、このファイルは、Apothem が作成したものであり、かつあなたのものが何も残っていない場合にのみ削除されます。
+アダプターが追加したもの、つまり `skills.load.extraDirs` 内のそのエントリー、フックのエントリー内のそのパス（Apothem が作成した場合はエントリー自体）、各ワークスペースの `apothem/AGENTS.md` 内の管理ブロック（中に他に何も残っていなければファイルとフォルダーも削除）、プロファイルドキュメント、サポートツリーを削除します。
+`openclaw.json` 内のあなた自身のキーは、あなた自身の `extraDirs` のエントリーやフック設定を含めて残り、ワークスペース自身のファイルはそのまま残ります。`openclaw.json` は、Apothem が作成したものであり、かつあなたのものが何も残っていない場合にのみ削除されます。
+
+次の残存物は手作業が必要です。
+
+- <strong>コメントやその他の JSON5 構文を含む `openclaw.json` 内の Apothem のエントリー。</strong> アンインストールは何も変更する前に停止し、取り除くべきエントリーを示すエラーで終了します。
+- <strong>リンク経由でたどり着く、まだ Apothem ブロックを保持しているルールファイル。</strong> アンインストールはそれ以外のすべてを削除し、そのファイルはその場に残して、リンクを示したうえでアンインストールを未完了（終了コード 2）として報告します。レポートは、OpenClaw がまだそのファイルを読み込むかどうかも伝えます。Apothem が `openclaw.json` を変更できなかったため、またはあなた自身のパターンがそれに一致するために、OpenClaw が使うワークスペースで `openclaw.json` がそのファイルを指定している間は、読み込まれます。
+- <strong>Apothem が書き直せないルールファイル</strong>（書き込みできないフォルダー内にあるもの、または Windows での読み取り専用ファイル）。アンインストールはそのファイルを示すエラーを報告し、他のワークスペースのルールファイルを整理し、`openclaw.json` やサポートファイルを変更する前に停止します。
+- <strong>Apothem が自分のブロックとあなたのテキストを区別できないルールファイル</strong>（たとえば、ブロックがあなたのコードブロックの中にある場合）。アンインストールはそれ以外のすべてを削除し、そのファイルはそのまま残して、アンインストールを未完了（終了コード 2）として報告します。その警告は各マーカーのペアを示し、番号付きの修正を示します。アンインストールを再度実行する前に、当てはまるケースの修正に従ってください。
+
+いずれの場合も、Apothem はアンインストールを未完了として記録し、その後あなたがブロックの横に自分のテキストを追加したとしても、インストール記録を保持します。
+示されたエントリー、または Apothem ブロック（またはファイル）を取り除くか、ファイルを修正してから、アンインストールを再度実行して完了させてください。
+Apothem ブロックの END 行が失われたルールファイルも、それを示す警告とともにそのまま残されますが、アンインストールはそれでも完了します。ブロックの残りは手動で削除してください。
+インストールが残っている間は、各インストールと更新が、インストールがもう使っていないワークスペース内のそのようなファイルを、あなたがブロックの残りを削除するまで示し続けます。
+アンインストールが完了した後は、後のインストールがそのワークスペースに書き込む場合にのみ、Apothem は再びそのファイルを示します。
+インストールが使っているワークスペースでは、インストールまたは更新はそのようなルールファイルのテキストを保持し、それとは別に Apothem のブロックを書き込んで、そのファイルを示します。
 共有プロファイルの YAML と Apothem エンジンには影響しません。
 
 ## コンフォーミティゲート
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+プロジェクトのフォルダーから実行します。Windows では、`python3` の代わりに `python` を使い、
+フルパスを指定します。Windows PowerShell と cmd は `~` を展開しないためです。
+PowerShell では `$HOME\.apothem\src\apothem\conformity\gate.py`、
+cmd では `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` です。このパスは
+インストーラーがエンジンを置く場所で、`-E -s` はあなたの `PYTHONPATH` とユーザーの
+site-packages をゲートから締め出します。両者とその他のインストールについては
+[コンフォーミティゲート](/docs/conformity-gate)で説明しています。
 
 ## トラブルシューティング
 
 | 症状 | 対処 |
 |---------|-----|
 | 設定ファイルが見つからない | `apothem install --harness open-claw` を再実行する |
-| 検証が失敗した | `apothem update --harness open-claw` を実行してから、再度検証する |
-| 想定外の設定内容 | Apothem は `openclaw.json` に `skills.load.extraDirs` のエントリーだけを作成し、既存のキーを保持する。そのため、プロファイルの内容はそこには入らない。プロファイルの内容は `~/.openclaw/apothem/rules/00-apothem-profile.md` に入る。`~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、そのうえで [更新](#更新) の手順にあるコマンドを再実行する |
-| インストールが、`openclaw.json` 内のコメントや JSON5 構文に関するメッセージを出して停止する | Apothem は、コメントを取り除かなければならないファイルを書き直さない。[互換性に関する注意](#互換性に関する注意) に示した `skills.load.extraDirs` のエントリーを自分で追加するか、ファイルをプレーンな JSON に変換してから、再度インストールを実行する |
-| Apothem のスキルが OpenClaw に表示されない | ワークスペース、`~/.agents/skills`、または `~/.openclaw/skills` にある同じ名前のスキルが、Apothem のコピーより優先される（[互換性に関する注意](#互換性に関する注意) を参照）。また、`apothem verify --harness open-claw` を実行し、使っている `agents.defaults.skills` 許可リストがあればそのスキルが記載されているか確認する |
+| 検証が失敗した | `apothem update --harness open-claw` を実行してから、再度検証する。`Note:` 行が、ルールファイルなど修正すべき Apothem マーカーのあるファイルを示している場合、更新ではそれは解消されない。ノートの指示どおりにそのファイルを手動で修正してから、再度検証する（[検証](#検証) の項目 6 を参照） |
+| 想定外の設定内容 | Apothem は `openclaw.json` に、`skills.load.extraDirs` 内のそのエントリーと `bootstrap-extra-files` フックのエントリー内のそのパス（そのエントリーを作成する場合は `enabled: true` も）だけを作成し、既存のキーを保持する。そのため、プロファイルの内容はそこには入らない。プロファイルの内容は `~/.openclaw/apothem/rules/00-apothem-profile.md` と各ワークスペースの `apothem/AGENTS.md` に入る。`~/.config/apothem/profile.yaml` または `--profile PATH` を確認し、そのうえで [更新](#更新) の手順にあるコマンドを再実行する |
+| インストールが、`openclaw.json` 内のコメントや JSON5 構文に関するメッセージを出して停止する、または JSON5 構文が含まれていると警告する | Apothem は、コメントを取り除かなければならないファイルを書き直さない。[互換性に関する注意](#互換性に関する注意) に示した両方のエントリー（`skills.load.extraDirs` のエントリーと `bootstrap-extra-files` フックのエントリー）を自分で追加するか、ファイルをプレーンな JSON に変換してから、再度インストールを実行する |
+| OpenClaw が Apothem のルールに従わない | `apothem verify --harness open-claw` を実行し、インストールの警告を確認する。インストール時に存在しなかったワークスペース、オフにされた内部フック、または制限のないフック検出があると、ルールは読み込まれないままになる（[ワークスペースごとのルール](#rules-in-each-workspace) を参照）。そのうえで `apothem update --harness open-claw` を実行する |
+| Apothem のスキルが OpenClaw に表示されない | ワークスペース、`~/.agents/skills`、`~/.openclaw/skills`、または OpenClaw のワークショップスキルや同梱スキルの中にある同じ名前のスキルが、Apothem のコピーより優先される（[互換性に関する注意](#互換性に関する注意) を参照）。また、`apothem verify --harness open-claw` を実行し、使っている `agents.defaults.skills` または `agents.entries.<id>.skills` 許可リストがあればそのスキルが記載されているか確認する |
 
 ## 設定ノブ
 

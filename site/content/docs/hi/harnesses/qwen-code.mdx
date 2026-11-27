@@ -2,7 +2,7 @@
 title: "Qwen Code"
 description: "Qwen Code (बीटा) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "f5b172839bc072f8"
+sourceHash: "60c859a693851061"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,8 +34,16 @@ Apothem हुक डिस्पैचर पंजीकृत करता �
 ~/.qwen/.apothem/support/{rules,templates,hooks}/
 ```
 
+इंस्टॉल Apothem डेटा फ़ोल्डर भी बनाता है, डिफ़ॉल्ट रूप से `~/.qwen/.apothem/`, जिसमें
+`contexts/`, `learning/`, `memory/` और `plans/` होते हैं।
+
 फ़ाइल `~/.qwen/apothem/rules/00-apothem-profile.md` प्रोफ़ाइल दस्तावेज़ है। यह
 साझा प्रोफ़ाइल से आपकी पहचान और प्राथमिकताएँ रखती है।
+
+हर इंस्टॉल और अपडेट `~/.qwen/apothem/rules/` की हर वह फ़ाइल हटा देता है जिसे
+Apothem ने वहाँ नहीं रखा, उसे `~/.apothem/backups/` के अंतर्गत एक बैकअप सेट में सहेजने
+के बाद। हार्नेस के 10 नए बैकअप सेट बन जाने पर वह बैकअप हटा दिया जाता है, इसलिए अपनी
+फ़ाइलें कहीं और रखें।
 
 ## प्रोफ़ाइल-से-नेटिव-कॉन्फ़िग मैपिंग
 
@@ -120,8 +128,16 @@ Apothem इंजन अप्रभावित रहते हैं।
 ## अनुरूपता गेट
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+इसे अपने प्रोजेक्ट फ़ोल्डर से चलाएँ। Windows पर, `python3` के स्थान पर `python` का
+और पूरे पथ का उपयोग करें, क्योंकि Windows PowerShell और cmd `~` का विस्तार नहीं करते:
+PowerShell में `$HOME\.apothem\src\apothem\conformity\gate.py`, या cmd में
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`। यह पथ वह जगह है
+जहाँ इंस्टॉलर इंजन रखता है, और `-E -s` आपके `PYTHONPATH` और उपयोगकर्ता
+site-packages को गेट से बाहर रखता है; [अनुरूपता गेट](/docs/conformity-gate)
+दोनों को और अन्य इंस्टॉल को समझाता है।
 
 ## समस्या निवारण
 

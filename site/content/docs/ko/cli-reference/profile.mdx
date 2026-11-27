@@ -2,7 +2,7 @@
 title: "profile"
 description: "apothem profile 명령 그룹에 대한 CLI 참조."
 machineTranslated: true
-sourceHash: "012b17d6a7a7bc49"
+sourceHash: "93fe295d7fa540f1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -84,7 +84,25 @@ apothem profile edit [--profile PATH] [--quiet|-q] [--verbose|-v]
 
 ### `profile edit`
 
-시스템 편집기에서 공유 프로필을 엽니다.
+시스템 편집기에서 공유 프로필을 엽니다. 그 경로에 아직 프로필이 없으면, `edit`은
+먼저 `profile init`이 쓰는 것과 같은 시작 프로필을 그곳에 쓴 다음 엽니다.
+
+### 링크 뒤에 있는 프로필
+
+기본값 `~/.config/apothem/profile.yaml`처럼 홈 디렉터리 안으로 지정된 프로필 경로는
+홈 디렉터리 밖으로 이어지는 링크를 통해 쓰이지 않습니다. 그 링크는 `~/.config` 같은
+프로필 위의 폴더일 수도 있고(Windows에서는 정션도 링크로 칩니다), 다른 드라이브에 있는
+dotfiles 파일 같은 프로필 파일 자체일 수도 있습니다. 그러면 `profile init`, `profile set`,
+`profile edit`은 무엇이든 쓰거나 열기 전에 멈춥니다. 아직 프로필이 없으면 메시지는
+`Apothem could not create the starter profile`입니다. 기존 프로필에 대해서는
+`profile set`, `profile edit`, `profile init --force`가
+`Apothem could not write the profile`로 멈춥니다. `--force` 없는 `profile init`은 어디서나
+그렇듯 먼저 `profile file already exists`로 멈춥니다. `profile show`와 프로필을 읽기만
+하는 명령은 계속 프로필을 읽습니다. dotfile 관리자가 만드는 것처럼 홈 디렉터리 안에
+머무는 링크는 따라갑니다. 프로필을 홈 디렉터리 밖에 두려면, 그곳에 있는 프로필 자체의
+경로(프로필 파일 링크가 가리키는 경로 포함)와 함께 `--profile PATH`를 전달하세요. 홈
+디렉터리 밖으로 지정한 경로는 그 링크가 가리키는 곳에 쓰입니다. 그곳에 아직 프로필이
+없다면 먼저 `apothem profile init --profile PATH`로 만드세요.
 
 ## 검증 오류
 

@@ -2,7 +2,7 @@
 title: "ハーネスアダプターの抽象化"
 description: "HarnessAdapter プロトコル — Apothem のアダプターが共有プロファイルをどのように変換するか。"
 machineTranslated: true
-sourceHash: "da20d21cbe60d343"
+sourceHash: "20a51a9c0e55e94a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -96,6 +96,8 @@ flowchart TD
 from pathlib import Path
 from typing import Protocol
 
+from apothem.harnesses._shared.install_driver_types import MaterializationRun
+
 class HarnessAdapter(Protocol):
     name: str
     output_path: Path
@@ -106,7 +108,7 @@ class HarnessAdapter(Protocol):
     def update(self, profile: dict[str, object]) -> object:
         ...
 
-    def uninstall(self) -> None:
+    def uninstall(self) -> MaterializationRun | None:
         ...
 
     def is_installed(self) -> bool:
@@ -115,6 +117,9 @@ class HarnessAdapter(Protocol):
     def verify(self) -> bool:
         ...
 ```
+
+同梱のアダプターは `uninstall` から `MaterializationRun` を返し、CLI はその警告とエラーを
+報告します。報告するものがないアダプターは `None` を返してもかまいません。
 
 プロジェクトスコープのアダプターは、ライフサイクルメソッドで追加的に `project: Path | None`
 を受け取り、`resolve_output_path(project)` を公開してもかまいません。CLI は、メソッドシグネチャが

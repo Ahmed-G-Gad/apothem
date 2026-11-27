@@ -2,7 +2,7 @@
 title: "フック"
 description: "SessionStart、PreToolUse、PostToolUse、Stop で発火するツールイベントハンドラー。git の隔離とプラン規律を強制するメッセージコンテキストを読み込み、テスト済みのランタイム契約とユーザーごとの状態を備えます。"
 machineTranslated: true
-sourceHash: "2fe3999ec76b34d3"
+sourceHash: "e510ec34e7c5cded"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -46,6 +46,14 @@ Claude Code プラグインは、各フックを Claude Code のデフォルト�
 実行されます。新たな探索を強制するには、キャッシュファイルを削除してください。絶対パスの状態
 ディレクトリと絶対パスのキャッシュ済みパスだけが尊重されます。
 
+すべてのフックコマンドは、プラグインのブートストラップとそのインタープリター探索も含め、Python を `-E -s` 付きで
+起動します。`-E` により Python は `PYTHONPATH` とその他の `PYTHON*` 変数を無視し、`-s` はユーザーの
+site-packages を除外します。フックはアシスタントが開いたフォルダーで実行され、`PYTHONPATH` の空のエントリーは
+そのフォルダーを表すため、これらのフラグがなければ、そこに置かれた `sitecustomize.py` や `json.py` が
+フックの中で実行されてしまいます。フックは標準ライブラリと自身のファイルだけを使います。ディスパッチャーと
+コンフォーミティゲートは入力を自分で UTF-8 として読み取ります。`-E` は `PYTHONUTF8` と
+`PYTHONIOENCODING` も無効にするためです。
+
 すべての面は、イベントとマッチャーごとに 1 つのディスパッチャーエントリを登録し、そのマッチャーが
 評価するすべてのメッセージを列挙します。1 つのプロセスがペイロードを 1 回読み取り、各ガードを実行し、
 1 つのエンベロープで応答するため、Write はガードごとに 1 つではなく 1 つのディスパッチャーを起動します。
@@ -56,8 +64,9 @@ Claude Code のエンジンインストールは、Write と Edit に対して�
 ディスパッチャーは標準ライブラリのみのスタンドアロンスクリプトです。自身の
 `sys.path` をブートストラップするため、ホスト上にインポート可能な `apothem` パッケージは
 必要ありません。ソースチェックアウトからは、モジュール形式の
-`python -m apothem.hooks.dispatch <event>`（`PYTHONPATH=src` を指定）が、開発用に
-同じコードを実行します。ディスパッチャーは、エコシステムルートの解決のために
+`python -m apothem.hooks.dispatch <event>`（`PYTHONPATH=src` を指定し、チェックアウトのルートから実行。`-m` は
+現在のフォルダーのモジュールを先に読み込みます）が、開発用に同じコードを実行します。
+アダプターが書き込むコマンドは、スクリプトをパスで `-E -s` 付きで実行します。ディスパッチャーは、エコシステムルートの解決のために
 `hooks/lib/resolve_root.py` を読み込み、`hooks/emit_hook_context.py` と
 `hooks/session_start_bootstrap.py` に委譲します。
 

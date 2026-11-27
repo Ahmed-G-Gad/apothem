@@ -2,7 +2,7 @@
 title: "GLM (Z.ai)"
 description: "Adapter harness Apothem untuk GLM (Z.ai) sebagai backend model yang dapat dikonfigurasi."
 machineTranslated: true
-sourceHash: "026e29a055db8a67"
+sourceHash: "fcd06518f021542b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,7 +34,9 @@ apothem install --harness glm --project /path/to/project
 Adapter menulis satu berkas penyedia berlingkup proyek yang mencatat endpoint
 backend GLM dan placeholder yang dapat dikonfigurasi operator.
 
-**Berkas yang ditulis:** `<project>/.apothem/providers/glm.toml`
+**Berkas yang ditulis:** `<project>/.apothem/providers/glm.toml`, ditambah
+folder data yang dibuat setiap instalasi proyek, `.apothem/` secara default
+(`contexts/`, `learning/`, `memory/`, `plans/`).
 
 ## Pemetaan profil ke konfigurasi native
 
@@ -77,8 +79,10 @@ keduanya.
 ## Catatan kompatibilitas
 
 Backend GLM tidak mengekspos permukaan untuk aturan, command, skill, atau hook,
-sehingga adapter hanya menulis berkas penyedia backend dan tidak ada yang lain.
-Apothem belum memeriksa apakah ZCode mengekspos permukaan semacam itu. Kunci
+sehingga adapter menulis berkas penyedia backend dan tidak satu pun dari itu.
+Apothem belum memeriksa apakah ZCode mengekspos permukaan semacam itu. Seperti setiap
+instalasi proyek, instalasi GLM juga membuat folder data Apothem,
+`<project>/.apothem/` secara default. Kunci
 Z.ai Anda dan pilihan ID model Anda tetap menjadi milik operator. Konvensi permukaan vendor yang menjadi
 sandaran adapter dipatok di `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md`,
 yang di-snapshot terhadap dokumentasi Z.ai yang berlaku.
@@ -131,8 +135,16 @@ terpengaruh.
 ## Gerbang konformitas
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Jalankan dari folder proyek Anda. Di Windows, gunakan `python` sebagai pengganti
+`python3` dan jalur lengkapnya, karena Windows PowerShell dan cmd tidak mengekspansi
+`~`: `$HOME\.apothem\src\apothem\conformity\gate.py` di PowerShell, atau
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` di cmd. Jalur itu adalah
+tempat installer menaruh engine, dan `-E -s` menjauhkan `PYTHONPATH` serta
+site-packages pengguna Anda dari gerbang; [Gerbang konformitas](/docs/conformity-gate)
+menjelaskan keduanya dan instalasi lainnya.
 
 ## Pemecahan masalah
 

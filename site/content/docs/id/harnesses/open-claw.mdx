@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "Adapter harness Apothem untuk Open-Claw (Pratinjau)."
 machineTranslated: true
-sourceHash: "4c7b4673820f1fa6"
+sourceHash: "057bb9c3bebcd657"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,14 +18,23 @@ apothem install --harness open-claw
 ```
 
 Adapter menulis berkas konfigurasi global-pengguna OpenClaw, memproyeksikan
-profil bersama ke dalam dokumen profil, dan memasang kohor pendukung Apothem di
-bawah akar harness. Konfigurasi native OpenClaw adalah JSON; materializer
-merender satu kunci, `skills.load.extraDirs`, dan berkas yang sudah ada tetap
-mempertahankan kunci-kuncinya yang lain.
+profil bersama ke dalam dokumen profil, menulis berkas aturan Apothem ke setiap
+workspace OpenClaw, dan memasang kohor pendukung Apothem di bawah akar harness.
+Konfigurasi native OpenClaw adalah JSON; materializer merender dua entri,
+`skills.load.extraDirs` dan entri hook `bootstrap-extra-files`, dan berkas yang
+sudah ada tetap mempertahankan kunci-kuncinya yang lain.
 
 **Berkas yang ditulis:** `~/.openclaw/openclaw.json`, dokumen profil
-`~/.openclaw/apothem/rules/00-apothem-profile.md`, dan berkas pendukung di bawah
-`~/.openclaw/.apothem/support/`
+`~/.openclaw/apothem/rules/00-apothem-profile.md`, berkas aturan
+`<workspace>/apothem/AGENTS.md` di setiap workspace, dan folder data Apothem
+`~/.openclaw/.apothem/` (penyimpanan konteks, pembelajaran, dan memorinya, serta
+berkas pendukung di bawah `~/.openclaw/.apothem/support/`)
+
+Setiap instalasi dan pembaruan menghapus setiap berkas di
+`~/.openclaw/apothem/rules/` yang tidak ditaruh di sana oleh Apothem, setelah
+menyimpannya dalam set cadangan di bawah `~/.apothem/backups/`. Cadangan itu
+dihapus begitu ada 10 set cadangan yang lebih baru untuk harness ini, jadi
+simpan berkas Anda sendiri di tempat lain.
 
 Dokumen profil diakhiri dengan bagian berkas pendukung Apothem yang menyebutkan
 direktori absolut di bawah `~/.openclaw/.apothem/support/` tempat setiap kutipan
@@ -34,62 +43,235 @@ di-resolve.
 
 ## Pemetaan profil ke konfigurasi native
 
-Adapter menulis satu kunci konfigurasi. Adapter menambahkan
-`~/.openclaw/.apothem/support/skills` ke `skills.load.extraDirs`, daftar
-direktori skill tambahan yang dibaca OpenClaw, yang merupakan cara OpenClaw
-menemukan skill yang terpasang. Entri ini ditempatkan setelah entri apa pun yang
-sudah Anda cantumkan, dan kunci Anda yang lain tetap seperti semula. Identitas,
-preferensi, dan aturan profil masuk ke dokumen profil. Command, skill, aturan,
-templat, dan prompt hook bersama dipasang sebagai materi pendukung di bawah
-`~/.openclaw/.apothem/support/`.
+Adapter menulis dua entri konfigurasi:
+
+- Adapter menambahkan `~/.openclaw/.apothem/support/skills` ke
+  `skills.load.extraDirs`, daftar direktori skill tambahan yang dibaca OpenClaw,
+  yang merupakan cara OpenClaw menemukan skill yang terpasang. Entri ini
+  ditempatkan setelah entri apa pun yang sudah Anda cantumkan.
+- Adapter menambahkan `apothem/AGENTS.md` ke daftar jalur entri
+  `hooks.internal.entries.bootstrap-extra-files`, yang merupakan cara OpenClaw
+  memuat berkas aturan Apothem (lihat [Aturan di setiap workspace](#aturan-di-setiap-workspace)).
+
+Kunci Anda yang lain tetap seperti semula, dan Apothem tidak pernah menulis
+`hooks.internal.enabled`. Identitas, preferensi, dan aturan profil masuk ke
+dokumen profil dan ke berkas aturan setiap workspace. Command, skill, definisi
+pembantu, aturan, templat, dan prompt hook bersama dipasang sebagai materi
+pendukung di bawah `~/.openclaw/.apothem/support/`.
 
 ## Catatan kompatibilitas
 
 Adapter pratinjau. OpenClaw memuat skill Apothem melalui
-`skills.load.extraDirs`, tetapi tidak memuat bagian lain dari pohon pendukung
-maupun dokumen profil dengan sendirinya: tidak satu pun berkas instruksi
-workspace-nya atau konfigurasinya menunjuk ke sana, sehingga setelah pemasangan
-OpenClaw berjalan tanpa aturan atau server MCP Apothem.
+`skills.load.extraDirs` dan aturan Apothem melalui berkas aturan di setiap
+workspace. OpenClaw tidak memuat server MCP dari Apothem.
+
+### Aturan di setiap workspace
+
+OpenClaw memasukkan enam berkas dari sebuah workspace ke dalam prompt sistemnya:
+`AGENTS.md`, `SOUL.md`, `IDENTITY.md`, `USER.md`, `BOOTSTRAP.md`, dan
+`MEMORY.md`. Hook bawaannya, `bootstrap-extra-files`, menambahkan berkas lain
+yang memakai salah satu nama itu, dengan jalur yang dibaca relatif terhadap
+workspace setiap sesi. Apothem menulis `apothem/AGENTS.md` ke setiap workspace
+dan mencantumkan jalur itu di entri hook tersebut:
+
+```json
+{
+  "hooks": {
+    "internal": {
+      "entries": {
+        "bootstrap-extra-files": {
+          "enabled": true,
+          "paths": ["apothem/AGENTS.md"]
+        }
+      }
+    }
+  }
+}
+```
+
+Berkas itu memuat blok terkelola profil dan penunjuk ke indeks aturan di bawah
+`~/.openclaw/.apothem/support/`, yang menjadi jalan menuju seluruh set aturan.
+Karena berkas itu bernama `AGENTS.md`, OpenClaw juga memuatnya dalam sesi cron
+dan dalam sesi pembantu yang dimulai oleh sesi lain, yang hanya mendapat
+sebagian dari enam berkas itu. Apothem tidak pernah
+menyunting `AGENTS.md` milik workspace itu sendiri: OpenClaw membuatnya dari
+templat dan asisten yang bekerja di workspace itu menyuntingnya. Folder bernama
+`apothem` tidak dihitung sebagai pekerjaan penyiapan, sehingga workspace yang
+belum disiapkan OpenClaw tetap mendapat berkas jalankan-pertamanya.
+
+Apothem menulis berkas itu ke setiap workspace yang ada di direktori home Anda:
+`agents.defaults.workspace` (jika tidak ada, `OPENCLAW_WORKSPACE_DIR`, jika
+tidak ada, `~/.openclaw/workspace`), dan `workspace` dari setiap entri
+`agents.entries` (atau dari setiap item `agents.list` yang lebih lama, yang
+masih dibaca OpenClaw ketika `agents.entries` tidak ada). Entri yang memiliki
+workspace default langsung memakainya ketika entri itu tidak punya `workspace`
+sendiri: entri yang ditandai `default: true` (kecuali `agents.ownership`
+bernilai `"explicit"`), jika tidak ada, satu-satunya entri. Entri lain tanpa
+`workspace` sendiri memakai `<agents.defaults.workspace>/<id>`, jika tidak ada,
+`~/.openclaw/workspace-<id>`, dengan id dieja seperti OpenClaw mengejanya dalam
+nama folder: huruf kecil, dan karakter selain huruf, angka, `_` dan `-` diubah
+menjadi `-` (jadi `Bob Smith` memakai `workspace-bob-smith`).
+
+- Workspace yang belum ada dilewati tanpa pesan: begitu OpenClaw membuatnya,
+  `apothem verify --harness open-claw` gagal sampai Anda menjalankan
+  `apothem update --harness open-claw`.
+- Hal-hal berikut dilewati, masing-masing dengan satu peringatan: workspace di
+  luar direktori home Anda, workspace yang dicapai melalui tautan (tautan
+  simbolik atau junction Windows), jalur yang berupa berkas, workspace tempat
+  `apothem/AGENTS.md` berupa folder, dan workspace yang folder `apothem`-nya
+  sendiri merupakan workspace lain (`AGENTS.md` miliknya akan menjadi milik
+  workspace itu sendiri). Apothem tidak pernah
+  menulis atau menghapus melalui tautan: berkas aturan di workspace yang sejak
+  itu menjadi tautan dibiarkan di tempatnya, dengan peringatan untuk menghapus
+  blok Apothem-nya secara manual.
+- Ketika sebuah workspace keluar dari konfigurasi, atau sebuah berkas tidak lagi
+  muat (lihat batas ukuran di bawah), instalasi atau pembaruan berikutnya
+  mengeluarkan blok Apothem dari berkas yang ditulisnya di sana. Berkas itu dan
+  folder `apothem`-nya dihapus ketika tidak ada lagi yang tersisa di dalamnya;
+  teks yang Anda tambahkan di luar blok tetap ada.
+
+Jika konfigurasi Anda sudah memiliki entri `bootstrap-extra-files`, Apothem
+menambahkan jalurnya ke daftar yang dibaca hook: daftar tidak kosong pertama di
+antara `paths`, `patterns`, dan `files`. Apothem tidak pernah memulai daftar
+kedua yang akan menyembunyikan daftar Anda.
+
+**Ketika Apothem membiarkan hook apa adanya.** Dalam kasus-kasus ini instalasi
+menulis berkas aturan tetapi tidak mengubah pengaturan hook, dan mencetak
+peringatan:
+
+- `hooks.internal.enabled` bernilai `false`: Anda mematikan hook internal.
+- Entri `bootstrap-extra-files` memiliki `enabled: false`.
+- `hooks.internal.enabled` bernilai `true` dan tidak ada hook yang disebutkan di
+  bawah `hooks.internal.entries` (dan `hooks.internal.load.extraDirs` kosong).
+  OpenClaw lalu memuat setiap hook yang memenuhi syarat, dan menyebutkan hook
+  pertama akan mematikan hook lainnya. Sebutkan hook yang Anda gunakan, lalu
+  jalankan pembaruan. Paket hook yang Anda pasang dengan OpenClaw tercantum di
+  basis data state milik OpenClaw sendiri, yang tidak dibaca Apothem, sehingga
+  Apothem memperlakukan kasus ini dengan cara yang sama bahkan ketika paket
+  semacam itu terpasang.
+- `openclaw.json` memuat komentar atau sintaks JSON5 lainnya (lihat
+  [Komentar di `openclaw.json`](#catatan-kompatibilitas)).
+
+Ketika berkas aturan tidak muat di workspace mana pun dalam kedua batas ukuran,
+instalasi tidak menulis berkas apa pun dan tidak menambahkan jalur ke entri hook.
+
+**Batas ukuran.** OpenClaw menyuntikkan paling banyak 20.000 karakter per berkas
+dan 60.000 secara total (`agents.defaults.bootstrapMaxChars` dan
+`bootstrapTotalMaxChars`; sebuah entri `agents.entries` dapat menetapkan
+nilainya sendiri, yang berlaku untuk workspace-nya). OpenClaw menghitung
+karakter dalam satuan UTF-16, sehingga emoji dihitung dua, dan Apothem
+menghitung dengan cara yang sama, termasuk akhir baris (jeda baris Windows
+dihitung dua). Dengan profil default, berkas aturan berukuran beberapa
+ribu karakter.
+
+Berkas aturan dimuat setelah enam berkas workspace dan setelah berkas lain dari
+entri `bootstrap-extra-files`. Di workspace tempat berkas itu akan melampaui
+batas per berkas, atau melewati ruang yang tersisa dari batas total, OpenClaw
+akan memotongnya atau melewatinya, sehingga aturan akan tiba dalam keadaan
+rusak: Apothem tidak menulisnya di sana, menjelaskan alasannya dalam
+peringatan, dan mengeluarkan salinan yang ditinggalkan instalasi sebelumnya.
+Ketika beberapa entri berbagi satu workspace, batas terkecil yang berlaku.
+(Perilaku OpenClaw menurut dokumentasinya tentang
+[konfigurasi hook](https://docs.openclaw.ai/automation/hooks/configuration),
+[hook bawaan](https://docs.openclaw.ai/automation/hooks/bundled-hooks) dan
+[workspace dan bootstrap](https://docs.openclaw.ai/gateway/config-agents/workspace-and-bootstrap),
+dibaca 2026-11-09.)
+
+Berkas aturan yang blok Apothem-nya kehilangan penanda END tetap menyimpan teks
+Apothem lama di bawah penanda BEGIN-nya, dan pembaruan menulis blok Apothem di
+sampingnya, sehingga teks lama itu dihitung terhadap batas per berkas. Ketika
+berkas aturan yang melampaui batas memuat penanda BEGIN yang tidak memulai blok
+utuh (penanda END-nya hilang, atau penanda itu milik Anda), peringatan
+menyebutkan berkas itu dan setiap penanda semacam itu menurut barisnya.
+Peringatan lalu menyebutkan setiap baris penanda yang diubah oleh perbaikan
+untuk berkas itu, baris yang sama dengan yang diberikan peringatan lain untuk
+berkas itu, misalnya "change line 3 by adding a word inside its comment"
+("change lines 3 and 9 by adding a word inside each comment" untuk dua baris,
+yang dapat mencakup penanda BEGIN yang Anda kutip dalam blok kode). Ketika
+berkas berakhir di dalam blok kode yang tidak ditutup oleh baris mana pun,
+peringatan lebih dulu meminta Anda menambahkan baris penutup blok kode itu,
+misalnya "add a line of 3 backticks below line 12". Jika penampil Markdown
+mungkin membaca blok kode itu secara berbeda dari Apothem (baris di atasnya
+mungkin memulai blok HTML, atau teks sebuah butir daftar berlanjut di margin
+kiri di atasnya dan diikuti baris yang menjorok), peringatan tidak menyebutkan
+baris yang harus diubah: peringatan menyatakan bahwa Apothem tidak dapat
+memberikan langkah-langkahnya dan menyebutkan baris yang membuka blok kode itu,
+seperti yang dilakukan peringatan lain untuk berkas itu (lihat
+[Ikuti perbaikan bernomor](/docs/install/troubleshooting#follow-a-numbered-fix)).
+Peringatan meminta Anda menghapus teks lama di bawah penanda secara manual,
+dengan tetap menyimpan teks Anda sendiri, atau memperpendek aturan kustom
+profil, atau menaikkan batasnya.
+
+### Skill
 
 **Bentrok nama.** OpenClaw membaca skill dari sumber-sumber berikut, dimulai
 dari prioritas tertinggi, dan ketika nama skill yang sama muncul di lebih dari
 satu tempat, sumber tertinggi yang menang: folder `skills/` di workspace, folder
 `.agents/skills/` di workspace, `~/.agents/skills` (hanya untuk direktori state
 default), folder `skills/` di direktori state (`~/.openclaw/skills` secara
-default), skill workshop, skill bawaan dan custodian, dan terakhir folder yang
-tercantum di bawah `skills.load.extraDirs` bersama skill plugin. Direktori
+default), skill workshop, skill bawaan dan custodian, lalu folder yang
+tercantum di bawah `skills.load.extraDirs` bersama skill plugin. Sesi yang
+berjalan di workspace eksekusi terpisah, yaitu folder selain workspace-nya
+sendiri, juga membaca folder `skills/` dan `.agents/skills/` milik folder itu
+setelah semua sumber ini, sehingga skill Apothem menang atas skill bernama sama
+yang disimpan di sana. Direktori
 Apothem adalah entri `extraDirs`, sehingga skill dengan nama yang sama yang Anda
 simpan di salah satu sumber sebelumnya adalah yang digunakan OpenClaw, dan
 salinan Apothem dari skill itu tetap tidak terpakai di disk. Apothem hanya
-menulis ke `openclaw.json` dan di bawah `~/.openclaw/.apothem/support/`, tidak
-pernah ke folder-folder sebelumnya itu, sehingga instalasi, pembaruan, dan
-pencopotan tidak mengganti skill yang Anda simpan di sana.
+menulis ke `openclaw.json`, `~/.openclaw/apothem/rules/`, `~/.openclaw/.apothem/`
+dan `apothem/AGENTS.md` di setiap workspace, tidak pernah ke folder-folder
+sebelumnya itu, sehingga instalasi, pembaruan, dan pencopotan tidak mengganti
+skill yang Anda simpan di sana.
 
-`agents.defaults.skills` adalah daftar izin nama skill; Apothem tidak
-menyuntingnya, jadi jika Anda menyimpannya, periksa bahwa daftar itu menyebutkan
-skill Apothem yang Anda inginkan.
+`agents.defaults.skills` adalah daftar izin nama skill, dan daftar
+`agents.entries.<id>.skills` menggantikannya untuk entri pemiliknya. Apothem
+tidak menyunting keduanya, jadi jika Anda menyimpan salah satunya, periksa
+bahwa daftar itu menyebutkan skill Apothem yang Anda inginkan.
 `apothem update` mempertahankan kunci yang Anda tambahkan ke `openclaw.json`.
 Server MCP berada di blok `mcp.servers` pada konfigurasi OpenClaw, yang Anda
 kelola dengan `openclaw mcp add` dan subperintah terkait; adapter tidak menulis
 entri apa pun di sana. (Perilaku OpenClaw menurut dokumentasinya tentang
 [skill](https://docs.openclaw.ai/tools/skills),
-[konfigurasi skill](https://docs.openclaw.ai/tools/skills-config), dan
-[ekstensi konfigurasi](https://docs.openclaw.ai/gateway/config-extensions),
-dibaca 2026-10-24, serta dokumentasi [CLI MCP](https://docs.openclaw.ai/cli/mcp)
-miliknya, dibaca 2026-10-02.)
+[konfigurasi skill](https://docs.openclaw.ai/tools/skills-config),
+[ekstensi konfigurasi](https://docs.openclaw.ai/gateway/config-extensions), dan
+[CLI MCP](https://docs.openclaw.ai/cli/mcp), dibaca 2026-11-03.)
 
 **Komentar di `openclaw.json`.** OpenClaw membaca konfigurasinya sebagai JSON5,
 dan Apothem menulis ulang berkas itu sebagai JSON biasa. Ketika berkas itu
-memuat komentar atau sintaks JSON5 lainnya dan entri tersebut tidak ada, Apothem
-membiarkan berkas itu tidak tersentuh dan instalasi berhenti dengan pesan yang
-menyebutkan kuncinya. Gabungkan sendiri entri ini ke dalam berkas Anda, atau
-konversikan berkas itu menjadi JSON biasa, lalu jalankan instalasi lagi:
+memuat komentar atau sintaks JSON5 lainnya, Apothem tidak pernah menulis
+ulangnya:
+
+- Jika entri `skills.load.extraDirs` tidak ada, instalasi berhenti dengan pesan
+  bahwa berkas itu memuat komentar atau sintaks JSON5.
+- Jika hanya entri hook yang tidak ada, instalasi dan pembaruan tetap berjalan,
+  menulis berkas aturan workspace, dan mencetak peringatan yang menyebutkan apa
+  yang harus ditambahkan (jalur itu masuk ke daftar yang sudah dipakai entri
+  `bootstrap-extra-files` Anda, jika ada). Sampai Anda menambahkannya,
+  `apothem verify` gagal.
+- Entri yang ditulis Apothem sebelum Anda menambahkan komentar tetap persis
+  seperti adanya, dan pembaruan tetap berjalan. Ketika batas ukuran atau
+  pengaturan hook Anda mengharuskan jalur Apothem dikeluarkan dari entri hook,
+  peringatan meminta Anda menghapusnya secara manual; berkas aturan yang tidak
+  lagi muat tetap dikeluarkan.
+
+Gabungkan sendiri entri-entri ini ke dalam berkas Anda, atau konversikan berkas
+itu menjadi JSON biasa, lalu jalankan instalasi lagi:
 
 ```json
 {
   "skills": {
     "load": {
       "extraDirs": ["~/.openclaw/.apothem/support/skills"]
+    }
+  },
+  "hooks": {
+    "internal": {
+      "entries": {
+        "bootstrap-extra-files": {
+          "enabled": true,
+          "paths": ["apothem/AGENTS.md"]
+        }
+      }
     }
   }
 }
@@ -113,7 +295,34 @@ Perintah verify memastikan bahwa:
 3. `skills.load.extraDirs` di konfigurasi native mencantumkan
    `~/.openclaw/.apothem/support/skills`. Tanpa entri itu OpenClaw tidak
    memuat skill yang terpasang; `apothem update` menambahkannya kembali.
-4. Rutin verifikasi khusus adapter melaporkan keberhasilan.
+4. Entri `bootstrap-extra-files` mencantumkan `apothem/AGENTS.md` di daftar yang
+   dibaca hook, kecuali pengaturan Anda sendiri mencegah Apothem mendaftarkannya
+   (lihat [Aturan di setiap workspace](#aturan-di-setiap-workspace)).
+5. Setiap workspace yang ditemukan Apothem memuat `apothem/AGENTS.md` dengan
+   blok terkelolanya. Workspace yang dibuat setelah instalasi gagal dalam
+   pemeriksaan ini sampai `apothem update` menulis berkas itu. Workspace tempat
+   instalasi melaporkan berkas itu melampaui batas ukuran gagal dalam pemeriksaan
+   ini sampai Anda memperpendek aturan kustom profil atau menaikkan batasnya lalu
+   menjalankan pembaruan; tautan, jalur di luar direktori home Anda, dan
+   workspace yang tidak ada tidak diperiksa. `apothem status` melaporkan
+   berkas aturan yang bloknya telah disunting.
+6. Tidak ada berkas tempat Apothem menyimpan bloknya (dokumen profil dan setiap
+   berkas aturan, termasuk yang ada di workspace yang tidak lagi dipakai
+   instalasi) yang memuat penanda BEGIN yang tidak memulai blok utuh, dua blok
+   utuh atau lebih di antara penanda Apothem, atau pasangan penanda yang tidak
+   dapat dibedakan Apothem dari teks Anda. Pembaruan mempertahankan penanda
+   semacam itu, atau membiarkan berkas semacam itu apa adanya, sehingga
+   pemeriksaan gagal sampai Anda memperbaiki berkas itu secara manual seperti
+   yang disebutkan baris `Note:`. Berkas aturan hanya ditulis selama muat dalam
+   batas per berkas, dan teks Apothem lama yang Anda simpan di bawah baris
+   penanda yang Anda ubah dihitung terhadap batas itu, sehingga catatan itu
+   menyatakan bahwa pembaruan berikutnya menulis blok Apothem "if the file then
+   fits OpenClaw's per-file limit (bootstrapMaxChars)"; jika tidak muat,
+   pembaruan menyebutkan berkas itu dalam peringatan ukurannya (lihat
+   [Sebuah berkas memiliki penanda BEGIN Apothem tanpa penanda END](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker),
+   [Sebuah berkas memuat dua blok di antara penanda Apothem](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)
+   dan
+   [Apothem tidak dapat membedakan bloknya dari teks Anda](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
 
 ## Pembaruan
 
@@ -121,10 +330,35 @@ Perintah verify memastikan bahwa:
 apothem update --harness open-claw
 ```
 
-Menurunkan ulang dokumen profil dari status profil bersama saat ini dan
-menyegarkan berkas pendukung; `openclaw.json` tetap mempertahankan kunci yang
-sudah dimilikinya, dan entri Apothem di `skills.load.extraDirs` tetap tercantum
-sekali, seberapa sering pun Anda memperbarui.
+Menurunkan ulang dokumen profil dan berkas aturan setiap workspace dari status
+profil bersama saat ini dan menyegarkan berkas pendukung; `openclaw.json` tetap
+mempertahankan kunci yang sudah dimilikinya, dan entri Apothem di
+`skills.load.extraDirs` dan di entri hook tetap tercantum sekali, seberapa sering
+pun Anda memperbarui. Setiap pembaruan menulis jalur Apothem paling akhir di
+daftar entri hook, sehingga jalur itu berpindah ke akhir jika Anda menaruh entri
+setelahnya. Teks yang Anda tambahkan ke berkas aturan di luar blok terkelolanya
+tetap ada. Berkas aturan di workspace yang tidak lagi dipakai instalasi
+kehilangan bloknya. Ketika hal itu meninggalkan penanda BEGIN tanpa penanda END
+di berkas itu (baris milik Anda, atau sisa blok lama yang kehilangan penanda
+END-nya), pembaruan menyebutkan berkas itu dan baris penandanya, dengan langkah
+bernomor yang mengubah baris itu sehingga tidak lagi terbaca sebagai penanda;
+`apothem verify` gagal sampai Anda mengubahnya. Teks Apothem lama di bawahnya
+kemudian menjadi milik Anda untuk dihapus secara manual. Jika berkas semacam itu
+memuat dua blok berbeda di antara penanda Apothem, pembaruan membiarkannya apa
+adanya dan menyebutkan setiap blok menurut barisnya, atau blok Apothem dan baris
+penanda di sekitarnya. Ikuti salah satu perbaikan bernomor dari peringatan itu,
+yang mengubah baris penanda BEGIN di tempatnya: dengan blok Apothem
+dipertahankan, instalasi, pembaruan, atau pencopotan berikutnya lalu
+mengeluarkannya, dan dengan setiap baris penanda BEGIN diubah, Apothem tidak
+menemukan blok miliknya di sana. Jika Apothem tidak dapat membedakan bloknya di
+berkas itu dari teks Anda (misalnya blok itu berada di dalam blok kode milik
+Anda), pembaruan juga membiarkan berkas itu apa adanya, dan peringatannya
+menyebutkan setiap pasangan penanda beserta cara memperbaikinya; begitu Anda
+memperbaikinya, instalasi, pembaruan, atau pencopotan berikutnya mengeluarkan
+blok Apothem (lihat
+[Apothem tidak dapat membedakan bloknya dari teks Anda](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+Sampai saat itu, `apothem verify` gagal dan menyebutkan berkas itu (lihat
+[Verifikasi](#verifikasi)).
 Jalankan setelah menyunting `~/.config/apothem/profile.yaml` atau memutakhirkan
 paket Apothem yang terpasang.
 
@@ -135,27 +369,80 @@ apothem uninstall --harness open-claw
 ```
 
 Menghapus apa yang ditambahkan adapter: entrinya di `skills.load.extraDirs`,
-dokumen profil, dan pohon pendukung. Kunci milik Anda sendiri di
-`openclaw.json` tetap ada, termasuk entri `extraDirs` milik Anda sendiri, dan
-berkas itu dihapus
-hanya ketika Apothem yang membuatnya dan tidak ada lagi yang tersisa milik
-Anda. YAML profil bersama dan mesin Apothem tidak terpengaruh.
+jalurnya di entri hook (dan entri itu sendiri ketika Apothem yang membuatnya),
+blok terkelola di `apothem/AGENTS.md` setiap workspace (berkas dan foldernya
+dihapus ketika tidak ada lagi yang tersisa di dalamnya), dokumen profil, dan
+pohon pendukung. Kunci milik Anda sendiri di `openclaw.json` tetap ada,
+termasuk entri `extraDirs` dan pengaturan hook milik Anda sendiri, berkas milik
+workspace itu sendiri tetap seperti semula, dan `openclaw.json` dihapus hanya
+ketika Apothem yang membuatnya dan tidak ada lagi yang tersisa milik Anda.
+
+Beberapa sisa memerlukan tangan Anda:
+
+- **Entri Apothem di `openclaw.json` yang memuat komentar atau sintaks JSON5
+  lainnya.** Pencopotan berhenti sebelum mengubah apa pun dan keluar dengan
+  galat yang menyebutkan entri yang harus dihapus.
+- **Berkas aturan yang dicapai melalui tautan dan masih memuat blok Apothem.**
+  Pencopotan menghapus semua yang lain, membiarkan berkas itu di tempatnya, dan
+  melaporkan pencopotan sebagai belum selesai (kode keluar 2), dengan menyebutkan
+  tautan itu. Laporan itu
+  juga menyatakan apakah OpenClaw masih memuat berkas itu: OpenClaw memuatnya
+  selama `openclaw.json` menyebutkannya di workspace yang dipakai OpenClaw,
+  karena Apothem tidak dapat mengubah `openclaw.json` atau karena pola milik
+  Anda sendiri cocok dengannya.
+- **Berkas aturan yang tidak dapat ditulis ulang Apothem** (di folder yang tidak
+  dapat Anda tulisi, atau berkas baca-saja di Windows). Pencopotan
+  melaporkan galat yang menyebutkan berkas itu, membersihkan berkas aturan di
+  workspace lain, dan berhenti sebelum mengubah `openclaw.json` atau berkas
+  pendukung.
+- **Berkas aturan tempat Apothem tidak dapat membedakan bloknya dari teks
+  Anda** (misalnya blok itu berada di dalam blok kode milik Anda). Pencopotan
+  menghapus semua yang lain, membiarkan berkas itu apa adanya, dan melaporkan
+  pencopotan sebagai belum selesai (kode keluar 2). Peringatannya menyebutkan
+  setiap pasangan penanda dan memberikan perbaikan bernomor: ikuti perbaikan
+  yang kasusnya benar sebelum Anda menjalankan pencopotan
+  lagi.
+
+Dalam setiap kasus, Apothem mencatat pencopotan sebagai belum selesai dan
+menyimpan catatan instalasinya, bahkan jika Anda kemudian menambahkan teks Anda
+sendiri di samping blok itu. Hapus entri yang disebutkan, atau blok Apothem
+(atau berkasnya), atau perbaiki berkas itu, lalu jalankan pencopotan lagi untuk
+menyelesaikannya. Berkas aturan yang blok Apothem-nya kehilangan baris END juga
+dibiarkan apa adanya, dengan peringatan yang menyebutkannya, tetapi pencopotan
+tetap selesai; hapus sisa blok itu secara manual. Selama instalasi tetap ada,
+setiap instalasi dan pembaruan menyebutkan berkas semacam itu di workspace yang
+tidak lagi dipakai instalasi, sampai Anda menghapus sisa blok itu. Setelah
+pencopotan selesai, Apothem menyebutkan berkas itu lagi hanya ketika instalasi
+berikutnya menulis ke workspace-nya. Di workspace yang dipakai instalasi,
+instalasi atau pembaruan mempertahankan teks berkas aturan semacam itu, menulis
+blok Apothem terpisah darinya, dan menyebutkan berkas itu. YAML profil bersama
+dan mesin Apothem tidak terpengaruh.
 
 ## Gerbang konformitas
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Jalankan dari folder proyek Anda. Di Windows, gunakan `python` sebagai pengganti
+`python3` dan jalur lengkapnya, karena Windows PowerShell dan cmd tidak mengekspansi
+`~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` di PowerShell, atau
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` di cmd. Jalur itu adalah
+tempat installer menaruh engine, dan `-E -s` menjauhkan `PYTHONPATH` serta
+site-packages pengguna Anda dari gerbang; [Gerbang konformitas](/docs/conformity-gate)
+menjelaskan keduanya dan instalasi lainnya.
 
 ## Pemecahan masalah
 
 | Gejala | Perbaikan |
 |---------|-----|
 | Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness open-claw` |
-| Verifikasi gagal | Jalankan `apothem update --harness open-claw`, lalu verifikasi lagi |
-| Konten konfigurasi tidak terduga | Apothem hanya menulis entri `skills.load.extraDirs` di `openclaw.json` dan mempertahankan kunci yang sudah ada di dalamnya, sehingga konten profil tidak masuk ke sana. Konten profil masuk ke `~/.openclaw/apothem/rules/00-apothem-profile.md`: periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang perintah di bawah [Pembaruan](#pembaruan) |
-| Instalasi berhenti dengan pesan tentang komentar atau sintaks JSON5 di `openclaw.json` | Apothem tidak menulis ulang berkas yang komentarnya harus dibuang. Tambahkan sendiri entri `skills.load.extraDirs` yang ditunjukkan di [Catatan kompatibilitas](#catatan-kompatibilitas), atau konversikan berkas itu menjadi JSON biasa, lalu jalankan instalasi lagi |
-| Skill Apothem tidak muncul di OpenClaw | Skill dengan nama yang sama di workspace, `~/.agents/skills`, atau `~/.openclaw/skills` didahulukan daripada salinan Apothem (lihat [Catatan kompatibilitas](#catatan-kompatibilitas)). Jalankan juga `apothem verify --harness open-claw`, dan periksa bahwa daftar izin `agents.defaults.skills` yang Anda simpan menyebutkan skill tersebut |
+| Verifikasi gagal | Jalankan `apothem update --harness open-claw`, lalu verifikasi lagi. Jika baris `Note:` menyebutkan berkas dengan penanda Apothem yang harus diperbaiki, seperti berkas aturan, pembaruan tidak menghilangkannya: perbaiki berkas itu secara manual seperti yang disebutkan catatan itu, lalu verifikasi lagi (lihat [Verifikasi](#verifikasi), butir 6) |
+| Konten konfigurasi tidak terduga | Apothem hanya menulis entrinya di `skills.load.extraDirs` dan jalurnya di entri hook `bootstrap-extra-files` di `openclaw.json` (ditambah `enabled: true` ketika Apothem membuat entri itu), dan mempertahankan kunci yang sudah ada di dalamnya, sehingga konten profil tidak masuk ke sana. Konten profil masuk ke `~/.openclaw/apothem/rules/00-apothem-profile.md` dan ke `apothem/AGENTS.md` di setiap workspace: periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang perintah di bawah [Pembaruan](#pembaruan) |
+| Instalasi berhenti dengan pesan tentang komentar atau sintaks JSON5 di `openclaw.json`, atau memperingatkan bahwa berkas itu memuat sintaks JSON5 | Apothem tidak menulis ulang berkas yang komentarnya harus dibuang. Tambahkan sendiri kedua entri yang ditunjukkan di [Catatan kompatibilitas](#catatan-kompatibilitas) (entri `skills.load.extraDirs` dan entri hook `bootstrap-extra-files`), atau konversikan berkas itu menjadi JSON biasa, lalu jalankan instalasi lagi |
+| OpenClaw tidak mengikuti aturan Apothem | Jalankan `apothem verify --harness open-claw` dan periksa peringatan instalasi: workspace yang belum ada saat instalasi, hook internal yang dimatikan, atau penemuan hook terbuka membuat aturan tidak dimuat (lihat [Aturan di setiap workspace](#aturan-di-setiap-workspace)). Lalu jalankan `apothem update --harness open-claw` |
+| Skill Apothem tidak muncul di OpenClaw | Skill dengan nama yang sama di workspace, `~/.agents/skills`, `~/.openclaw/skills`, atau di antara skill workshop atau bawaan OpenClaw didahulukan daripada salinan Apothem (lihat [Catatan kompatibilitas](#catatan-kompatibilitas)). Jalankan juga `apothem verify --harness open-claw`, dan periksa bahwa daftar izin `agents.defaults.skills` atau `agents.entries.<id>.skills` yang Anda simpan menyebutkan skill tersebut |
 
 ## Tombol konfigurasi
 

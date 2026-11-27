@@ -2,15 +2,15 @@
 title: "Antigravity"
 description: "Antigravity（プレビュー）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "a97b457853f5e1e2"
+sourceHash: "c5d8a954306518e0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-- **ベンダー：** Antigravity
+- **ベンダー：** Google
 - **インストール名：** `antigravity`
 - **ステータス：** プレビュー
 - **ネイティブ設定：** `~/.gemini/GEMINI.md` および
-  `~/.gemini/antigravity-cli/plugins/apothem/`
+  `~/.gemini/config/plugins/apothem/`
 
 ## インストール
 
@@ -18,18 +18,26 @@ sourceHash: "a97b457853f5e1e2"
 apothem install --harness antigravity
 ```
 
-アダプターは共有プロファイルを `~/.gemini/GEMINI.md` にレンダリングし、Apothem のサポートコホートを Antigravity CLI プラグインとしてインストールします。
+アダプターは共有プロファイルを `~/.gemini/GEMINI.md` にレンダリングし、Apothem のサポートコホートを Antigravity プラグインとしてインストールします。プラグインフォルダーは Antigravity の CLI、App、IDE で共有されるため、3 つすべてがプラグインを読み込みます。
 
 **書き込まれるファイル：** `~/.gemini/GEMINI.md`、
-`~/.gemini/antigravity-cli/plugins/apothem/plugin.json`、
-`~/.gemini/antigravity-cli/plugins/apothem/skills/`、
-`~/.gemini/antigravity-cli/plugins/apothem/rules/`、
+`~/.gemini/config/plugins/apothem/plugin.json`、
+`~/.gemini/config/plugins/apothem/skills/`、
+`~/.gemini/config/plugins/apothem/rules/`、
 プラグイン内の変換済みローカルヘルパー定義、
-`~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/templates/`、および
-`~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/hooks/`。
+`~/.gemini/config/plugins/apothem/.apothem/support/templates/`、および
+`~/.gemini/config/plugins/apothem/.apothem/support/hooks/`。インストールでは
+Apothem のデータフォルダー（デフォルトは `~/.gemini/.apothem/`）も作成され、
+その中に `contexts/`、`learning/`、`memory/`、`plans/` が置かれます。
 
 `~/.gemini/GEMINI.md` 内の Apothem ブロックは、Apothem サポートファイルのセクションで終わります。
 このセクションは、リポジトリ形式の各参照が解決される先の絶対ディレクトリを示します。`rules/<name>.md` はプラグインの `rules/` 配下に、`templates/...` と `hooks/...` はプラグインの `.apothem/support/` 配下に解決されます。
+
+**プラグインフォルダー。** Antigravity は、登録の手順なしに `~/.gemini/config/plugins/<name>/` からプラグインを読み込みます（[Antigravity のプラグインに関するドキュメント](https://antigravity.google/docs/plugins)）。アダプターは Apothem プラグインをそこに書き込みます。
+現在の CLI リリースはこのフォルダーからプラグインを読み込みます。CLI は自身を更新するため、`AGY_CLI_DISABLE_AUTO_UPDATE=true` で更新を無効にしている場合は、プラグインを当てにする前に CLI を更新してください。
+Antigravity の App と IDE も同じフォルダーを読み込むため、常時適用のルール、スキル、ヘルパー定義を含む Apothem プラグインは 3 つすべてに適用されます。
+Antigravity は、プラグインをツールごとに切り替える仕組みを文書化していません。`plugin.json` には、プラグインをそのうちの 1 つに限定するフィールドがありません。
+以前の Apothem リリースは、プラグインを CLI 自身のデータフォルダーである `~/.gemini/antigravity-cli/plugins/apothem/` に書き込んでいました。そのようなインストールに対するインストールまたは更新は、そのフォルダーをバックアップしてから削除します（[アンインストール](#アンインストール)を参照）。
 
 **プラグインのルール。** Antigravity は、プラグインの `rules/` ディレクトリ内のファイルのうち、有効な `trigger` で始まらないものをすべて破棄します（[Antigravity のルールに関するドキュメント](https://antigravity.google/docs/rules)）。
 そのため、Apothem の各ルールはインストール時に変換されます。
@@ -39,7 +47,8 @@ apothem install --harness antigravity
 その他のルールは `trigger: glob` を持ちます。
 Antigravity は常時適用のルール全体で 20,000 トークンの予算を共有し、それを超えると、最も大きいルールをオンデマンドのポインターに変えます。5 つのルールは合計で約 11,000 トークンなので、どれもポインターには変えられません。
 
-**プラグインマニフェスト。** `plugin.json` は、Antigravity のプラグインスキーマが認める 2 つのキーである `name` と `description` のみを持ちます。
+**プラグインマニフェスト。** `plugin.json` は `name` と `description` のみを持ちます。
+Antigravity の [Build plugins ページ](https://antigravity.google/docs/build-plugins)で公開されているプラグインスキーマは、`name` を必須とし、`displayName`、`version`、`author` などのキーも列挙していますが、それ以外のキーは認めません。そのため、`agy plugin validate` は列挙されていないキーを報告します。
 
 **プラグインのヘルパー。** プラグインの `agents/` ディレクトリ内のヘルパー定義は、`name` と `description` を持ちます。
 Antigravity の `tools` リストは独自のツール名を使用し、ドキュメントは、未知の名前がサブエージェントをハングさせる可能性があると警告しています。
@@ -47,7 +56,8 @@ Antigravity の `tools` リストは独自のツール名を使用し、ドキ�
 Antigravity には読み取り専用の制限を強制する仕組みが何もないため、それらのヘルパーの説明からは「読み取り専用」というラベルが外されます。
 
 **共有ユーザーアンカー。** `~/.gemini/GEMINI.md` は、Gemini ファミリーのツールにとってのユーザースコープのアンカーでもあります。
-Antigravity アダプターは追加の Apothem 素材を `~/.gemini/antigravity-cli/plugins/` 配下の `apothem` プラグイン内に保持するため、汎用的な Gemini CLI のプロジェクトディレクトリを占有しません。
+Antigravity アダプターは、ルール、スキル、ヘルパー定義、テンプレート、フックファイルを `~/.gemini/config/plugins/` 配下の `apothem` プラグイン内に保持するため、汎用的な Gemini CLI のプロジェクトディレクトリを占有しません。
+Apothem のデータフォルダーはプラグインの外、デフォルトでは `~/.gemini/.apothem/` にあります。
 `~/.gemini/GEMINI.md` を読み込むツールは 1 つではないため、そこにある Apothem ブロックは、単一のツールを読み手として名指ししないグローバルなガイダンスとして書かれます。
 
 ## プロファイルからネイティブ設定へのマッピング
@@ -68,9 +78,14 @@ apothem verify --harness antigravity
 
 verify コマンドは次のことを確認します。
 
-1. ネイティブのコンテキストファイルが想定されたパスに存在すること。
-2. プラグインのマニフェスト `plugin.json` が存在し、空ではなく、JSON として解析できること。
+1. ネイティブのコンテキストファイル `~/.gemini/GEMINI.md` が存在し、空ではないこと。
+2. プラグインフォルダー内の各管理対象がそろっていること。プラグインのマニフェスト
+   `plugin.json` が存在し、空ではなく、JSON として解析でき、プラグインの
+   `skills/`、`rules/`、`agents/`、`.apothem/support/templates/`、
+   `.apothem/support/hooks/` の各フォルダーが存在すること。フォルダーが欠けていると確認は失敗します。
    verify はプラグイン名を確認しません。名前を変更した後は、そのフィールドを自分で確認してください。
+
+`--profile PATH` を付けると、インストールされたファイルがそのプロファイルと一致することも確認します。
 
 ## 更新
 
@@ -89,16 +104,46 @@ apothem uninstall --harness antigravity
 
 `~/.gemini/GEMINI.md` から Apothem ブロックを取り除き、その中にある他のテキストはそのまま残します。
 ファイルが削除されるのは、中に他に何も残っていない場合のみです。
-また、プラグインフォルダー `~/.gemini/antigravity-cli/plugins/apothem/` 内の `plugin.json` から Apothem のキーを取り除き、あなた自身のキーは残します。
+また、プラグインフォルダー `~/.gemini/config/plugins/apothem/` 内の `plugin.json` から Apothem のキーを取り除き、あなた自身のキーは残します。
 さらに、そのフォルダーの `skills/`、`rules/`、`agents/`、`.apothem/support/` の各サブフォルダー内にある Apothem のファイルを取り除きます。そこにある他のファイルはそのまま残ります。
+データフォルダー内の `memory/`、`contexts/`、`learning/` の各ストアも、別の Apothem インストールがまだ使っていない限り削除されます。
 各ファイルは、変更または削除される前に `~/.apothem/backups/` 配下にバックアップされます。
 共有プロファイルの YAML と Apothem エンジンには影響しません。
+
+以前のリリースによるインストールは、プラグインを CLI 自身のデータフォルダーである `~/.gemini/antigravity-cli/plugins/apothem/` に保持しています。
+そのようなインストールに対するインストール、更新、アンインストールは、そのフォルダーを `~/.apothem/backups/` 配下にバックアップしてから削除します。その中にあるあなた自身のファイルも含まれます。
+そのパス、その上位、またはフォルダー内にあるシンボリックリンクや Windows ジャンクションはその場に残され、それを名指しする警告が出ます。リンク先のものは変更もバックアップもされません。
+そのパスにあり、現在のプラグインフォルダーを指すリンクは、毎回の実行で警告とともにその場に残されます。アンインストール後も残るため、古いパスを何も使わなくなったら自分で削除してください。
+したがって、アンインストールは以前のフォルダーを削除し、現在のフォルダーからは上で説明した Apothem のファイルだけを削除します。
+アンインストールは各警告を出力し、以前のフォルダーの削除に失敗した場合は、成功ではなく失敗を報告します。
+
+インストール、更新、アンインストールのたびに、`~/.antigravity/profile.yaml` も `~/.apothem/backups/` 配下にバックアップされてから削除されます。
+そのファイルを書き込む Apothem リリースはないため、これらのコマンドを実行する前に、そこにあるあなた自身のファイルを移動してください。
+
+インストール、更新、アンインストールは、Antigravity App のデータフォルダーである `~/.gemini/antigravity/` に一切触れません。
+（CLI のデータフォルダーは `~/.gemini/antigravity-cli/`、IDE のデータフォルダーは `~/.gemini/antigravity-ide/` です。）
+App のフォルダーには、MCP サーバー向けのサインイントークン（`mcp_oauth_tokens.json`）、セッションのトランスクリプト（`brain/`）、従来のグローバルスキルフォルダー（`skills/`）、そして `sidecar_data/` が保持されています。
+以前のリリースは、そのフォルダーを Apothem が最初のリリースより前に使っていたレイアウトとして扱い、インストールと更新のたびに `~/.apothem/backups/` 配下にバックアップしてから削除していました。
+`~/.gemini/antigravity-cli/` にある CLI 自身の設定とセッション履歴は影響を受けていません。
+
+App のサインイン、セッションのトランスクリプト、またはあなたのスキルが見当たらなくなった場合、そのコピーは
+`~/.apothem/backups/<timestamp>/antigravity/.gemini/antigravity/` にあります。フォルダーを見つけた以前のインストールまたは更新ごとに 1 セットずつあり、それぞれがその時点のフォルダーを保持しています。
+Apothem は Antigravity のバックアップセットを最新の 10 個しか保持しないため、古いインストールのコピーはすでに失われている可能性があります。また、次のインストール、更新、アンインストール、ロールバックで再び整理されます。
+必要なセットは、先に `~/.apothem/backups/` の外へコピーしてください。
 
 ## コンフォーミティゲート
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+プロジェクトのフォルダーから実行します。Windows では、`python3` の代わりに `python` を使い、
+フルパスを指定します。Windows PowerShell と cmd は `~` を展開しないためです。
+PowerShell では `$HOME\.apothem\src\apothem\conformity\gate.py`、
+cmd では `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` です。このパスは
+インストーラーがエンジンを置く場所で、`-E -s` はあなたの `PYTHONPATH` とユーザーの
+site-packages をゲートから締め出します。両者とその他のインストールについては
+[コンフォーミティゲート](/docs/conformity-gate)で説明しています。
 
 ## トラブルシューティング
 

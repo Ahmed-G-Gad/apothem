@@ -2,7 +2,7 @@
 title: "マシン間同期検証チェックリスト"
 description: "完全な可搬性チェックを伴い、新しいホスト上で Claude Code アダプターが正しくインストール、検証、アンインストールされることを確認する検証手順。"
 machineTranslated: true
-sourceHash: "649ffe348614b809"
+sourceHash: "b241d44d7e0005f9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -110,6 +110,11 @@ make test                                                     # exit 0, no failu
 **期待される結果:** すべてのゲートがグリーンであること。終了コードと要約行を記録します。
 
 ## 5. アンインストールの検証
+
+これらは、セクション 4 で移動したフォルダーである `$HOME/.apothem` から実行します。
+アンインストールは `apothem` シムを削除するため、`verify` の行は残したソースから `python3 -m` で
+エンジンを起動します。この形式は現在のフォルダーのモジュールを先に読み込むため、
+そのフォルダーか、信頼できる別のフォルダーからのみ実行してください。
 
 ```bash
 # POSIX path — interactive uninstall

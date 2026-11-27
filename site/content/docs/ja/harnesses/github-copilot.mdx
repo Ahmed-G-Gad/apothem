@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "GitHub Copilot（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "b1b8b4918d7d754d"
+sourceHash: "040eeddf99d35ec6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -124,6 +124,8 @@ Apothem は Copilot に `preToolUse` のガードを登録しません。
 "/path/to/python" -E -s "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
 ```
 
+`-E -s` によって、Python は `PYTHONPATH` とその他の `PYTHON*` 変数を無視し、あなたのユーザー site-packages を読み飛ばすため、プロジェクト内のどのファイルもフックに読み込まれることはありません。
+
 `--contract copilot` は、ディスパッチャーに Copilot の camelCase の入力を読み取らせ、`{"additionalContext": ...}` を出力させます。これは Copilot がこの 2 つのイベントで読み取る形式です。
 
 **コミットには注意してください。クラウドエージェントについても。** `.github/hooks/` はあなたのリポジトリの一部であり、Copilot のクラウドコーディングサービスがそれを読みます。
@@ -159,6 +161,17 @@ GitHub は、短い命令ファイルほどコードレビューで全体が処�
 GitHub Copilot は、このアダプターが管理できる、ファイルベースのユーザーグローバルな命令パスを公開していません。
 Apothem は文書化されたプロジェクトスコープの命令ファイルを対象とし、IDE レベルのユーザー設定はオペレーターの所有のままにします。
 フックファイルは `.github/hooks/apothem.json` を 1 つだけ書き込み、`.github/hooks/` 内の他のファイルは書き込みません。
+
+Copilot は、他の Apothem のインストールがブロックを書き込むプロジェクトファイルも 2 つ読み込みます。[Kimi Code](/docs/harnesses/kimi-code) のインストールが書き込む `AGENTS.md` ファイルと、[別のコマンドラインツール向けのインストール](/docs/harnesses/gemini-cli)が書き込むコンテキストファイルです。
+
+```text
+<project>/AGENTS.md
+<project>/GEMINI.md
+```
+
+そのため、これらのインストールがあるプロジェクトでは、それらの Apothem ブロックも Copilot に届きます。
+どちらかのファイルにすでに Apothem ブロックがある場合、`github-copilot` をインストールすると、そのファイルとそれを書き込んだインストールを名指しする注記が出力されます。
+[ハーネスレジストリ](/docs/reference/harness-registry#shared-roots)は、各ファイルを読み込む他のツールを一覧表示します。
 
 Apothem リポジトリ内では、`.github/copilot-instructions.md` は、そのリポジトリのアシスタント命令面の中の 1 つの声です。
 そのリポジトリのチェックアウトでは、コンフォーミティゲートの複数面整合性チェックが、`AGENTS.md`、`CLAUDE.md`、`.github/copilot-instructions.md` に共通する主張を比較します。
@@ -221,14 +234,24 @@ apothem uninstall --harness github-copilot --project /path/to/project
 ## コンフォーミティゲート
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
 
-`--all` の実行は、単独のバリデーターを対象とします。互換性に関する注意で説明しているマルチサーフェスの整合性チェックは実行されません。チェックアウトでそのチェックを名前で実行するには：
+プロジェクトのフォルダーから実行します。Windows では、`python3` の代わりに `python` を使い、
+フルパスを指定します。Windows PowerShell と cmd は `~` を展開しないためです。
+PowerShell では `$HOME\.apothem\src\apothem\conformity\gate.py`、
+cmd では `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` です。このパスは
+インストーラーがエンジンを置く場所で、`-E -s` はあなたの `PYTHONPATH` とユーザーの
+site-packages をゲートから締め出します。両者とその他のインストールについては
+[コンフォーミティゲート](/docs/conformity-gate)で説明しています。
+
+`--all` の実行は、単独のバリデーターを対象とします。互換性に関する注意で説明しているマルチサーフェスの整合性チェックは実行されません。そのチェックを名前で実行するには、Apothem リポジトリのチェックアウトのルートから、そのチェックアウト自身のゲートを実行します。
 
 ```bash
-python -m apothem.conformity.gate --check multi-surface-coherence-grep AGENTS.md
+python3 -E -s src/apothem/conformity/gate.py --check multi-surface-coherence-grep AGENTS.md
 ```
+
+`~/.apothem` 配下にインストールされたコピーは、比較するファイルを自身の隣で探すため、チェックアウトに対して実行するとこのチェックを飛ばし、合格と報告します。
 
 ## トラブルシューティング
 

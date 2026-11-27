@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "Kimi Code (GA) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "88671d55a3315922"
+sourceHash: "0ae31afd4f1fbbbd"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,7 +27,7 @@ apothem install --harness kimi-code --project /path/to/project
 अंतर्गत रहते हैं। किसी प्रोजेक्ट की `AGENTS.md` फ़ाइल को Kimi Code के अलावा कई
 कोडिंग टूल पढ़ते हैं, इसलिए ब्लॉक प्रोजेक्ट-व्यापी मार्गदर्शन के रूप में लिखा
 जाता है, जो किसी एक टूल को अपने पाठक के रूप में नामित नहीं करता। उन टूल में से कुछ इसे
-केवल कुछ प्रोजेक्ट में लोड करते हैं, उदाहरण के लिए केवल तब जब प्रोजेक्ट में उनकी
+केवल कुछ प्रोजेक्ट, संस्करणों या सेटिंग्स में लोड करते हैं, उदाहरण के लिए केवल तब जब प्रोजेक्ट में उनकी
 अपनी कोई निर्देश फ़ाइल न हो, और इंस्टॉल नोट ऐसे हर टूल का नाम उसकी शर्त के साथ बताता
 है ([हार्नेस रजिस्ट्री](/docs/reference/harness-registry#shared-roots) उन्हें
 सूचीबद्ध करती है)।
@@ -41,8 +41,10 @@ Apothem उसे नामित करता है, लेकिन उसम
 
 **लिखी गई फ़ाइलें:** `<project>/AGENTS.md` (प्रबंधित ब्लॉक),
 `<project>/.kimi-code/skills/` के अंतर्गत स्किल और कमांड (स्किल के रूप में), हर
-Apothem सहायक के लिए एक `<project>/.kimi-code/agents/<name>.md`, और
-`<project>/.kimi-code/.apothem/support/` के अंतर्गत हुक, नियम, और टेम्पलेट समूह।
+Apothem सहायक के लिए एक `<project>/.kimi-code/agents/<name>.md`,
+`<project>/.kimi-code/.apothem/support/` के अंतर्गत हुक, नियम, और टेम्पलेट समूह, और वह
+डेटा फ़ोल्डर जो हर प्रोजेक्ट इंस्टॉल बनाता है, डिफ़ॉल्ट रूप से `<project>/.apothem/`
+(`contexts/`, `learning/`, `memory/`, `plans/`)।
 
 ## सबएजेंट
 
@@ -208,7 +210,9 @@ apothem update --harness kimi-code --project /path/to/project
 एक बार मौजूद रहे। सहायकों के `.kimi-code/agents/` में जाने से पहले के इंस्टॉल पर
 अपडेट उसी तरह पुरानी `<project>/.kimi-code/.apothem/support/agents/` डायरेक्टरी
 हटा देता है। हर हटाई गई डायरेक्टरी की एक टाइमस्टैम्प-युक्त प्रति पहले
-`~/.apothem/backups/` के अंतर्गत सहेजी जाती है।
+`~/.apothem/backups/` के अंतर्गत सहेजी जाती है। उन दो पुरानी डायरेक्टरियों में आपकी अपनी कोई
+भी फ़ाइल उनके साथ चली जाती है; हार्नेस के 10 नए बैकअप सेट बन जाने पर उसका बैकअप हटा दिया
+जाता है, इसलिए अपनी फ़ाइलें कहीं और रखें।
 
 ## अनइंस्टॉल करना
 
@@ -231,8 +235,16 @@ apothem uninstall --harness kimi-code --project /path/to/project
 ## अनुरूपता गेट
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+इसे अपने प्रोजेक्ट फ़ोल्डर से चलाएँ। Windows पर, `python3` के स्थान पर `python` का
+और पूरे पथ का उपयोग करें, क्योंकि Windows PowerShell और cmd `~` का विस्तार नहीं करते:
+PowerShell में `$HOME\.apothem\src\apothem\conformity\gate.py`, या cmd में
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`। यह पथ वह जगह है
+जहाँ इंस्टॉलर इंजन रखता है, और `-E -s` आपके `PYTHONPATH` और उपयोगकर्ता
+site-packages को गेट से बाहर रखता है; [अनुरूपता गेट](/docs/conformity-gate)
+दोनों को और अन्य इंस्टॉल को समझाता है।
 
 ## समस्या निवारण
 

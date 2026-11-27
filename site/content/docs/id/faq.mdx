@@ -2,7 +2,7 @@
 title: "FAQ"
 description: "Pertanyaan umum tentang tujuan Apothem, harness yang didukung, opsionalitas suite rencana, kustomisasi aturan, jenis artefak, dan lokasi state ekosistem."
 machineTranslated: true
-sourceHash: "39f28c46787a7498"
+sourceHash: "bc73f569d994fb5b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,13 +40,15 @@ berguna secara independen.
 
 ## Bagaimana saya mengustomisasi aturan tanpa mem-fork repositori?
 
-Tambahkan sebuah string ke daftar `rules:` di `~/.config/apothem/profile.yaml` lalu jalankan ulang pemasangan atau pembaruan. Berkas aturan di bawah `src/apothem/rules/` mengedit pohon sumber yang dipaketkan; pemasang arsip menggantinya ketika dijalankan dengan `--yes`.
+Tambahkan sebuah string ke daftar `rules:` di `~/.config/apothem/profile.yaml` lalu jalankan ulang pemasangan atau pembaruan. Berkas aturan di bawah `src/apothem/rules/` adalah bagian dari pohon sumber yang terpasang, sehingga suntingan di sana tidak bertahan setelah Apothem sendiri diperbarui. Menjalankan ulang pemasang yang memasang arsip rilis, seperti yang dilakukannya bila cosign terpasang, mengganti berkas sumber instalasi arsip rilis, termasuk suntingannya. Menjalankan ulang yang menempuh jalur git-clone, seperti yang dilakukannya tanpa cosign, hanya menggantinya dengan `--yes` (`-Yes` di PowerShell), yang mengalihkan instalasi menjadi klon. Memperbarui klon git berhenti pada berkas terlacak yang disunting sampai Anda melakukan commit atau stash atas perubahan itu, lalu melakukan checkout salinan berkas dari rilis.
 
 ## Bagaimana saya menonaktifkan aturan untuk sementara?
 
-Bisa dengan mengganti nama berkas keluar dari pola `src/apothem/rules/*.md`
-atau memindahkannya ke direktori saudara yang tidak dipindai
-pemuat.
+Apothem tidak memiliki kunci profil yang mematikan satu aturan yang dipaketkan. Mengganti nama atau memindahkan
+berkas di bawah `src/apothem/rules/` mengubah pohon sumber yang terpasang, sehingga, seperti
+suntingan (lihat jawaban di atas), perubahan itu tidak bertahan setelah Apothem sendiri diperbarui. Untuk
+menyesuaikan perilaku tanpa menyentuh pohon sumber, tambahkan aturan Anda sendiri ke daftar
+`rules:` di profil Anda dan jalankan `apothem update`.
 
 ## Apa perbedaan antara aturan, skill, dan pekerja terdelegasi?
 
@@ -92,7 +94,7 @@ bersama, sebuah direktori tersinkronisasi). Lihat
 ## Apakah Apothem memerlukan pip?
 
 Tidak — tidak untuk engine itu sendiri. Engine adalah pohon sumber mandiri dengan
-dependensi yang divendor — ia berjalan sebagai `python -m apothem` dari checkout
+dependensi yang divendor — ia berjalan dari checkout
 mana pun, cache npx, atau pohon plugin pada Python sistem 3.10+, dan tidak
 menginstal kode miliknya sendiri ke dalam `site-packages` (`click` dan `rich`
 adalah satu-satunya prasyarat interpreter). Satu-satunya pengecualian opsional:

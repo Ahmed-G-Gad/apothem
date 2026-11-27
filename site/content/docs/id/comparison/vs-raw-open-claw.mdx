@@ -2,22 +2,28 @@
 title: "Apothem vs. konfigurasi Open-Claw mentah"
 description: "Memelihara konfigurasi Open-Claw dengan tangan versus mengelolanya melalui profil bersama Apothem."
 machineTranslated: true
-sourceHash: "5d78575328c10397"
+sourceHash: "a63d807f20acee09"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Open-Claw membaca `~/.openclaw/openclaw.json`. Apothem memasang kohor perintah
-dan skill bersama di bawah `~/.openclaw/.apothem/support/skills/` dan menulis satu
-kunci di sana, `skills.load.extraDirs`, yang mencantumkan direktori itu agar
-OpenClaw memuat skill tersebut. `agents.defaults.skills`-nya adalah daftar nama
+dan skill bersama di bawah `~/.openclaw/.apothem/support/skills/` dan menyunting
+dua tempat di `~/.openclaw/openclaw.json`. Apothem menambahkan direktori itu ke
+`skills.load.extraDirs`, agar OpenClaw memuat skill tersebut. Apothem menambahkan
+jalur `apothem/AGENTS.md` ke daftar jalur entri hook
+`hooks.internal.entries.bootstrap-extra-files`, dan membuat entri itu dengan `enabled: true`
+bila belum ada, agar OpenClaw memuat berkas aturan Apothem yang ditulisnya ke setiap
+workspace. `agents.defaults.skills`-nya adalah daftar nama
 yang diizinkan milik Anda dan MCP adalah permukaan CLI, jadi Apothem tidak
 menulis keduanya.
 
 ## Status
 
 **Pratinjau.** Adaptor Open-Claw menyasar berkas konfigurasi yang
-terdokumentasi saat ini dan permukaan direktori skill tambahan. Kohor non-skill
-tetap menjadi materi pendukung Apothem.
+terdokumentasi saat ini, permukaan direktori skill tambahan, dan hook
+`bootstrap-extra-files` bawaan. Aturan dimuat melalui berkas workspace
+`apothem/AGENTS.md`; templat, agents, dan materi hook tetap menjadi materi
+pendukung Apothem.
 
 ## Perbandingan upaya
 
@@ -33,10 +39,12 @@ tetap menjadi materi pendukung Apothem.
 Adaptor Open-Claw menulis `openclaw.json`, membungkus perintah garis miring
 Apothem sebagai skill, menyalin skill Apothem ke direktori pendukung yang
 direferensikan, dan menjaga aturan, templat, agents, dan materi hook di bawah
-pohon pendukung Apothem. OpenClaw membaca `skills.load.extraDirs` pada prioritas
-terendah di antara sumber skill-nya, sehingga skill dengan nama yang sama di
-ruang kerja Anda, `~/.agents/skills`, atau `~/.openclaw/skills` digunakan sebagai
-ganti salinan Apothem.
+pohon pendukung Apothem. Adaptor ini juga menulis `apothem/AGENTS.md` ke setiap
+workspace dan mendaftarkannya pada hook `bootstrap-extra-files` bawaan, agar
+OpenClaw memuat aturan Apothem tanpa mengubah `AGENTS.md` milik workspace itu sendiri.
+OpenClaw membaca `skills.load.extraDirs` setelah sumber workspace-nya, `~/.agents/skills`,
+dan `~/.openclaw/skills`, sehingga skill dengan nama yang sama di salah satunya
+digunakan sebagai ganti salinan Apothem.
 
 ## Jalur migrasi
 

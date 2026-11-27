@@ -2,9 +2,16 @@
 title: "更新"
 description: "Apothem とハーネスアダプターを更新する。"
 machineTranslated: true
-sourceHash: "04ad375058d55ffd"
+sourceHash: "9a8965434be8f7a4"
 ---
 {/* SPDX-License-Identifier: MIT */}
+
+<Callout title="以前のリリースから更新しますか？ 先にバックアップを保存してください">
+  以前のリリース（変更履歴にその名前があります）では、インストールと更新のたびに、Claude Code のスラッシュコマンドやフックスクリプトなど、あなた自身のファイルを保持する一部のフォルダーを、`~/.apothem/backups/` にコピーした後で削除していました。
+  それらのリリースの大半はハーネスごとに最新 10 件のバックアップセットしか保持しないため、それらのリリースのいずれかを実行するたびに、あなたの唯一のコピーを保持しているかもしれない最も古いセットが削除される可能性があります。Apothem を再度実行する前に、
+  `~/.apothem/backups/` を別の場所にコピーしてください。
+  [変更履歴](/docs/changelog#data-loss-in-earlier-releases-recover-your-files)に、影響を受けるすべてのフォルダーと、ファイルをコピーして戻す方法が記載されています。
+</Callout>
 
 ## Claude Code プラグインを更新する
 
@@ -18,6 +25,19 @@ sourceHash: "04ad375058d55ffd"
 `/plugin` を開き、**apothem** を選択し、より新しいプラグインバージョンが一覧に表示されている
 ときは更新アクションを選びます。
 
+## VS Code 拡張機能を更新する
+
+拡張機能は、同梱されたエンジンのバージョンを実行します。既定のランナーは
+`npx @ahmed-g-gad/apothem@<extension version>` であるため、新しいエンジンが得られるのは
+拡張機能自体が更新されたときだけです。
+
+VS Code は、その[拡張機能の自動更新](https://code.visualstudio.com/docs/configure/extensions/extension-marketplace#_extension-auto-update)のドキュメントに記載されているとおり、拡張機能の更新を確認して自動的にインストールします。既定では、更新が公開されてから 12 時間待ちます。
+すぐにインストールするには、拡張機能ビューで拡張機能の **Update** ボタンを選択します。自動更新をオフにしている場合は、
+**Show Extension Updates** コマンドを実行して **Update** を選択するか、
+**Update All Extensions** を実行します。
+
+VS Code は、`.vsix` ファイルからインストールされた拡張機能の自動更新をオフにします。`apothem.vsix` からインストールした場合は、より新しい [GitHub Release](https://github.com/ahmed-g-gad/apothem/releases) に添付された `apothem.vsix` を同じ方法でインストールしてください。
+
 ## npx は常に現行リリースを実行する
 
 `npx @ahmed-g-gad/apothem` は実行のたびに現行の公開パッケージを解決するため、更新するものは
@@ -29,8 +49,7 @@ npx @ahmed-g-gad/apothem@latest --version
 
 ## インストーラーベースのセットアップを更新する
 
-インストーラーを再実行します — べき等であり、既存のツリーでリリースタグをチェックアウトします — または
-専用の更新スクリプトを実行します。
+インストーラーを再実行します — べき等であり、既存の git クローンをフェッチし、新しいリリースタグを確認してから、はじめてクローンをチェックアウトします。また、リリースアーカイブのインストールも更新します — または、git クローンで動作する専用の更新スクリプトを実行します。
 
 ```bash title="macOS · Linux · WSL2 · BSD"
 bash scripts/installer/update.sh
@@ -40,7 +59,19 @@ bash scripts/installer/update.sh
 pwsh -NoProfile -File scripts/installer/update.ps1
 ```
 
-更新スクリプトは、`APOTHEM_HOME`（既定は `~/.apothem`）にあるソースツリーを、`APOTHEM_REF` にチェックアウトし直します。未設定の場合は、最新の署名付き `vMAJOR.MINOR.PATCH` リリースタグに解決されます。タグの値を指定するとそのタグに固定され、`main` は `APOTHEM_ALLOW_UNVERIFIED=1` も設定されている場合にのみ、移動するブランチを選択します。このオーバーライドがない場合、更新はその ref をチェックアウトしたあとで、再マテリアライズの前に中止します。ブランチは署名付きリリースタグではないためです。再マテリアライズの前に、`git verify-tag` でタグの署名を検証します。署名のないタグ、または改ざんされたタグは、`APOTHEM_ALLOW_UNVERIFIED=1` で中止を警告に格下げしない限り中止します。メンテナーの公開鍵がローカルのキーリングにない署名付きタグは、[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) に公開されているフィンガープリントを示す、鍵のインポートに関する案内とともに中止します。その後、更新されたツリーから `apothem update` を実行して、`APOTHEM_HARNESS` で指定されたハーネスを再マテリアライズします（ハーネスの既定値は、[インストーラーの環境変数](/docs/how-to/installer-environment-variables)の表に従います）。事前のインストールが必要です。`APOTHEM_HOME` にツリーがなく、かつ `APOTHEM_SOURCE` が未設定の場合は、まずインストーラーを実行するよう案内するメッセージを表示して終了します。
+更新スクリプトは、`APOTHEM_HOME`（既定は `~/.apothem`）にあるソースツリーを `APOTHEM_REF` に移動します。未設定の場合は、最新の署名付き `vMAJOR.MINOR.PATCH` リリースタグに解決されます。タグの値を指定するとそのタグに固定され、`main` は `APOTHEM_ALLOW_UNVERIFIED=1` も設定されている場合にのみ、移動するブランチを選択します。このオーバーライドがない場合、更新は何かをチェックアウトしたり再マテリアライズしたりする前に中止します。ブランチは署名付きリリースタグではないためです。更新はまず ref をフェッチし、チェックアウトの前に `git verify-tag` でタグの署名を検証するため、確認に失敗してもクローンは元のバージョンのままです。署名は SECURITY.md に公開されているメンテナー鍵によるものでなければならず、署名付きタグはそのリリースの名前を持つタグでなければなりません。署名のないタグ、改ざんされたタグ、またはほかの鍵で署名されたタグは、`APOTHEM_ALLOW_UNVERIFIED=1` で中止を警告に格下げしない限り中止します（この変数は、署名付きタグがリリースタグであるかどうかの確認を迂回しません）。この変数は署名のないタグやほかの鍵で署名されたタグを通してしまうため、この確認が保護するのはメンテナー鍵の署名を持つタグだけです。`main` のようなリリース以外の ref では、クローンは origin にあるそのブランチのコピーに従います。チェックアウトがローカルの変更を破棄することは決してありません。追跡対象ファイルに変更があるクローンでは更新が停止するため、変更をコミットまたはスタッシュしてから再実行してください。フェッチの前に、更新は次の場合にも停止します。ファイルに assume-unchanged または skip-worktree の印が付いている場合（git はその変更を認識しません）、クローンの作業ツリーが `APOTHEM_HOME` でない場合、クローンがサブモジュールを保持している場合、`.git/info/attributes` がフィルターまたは diff ドライバー（`filter=` または `diff=`）を指定している場合、それまたは設定ファイルが通常のファイルでない場合、クローンが別のリポジトリからオブジェクトを借りている場合（`objects/info/alternates`）、またはクローンの `.git/config` か `.git/config.worktree` が、`git clone` と `git init` が完全なクローンのためにそこへ書き込む設定、ブランチ設定（ブランチの `remote` と `pushremote` は `origin` でなければなりません）、`user.name`、`user.email`、`maintenance.auto`、`maintenance.strategy`、`pull.rebase`、`pull.ff` 以外の設定を保持している場合です。`--filter` で作成した部分クローンも、そこで停止します。メッセージは設定とそれがあるファイルの名前を挙げ、[トラブルシューティング](/docs/install/troubleshooting#the-installer-stops-the-existing-clone-is-set-up-in-a-way-the-update-would-trust)に受け入れられる設定の一覧があります。また、フェッチの前に、次の場合にも停止します。作業ツリー内の `.gitattributes` ファイルを git が追跡していない場合、それがコミット済みのコピーと異なる場合、またはそのコミット済みのコピーを git が読み取れないかフィルターまたは diff ドライバーを指定している場合（作業ツリー内のコピーも読み取られます）、`backups` などのエンジン自身のデータフォルダーの外に、git が追跡していない git リポジトリがクローン内にある場合（git はその中の `.gitattributes` ファイルを読み取ります）、そして `src` 配下（大文字・小文字を問わない綴り）に git が追跡していないファイルがある場合です。エンジンがそれらを読み込む可能性があるためです。チェックアウトの後、エンジンがクローンから実行される前に、`src` 配下の Python キャッシュフォルダー（`__pycache__`）を削除します。更新中にクローンの git フックが実行されることは決してなく、Apothem 以外のプロジェクトのクローンはまったく更新されません。更新は実行中に `GIT_NO_REPLACE_OBJECTS=1`、`GIT_NO_LAZY_FETCH=1`、`GIT_ALLOW_PROTOCOL`、`GIT_ATTR_NOSYSTEM=1` を設定し、git はクローンの外にある属性ファイルを読み取りません（[インストーラーの環境変数](/docs/how-to/installer-environment-variables#the-installer-variables)を参照）。各実行はその全期間にわたってロック `<APOTHEM_HOME>.lock` を保持するため、同じ `APOTHEM_HOME` に対する 2 つ目のインストール、更新、またはアンインストールは停止します。ロックが残された場合は[トラブルシューティング](/docs/install/troubleshooting#the-installer-stops-another-run-holds-the-lock)を参照してください。メンテナーの公開鍵がローカルのキーリングにない署名付きタグは、[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) に公開されているフィンガープリントを示す、鍵のインポートに関する案内とともに中止します。その後、更新されたツリーから `apothem update` を実行して、`APOTHEM_HARNESS` で指定されたハーネスを再マテリアライズします（ハーネスの既定値は、[インストーラーの環境変数](/docs/how-to/installer-environment-variables)の表に従います）。事前のインストールが必要です。`APOTHEM_HOME` にツリーがなく、かつ `APOTHEM_SOURCE` が未設定の場合は、まずインストーラーを実行するよう案内するメッセージを表示して終了します。
+
+更新スクリプトは git クローンでのみ動作します。cosign を使って、または `APOTHEM_VERIFY=checksum` を使って行ったインストールは、代わりにリリースアーカイブを配置するため、更新スクリプトは停止し、cosign と `gpg` を `PATH` に置いた状態でインストーラーを再実行するよう伝えます。その再実行は新しいリリースに入れ替え、エンジンのバックアップやインストール台帳を含め、リリースに含まれないすべてのファイルを保持します。cosign がない場合は、`--yes`（Windows では `-Yes`）を付けてインストーラーを再実行してください。アーカイブのインストールを、メンテナー鍵で確認された git クローンに切り替え、バックアップ、台帳、プラン、メモリーを含め、ソースツリーの一部でないものをすべて保持します。`APOTHEM_VERIFY=checksum` もアーカイブをその場で更新し、`APOTHEM_ALLOW_UNVERIFIED=1` を必要とします。チェックサムモードはリリースを検証しません。SHA256SUMS はアーカイブと同じリリースから取得されるため、一致してもダウンロードが破損していないことを示すだけです。リリースのファイルを変更できる者は、その両方を変更できます。
+
+### エンジンがファイルをそのまま残す場合
+
+エンジンは、Apothem のブロックを保持するファイル（たとえば `CLAUDE.md` や `AGENTS.md`）を、その Apothem マーカー行のためにそのまま残すことがあります。たとえば、そのファイルが Apothem のマーカー間に 2 つの完全なブロックを保持している場合です。その場合エンジンはほかのすべてを書き込み、ファイルの名前と修正方法を示す警告を出力し、終了コード `2` の部分的な結果として終了します。エンジンは、何かを書き込んだ後で停止した場合にも部分的な結果として終了します。たとえば、`APOTHEM_HARNESS=all` の実行で、先のツールがファイルを書き込んだ後に 1 つのツールが失敗した場合です。そのエラーは何が失敗したかを示し、それより前に完了した各ツールには、エラーの上にそれぞれの行があります。インストーラーと更新スクリプトは、その後さらに 1 行を出力します：
+
+```text
+! The engine ended as partial (exit code 2): its messages above name the files it left as they are, or the error that stopped it. Fix what they name, then run 'apothem update --harness claude-code' again.
+```
+
+どちらも完全に成功した場合と同じように実行を終えます。インストーラーは引き続き verify を実行し、`apothem` コマンドを配置し、締めくくりのバナーを出力します。更新スクリプトは引き続き最後の行として "Update complete." を出力します。その後、各スクリプトは終了コード `2` で終了します。パイプによる PowerShell の実行（`irm ... | iex`）では、代わりに `$LASTEXITCODE` が `2` のまま残るため、PowerShell セッションは開いたままです。単発の `pwsh -Command "irm ... | iex"`（または `powershell -c`）は、部分的な実行を `$LASTEXITCODE` を通じてのみ報告するため、プロセス自体は `0` で終了します。CI ジョブやスクリプトがこのコードを必要とする場合は、コマンドの末尾に `; exit $LASTEXITCODE` を付けるか、`-File` でパスを指定してスクリプトを実行してください。PowerShell、bash、またはほかの POSIX シェルからは、そのコマンドを単一引用符で囲みます。二重引用符の中では、新しいプロセスが始まる前に呼び出し側のシェルが自分の `$LASTEXITCODE` を埋め込む（POSIX シェルは空文字列を埋め込む）ため、プロセスは実行のコードで終了しません。cmd.exe からは、二重引用符で問題ありません。インストーラーのドライラン（`--dry-run`、Windows では `-DryRun`）は何も書き込まないため、エンジンがそれを部分的な結果として終了することはありません。エンジンのメッセージが挙げた問題を修正してください。ファイルについては、あなた自身のテキストを保持し（[ファイルが Apothem のマーカー間に 2 つのブロックを保持している](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)と[Apothem が自分のブロックとあなたのテキストを区別できない](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)を参照）、その後、実行が未完了のまま残した各ツールについて、`apothem update --harness <name>` または更新スクリプトをもう一度実行してください。エンジンからそれ以外のゼロ以外の終了コードが返された場合、スクリプトはそこで停止します。
 
 ## ハーネス出力を再マテリアライズする
 

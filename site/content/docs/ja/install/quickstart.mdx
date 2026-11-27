@@ -2,7 +2,7 @@
 title: "クイックスタート"
 description: "Apothem をインストールし、プロファイルを作成し、最初のハーネスをマテリアライズして検証する — 期待される出力付きの、コピー＆ペーストで進めるツアー。"
 machineTranslated: true
-sourceHash: "7a414de2fdc9eea3"
+sourceHash: "549fab5f56f4cf9e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,7 +22,7 @@ sourceHash: "7a414de2fdc9eea3"
 
 ## 1. Apothem をインストールする
 
-Apothem は自己完結型ランタイムとして出荷されます——エンジンは、ベンダリングされた依存関係とともに、そのソースツリーから直接実行されます。1 つのコマンドでソースを取得し、エンジンを配置して、最初のハーネスをマテリアライズします。インストーラーは署名済みリリースを最初に検証するため、最初のインストールの前に一度、メンテナーの署名鍵をインポートし、フィンガープリントが `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163` と表示されることを確認してください:
+Apothem は自己完結型ランタイムとして出荷されます——エンジンは、ベンダリングされた依存関係とともに、そのソースツリーから直接実行されます。1 つのコマンドでソースを取得し、エンジンを配置して、最初のハーネスをマテリアライズします。インストーラーは最初に署名済みリリースを検証します。署名済みのリリースタグをメンテナー鍵と照合し、[cosign](https://docs.sigstore.dev/cosign/system_config/installation/) がインストールされている場合は署名済みのリリースアーカイブも確認します。確認に失敗すると `~/.apothem` が変更される前にインストールは停止し、そこにある git クローンで追跡対象のファイルに変更がある場合は、それらをコミットまたはスタッシュするまで更新は停止します。最初のインストールの前に一度、メンテナーの署名鍵をインポートし、フィンガープリントが `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163` と表示されることを確認してください:
 
 ```bash title="macOS · Linux · WSL2 · BSD — import the key once"
 curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
@@ -43,7 +43,7 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
-インストーラーには、システムの Python 3.10+ が必要で、ネットワーク形式の場合はさらに `git` と `gpg` が必要です。インストーラーは前提条件をチェックし、エンジンを `~/.apothem` 配下に配置します。`click` または `rich` が不足している場合、インストーラーは、あなたの確認を得たうえで、または `--yes`（PowerShell では `-Yes`）か `APOTHEM_AUTO_INSTALL_DEPS=1` が指定されている場合に、そのパッケージをインストールします。それ以外の場合は、実行すべき pip コマンドを示して停止します（[前提条件の一覧](/docs/install#prerequisites-at-a-glance)を参照）。完了時には次のステップのバナーを表示します。POSIX で、シムのディレクトリがすでに `PATH` 上にある場合、バナーは次のようになります:
+インストーラーには、システムの Python 3.10+ が必要で、ネットワーク形式の場合はさらに `git` と `gpg`（および任意で cosign）が必要です。インストーラーは前提条件をチェックし、エンジンを `~/.apothem` 配下に配置します。`click` または `rich` が不足している場合、インストーラーは、あなたの確認を得たうえで、または `--yes`（PowerShell では `-Yes`）か `APOTHEM_AUTO_INSTALL_DEPS=1` が指定されている場合に、そのパッケージをインストールします。それ以外の場合は、実行すべき pip コマンドを示して停止します（[前提条件の一覧](/docs/install#prerequisites-at-a-glance)を参照）。完了時には次のステップのバナーを表示します。POSIX で、シムのディレクトリがすでに `PATH` 上にある場合、バナーは次のようになります:
 
 ```text
 Installation complete.
@@ -56,15 +56,17 @@ Recommended first step — the guided setup (profile -> preview -> install):
 ```
 
 <Callout title="プロファイルなしでの初回実行">
-  まだプロファイルがない場合、インストーラーはサンプルプロファイルを `~/.config/apothem/profile.yaml` にコピーし、そのまま続行します。同じ実行の中で最初のハーネスをマテリアライズし、それを検証します。
-  サンプルの識別情報フィールドはプレースホルダーであるため、インストールは注意書きを出力します。
-  ステップ 2 でプロファイルを自分のものにし、ステップ 5 と同様に `apothem update --harness <name>` で適用してください。
+  まだプロファイルがない場合、インストーラーはサンプルプロファイル（ソースツリー内の `src/apothem/schemas/profile.example.yaml`）を `~/.config/apothem/profile.yaml` にコピーし、そのまま続行します。同じ実行の中で最初のハーネスをマテリアライズし、それを検証します。
+  このサンプルは見本であり、空のプロファイルではありません。
+  サンプルの識別情報フィールドはプレースホルダーであるため、インストールは注意書きを出力します。さらに、3 つのサンプルルール、2 つのサンプル MCP サーバー（`https://mcp.example.invalid/docs` にある `docs` と、`npx` で起動する `filesystem` サーバー）、`harnesses:` 配下のハーネスごとのオーバーライド、そして `antigravity` と `open-claw` を `--harness all` から除外するリストも含まれています。
+  OpenCode や Qwen Code のように、プロファイルから MCP サーバーを受け取るハーネスは、両方のサンプルサーバーを自身の設定に取り込みます。
+  ステップ 2 で、不要なものを削除してプロファイルを自分のものにし、ステップ 5 と同様に `apothem update --harness <name>` で適用してください。
 </Callout>
 
 <Callout title="apothem コマンド">
   インストーラーは `apothem` シムを `$HOME/.local/bin`（POSIX）または `%LOCALAPPDATA%\Microsoft\WindowsApps`（Windows）に書き込み、`PATH` は決して編集しません。
   そのディレクトリが `PATH` 上にあれば、エンジンを `apothem <command>` として直接実行します。
-  まだ `PATH` 上にない場合、バナーはシムを必要としない自己完結型のフォールバック — `PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>` — を出力します。各コマンドの前に、バナーが出力した正確なプレフィックスを付けてください。
+  まだ `PATH` 上にない場合、バナーはシムの完全なパス（既定では `~/.local/bin/apothem`）を出力します。シムが配置されなかった場合は、カレントフォルダーを `sys.path` から外した状態でエンジンを起動するコマンドを出力します。各コマンドでは、`apothem` の代わりにバナーが出力したものを使ってください。
 </Callout>
 
 [インストールガイド](/docs/install)は、環境変数のオプションとあわせて、その他のインストール経路 — Claude Code プラグイン（`/plugin marketplace add ahmed-g-gad/apothem` の後に `/plugin install apothem@apothem`）、VS Code 系およびその他のツールネイティブな拡張機能、そしてオンデマンドの npx 形式（`npx @ahmed-g-gad/apothem <command>`） — を扱います。
@@ -82,7 +84,8 @@ apothem profile show --json
 
 このスキャフォールドは架空のプレースホルダーの識別情報を使用しており、ハーネスの出力をインストールする前に編集しても安全です。
 `show --json` はそれを読み戻し、`schema_version` から始まる、すべてのデフォルトが埋められた検証済みのプロファイルを報告します。
-コマンドはそれを 1 行で出力します。ここでは展開して示します。
+`profile init` が書き込むスキャフォールドの場合、コマンドは下のドキュメントを 1 行で出力します。ここでは展開して示します。
+ステップ 1 でインストーラーがコピーしたサンプルプロファイルをそのまま残している場合、出力にはサンプルの値が表示され、そのサンプルルール、MCP サーバー、ハーネスごとのオーバーライドも含まれます。
 
 ```json
 {

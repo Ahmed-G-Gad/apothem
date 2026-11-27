@@ -2,7 +2,7 @@
 title: "リリース復旧ランブック"
 description: "追加型リリースモデルのもとで、途中で失敗したリリースを、公開済みの履歴を書き換えずにステージごとに復旧する手順。"
 machineTranslated: true
-sourceHash: "91a31722fb721a3e"
+sourceHash: "d3bcc2874d9e87b5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -42,7 +42,7 @@ git tag -v vX.Y.Z           # signature check
 
 何をすべきかは、そのタグから何かが公開されたかどうかによって決まります。
 
-- **まだ何も公開されていない**場合（リリースワークフローが publish ジョブより前に失敗し、かつ `publish-npm.yml` が公開しなかった）: タグを削除し、同じコミットに `-a -s` で再度タグを付けます。
+- **まだ何も公開されていない**場合（リリースワークフローが publish ジョブより前に失敗し、`publish-npm.yml` が公開せず、かつ `publish-vscode.yml` が Visual Studio Marketplace に公開しなかった）: タグを削除し、同じコミットに `-a -s` で再度タグを付けます。プラグインのバージョン更新漏れのように、失敗の修正をまず `main` で行う必要がある場合は、代わりに新しいリリースコミットにタグを付けます（release-cycle ランブックの失敗の表を参照）。
 
   ```bash
   git push --delete origin vX.Y.Z
@@ -51,10 +51,10 @@ git tag -v vX.Y.Z           # signature check
   git push origin vX.Y.Z
   ```
 
-- **何かが公開された**場合（アセット付きの GitHub Release、または npm バージョン）: タグを移動、削除、再利用することは決してしないでください。
+- **何かが公開された**場合（アセット付きの GitHub Release、npm バージョン、または Marketplace のバージョン）: タグを移動、削除、再利用することは決してしないでください。
   `vX.Y.(Z+1)` で前方修正します。
 
-タグ名が別のコミットに再利用されることは決してありません。
+タグから何かが公開された後は、その名前が別のコミットに再利用されることは決してありません。
 
 ## 3. パブリッシャーの復旧
 

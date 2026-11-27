@@ -2,7 +2,7 @@
 title: "계획 디시플린 — 프로젝트 로컬 임시 작업 메모리"
 description: "프론트매터 스키마, 라이프사이클 전이, ADR로의 승격, 훅과 검증기를 통한 강제를 사용하여 .apothem/plans/(레거시 .plans/ 트리는 apothem migrate-workspace로 업그레이드됨)에 있는 프로젝트 로컬 임시 작업 메모리를 관리합니다."
 machineTranslated: true
-sourceHash: "175d0e7730335ebd"
+sourceHash: "78ba9223bd5803ab"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -155,7 +155,7 @@ promotes-to: <ADR path or null>
 
 이 디시플린은 앞으로의 모든 세션에서 살아남아야 합니다. 다음 강제 표면은 필수이며 게시된 생태계에 인코딩되어 있습니다:
 
-1. **`AGENTS.md` 및 미러 지시 표면** — 다음을 명시하는 최상위 필수 행동 블록: *"계획 산출물은 `<project-root>/.apothem/plans/`에 작성됩니다. 유일한 정규 계획 홈입니다(레거시 `<project-root>/.plans/` 트리는 `apothem migrate-workspace`를 통해 업그레이드됨). 어떤 하니스 구성 디렉터리(예: `~/.codex/` 또는 `~/.claude/`)에도, 전역 위치에도 결코 작성하지 않습니다. 이 규칙은 협상할 수 없습니다. 관련된 모든 결정에서 프로젝트 명세의 §3을 인용하십시오."* 이 블록은 `plans-discipline-language` 검증기가 감지합니다.
+1. **`AGENTS.md` 및 미러 지시 표면** — 다음을 명시하는 최상위 필수 행동 블록: *"계획 산출물은 `<project-root>/.apothem/plans/`에 작성됩니다. 유일한 정규 계획 홈입니다. 레거시 `<project-root>/.plans/` 트리는 더 이상 정규가 아니며, 운영자는 기존 트리를 `apothem migrate-workspace`로 업그레이드합니다. 계획 산출물은 어떤 하니스 구성 디렉터리(예: `~/.codex/` 또는 `~/.claude/`)에도, 전역 위치에도 결코 작성되지 않습니다. 이 규칙은 협상할 수 없습니다. `site/content/docs/reference/plans-discipline.mdx`의 §2에 전문이 있습니다."* 이 블록은 `plans-discipline-language` 검증기가 감지합니다.
 2. **하니스별 저장소 내 지시 파일** — 그 하니스의 지시 표면에 맞는 틀로 같은 지시를 미러링합니다(§4 *Plans Discipline*). 등록된 각 하니스 표면에서 같은 검증기가 감지합니다.
 3. **기본 출력 스타일** — 응답이 계획 형태의 내용(다단계 전략, 분해, 설계 워크스루, 디버깅 일지)을 만들어 낼 때, 스타일은 그 산출물을 인라인으로 출력하고 버리는 대신 프로젝트 로컬 `.apothem/plans/`에 쓰도록 보냅니다. 스타일은 명시적으로 지시합니다: *"프로젝트 루트를 찾을 수 없으면, 어디에 계획할지 운영자에게 묻는 구조화된 질의로 중단한다."*
 4. **모든 위임된 워커 프롬프트** — 계획 산출물의 대상으로 `.apothem/plans/`를 명시하는 *Output Surface* 조항과, 하니스 로컬 계획 디렉터리를 금지 대상으로 명시하는 *Anti-Pattern* 조항을 담습니다.

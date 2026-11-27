@@ -2,7 +2,7 @@
 title: "status"
 description: "Referensi CLI untuk perintah apothem status."
 machineTranslated: true
-sourceHash: "8b2767bb799e4c2e"
+sourceHash: "fe8df509dd01788b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,7 +35,7 @@ Nilai `drift` adalah salah satu dari:
 | Nilai | Arti |
 |---|---|
 | `in-sync` | Konfigurasi yang terpasang membawa profil bersama yang baru diproyeksikan secara harfiah. |
-| `drift` | Harness terpasang, tetapi konten profil yang diproyeksikannya tidak lagi cocok dengan profil bersama saat ini. Jalankan ulang `apothem install` untuk memproyeksikan ulang. |
+| `drift` | Harness terpasang, tetapi konten profil yang diproyeksikannya tidak lagi cocok dengan profil bersama saat ini, atau berkas tempat instalasi saat ini menyimpan blok terkelola memuat penanda BEGIN yang tidak memulai blok utuh, dua blok utuh atau lebih di antara penanda Apothem, atau pasangan penanda yang tidak dapat dibedakan Apothem dari teks Anda. Berkas yang hanya tercantum dalam catatan instalasi sebelumnya, seperti berkas aturan di workspace OpenClaw yang tidak lagi dipakai instalasi, tidak dihitung di sini; `apothem verify` dan `apothem doctor` menyebutkannya. Jalankan `apothem update` untuk menerapkan profil saat ini; perbaiki penanda seperti itu secara manual (lihat [Pemecahan masalah](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker), [Sebuah berkas memuat dua blok di antara penanda Apothem](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers), dan [Apothem tidak dapat membedakan bloknya dari teks Anda](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)). |
 | `absent` | Harness tidak terpasang, sehingga tidak ada yang dibandingkan. |
 | `needs-project` | Harness berlingkup-proyek dilaporkan tanpa `--project`, sehingga targetnya tidak dapat di-resolve. Berikan `--project PATH` untuk memeriksanya. |
 | `unknown` | Profil default tidak dapat dimuat, sehingga harness yang terpasang tidak memiliki acuan dasar untuk dibandingkan. Perbaiki profil untuk memulihkan putusan penyimpangan. |

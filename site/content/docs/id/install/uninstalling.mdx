@@ -2,7 +2,7 @@
 title: "Pencopotan"
 description: "Hapus Apothem dan bersihkan konfigurasi harness."
 machineTranslated: true
-sourceHash: "60208ca7c4c5f168"
+sourceHash: "e1f5ac4a5447a167"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -94,3 +94,67 @@ Untuk membersihkan akar harness sepenuhnya, hapus jalur native-harness yang
 didokumentasikan di [halaman referensi harness](/docs/harnesses) setelah
 memastikan Anda telah mencadangkan aturan, helper, atau berkas profil kustom
 apa pun yang ingin Anda simpan.
+
+## Jika pencopotan melaporkan bahwa prosesnya tidak selesai
+
+Pencopotan dapat berhenti di tengah jalan, dan ketika itu terjadi pemasangan
+tetap tercatat. Pesannya bergantung pada alasannya:
+
+- `✗ <harness> uninstall did not finish:` menyebutkan berkas Apothem yang
+  ditinggalkannya di balik sebuah tautan (symlink atau junction), berkas yang
+  dicatat oleh pemasangan rilis sebelumnya dan berbeda dari apa yang ditulis
+  rilis ini, berkas dari pemasangan yang sama sekali tidak memiliki catatan,
+  berkas yang menyimpan dua blok berbeda di antara penanda Apothem, berkas yang
+  baris penandanya tidak dapat dibedakan Apothem dari teks Anda, atau langkah
+  penghapusan yang melaporkan galat. Untuk tautan, berkas rilis sebelumnya,
+  pemasangan tanpa catatan, atau berkas dengan dua blok atau dengan baris
+  penanda semacam itu, pesan ini juga memberikan jumlah jalur yang
+  ditinggalkannya. Setelah pencopotan yang berhenti, baris untuk tautan, berkas
+  yang dipertahankan, dan langkah yang gagal mengikuti salah satu dari dua baris
+  di bawah ini.
+- `✗ <harness> uninstall stopped after removing files:` berarti sebuah langkah
+  penghapusan menghentikan pencopotan setelah langkah itu menghapus sebagian
+  berkas, atau mengeluarkan entri atau blok Apothem dari sebuah berkas seperti
+  `openclaw.json`.
+- `✗ <harness> uninstall failed:` berarti sebuah langkah penghapusan
+  menghentikan pencopotan sebelum mengubah apa pun, atau sebuah galat tak
+  terduga (sebuah pengecualian, seperti cadangan yang tidak dapat ditulis)
+  menghentikan langkah pertama pencopotan Open-Claw, Antigravity, atau Kimi
+  Code, yang tidak melaporkan apa pun yang telah dilakukannya.
+
+Perintah keluar dengan `2` ketika perintah itu menghapus atau mengubah berkas,
+meninggalkan berkas Apothem sendiri di balik sebuah tautan, mempertahankan
+berkas dari pemasangan rilis sebelumnya atau dari pemasangan tanpa catatan,
+atau meninggalkan berkas dengan dua blok berbeda di antara penanda Apothem atau
+dengan baris penanda yang tidak dapat dibedakan Apothem dari teks Anda, atau
+ketika harness lain telah dihapus, dan `1` ketika perintah berhenti sebelum
+mengubah apa pun karena alasan lain. Galat tak terduga pada langkah pertama itu
+keluar dengan `1` (`2` ketika harness lain telah dihapus), apa pun yang telah
+diubah langkah tersebut. Perbaiki apa yang disebutkan pesan, lalu jalankan lagi
+perintah `apothem uninstall` yang sama: perintah itu menghapus apa yang
+ditinggalkan eksekusi pertama. Untuk berkas dengan dua blok, atau berkas yang
+baris penandanya tidak dapat dibedakan Apothem dari teks Anda, peringatan
+memberikan perbaikan bernomor, satu untuk setiap kasus: pilih yang kasusnya
+benar dan lakukan langkah-langkahnya sesuai urutan yang diberikan, sebelum Anda
+menjalankan pencopotan lagi (lihat
+[Ikuti perbaikan bernomor](/docs/install/troubleshooting#follow-a-numbered-fix)).
+Jangan hapus blok Apothem untuk mempertahankan pasangan penanda milik Anda,
+karena pencopotan berikutnya kemudian akan ikut mengambil pasangan Anda. Untuk
+pemasangan rilis sebelumnya atau pemasangan tanpa catatan, salin terlebih
+dahulu setiap berkas tercantum yang Anda sunting atau tambahkan, dan perbaiki
+setiap berkas yang disebutkan peringatan karena penanda Apothem, sebagaimana
+dikatakan peringatan itu, lalu jalankan `apothem update`, lalu pencopotan.
+Tanpa catatan, blok Apothem di `CLAUDE.md` atau di dokumen profil tetap ada,
+dan peringatannya memberikan perbaikan bernomor yang menghapus baris blok itu
+secara manual jika Anda tidak lagi menginginkan blok tersebut (atau, ketika
+tidak ada perbaikan semacam itu yang membuat baris Anda tetap terbaca seperti
+sebelumnya, meminta Anda mengubah setiap baris penanda Apothem di berkas itu).
+Ketika berkas itu menyimpan dua blok utuh atau lebih, peringatan menyebutkan
+masing-masing dan diakhiri dengan pembaruan dan pencopotan tadi, dan pencopotan
+kemudian menyebutkan baris penanda milik Anda di sekitar blok Apothem sebelum
+mengeluarkan blok itu. Pembaruan mempertahankan penanda BEGIN tanpa END beserta
+teks di bawahnya, dan tidak memperbaiki berkas yang menyimpan dua blok berbeda.
+[Referensi pencopotan](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish)
+menjelaskan setiap kasus, dan tabel
+[kode keluar](/docs/cli-reference/uninstall#exit-codes)-nya mencantumkan arti
+`1` dan `2`.

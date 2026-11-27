@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "Adapter harness Apothem untuk Kimi Code (GA)."
 machineTranslated: true
-sourceHash: "88671d55a3315922"
+sourceHash: "0ae31afd4f1fbbbd"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,7 +28,7 @@ tetap berada di bawah pohon pendukung milik Apothem di
 `AGENTS.md` proyek dibaca oleh banyak alat pengodean selain Kimi Code, sehingga
 blok tersebut ditulis sebagai panduan seluruh proyek yang tidak menyebut satu
 alat tunggal pun sebagai pembacanya. Sebagian alat itu memuatnya hanya di
-beberapa proyek, misalnya hanya ketika proyek tidak memiliki berkas instruksi
+beberapa proyek, versi, atau pengaturan, misalnya hanya ketika proyek tidak memiliki berkas instruksi
 khusus alat itu, dan catatan pemasangan menyebut setiap alat semacam itu beserta
 syaratnya ([registri harness](/docs/reference/harness-registry#shared-roots)
 mencantumkannya).
@@ -43,8 +43,10 @@ tidak menulis entri apa pun.
 
 **Berkas yang ditulis:** `<project>/AGENTS.md` (blok terkelola), skill dan
 command (sebagai skill) di bawah `<project>/.kimi-code/skills/`, satu
-`<project>/.kimi-code/agents/<name>.md` untuk setiap helper Apothem, serta kohor
-hook, aturan, dan templat di bawah `<project>/.kimi-code/.apothem/support/`.
+`<project>/.kimi-code/agents/<name>.md` untuk setiap helper Apothem, kohor
+hook, aturan, dan templat di bawah `<project>/.kimi-code/.apothem/support/`,
+serta folder data yang dibuat setiap instalasi proyek, `<project>/.apothem/` secara
+default (`contexts/`, `learning/`, `memory/`, `plans/`).
 
 ## Subagent
 
@@ -216,7 +218,9 @@ sehingga setiap skill hanya ada satu kali. Pembaruan atas instalasi dari sebelum
 helper dipindahkan ke `.kimi-code/agents/` menghapus direktori lama
 `<project>/.kimi-code/.apothem/support/agents/` dengan cara yang sama. Salinan
 bertanda waktu dari setiap direktori yang dihapus disimpan lebih dulu di bawah
-`~/.apothem/backups/`.
+`~/.apothem/backups/`. Berkas milik Anda sendiri di kedua direktori lama itu ikut
+terhapus; cadangannya dihapus begitu ada 10 set cadangan yang lebih baru untuk
+harness tersebut, jadi simpan berkas Anda di tempat lain.
 
 ## Pencopotan
 
@@ -240,8 +244,16 @@ mesin Apothem tidak terpengaruh.
 ## Gerbang konformitas
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Jalankan dari folder proyek Anda. Di Windows, gunakan `python` sebagai pengganti
+`python3` dan jalur lengkapnya, karena Windows PowerShell dan cmd tidak mengekspansi
+`~`: `$HOME\.apothem\src\apothem\conformity\gate.py` di PowerShell, atau
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` di cmd. Jalur itu adalah
+tempat installer menaruh engine, dan `-E -s` menjauhkan `PYTHONPATH` serta
+site-packages pengguna Anda dari gerbang; [Gerbang konformitas](/docs/conformity-gate)
+menjelaskan keduanya dan instalasi lainnya.
 
 ## Pemecahan masalah
 

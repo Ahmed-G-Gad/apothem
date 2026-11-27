@@ -2,7 +2,7 @@
 title: "적합성 게이트"
 description: "Apothem 적합성 게이트 — 방출되는 모든 아티팩트가 통과해야 하는 15개 막대 사전 방출 게이트(M1-M15)의 기계적 부분."
 machineTranslated: true
-sourceHash: "3327d1105c04f8e3"
+sourceHash: "4abccec00243f36d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,16 +30,18 @@ sourceHash: "3327d1105c04f8e3"
 
 ## 심각도 단계
 
-게이트에는 치명, 중요, 권고로 나뉘는 등급 체계가 없고, 두 건의 발견 사항이라는 임계값도 없습니다. `--strict`(또는 `APOTHEM_CONFORMITY_STRICT=1`)가 없으면 게이트는 발견 사항을 보고하고 `0`으로 종료합니다. `--strict`를 지정하면 단일 파일 또는 훅 검사는 어떤 매처든 실패할 때 `2`로 종료하고, 코퍼스 실행(`--all` 또는 `--all-perwrite`)은 차단 검증기 또는 매처가 실패할 때 `2`로 종료합니다. 권고 발견 사항은 보고만 합니다. 설치된 Write/Edit 훅은 `--strict`를 전달하지 않으므로, 그 환경에 `APOTHEM_CONFORMITY_STRICT=1`이 설정되어 있지 않은 한 발견 사항을 보고하고 쓰기는 그대로 진행됩니다.
+게이트에는 치명, 중요, 권고로 나뉘는 등급 체계가 없고, 두 건의 발견 사항이라는 임계값도 없습니다. `--strict`(또는 `APOTHEM_CONFORMITY_STRICT=1`)가 없으면 게이트는 발견 사항을 보고하고 `0`으로 종료합니다. `--strict`를 지정하면 단일 파일 또는 훅 검사는 어떤 매처든 실패할 때 `2`로 종료하고, 코퍼스 실행(`--all` 또는 `--all-perwrite`)은 차단 검증기 또는 매처가 실패할 때 `2`로 종료합니다. 권고 발견 사항은 보고만 합니다. 파일을 하나도 읽지 않았거나, 프로젝트 밖으로 나가는 인덱스 항목을 만났거나, 읽을 수 없는 파일 또는 크기 한도를 넘는 텍스트 파일을 만난 `--all-perwrite` 실행은 `passed: false`를 보고하며, 추적되는 파일 목록을 읽을 수 없을 때(예: git 작업 트리 밖의 폴더에서)는 `check_error`도 함께 보고하므로, `--strict`를 지정하면 역시 `2`로 종료합니다. 설치된 Write/Edit 훅은 `--strict`를 전달하지 않으므로, 그 환경에 `APOTHEM_CONFORMITY_STRICT=1`이 설정되어 있지 않은 한 발견 사항을 보고하고 쓰기는 그대로 진행됩니다.
+
+`--all` 및 `--check` 실행에서는 끝까지 마치지 못한 standalone 검증기도 통과하지 못합니다. 10분이 지나도 실행 중인 검증기는 중지되고, 자체 `git` 명령이 시간 한도를 넘기거나 찾아낸 체크아웃에서 실패한 검증기는 그 사실을 보고합니다. 어느 결과든 `passed: false`와 이유를 설명하는 `check_error`를 담으므로, `--strict`를 지정하면 역시 `2`로 종료합니다. 한도는 [적합성 게이트 실행](/docs/usage/conformity-gate)에 나와 있습니다.
 
 ## 검증기
 
 기계적 부분은 [`src/apothem/conformity/`](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/conformity)에 있으며, [`src/apothem/conformity/gate.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/gate.py)가 이를 조율합니다.
 각 검증기는 다음 세 가지 방식 중 하나로 실행됩니다.
 
-- **per-write**: 보류 중인 모든 쓰기마다(`--hook`), 또는 `--all-perwrite`로 추적되는 모든 파일에 대해 실행합니다.
+- **per-write**: 보류 중인 모든 쓰기마다(`--hook`), 또는 `--all-perwrite`로 추적되는 모든 파일에 대해 실행합니다. 이때 프로젝트 안의 일반 파일만 읽고, 건너뛴 경로(링크, 명명된 파이프, 장치, 프로젝트 밖으로 나가는 항목)의 수를 셉니다.
 - **standalone**: `--all`로 저장소 전체에 걸쳐 실행하거나, `--check <name>`으로 하나씩 실행합니다.
-- **change-set**: 스테이징된 diff를 대상으로 하며, 게이트를 거치지 않고 `python -m apothem.conformity.semver_stability_grep --staged`로 직접 실행합니다.
+- **change-set**: 스테이징된 diff를 대상으로 하며, 게이트를 거치지 않고 체크아웃 루트에서 `PYTHONPATH=src python -m apothem.conformity.semver_stability_grep --staged`로 직접 실행합니다.
 
 아래 표는 검증기 모듈에서 생성됩니다.
 
@@ -113,34 +115,61 @@ The conformity package ships 54 validators: 22 per-write, 31 standalone and 1 ch
 Write/Edit 전에 `~/.claude/.apothem/support/conformity/gate.py`에 머티리얼라이즈된
 사본을 호출합니다. 이때 게이트는 훅 범위에 속한 쓰기만 검사하며, 범위 밖의 쓰기는
 조용히 통과합니다. 범위는 [적합성 게이트 실행](/docs/usage/conformity-gate)에
-나와 있습니다. 소스 체크아웃에서는 모듈 형식이 같은 코드를 실행합니다. 아래의 각
-`python` 명령 앞에 `PYTHONPATH=src`를 붙이세요. 게이트는 기본적으로 권고
-모드입니다. 발견 사항을 보고하고 `0`으로 종료합니다. 차단 수준의 발견 사항이 있을
-때 `2`로 종료하려면 `--strict`를 추가하세요. 알 수 없는 검증기 이름은 `3`으로
-종료합니다.
+나와 있습니다.
+
+아래 예제처럼 게이트는 `-E -s`와 함께 스크립트 경로로 실행하고,
+`python -m apothem.conformity.gate`로 실행하지 마세요. 검사하는 프로젝트에 게이트
+모듈과 같은 이름의 파일이 있을 수 있으며, Python이 그 파일을 불러와서는 안 됩니다.
+`-m`은 현재 폴더를 Python 모듈 검색 경로의 맨 앞에 두지만, 스크립트로 시작하면
+그 자리에 스크립트 자신의 폴더가 놓입니다. 그것만으로는 충분하지 않습니다.
+`PYTHONPATH`의 빈 항목이나 상대 경로 항목도 현재 폴더를 가리키기 때문입니다.
+`-E`는 Python이 `PYTHONPATH`와 다른 `PYTHON*` 변수를 무시하게 하고, `-s`는 사용자
+site-packages를 제외합니다. 게이트는 둘 중 어느 것도 필요로 하지 않습니다. 이
+플래그들은 프로젝트의 파일이 게이트 자체의 Python 코드에 들어오지 못하게 할
+뿐이며, 게이트가 실행하는 `git`은 아래에서 다룹니다. 스크립트 설치 후 스크립트는
+`~/.apothem/src/apothem/conformity/gate.py`이고(Windows에서는
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`이며, `python3` 대신
+`python`으로 실행), 체크아웃에서는 `src/apothem/conformity/gate.py`입니다. 게이트는
+각 standalone 검증기를 별도 프로세스에서 시작하며, 이때도 `-E -s`를 사용하고 현재
+폴더를 검색 경로에서 제외합니다. 게이트는 기본적으로 권고 모드입니다. 발견 사항을
+보고하고 `0`으로 종료합니다. 차단 수준의 발견 사항이 있을 때 `2`로 종료하려면
+`--strict`를 추가하세요. 알 수 없는 검증기 이름은 `3`으로 종료합니다.
+
+`--all`, `--all-perwrite`, 세 개의 standalone 검증기, 그리고 `--staged` change-set
+검사는 검사하는 프로젝트에서 `git`을 실행합니다. 각각은 `PATH`의 전체 경로 항목에서만
+git을 시작하며, 그 저장소의 `.git/config`에서 프로그램을 시작하는 것으로 알려진
+모든 설정을 끄고 누락된 객체 가져오기를 차단합니다. 따라서 다른 사람에게서
+`.git` 폴더와 함께 받은 프로젝트도 그런 설정을 통해 프로그램을 시작하게 만들 수
+없습니다.
+[적합성 게이트 실행](/docs/usage/conformity-gate)에 그 설정들과 남아 있는 두 가지
+한계가 나와 있습니다. git은 여전히 저장소가 어떤 설정이나 파일에서든 지정하는
+경로(`include.path`, `core.worktree`, `.git` 파일의 `gitdir:` 줄 등)를 읽을 수
+있고, 이후의 git 릴리스가 새 설정을 추가할 수 있습니다.
 
 ```shell
+gate=~/.apothem/src/apothem/conformity/gate.py   # or src/apothem/conformity/gate.py
+
 # Every standalone validator across the repository:
-python -m apothem.conformity.gate --all .
+python3 -E -s "$gate" --all .
 
 # The same sweep, failing on a blocking finding (the CI form):
-python -m apothem.conformity.gate --all --strict .
+python3 -E -s "$gate" --all --strict .
 
 # Every per-write validator against every tracked file:
-python -m apothem.conformity.gate --all-perwrite .
+python3 -E -s "$gate" --all-perwrite .
 
 # One validator by name (names come from --list):
-python -m apothem.conformity.gate --check naming-grep .
+python3 -E -s "$gate" --check naming-grep .
 
 # List every registered validator as JSON:
-python -m apothem.conformity.gate --list
+python3 -E -s "$gate" --list
 
 # Single-file dispatch (mimics the PreToolUse hook):
 echo '{"tool_input": {"file_path": "path/to/file", "content": "..."}}' \
-    | python -m apothem.conformity.gate --hook
+    | python3 -E -s "$gate" --hook
 ```
 
-`python -m apothem.conformity.gate --help`는 사용법 요약을 출력합니다.
+`python3 -E -s "$gate" --help`는 사용법 요약을 출력합니다.
 전체 절차는 [적합성 게이트 실행](/docs/usage/conformity-gate)을 참조하세요.
 
 ## 참조

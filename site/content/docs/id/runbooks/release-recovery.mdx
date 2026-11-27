@@ -2,7 +2,7 @@
 title: "Runbook pemulihan rilis"
 description: "Prosedur pemulihan untuk rilis yang gagal di tengah jalan di bawah model rilis aditif, tahap demi tahap, tanpa menulis ulang riwayat yang telah dipublikasikan."
 machineTranslated: true
-sourceHash: "91a31722fb721a3e"
+sourceHash: "d3bcc2874d9e87b5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -49,8 +49,11 @@ Apa yang harus dilakukan bergantung pada apakah ada sesuatu yang telah
 dipublikasikan dari tag tersebut:
 
 - **Belum ada yang dipublikasikan** (alur kerja rilis gagal sebelum job
-  publikasinya, dan `publish-npm.yml` tidak memublikasikan): hapus tag dan buat
-  ulang tag pada commit yang sama dengan `-a -s`.
+  publikasinya, `publish-npm.yml` tidak memublikasikan, dan `publish-vscode.yml`
+  tidak memublikasikan ke Visual Studio Marketplace): hapus tag dan buat
+  ulang tag pada commit yang sama dengan `-a -s`. Jika kegagalan perlu diperbaiki
+  di `main` terlebih dahulu, misalnya kenaikan versi plugin yang terlewat, beri tag
+  pada commit rilis yang baru (lihat tabel kegagalan di runbook release-cycle).
 
   ```bash
   git push --delete origin vX.Y.Z
@@ -59,11 +62,12 @@ dipublikasikan dari tag tersebut:
   git push origin vX.Y.Z
   ```
 
-- **Ada yang telah dipublikasikan** (GitHub Release dengan aset, atau versi
-  npm): jangan pernah memindahkan, menghapus, atau menggunakan ulang tag.
+- **Ada yang telah dipublikasikan** (GitHub Release dengan aset, versi
+  npm, atau versi Marketplace): jangan pernah memindahkan, menghapus, atau menggunakan ulang tag.
   Perbaiki maju dengan `vX.Y.(Z+1)`.
 
-Nama tag tidak pernah digunakan ulang untuk commit yang berbeda.
+Begitu ada sesuatu yang dipublikasikan dari sebuah tag, namanya tidak pernah
+digunakan ulang untuk commit yang berbeda.
 
 ## 3. Pemulihan penerbit
 
