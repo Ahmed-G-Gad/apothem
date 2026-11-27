@@ -15,7 +15,7 @@
 | `_corpus.py` | The `--all-perwrite` file list and reader: lists the tracked files with `git ls-files` (with a time limit) and reads only the regular files inside the project, checking every level with `lstat` and reading through `_safe_open`, so no link, junction, named pipe or device is followed or opened, and naming the reason for every path it skips. `link-check` uses the same level check to keep a corpus run's link lookups inside the project. Private to this package. |
 | `__init__.py` | Package marker. |
 | `_project_paths.py` | The link-aware helpers every validator reads project files through: a walk entry, a fixed path or a folder listing is looked at without following a link, a link to a regular file inside the project counts for a fixed file, and every link or special file left out is noted for the report's `skipped_links`. Private to this package. |
-| `_safe_open.py` | The guarded open every project read goes through (`read_project_text`, `read_project_bytes`, `open_project_file`): the root, then each folder inside the one opened before it, then the file, none of them through a link (`openat` with `O_NOFOLLOW` on POSIX, `NtCreateFile` with `FILE_OPEN_REPARSE_POINT` on Windows), so a file or folder swapped for a link or a named pipe after its check is refused and noted under `skipped_links`, never followed or waited on. Keeps the folders it opened in a small cache while a skip log runs. Private to this package. |
+| `_safe_open.py` | The guarded open every project read goes through (`read_project_text`, `read_project_bytes`, `open_project_file`): the root, then each folder inside the one opened before it, then the file, none of them through a link (`openat` with `O_NOFOLLOW` on POSIX, `NtCreateFile` with `FILE_OPEN_REPARSE_POINT` on Windows), so a file or folder swapped for a link or a named pipe after its check is refused and noted under `skipped_links`, never followed or waited on. Opens each level afresh for every read and keeps no folder open between reads. On Windows a program that holds an opportunistic lock on a file and does not let go still makes a read wait, as a plain open did; no test reads a real cloud placeholder or deduplicated file. Private to this package. |
 
 ## Matcher families
 
@@ -236,9 +236,15 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   missing catches `REFUSED_OR_GONE` and counts the swapped file as missing
   too. `tests/conformity/test_reads_close_the_race.py` swaps a path right
   after each kind of check answers, and the audit oracle below fails a
-  project read that skips the guarded open. A hard link still reads as an
+  project read that skips the guarded open, or that opens a folder below
+  the run's root as the root of a read. A hard link still reads as an
   ordinary file, and a file system that gives no inode or file ID cannot
-  show a swap to another regular file.
+  show a swap to another regular file. On Windows a program that can write
+  to the project can still make a read wait by holding an opportunistic
+  lock on the file and not letting go: no open option avoids that wait, so
+  only a validator's time limit ends it, and `--all-perwrite` has none. The
+  tests stand in for a cloud placeholder or a deduplicated file by its
+  reparse tag; no test reads a real one.
   `tests/conformity/test_validators_stay_in_project.py` runs every `--all`
   validator against a project made of links. Add each file a new validator
   reads to its `_project_files` (or, for a file read only after another one

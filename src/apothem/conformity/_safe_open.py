@@ -39,7 +39,13 @@ like any other.
 
 What it does not cover. A hard link reads as an ordinary file, and a file
 system that gives no inode or file ID cannot show a swap to another regular
-file (see the conformity README).
+file (see the conformity README). On Windows an open waits while another
+program holds an opportunistic lock on the file and does not acknowledge its
+break; no open option avoids that wait, so a program that can write to the
+project can hold a read until the validator's time limit (each ``--all``
+validator runs under one; ``--all-perwrite`` runs in the gate's own process
+without one). No test reads a real cloud placeholder or deduplicated file:
+the tests stand in for one by its reparse tag.
 """
 
 from __future__ import annotations
