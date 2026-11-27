@@ -102,8 +102,17 @@ für Ebene vom Stammverzeichnis aus, jeden Ordner innerhalb des zuvor geöffnete
 nie über einen Link. Tauscht also jemand, der in das Projekt schreiben kann,
 während des Gate-Laufs eine geprüfte Datei oder einen Ordner darüber gegen einen
 Link oder eine Named Pipe, liest das Gate nicht über den Link und wartet nicht
-auf die Pipe: Die Datei gilt als fehlend, und der getauschte Eintrag wird unter
-`skipped_links` aufgeführt. In
+auf die Pipe: Die Datei wird nicht gelesen. Ein `--all`-Validator zählt sie
+als fehlend oder unlesbar, so wie er einen Link zählt, und führt den
+getauschten Eintrag unter `skipped_links` auf; `--all-perwrite` zählt sie als
+`link` oder, wird sie erneut getauscht, als `unreadable`, wie unten
+beschrieben. Unter Windows bleibt eine Wartezeit, wie bei einem einfachen
+Öffnen: Ein Programm, das in das Projekt schreiben kann, kann eine
+opportunistische Sperre (Oplock) auf eine Datei halten und sie nicht
+freigeben, wenn das Gate die Datei öffnet. Keine Art, die Datei zu öffnen,
+vermeidet dieses Warten, daher wartet ein `--all`-Validator bis zu seinem
+Limit von 10 Minuten und `--all-perwrite`, das kein solches Limit hat, bis
+dieses Programm die Datei freigibt. In
 `--all` und `--all-perwrite` öffnet das Gate selbst nur reguläre Dateien
 innerhalb des Stammverzeichnisses, prüft jeden Ordner auf dem Weg mit `lstat`,
 auch jeden Pfad, den git auflistet, und liest nie innerhalb eines

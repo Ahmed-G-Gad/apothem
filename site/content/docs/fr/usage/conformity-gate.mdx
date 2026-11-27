@@ -102,8 +102,17 @@ par niveau depuis la racine, chaque dossier à l'intérieur de celui ouvert avan
 lui, jamais à travers un lien. Ainsi, quand quelqu'un qui peut écrire dans le
 projet remplace un fichier déjà vérifié, ou un dossier au-dessus de lui, par un
 lien ou un tube nommé pendant que le gate tourne, le gate ne lit pas à travers
-le lien et n'attend pas sur le tube : le fichier compte comme absent et l'entrée
-remplacée figure dans `skipped_links`. Dans `--all`
+le lien et n'attend pas sur le tube : le fichier n'est pas lu. Un validateur
+`--all` le compte comme absent ou illisible, comme il compte un lien, et liste
+l'entrée remplacée dans `skipped_links` ; `--all-perwrite` le compte comme
+`link`, ou comme `unreadable` s'il est remplacé une nouvelle fois, comme décrit
+plus bas. Sous Windows, une attente subsiste, comme pour une ouverture
+ordinaire : un programme qui peut écrire dans le projet peut tenir un verrou
+opportuniste (oplock) sur un fichier et ne pas le relâcher quand le gate
+l'ouvre. Aucune manière d'ouvrir le fichier n'évite cette attente : un
+validateur `--all` attend donc jusqu'à sa limite de 10 minutes, et
+`--all-perwrite`, qui n'a pas de telle limite, jusqu'à ce que ce programme le
+relâche. Dans `--all`
 et `--all-perwrite`, le gate lui-même n'ouvre que des fichiers ordinaires dans
 la racine, vérifie chaque dossier du chemin avec `lstat`, y compris chaque
 chemin que git liste, et ne lit jamais à l'intérieur d'une entrée `.git`. Avant

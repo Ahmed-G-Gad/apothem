@@ -98,7 +98,15 @@ nível por nível a partir da raiz, cada pasta dentro da que foi aberta antes,
 nunca através de um link. Então, quando alguém que pode escrever no projeto
 troca um arquivo já verificado, ou uma pasta acima dele, por um link ou um pipe
 nomeado enquanto o gate roda, o gate não lê através do link nem espera no pipe:
-o arquivo conta como ausente e a entrada trocada é listada em `skipped_links`.
+o arquivo não é lido. Um validador do `--all` o conta como ausente ou ilegível,
+como conta um link, e lista a entrada trocada em `skipped_links`; o
+`--all-perwrite` o conta como `link`, ou como `unreadable` quando é trocado de
+novo, como descrito abaixo. No Windows resta uma espera, como já acontecia ao
+abrir o arquivo do jeito comum: um programa que pode escrever no projeto pode
+manter um bloqueio oportunista (oplock) sobre um arquivo e não soltá-lo quando o
+gate o abre. Nenhuma forma de abrir o arquivo evita essa espera, então um
+validador do `--all` espera até seu limite de 10 minutos, e o `--all-perwrite`,
+que não tem esse limite, até que esse programa o solte.
 No `--all` e no `--all-perwrite`, o próprio
 gate abre apenas arquivos comuns dentro da raiz, verifica cada pasta no caminho
 com `lstat`, incluindo cada caminho que o git lista, e nunca lê dentro de uma

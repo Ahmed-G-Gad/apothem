@@ -99,8 +99,17 @@ lalu membuka berkas tingkat demi tingkat dari root, setiap folder di dalam
 folder yang dibuka sebelumnya, tidak pernah melalui tautan. Jadi, saat seseorang
 yang dapat menulis ke proyek menukar berkas yang sudah diperiksa, atau folder di
 atasnya, dengan tautan atau named pipe selama gate berjalan, gate tidak membaca
-melalui tautan itu dan tidak menunggu pada pipe: berkasnya dihitung sebagai
-tidak ada dan entri yang ditukar dicantumkan di bawah `skipped_links`. Pada
+melalui tautan itu dan tidak menunggu pada pipe: berkasnya tidak dibaca.
+Validator `--all` menghitungnya sebagai tidak ada atau tidak terbaca, sama
+seperti ia menghitung tautan, dan mencantumkan entri yang ditukar di bawah
+`skipped_links`; `--all-perwrite` menghitungnya sebagai `link`, atau sebagai
+`unreadable` bila ditukar lagi, seperti dijelaskan di bawah. Di Windows masih
+ada satu penantian, seperti pada pembukaan biasa: program yang dapat menulis
+ke proyek dapat memegang kunci oportunistik (oplock) pada berkas dan tidak
+melepasnya saat gate membukanya. Tidak ada cara membuka berkas yang
+menghindari penantian itu, jadi validator `--all` menunggu sampai batas 10
+menitnya, dan `--all-perwrite`, yang tidak punya batas seperti itu, sampai
+program itu melepasnya. Pada
 `--all` dan `--all-perwrite`, gate sendiri hanya membuka berkas biasa di dalam
 root, memeriksa setiap folder di jalan dengan `lstat`, termasuk setiap jalur
 yang didaftar git, dan tidak pernah membaca di dalam entri `.git`. Sebelum

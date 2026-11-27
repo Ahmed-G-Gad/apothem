@@ -99,8 +99,16 @@ nivel por nivel desde la raíz, cada carpeta dentro de la abierta antes, nunca a
 través de un enlace. Así que cuando alguien que puede escribir en el proyecto
 cambia un archivo ya revisado, o una carpeta por encima de él, por un enlace o
 una tubería con nombre mientras corre el gate, el gate no lee a través del
-enlace ni espera en la tubería: el archivo cuenta como ausente y la entrada
-cambiada aparece en `skipped_links`. En `--all` y `--all-perwrite`,
+enlace ni espera en la tubería: el archivo no se lee. Un validador de `--all`
+lo cuenta como ausente o ilegible, igual que cuenta un enlace, y muestra la
+entrada cambiada en `skipped_links`; `--all-perwrite` lo cuenta como `link`, o
+como `unreadable` si se cambia otra vez, como se describe más abajo. En Windows
+queda una espera, como ya ocurría al abrir el archivo de forma normal: un
+programa que puede escribir en el proyecto puede mantener un bloqueo
+oportunista (oplock) sobre un archivo y no soltarlo cuando el gate lo abre.
+Ninguna forma de abrir el archivo evita esa espera, así que un validador de
+`--all` espera hasta su límite de 10 minutos, y `--all-perwrite`, que no tiene
+ese límite, hasta que ese programa lo suelte. En `--all` y `--all-perwrite`,
 el propio gate abre solo archivos normales dentro de la raíz, revisa cada
 carpeta del camino con `lstat`, incluida cada ruta que lista git, y nunca lee
 dentro de una entrada `.git`. Antes de ejecutar git, los tres validadores de
