@@ -79,6 +79,10 @@ from apothem.conformity._grep_base import (
     parse_root_args,
     project_file_target,
 )
+from apothem.conformity._safe_open import (
+    REFUSED_OR_GONE,
+    read_project_text,
+)
 
 GREP_NAME: Final[str] = "workflow-concurrency-grep"
 RULE_ANCHOR: Final[str] = "workflow concurrency + per-job timeouts"
@@ -210,7 +214,7 @@ def _parse_windows_conditional(value: str) -> tuple[int, int] | None:
     return windows, other
 
 
-def _callee_runs_matrix(workflows_dir: Path, uses: object) -> bool:
+def _callee_runs_matrix(workflows_dir: Path, uses: object, *, root: Path) -> bool:
     """Return True when a local callee's matrix job takes the passed limit.
 
     ``uses`` counts only as ``./.github/workflows/<file>`` naming a file
@@ -231,7 +235,7 @@ def _callee_runs_matrix(workflows_dir: Path, uses: object) -> bool:
     if source is None:
         return False
     try:
-        doc = yaml.safe_load(source.read_text(encoding="utf-8"))
+        doc = yaml.safe_load(read_project_text(root, source))
     except (OSError, UnicodeDecodeError, ValueError, yaml.YAMLError):
         # ValueError: PyYAML's int() refuses an integer past 4,300 digits.
         return False
@@ -304,12 +308,18 @@ def _timeout_drift(
     return None
 
 
-def _check_workflow(path: Path) -> list[Finding]:
-    """Inspect one workflow file; return its drift findings."""
+def _check_workflow(path: Path, *, root: Path) -> list[Finding]:
+    """Inspect one workflow file; return its drift findings.
+
+    A file that a link or a special file replaced since it was listed, or
+    that is gone, counts as missing, as the listing would have counted it.
+    """
     findings: list[Finding] = []
     workflow_name = path.name
     try:
-        doc = yaml.safe_load(path.read_text(encoding="utf-8"))
+        doc = yaml.safe_load(read_project_text(root, path))
+    except REFUSED_OR_GONE:
+        return findings
     except (ValueError, yaml.YAMLError) as exc:
         # ValueError: PyYAML's int() refuses an integer past 4,300 digits.
         findings.append(
@@ -386,7 +396,7 @@ def _check_workflow(path: Path) -> list[Finding]:
                 drift = _timeout_drift(
                     with_block["timeout-minutes"],
                     full_matrix=full_matrix
-                    or _callee_runs_matrix(path.parent, job["uses"]),
+                    or _callee_runs_matrix(path.parent, job["uses"], root=root),
                     label="with: timeout-minutes",
                     matrix_os_in_scope=full_matrix,
                 )
@@ -451,7 +461,7 @@ def check(root: Path) -> GrepResult:
     )
     findings: list[Finding] = []
     for path in workflow_files:
-        findings.extend(_check_workflow(path))
+        findings.extend(_check_workflow(path, root=root))
     return GrepResult(
         grep=GREP_NAME,
         root=str(root),

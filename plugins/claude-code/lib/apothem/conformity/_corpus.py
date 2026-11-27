@@ -15,10 +15,10 @@ other entry it says why it was not read, so the report can count them.
 outside the project during a corpus run.
 
 What it does not cover. The checks see the tree as it is when they run. Each
-file's levels are checked right before it is read, and the file opened must
-be the one that check found, so a file swapped in between is not read; but a
-folder above it that a program swaps for a link in between is followed. A hard
-link reads as an ordinary file, because nothing in it tells where the other
+file's levels are checked right before it is read, then opened one at a time
+from the root without following a link (``_safe_open``), and the file opened
+must be the one that check found, so a file, or a folder above it, swapped in
+between is not read through. A hard link reads as an ordinary file, because nothing in it tells where the other
 names of its data are; git and archive tools do not create one to a file
 outside the project. And ``git ls-files`` itself reads the repository's own git
 configuration: :func:`run_git` turns off the settings in it that start a
@@ -48,10 +48,8 @@ from apothem.conformity._grep_base import (
     linked_git_message,
     nearest_linked_git_entry,
 )
-from apothem.conformity._project_paths import (
-    NAME_SURROGATE_TAG_BIT,
-    is_link,
-)
+from apothem.conformity._project_paths import is_link
+from apothem.conformity._safe_open import open_project_file
 
 # The largest file the corpus run reads, in bytes. It is well above any text a
 # project tracks, lockfiles and notebooks included; a larger tracked file is
@@ -64,16 +62,6 @@ _SNIFF_BLOCK_BYTES: Final[int] = 1024 * 1024
 _RETRY_DELAY_SECONDS: Final[float] = 0.2
 # Windows' error for a file another program has open without sharing it.
 _SHARING_VIOLATION: Final[int] = 32
-# The share modes read, write and delete, so the gate's own open of a file on
-# Windows conflicts only with a holder that does not share reading.
-_SHARE_ALL: Final[int] = 0x7
-# Opens a link or junction itself on Windows, never the file it names.
-_FILE_FLAG_OPEN_REPARSE_POINT: Final[int] = 0x00200000
-# The FILE_INFO_BY_HANDLE_CLASS value of a file's attributes and reparse tag.
-_FILE_ATTRIBUTE_TAG_INFO: Final[int] = 9
-# The Windows errors a file system gives for an information class it does
-# not have: invalid function, not supported, invalid parameter.
-_QUERY_NOT_SUPPORTED: Final[frozenset[int]] = frozenset({1, 50, 87})
 # How many leading bytes of a file over the limit decide whether it is
 # binary: the span git looks at for the same question.
 _BINARY_SNIFF_BYTES: Final[int] = 8000
@@ -367,176 +355,14 @@ def _held_by_another_program(exc: OSError) -> bool:
     return exc.errno in (errno.EAGAIN, errno.EWOULDBLOCK)
 
 
-def _open_binary(path: Path) -> BinaryIO:
-    """Open *path* to read bytes, never through a link at its last level.
-
-    On Windows see :func:`_open_windows_handle`. Elsewhere the open neither
-    follows a link (``O_NOFOLLOW``) nor waits for a named pipe to get a writer
-    or a lease to break (``O_NONBLOCK``, cleared once the file is open).
-    """
-    if sys.platform == "win32":
-        import msvcrt  # Windows only, so imported here.
-
-        handle = _open_windows_handle(path)
-        try:
-            fd = msvcrt.open_osfhandle(handle, os.O_RDONLY)
-        except BaseException:
-            _close_handle(handle)
-            raise
-    else:
-        flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_NOCTTY
-        fd = os.open(path, flags | os.O_CLOEXEC)
-    try:
-        if sys.platform != "win32":
-            os.set_blocking(fd, True)
-        return os.fdopen(fd, "rb")
-    except BaseException:
-        os.close(fd)
-        raise
-
-
-if sys.platform == "win32":
-    import _winapi
-    import ctypes
-    import functools
-    from ctypes import wintypes
-
-    class _AttributeTagInfo(ctypes.Structure):
-        """``FILE_ATTRIBUTE_TAG_INFO``: a file's attributes and reparse tag."""
-
-        _fields_ = (("attributes", wintypes.DWORD), ("tag", wintypes.DWORD))
-
-    class _ByHandleFileInformation(ctypes.Structure):
-        """``BY_HANDLE_FILE_INFORMATION``, of which the file ID is used."""
-
-        _fields_ = tuple(
-            (name, wintypes.DWORD)
-            for name in (
-                "attributes",
-                "created_low",
-                "created_high",
-                "accessed_low",
-                "accessed_high",
-                "written_low",
-                "written_high",
-                "volume_serial",
-                "size_high",
-                "size_low",
-                "links",
-                "index_high",
-                "index_low",
-            )
-        )
-
-    @functools.cache
-    def _kernel32() -> ctypes.WinDLL:
-        """Return ``kernel32`` with the two queries used here typed, built once."""
-        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-        by_class = kernel32.GetFileInformationByHandleEx
-        by_class.argtypes = (
-            wintypes.HANDLE,
-            ctypes.c_int,
-            ctypes.c_void_p,
-            wintypes.DWORD,
-        )
-        by_class.restype = wintypes.BOOL
-        basic = kernel32.GetFileInformationByHandle
-        basic.argtypes = (wintypes.HANDLE, ctypes.c_void_p)
-        basic.restype = wintypes.BOOL
-        return kernel32
-
-    def _create_file(path: Path, flags: int) -> int:
-        """Open *path* to read through the Windows API, sharing everything."""
-        return int(
-            _winapi.CreateFile(
-                str(path),
-                _winapi.GENERIC_READ,
-                _SHARE_ALL,
-                0,
-                _winapi.OPEN_EXISTING,
-                flags,
-                0,
-            )
-        )
-
-    def _close_handle(handle: int) -> None:
-        _winapi.CloseHandle(handle)
-
-    def _reparse_tag(handle: int) -> int | None:
-        """Return the reparse tag of the open file *handle*: 0 for none, or None
-        when the file system does not give one.
-
-        ``os.fstat`` reports no tag on Windows, so the attribute and tag record
-        (``FileAttributeTagInfo``) is read from the handle. Any other failure
-        raises ``OSError``, so the file is not read.
-        """
-        info = _AttributeTagInfo()
-        query = _kernel32().GetFileInformationByHandleEx
-        if not query(
-            handle, _FILE_ATTRIBUTE_TAG_INFO, ctypes.byref(info), ctypes.sizeof(info)
-        ):
-            error = ctypes.get_last_error()
-            if error in _QUERY_NOT_SUPPORTED:
-                return None
-            raise ctypes.WinError(error)
-        if not info.attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT:
-            return 0
-        return int(info.tag)
-
-    def _file_id(handle: int) -> tuple[int, int]:
-        """Return the volume and file index of the open file *handle*."""
-        info = _ByHandleFileInformation()
-        if not _kernel32().GetFileInformationByHandle(handle, ctypes.byref(info)):
-            raise ctypes.WinError(ctypes.get_last_error())
-        return info.volume_serial, (info.index_high << 32) | info.index_low
-
-    def _open_windows_handle(path: Path) -> int:
-        """Open *path* on Windows and return a handle to read its content from.
-
-        The first open uses ``FILE_FLAG_OPEN_REPARSE_POINT``, so a reparse
-        point at *path* is opened itself. One whose tag names another file or
-        folder (a link or junction, see :func:`is_link`) raises ``ELOOP``, as
-        ``O_NOFOLLOW`` does elsewhere. A plain file is read through that
-        handle. Any other reparse point, such as a file Data Deduplication or
-        a cloud sync program keeps behind one, is opened again without the
-        flag, so its filter gives the real content, and the second handle must
-        name the same file; when no filter claims the tag (its program is
-        stopped), that open fails and the file is unreadable rather than read
-        as its empty stub. A file system that gives no tag takes the same
-        second open. The API also reports a sharing violation as such, which
-        Python's ``open`` does not.
-        """
-        first = _create_file(path, _FILE_FLAG_OPEN_REPARSE_POINT)
-        try:
-            tag = _reparse_tag(first)
-            if tag is not None and tag & NAME_SURROGATE_TAG_BIT:
-                raise OSError(errno.ELOOP, "a link is in the file's place", str(path))
-            if tag == 0:
-                return first
-            second = _create_file(path, 0)
-            try:
-                if _file_id(second) != _file_id(first):
-                    raise OSError(
-                        errno.ELOOP, "the file changed between opens", str(path)
-                    )
-            except BaseException:
-                _close_handle(second)
-                raise
-        except BaseException:
-            _close_handle(first)
-            raise
-        _close_handle(first)
-        return second
-
-
 def _same_file(seen: os.stat_result, opened: os.stat_result) -> bool:
     """Return True when the *opened* file is the regular file ``os.lstat`` *seen*.
 
     It must be a regular file. The file ID (device and inode) is compared
     when the system gives one; on a file system that gives none (an inode of
-    0), the open never followed a link at the last level (see
-    :func:`_open_binary`), so a swap to another regular file is the one
-    change left unseen.
+    0), the open never followed a link at any level (see
+    :func:`~apothem.conformity._safe_open.open_project_file`), so a swap to
+    another regular file is the one change left unseen.
     """
     if not stat.S_ISREG(opened.st_mode):
         return False
@@ -545,13 +371,17 @@ def _same_file(seen: os.stat_result, opened: os.stat_result) -> bool:
     return (seen.st_dev, seen.st_ino) == (opened.st_dev, opened.st_ino)
 
 
-def _read_file(path: Path, seen: os.stat_result) -> bytes | str | None:
+def _read_file(root: Path, path: Path, seen: os.stat_result) -> bytes | str | None:
     """Return the bytes of the regular file *path*, or why it was not read.
 
-    *seen* is what ``os.lstat`` found at *path*. The opened file must be that
-    same regular file; when it is not (it was swapped for another file, a link
-    or a named pipe since), the result is None and nothing is read. The file
-    is opened once per attempt, and each attempt starts afresh. An open
+    *seen* is what ``os.lstat`` found at *path*. The file is opened from
+    *root* one level at a time, never through a link (see
+    :func:`~apothem.conformity._safe_open.open_project_file`), so a folder
+    above it swapped for a link since is not followed either. The opened file
+    must be that same regular file; when it is not (it was swapped for another
+    file, a link or a named pipe since), the result is None and nothing is
+    read. The file is opened once per attempt, and each attempt starts
+    afresh. An open
     refused because another program holds the file (see
     :func:`_held_by_another_program`) is tried once more after
     :data:`_RETRY_DELAY_SECONDS`, since such a hold is often brief. A refusal
@@ -560,10 +390,11 @@ def _read_file(path: Path, seen: os.stat_result) -> bytes | str | None:
     """
     for attempt in range(2):
         try:
-            handle = _open_binary(path)
+            handle = open_project_file(root, path)
         except OSError as exc:
             if exc.errno == errno.ELOOP:
-                # O_NOFOLLOW met a link that took the file's place.
+                # A link or a special file took the place of the file, or of
+                # a folder above it.
                 return None
             if attempt == 0 and _held_by_another_program(exc):
                 time.sleep(_RETRY_DELAY_SECONDS)
@@ -667,7 +498,7 @@ def read_entry(root: Path, entry: TrackedEntry) -> tuple[str | None, str | None]
             return None, info
         if not stat.S_ISREG(info.st_mode):
             return None, SKIP_NOT_REGULAR
-        data = _read_file(entry.path, info)
+        data = _read_file(root, entry.path, info)
         if data is not None:
             break
     if data is None:

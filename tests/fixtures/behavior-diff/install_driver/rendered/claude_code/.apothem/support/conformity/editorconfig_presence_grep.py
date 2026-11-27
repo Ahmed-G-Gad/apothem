@@ -38,6 +38,7 @@ from apothem.conformity._grep_base import (
     parse_root_args,
     project_file_target,
 )
+from apothem.conformity._safe_open import read_project_text
 
 GREP_NAME: Final[str] = "editorconfig-presence-grep"
 RULE_ANCHOR: Final[str] = "supply-chain SOTA-rigor §editorconfig"
@@ -183,7 +184,7 @@ def check(root: Path) -> GrepResult:
         )
 
     try:
-        text = source.read_text(encoding="utf-8")
+        text = read_project_text(root, source)
     except (OSError, UnicodeDecodeError) as exc:
         findings.append(
             Finding(

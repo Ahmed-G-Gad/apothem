@@ -56,6 +56,7 @@ from apothem.conformity._grep_base import (
     iter_tree_files,
     parse_root_args,
 )
+from apothem.conformity._safe_open import read_project_text
 
 GREP_NAME: Final[str] = "reference-token-grep"
 RULE_ANCHOR: Final[str] = "rules/own-voice-reimplementation.md"
@@ -387,10 +388,12 @@ def _scan_file(
     denylist: Denylist,
     memo: dict[str, bool],
     literal_memo: dict[str, tuple[tuple[int, int], ...]],
+    *,
+    root: Path,
 ) -> list[Finding]:
     """Scan one text file; return one Finding per denylisted span."""
     try:
-        content = path.read_text(encoding="utf-8")
+        content = read_project_text(root, path)
     except (OSError, UnicodeDecodeError):
         return []
     if not _text_has_hit(content, denylist, memo, literal_memo):
@@ -437,7 +440,9 @@ def check(root: Path) -> GrepResult:
             if not _is_in_scope(rel_posix):
                 continue
             inspected += 1
-            findings.extend(_scan_file(path, rel_posix, denylist, memo, literal_memo))
+            findings.extend(
+                _scan_file(path, rel_posix, denylist, memo, literal_memo, root=root)
+            )
     return GrepResult(
         grep=GREP_NAME,
         root=str(root),

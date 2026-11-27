@@ -76,6 +76,7 @@ from apothem.conformity._grep_base import (
     is_project_file,
     parse_root_args,
 )
+from apothem.conformity._safe_open import read_project_text
 
 GREP_NAME: Final[str] = "frontmatter-value-grep"
 RULE_ANCHOR: Final[str] = "per-class JSON Schema enum/pattern value constraints"
@@ -310,7 +311,7 @@ def _check_file(
     integrity are owned by ``frontmatter_grep``.
     """
     try:
-        content = path.read_text(encoding="utf-8")
+        content = read_project_text(root, path)
     except (OSError, UnicodeDecodeError):
         return False, []
     block = _extract_frontmatter(content)

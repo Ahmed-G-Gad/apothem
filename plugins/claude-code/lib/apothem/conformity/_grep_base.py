@@ -74,6 +74,7 @@ from apothem.conformity._project_paths import (
     note_checkout,
     note_root_spelling,
     note_skipped,
+    path_kind,
     scan_entries,
     start_skip_log,
     take_skipped_checkouts,
@@ -95,6 +96,7 @@ from apothem.conformity._project_paths import no_files as no_files
 from apothem.conformity._project_paths import (
     project_file_target as project_file_target,
 )
+from apothem.conformity._safe_open import read_project_bytes
 
 EXIT_PASS: Final[int] = 0
 EXIT_FAIL: Final[int] = 2
@@ -575,12 +577,35 @@ def _holds_repository(git_dir: Path) -> bool:
     return (git_dir / "objects").is_dir() and (git_dir / "refs").is_dir()
 
 
+def _linked_git_entry_state(entry: Path) -> str:
+    """Say what the ``.git`` link *entry* is to git, from what it names.
+
+    git follows the link. Only the kind of what it names is looked at
+    (``Path.stat``, which reads no content): nothing there is passed by, as
+    git passes it; a folder is judged by :func:`_holds_repository`; a
+    regular file counts as a repository without its ``gitdir:`` line
+    being read through the link; anything else is passed by.
+    """
+    try:
+        info = entry.stat()
+    except (OSError, ValueError):
+        return GIT_ENTRY_NONE
+    if stat.S_ISDIR(info.st_mode):
+        return GIT_ENTRY_REPOSITORY if _holds_repository(entry) else GIT_ENTRY_NONE
+    if stat.S_ISREG(info.st_mode):
+        return GIT_ENTRY_REPOSITORY
+    return GIT_ENTRY_NONE
+
+
 def git_entry_state(directory: Path) -> str:
     """Say what the ``.git`` entry of ``directory`` is to git's search.
 
     - :data:`GIT_ENTRY_REPOSITORY`: git stops here and uses it. A ``.git``
       folder that holds a repository, or a ``.git`` file whose ``gitdir:``
-      line names one (a linked work tree, a submodule).
+      line names one (a linked work tree, a submodule). A ``.git`` link
+      to a folder is judged as that folder, and a link to a regular file
+      counts as a repository: git reads the ``gitdir:`` line through the
+      link, and the check does not.
     - :data:`GIT_ENTRY_BROKEN`: git stops here with an error. A ``.git`` file
       that names no repository, that does not start with ``gitdir:`` and
       one space, that is larger than git reads (1 MiB), or, on Windows,
@@ -590,19 +615,25 @@ def git_entry_state(directory: Path) -> str:
       Windows refuses (a name that ends in a dot or a space, a colon after
       the drive) is broken too, and is not looked up either.
     - :data:`GIT_ENTRY_NONE`: git looks further up. No entry, a ``.git``
-      folder that holds no repository (an empty one, say), or a ``.git`` link
-      that leads nowhere.
+      folder that holds no repository (an empty one, say), a ``.git``
+      link that leads nowhere, or a named pipe, a device or a socket.
 
-    A ``.git`` file is read only up to git's size limit plus one byte.
+    The entry is looked at with ``os.lstat``. What a ``.git`` link names
+    is looked at by its kind only (``Path.stat``), never read. A ``.git``
+    file is read only up to git's size limit plus one byte, and through
+    the guarded open (``_safe_open``): an entry swapped for a link or a
+    named pipe after the look is not read, and is broken.
     """
     entry = directory / GIT_ENTRY
-    if entry.is_dir():
+    kind = path_kind(entry)
+    if kind == LINK_ENTRY:
+        return _linked_git_entry_state(entry)
+    if kind == DIR_ENTRY:
         return GIT_ENTRY_REPOSITORY if _holds_repository(entry) else GIT_ENTRY_NONE
-    if not entry.is_file():
+    if kind != FILE_ENTRY:
         return GIT_ENTRY_NONE
     try:
-        with entry.open("rb") as handle:
-            content = handle.read(_GITFILE_MAX_BYTES + 1)
+        content = read_project_bytes(directory, entry, max_bytes=_GITFILE_MAX_BYTES + 1)
     except OSError:
         return GIT_ENTRY_BROKEN
     if len(content) > _GITFILE_MAX_BYTES:

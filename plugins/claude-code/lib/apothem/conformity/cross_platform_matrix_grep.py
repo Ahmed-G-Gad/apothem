@@ -46,6 +46,10 @@ from apothem.conformity._grep_base import (
     parse_root_args,
     project_file_target,
 )
+from apothem.conformity._safe_open import (
+    REFUSED_OR_GONE,
+    read_project_text,
+)
 
 REQUIRED_OS: Final[tuple[str, ...]] = (
     "ubuntu-latest",
@@ -88,7 +92,7 @@ def _required_python(root: Path) -> tuple[str, ...]:
     if source is None:
         return _FALLBACK_PYTHON
     try:
-        text = source.read_text(encoding="utf-8")
+        text = read_project_text(root, source)
     except OSError:
         return _FALLBACK_PYTHON
     found = _CLASSIFIER_RE.findall(text)
@@ -371,7 +375,15 @@ def _check_string_fallback(
 def check(root: Path) -> GrepResult:
     """Verify the CI-matrix workflow declares the canonical 3x4 matrix."""
     workflow = _find_workflow(root)
-    if workflow is None:
+    content: str | None = None
+    if workflow is not None:
+        try:
+            content = read_project_text(root, workflow)
+        except REFUSED_OR_GONE:
+            # Replaced by a link or a special file since it was found, or
+            # gone: it counts as absent, as the lookup would have said.
+            content = None
+    if workflow is None or content is None:
         # Workflow-absent is informational tolerance: the canonical
         # ci-matrix.yml may not yet be materialised. Pass cleanly with
         # the informational field set so callers can distinguish.
@@ -383,7 +395,6 @@ def check(root: Path) -> GrepResult:
             not_yet_materialised=True,
             findings=[],
         )
-    content = workflow.read_text(encoding="utf-8")
     required_python = _required_python(root)
     findings: list[Finding] = []
     parsed = _parse_yaml(content)

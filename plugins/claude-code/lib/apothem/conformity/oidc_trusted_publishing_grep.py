@@ -65,6 +65,10 @@ from apothem.conformity._grep_base import (
     list_real_entries,
     parse_root_args,
 )
+from apothem.conformity._safe_open import (
+    REFUSED_OR_GONE,
+    read_project_text,
+)
 
 GREP_NAME: Final[str] = "oidc-trusted-publishing-grep"
 RULE_ANCHOR: Final[str] = "OIDC trusted publishing"
@@ -281,12 +285,20 @@ def check(root: Path) -> GrepResult:
             passed=True,
             findings=[],
         )
+    # A workflow that a link or a special file replaced since it was listed,
+    # or that is gone, is not inspected, as the listing would have left it out.
     for workflow in pypi_workflows:
-        text = workflow.read_text(encoding="utf-8")
+        try:
+            text = read_project_text(root, workflow)
+        except REFUSED_OR_GONE:
+            continue
         inspected.append(workflow.name)
         findings.extend(_check_pypi_workflow(workflow, text))
     for workflow in npm_workflows:
-        text = workflow.read_text(encoding="utf-8")
+        try:
+            text = read_project_text(root, workflow)
+        except REFUSED_OR_GONE:
+            continue
         inspected.append(workflow.name)
         findings.extend(_check_npm_workflow(workflow, text))
     return GrepResult(

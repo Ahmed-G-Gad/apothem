@@ -111,6 +111,25 @@ _skipped: dict[str, Path] = {}
 _used: set[str] = set()
 # Folders a walk left out as a nested checkout, keyed like ``_skipped``.
 _checkouts: dict[str, Path] = {}
+# Called each time a skip log starts or stops, such as the guarded open's
+# release of the folders it keeps open during one run (``_safe_open``).
+_log_bound_callbacks: list[Callable[[], None]] = []
+
+
+def on_skip_log_bounds(callback: Callable[[], None]) -> None:
+    """Call *callback* each time a skip log starts or stops."""
+    if callback not in _log_bound_callbacks:
+        _log_bound_callbacks.append(callback)
+
+
+def skip_log_running() -> bool:
+    """Return True while a command-line run notes what it skips."""
+    return _skip_root is not None
+
+
+def _log_bound() -> None:
+    for callback in _log_bound_callbacks:
+        callback()
 
 
 def start_skip_log(root: Path) -> None:
@@ -121,6 +140,7 @@ def start_skip_log(root: Path) -> None:
     nothing.
     """
     global _skip_root
+    _log_bound()
     _skip_root = root
     _skipped.clear()
     _used.clear()
@@ -188,6 +208,7 @@ def take_skipped_paths() -> list[str]:
     global _skip_root
     root, noted = _skip_root, list(_skipped.values())
     _skip_root = None
+    _log_bound()
     _skipped.clear()
     _used.clear()
     _checkouts.clear()
