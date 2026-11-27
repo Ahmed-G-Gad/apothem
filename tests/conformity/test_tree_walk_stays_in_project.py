@@ -1350,10 +1350,14 @@ def test_path_not_found_up_the_chain_is_absent_only_where_it_ends_in_nothing(
 
 
 @_WINDOWS_ONLY
-def test_a_case_variant_with_no_file_number_is_not_taken_for_git(
+def test_a_case_variant_with_no_file_number_is_judged_by_the_listing(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A file number of 0 says nothing, so a ``.GIT`` there is walked."""
+    """With no file number, the listing settles it: ``.GIT`` opens as ``.git``.
+
+    No exact ``.git`` is listed, yet ``.git`` opens there, so the file system
+    matched it to ``.GIT``, and the walk does not enter it.
+    """
     root = (tmp_path / "project").resolve()
     _write(root / ".GIT" / "inside.md")
     real_lstat = os.lstat
@@ -1367,7 +1371,47 @@ def test_a_case_variant_with_no_file_number_is_not_taken_for_git(
         return info
 
     monkeypatch.setattr(os, "lstat", lstat)
-    assert _walk(root, ".md") == [".GIT/inside.md"]
+    _write(root / "page.md")
+    assert _walk(root, ".md") == ["page.md"]
+
+
+def test_path_not_found_up_to_the_drive_root_is_unreadable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """winerror 3 all the way up ends at the anchor, unreadable, not in a loop."""
+    entry = (tmp_path / "a" / "b").resolve() / ".git"
+
+    def lstat(path: object, *args: object, **kwargs: object) -> os.stat_result:
+        raise _lstat_error("3", Path(os.fspath(path)))  # type: ignore[arg-type]
+
+    monkeypatch.setattr(os, "lstat", lstat)
+    assert not _grep_base._absent(_lstat_error("3", entry), entry)
+
+
+def test_the_roots_own_entry_read_again_as_a_link_is_no_longer_unreadable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The root's own .git record is replaced too, before the root is looked at."""
+    root = (tmp_path / "project").resolve()
+    root.mkdir()
+    blocked = root / ".git"
+    real_lstat = os.lstat
+    unreadable = [True]
+
+    def lstat(path: object, *args: object, **kwargs: object) -> os.stat_result:
+        if unreadable[0] and os.fspath(path) == os.fspath(blocked):  # type: ignore[arg-type]
+            raise _lstat_error("permission", blocked)
+        return real_lstat(path, *args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(os, "lstat", lstat)
+    assert nearest_linked_git_entry(root) == blocked
+    assert _grep_base.git_entry_unreadable(blocked)
+    unreadable[0] = False
+    target = tmp_path / "elsewhere"
+    target.mkdir()
+    _link_folder(blocked, target)
+    assert nearest_linked_git_entry(root) == blocked
+    assert not _grep_base.git_entry_unreadable(blocked)
 
 
 def test_a_short_name_spelled_file_does_not_hide_its_folder(tmp_path: Path) -> None:

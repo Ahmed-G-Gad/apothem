@@ -787,11 +787,13 @@ def nearest_linked_git_entry(root: Path) -> Path | None:
     The boundary this is part of, what it refuses that git would handle
     safely, and what it leaves to git, are stated once, in the conformity
     README's rule for checks that run git (``src/apothem/conformity/README.md``,
-    "Project files only, never through a link"); the usage page and the
-    changelog repeat it word for word. Every check in the ``--all`` and
+    "Project files only, never through a link"); the English usage page and
+    the changelog state the same boundary. Every check in the ``--all`` and
     ``--all-perwrite`` set that runs git calls this first and runs git with
     ``discover=True``; the ``--staged`` checks do not.
     """
+    # What this look finds replaces what an earlier one found.
+    _unreadable_entries.discard(os.fspath(root / GIT_ENTRY))
     if linked_git_entry(root):
         return root / GIT_ENTRY
     for folder in checkout_search_folders(root):
@@ -837,6 +839,10 @@ def _absent(exc: OSError, entry: Path) -> bool:
     except FileNotFoundError as missing:
         # The holder's own winerror 3 is judged the same way, up the chain,
         # so only a chain that ends in nothing there or in no folder counts.
+        # A drive root is its own parent: reached that way, the chain ends
+        # in nothing known, so the entry counts as unreadable.
+        if entry.parent == entry.parent.parent:
+            return False
         return _absent(missing, entry.parent)
     except (OSError, ValueError):
         return False
@@ -897,10 +903,12 @@ def _is_git_entry(path: Path, listed: frozenset[str]) -> bool:
     *listed* holds the names in the folder's own listing. ``.git`` as listed
     is; another spelling of it in case (``.GIT``) is only when the listing
     holds no exact ``.git`` and the file system opens ``.git`` there as that
-    same entry, judged by ``os.lstat`` and ``os.path.samestat``. A file
-    number of 0 (some network and FUSE file systems) says nothing, so it
-    counts as not ``.git``. A case-sensitive folder (NTFS, APFS) can hold
-    both, and git uses only ``.git``. A folder listing gives long names
+    same entry, judged by ``os.lstat`` and ``os.path.samestat``. Where the
+    file system gives no file number (0, as some network and FUSE file
+    systems do), the listing settles it: no exact ``.git`` is listed, yet
+    ``.git`` opens, so the file system matched it to this entry. A
+    case-sensitive folder (NTFS, APFS) can hold both, and git uses only
+    ``.git``. A folder listing gives long names
     only, so a short name such as ``GIT~2`` is a name of its own.
     """
     if path.name == GIT_ENTRY:
@@ -913,7 +921,7 @@ def _is_git_entry(path: Path, listed: frozenset[str]) -> bool:
     except (OSError, ValueError):
         return False
     if variant.st_ino == 0 or exact.st_ino == 0:
-        return False
+        return True
     return os.path.samestat(variant, exact)
 
 

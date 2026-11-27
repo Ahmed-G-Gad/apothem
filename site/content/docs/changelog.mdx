@@ -347,7 +347,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   inside the root. When they find a link, they list it under `skipped_links`
   (by its full path when it lies above the root), `no-global-plans-grep`
   reports it as a failing finding, and `--all-perwrite` lists no tracked files
-  and fails with a `check_error` that names it.
+  and fails with a `check_error` that names it. A `.git` entry the gate cannot
+  look at (a path too long, a share it cannot reach, no access) is not a link
+  and is not listed under `skipped_links`: `conventional-commit-grep` fails
+  with the status `git-failed` and a `check_error`, the companion coverage
+  check and `--all-perwrite` fail with a `check_error` that says the entry
+  could not be looked at, and `no-global-plans-grep` reports it as a finding.
 
 ## [1.6.0] - 2026-11-26
 

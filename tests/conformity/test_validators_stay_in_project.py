@@ -651,6 +651,10 @@ def hook(event, args):
             started = started[0]
         log.write(json.dumps([current[0], event, os.fsdecode(started)]) + "\n")
         return
+    # From 3.11 the _winapi.CreateFile audit event carries a correct path: a
+    # second net beside the wrapper below, for a caller that binds it early.
+    if event == "_winapi.CreateFile" and sys.version_info >= (3, 11):
+        event = "open"
     if event not in ("open", "os.scandir", "os.listdir") or not args:
         return
     target = args[0]
