@@ -547,10 +547,30 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   error), where before it read as empty. Every folder a walk or the
   stray-plans check skips as a nested checkout is now listed under a new
   `skipped_checkouts` key, whatever its `.git` entry names, since one
-  `gitdir:` line can hide any folder; the list never changes the verdict. The `--all` validators still check each level
-  and then open a file by name, so someone writing to the project while the
-  gate runs can swap a checked entry for a link or a named pipe, or make a
-  read wait until the time limit; the usage page now says so.
+  `gitdir:` line can hide any folder; the list never changes the verdict.
+- **A file swapped for a link or a named pipe while the gate checks it is not
+  read through.** The `--all` validators checked each level of a path and
+  then opened the file by name, so someone writing to the project while the
+  gate ran could swap a checked file, or a folder above it, for a link out of
+  the project or for a named pipe: the read took the outside file's content
+  or waited until the time limit. `--all-perwrite` already refused a link in
+  the file's own place, but opened a file through a folder above it swapped
+  for a link. Every project file a validator reads is now opened one level
+  at a time from the root, each folder inside the one opened before it, and
+  no level through a link, and the read never waits on a pipe. A swapped
+  file is not read: an `--all` validator counts it as missing or unreadable,
+  as it counts a link, and lists its entry under `skipped_links`, and
+  `--all-perwrite` counts it as a `link` or `unreadable`. The `.git` file a
+  nested checkout holds is read the same way, from the root the walk started
+  at. A `.git` link to a regular file now counts as a repository without its
+  `gitdir:` line being read through the link. The five validators that read
+  a CI matrix or publish workflow, a workflow's concurrency settings, the
+  installer scripts or the Plans Discipline surfaces now report a file they
+  cannot read, for example for lack of permission, as a finding that names
+  the file unreadable, instead of stopping with a traceback. A hard link
+  still reads as an ordinary file, and on Windows a program that holds an
+  opportunistic lock on a file can still make a read wait, as it could
+  before.
 
 ## [1.6.0] - 2026-11-26
 

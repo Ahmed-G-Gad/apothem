@@ -62,6 +62,7 @@ from apothem.conformity._grep_base import (
     parse_root_args,
     project_file_target,
 )
+from apothem.conformity._safe_open import read_project_text
 
 GREP_NAME: Final[str] = "plan-next-step-consistency-grep"
 RULE_ANCHOR: Final[str] = "rules/recommend-next-step.md"
@@ -177,10 +178,10 @@ class GrepResult:
         return json.dumps(payload, indent=2)
 
 
-def _read_lines(path: Path) -> list[str] | None:
+def _read_lines(path: Path, *, root: Path) -> list[str] | None:
     """Return the file's lines, or None when it is absent or unreadable."""
     try:
-        return path.read_text(encoding="utf-8").splitlines()
+        return read_project_text(root, path).splitlines()
     except (OSError, UnicodeDecodeError):
         return None
 
@@ -331,7 +332,7 @@ def _inspect_suite(
     progress_source = project_file_target(suite_dir, progress)
     if progress_source is None:
         return None
-    progress_lines = _read_lines(progress_source)
+    progress_lines = _read_lines(progress_source, root=root)
     if progress_lines is None:
         return (
             [
@@ -376,7 +377,7 @@ def _inspect_suite(
         infra_source = project_file_target(suite_dir, infra_path)
         if infra_source is None:
             continue
-        infra_lines = _read_lines(infra_source)
+        infra_lines = _read_lines(infra_source, root=root)
         if infra_lines is None:
             continue
         files_inspected += 1

@@ -34,6 +34,10 @@ from apothem.conformity._grep_base import (
     parse_root_args,
     project_file_target,
 )
+from apothem.conformity._safe_open import (
+    REFUSED_OR_GONE,
+    read_project_text,
+)
 
 # Strict-mode preamble fragments per code-craft-shell rule section 1.
 # A script that lacks ANY of the strict-mode fragments listed for its
@@ -127,9 +131,36 @@ def _has_any(content: str, fragments: tuple[str, ...]) -> bool:
     return any(fragment in content for fragment in fragments)
 
 
-def _check_bash(root: Path, path: Path, findings: list[Finding]) -> None:
+def _read_script(root: Path, path: Path) -> str | None:
+    """Return the text of the script *path*, or None when it is absent.
+
+    A link to a regular file in the project is read at that file (see
+    ``project_file_target``). A script that a link or a special file
+    replaced since it was looked at, or that is gone, counts as absent too.
+    Any other ``OSError`` (a script that is there but cannot be read) is
+    raised for the caller to report as unreadable.
+    """
     source = project_file_target(root, path)
     if source is None:
+        return None
+    try:
+        return read_project_text(root, source)
+    except REFUSED_OR_GONE:
+        return None
+
+
+def _check_bash(root: Path, path: Path, findings: list[Finding]) -> None:
+    try:
+        content = _read_script(root, path)
+    except OSError as exc:
+        findings.append(
+            Finding(
+                script=path.name,
+                detail=f"scripts/installer/install.sh unreadable: {exc}",
+            )
+        )
+        return
+    if content is None:
         findings.append(
             Finding(
                 script=path.name,
@@ -137,7 +168,6 @@ def _check_bash(root: Path, path: Path, findings: list[Finding]) -> None:
             )
         )
         return
-    content = source.read_text(encoding="utf-8")
     if not _has_any(content, BASH_STRICT_FRAGMENTS):
         findings.append(
             Finding(
@@ -162,8 +192,17 @@ def _check_bash(root: Path, path: Path, findings: list[Finding]) -> None:
 
 
 def _check_powershell(root: Path, path: Path, findings: list[Finding]) -> None:
-    source = project_file_target(root, path)
-    if source is None:
+    try:
+        content = _read_script(root, path)
+    except OSError as exc:
+        findings.append(
+            Finding(
+                script=path.name,
+                detail=f"scripts/installer/install.ps1 unreadable: {exc}",
+            )
+        )
+        return
+    if content is None:
         findings.append(
             Finding(
                 script=path.name,
@@ -171,7 +210,6 @@ def _check_powershell(root: Path, path: Path, findings: list[Finding]) -> None:
             )
         )
         return
-    content = source.read_text(encoding="utf-8")
     if not _has_any(content, POWERSHELL_STRICT_FRAGMENTS):
         findings.append(
             Finding(

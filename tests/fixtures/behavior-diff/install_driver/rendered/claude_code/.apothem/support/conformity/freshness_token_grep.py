@@ -60,6 +60,7 @@ from apothem.conformity._grep_base import (
     iter_tree_files,
     parse_root_args,
 )
+from apothem.conformity._safe_open import read_project_text
 
 GREP_NAME: Final[str] = "freshness-token-grep"
 RULE_ANCHOR: Final[str] = "rules/freshness-facade.md"
@@ -176,10 +177,12 @@ def _is_in_scope(rel_posix: str) -> bool:
     return rel_posix.startswith(_DOCS_DIR + "/")
 
 
-def _scan_file(path: Path, rel_posix: str, pattern: re.Pattern[str]) -> list[Finding]:
+def _scan_file(
+    path: Path, rel_posix: str, pattern: re.Pattern[str], *, root: Path
+) -> list[Finding]:
     """Scan one text file; return findings outside fenced code blocks."""
     try:
-        content = path.read_text(encoding="utf-8")
+        content = read_project_text(root, path)
     except (OSError, UnicodeDecodeError):
         return []
     findings: list[Finding] = []
@@ -222,7 +225,7 @@ def check(root: Path) -> GrepResult:
             if not _is_in_scope(rel_posix):
                 continue
             inspected += 1
-            findings.extend(_scan_file(path, rel_posix, pattern))
+            findings.extend(_scan_file(path, rel_posix, pattern, root=root))
     return GrepResult(
         grep=GREP_NAME,
         root=str(root),

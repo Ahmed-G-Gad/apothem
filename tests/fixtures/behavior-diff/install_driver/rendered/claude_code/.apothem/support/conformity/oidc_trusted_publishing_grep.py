@@ -65,6 +65,10 @@ from apothem.conformity._grep_base import (
     list_real_entries,
     parse_root_args,
 )
+from apothem.conformity._safe_open import (
+    REFUSED_OR_GONE,
+    read_project_text,
+)
 
 GREP_NAME: Final[str] = "oidc-trusted-publishing-grep"
 RULE_ANCHOR: Final[str] = "OIDC trusted publishing"
@@ -247,6 +251,15 @@ def _check_npm_workflow(workflow: Path, text: str) -> list[Finding]:
     return findings
 
 
+def _unreadable(workflow: Path, exc: OSError) -> Finding:
+    """Return the finding for a listed workflow that cannot be read."""
+    return Finding(
+        workflow=workflow.name,
+        drift_class="workflow-unreadable",
+        detail=f"unreadable workflow: {exc}",
+    )
+
+
 def check(root: Path) -> GrepResult:
     """Walk release workflows under root; aggregate trusted-publishing drift."""
     workflows_dir = root / ".github" / "workflows"
@@ -281,12 +294,27 @@ def check(root: Path) -> GrepResult:
             passed=True,
             findings=[],
         )
+    # A workflow that a link or a special file replaced since it was listed,
+    # or that is gone, is not inspected, as the listing would have left it out.
+    # One that is there but cannot be read is a finding.
     for workflow in pypi_workflows:
-        text = workflow.read_text(encoding="utf-8")
+        try:
+            text = read_project_text(root, workflow)
+        except REFUSED_OR_GONE:
+            continue
+        except OSError as exc:
+            findings.append(_unreadable(workflow, exc))
+            continue
         inspected.append(workflow.name)
         findings.extend(_check_pypi_workflow(workflow, text))
     for workflow in npm_workflows:
-        text = workflow.read_text(encoding="utf-8")
+        try:
+            text = read_project_text(root, workflow)
+        except REFUSED_OR_GONE:
+            continue
+        except OSError as exc:
+            findings.append(_unreadable(workflow, exc))
+            continue
         inspected.append(workflow.name)
         findings.extend(_check_npm_workflow(workflow, text))
     return GrepResult(

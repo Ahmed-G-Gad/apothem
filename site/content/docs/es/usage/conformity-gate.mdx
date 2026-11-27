@@ -93,13 +93,22 @@ especial; la carpeta misma aparece en `skipped_checkouts`, descrito más
 abajo. Un validador que pasa cuando falta su carpeta, como los validadores de
 workflows, no pasa cuando esa carpeta es un enlace: los archivos pueden estar
 detrás, así que la ejecución falla como una que no revisó nada. Un enlace duro
-es un archivo normal y se lee como tal. Los validadores de `--all` miran cada
-nivel cuando lo alcanzan y después abren el archivo por su nombre, así que un
-segundo usuario que pueda escribir en el proyecto mientras corre el gate puede
-cambiar un archivo o una carpeta ya revisados por un enlace o una tubería con
-nombre antes de que se abra, o hacer que una lectura espere hasta el límite de
-tiempo; el gate no protege contra eso. `--all-perwrite` abre el último nivel sin
-seguirlo, pero sus carpetas aún pueden cambiarse. En `--all` y `--all-perwrite`,
+es un archivo normal y se lee como tal. Los validadores de `--all` y
+`--all-perwrite` miran cada nivel cuando lo alcanzan y después abren el archivo
+nivel por nivel desde la raíz, cada carpeta dentro de la abierta antes, nunca a
+través de un enlace. Así que cuando alguien que puede escribir en el proyecto
+cambia un archivo ya revisado, o una carpeta por encima de él, por un enlace o
+una tubería con nombre mientras corre el gate, el gate no lee a través del
+enlace ni espera en la tubería: el archivo no se lee. Un validador de `--all`
+lo cuenta como ausente o ilegible, igual que cuenta un enlace, y muestra la
+entrada cambiada en `skipped_links`; `--all-perwrite` lo cuenta como `link`, o
+como `unreadable` si se cambia otra vez. En Windows
+queda una espera, como ya ocurría al abrir el archivo de forma normal: un
+programa que puede escribir en el proyecto puede mantener un bloqueo
+oportunista (oplock) sobre un archivo y no soltarlo cuando el gate lo abre.
+Ninguna forma de abrir el archivo evita esa espera, así que un validador de
+`--all` espera hasta su límite de 10 minutos, y `--all-perwrite`, que no tiene
+ese límite, hasta que ese programa lo suelte. En `--all` y `--all-perwrite`,
 el propio gate abre solo archivos normales dentro de la raíz, revisa cada
 carpeta del camino con `lstat`, incluida cada ruta que lista git, y nunca lee
 dentro de una entrada `.git`. Antes de ejecutar git, los tres validadores de

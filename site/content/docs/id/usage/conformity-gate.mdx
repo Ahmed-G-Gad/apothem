@@ -94,12 +94,22 @@ berupa tautan atau berkas khusus; folder itu sendiri dicantumkan di bawah
 seperti validator workflow, tidak lolos saat folder itu berupa tautan: berkasnya
 mungkin ada di baliknya, sehingga proses gagal seperti proses yang tidak
 memeriksa apa pun. Tautan keras adalah berkas biasa dan dibaca seperti itu.
-Validator `--all` melihat setiap tingkat saat mencapainya lalu membuka berkas
-berdasarkan namanya, sehingga pengguna kedua yang dapat menulis ke proyek saat
-gate berjalan bisa menukar berkas atau folder yang sudah diperiksa dengan tautan
-atau named pipe sebelum dibuka, atau membuat pembacaan menunggu sampai batas
-waktu; gate tidak menjaga dari hal itu. `--all-perwrite` membuka tingkat
-terakhir tanpa mengikutinya, tetapi folder-foldernya tetap bisa ditukar. Pada
+Validator `--all` dan `--all-perwrite` melihat setiap tingkat saat mencapainya,
+lalu membuka berkas tingkat demi tingkat dari root, setiap folder di dalam
+folder yang dibuka sebelumnya, tidak pernah melalui tautan. Jadi, saat seseorang
+yang dapat menulis ke proyek menukar berkas yang sudah diperiksa, atau folder di
+atasnya, dengan tautan atau named pipe selama gate berjalan, gate tidak membaca
+melalui tautan itu dan tidak menunggu pada pipe: berkasnya tidak dibaca.
+Validator `--all` menghitungnya sebagai tidak ada atau tidak terbaca, sama
+seperti ia menghitung tautan, dan mencantumkan entri yang ditukar di bawah
+`skipped_links`; `--all-perwrite` menghitungnya sebagai `link`, atau sebagai
+`unreadable` bila ditukar lagi. Di Windows masih
+ada satu penantian, seperti pada pembukaan biasa: program yang dapat menulis
+ke proyek dapat memegang kunci oportunistik (oplock) pada berkas dan tidak
+melepasnya saat gate membukanya. Tidak ada cara membuka berkas yang
+menghindari penantian itu, jadi validator `--all` menunggu sampai batas 10
+menitnya, dan `--all-perwrite`, yang tidak punya batas seperti itu, sampai
+program itu melepasnya. Pada
 `--all` dan `--all-perwrite`, gate sendiri hanya membuka berkas biasa di dalam
 root, memeriksa setiap folder di jalan dengan `lstat`, termasuk setiap jalur
 yang didaftar git, dan tidak pernah membaca di dalam entri `.git`. Sebelum

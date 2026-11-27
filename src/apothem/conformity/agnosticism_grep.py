@@ -64,6 +64,7 @@ from apothem.conformity._grep_base import (
     iter_tree_files,
     parse_root_args,
 )
+from apothem.conformity._safe_open import read_project_text
 
 GREP_NAME: Final[str] = "agnosticism-grep"
 RULE_ANCHOR: Final[str] = (
@@ -262,7 +263,7 @@ def _scan_enforcement_preset(rel_posix: str, content: str) -> list[Finding]:
     return findings
 
 
-def _scan_file(path: Path, rel_posix: str) -> list[Finding]:
+def _scan_file(path: Path, rel_posix: str, *, root: Path) -> list[Finding]:
     """Scan one Markdown file for the applicable finding classes.
 
     The bias scan applies only to the four prose surfaces and the AGENTS.md
@@ -271,7 +272,7 @@ def _scan_file(path: Path, rel_posix: str) -> list[Finding]:
     two classes are gated independently.
     """
     try:
-        content = path.read_text(encoding="utf-8")
+        content = read_project_text(root, path)
     except (OSError, UnicodeDecodeError):
         return []
     findings: list[Finding] = []
@@ -301,7 +302,7 @@ def check(root: Path) -> GrepResult:
         if not (_in_scope(rel_posix) or rel_posix.startswith(_PRESET_PREFIXES)):
             continue
         scanned += 1
-        findings.extend(_scan_file(path, rel_posix))
+        findings.extend(_scan_file(path, rel_posix, root=root))
     return GrepResult(
         grep=GREP_NAME,
         root=str(root),

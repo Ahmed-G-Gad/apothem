@@ -327,7 +327,9 @@ def _sweep_stray_plans_dirs(
         # this project. A ``.git`` that is a link or a special file marks one
         # too, but the folder is then left out because of it, so the report
         # names that entry as the folder lists it (:func:`nested_checkout`).
-        if current != resolved_root and nested_checkout(current, entries):
+        if current != resolved_root and nested_checkout(
+            current, entries, root=resolved_root
+        ):
             continue
         listed = frozenset(entry.name for entry, _ in entries)
         for entry, kind in entries:

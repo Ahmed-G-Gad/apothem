@@ -182,7 +182,7 @@ def _every_pair(root: Path, threshold: float) -> list[tuple[list[str], float]]:
     entries = [
         (path, tokens)
         for path in _MOD._walk_corpus(root)
-        for _text, tokens in _MOD._extract_paragraphs(path)
+        for _text, tokens in _MOD._extract_paragraphs(path, root=root)
     ]
     found: list[tuple[list[str], float]] = []
     for i, (path_i, tokens_i) in enumerate(entries):

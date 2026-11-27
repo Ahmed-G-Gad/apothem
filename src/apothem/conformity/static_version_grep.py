@@ -37,6 +37,7 @@ from apothem.conformity._grep_base import (
     parse_root_args,
     project_file_target,
 )
+from apothem.conformity._safe_open import read_project_text
 
 GREP_NAME: Final[str] = "static-version-grep"
 RULE_ANCHOR: Final[str] = "rules/dynamism.md §static-version-resolution"
@@ -188,7 +189,7 @@ def _check_readme(root: Path, findings: list[Finding]) -> int:
         if source is None:
             continue
         try:
-            text = source.read_text(encoding="utf-8")
+            text = read_project_text(root, source)
         except (OSError, UnicodeDecodeError):
             continue
         read += 1
@@ -224,7 +225,7 @@ def _check_site_config(root: Path, findings: list[Finding]) -> int:
         if source is None:
             continue
         try:
-            text = source.read_text(encoding="utf-8")
+            text = read_project_text(root, source)
         except (OSError, UnicodeDecodeError):
             continue
         read += 1
@@ -258,7 +259,7 @@ def _check_runtime_version(root: Path, findings: list[Finding]) -> int:
     if source is None:
         return 0
     try:
-        text = source.read_text(encoding="utf-8")
+        text = read_project_text(root, source)
     except (OSError, UnicodeDecodeError):
         return 0
     if any(marker in text for marker in DYNAMIC_VERSION_MARKERS):

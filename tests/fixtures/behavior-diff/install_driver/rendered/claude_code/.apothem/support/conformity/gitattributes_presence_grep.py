@@ -39,6 +39,7 @@ from apothem.conformity._grep_base import (
     is_project_file,
     parse_root_args,
 )
+from apothem.conformity._safe_open import read_project_text
 
 GREP_NAME: Final[str] = "gitattributes-presence-grep"
 RULE_ANCHOR: Final[str] = "supply-chain .gitattributes contract"
@@ -167,7 +168,7 @@ def check(root: Path) -> GrepResult:
         )
 
     try:
-        content = path.read_text(encoding="utf-8")
+        content = read_project_text(root, path)
     except OSError as exc:
         finding = Finding(
             drift_class=DRIFT_FILE_ABSENT,

@@ -59,6 +59,7 @@ import pytest
 from apothem.conformity import (
     _bounded_run,
     _grep_base,
+    _safe_open,
     agents_md_coverage_grep,
     conventional_commit_grep,
     gate,
@@ -1421,41 +1422,68 @@ def _names_git_or_finds_programs(source: str) -> list[int]:
     return sorted(lines)
 
 
-# ``_corpus.py`` opens a file on Windows with ``_winapi.CreateFile`` and asks
-# kernel32 what the open file is, so it may import ``_winapi`` and ``ctypes``.
-# It is held to these names instead: a CreateProcess or any other call through
-# either module trips the guard.
-_CORPUS_WINAPI_NAMES: Final[frozenset[str]] = frozenset({"CloseHandle", "CreateFile"})
-_CORPUS_KERNEL32_NAMES: Final[frozenset[str]] = frozenset(
-    {"GetFileInformationByHandle", "GetFileInformationByHandleEx"}
-)
-_CORPUS_CTYPES_NAMES: Final[frozenset[str]] = frozenset(
+# ``_safe_open.py`` opens a project file on Windows one level at a time with
+# ntdll's ``NtCreateFile`` (the root with kernel32's ``CreateFileW``), asks
+# kernel32 what the open file is, and hands the handle to the C runtime with
+# ``msvcrt.open_osfhandle``, so it may import ``ctypes`` and ``msvcrt``. It is
+# held to these names instead: a CreateProcess or any other call through
+# either library trips the guard.
+_SAFE_OPEN_WINAPI_NAMES: Final[frozenset[str]] = frozenset()
+_SAFE_OPEN_KERNEL32_NAMES: Final[frozenset[str]] = frozenset(
     {
+        "CloseHandle",
+        "CreateFileW",
+        "GetFileInformationByHandle",
+        "GetFileInformationByHandleEx",
+    }
+)
+_SAFE_OPEN_NTDLL_NAMES: Final[frozenset[str]] = frozenset(
+    {"NtCreateFile", "RtlNtStatusToDosError"}
+)
+_SAFE_OPEN_MSVCRT_NAMES: Final[frozenset[str]] = frozenset({"open_osfhandle"})
+_SAFE_OPEN_CTYPES_NAMES: Final[frozenset[str]] = frozenset(
+    {
+        "POINTER",
         "Structure",
         "WinDLL",
         "WinError",
         "byref",
         "c_int",
+        "c_long",
+        "c_size_t",
+        "c_ulonglong",
+        "c_ubyte",
+        "c_ushort",
         "c_void_p",
+        "c_wchar_p",
+        "cast",
         "get_last_error",
+        "pointer",
         "sizeof",
     }
 )
+# The libraries ``_safe_open.py`` may load, each through its own cached loader.
+_SAFE_OPEN_LIBRARIES: Final[dict[str, str]] = {
+    "_kernel32": "kernel32",
+    "_ntdll": "ntdll",
+}
 
 
-def _corpus_program_starts(source: str) -> list[int]:
-    """Return the lines where ``_corpus.py``'s *source* may start a program.
+def _safe_open_program_starts(source: str) -> list[int]:
+    """Return the lines where ``_safe_open.py``'s *source* may start a program.
 
-    Its plain ``import _winapi``, ``import ctypes`` and ``from ctypes import
-    wintypes`` pass; every other form :func:`_program_starts` flags still
-    counts. A ``_winapi`` name other than ``CreateFile``, ``CloseHandle`` and
+    Its plain ``import _winapi``, ``import ctypes``, ``import msvcrt`` and
+    ``from ctypes import wintypes`` pass; every other form
+    :func:`_program_starts` flags still counts. A ``_winapi`` name other than
     the upper-case constants counts, as does a ``ctypes`` name outside
-    :data:`_CORPUS_CTYPES_NAMES`, a ``WinDLL`` for any library but kernel32,
-    and a ``kernel32`` function other than the two that read what a file is.
-    ``_kernel32()``, the module's own cached loader, counts as ``kernel32``.
-    An allowed import passes only alone on its line. Like the rest of the
-    guard it is a tripwire: a name bound to another name first is not
-    followed.
+    :data:`_SAFE_OPEN_CTYPES_NAMES`, an ``msvcrt`` name other than
+    ``open_osfhandle``, a ``WinDLL`` for any library but kernel32 and ntdll,
+    a ``kernel32`` function other than those that open, close and read what
+    a file is, and an ``ntdll`` function other than ``NtCreateFile`` and its
+    error mapping. ``_kernel32()`` and ``_ntdll()``, the module's own cached
+    loaders, count as those libraries. An allowed import passes only alone on
+    its line. Like the rest of the guard it is a tripwire: a name bound to
+    another name first is not followed.
     """
     tree = ast.parse(source)
     statements_per_line: dict[int, int] = {}
@@ -1473,7 +1501,7 @@ def _corpus_program_starts(source: str) -> list[int]:
         if (
             isinstance(node, ast.Import)
             and all(
-                alias.name in {"_winapi", "ctypes"} and alias.asname is None
+                alias.name in {"_winapi", "ctypes", "msvcrt"} and alias.asname is None
                 for alias in node.names
             )
         ) or (
@@ -1493,19 +1521,21 @@ def _corpus_program_starts(source: str) -> list[int]:
             isinstance(node, ast.Attribute)
             and isinstance(node.value, ast.Call)
             and isinstance(node.value.func, ast.Name)
-            and node.value.func.id == "_kernel32"
+            and node.value.func.id in _SAFE_OPEN_LIBRARIES
         ):
-            base, name = "kernel32", node.attr
+            base, name = _SAFE_OPEN_LIBRARIES[node.value.func.id], node.attr
         else:
             base = name = ""
         if base:
             if (
                 (
                     base == "_winapi"
-                    and not (name in _CORPUS_WINAPI_NAMES or name.isupper())
+                    and not (name in _SAFE_OPEN_WINAPI_NAMES or name.isupper())
                 )
-                or (base == "ctypes" and name not in _CORPUS_CTYPES_NAMES)
-                or (base == "kernel32" and name not in _CORPUS_KERNEL32_NAMES)
+                or (base == "ctypes" and name not in _SAFE_OPEN_CTYPES_NAMES)
+                or (base == "msvcrt" and name not in _SAFE_OPEN_MSVCRT_NAMES)
+                or (base == "kernel32" and name not in _SAFE_OPEN_KERNEL32_NAMES)
+                or (base == "ntdll" and name not in _SAFE_OPEN_NTDLL_NAMES)
             ):
                 lines.add(node.lineno)
         elif (
@@ -1515,7 +1545,7 @@ def _corpus_program_starts(source: str) -> list[int]:
             and not (
                 node.args
                 and isinstance(node.args[0], ast.Constant)
-                and node.args[0].value == "kernel32"
+                and node.args[0].value in _SAFE_OPEN_LIBRARIES.values()
             )
         ):
             lines.add(node.lineno)
@@ -1526,13 +1556,13 @@ def _modules_that_start_programs(package: Path) -> list[str]:
     """Return ``path:line`` for each program start below *package*.
 
     Only the package's own ``_git.py``, ``_bounded_run.py`` and
-    ``_corpus.py`` are held to rules of their own, by their path: a file of the same name in a subfolder
+    ``_safe_open.py`` are held to rules of their own, by their path: a file of the same name in a subfolder
     is checked like any other. ``_bounded_run.py`` must name no git and look
     no program up. A call to ``run_bounded`` counts everywhere but in
     ``_run_standalone`` of the package's own ``gate.py`` and in ``run_git`` of
-    its ``_git.py``, which is checked for that one rule. ``_corpus.py`` may
-    open and inspect files through ``_winapi`` and kernel32 (see
-    :func:`_corpus_program_starts`).
+    its ``_git.py``, which is checked for that one rule. ``_safe_open.py`` may
+    open and inspect files through kernel32, ntdll and msvcrt (see
+    :func:`_safe_open_program_starts`).
     """
     offenders: list[str] = []
     for module in sorted(package.rglob("*.py")):
@@ -1542,8 +1572,8 @@ def _modules_that_start_programs(package: Path) -> list[str]:
             lines = _names_git_or_finds_programs(source)
         elif relative == "_git.py":
             lines = _run_bounded_uses(source, inside=frozenset({"run_git"}))
-        elif relative == "_corpus.py":
-            lines = _corpus_program_starts(source)
+        elif relative == "_safe_open.py":
+            lines = _safe_open_program_starts(source)
         else:
             allowed = _RUN_BOUNDED_CALLERS.get(relative, frozenset())
             lines = _program_starts(source, run_bounded_in=allowed)
@@ -1564,30 +1594,34 @@ def test_no_conformity_module_starts_a_program_itself() -> None:
     assert _modules_that_start_programs(package) == []
 
 
-def test_the_corpus_reader_may_open_files_but_start_no_program() -> None:
-    """``_corpus.py``'s Windows file reads pass; a program start beside them does not."""
+def test_the_guarded_open_may_open_files_but_start_no_program() -> None:
+    """``_safe_open.py``'s Windows file opens pass; a program start beside them does not."""
     own = (
-        "import _winapi\n"
         "import ctypes\n"
+        "import msvcrt\n"
         "from ctypes import wintypes\n"
         "kernel32 = ctypes.WinDLL('kernel32', use_last_error=True)\n"
         "kernel32.GetFileInformationByHandleEx(0, 0, None, 0)\n"
-        "_winapi.CloseHandle(_winapi.CreateFile('f', _winapi.GENERIC_READ, 0, 0,"
-        " _winapi.OPEN_EXISTING, 0, 0))\n"
+        "_ntdll().NtCreateFile(ctypes.byref(wintypes.HANDLE()), 0, None, None,"
+        " None, 0, 7, 1, 0x20, None, 0)\n"
+        "msvcrt.open_osfhandle(_kernel32().CreateFileW('f', 0, 7, None, 3, 0,"
+        " None), 0)\n"
     )
-    assert _corpus_program_starts(own) == []
+    assert _safe_open_program_starts(own) == []
     starts = {
-        "_winapi.CreateProcess(None, 'git', None, None, 0, 0, None, None, None)\n": 7,
-        "kernel32.CreateProcessW(None, 'x', None, None, 0, 0, None, None, 0, 0)\n": 7,
-        "ctypes.windll.kernel32.WinExec(b'x', 0)\n": 7,
-        "ctypes.WinDLL('shell32').ShellExecuteW(0, 0, 'x', 0, 0, 0)\n": 7,
-        "import subprocess\nsubprocess.run(['git'])\n": 8,
-        "import _winapi as w\n": 7,
-        "_kernel32().CreateProcessW(None, 'x', None, None, 0, 0, None, None, 0, 0)\n": 7,
-        "import ctypes; os.system('git')\n": 7,
+        "_winapi.CreateProcess(None, 'git', None, None, 0, 0, None, None, None)\n": 8,
+        "kernel32.CreateProcessW(None, 'x', None, None, 0, 0, None, None, 0, 0)\n": 8,
+        "ctypes.windll.kernel32.WinExec(b'x', 0)\n": 8,
+        "ctypes.WinDLL('shell32').ShellExecuteW(0, 0, 'x', 0, 0, 0)\n": 8,
+        "import subprocess\nsubprocess.run(['git'])\n": 9,
+        "import _winapi as w\n": 8,
+        "_kernel32().CreateProcessW(None, 'x', None, None, 0, 0, None, None, 0, 0)\n": 8,
+        "_ntdll().RtlCreateUserProcess(None, 0, None, None, None, None, 0)\n": 8,
+        "msvcrt.getch()\n": 8,
+        "import ctypes; os.system('git')\n": 8,
     }
     for extra, line in starts.items():
-        assert line in _corpus_program_starts(own + extra), extra
+        assert line in _safe_open_program_starts(own + extra), extra
 
 
 def test_run_bounded_is_allowed_only_in_the_gate_launcher(tmp_path: Path) -> None:
@@ -2995,12 +3029,12 @@ def test_a_git_file_larger_than_git_reads_is_broken_and_read_in_part(
     assert refused.returncode != 0
     assert b"too large to be a .git file" in refused.stderr
     sizes: list[int] = []
-    real_open: Callable[..., IO[Any]] = Path.open
+    real_open: Callable[..., IO[Any]] = _safe_open.open_project_file
 
-    def counting_open(self: Path, *args: object, **kwargs: object) -> _CountingReader:
-        return _CountingReader(real_open(self, *args, **kwargs), sizes)
+    def counting_open(root: Path, path: Path) -> _CountingReader:
+        return _CountingReader(real_open(root, path), sizes)
 
-    monkeypatch.setattr(Path, "open", counting_open)
+    monkeypatch.setattr(_safe_open, "open_project_file", counting_open)
 
     state = _grep_base.git_entry_state(folder)
 

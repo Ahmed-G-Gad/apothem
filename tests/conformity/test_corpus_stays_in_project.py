@@ -1101,14 +1101,14 @@ def test_file_that_cannot_be_opened_is_unreadable_and_fails_the_run(
     unreadable, not missing, and the run does not pass: its findings are
     unknown."""
     repo = _project(tmp_path, {"bad.yml": _UNPINNED_WORKFLOW})
-    real_open = _corpus_module()._open_binary
+    real_open = _corpus_module().open_project_file
 
-    def refusing_open(self: Path, *args: object, **kwargs: object) -> object:
-        if self.name == "bad.yml":
-            raise PermissionError(13, "Permission denied", str(self))
-        return real_open(self)
+    def refusing_open(root: Path, path: Path) -> object:
+        if path.name == "bad.yml":
+            raise PermissionError(13, "Permission denied", str(path))
+        return real_open(root, path)
 
-    monkeypatch.setattr(_corpus_module(), "_open_binary", refusing_open)
+    monkeypatch.setattr(_corpus_module(), "open_project_file", refusing_open)
     payload = _run(repo)
     _assert_only_clean_file_read(payload, passed=False)
     assert _skipped(payload) == {"unreadable": 1}
@@ -1203,6 +1203,10 @@ def test_large_lockfile_is_read_and_the_run_passes(tmp_path: Path) -> None:
 
 def _corpus_module() -> Any:  # noqa: ANN401 - the module, for monkeypatching
     return importlib.import_module("apothem.conformity._corpus")
+
+
+def _safe_open_module() -> Any:  # noqa: ANN401 - the module, for monkeypatching
+    return importlib.import_module("apothem.conformity._safe_open")
 
 
 def _shrink_limit(monkeypatch: pytest.MonkeyPatch, size: int) -> None:
@@ -1397,16 +1401,16 @@ def _refuse_opens(
 ) -> list[float]:
     """Refuse the first *times* opens of *name*; return the recorded sleeps."""
     corpus = importlib.import_module("apothem.conformity._corpus")
-    real_open = _corpus_module()._open_binary
+    real_open = _corpus_module().open_project_file
     left = [times]
 
-    def refusing_open(self: Path, *args: object, **kwargs: object) -> object:
-        if self.name == name and left[0] > 0:
+    def refusing_open(root: Path, path: Path) -> object:
+        if path.name == name and left[0] > 0:
             left[0] -= 1
             raise _refusal(winerror)
-        return real_open(self)
+        return real_open(root, path)
 
-    monkeypatch.setattr(_corpus_module(), "_open_binary", refusing_open)
+    monkeypatch.setattr(_corpus_module(), "open_project_file", refusing_open)
     sleeps = _record_corpus_sleeps(monkeypatch)
     # Read the made-up winerror on every system (a real hold is tested on
     # Windows, and the errno rule for a lease below).
@@ -1506,17 +1510,17 @@ class _RecordingHandle:
 def _record_opens(
     monkeypatch: pytest.MonkeyPatch, name: str, fail_read: int | None = None
 ) -> list[_RecordingHandle]:
-    real_open = _corpus_module()._open_binary
+    real_open = _corpus_module().open_project_file
     handles: list[_RecordingHandle] = []
 
-    def recording_open(self: Path, *args: object, **kwargs: object) -> object:
-        handle = real_open(self)
-        if self.name != name:
+    def recording_open(root: Path, path: Path) -> object:
+        handle = real_open(root, path)
+        if path.name != name:
             return handle
         handles.append(_RecordingHandle(handle, fail_read))
         return handles[-1]
 
-    monkeypatch.setattr(_corpus_module(), "_open_binary", recording_open)
+    monkeypatch.setattr(_corpus_module(), "open_project_file", recording_open)
     return handles
 
 
@@ -1619,14 +1623,14 @@ def test_open_error_after_the_file_was_found(
     any other, such as an online-only file whose sync program is stopped, is
     unreadable and fails the run."""
     repo = _project(tmp_path, {"cloud.yml": _UNPINNED_WORKFLOW})
-    real_open = _corpus_module()._open_binary
+    real_open = _corpus_module().open_project_file
 
-    def failing_open(self: Path, *args: object, **kwargs: object) -> object:
-        if self.name == "cloud.yml":
+    def failing_open(root: Path, path: Path) -> object:
+        if path.name == "cloud.yml":
             raise error
-        return real_open(self)
+        return real_open(root, path)
 
-    monkeypatch.setattr(_corpus_module(), "_open_binary", failing_open)
+    monkeypatch.setattr(_corpus_module(), "open_project_file", failing_open)
     payload = _run(repo)
     _assert_only_clean_file_read(payload, passed=reason == "missing")
     assert _skipped(payload) == {reason: 1}
@@ -1971,19 +1975,18 @@ def test_windows_open_never_follows_a_link_at_the_last_level(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The open asks Windows for the reparse point itself, never its target."""
-    import _winapi
-
     corpus = _corpus_module()
+    safe_open = _safe_open_module()
     target = tmp_path / "doc.md"
     target.write_text("doc\n")
-    real_create = _winapi.CreateFile
+    real_create = safe_open._create_relative
     flags: list[int] = []
 
     def recording_create(*args: Any) -> int:  # noqa: ANN401
-        flags.append(args[5])
+        flags.append(args[3])
         return int(real_create(*args))
 
-    monkeypatch.setattr(_winapi, "CreateFile", recording_create)
+    monkeypatch.setattr(safe_open, "_create_relative", recording_create)
     assert corpus.read_entry(tmp_path, corpus.TrackedEntry(target, "100644")) == (
         "doc\n",
         None,
@@ -2015,7 +2018,7 @@ def test_only_a_reparse_point_naming_another_file_is_refused(
     corpus = _corpus_module()
     target = tmp_path / "kept.md"
     target.write_text("kept\n")
-    monkeypatch.setattr(corpus, "_reparse_tag", lambda _handle: tag)
+    monkeypatch.setattr(_safe_open_module(), "_reparse_tag", lambda _handle: tag)
 
     assert (
         corpus.read_entry(tmp_path, corpus.TrackedEntry(target, "100644")) == expected
@@ -2027,7 +2030,7 @@ def test_reparse_tag_is_read_from_the_handle(tmp_path: Path) -> None:
     """A plain file has no tag; a junction opened as itself has its own."""
     import _winapi
 
-    corpus = _corpus_module()
+    safe_open = _safe_open_module()
     plain = tmp_path / "plain.md"
     plain.write_text("x\n")
     folder = tmp_path / "folder"
@@ -2043,7 +2046,7 @@ def test_reparse_tag_is_read_from_the_handle(tmp_path: Path) -> None:
             str(path), _winapi.GENERIC_READ, 0x7, 0, _winapi.OPEN_EXISTING, flags, 0
         )
         try:
-            assert corpus._reparse_tag(handle) == tag
+            assert safe_open._reparse_tag(handle) == tag
         finally:
             _winapi.CloseHandle(handle)
 
@@ -2135,21 +2138,30 @@ def test_windows_open_reads_through_the_filter_and_closes_every_handle(
     is read through a second, plain open that must name the same file; a
     failed query or a link is not read; no handle is left open."""
     corpus = _corpus_module()
+    safe_open = _safe_open_module()
     target = tmp_path / "kept.md"
     target.write_text("kept\n")
     opened: list[int] = []
+    created: list[int] = []
     flags_used: list[int] = []
     closed: list[int] = []
-    real_create, real_close, real_id = (
-        corpus._create_file,
-        corpus._close_handle,
-        corpus._file_id,
+    real_root, real_create, real_close, real_id = (
+        safe_open._open_root,
+        safe_open._create_relative,
+        safe_open._close_handle,
+        safe_open._file_id,
     )
 
-    def creating(path: Path, flags: int) -> int:
-        handle = int(real_create(path, flags))
+    def opening_root(root: Path) -> int:
+        handle = int(real_root(root))
         opened.append(handle)
-        flags_used.append(flags)
+        return handle
+
+    def creating(parent: int, name: str, access: int, options: int, shown: Path) -> int:
+        handle = int(real_create(parent, name, access, options, shown))
+        opened.append(handle)
+        created.append(handle)
+        flags_used.append(options & 0x00200000)
         return handle
 
     def closing(handle: int) -> None:
@@ -2162,14 +2174,15 @@ def test_windows_open_reads_through_the_filter_and_closes_every_handle(
         return cast("int | None", tag)
 
     def file_id(handle: int) -> tuple[int, int]:
-        if second_id is not None and handle == opened[-1] and len(opened) % 2 == 0:
+        if second_id is not None and handle == created[-1] and len(created) % 2 == 0:
             return second_id
         return cast("tuple[int, int]", real_id(handle))
 
-    monkeypatch.setattr(corpus, "_create_file", creating)
-    monkeypatch.setattr(corpus, "_close_handle", closing)
-    monkeypatch.setattr(corpus, "_reparse_tag", reading_tag)
-    monkeypatch.setattr(corpus, "_file_id", file_id)
+    monkeypatch.setattr(safe_open, "_open_root", opening_root)
+    monkeypatch.setattr(safe_open, "_create_relative", creating)
+    monkeypatch.setattr(safe_open, "_close_handle", closing)
+    monkeypatch.setattr(safe_open, "_reparse_tag", reading_tag)
+    monkeypatch.setattr(safe_open, "_file_id", file_id)
 
     result = corpus.read_entry(tmp_path, corpus.TrackedEntry(target, "100644"))
     assert result == expected
@@ -2206,9 +2219,10 @@ def test_tag_query_that_fails_is_handled_by_its_error(
     from types import SimpleNamespace
 
     corpus = _corpus_module()
+    safe_open = _safe_open_module()
     target = tmp_path / "kept.md"
     target.write_text("kept\n")
-    real_kernel32 = corpus._kernel32()
+    real_kernel32 = safe_open._kernel32()
 
     def failing_query(*_args: object) -> int:
         ctypes.set_last_error(error)  # type: ignore[attr-defined,unused-ignore]
@@ -2217,16 +2231,18 @@ def test_tag_query_that_fails_is_handled_by_its_error(
     fake = SimpleNamespace(
         GetFileInformationByHandleEx=failing_query,
         GetFileInformationByHandle=real_kernel32.GetFileInformationByHandle,
+        CreateFileW=real_kernel32.CreateFileW,
+        CloseHandle=real_kernel32.CloseHandle,
     )
-    monkeypatch.setattr(corpus, "_kernel32", lambda: fake)
-    real_create = corpus._create_file
+    monkeypatch.setattr(safe_open, "_kernel32", lambda: fake)
+    real_create = safe_open._create_relative
     flags_used: list[int] = []
 
-    def creating(path: Path, flags: int) -> int:
-        flags_used.append(flags)
-        return int(real_create(path, flags))
+    def creating(parent: int, name: str, access: int, options: int, shown: Path) -> int:
+        flags_used.append(options & 0x00200000)
+        return int(real_create(parent, name, access, options, shown))
 
-    monkeypatch.setattr(corpus, "_create_file", creating)
+    monkeypatch.setattr(safe_open, "_create_relative", creating)
 
     entry = corpus.TrackedEntry(target, "100644")
     assert corpus.read_entry(tmp_path, entry) == expected

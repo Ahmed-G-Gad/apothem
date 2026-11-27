@@ -445,7 +445,7 @@ def test_nested_checkout_notes_nothing_without_a_skip_log(tmp_path: Path) -> Non
     folder = tmp_path / "nested"
     _fake_repository(folder / ".git")
     entries = [(folder / ".git", _project_paths.DIR_ENTRY)]
-    assert nested_checkout(folder, entries) is True
+    assert nested_checkout(folder, entries, root=tmp_path) is True
     start_skip_log(tmp_path)
     assert take_skipped_checkouts() == []
 
