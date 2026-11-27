@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "Адаптер окружения Apothem для GitHub Copilot (GA)."
 machineTranslated: true
-sourceHash: "b1b8b4918d7d754d"
+sourceHash: "040eeddf99d35ec6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -176,6 +176,10 @@ Apothem не регистрирует в Copilot защиту `preToolUse`. Дл
 "/path/to/python" -E -s "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
 ```
 
+`-E -s` заставляет Python игнорировать `PYTHONPATH` и другие переменные
+`PYTHON*` и пропускать ваши пользовательские site-packages, поэтому ни один файл
+в проекте не может загрузиться в хук.
+
 `--contract copilot` заставляет диспетчер читать ввод Copilot в camelCase и
 выводить `{"additionalContext": ...}` — именно это Copilot читает для этих двух
 событий.
@@ -240,6 +244,22 @@ GitHub Copilot не предоставляет файлового пути дл�
 оставляет пользовательские настройки уровня IDE во владении оператора. Он
 записывает один файл хуков, `.github/hooks/apothem.json`, и никаких других
 файлов в `.github/hooks/`.
+
+Copilot также загружает два файла проекта, в которые другие установки Apothem
+записывают блок: файл `AGENTS.md`, который записывает установка
+[Kimi Code](/docs/harnesses/kimi-code), и файл контекста, который записывает
+[установка для другого инструмента командной строки](/docs/harnesses/gemini-cli):
+
+```text
+<project>/AGENTS.md
+<project>/GEMINI.md
+```
+
+Поэтому в проекте с этими установками их блоки Apothem тоже доходят до Copilot.
+Когда в любом из этих файлов уже есть блок Apothem, установка `github-copilot`
+выводит примечание с именем файла и установки, которая его записала. В
+[реестре окружений](/docs/reference/harness-registry#shared-roots) перечислены
+другие инструменты, которые загружают каждый файл.
 
 В репозитории Apothem `.github/copilot-instructions.md` — один из голосов среди
 поверхностей инструкций для ассистентов этого репозитория. В чекауте этого
@@ -344,11 +364,14 @@ python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 пользовательские site-packages; [Шлюз соответствия](/docs/conformity-gate)
 объясняет и то и другое, а также другие способы установки.
 
-Прогон `--all` охватывает автономные валидаторы. Он не запускает проверку согласованности нескольких поверхностей, описанную в разделе «Заметки о совместимости». Чтобы запустить эту проверку по имени в чекауте:
+Прогон `--all` охватывает автономные валидаторы. Он не запускает проверку согласованности нескольких поверхностей, описанную в разделе «Заметки о совместимости». Чтобы запустить эту проверку по имени, запустите собственный шлюз чекаута из корня чекаута репозитория Apothem:
 
 ```bash
-python -m apothem.conformity.gate --check multi-surface-coherence-grep AGENTS.md
+python3 -E -s src/apothem/conformity/gate.py --check multi-surface-coherence-grep AGENTS.md
 ```
+
+Установленная копия в `~/.apothem` находит сравниваемые файлы рядом с собой,
+поэтому при запуске на чекауте она пропускает проверку и сообщает об успехе.
 
 ## Устранение неполадок
 

@@ -2,7 +2,7 @@
 title: "Вклад в Apothem — руководство разработчика"
 description: "Сопровождайте и расширяйте экосистему Apothem, создавая правила, команды, помощников, навыки и хуки с каноническими схемами, требованиями к фронтматтеру и процедурами проверки."
 machineTranslated: true
-sourceHash: "82cbd13f4a28f8cb"
+sourceHash: "a2dea5f7e64b7fbc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -61,8 +61,11 @@ Output-стили — ещё один класс артефактов с дву�
 
 Общий драйвер установки проверяет каждый источник и каждую цель перед первой
 записью. Он отклоняет отсутствующие источники манифеста, обход каталогов в
-цели, целевые пути вне выбранного корня и пересечения символических ссылок.
-Пробные прогоны (dry-run) выполняют ту же проверку и возвращают
+цели, целевые пути вне выбранного корня и пересечения символических ссылок;
+соединение (junction) Windows проверяется как символическая ссылка. Исключения —
+ссылки, которые менеджеры dotfiles создают в `~/.config` или на уровне общей
+папки навыков, правил или шаблонов либо выше неё: по ним переходят, пока они
+остаются внутри домашнего каталога. Пробные прогоны (dry-run) выполняют ту же проверку и возвращают
 структурированные результаты `skipped` или `unchanged`, не создавая файлов.
 
 ## Маскирование и примеры данных
@@ -130,7 +133,9 @@ Schema, приоритет у схем.
 - **Хуки:** внутри папки `src/apothem/hooks/`. Все обработчики событий написаны на Python.
   Каждая команда хука в шаблоне `settings.json` для Claude Code использует exec-форму:
   `command` — это плейсхолдер интерпретатора `${PYTHON_BIN}`, который разрешается при
-  установке, а `args` содержит путь к скрипту и его аргументы. Этот шаблон запускает
+  установке, а `args` содержит `-E`, `-s`, путь к скрипту и его аргументы. Эти два флага
+  не пускают `PYTHONPATH`, другие переменные `PYTHON*` и пользовательские site-packages
+  ни в один хук; сохраняйте их в любом хуке, который вы добавляете. Этот шаблон запускает
   `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` и
   `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` по абсолютному пути, поэтому
   установленной копии не нужен импортируемый пакет `apothem`. Плагин Claude Code вместо
@@ -658,13 +663,183 @@ Or: § Plans Discipline.
 ```bash
 python -m pytest                      # unit, integration, property, conformity, scripts
 python -m pytest tests/property       # Hypothesis properties (profile loader, frontmatter, merge)
+python -m pytest tests/fuzz           # replay each fuzz target's seed inputs (no Atheris needed)
 ```
+
+Цели фаззинга в `tests/fuzz/` запускаются под Atheris в CI. Чтобы провести
+фаззинг одной из них на своей машине (Linux или macOS, Python 3.11 или новее),
+установите Atheris, добавьте чекаут в путь и укажите цели копию её начальных
+данных:
+
+```bash
+python -m pip install atheris
+export PYTHONPATH="$PWD/src:$PWD/src/apothem/_vendor"
+mkdir -p /tmp/corpus && cp tests/fuzz/seeds/lenient-json/*.txt /tmp/corpus/
+python tests/fuzz/fuzz_lenient_json.py -max_total_time=60 /tmp/corpus
+```
+
+`tests/fuzz/README.md` перечисляет цели и что делать, когда одна из них находит
+сбой.
 
 Набор герметичен: он проходит, когда чекаут находится под `$TMPDIR`, и когда
 `python` в `PATH` не имеет зависимостей, необходимых CLI, потому что
 интеграционные тесты запускают тот интерпретатор, под которым работает pytest,
 и токенизируют вложенные временные пути и пути к исходникам, начиная с самых
 длинных.
+
+### Тесты никогда не пишут в ваш настоящий домашний каталог
+
+Пробный скрипт или автоматизированный помощник никогда не должен запускать
+установщики или адаптеры Apothem против вашего настоящего домашнего каталога.
+Проверяйте поведение внутри теста в `tests/`, где `tests/conftest.py`
+направляет домашний каталог, журнал установки и корень резервных копий во
+временные папки.
+
+Apothem и сам отказывает в таких записях, пока работает pytest, поэтому
+тестовый файл, скопированный из `tests/` и запущенный без `tests/conftest.py`,
+не может добраться до настоящего домашнего каталога через Apothem. Пока
+`PYTEST_CURRENT_TEST` задана и не пуста (тест) или `PYTEST_VERSION` содержит
+версию работающего pytest (весь сеанс, включая сбор и хуки сеанса), запись,
+удаление, копирование, переименование или файл блокировки в `~/.apothem`
+учётной записи, `~/.config/apothem`, папке инструмента, которую реестр
+окружений называет в домашнем каталоге (`~/.claude`, `~/.qwen`,
+`~/.config/opencode` и остальные), или в файле вне этих папок, который
+изменяет манифест распространения (`~/.antigravity/profile.yaml`, который
+записал более ранний выпуск), останавливается до каких-либо изменений с
+ошибкой такого вида:
+
+```text
+RealHomeWriteError: Apothem refused to create the lock file
+C:\Users\you\.apothem\state\codex\<id>.install.lock: it is inside or holds
+C:\Users\you\.apothem, a protected path in this account's real home, while a
+pytest test is running (PYTEST_CURRENT_TEST is set:
+test_probe.py::test_install (call)). Nothing in C:\Users\you\.apothem was
+changed. ...
+```
+
+`PYTEST_VERSION` с любым другим значением, например закреплённой версией
+вроде `8.2`, которую экспортирует оболочка или задание CI, не учитывается, как
+и пустая `PYTEST_CURRENT_TEST`. Вне какого-либо теста ошибка вместо теста
+говорит `PYTEST_VERSION holds
+the version of the pytest imported in this process, <version>, outside any
+test`; она не утверждает, что работает сеанс pytest, поскольку процесс может
+импортировать pytest, не запуская его. `PYTEST_VERSION`, которую оболочка или
+задание CI экспортирует с точной версией установленного pytest, учитывается
+точно так же, в том числе вне pytest, и в процессе, который не импортировал
+pytest, ошибка тогда говорит `PYTEST_VERSION holds the installed pytest's
+version, <version>, though no pytest runs in this process`.
+
+Установка, обновление, удаление или откат с областью проекта, у которых
+корень проекта — сам домашний каталог учётной записи, отклоняются так же, до
+какой-либо записи: иначе файлы проекта попали бы прямо в домашний каталог.
+Папка проекта внутри домашнего каталога остаётся разрешённой. Домашний каталог
+данных прямо в домашнем каталоге тоже отклоняется, какое бы имя ему ни дал
+профиль (`workspace.scope: user-home` с собственным `directory_name`), до его
+создания и до удаления его хранилищ. Домашний каталог данных, который является
+ссылкой (в Windows — соединением) на папку прямо в домашнем каталоге,
+отклоняется так же, как и тот, что ведёт к самому домашнему каталогу, напрямую
+или через цепочку ссылок, и чьи хранилища попали бы прямо в домашний каталог.
+
+Учитываются такие написания защищённой папки: ссылка или соединение на неё и
+папка, заменённая ссылкой во время теста. В Windows учитываются также регистр
+букв, короткие имена (8.3), префиксы `\\?\`, `\\.\` и `\??\`, административный
+общий ресурс обратной петли, например `\\localhost\C$` или `\\--1.ipv6-literal.net\C$`, общий ресурс, к
+которому обращаются по одному из собственных адресов машины или через
+подключённый диск, и альтернативный поток данных (`.apothem:name`), а также
+путь устройства за одним из этих префиксов (`GLOBALROOT\Device\HarddiskVolume2` или `Volume{GUID}`). В macOS
+также игнорируются регистр букв и нормализация Unicode, а
+`/System/Volumes/Data/<path>` читается как `/<path>`. Только эти строковые
+правила не обращаются к сети: путь к общему ресурсу или путь на подключённом
+диске проверяется запросом к хосту ресурса. `tests/README.md` перечисляет
+написания, которые проверка не видит, например жёсткую ссылку на файл в
+защищённой папке, bind-монтирование домашнего каталога и
+нечувствительное к регистру монтирование в Linux.
+
+CLI выдаёт ошибку как есть, в том числе для удаления. Некоторые проходы
+проверяют свои пути до первого изменения, поэтому отказ там оставляет всё как
+было. Проход по устаревшим путям проверяет каждый устаревший путь. Откат
+проверяет каждый путь, который называет его запись об установке (даже тот,
+который он оставил бы на месте), хранилища данных, которые он удалил бы, и
+папки уровня пользователя в домашнем каталоге, которые он упорядочил бы
+последними. Откат и удаление проверяют корень резервных копий и журнал, а
+удаление OpenClaw также проверяет `openclaw.json` и каждый файл правил рабочего
+пространства. Отклонённое удаление записывает незавершённое удаление в журнал
+только тогда, когда оно уже изменило файлы вне защищённых папок, в том числе
+на шаге перед общим удалением (например, на первом шаге удаления с нативной
+конфигурацией), чтобы резервные копии этих файлов оставались связанными с
+записью. Несколько внутренних вызывающих сторон намеренно поглощают ошибку
+(например, строка журнала по принципу best-effort), поэтому каждый отказ также
+записывается в лог, и `tests/conftest.py` проваливает тест, после которого он
+был записан, даже когда тест помечен `xfail`. Отказ, записанный вне какого-либо
+теста, пока pytest собирает узел, проваливает сбор этого узла. Любой другой
+отказ, записанный вне какого-либо теста — в начале сеанса, между двумя
+отчётами о сборе, после сбора, между двумя тестами, после последнего теста, в
+сводке или в `pytest_unconfigure`, — сообщается по завершении сеанса с
+указанием места, где он произошёл, и проваливает прогон, в том числе когда хук
+затем завершает прогон через
+`pytest.exit(returncode=0)` или `sys.exit(0)` (или, в любой системе, кодом,
+который система POSIX сокращает до 0 или 5, например 256), в том числе после
+того, как другой хук завершил финал сеанса через `sys.exit` или исключение, и
+в том числе когда его записывает параллельный рабочий процесс (`-n`), до или
+после того, как тот передал свои отказы главному процессу. Рабочий процесс
+записывает каждый отказ, как только получает его, в файл, который читает
+главный процесс, поэтому отказ, полученный им до того, как он аварийно
+завершился или был остановлен, не дойдя до этой передачи, или до того, как
+хук финала сеанса остановил его там, всё равно проваливает прогон. Три случая
+по-прежнему видны только в `stderr` и оставляют код выхода как есть: отказ,
+записанный после `yield` обёртки `tryfirst` `pytest_unconfigure`, которую
+pytest зарегистрировал после защиты, отказ, записанный в очистке,
+зарегистрированной через `config.add_cleanup` (каждый — если только затем
+прогон не завершает проходящий `sys.exit` или такой вызов не завершил финал
+сеанса до него), и отказ, который рабочий процесс записывает, но не передаёт и
+не пишет в этот файл, потому что рабочий процесс завершился или был
+остановлен раньше (например, хук финала сеанса записал его, а затем аварийно
+завершил рабочий процесс) или потому что этот файл не удалось создать или
+записать (когда последняя запись рабочего процесса в него обрывается на
+полпути, дошедшая до файла часть остаётся, и главный процесс проваливает
+прогон по ней, как и тогда, когда эта запись оставила файл пустым, если только
+копия, записанная рядом с передачей, уже не оставила его пустым и главный
+процесс не взял вывод рабочего процесса). В последнем случае вывод содержит
+только отказы, которые рабочий процесс передал: отказ, найденный им после
+передачи, запись которого снова оставляет файл пустым, виден только в
+`stderr` рабочего процесса и нигде, если рабочий процесс аварийно завершается
+во время этой записи; прогон всё равно проваливается по переданным отказам. В
+конце прогона главный процесс велит
+каждому рабочему процессу завершиться; рабочий процесс, который через 5 секунд
+всё ещё выполняет код Python, прерывается (в Windows — не тот, что заблокирован
+в sleep или другом вызове), а любой рабочий процесс, всё ещё работающий через
+10 секунд, останавливается. Защита не может изменить код выхода прогона,
+который завершается через `os._exit` в главном процессе (в хуке, очистке или
+обработчике `atexit`), через обёртку `tryfirst` `pytest_cmdline_main`, которую
+pytest зарегистрировал после защиты, или через хук `pytest_cmdline_main`,
+который возвращается до запуска какого-либо сеанса; при `os._exit` итоговый
+отчёт защиты в терминале тоже может потеряться, а в первом и последнем случаях
+отказ, о котором защита ещё не сообщила, виден только как его строка в
+`stderr`. Лог ведётся для каждого процесса отдельно: отказ, который поглощает
+дочерний процесс Apothem, виден только как строка в `stderr` дочернего
+процесса, и тест из-за него не проваливается.
+
+Домашний каталог — это тот, который операционная система записала для учётной
+записи, а не `HOME` или `USERPROFILE`. Чтение, пробные запуски и
+предпросмотры по-прежнему работают; единственная проверка состояния, которая
+записывает завершённое удаление в журнал, — это запись, поэтому она тихо
+отклоняется и попадает в отчёт. Тест, который должен намеренно выполнить
+настоящую установку, запускает Apothem без `PYTEST_CURRENT_TEST` и
+`PYTEST_VERSION` в окружении дочернего процесса.
+
+Отказ не охватывает папки, которые `CODEX_HOME`, `CLAUDE_CONFIG_DIR` или
+`XDG_CONFIG_HOME` уводят от их имён по умолчанию, вне домашнего каталога или
+внутри него (`XDG_CONFIG_HOME=~/xdg` помещает папку OpenCode в
+`~/xdg/opencode`), папку состояния хуков или программы не на Python, например
+shell-установщики. Проверка выполняется до записи, по пути, поэтому папка,
+заменённая ссылкой между ними, не видна. Когда в системе нет записи о
+домашнем каталоге учётной записи (пользователь контейнера без записи в
+`passwd`), домашний каталог учётной записи вообще не защищён. Для чекаута,
+который находится внутри защищённой папки (например, под `~/.claude`), записи
+Apothem во время тестов отклоняются. Вне pytest отказ ничего не делает, то
+есть когда окружение не содержит ни непустой `PYTEST_CURRENT_TEST`, ни версии
+установленного pytest в `PYTEST_VERSION`, поэтому правило выше по-прежнему
+действует. `tests/README.md` перечисляет все пробелы.
 
 ### Покрытие по пакетам
 
@@ -685,7 +860,7 @@ CI измеряет три пакета и держит каждый на его
 Чтобы проверить локально:
 
 ```bash
-python -m pytest --cov=src/apothem --cov-report=json:coverage.json
+python -m pytest --cov=src/apothem --cov-fail-under=0 --cov-report=json:coverage.json
 python scripts/dev/collect_metrics.py --coverage-json coverage.json --check-floors \
   --skip-hooks --skip-coldstart --harness zed
 ```
@@ -693,7 +868,8 @@ python scripts/dev/collect_metrics.py --coverage-json coverage.json --check-floo
 ### Артефакт метрик
 
 Задание CI `metrics` запускает `scripts/dev/collect_metrics.py` при каждом push
-и каждом pull request и загружает `metrics.json` (`schema_version: 1`). Для
+и каждом pull request, как только проходят оба шарда покрытия, используя
+измеренные ими данные покрытия, и загружает `metrics.json` (`schema_version: 1`). Для
 каждого значения `null` его причина указана под `nulls`.
 
 | Ключ | Что измеряет |
@@ -711,13 +887,25 @@ python scripts/dev/collect_metrics.py --coverage-json coverage.json --check-floo
 
 ```text
 antigravity     ~/.gemini/{GEMINI,AGENTS}.md, ~/.gemini/config/{GEMINI,AGENTS}.md,
-                ~/.gemini/config/rules/*.md with trigger: always_on, project
-                GEMINI.md and AGENTS.md. The plugin rules/ folder is not a
-                documented launch surface.
+                ~/.gemini/config/rules/*.md with trigger: always_on, and in the
+                project GEMINI.md, AGENTS.md, .agents/{GEMINI,AGENTS}.md and
+                .agents/rules/*.md with trigger: always_on, plus, for each
+                plugin in ~/.gemini/config/plugins/ with a plugin.json not
+                marked disabled: true, its rules/AGENTS.md (else
+                rules/GEMINI.md) and its rules/*.md with trigger: always_on.
+                A rule file counts only when its first line opens the
+                frontmatter. Each file counted up to 24,000 bytes. @ includes
+                are not expanded, the user's own plugin on/off choice is not
+                read, and the 20,000-token budget across always-on rules is
+                not modeled.
 claude-code     ~/.claude/CLAUDE.md and ~/.claude/rules/**/*.md without paths:
-                frontmatter, plus the project equivalents.
-codebuddy       .codebuddy/rules/**/*.md (project and home) unless
-                alwaysApply: false, plus CODEBUDDY.md.
+                frontmatter, plus the project equivalents and CLAUDE.local.md;
+                the project AGENTS.md and .claude/AGENTS.md only when the
+                project has no CLAUDE.md, .claude/CLAUDE.md or CLAUDE.local.md.
+codebuddy       .codebuddy/rules/**/*.md (project and home) unless enabled:
+                false or alwaysApply: false, ~/.codebuddy/CODEBUDDY.md, the
+                project CODEBUDDY.local.md, and the first of CODEBUDDY.md and
+                .codebuddy/CODEBUDDY.md, else AGENTS.md.
 codex           The first non-empty of ~/.codex/AGENTS.override.md and
                 ~/.codex/AGENTS.md, plus the first of AGENTS.override.md,
                 AGENTS.md and the project_doc_fallback_filenames names that
@@ -726,16 +914,26 @@ codex           The first non-empty of ~/.codex/AGENTS.override.md and
 cursor          .cursor/rules/**/*.mdc with alwaysApply: true, and AGENTS.md.
 gemini-cli      ~/.gemini/GEMINI.md and the project GEMINI.md.
 github-copilot  .github/copilot-instructions.md and the project AGENTS.md.
-hermes          ~/.hermes/SOUL.md, plus the first of these kinds in the project
-                with a non-empty file (Hermes loads one): .hermes.md or
-                HERMES.md (the first of the two that exists is the only
-                candidate), AGENTS.override.md or AGENTS.md, CLAUDE.md, then
-                .cursorrules with .cursor/rules/*.mdc. The support tree and
-                apothem/rules/ are not launch surfaces.
-kimi-code       ~/.kimi-code/AGENTS.md, project AGENTS.md and .kimi-code/AGENTS.md.
+hermes          ~/.hermes/SOUL.md when it holds text, plus the first of these
+                kinds in the project with a non-empty file (Hermes loads one):
+                .hermes.md or HERMES.md (the first of the two that exists is
+                the only candidate), AGENTS.override.md or AGENTS.md,
+                CLAUDE.md, then .cursorrules with .cursor/rules/*.mdc. The
+                support tree and apothem/rules/ are not launch surfaces.
+kimi-code       ~/.kimi-code/AGENTS.md, the first non-empty of
+                ~/.agents/AGENTS.md and ~/.agents/agents.md, and the project
+                .kimi-code/AGENTS.md and AGENTS.md; blank files load nothing.
+                Kimi also reads AGENTS.md in each folder from the git root
+                down; the scratch project has no .git, so only its root is
+                read.
 kiro            .kiro/steering/**/*.md with inclusion: always or no inclusion
                 key, and the project AGENTS.md.
-open-claw       Workspace bootstrap files ~/.openclaw/workspace/*.md.
+open-claw       The non-blank bootstrap files in ~/.openclaw/workspace/, in
+                order: AGENTS.md, SOUL.md, IDENTITY.md, USER.md, BOOTSTRAP.md,
+                MEMORY.md; each up to 20,000 characters (USER.md 4,000),
+                60,000 in all. Approximate: OpenClaw's own trimming,
+                head-and-tail truncation, missing-file markers and per-session
+                filtering are not modeled.
 opencode        ~/.config/opencode/AGENTS.md, the project AGENTS.md, and every
                 file the instructions globs in opencode.json match.
 qwen-code       The context files named by context.fileName in
