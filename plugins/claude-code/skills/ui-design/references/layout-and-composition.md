@@ -119,7 +119,7 @@ At most two adjacent sections share a skeleton, such as "heading group, then one
 - Every body has mass: at least one of these.
   - A visual 360 px or taller. A visual under 360 px does not count as mass, and one under 300 px is flagged (`lay-00.width-and-mass`).
   - Three or four items running edge to edge.
-  - A list or table with at least three rows that spans ten or more columns.
+  - A list or table with at least three rows that spans ten or more columns, or the rows of the hairline-rows variant (composition 5).
   - An interactive control built from the brief's own facts.
   - A statement set at section-heading size or larger.
 - A heading and a paragraph alone are a heading group, not a section.

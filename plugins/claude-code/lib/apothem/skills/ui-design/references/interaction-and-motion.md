@@ -273,7 +273,7 @@ These MUST NOT appear (`mot-00.13.8`):
 - `will-change` applied across a class.
 - Pulsing dots.
 - A caret that still blinks past the `acc-11` time limit.
-- An infinite loop. Four exceptions exist: a loader; one marquee; one small loop whose cycle is 4 seconds or less; and one ambient loop whose cycle is 8 seconds or more. Every exception except the loader meets the `acc-11` conditions below.
+- An infinite loop. Four exceptions exist: a loader, while its load runs and the content beside it cannot be used; one marquee; one small loop whose cycle is 4 seconds or less; and one ambient loop whose cycle is 8 seconds or more. Every exception except the loader meets the `acc-11` conditions below.
 
 Motion that starts on its own and runs past the `acc-11` time limit in total follows that row. The total counts every repeat, so any loop that repeats past the limit qualifies, whatever its cycle length. Examples are marquees, small and ambient loops, and videos that loop. Only a loader is exempt, while its load runs and the content beside it cannot be used. Such motion waits for script before it starts. It halts when it leaves the viewport, and it does not run under reduced motion. It pauses while the pointer or focus is on it. A visible play and pause button controls it, which is what SC 2.2.2 asks for; without script or under reduced motion, that button is hidden. Content that rotates on its own with no pause control fails `acc-11` through SC 2.2.2. Content that keeps rotating under hover or focus fails `acc-11` through the house extension the row marks Beyond WCAG. Content that updates on its own beside other content, such as a ticker, a feed, or a refreshing score, carries the control the `acc-11` row asks for.
 
