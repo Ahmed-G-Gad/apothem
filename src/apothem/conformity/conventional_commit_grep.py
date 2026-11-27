@@ -342,7 +342,9 @@ def _read_head_subject(root: Path) -> tuple[str | None, str, str | None]:
         GitCheckError,
         GitFailedError,
         GitTimeoutError,
+        git_entry_unreadable,
         in_checkout,
+        linked_git_message,
         nearest_linked_git_entry,
     )
 
@@ -351,7 +353,12 @@ def _read_head_subject(root: Path) -> tuple[str | None, str, str | None]:
     # when a .git entry in ``root`` or a folder above it that git searches is
     # a link (dangling or not); which repository git then uses is git's own
     # answer, not checked here.
-    if nearest_linked_git_entry(root) is not None or not in_checkout(root):
+    linked = nearest_linked_git_entry(root)
+    if linked is not None and git_entry_unreadable(linked):
+        # Not a link: the gate could not look, so the check has not earned
+        # the exemption of a folder outside a checkout.
+        return None, "git-failed", linked_git_message(root, linked)
+    if linked is not None or not in_checkout(root):
         return None, "not-a-git-repo", None
     try:
         prefix = _work_tree_prefix(root)

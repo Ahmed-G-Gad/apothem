@@ -1240,7 +1240,11 @@ def _lstat_error(kind: str, path: Path) -> OSError:
     ],
 )
 def test_an_entry_lstat_cannot_read_is_refused(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, kind: str, refused: bool
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    kind: str,
+    refused: bool,
 ) -> None:
     """The guard fails closed: a .git entry it cannot look at stops git.
 
@@ -1275,6 +1279,46 @@ def test_an_entry_lstat_cannot_read_is_refused(
     result = no_global_plans_grep.check(inner)
     assert [f.path for f in result.findings] == [blocked.as_posix()]
     assert "could not be looked at" in result.findings[0].detail
+    # Each validator that runs git, run as a command, fails with that sentence.
+    message = (
+        f"the .git entry {blocked.as_posix()} on git's search path could not be "
+        "looked at, so the gate does not run git below it"
+    )
+    for module in (conventional_commit_grep, agents_md_coverage_grep):
+        code = module._main([module.GREP_NAME, str(inner)])
+        payload = json.loads(capsys.readouterr().out)
+        assert code != 0, module.GREP_NAME
+        assert payload["passed"] is False
+        assert payload["check_error"] == message
+    code = no_global_plans_grep._main(["no-global-plans-grep", str(inner)])
+    payload = json.loads(capsys.readouterr().out)
+    assert code != 0
+    assert payload["passed"] is False
+    passed, perwrite = gate._run_all_perwrite(inner)
+    assert not passed
+    assert json.loads(perwrite)["check_error"] == message
+
+
+def test_a_short_name_spelled_file_does_not_hide_its_folder(tmp_path: Path) -> None:
+    """A listing gives long names, so ``GIT~2`` is a name of its own, not ``.git``."""
+    root = (tmp_path / "project").resolve()
+    _write(root / "docs" / "GIT~2")
+    _write(root / "docs" / "page.md")
+    assert _walk(root, ".md") == ["docs/page.md"]
+
+
+def test_a_git_folder_in_another_case_in_a_case_sensitive_folder_is_walked(
+    tmp_path: Path,
+) -> None:
+    """Where ``.GIT`` and ``.git`` are two entries, git uses only ``.git``."""
+    if sys.platform == "darwin":
+        pytest.skip("macOS folders are case-insensitive by default")
+    root = (tmp_path / "project").resolve()
+    if os.name == "nt":
+        _case_sensitive_folder(root)
+    _write(root / ".GIT" / "inside.md")
+    _write(root / "nested" / ".GIT" / "page.md")
+    assert _walk(root, ".md") == [".GIT/inside.md", "nested/.GIT/page.md"]
 
 
 _FOLDS_CASE = pytest.mark.skipif(
