@@ -218,14 +218,39 @@ def find_git(environ: Mapping[str, str] | None = None) -> str | None:
     return None
 
 
-def git_environment(environ: Mapping[str, str] | None = None) -> dict[str, str]:
+# The variables that tell git where the repository, its stores or its index
+# are, in place of looking for them from the folder it runs in. git exports
+# GIT_DIR to the hooks it runs, so a gate run from a hook inherits it.
+GIT_LOCATION_VARIABLES: Final[tuple[str, ...]] = (
+    "GIT_DIR",
+    "GIT_WORK_TREE",
+    "GIT_COMMON_DIR",
+    "GIT_OBJECT_DIRECTORY",
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+    "GIT_INDEX_FILE",
+    "GIT_GRAFT_FILE",
+    "GIT_SHALLOW_FILE",
+)
+
+
+def git_environment(
+    environ: Mapping[str, str] | None = None, *, discover: bool = False
+) -> dict[str, str]:
     """Return the environment for one git run.
 
     A copy of *environ* (default ``os.environ``) with :data:`GIT_ENVIRONMENT`
     set and ``PATH`` narrowed to its full-path entries, so a program git
-    starts by name is never taken from the current folder either.
+    starts by name is never taken from the current folder either. With
+    *discover*, :data:`GIT_LOCATION_VARIABLES` (the variables that name the
+    repository, its stores, its index, or a file git reads in place of one
+    of the repository's own) are left out, so git searches from the folder it
+    runs in: the search path whose ``.git`` entries
+    :func:`~apothem.conformity._grep_base.nearest_linked_git_entry` checked.
     """
     env = dict(os.environ if environ is None else environ)
+    if discover:
+        for name in GIT_LOCATION_VARIABLES:
+            env.pop(name, None)
     env.update(GIT_ENVIRONMENT)
     kept = full_path_entries(env.get("PATH", ""))
     if kept:
@@ -259,6 +284,7 @@ def run_git(
     timeout: float | None = None,
     check: bool = False,
     file_names: bool = False,
+    discover: bool = False,
 ) -> subprocess.CompletedProcess[str]:
     """Run ``git <args>`` in *cwd* with the project's program-running settings off.
 
@@ -281,6 +307,12 @@ def run_git(
     *check* is set), so a caller handles a missing git as it would any failed
     start.
 
+    A check that asked :func:`~apothem.conformity._grep_base.nearest_linked_git_entry`
+    before git sets *discover*: git then searches from *cwd*, the search path
+    whose ``.git`` entries that check looked at, and not from a ``GIT_DIR``
+    the environment names (see :func:`git_environment`). Which repository
+    git then reads is not checked.
+
     On Windows a git that started but could not be resumed
     (:class:`~apothem.conformity._bounded_run.ProgramResumeError`) is a
     failed git, not a missing one: the result has the exit code
@@ -298,7 +330,7 @@ def run_git(
     try:
         return _bounded_run.run_bounded(
             argv,
-            env=git_environment(),
+            env=git_environment(discover=discover),
             timeout=timeout,
             check=check,
             file_names=file_names,

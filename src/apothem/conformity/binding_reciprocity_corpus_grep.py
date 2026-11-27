@@ -59,6 +59,8 @@ from apothem.conformity._grep_base import (
     EXIT_PASS,
     RootGrepResult,
     finish_root_report,
+    is_project_dir,
+    is_project_file,
     iter_prose_lines,
     parse_root_args,
 )
@@ -131,7 +133,7 @@ def _resolve_rules_dir(root: Path) -> Path | None:
     """
     for parts in _RULES_SUBTREES:
         candidate = root.joinpath(*parts)
-        if candidate.is_dir():
+        if is_project_dir(root, candidate):
             return candidate
     return None
 
@@ -216,7 +218,7 @@ def check(root: Path) -> RootGrepResult:
 
     # basename -> set of ↔-cited sibling-rule basenames.
     cross_map: dict[str, set[str]] = {}
-    for md in sorted(rules_dir.glob("*.md")):
+    for md in sorted(p for p in rules_dir.glob("*.md") if is_project_file(root, p)):
         try:
             text = md.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):

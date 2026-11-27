@@ -54,6 +54,15 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Final
 
+from apothem.conformity._grep_base import (
+    finish_root_report,
+    is_project_dir,
+    list_real_entries,
+    no_files,
+    parse_root_args,
+    project_file_target,
+)
+
 GREP_NAME: Final[str] = "plan-next-step-consistency-grep"
 RULE_ANCHOR: Final[str] = "rules/recommend-next-step.md"
 
@@ -319,9 +328,10 @@ def _inspect_suite(
     pass.
     """
     progress = suite_dir / PROGRESS_FILENAME
-    if not progress.is_file():
+    progress_source = project_file_target(suite_dir, progress)
+    if progress_source is None:
         return None
-    progress_lines = _read_lines(progress)
+    progress_lines = _read_lines(progress_source)
     if progress_lines is None:
         return (
             [
@@ -362,7 +372,11 @@ def _inspect_suite(
     files_inspected = 0
     unvalidated_footers: list[str] = []
     for fname in INFRA_FILENAMES:
-        infra_lines = _read_lines(suite_dir / fname)
+        infra_path = suite_dir / fname
+        infra_source = project_file_target(suite_dir, infra_path)
+        if infra_source is None:
+            continue
+        infra_lines = _read_lines(infra_source)
         if infra_lines is None:
             continue
         files_inspected += 1
@@ -413,9 +427,11 @@ def check(root: Path) -> GrepResult:
     suites_inspected = 0
     files_inspected = 0
     for plans_dir in plans_dirs:
-        if not plans_dir.is_dir():
+        if not is_project_dir(root, plans_dir):
             continue
-        for suite_dir in sorted(p for p in plans_dir.iterdir() if p.is_dir()):
+        for suite_dir in sorted(
+            p for p in list_real_entries(plans_dir, wanted_files=no_files) if p.is_dir()
+        ):
             outcome = _inspect_suite(suite_dir, root)
             if outcome is None:
                 continue
@@ -442,7 +458,6 @@ def _read_input(argv: list[str]) -> tuple[Path, bool]:
     Usage errors (unknown flag, a root that is not an existing directory)
     exit ``EXIT_USAGE`` (3); ``--help`` exits 0.
     """
-    from apothem.conformity._grep_base import parse_root_args
 
     def _configure(parser: argparse.ArgumentParser) -> None:
         parser.add_argument(
@@ -457,8 +472,6 @@ def _read_input(argv: list[str]) -> tuple[Path, bool]:
 
 
 def _main(argv: list[str]) -> int:
-    from apothem.conformity._grep_base import finish_root_report
-
     root, strict = _read_input(argv)
     result = check(root)
     # Plan suites live under the gitignored ``.apothem/plans/`` tree, so a

@@ -345,7 +345,11 @@ def _assert_check_error(
 def test_commit_subject_timeout_does_not_pass(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """A ``git log`` past its limit is not the no-history exemption."""
+    """A git command past its limit is not the no-history exemption.
+
+    The first command the check starts, ``git rev-parse``, is the one that
+    runs past the limit here.
+    """
     (tmp_path / ".git").mkdir()
     monkeypatch.setattr(_bounded_run, "run_bounded", _timing_out_run)
 
@@ -358,7 +362,7 @@ def test_commit_subject_timeout_does_not_pass(
     )
     payload = _printed_payload(capsys)
     assert exit_code == conventional_commit_grep.EXIT_FAIL
-    _assert_check_error(payload, "git log")
+    _assert_check_error(payload, "git rev-parse")
     assert payload["inspected"] == 0
     assert payload["empty_scope_expected"] is False
 

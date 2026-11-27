@@ -34,6 +34,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   with the base branch and names the section that changed. A commit trailer
   `Changelog-Released-Edit: <version> <reason>` allows a deliberate
   correction to that version's notes only.
+- **`python -m apothem.conformity.gate --all` takes seconds, not minutes.**
+  The gate now runs its standalone validators side by side, at most eight at once, and
+  still reports them in the same order. `redundancy-grep` skips paragraph pairs
+  whose distinct-word counts rule out a match, with the same findings as before.
+  A full `gate --all .` on this repository went from about 100 seconds to about
+  12 on Windows.
 
 ### Fixed
 
@@ -134,50 +140,6 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   the canon and passed it, while a run on the whole repository reported it;
   only the `AGENTS.md` at the top of the repository is the canon now, so both
   runs agree for a subfolder that has a README of its own.
-- **OpenCode installs say when a file in OpenCode's folder keeps the rules
-  from OpenCode 1.**
-  OpenCode 1 reads `config.json`, `opencode.json` and then `opencode.jsonc`
-  from its configuration folder, and a list in a later file replaces the
-  earlier one. So an `instructions` list in an `opencode.jsonc` beside the
-  `opencode.json` the install writes, even an empty one, kept OpenCode 1 from
-  loading the profile document and the rules, and nothing said so. `apothem
-  install` and `apothem update` now print a note that names the file, dry runs
-  included, and `apothem verify` prints it while `opencode.json` lists an entry
-  the install wrote, without failing the check. When that list already holds
-  every entry the install writes, the note says installs do not refresh the
-  copy; when it holds only some, the note says the others do not reach
-  OpenCode 1. OpenCode 2 joins the lists of every file it reads, so the note is
-  about OpenCode 1 only. There is no note for a file with no `instructions`
-  list or for a symbolic link to `opencode.json`. There is none while
-  `OPENCODE_CONFIG_DIR` names that folder or `OPENCODE_CONFIG` names that
-  `opencode.json` either, because OpenCode 1 then reads the written list again
-  and joins it to the others.
-- **`agents-md-coverage-grep` judges a re-created companion and a subfolder
-  root as it should.** A per-folder `AGENTS.md` that a commit deleted and that
-  was written again was timed by the deleting commit, so the new file was
-  reported stale before it was ever committed. It now counts as new until you
-  commit it. A run on a subfolder treated that subfolder's own `AGENTS.md` as
-  the canon and passed it, while a run on the whole repository reported it;
-  only the `AGENTS.md` at the top of the repository is the canon now, so both
-  runs agree for a subfolder that has a README of its own.
-- **OpenCode installs say when a file in OpenCode's folder keeps the rules
-  from OpenCode 1.**
-  OpenCode 1 reads `config.json`, `opencode.json` and then `opencode.jsonc`
-  from its configuration folder, and a list in a later file replaces the
-  earlier one. So an `instructions` list in an `opencode.jsonc` beside the
-  `opencode.json` the install writes, even an empty one, kept OpenCode 1 from
-  loading the profile document and the rules, and nothing said so. `apothem
-  install` and `apothem update` now print a note that names the file, dry runs
-  included, and `apothem verify` prints it while `opencode.json` lists an entry
-  the install wrote, without failing the check. When that list already holds
-  every entry the install writes, the note says installs do not refresh the
-  copy; when it holds only some, the note says the others do not reach
-  OpenCode 1. OpenCode 2 joins the lists of every file it reads, so the note is
-  about OpenCode 1 only. There is no note for a file with no `instructions`
-  list or for a symbolic link to `opencode.json`. There is none while
-  `OPENCODE_CONFIG_DIR` names that folder or `OPENCODE_CONFIG` names that
-  `opencode.json` either, because OpenCode 1 then reads the written list again
-  and joins it to the others.
 
 ### Security
 
@@ -358,6 +320,61 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `no-global-plans-grep` still fails, as before, outside a checkout git can
   read or without `git`. The gate's advisory default still exits `0` on such
   a result, and `--strict` exits `2`.
+
+- **The conformity gate's `--all` validators open and list only real files
+  inside the project they check.** A project that came from someone else, in
+  an archive or a shared folder, can hold symbolic links and, on Windows,
+  junctions that lead out of it. The shared tree walk entered junctions,
+  returned linked files and looked up the target of each symbolic link, so
+  `dynamism-grep` read a linked page outside the project, and a junction back
+  to a folder above it made the walk go round the tree until the path grew too
+  long. Most validators that look in fixed places, such as
+  `.github/workflows/`, `.apothem/plans/`, `src/apothem/rules/` or
+  `pyproject.toml`, read through links of either kind, and many opened
+  whatever sat at the path, so a named pipe there made the gate wait forever
+  and a link to `/dev/zero` made a read that never ended. Every `--all`
+  validator now opens and lists only regular files and real folders that it
+  reaches through real folders below the root, and never follows a link. A
+  link, a named pipe, a device, a socket, or on Windows a name ending in a dot
+  or a space, counts as missing. A few checks still use a link without
+  entering it: for a fixed file that is a symbolic link, such as a
+  `CLAUDE.md` that points at another file, the gate reads the link's text and
+  opens the named file only when it is a regular file inside the project (a
+  linked `.gitattributes` still counts as missing, because git does not read
+  it); `no-global-plans-grep` reports a plans folder or an `.apothem` folder
+  that is a link, by name; `no-toplevel-docs-grep` reports a root `docs` link;
+  and `naming-grep` checks a link's own name. Each report lists the links and
+  special files it left out under `skipped_links`, and a validator whose
+  folder is a link fails instead of passing as if the folder were not there
+  yet. The checks that run git read the `.git` folder through git itself;
+  see the next entry for when they do not run it.
+- **The checks that run git have a plain rule for links.** The three `--all`
+  validators that run git, and `--all-perwrite`, follow it. In `--all` and
+  `--all-perwrite`, the gate itself opens only regular files inside the root,
+  checking each folder on the way with `lstat`, including every path git
+  lists, and never reads inside a `.git` entry. Before they run git, they look
+  with `lstat` at the `.git` entry of the root and of every folder above it
+  that git searches, as the tree is at that moment; if any of them is a link,
+  or cannot be looked at, they do not run git. This also refuses projects git
+  would handle safely, such as every project below a home folder whose `.git`
+  is a link, even one with its own repository: that is the deliberate cost of
+  a simple rule. They run git without `GIT_DIR` and the other variables that
+  name the repository, its stores or its index. Which repository git then
+  reads is not checked: a `gitdir:` line, `commondir`, alternates,
+  `core.worktree`, an include, or a link inside the git folder can name
+  another one, and git follows them, so git can reach a network path or wait
+  until its time limit. The gate uses git's output only as names, modes,
+  status letters, the subject of the last commit, commit times and a few
+  settings, and never opens a path git prints without checking each level
+  inside the root. When they find a link, they list it under `skipped_links`
+  (by its full path when it lies above the root), `no-global-plans-grep`
+  reports it as a failing finding, and `--all-perwrite` lists no tracked files
+  and fails with a `check_error` that names it. A `.git` entry the gate cannot
+  look at (a path too long, a share it cannot reach, no access) is not a link
+  and is not listed under `skipped_links`: `conventional-commit-grep` fails
+  with the status `git-failed` and a `check_error`, the companion coverage
+  check and `--all-perwrite` fail with a `check_error` that says the entry
+  could not be looked at, and `no-global-plans-grep` reports it as a finding.
 
 ## [1.6.0] - 2026-11-26
 

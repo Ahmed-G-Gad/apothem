@@ -114,6 +114,71 @@ checkout and still pass. The workflow validators do the same when the project
 has no `.github/workflows/` directory yet, and the commit-subject validator does
 when the root has no commit history.
 
+A project can come with files someone else made, in an archive or a shared
+folder, so every `--all` validator opens and lists only regular files and real
+folders that it reaches through real folders below the root. It never follows
+a symbolic link or, on Windows, a junction, and at any level below the root it
+treats each of these as missing:
+
+- a link, even one that points inside the root. A walk or a folder listing
+  skips it, so what it points to is checked only where the validator reaches
+  it under its own path;
+- a named pipe, a device or a socket, where a read would wait or never end;
+- on Windows, a name that ends in a dot or a space, because Windows would
+  open a different entry under that name.
+
+A few checks still use a link without entering it:
+
+- for a fixed file that is a symbolic link, such as a `CLAUDE.md` that points
+  at another file, the gate reads the link's own text and opens the file it
+  names only when that is a regular file inside the project, reached through
+  real folders. A per-folder `README.md` link counts the same way. An absolute
+  link counts when it is written through the project folder as it resolves,
+  or on Windows through the same path in another letter case; a validator
+  run on its own also accepts the folder as you
+  typed it, unless that path contains `..`, while the gate resolves the
+  folder before it starts each validator. A linked
+  `.gitattributes` still counts as missing, because git does not read it;
+- the stray-plans check in `no-global-plans-grep` reports a plans folder or an
+  `.apothem` folder that is a link, by its name, wherever the link leads;
+- `no-toplevel-docs-grep` reports a `docs` link at the root by its name;
+- `naming-grep` checks a link's own name.
+
+Each validator's report lists the links and special files it left out under
+`skipped_links`, so a link never hides a file without a trace. A validator
+that passes when its folder is missing, such as the workflow validators, does
+not pass when that folder is a link: the files may be behind it, so the run
+fails like one that checked nothing. A hard link is a regular file and is read
+like one. In `--all` and `--all-perwrite`, the gate itself opens only regular
+files inside the root, checking each folder on the way with `lstat`, including
+every path git lists, and never reads inside a `.git` entry. Before they run
+git, the three validators that run git look with `lstat` at the `.git` entry
+of the root and of every folder above it that git searches, as the tree is at
+that moment; if any of them is a link, or cannot be looked at, they do not run
+git. This also refuses projects git would handle safely, such as every project
+below a home folder whose `.git` is a link, even one with its own repository:
+that is the deliberate cost of a simple rule. They run git without `GIT_DIR`
+and the other variables that name the repository, its stores or its index.
+Which repository git then reads is not checked: a `gitdir:` line, `commondir`,
+alternates, `core.worktree`, an include, or a link inside the git folder can
+name another one, and git follows them, so git can reach a network path or
+wait until its time limit. The gate uses git's output only as names, modes,
+status letters, the subject of the last commit, commit times and a few
+settings, and never opens a path git prints without checking each level inside
+the root. When a link is found, each lists it under `skipped_links` (relative
+to the root inside it, by its full path above it). `conventional-commit-grep`
+then reports `not-a-git-repo`, as it does outside a checkout, but it does not
+pass: the link was left out, so its empty result is not the one it expects.
+`no-global-plans-grep` reports the link as a finding and fails, and the
+companion coverage check skips its freshness test, as it does with no history.
+`--all-perwrite` does not list the tracked files either: it fails with a
+`check_error` that names the link. A `.git` entry the gate cannot look at (a
+path too long, a share it cannot reach, no access) is not a link and is not
+listed under `skipped_links`: `conventional-commit-grep` fails with the status
+`git-failed` and a `check_error`, the companion coverage check and
+`--all-perwrite` fail with a `check_error` that says the entry could not be
+looked at, and `no-global-plans-grep` reports it as a finding.
+
 Each standalone validator runs as a program of its own, and the gate gives it
 10 minutes, in `--all` and in `--check`. The slowest one takes about a minute on
 Apothem's own repository. A validator still running at the limit is stopped,
@@ -312,8 +377,9 @@ reference-token-grep
 ```
 
 These skip nested git checkouts, such as worktrees, submodules and nested
-clones, and skip directories that hold dependencies, virtual environments,
-caches or build output, such as `node_modules`, `venv` and `dist`. The
+clones, never enter a linked folder, and skip directories that hold
+dependencies, virtual environments, caches or build output, such as
+`node_modules`, `venv` and `dist`. The
 stray-plans check in `no-global-plans-grep` also stops at a nested checkout. A
 run of any of these reports on the checkout it was pointed at and on nothing
 else. A validator that reads one fixed folder, such as `naming-grep` under

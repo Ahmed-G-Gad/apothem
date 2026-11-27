@@ -45,6 +45,12 @@ from apothem.conformity._grep_base import (
     GIT_LS_FILES_TIMEOUT_SECONDS,
     GitFailedError,
     GitTimeoutError,
+    linked_git_message,
+    nearest_linked_git_entry,
+)
+from apothem.conformity._project_paths import (
+    NAME_SURROGATE_TAG_BIT,
+    is_link,
 )
 
 # The largest file the corpus run reads, in bytes. It is well above any text a
@@ -128,19 +134,17 @@ _WINDOWS_UNHELD: Final[frozenset[str]] = frozenset(
     ':\\<>"|?*' + "".join(chr(code) for code in range(1, 32))
 )
 
-# Windows sets this bit in the tag of a reparse point that names another file or
-# folder: a symbolic link, a junction or a WSL link. ``os.lstat`` reports a
-# junction as a plain folder, so the tag is what shows it is a link.
-_NAME_SURROGATE_TAG_BIT: Final[int] = 0x20000000
-
 
 class CorpusListError(Exception):
-    """git cannot be started to list the tracked files.
+    """The tracked-file list cannot be read: git was not run, or did not start.
 
-    The message is a fixed sentence, like those of the git-check errors in
-    :mod:`apothem.conformity._grep_base`: git's own error text is left out,
-    because it can quote the repository's settings and name files outside the
-    project.
+    git is not run when a ``.git`` entry on its search path is a link (see
+    :func:`~apothem.conformity._grep_base.nearest_linked_git_entry`), and
+    does not start when it is missing. The message is a fixed sentence, like
+    those of the git-check errors in :mod:`apothem.conformity._grep_base`,
+    except that a linked entry is named by its own path (by its full path when
+    it lies above the root). git's own error text is left out, because it can
+    quote the repository's settings and name files outside the project.
     """
 
 
@@ -173,18 +177,25 @@ def tracked_entries(root: Path) -> list[TrackedEntry]:
     submodule when any of its stages does. Each name is judged as git writes
     it (see :func:`name_skip`); no path is resolved and no link is followed.
 
-    Raises :class:`CorpusListError` when git cannot be started,
+    Raises :class:`CorpusListError` when git is not run or cannot be started
+    (a ``.git`` entry in *root* or a folder above it that git searches is a
+    link, see :func:`~apothem.conformity._grep_base.nearest_linked_git_entry`;
+    or git did not start),
     :class:`~apothem.conformity._grep_base.GitFailedError` when git exits
     with an error (for example, *root* is not inside a git work tree), and
     :class:`~apothem.conformity._grep_base.GitTimeoutError` when git runs
     past the time limit: the same errors, in the same words, as the
     standalone validators' own git commands.
     """
+    linked = nearest_linked_git_entry(root)
+    if linked is not None:
+        raise CorpusListError(linked_git_message(root, linked))
     try:
         completed = run_git(
             ["ls-files", "-s", "-z"],
             cwd=root,
             timeout=GIT_LS_FILES_TIMEOUT_SECONDS,
+            discover=True,
             file_names=True,
         )
     except subprocess.TimeoutExpired as exc:
@@ -262,13 +273,6 @@ def _windows_cannot_hold(part: str) -> bool:
         return True
     digits = bare[4:]
     return bare.startswith("git~") and digits.isascii() and digits.isdigit()
-
-
-def is_link(info: os.stat_result) -> bool:
-    """Return True when *info*, from ``os.lstat``, describes a link of any kind."""
-    if stat.S_ISLNK(info.st_mode):
-        return True
-    return bool(getattr(info, "st_reparse_tag", 0) & _NAME_SURROGATE_TAG_BIT)
 
 
 def leaves_root(root: Path, path: Path) -> bool:
@@ -505,7 +509,7 @@ if sys.platform == "win32":
         first = _create_file(path, _FILE_FLAG_OPEN_REPARSE_POINT)
         try:
             tag = _reparse_tag(first)
-            if tag is not None and tag & _NAME_SURROGATE_TAG_BIT:
+            if tag is not None and tag & NAME_SURROGATE_TAG_BIT:
                 raise OSError(errno.ELOOP, "a link is in the file's place", str(path))
             if tag == 0:
                 return first

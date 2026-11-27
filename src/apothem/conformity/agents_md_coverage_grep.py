@@ -90,12 +90,18 @@ from apothem.conformity._git import run_git
 from apothem.conformity._grep_base import (
     CHECK_ERROR_KEY,
     GitCheckError,
+    GitEntryUnreadableError,
     GitFailedError,
     GitTimeoutError,
     finish_root_report,
+    git_entry_unreadable,
     in_checkout,
+    is_project_file,
     iter_tree_files,
+    linked_git_message,
+    nearest_linked_git_entry,
     parse_root_args,
+    project_file_target,
 )
 
 GREP_NAME: Final[str] = "agents-md-coverage-grep"
@@ -265,9 +271,13 @@ def meaningful_folders(root: Path) -> list[str]:
     folders: set[str] = set()
 
     # Rule (A): folders carrying a contributor README, minus fixture/example leaves.
+    # A README that links to a regular file in the project counts; one that
+    # leads out of it, or to anything else, does not.
     for readme in iter_tree_files(
-        root, names=(README_NAME,), extra_prune=_EXCLUDED_SEGMENTS
+        root, names=(README_NAME,), extra_prune=_EXCLUDED_SEGMENTS, include_links=True
     ):
+        if project_file_target(root, readme) is None:
+            continue
         rel = _rel_posix(readme.parent, root_resolved)
         if rel is None or _has_excluded_segment(rel):
             continue
@@ -290,7 +300,8 @@ def meaningful_folders(root: Path) -> list[str]:
             continue
         if _has_excluded_segment(rel) or _is_harness_template_leaf(rel):
             continue
-        if (py_file.parent / README_NAME).is_file():
+        # A README that links to a regular file in the project counts.
+        if project_file_target(root, py_file.parent / README_NAME) is not None:
             continue
         folders.add(rel)
 
@@ -318,6 +329,7 @@ def _is_partial_clone(root: Path) -> bool:
             ],
             cwd=root,
             timeout=GIT_TIMEOUT_SECONDS,
+            discover=True,
         )
     except subprocess.TimeoutExpired as exc:
         raise GitTimeoutError("git config", GIT_TIMEOUT_SECONDS) from exc
@@ -365,21 +377,32 @@ def _read_history(root: Path) -> _History | None:
     is a subtree of the repository. git runs through :func:`run_git`, which
     turns off the repository's program-running settings (a signature check,
     say) and prints non-ASCII path names as they are, decoded as UTF-8.
-    Returns None when git history is unavailable (no repository, no commit
-    yet, git absent, or a partial clone whose read failed, whatever the cause)
+    Returns None when git history is unavailable (no repository, a ``.git``
+    entry that is a link in *root* or a folder above it, so git is not run,
+    no commit yet, git absent, or a partial clone whose read failed, whatever
+    the cause)
     so the caller degrades to a presence-only sweep. Raises
     :class:`~apothem.conformity._grep_base.GitTimeoutError` when a git command
     runs past its limit, and
     :class:`~apothem.conformity._grep_base.GitFailedError` when git fails
     although *root* is inside a checkout (git refused the repository) or
     after it found the history in a full clone: in both cases the history is
-    there but was not read.
+    there but was not read. Raises
+    :class:`~apothem.conformity._grep_base.GitEntryUnreadableError` when a
+    ``.git`` entry on git's search path could not be looked at.
     """
+    linked = nearest_linked_git_entry(root)
+    if linked is not None:
+        if git_entry_unreadable(linked):
+            # Not a link: the gate could not look, so the history is unread.
+            raise GitEntryUnreadableError(linked_git_message(root, linked))
+        return None
     try:
         head = run_git(
             ["rev-parse", "--show-prefix", "--verify", "--quiet", "HEAD"],
             cwd=root,
             timeout=GIT_TIMEOUT_SECONDS,
+            discover=True,
         )
     except subprocess.TimeoutExpired as exc:
         raise GitTimeoutError("git rev-parse", GIT_TIMEOUT_SECONDS) from exc
@@ -404,6 +427,7 @@ def _read_history(root: Path) -> _History | None:
             ],
             cwd=root,
             timeout=GIT_HISTORY_TIMEOUT_SECONDS,
+            discover=True,
         )
     except subprocess.TimeoutExpired as exc:
         raise GitTimeoutError("git log", GIT_HISTORY_TIMEOUT_SECONDS) from exc
@@ -510,7 +534,7 @@ def check(root: Path) -> GrepResult:
                     not is_canon
                     and path not in history.deleted
                     and companion_folder in folder_set
-                    and (root / path).is_file()
+                    and is_project_file(root, root / path)
                 ):
                     companion_ct[companion_folder] = ct
                 continue
