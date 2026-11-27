@@ -115,7 +115,7 @@ At most two adjacent sections share a skeleton, such as "heading group, then one
 
 ### Width and mass
 
-- Below the hero, the widest row of each section body spans 10 or more of the 12 columns, unless the body is a single statement (`lay-07.a`). The clause does not fire on the prose-document, letter, and question-answer shapes. It also does not fire on running prose of two paragraphs or more held at the `pol-02` measure ([typography](typography.md)). Fix a narrow body by adding a visual beside the text, splitting the text, or setting it as a statement.
+- Below the hero, the widest row of each section body spans 10 or more of the 12 columns, unless the body is a single statement (`lay-07.a`). The clause does not fire on the prose-document, letter, and question-answer shapes. It also does not fire on running prose of two paragraphs or more held at the `pol-02` measure ([typography](typography.md)), on the hairline-rows variant (composition 5), or on the sticky-pane shape. Fix a narrow body by adding a visual beside the text, splitting the text, or setting it as a statement.
 - Every body has mass: at least one of these.
   - A visual 360 px or taller. A visual under 360 px does not count as mass, and one under 300 px is flagged (`lay-00.width-and-mass`).
   - Three or four items running edge to edge.
@@ -178,7 +178,7 @@ A composition is an arrangement, not a component. Each one is drawn in the theme
 
 | # | Composition | Layout | Numbers |
 |---|-------------|--------|---------|
-| 1 | Text and visual split | A text group sits beside a visual. The group holds a heading, a lead, and either a few short facts (two to four) or a single action. Swap sides at most once per page. Two splits on a page use different ratios. | Ratios 6/6, 5/7, 4/8, putting the visual on columns 7-12, 6-12, or 5-12. Visual 440 px or taller, aspect 4:3 to 4:5 (portrait for product photos). |
+| 1 | Text and visual split | A text group sits beside a visual. The group holds a heading, a lead, and either a few short facts (two to four) or a single action. Swap sides at most once per page. Two splits on a page use different ratios, except in a page shape built wholly from splits. | Ratios 6/6, 5/7, 4/8, putting the visual on columns 7-12, 6-12, or 5-12. Visual 440 px or taller, aspect 4:3 to 4:5 (portrait for product photos). |
 | 2 | Full-width showcase | Heading group, then one wide visual across all 12 columns. Up to two smaller visuals below at unequal widths, never three equal frames. | Aspect 16:9 to 21:9, 560 px or taller. Secondaries 8+4 or 7+5. |
 | 3 | Item grid | One row of 3-4 items or a 2 x 2 block: plans, products, places, rooms, dishes. Each has a photo, a large number, or a title that fills the cell, plus one line. Cells match height and align at the top. No empty frames, no stock faces passed off as real people (`cpy-02`), no icon tiles over headings (`img-02.c`). | Cells 240 px or taller. |
 | 4 | Bento tiles | Tiles of mixed span on the shared 12-column grid. A 6-column bento is that grid read in pairs of tracks, with the same `col-gap`. Two or more carry a visual. One tile clearly leads. | 4-6 tiles. Spans such as 8+4 over 4+4+4, or 7+5 over 5+7. Rows 280-360 px. |

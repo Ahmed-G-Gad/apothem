@@ -35,7 +35,7 @@ Rules for both routes:
 - MUST NOT hotlink stock sites or use paid stock (`cpy-03`). No license record can be made for a hotlinked file, and paid stock needs a license the user holds.
 - Each approved file lives in the project and is served from there. [Direction and themes](direction-and-themes.md), section "Safe fetching", sets who saves it and when.
 - Accept raster files only: JPEG, PNG, WebP, or AVIF. When a host tool reports both the content type and the file's opening bytes, check both. Otherwise take the type from the fetch response and the file extension, and record the byte check as not run.
-- Serve no SVG from an outside source, and no raster file that still carries EXIF or XMP metadata (`img-00.1`). "Safe fetching" in [direction and themes](direction-and-themes.md) sets which SVG files count as project material, how an outside SVG becomes a raster, and how metadata is stripped.
+- Serve no SVG from an outside source, and no raster file that still carries EXIF or XMP metadata (`img-00.1`). "Safe fetching" in [direction and themes](direction-and-themes.md) sets which SVG files count as project material, that the user supplies a raster file in place of an outside SVG, and how metadata is stripped.
 - Credit every one of these photos (section 7).
 
 ### Generated stills
@@ -117,9 +117,8 @@ A photo is large or absent: at least 6 of 12 columns and 440px tall, or full-ble
 
 ### Page share
 
-- Under the hero, photos cover 33% or less of the page area at 1440 wide. Photo-led and project-cards shapes ([page shapes](page-shapes.md)) MAY reach 45%.
 - Product images do not count toward the share.
-- With three or more pictures present, coverage above 36% is a finding (`img-03.a`). The limit is 45% on photo-led and project-cards shapes.
+- With three or more pictures present, photo coverage under the hero above 36% of the page area at 1440 wide is a finding (`img-03.a`). The limit is 45% on photo-led and project-cards shapes ([page shapes](page-shapes.md)).
 - Two photo-led sections MUST NOT sit next to each other (`img-03.b`). The section between is carried by the theme's other material: type, figures, rules, color fields, tables, forms, or the product.
 - In doubt, remove the least useful picture and state its fact in large type.
 
@@ -228,7 +227,7 @@ Everything in this section is banned. An item that cites no id of its own grades
 - **Fake objects and grids:** bevel or emboss effects imitating objects; grid or stripe backgrounds with nothing beneath. A grid needs a canvas, map, or measuring tool under it.
 - Illustration packs, mascots, 3D blobs, and isometric scenes.
 - Stock faces offered as proof, and invented customer logo walls (`cpy-02`).
-- Mesh-gradient blobs, glowing orbs, or aurora effects behind text ([color and surfaces](color-and-surfaces.md)).
+- Mesh-gradient blobs, glowing orbs, or aurora effects behind text (`col-00.4`, [color and surfaces](color-and-surfaces.md), section 4).
 - Images that zoom or spin on hover.
 - Text baked into images (`img-01`).
 - Photos of screens showing another company's interface.

@@ -19,7 +19,7 @@ Copy beside a picture is the posture generated pages fall into by default. The s
 | # | Posture (`hero:` slug) | Layout | Suits |
 |---|---------|--------|-------|
 | 1 | **Balanced split** (`balanced-split`) | Fills the screen below the nav (the sizing rule in section 1). Copy on 6 columns, visual on 6, both centered vertically. | A product whose picture carries the page. |
-| 2 | **Wide-visual split** (`wide-visual-split`) | Copy on 5 columns, visual on 7 at the size in section 6. The visual MAY bleed past the outer edge. Give the copy the 7 columns when a headline set at `text-display` needs the room. | Screens, objects, and photos that reward size. |
+| 2 | **Wide-visual split** (`wide-visual-split`) | Copy on 5 columns, visual on 7 at the size in section 6. The visual MAY bleed past the outer edge. | Screens, objects, and photos that reward size. |
 | 3 | **Short header** (`short-header`) | Ends at the short-header limit in section 3, so the first section shows above the fold. | Reference material, docs, and utilities. |
 | 4 | **Bottom-anchored** (`bottom-anchored`) | A full-height field with the headline set at its foot. At 1920 wide the headline reaches its maximum size before anything else grows. | Statement pages, studios, and events. |
 | 5 | **Narrow centered column** (`narrow-centered-column`) | Fills the screen below the nav (the sizing rule in section 1), one column no wider than 44ch. With no picture, type is the hero's main visual, so the headline MAY take the type-as-visual ceiling in the display exceptions of the [`DESIGN.md` template](design-md-template.md), "Reference scale". | One message, one action. |

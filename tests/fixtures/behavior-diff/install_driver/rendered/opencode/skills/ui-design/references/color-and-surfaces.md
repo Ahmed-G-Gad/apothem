@@ -81,7 +81,6 @@ The WCAG ratio is the only pass line. A perceptual-contrast figure never replace
 A ratio comes from a tool, never from hand arithmetic. The routes, and the `not checked` grade when no route exists, are in the [pre-delivery checklist](pre-delivery-checklist.md), section 1, "Static checks".
 
 - A rule that puts an element on a dark background MUST also set that element's text color (`acc-01`).
-- A page MUST NOT set gray text on a colored background (`acc-01`).
 - Button text meets its `acc-01` ratio against its fill in every enabled state.
 - Where the accent carries text, an on-accent ink token MUST exist (`acc-01`, `tok-01`).
 - Red against green is never the only cue for a status (`acc-02`). Add an icon, a word, or a shape.

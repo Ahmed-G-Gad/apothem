@@ -184,7 +184,6 @@ Variants, each with its `footer:` slug:
 ## 12. No invented proof
 
 - Never invent metrics, testimonials, logo walls, customer names, awards, or case-study counts (`cpy-02`). Use the user's figure, a marked blank (section 13), or nothing.
-- A lone number as the whole hero headline is flagged (`cpy-00.12`) unless the user supplied it with its unit and source and the page is designed around it.
 
 ## 13. Missing facts and unknown links
 
@@ -224,3 +223,4 @@ Each is named by its symptom, and each is a finding. The detail rule sits in the
 - On any genre except product-minimal, the stock product look: a tight grotesk at weight 600 on paper of L 96 or lighter, one blue accent, a 1px border under a broad soft shadow ([color and surfaces](color-and-surfaces.md), section 7).
 - Gradient ramps posing as material (`col-01.b`).
 - A strong first screen whose third section turns into an identical card grid for unlike items (`lay-03.b`).
+- A lone number as the whole hero headline, unless the user supplied it with its unit and source and the page is designed around it.

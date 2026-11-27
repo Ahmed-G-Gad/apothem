@@ -44,7 +44,7 @@ Deliver two things:
 1. The component, written to the project's existing conventions for file layout, naming, and styling. When the build writes no stylesheet, the build record opens the component's own source file ([build record](build-record.md), section 1).
 2. A preview file that stacks every interactive state, each in its own labeled row.
 
-The preview MUST show, for each control, every state its kind needs under the `lay-02` row of the [rule catalog](rule-catalog.md), which is the only list of those sets. Each row forces its state through a helper class. The component CSS targets the helper class and the real pseudo-class in the same selector, for example `.btn:hover, .btn.is-hover`. The reviewer then sees every state at once, and the live states still work. Helper classes live only in the preview file's stylesheet, so the component's own CSS keeps its ring on `:focus-visible` alone (`acc-03`).
+The preview MUST show, for each control, every state its kind needs under the `lay-02` row of the [rule catalog](rule-catalog.md), which is the only list of those sets. Each row forces its state through a helper class. The preview stylesheet repeats each state rule under its helper class, for example `.btn.is-hover`. The reviewer then sees every state at once, and the live states still work. Helper classes live only in the preview file's stylesheet, so the component's own CSS keeps its ring on `:focus-visible` alone (`acc-03`).
 
 ## App scope
 

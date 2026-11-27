@@ -170,7 +170,7 @@ Duration tokens are defined in section 13.3.
 ## 12. Feedback honesty
 
 - **Silent success.** When the outcome is already visible, there is no toast. Toasts are for errors and for outcomes the interface cannot show.
-- **Optimistic update.** Change the UI at once and send the request in the background, silent on success. On failure, revert over `short`. Then raise an error toast with a retry that stays until the user responds.
+- **Optimistic update.** When an update is optimistic, it changes the UI at once, sends the request in the background, and stays silent on success. On failure, revert over `short`. Then raise an error toast with a retry that stays until the user responds.
 
 ## 13. Motion
 
@@ -275,7 +275,7 @@ These MUST NOT appear (`mot-00.13.8`):
 - A caret that still blinks past the `acc-11` time limit.
 - An infinite loop. Four exceptions exist: a loader; one marquee; one small loop whose cycle is 4 seconds or less; and one ambient loop whose cycle is 8 seconds or more. Every exception except the loader meets the `acc-11` conditions below.
 
-Motion that starts on its own and runs past the `acc-11` time limit in total follows that row. The total counts every repeat, so any loop that repeats past the limit qualifies, whatever its cycle length. Examples are marquees, small and ambient loops, and videos that loop. Only a loader is exempt, while its load runs. Such motion waits for script before it starts. It halts when it leaves the viewport, and it does not run under reduced motion. It pauses while the pointer or focus is on it. A visible play and pause button controls it, which is what SC 2.2.2 asks for; without script or under reduced motion, that button is hidden. Content that rotates on its own with no pause control fails `acc-11` through SC 2.2.2. Content that keeps rotating under hover or focus fails `acc-11` through the house extension the row marks Beyond WCAG. Content that updates on its own beside other content, such as a ticker, a feed, or a refreshing score, carries the control the `acc-11` row asks for.
+Motion that starts on its own and runs past the `acc-11` time limit in total follows that row. The total counts every repeat, so any loop that repeats past the limit qualifies, whatever its cycle length. Examples are marquees, small and ambient loops, and videos that loop. Only a loader is exempt, while its load runs and the content beside it cannot be used. Such motion waits for script before it starts. It halts when it leaves the viewport, and it does not run under reduced motion. It pauses while the pointer or focus is on it. A visible play and pause button controls it, which is what SC 2.2.2 asks for; without script or under reduced motion, that button is hidden. Content that rotates on its own with no pause control fails `acc-11` through SC 2.2.2. Content that keeps rotating under hover or focus fails `acc-11` through the house extension the row marks Beyond WCAG. Content that updates on its own beside other content, such as a ticker, a feed, or a refreshing score, carries the control the `acc-11` row asks for.
 
 Nothing on the page flashes past the `acc-16` limit, and the skill does not use the below-threshold exception. A blink, a strobe, or a fast color swap counts as a flash.
 
