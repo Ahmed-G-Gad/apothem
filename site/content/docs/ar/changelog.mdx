@@ -81,10 +81,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   literal text in four command-page summaries, the quick start's "The apothem
   command" box, bold phrases in the Japanese, Korean and Simplified Chinese
   pages, and the cut-off descriptions in the rules, commands and helpers
-  tables; a cut no longer leaves half a link or an unclosed emphasis, bold or
-  strikethrough marker either. The
+  tables; a cut no longer leaves half a link, an unclosed emphasis, bold or
+  strikethrough marker, or an open parenthesis either. The
   summaries of four command pages and the raw Cursor comparison say which file
   or folder a path names, so it reads as part of the sentence.
+- **The release version bumper stops early when the docs packages are not
+  installed.** The docs reference generator now reads Markdown with packages
+  that `site/package.json` declares. `scripts/release/bump_version.py` checks
+  for `site/node_modules` before it changes any file and, when the folder is
+  missing, stops and names the fix, `npm ci --prefix site`. The generator run
+  on its own also stops before writing any page and names the same command.
 - **The conformity gate reads every byte of a path name, and a failed
   `git diff` does not pass from a subfolder.** The gate read git's lists of
   path names as text, which turned a carriage return in a name into a line

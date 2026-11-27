@@ -70,8 +70,11 @@ publish pipeline deploys.
   Python interpreter on `PATH`.
 
 The `predev` and `prebuild` steps run `scripts/update-reference-inventory.mjs`,
-so a clean build regenerates the source-generated reference pages. Regenerate
-the `llms.txt` / `llms-full.txt` summaries with
+so a clean build regenerates the source-generated reference pages. The
+generator imports Markdown packages from `node_modules`, so run `npm ci` in
+this folder (or `npm ci --prefix site` from the repository root) before
+running it directly; without them it stops before writing any page and names
+that command. Regenerate the `llms.txt` / `llms-full.txt` summaries with
 `node scripts/build-llms-txt.mjs` when the documentation set changes.
 
 ## Working in this folder
@@ -85,10 +88,10 @@ expression for MDX content pages).
 - **Source-generated reference pages are not edited by hand.** When a documented
   public surface in the Python package changes (a CLI command or flag, a harness
   adapter, a profile field, an installer flag), refresh the matching reference
-  page by re-running `node scripts/update-reference-inventory.mjs` and committing
-  the regenerated output in the same change-set. The CI docs-reference-sync drift
-  gate enforces this — a dirty `git status` on a reference page after a build
-  signals a missed regeneration.
+  page by re-running `node scripts/update-reference-inventory.mjs` (after
+  `npm ci` here) and committing the regenerated output in the same change-set.
+  The CI docs-reference-sync drift gate enforces this — a dirty `git status` on
+  a reference page after a build signals a missed regeneration.
 - **A link on a translated page keeps the reader in their language.** Write a
   docs link once, as `/docs/<page>` or `/docs/<page>#<id>`, the same in every
   language. The per-locale docs route (`components/localized-link.tsx`, with

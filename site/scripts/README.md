@@ -29,7 +29,13 @@ Run any of them from `site/`.
   Markdown, counts only the characters the page shows, and keeps or drops
   whole inline nodes at the cut, so no code span, emphasis, bold,
   strikethrough or link is left open (a link the cut lands in keeps its label
-  as plain text). Each cut is parsed again and checked before it is used.
+  as plain text). It steps back to an earlier word boundary rather than end a
+  cell inside an open parenthesis, unless the source never closes it. Each cut
+  is parsed again and checked before it is used; when no cut passes, the shown
+  text is cut at a word boundary and written as escaped plain text ending in
+  " …", never longer than the limit. The Markdown packages it imports are
+  declared in `package.json`, so `npm ci` installs them; the generator stops
+  with that fix named when they are missing.
   Covered by `cut-at-word.test.mjs` under `npm test`, which also cuts every
   excerpt source that `update-reference-inventory.mjs` exports through
   `cutInputs()` (the script writes pages only when run directly).

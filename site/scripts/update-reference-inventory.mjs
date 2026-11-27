@@ -27,7 +27,22 @@ import { spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { cutAtWord } from './cut-at-word.mjs';
+
+// The excerpt cutter parses Markdown with packages from site/node_modules.
+// Load it here so a checkout without them stops before any page is written,
+// with a message that names the fix.
+let cutAtWord;
+try {
+	({ cutAtWord } = await import('./cut-at-word.mjs'));
+} catch (error) {
+	if (error?.code !== 'ERR_MODULE_NOT_FOUND') throw error;
+	process.stderr.write(
+		'update-reference-inventory: the Markdown packages in site/node_modules are missing.\n' +
+			'Run `npm ci --prefix site` from the repository root, then run this script again.\n' +
+			`(${error.message})\n`,
+	);
+	process.exit(1);
+}
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
 const SITE_ROOT = join(SCRIPT_DIR, '..');
@@ -931,8 +946,9 @@ function writePipelineNav(pages) {
 }
 
 // Every text this script passes to cutAtWord, with its limit, for the
-// cut-at-word tests: the opening paragraph of every source file (180) and the
-// first sentence of every command summary (160). Reads only.
+// cut-at-word tests: the opening paragraph of every source file (180), the
+// body excerpt of a command with no description (180) and the first sentence
+// of every command summary (160). Reads only.
 export function cutInputs() {
 	const inputs = [];
 	const files = SOURCES.flatMap((config) =>
@@ -943,6 +959,9 @@ export function cutInputs() {
 		inputs.push({ text: excerptSource(body), limit: 180 });
 	}
 	for (const { frontmatter, body } of commandDefinitions()) {
+		// commandPage() falls back to the 180-limit body excerpt when the
+		// frontmatter has no description.
+		if (!frontmatter.description) inputs.push({ text: excerptSource(body), limit: 180 });
 		inputs.push({ text: sentenceSource(frontmatter.description || excerpt(body)), limit: 160 });
 	}
 	return inputs.filter((input) => input.text);
@@ -998,6 +1017,16 @@ function main() {
 }
 
 // Run only as a script, so the tests can import cutInputs without writing pages.
-if (process.argv[1] && realpathSync(process.argv[1]).toLowerCase() === realpathSync(fileURLToPath(import.meta.url)).toLowerCase()) {
+function runAsScript() {
+	if (!process.argv[1]) return false;
+	try {
+		const fold = (path) => (process.platform === 'win32' ? path.toLowerCase() : path);
+		return fold(realpathSync(process.argv[1])) === fold(realpathSync(fileURLToPath(import.meta.url)));
+	} catch {
+		return false;
+	}
+}
+
+if (runAsScript()) {
 	main();
 }
