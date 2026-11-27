@@ -2,7 +2,7 @@
 title: "Runbook du cycle de publication"
 description: "Flux de travail de publication complet, des contrôles locaux au GitHub Release signé jusqu'à la publication npm."
 machineTranslated: true
-sourceHash: "290e07a124d79a3c"
+sourceHash: "74550dc717817290"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,8 +14,8 @@ test de fumée du chemin d'installation confirmant que chaque surface destinée 
 l'utilisateur répond à la commande d'installation canonique.
 
 Le modèle de publication est **additif**. Chaque publication ajoute un commit
-sur `main` et une étiquette `vX.Y.Z` annotée et signée ; aucun force-push n'est
-effectué et aucune étiquette, aucun GitHub Release ni aucune version npm
+sur `main` (le squash merge d'une pull request de publication) et une étiquette
+`vX.Y.Z` annotée et signée ; aucun force-push n'est effectué et aucune étiquette, aucun GitHub Release ni aucune version npm
 antérieurs ne sont retirés. Chaque publication conserve son étiquette, son GitHub Release et sa version npm, et toutes restent publiées : les versions npm sont immuables (un `name@version` publié ne peut
 jamais être remplacé), et les installations épinglées dépendent des étiquettes.
 
@@ -28,7 +28,7 @@ npmjs.com via la publication de confiance npm, et `publish-vscode.yml`
 empaquette l'extension VS Code et la publie sur le Visual Studio Marketplace.
 La section versionnée du
 CHANGELOG atterrit dans le commit de publication ; l'opérateur exécute le test
-de fumée du chemin d'installation une fois les deux flux de travail terminés.
+de fumée du chemin d'installation une fois les trois flux de travail terminés.
 
 ## 1. Prérequis
 
@@ -36,8 +36,13 @@ Le mainteneur confirme les éléments suivants avant d'étiqueter :
 
 - **Arbre de travail.** Propre (`git status` n'affiche rien en attente). Tout le
   travail de fonctionnalités de la publication se trouve sur `main`.
-- **CI au vert.** Pour le dernier `main`, `gh run list --branch=main --limit=1
-  --json conclusion --jq '.[0].conclusion'` renvoie `success`.
+- **CI au vert.** La dernière exécution de la CI sur `main` a réussi :
+  `gh run list --workflow ci.yml --branch=main --limit=1 --json conclusion
+  --jq '.[0].conclusion'` renvoie `success`. Sans `--workflow`, la commande
+  lit la dernière exécution de n'importe quel flux de travail (Badges, par
+  exemple), et non celle de la CI. La vérification de l'état de préparation du
+  §2.4 contrôle plus tard chaque flux de travail requis sur le commit de
+  publication ; `scripts/release/check-release-ready.sh` les liste.
 - **Outillage.** `gh` (GitHub CLI) version 2.40 ou ultérieure authentifié
   auprès de `ahmed-g-gad` ; `git` 2.40 ou ultérieure avec la sous-clé de
   signature GPG chargée ; le lien d'éditeur de confiance npm pour
@@ -66,20 +71,25 @@ Le mainteneur confirme les éléments suivants avant d'étiqueter :
 
 ### 2.1 Rédiger le commit de publication
 
-La version figure dans plus d'une douzaine de fichiers ; ne les modifiez donc
-pas à la main. Une seule commande les met tous à jour :
+Le commit de publication arrive sur `main` par une pull request fusionnée en
+squash, comme toute autre modification. La protection de branche ne s'impose
+pas à un administrateur, qui pourrait pousser directement vers `main` ; ce
+runbook n'utilise pas ce contournement. Créez le commit sur une branche
+`release/vX.Y.Z`. La version figure dans plus d'une douzaine de fichiers ; ne
+les modifiez donc pas à la main. Une seule commande les met tous à jour :
 
 ```bash
 git checkout main
 git pull --ff-only origin main
+git checkout -b release/vX.Y.Z
+npm ci --prefix site
 python scripts/release/bump_version.py X.Y.Z
 ```
 
 `bump_version.py` met à jour tous les ancrages de version ensemble :
 
 - Chaque manifeste d'empaquetage, d'extension, de plugin et de marketplace,
-  ainsi que le fichier de citation (version et date de publication). La liste
-  complète :
+  ainsi que le fichier de citation (version et date de publication) :
 
   ```text
   pyproject.toml
@@ -95,6 +105,24 @@ python scripts/release/bump_version.py X.Y.Z
   CITATION.cff
   ```
 
+- Les fichiers d'encapsulation qui exécutent le moteur par npx, dont les
+  appels `npx @ahmed-g-gad/apothem@X.Y.Z` sont épinglés sur la publication :
+
+  ```text
+  commands/apothem.toml
+  qwen-commands/apothem.md
+  GEMINI.md
+  QWEN.md
+  plugins/apothem/skills/apothem/SKILL.md
+  vscode-extension/extension.js
+  vscode-extension/package.json
+  vscode-extension/README.md
+  ```
+
+  Les deux listes sont `JSON_ANCHORS` et `NPX_PIN_ANCHORS` dans
+  `scripts/release/bump_version.py` ; c'est le script, et non cette page, qui
+  fait autorité.
+
 - `CHANGELOG.md` : les entrées `[Unreleased]` deviennent une section
   `## [X.Y.Z]` datée, `[Unreleased]` compare à partir de `vX.Y.Z`, et un lien
   `[X.Y.Z]` est ajouté.
@@ -102,36 +130,66 @@ python scripts/release/bump_version.py X.Y.Z
   en charge. Le maintien ou non des versions mineures plus anciennes dans la
   liste relève de votre décision ; le script affiche un rappel.
 
+Deux modifications de `SECURITY.md` vous reviennent, à la main, dans le même
+commit :
+
+- Ajoutez la nouvelle étiquette en haut du tableau des étiquettes signées, sous
+  « Release tags are not all the same kind of object ». Le script ne touche pas
+  à ce tableau. La ligne se lit ainsi :
+
+  ```text
+  | `vX.Y.Z` | annotated, GPG-signed | `git verify-tag vX.Y.Z` |
+  ```
+
+- Pour une nouvelle version mineure, remplacez la ligne de la mineure
+  précédente par le support que vous lui conservez, par exemple « Critical
+  security fixes only, until `<date>` ».
+
 Il régénère ensuite les arborescences dérivées : le paquet du plugin Claude
 Code, les goldens de behavior-diff, ainsi que les pages de référence et de
 changelog de la documentation. Passez `--dry-run` pour lister d'abord les
 modifications, `--date
 YYYY-MM-DD` pour définir la date de publication (par défaut : aujourd'hui en
-UTC), ou `--no-regen` pour ignorer la régénération. Le script refuse une version
+UTC), ou `--no-regen` pour ignorer la régénération. Les pages de la
+documentation sont construites avec des paquets Markdown de `site/node_modules` ;
+le script s'arrête donc avant de modifier le moindre fichier lorsque ce dossier
+manque, et `npm ci --prefix site` l'installe. Le script refuse une version
 malformée ou une rétrogradation, et le relancer avec la version actuelle ne fait
 que réaligner les ancrages divergents.
 
-Examinez le diff, puis créez le commit :
+Examinez le diff, puis créez le commit, poussez la branche et ouvrez la pull
+request :
 
 ```bash
-git checkout -b release/vX.Y.Z
 git add -A
 git commit -s -m "chore(release): cut vX.Y.Z"
 git push -u origin release/vX.Y.Z
 gh pr create --base main --head release/vX.Y.Z \
   --title "chore(release): cut vX.Y.Z" --body "Release vX.Y.Z."
+```
+
+Le drapeau `-s` ajoute la ligne `Signed-off-by` que la vérification obligatoire
+`Require Signed-off-by` recherche sur chaque commit de la pull request. Le sujet
+du commit de squash est le titre de la pull request suivi de ` (#N)`, et il doit
+tenir en 72 caractères.
+
+Attendez les vérifications obligatoires, puis fusionnez la pull request en
+squash et ramenez le commit de fusion dans votre clone :
+
+```bash
 gh pr checks release/vX.Y.Z --required --watch
 gh pr merge release/vX.Y.Z --squash --match-head-commit "$(git rev-parse HEAD)"
 git checkout main
 git pull --ff-only origin main
+git log -1 --format='%h %s'
 ```
 
-Le drapeau `-s` ajoute la ligne `Signed-off-by` que recherche la vérification
-obligatoire `Require Signed-off-by`. Le commit de release arrive sur `main`
-comme le squash merge de cette pull request ; GitHub signe ce commit avec sa
-propre clé, et votre signature de la release est celle de l'étiquette (§2.2). Le
-merge déclenche la matrice de CI standard (lint, test, build) sur `main` ;
-attendez le vert avant d'étiqueter.
+La dernière commande affiche le hash court suivi de
+`chore(release): cut vX.Y.Z (#N)`. GitHub crée le commit de squash et le signe
+avec sa propre clé ; le commit ne porte donc pas votre signature GPG. Votre
+signature de la publication est celle de l'étiquette (§2.2), que vérifient les
+installateurs. La fusion déclenche la matrice de CI standard (lint, test, build)
+sur `main` ; attendez le vert avant d'étiqueter.
 
 La vérification de l'état de préparation du §2.4 exige aussi que CodeQL et
 Conformity soient au vert sur le commit de publication. Les deux ne
@@ -147,20 +205,24 @@ gh run list --workflow codeql.yml --commit "$(git rev-parse HEAD)" --limit 1
 gh run list --workflow conformity.yml --commit "$(git rev-parse HEAD)" --limit 1
 ```
 
-Attendez la réussite des deux avant d'étiqueter, et ne poussez rien d'autre
-vers `main` tant que la publication n'est pas parue : un push ultérieur éloigne
-`main` du commit de publication, et la CI annule toute exécution encore en
-cours sur la même branche.
+Attendez la réussite des deux avant d'étiqueter, et ne fusionnez rien d'autre
+dans `main` tant que la publication n'est pas parue : une fusion ultérieure
+éloigne `main` du commit de publication, et la CI annule toute exécution encore
+en cours sur la même branche.
 
 ### 2.2 Signer et pousser l'étiquette
+
+Étiquetez le commit de squash du §2.1, qui est la tête de `main` dans votre
+clone :
 
 ```bash
 git tag -a -s vX.Y.Z -m "vX.Y.Z"
 git push origin vX.Y.Z
 ```
 
-La combinaison `-a -s` produit une étiquette annotée et signée avec GPG. Le push
-déclenche `.github/workflows/release.yml`, qui compile, signe, atteste et
+La combinaison `-a -s` produit une étiquette annotée et signée avec GPG. Une clé
+de signature absente ou verrouillée fait échouer `git tag` lui-même, avant que
+quoi que ce soit ne soit poussé (§6). Le push déclenche `.github/workflows/release.yml`, qui compile, signe, atteste et
 publie.
 
 ### 2.3 Confirmer que le flux de travail de publication est terminé
@@ -476,6 +538,77 @@ l'entrée du manifeste lorsque le modèle a changé. Le job CI `release-prefligh
 extrait chaque étiquette ; il échoue donc avec les noms des étiquettes tant que
 l'épinglage n'est pas actualisé.
 
+### 2.6 Actualiser les badges, le site et le test de fumée des canaux
+
+Le flux de travail des badges lit l'étiquette la plus récente avec
+`git describe` après chaque exécution de la CI sur `main`. La CI du commit de
+publication s'est terminée avant que l'étiquette n'existe ; le badge de
+publication publié nomme donc encore la publication précédente. Lancez trois
+flux de travail à la main, dans cet ordre, une fois terminées les publications
+npm et Marketplace du §2.4. Chacun doit réussir avant que vous ne lanciez le
+suivant : la publication du site copie les badges depuis la dernière exécution
+réussie du flux de travail des badges, et le test de fumée des canaux installe
+depuis le site et les registres publiés.
+
+```bash
+gh workflow run badges.yml --ref main
+gh run watch "$(gh run list --workflow badges.yml --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId')" --exit-status
+gh workflow run publish-static-site.yml --ref main
+gh run watch "$(gh run list --workflow publish-static-site.yml --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId')" --exit-status
+gh workflow run channel-smoke.yml --ref main
+gh run watch "$(gh run list --workflow channel-smoke.yml --event workflow_dispatch --limit 1 --json databaseId --jq '.[0].databaseId')" --exit-status
+curl -fsSL https://apothem.ahmedgad.com/badges/release.json
+```
+
+`--event workflow_dispatch` écarte de la liste l'exécution des badges que la CI
+sur `main` lance d'elle-même. Une exécution déclenchée peut mettre quelques
+secondes à apparaître dans `gh run list` ; vérifiez donc que l'exécution que
+suit chaque `gh run watch` est bien celle que vous venez de lancer, et non un
+déclenchement antérieur. La dernière commande affiche un JSON dont le `message`
+est `vX.Y.Z`.
+
+### 2.7 Publier les avis de sécurité que la publication corrige
+
+Une publication qui corrige une vulnérabilité signalée sort alors que l'avis de
+sécurité du dépôt est encore un brouillon. Publiez chacun d'eux seulement une
+fois la version corrigée disponible sur npm
+(`npm view @ahmed-g-gad/apothem version` affiche `X.Y.Z`), et seulement après
+l'avoir lu en entier. Listez les brouillons :
+
+```bash
+gh api "repos/Ahmed-G-Gad/apothem/security-advisories?state=draft" \
+  --jq '.[] | [.ghsa_id, .severity, .summary] | @tsv'
+```
+
+Pour chaque brouillon que cette publication corrige :
+
+1. Lisez sa description. Le texte Patches nomme `X.Y.Z` comme version corrigée
+   et donne l'étape de mise à niveau, et il ne reste aucun `TODO(clarify)`.
+   Sinon, modifiez-le sur la page de l'avis.
+2. Définissez la version corrigée sur chaque paquet concerné. L'API remplace la
+   liste `vulnerabilities` entière ; renvoyez donc chaque entrée avec
+   `patched_versions` défini :
+
+   ```bash
+   ghsa=GHSA-xxxx-xxxx-xxxx
+   gh api "repos/Ahmed-G-Gad/apothem/security-advisories/${ghsa}" \
+     --jq '{vulnerabilities: [.vulnerabilities[] | {package: {ecosystem: .package.ecosystem, name: .package.name}, vulnerable_version_range, patched_versions: "X.Y.Z", vulnerable_functions}]}' \
+     | gh api -X PATCH "repos/Ahmed-G-Gad/apothem/security-advisories/${ghsa}" \
+         --input - --jq '.vulnerabilities'
+   ```
+
+   La sortie du premier appel passe directement dans le second par un tube ;
+   aucun fichier ne reste donc dans votre clone. La sortie liste chaque paquet
+   avec `patched_versions` `X.Y.Z`.
+3. Publiez-le :
+
+   ```bash
+   gh api -X PATCH "repos/Ahmed-G-Gad/apothem/security-advisories/${ghsa}" \
+     -f state=published --jq '.state'
+   ```
+
+   La commande affiche `published`.
+
 ## 3. Surfaces de distribution
 
 Chaque surface possède une commande de vérification qui répond à « la
@@ -486,7 +619,7 @@ publication a-t-elle atterri ici ? » :
 | 1 | GitHub Release (distributions Python) | `apothem-X.Y.Z.tar.gz` (sdist) + `apothem-X.Y.Z-py3-none-any.whl` | `gh release view vX.Y.Z --json assets --jq '.assets[].name'` inclut les deux noms de fichier |
 | 2 | GitHub Release (SBOM) | `sbom.cdx.json` + `sbom.cdx.json.cosign.bundle` | la liste des ressources inclut les deux ; le `metadata.component.purl` du SBOM est `pkg:pypi/apothem@X.Y.Z` et ses composants incluent chaque paquet de `src/apothem/_vendor/vendor.txt` |
 | 3 | GitHub Release (signatures) | un `<asset>.cosign.bundle` par sdist, wheel, SBOM, extension VS Code, archive de plateforme et `SHA256SUMS` (les publications antérieures nomment les paquets de l'archive et de `SHA256SUMS` `<asset>.sig`) | `cosign verify-blob` avec l'identité exacte du §5.5 se termine avec 0 |
-| 4 | GitHub Release (provenance) | `provenance.intoto.jsonl` | `bash scripts/release/verify-provenance.sh <download-dir>` se termine avec 0 (§5.5) |
+| 4 | GitHub Release (provenance) | `provenance.intoto.jsonl` | `bash scripts/release/verify-provenance.sh --require-all <download-dir>` se termine avec 0 et affiche `chain OK (3 of 3 layers verified: ...)` (§5.5) |
 | 5 | GitHub Release (archives de plateforme) | `apothem-vX.Y.Z-darwin.tar.gz`, `apothem-vX.Y.Z-linux.tar.gz`, `apothem-vX.Y.Z-windows.zip` | la liste des ressources inclut chaque archive plus `SHA256SUMS`. Les archives darwin et linux sont les mêmes octets sous deux noms (le runtime est indépendant de la plateforme ; `--platform` choisit seulement tar.gz ou zip), de sorte que leurs lignes `SHA256SUMS` affichent deux fois le même condensé |
 | 6 | GitHub Release (extension VS Code) | `apothem.vsix` + `apothem.vsix.cosign.bundle` | la liste des ressources inclut les deux ; `code --install-extension apothem.vsix` l'installe. Les publications antérieures à l'empaquetage de l'extension par le flux de travail de publication ne contiennent ni l'un ni l'autre |
 | 7 | npmjs.com | `@ahmed-g-gad/apothem@X.Y.Z` | `npm view @ahmed-g-gad/apothem version` renvoie `X.Y.Z` ; `npx @ahmed-g-gad/apothem@X.Y.Z --version` affiche `Apothem, version X.Y.Z` |
@@ -506,6 +639,21 @@ Keep-a-Changelog. La modification du CHANGELOG dans le commit de publication :
 - Confirme que la section de version utilise l'en-tête `## [X.Y.Z] - YYYY-MM-DD`
   (un trait d'union ; `bump_version.py` l'écrit, et `extract_release_notes.py`
   reconnaît le préfixe `## [X.Y.Z]`).
+- N'a besoin d'aucune coupe pour la page du GitHub Release. GitHub refuse un
+  corps de publication de plus de 125 000 caractères ; le
+  `extract_release_notes.py` du job de publication raccourcit donc une section
+  plus longue à 120 000 : il garde les en-têtes `###`, réduit les entrées à
+  leurs titres en gras (Security et la section sur la perte de données en
+  dernier), ne supprime des entrées que lorsque les titres ne suffisent pas,
+  indique combien il en a omis, et renvoie aux notes complètes dans le
+  `CHANGELOG.md` étiqueté. Il ne raccourcit que des notes faites de sections
+  `###` d'entrées `- ` dont les autres lignes commencent par deux espaces.
+  Lorsque des notes à raccourcir contiennent une autre ligne (du texte avant le
+  premier en-tête, un en-tête `####`, un paragraphe, un autre marqueur de
+  liste, une tabulation, un filet ou un soulignement d'en-tête, une clôture de
+  bloc de code, un bloc HTML ou une définition de lien), il s'arrête avec une
+  erreur qui nomme la ligne. Un test de la CI fait passer chaque publication du
+  `CHANGELOG.md` par lui ; une telle ligne échoue donc avant l'étiquette.
 - Confirme que les en-têtes standard — Added, Changed, Deprecated, Removed,
   Fixed, Security — sont utilisés là où c'est applicable. Les en-têtes vides
   sont supprimés du fichier rendu.
@@ -515,6 +663,25 @@ Keep-a-Changelog. La modification du CHANGELOG dans le commit de publication :
 
 Une section du CHANGELOG qui a survécu à la revue du mainteneur se lit comme
 l'ancre des notes de publication pour le récit de l'annonce.
+
+Une fois la publication fusionnée, la section de la version est close. Une
+branche créée avant la publication peut intégrer la publication par fusion sans
+conflit et laisser son entrée dans la section publiée ; après la fusion,
+replacez donc à la main chacune de ces entrées sous `[Unreleased]`. La
+vérification `quality / ubuntu-latest / py3.12` exécute
+`check_changelog_released_sections.py`, qui fait échouer une pull request qui
+modifie une section publiée et la nomme. La CI ne se relance pas sur une pull
+request quand main avance, et relancer ses vérifications teste la même
+ancienne fusion ; après une publication, fusionnez donc main dans chaque pull
+request ouverte (ou fermez-la puis rouvrez-la) avant de la fusionner. La même
+vérification s'exécute à chaque push vers main, par rapport à la pointe d'avant
+le push, et signale une section qui y a changé ; une exécution de push annulée
+par un push plus récent ne vérifie rien. Une correction délibérée de notes
+publiées passe lorsqu'un commit porte le trailer
+`Changelog-Released-Edit: <version> <reason>`, qui autorise la seule section de
+cette version. Git lit les trailers dans le dernier paragraphe d'un message ;
+lorsque cette pull request est fusionnée en squash, terminez donc le message de
+squash par le trailer, à côté de `Signed-off-by`.
 
 ## 5. Test de fumée du chemin d'installation
 
@@ -598,9 +765,16 @@ bash ../scripts/release/verify-provenance.sh --require-all .
 ```
 
 Attendu : `Verified OK`, `PASSED: SLSA verification passed` et
-`verify-provenance: chain OK (3 of 3 layers verified: SHA256SUMS manifest, cosign signatures, SLSA provenance)`. Le script vérifie
-`SHA256SUMS`, chaque paquet de signature et la provenance en une seule
-exécution ; il déduit l'étiquette du nom du wheel (`--tag vX.Y.Z` la remplace).
+`verify-provenance: chain OK (3 of 3 layers verified: SHA256SUMS manifest,
+cosign signatures, SLSA provenance)`. Le script vérifie `SHA256SUMS`, chaque
+paquet de signature et la provenance en une seule exécution ; il déduit
+l'étiquette du nom du wheel (`--tag vX.Y.Z` la remplace). Il saute une
+vérification dont l'outil ou le fichier manque, et affiche alors
+`partial check` avec les vérifications sautées au lieu de `chain OK`. Sans
+`--require-all`, une vérification partielle se termine quand même avec 0 ; avec
+lui (`-RequireAll` pour `verify-provenance.ps1`), toute vérification sautée se
+termine avec 1, de sorte que le seul code de sortie distingue une vérification
+complète d'une vérification partielle.
 
 Le test de fumée produit une ligne PASS / FAIL par surface ; consignez les
 lignes dans le journal de publication du mainteneur.
@@ -612,8 +786,8 @@ moteur de publication et l'éditeur npm :
 
 | Échec | Diagnostic | Récupération |
 |---|---|---|
-| Push de l'étiquette rejeté (échec de signature) | `git push origin vX.Y.Z` renvoie `error: failed to push some refs` avec un message lié à GPG | Vérifiez que la sous-clé GPG est chargée (`gpg --list-secret-keys --keyid-format=long`) ; ré-étiquetez localement avec `-s` après avoir corrigé le trousseau ; poussez de nouveau |
-| La compilation de publication s'arrête à `Check the plugin version changed with the plugin` | Le journal du job de compilation nomme le plugin et l'étiquette précédente ; aucune ressource n'a été compilée ni publiée | Le paquet du plugin a changé depuis la publication précédente, mais pas sa version. Supprimez l'étiquette (`git push --delete origin vX.Y.Z`, `git tag -d vX.Y.Z`), exécutez `python scripts/release/bump_version.py X.Y.Z`, créez le commit, puis signez et poussez de nouveau l'étiquette (§2.2). La même vérification s'exécute sur chaque pull request sous forme d'annotation d'avertissement ; ce cas apparaît donc normalement avant l'étiquetage |
+| La signature de l'étiquette échoue | `git tag -a -s vX.Y.Z` s'arrête sur une erreur gpg (par exemple `gpg failed to sign the data`) et ne crée aucune étiquette ; rien n'est donc poussé | Vérifiez que la sous-clé GPG est chargée (`gpg --list-secret-keys --keyid-format=long`) ; après avoir corrigé le trousseau, relancez la commande `git tag -a -s`, puis poussez l'étiquette (§2.2) |
+| La compilation de publication s'arrête à `Check the plugin version changed with the plugin` | Le journal du job de compilation nomme le plugin et l'étiquette précédente ; aucune ressource n'a été compilée ni publiée | Le paquet du plugin a changé depuis la publication précédente, mais pas sa version. `publish-npm.yml` et `publish-vscode.yml` s'exécutent à côté du flux de travail de publication ; vérifiez donc d'abord qu'aucun des deux n'a publié (`npm view @ahmed-g-gad/apothem version` n'affiche pas `X.Y.Z`, et le Marketplace ne la liste pas). Si l'un d'eux a publié, laissez l'étiquette et sortez la publication de patch suivante. Sinon, supprimez l'étiquette (`git push --delete origin vX.Y.Z`, `git tag -d vX.Y.Z`), exécutez `python scripts/release/bump_version.py X.Y.Z`, faites arriver la modification par une pull request comme au §2.1, puis signez et poussez de nouveau l'étiquette (§2.2). L'étiquette nomme alors le nouveau commit de publication, ce que le §2 du [runbook de récupération de publication](/docs/runbooks/release-recovery) n'autorise que parce que rien n'a été publié depuis le premier. La même vérification s'exécute sur chaque pull request sous forme d'annotation d'avertissement ; ce cas apparaît donc normalement avant l'étiquetage |
 | Un job de `release.yml` échoue à une seule étape | `gh run view <run-id> --log` nomme le job en échec (build, qui écrit aussi le SBOM / sign / provenance / archive / publish) | Relancez le job en échec seul via `gh run rerun <run-id> --failed` ; si l'échec se répète, corrigez l'entrée du job à sa source avant de ré-étiqueter |
 | La vérification de la provenance SLSA échoue | Le job `verify SLSA provenance artifact` se termine avec un code non nul | Inspectez l'artefact de provenance à la recherche d'une incohérence de condensé du sujet ; recompilez à partir de la même étiquette — la provenance est liée aux condensés exacts des artefacts, donc toute régénération d'artefacts nécessite une réexécution complète du flux de travail |
 | Publication sur npmjs.com rejetée | Le job npm se termine avec un code non nul pendant `npm publish` ; un `404` du registre pendant `PUT` est une incohérence d'autorisation / d'éditeur de confiance, pas une preuve que le code du paquet est absent | Vérifiez que npm Trusted Publishing pour `@ahmed-g-gad/apothem` nomme le propriétaire `ahmed-g-gad`, le dépôt `apothem`, le flux de travail `publish-npm.yml` et l'action autorisée `npm publish` ; confirmez que le job s'exécute avec la version de Node et le plancher OIDC de la CLI npm épinglés dans le flux de travail |

@@ -2,7 +2,7 @@
 title: "Konformitäts-Gate"
 description: "Führen Sie das Apothem-Konformitäts-Gate aus, um den Zustand des Ökosystems zu verifizieren."
 machineTranslated: true
-sourceHash: "1e86535725961fda"
+sourceHash: "0bd3bfad466f605b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,6 +30,85 @@ PYTHONPATH=src python -m apothem.conformity.gate --all .
 # Strict: exit non-zero (code 2) when a blocking finding is present
 PYTHONPATH=src python -m apothem.conformity.gate --all --strict .
 ```
+
+Diese Befehle führen das Gate aus einem Apothem-Checkout aus. `python -m` liest
+Module zuerst aus dem aktuellen Ordner; führen Sie sie daher aus dem
+Stammverzeichnis des Checkouts oder aus einem anderen Ordner aus, dem Sie
+vertrauen. Um ein Projekt zu prüfen, dessen Dateien Sie nicht vertrauen,
+starten Sie das Gate stattdessen über seinen Skriptpfad mit `-E -s`:
+`python3 -E -s src/apothem/conformity/gate.py --all .` in einem Checkout oder
+`python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .` nach einer
+Skript-Installation. Unter Windows verwenden Sie `python` anstelle von
+`python3` und den vollständigen Pfad, da Windows PowerShell und cmd `~` nicht
+expandieren: `$HOME\.apothem\src\apothem\conformity\gate.py` in PowerShell oder
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` in cmd. Ein Start über
+das Skript hält den aktuellen Ordner aus dem ersten Eintrag von Pythons
+Modul-Suchpfad heraus; `-E` hält außerdem `PYTHONPATH` heraus, wo ein leerer
+oder relativer Eintrag ebenfalls den aktuellen Ordner benennt, und `-s` hält
+Ihre Benutzer-site-packages heraus. Das hält die Dateien des Projekts nur aus
+dem eigenen Python-Code des Gates heraus; um das `git`, das das Gate ausführt,
+geht es als Nächstes.
+
+Drei eigenständige Validatoren führen `git` in dem Projekt aus, das sie prüfen,
+ebenso `--all`, das sie ausführt, und `--all-perwrite`, das die verfolgten
+Dateien mit `git ls-files` auflistet:
+
+```text
+agents-md-coverage-grep
+conventional-commit-grep
+no-global-plans-grep
+```
+
+Die eigenen Einstellungen dieses Repositorys in `.git/config`, in den Dateien,
+die es einbindet, und in `.git/config.worktree` können ein Programm benennen,
+das git startet, während es nur liest. Das Gate schaltet jede solche
+Einstellung, die es kennt, mit Optionen auf der Kommandozeile von git ab; diese
+haben Vorrang vor jeder Datei, die git liest, und erreichen auch jedes git, das
+git in einem Submodul startet:
+
+- kein Dateisystem-Monitor (`core.fsmonitor`);
+- kein Signaturprogramm (`gpg.program`, `gpg.ssh.program` und
+  `gpg.x509.program` zeigen auf einen Pfad, an dem nichts existieren kann, und
+  `log.showSignature` ist aus);
+- keine Hooks, kein Pager und keine automatische Wartung;
+- kein externes Diff- oder Textkonvertierungsprogramm, und Änderungen an
+  Submodulen werden nur als Commit-IDs gezeigt, sodass git kein zweites git in
+  einem Submodul startet;
+- Dateiinhalte werden mit `git cat-file blob` gelesen, das einen
+  Submodul-Eintrag ablehnt, wo `git show` ihn als Commit zeigen würde.
+
+Drei Einstellungen benennen kein Programm, sondern eine Datei, die git lesen
+soll, und diese Datei kann auf einem Netzwerkpfad liegen. Die Kommandozeile des
+Gates hält git auch davon ab, sie zu lesen: die Diff-Reihenfolgedatei
+(`diff.orderFile`), die Ausschlussdatei (`core.excludesFile`) und die
+Mailmap-Datei.
+
+Es setzt außerdem `GIT_NO_LAZY_FETCH=1` und ein leeres `GIT_ALLOW_PROTOCOL`,
+sodass git ein fehlendes Objekt eines partiellen Klons nie über eine Adresse
+nachlädt, die das Repository nennt. Das Gate startet git nur aus einem Eintrag
+Ihres `PATH` mit vollständigem Pfad. Es nimmt git nie aus dem aktuellen Ordner:
+Es überspringt leere und relative `PATH`-Einträge, die diesen Ordner benennen,
+und sucht dort nicht zuerst, wie Windows es bei einem bloßen Programmnamen tut.
+git erhält für die Programme, die es über ihren Namen startet, nur diese
+Einträge mit vollständigem Pfad.
+
+Sie können diese Befehle also auf einem Projekt ausführen, das mit seinem
+`.git`-Ordner von jemand anderem kam, in einem Archiv oder einem freigegebenen
+Ordner: Keine der obigen Einstellungen kann das Gate dazu bringen, ein Programm
+zu starten. Zwei Grenzen bleiben. Das Repository kann git weiterhin einen Pfad
+an anderer Stelle lesen lassen, über jede Einstellung oder Datei, die einen
+benennt, etwa `include.path` oder `includeIf`, `core.worktree`, die
+`gitdir:`-Zeile einer `.git`-Datei oder `.git/objects/info/alternates`; unter
+Windows lässt ein Netzwerkpfad dort (`\\server\share`) Windows eine Verbindung
+zu diesem Server aufbauen und Sie dort anmelden. Ein Fall ist enger: Git for
+Windows 2.55 lehnt einen Netzwerkpfad in einer `gitdir:`-Zeile ab, bevor es
+eine Verbindung aufbaut, sofern Ihre eigene Einstellung `safe.directory` diesen
+Pfad nicht erlaubt. Und die Liste umfasst die heute bekannten Einstellungen;
+ein späteres git-Release kann eine neue hinzufügen. Ihre eigenen globalen und
+systemweiten git-Einstellungen gelten weiterhin, außer den obigen, die die
+Kommandozeile des Gates überschreibt. Das betrifft nur git: `python -m` liest
+Python-Module zuerst aus dem aktuellen Ordner; starten Sie das Gate daher aus
+einem Ordner, dem Sie vertrauen.
 
 Exit-Codes: `0` sauber (oder beratend), `2` eine Blockierung durch Befunde im
 strikten Modus, `3` ein Nutzungsfehler: ein unbekanntes Flag oder ein
@@ -61,7 +140,7 @@ fehlend:
 - einen Link, auch einen, der in das Stammverzeichnis zeigt. Ein Durchlauf oder
   eine Ordnerauflistung überspringt ihn, sodass sein Ziel nur dort geprüft
   wird, wo der Validator es unter seinem eigenen Pfad erreicht;
-- eine benannte Pipe, ein Gerät oder einen Socket, bei denen ein Lesevorgang
+- eine Named Pipe, ein Gerät oder einen Socket, bei denen ein Lesevorgang
   warten oder nie enden würde;
 - unter Windows einen Namen, der auf einen Punkt oder ein Leerzeichen endet,
   weil Windows unter diesem Namen einen anderen Eintrag öffnen würde.
@@ -105,8 +184,8 @@ Link oder eine Named Pipe, liest das Gate nicht über den Link und wartet nicht
 auf die Pipe: Die Datei wird nicht gelesen. Ein `--all`-Validator zählt sie
 als fehlend oder unlesbar, so wie er einen Link zählt, und führt den
 getauschten Eintrag unter `skipped_links` auf; `--all-perwrite` zählt sie als
-`link` oder, wird sie erneut getauscht, als `unreadable`.
-Unter Windows bleibt eine Wartezeit, wie bei einem einfachen
+`link` oder, wird sie erneut getauscht, als `unreadable`, wie unten
+beschrieben. Unter Windows bleibt eine Wartezeit, wie bei einem einfachen
 Öffnen: Ein Programm, das in das Projekt schreiben kann, kann eine
 opportunistische Sperre (Oplock) auf eine Datei halten und sie nicht
 freigeben, wenn das Gate die Datei öffnet. Keine Art, die Datei zu öffnen,
@@ -154,6 +233,219 @@ nicht erreichbare Freigabe, kein Zugriff), ist kein Link und steht nicht unter
 `check_error`, der sagt, dass der Eintrag nicht betrachtet werden konnte, und
 `no-global-plans-grep` meldet ihn als Befund.
 
+Jeder eigenständige Validator läuft als eigenes Programm, und das Gate gibt ihm
+10 Minuten, in `--all` und in `--check`. Der langsamste braucht auf Apothems
+eigenem Repository etwa eine Minute. Ein Validator, der beim Erreichen des
+Limits noch läuft, wird gestoppt, zusammen mit jedem Programm, das er gestartet
+hat, etwa einem noch wartenden `git`-Befehl, und mit `passed: false` und einem
+`check_error` gemeldet, der sagt, dass er nicht fertig wurde. Unter Linux und
+macOS läuft jeder Validator in einer eigenen Sitzung, und ein `SIGTERM` oder
+`SIGHUP` an das Gate, etwa von `timeout` oder einem geschlossenen Terminal,
+stoppt die Programme des Validators, bevor das Gate mit dem Code 128 plus der
+Nummer des Signals endet. Das gilt auch für eines, das eintrifft, während das
+Gate einen Validator startet oder stoppt: Es wartet, bis dieser Schritt fertig
+ist, und der Exit-Code bleibt 128 plus seine Nummer, auch wenn während dieses
+Schritts ein Ctrl+C folgt. Ein `SIGKILL`, das kein Programm abfangen kann,
+beendet dort nur das Gate: Ein Validator, den es gestartet hat, läuft weiter,
+bis er fertig ist, und ein `git`-Befehl, auf den dieser Validator wartet,
+stoppt weiterhin an seinem eigenen Limit. Unter Windows läuft jeder Validator
+in einem Job-Objekt, das seine Programme auch beendet, wenn das Gate selbst
+endet. Jedes Programm, das das Gate dort startet, wartet angehalten, bis es im
+Job-Objekt ist. Ein Programm, das es nicht fortsetzen kann, wird gestoppt, und
+der Fehler sagt, ob es im Job-Objekt ist. Ein Programm, das etwas anderes vor
+dem Fortsetzen zum Beenden aufgefordert hat, ist nie gelaufen und scheitert auf
+dieselbe Weise, unabhängig von seinem Exit-Code, mit zwei Ausnahmen. Eines,
+das mit dem Exit-Code 259 endete, dem Code, den Windows auch einem laufenden
+Programm gibt, gilt als laufend, solange Windows es noch beendet. Eines, das
+kurz vor dem Fortsetzen endete, wird nur erkannt, wenn das Gate seinen
+Exit-Code innerhalb von 1 ms nach dem Fortsetzen liest; ein späteres Lesen,
+etwa auf einem ausgelasteten Rechner oder während andere Threads im
+aufrufenden Prozess beschäftigt sind, nimmt seinen Exit-Code als den eigenen
+des Programms. Auf dem Rechner, auf dem gemessen wurde, lebte das kleinste
+Programm, das Windows ausführen kann, mindestens 3 ms über sein Fortsetzen
+hinaus und `git` 27 ms, sodass ein Programm, das gelaufen ist, nicht für eines
+gehalten wird, das beendet wurde. Eines, das kurz nach dem Fortsetzen endete,
+lässt sich ebenfalls nicht von einem unterscheiden, das gelaufen ist. Auf jeder
+Plattform wartet im eigenen Lauf des Gates ein Ctrl+C, das während des Starts
+eintrifft, bis das Programm läuft (unter Windows, bis das Gate versucht hat,
+es fortzusetzen), sodass kein Programm angehalten bleibt oder über sein Limit
+hinaus läuft. Ein zweites Ctrl+C, das eintrifft, während das Gate ein Programm
+stoppt, wartet, bis der Stopp abgeschlossen ist. Eines, das kurz vor Beginn des
+Stopps eintrifft, lässt das Gate den Stopp erneut versuchen, bis zu dreimal.
+Scheitern diese Versuche oder fällt ein Ctrl+C zwischen zwei davon, stoppt das
+Gate das Programm, ohne Signale zurückzuhalten, wieder bis zu dreimal, sodass
+ein weiteres Ctrl+C den Stopp nicht überspringt. Es braucht mehrere
+Ctrl+C-Drücke, jeder innerhalb von Mikrosekunden um einen dieser Punkte, um das
+Programm laufen zu lassen. Nach einem Stopp wartet das Gate bis zu einer halben
+Sekunde, bis das gestoppte Programm endet, sodass es unter Linux und macOS
+nicht als Zombie-Prozess zurückbleibt, und ein Ctrl+C während dieser Wartezeit
+ersetzt keine bereits laufende Beendigung. Ein Handler, den der aufrufende
+Prozess für ein anderes Signal gesetzt hat, kann das Programm dennoch laufen
+lassen (unter Windows angehalten), wenn sein Fehler in den wenigen
+Mikrosekunden nach dem Start des Programms eintritt, bevor das Gate es erfasst.
+Wenn das Gate
+seine eigenen Signal-Handler ändert, lässt ein Signal, das
+mitten in der Änderung eintrifft, keinen Handler geändert zurück. Unter Linux
+und macOS blockiert das Gate Ctrl+C, `SIGTERM` und `SIGHUP`, und kein anderes
+Signal, für die wenigen Mikrosekunden, die die Änderung dauert, sodass ein
+solches Signal wartet, bis die Änderung fertig ist, und auf die dann geltenden
+Handler trifft. Danach hebt das Gate die Blockierung nur für die Signale auf,
+die es blockiert hat. Bei jedem anderen Signal, unter Windows und bei einem
+Signal, das kurz vor der Blockierung eintraf, wird eine Änderung, die das
+Signal unterbrochen hat, erneut vorgenommen, bis zu dreimal. Scheitert das
+Zurücksetzen seiner Handler bei jedem Versuch, unternimmt das Gate für jeden
+verbliebenen Handler einen letzten Versuch. Ein Handler bleibt geändert, wenn
+ein Fehler auch diesen letzten Versuch stoppt, etwa ein `TimeoutError` von
+einem Timer, den der aufrufende Prozess gesetzt hat und der jedes Mal auslöst,
+und in seltenen Fällen, wenn mehrere Signale, deren Handler eine Ausnahme
+auslösen, unmittelbar nacheinander innerhalb von Mikrosekunden eintreffen und
+den letzten Versuch überspringen. Ein Fehler, der
+bei jedem Versuch wiederkehrt, etwa ein `RecursionError` nahe an Pythons
+Rekursionslimit, beendet die Änderung innerhalb von zwei Versuchen, und der Lauf
+geht weiter. Das Gate setzt seine Handler mit Aufrufen zurück, die nicht tiefer
+sind als die, die sie geändert haben, sodass es nahe an diesem Limit Ctrl+C
+nicht ignoriert zurücklässt. Ein `SIGTERM`-Handler, den der aufrufende Prozess
+während eines Laufs setzt, bleibt bestehen. Unter Linux und macOS führt das
+Gate in einem Python-Subinterpreter, in dem kein Signal-Handler gesetzt werden
+darf, seine Programme aus, ohne Handler zu ändern; unter Windows kann Python
+die Ausgabe eines Programms nicht aus einem isolierten Subinterpreter lesen,
+der keine Daemon-Threads erlaubt. Ctrl+C gibt eine Zeile aus und endet
+mit `130`. Die Limits addieren sich: Ein Lauf, in dem
+mehrere Validatoren warten, dauert die Summe ihrer Limits.
+
+Fünf Validatoren geben außerdem jedem `git`-Befehl, den sie ausführen, ein
+eigenes Zeitlimit. Die Limits gelten auf jeder Plattform, auch unter Windows,
+wenn `git` auf dem `PATH` der Launcher ist, den Git for Windows installiert und
+der das eigentliche git startet:
+
+```text
+conventional-commit-grep            git log -1, git rev-parse           1 minute
+                                    git ls-files, git config            1 minute
+agents-md-coverage-grep             git rev-parse, git config           1 minute
+                                    git log over the whole history      5 minutes
+no-global-plans-grep                git ls-files                        1 minute
+production-ready-pr-grep --staged   git diff --cached                   1 minute
+semver-stability-grep --staged      git diff --cached, git cat-file     1 minute
+```
+
+Diese Befehle dauern bei den meisten Projekten einen Bruchteil einer Sekunde,
+daher wird ein Limit nur erreicht, wenn `git` auf etwas wartet, das nie kommt.
+Die eigenen git-Einstellungen eines Projekts können es endlos warten lassen,
+etwa ein `include.path` in seiner `.git/config`, das eine Named Pipe benennt.
+Ein `git`-Befehl, der über sein Limit hinaus läuft, besteht nicht: Der
+Validator meldet `passed: false` mit einem `check_error`, der den Befehl nennt.
+Ebenso wenig ein `git`, das einen gefundenen Checkout ablehnt, etwa einen, der
+einem anderen Benutzer gehört, oder einen mit einer fehlerhaften Zeile in
+seiner `.git/config`; der `check_error` nennt dann den Exit-Code von git, und
+Exit-Code 128 ist der, den git verwendet, wenn es ein Repository nicht öffnen
+oder lesen kann. Ein Ordner, dessen `.git`-Eintrag git nicht öffnen kann, zählt
+als ein solcher Checkout, weil die Historie, die die Prüfungen brauchen,
+ungelesen dort liegen kann: ein leerer `.git`-Ordner außerhalb jedes anderen
+Checkouts oder eine `.git`-Datei, die einen nicht mehr existierenden Ordner
+nennt, wie sie ein entpackter Worktree oder ein kopiertes Submodul hinterlässt.
+Entfernen Sie diesen Eintrag oder führen Sie das Gate auf einem vollständigen
+Checkout aus. Das gilt auch für die Prüfung auf veraltete Begleitdateien,
+obwohl ihre Befunde sonst beratend sind, und die Commit-Subject-Prüfung meldet
+dann außerdem `inspected: 0` mit `empty_scope_expected: false`. Unter Windows
+ist ein `git`, das das Gate gestartet, aber nicht fortsetzen konnte, ebenfalls
+ein gescheitertes `git`: Der `check_error` nennt Exit-Code 128, und es zählt
+nie als fehlendes `git`. Die Prüfung auf veraltete Begleitdateien liest die
+gesamte Historie einmal, und dieses Lesen erhält 5 Minuten, sodass eine große
+Historie langsam ist statt ein Fehler; eine Historie, deren Lesen länger
+dauert, lässt die Prüfung scheitern. Ein einfacher Ordner, der in keinem
+git-Checkout liegt, ein Repository ohne Commit oder ein Rechner ohne `git`
+besteht diese Prüfungen weiterhin wie bisher. Ebenso ein partieller Klon, einer,
+der mit `git clone --filter` erstellt wurde: Das Gate lässt `git` nicht
+nachladen, was der Klon ausgelassen hat, und git gibt keine Antwort, die ein
+vom Klon ausgelassenes Objekt von einem verlorenen unterscheidet. Daher zählt
+die Prüfung auf veraltete Begleitdateien in einem partiellen Klon jedes
+gescheiterte Lesen der Historie als nicht verfügbare Historie: Sie überspringt
+ihren Aktualitätstest und besteht, wie ohne Historie. Diese Ausnahmen und der
+`check_error` für einen Checkout, den git ablehnt, gelten für die anderen vier
+Validatoren: `no-global-plans-grep` braucht einen Checkout, den git lesen kann;
+außerhalb eines solchen, auf einem Rechner ohne `git` oder in einem Checkout,
+den git ablehnt, scheitert es daher wie bisher, mit dem Grund auf der
+Standardfehlerausgabe: dem Exit-Code von git, nicht dem eigenen Text von git.
+Wie bei jedem Ergebnis, das nicht besteht, meldet der beratende Standardmodus
+es und endet mit `0`, und `--strict` endet mit `2`.
+
+Für die beiden `--staged`-Prüfungen ist ein Wert, den git für eine
+Diff-Einstellung nicht lesen kann, etwa `diff.renameLimit = abc`, eine solche
+fehlerhafte Zeile: `git diff` scheitert, und eine Änderungsmenge, die nicht
+gelesen wurde, ist keine leere. Diese beiden Prüfungen, die
+Commit-Subject-Prüfung und die Prüfung auf veraltete Begleitdateien suchen den
+Checkout in dem Ordner, in dem sie laufen, und in den Ordnern darüber, sodass
+dasselbe in einem Unterordner des Checkouts gilt. Sie hören dort auf zu suchen,
+wo git aufhört: an einem in `GIT_CEILING_DIRECTORIES` genannten Ordner und,
+außerhalb von Windows, an einem Ordner auf einem anderen Dateisystem, sofern
+`GIT_DISCOVERY_ACROSS_FILESYSTEM` nicht gesetzt ist. Ein Ordner ohne eigenes
+Repository, der unterhalb eines solchen eingehängt ist, besteht daher
+weiterhin. Die Commit-Subject-Prüfung prüft, auf einem Unterordner eines
+Checkouts ausgeführt, den letzten Commit des Checkouts, wenn der Checkout eine
+Datei in diesem Unterordner verfolgt oder dort eine vorgemerkt hat. Wo der
+Checkout Groß- und Kleinschreibung ignoriert, wie unter Windows und macOS, gilt
+das auch für einen Unterordner, dessen Name auf dem Datenträger nur in der
+Groß- oder Kleinschreibung geändert wurde. Ein Ordner, den der Checkout nicht
+verfolgt, ob nicht verfolgt oder ignoriert, hat keine eigene Historie und
+besteht, etwa ein neues Projekt innerhalb eines Dotfiles-Repositorys im
+Home-Ordner. Ein leerer `.git`-Ordner über dem Ordner, in dem sie läuft, ohne
+ein weiter oben liegendes Repository, lässt git scheitern, und die Prüfung
+meldet `git-failed`.
+
+Beide `--staged`-Prüfungen lesen die vorgemerkten Namen von der obersten Ebene
+des Arbeitsbaums aus, unabhängig von Ihrer eigenen Einstellung
+`diff.relative`, sodass eine Unterordner-Einstellung nie eine vorgemerkte Datei
+verbirgt.
+
+`semver-stability-grep --staged` sucht das Paket in dem Ordner, in dem es
+läuft, und dann in den Ordnern darüber, bis zum nächstgelegenen Ordner, der ein
+Repository enthält oder an dem git aufhört zu suchen, und führt git in dem
+Ordner aus, der das Paket enthält, sodass ein Lauf aus einem Unterordner
+dieselbe Änderungsmenge prüft. Es liest die Versionsdatei ebenfalls aus diesem
+Ordner, sodass ein Paket unterhalb der obersten Ebene des Repositorys geprüft
+wird. Liegt zwischen dem Ordner, in dem es läuft, und dem Paket eine
+`.git`-Datei, die git ablehnt, läuft git stattdessen in dem Ordner, in dem es
+läuft, hält an dieser Datei an, und die Prüfung meldet einen `check_error`. git
+lehnt eine `.git`-Datei ab, die kein Repository nennt, die größer als 1 MiB ist
+oder die nicht `gitdir:`, ein Leerzeichen und einen Pfad enthält, gefolgt nur
+von Zeilenenden. Unter Windows lehnt die Prüfung außerdem eine `.git`-Datei ab,
+die einen Netzwerk-, Geräte- oder NT-Pfad nennt (`\\host\share`, `\\?\`,
+`\??\`), und schlägt diesen Pfad nicht selbst nach. Sie lehnt auch einen Pfad
+ab, den Git for Windows ablehnt: einen Namen, der auf einen Punkt oder ein
+Leerzeichen endet oder ein Gerätename wie `aux.d`, `lpt0` oder `CONIN$` ist
+(aber nicht `com0`, das Git for Windows akzeptiert), oder einen `:` nach dem
+Laufwerk. Ein Byte im Pfad, das kein UTF-8 ist, liest sie wie Git for Windows:
+ab `0xA0` als dieses Zeichen und darunter als zwei Hexziffern, sodass `0x9F`
+als `9f` gelesen wird. Geprüft wird der nächstgelegene Ordner, der
+`src/apothem/__init__.py` enthält; `GIT_WORK_TREE` wird nicht gelesen. Ein
+Projekt ohne das Paket hat dort nichts zu prüfen: Es besteht, ohne git
+auszuführen, in welchem Zustand sein Repository auch ist.
+
+Das Gate liest jede Liste von Pfadnamen von git Byte für Byte, sodass ein Name,
+der einen Zeilenumbruch, einen Wagenrücklauf oder ein Byte enthält, das kein
+UTF-8 ist, für jede Prüfung dieselbe Datei benennt. Ein Fall lässt sich nicht
+lesen: Windows kann git keinen Namen übergeben, der kein UTF-8 ist, und einen
+solchen kann nur ein auf einem anderen System erstellter Index enthalten.
+`semver-stability-grep --staged` meldet dann einen `check_error` für die
+Änderungsmenge; es überspringt diese Datei nicht. Das Lesen der Historie durch
+die Prüfung auf veraltete Begleitdateien ist die Ausnahme vom ersten Satz: Dort
+gibt git einen Namen mit einem Steuerzeichen in seiner maskierten Form aus, und
+ein Byte, das kein UTF-8 ist, wird als Ersatzzeichen gelesen, sodass diese
+Prüfung einen Ordner mit einem solchen Namen nicht zuordnen kann.
+
+Die Prüfung auf veraltete Begleitdateien behandelt nur die `AGENTS.md` auf der
+obersten Ebene des Repositorys als Kanon. Wenn Sie sie auf einem Unterordner
+ausführen, der eine eigene README hat, ist die `AGENTS.md` dieses Unterordners
+eine ordnerbezogene Begleitdatei. Ist der Unterordner die oberste Ebene eines
+eigenen Repositorys, etwa ein Submodul oder ein verschachtelter Klon, ist seine
+`AGENTS.md` stattdessen der Kanon dieses Repositorys. Ein Lauf über das gesamte
+Repository überspringt einige Unterordner, etwa Test-Fixtures und
+verschachtelte Repositorys, die ein Lauf auf dem Unterordner selbst prüft. Ein
+Unterordner ohne README wird auf diese Weise nicht als eigener Ordner geprüft;
+führen Sie die Prüfung auf einem Ordner darüber aus. Eine Begleitdatei, die in
+einem Commit gelöscht und neu geschrieben wurde, zählt als neu, bis Sie sie
+committen.
+
 Sechs Validatoren beginnen im Wurzelverzeichnis des Repositorys und durchsuchen
 den gesamten Baum nach den Dateien, die sie prüfen:
 
@@ -169,9 +461,10 @@ reference-token-grep
 Diese überspringen verschachtelte Git-Checkouts, etwa Worktrees, Submodule und
 verschachtelte Klone (ein Ordner, dessen `.git`-Datei oder `.git`-Ordner ein
 Repository enthält oder nennt; eine einfache `.git`-Datei oder ein leerer
-`.git`-Ordner verbirgt seinen Ordner nicht), und überspringen Verzeichnisse, die
-Abhängigkeiten, virtuelle Umgebungen, Caches oder Build-Ausgaben enthalten, etwa
-`node_modules`, `venv` und `dist`. Die Prüfung auf verirrte Pläne in
+`.git`-Ordner verbirgt seinen Ordner nicht), betreten nie einen verlinkten
+Ordner und überspringen Verzeichnisse, die Abhängigkeiten, virtuelle
+Umgebungen, Caches oder Build-Ausgaben enthalten, etwa `node_modules`, `venv`
+und `dist`. Die Prüfung auf verirrte Pläne in
 `no-global-plans-grep` hält ebenfalls an einem verschachtelten Checkout an. Jeder
 Ordner, der als verschachtelter Checkout übersprungen wurde, steht im Bericht
 unter `skipped_checkouts`, gleich was sein `.git`-Eintrag nennt, denn eine
@@ -182,6 +475,141 @@ nicht darin. Ein Lauf eines dieser Validatoren
 meldet Ergebnisse zu dem Checkout, auf den er gerichtet wurde, und zu nichts
 anderem. Ein Validator, der einen festen Ordner liest, etwa `naming-grep` unter
 `src/apothem/`, liest alles unterhalb dieses Ordners.
+
+`--all-perwrite` prüft die Dateien, die `git ls-files` unterhalb des
+Stammverzeichnisses auflistet. git listet jeden Eintrag genau so, wie der Index
+des Repositorys ihn enthält, und ein Projekt kann mit einem Index und Dateien
+kommen, die jemand anderes erstellt hat; daher liest das Gate einen
+aufgelisteten Pfad nur, wenn er eine reguläre Datei innerhalb des
+Stammverzeichnisses ist, höchstens 64 MiB groß, mit UTF-8-Text. Jeden anderen
+aufgelisteten Pfad zählt es unter `files_skipped`, nach Grund:
+
+- `outside_project`: ein Eintrag mit einem leeren Teil, `.` oder `..`, etwa
+  `../notes.md`, `a//b.md` oder ein Name, der mit `/` beginnt, oder mit einem
+  Teil, der unter Windows `.git` benennt: `.git` in beliebiger Schreibung, auch
+  mit Punkten, Leerzeichen oder einem Doppelpunkt dahinter, und `GIT~1`. git
+  lehnt jeden davon standardmäßig auf jedem System ab, daher besteht der Lauf
+  nicht;
+- `unsupported_name`: unter Windows ein Name, den das System nicht so halten
+  kann, wie er geschrieben ist: einer mit einem Doppelpunkt (wie in `a:b.md`,
+  dessen `a:` als Laufwerk gelesen wird), einem Backslash, einem von `<>"|?*`
+  oder einem Steuerzeichen, oder ein Teil, der auf einen Punkt oder ein
+  Leerzeichen endet; und ein Name, den Windows als etwas anderes liest: ein
+  alleinstehender Gerätename wie `CON`, `NUL` oder `COM1` oder ein Kurzname wie
+  `GIT~2`. git unter Linux oder macOS kann einen solchen Namen verfolgen, daher
+  wird er gezählt, ohne den Lauf scheitern zu lassen. Ein von Hand
+  geschriebener Eintrag wie `C:/x` oder `..\..\x` landet unter Windows
+  ebenfalls hier;
+- `link`: ein symbolischer Link oder, unter Windows, ein Junction-Punkt auf
+  jeder Ebene unterhalb des Stammverzeichnisses, auch einer, der hinein zeigt,
+  oder ein Eintrag, den der Index als Link markiert (in jeder Stufe eines
+  Merge-Konflikts, sodass eine solche Datei nicht gelesen wird, bis der
+  Konflikt gelöst ist).
+  git speichert einen Link als den Pfad, auf den er zeigt, und eine verfolgte
+  Datei, auf die ein Link zeigt, wird unter ihrem eigenen Pfad geprüft;
+- `submodule`: der Eintrag eines Submoduls;
+- `not_regular_file`: alles andere, das keine reguläre Datei ist, etwa ein
+  Ordner, eine Named Pipe oder ein Gerät, bei denen ein Lesevorgang warten oder
+  nie enden würde;
+- `missing`: eine verfolgte Datei, die nicht im Arbeitsbaum liegt; unter
+  Windows gehört dazu ein Name, den git in Bytes aufgelistet hat, die kein
+  UTF-8 sind, wie ihn nur ein auf einem anderen System erstellter Index enthält
+  (Git for Windows schreibt eine solche Datei unter einem anderen Namen, daher
+  wird ihr Inhalt nicht geprüft), und ein Pfad, der länger ist, als das System
+  erlaubt, wenn lange Pfade nicht aktiviert sind;
+- `unreadable`: eine Datei oder ein Ordner auf dem Weg dorthin, die das System
+  das Gate nicht betrachten, öffnen oder lesen lässt: mangels Berechtigung,
+  weil ein anderes Programm die Datei oder einen Teil davon hält, oder weil das
+  System sie nicht öffnen kann, etwa eine reine Online-Datei, deren
+  Synchronisierungsprogramm gestoppt ist. Hält ein anderes Programm die ganze
+  Datei, wartet das Gate 0,2 Sekunden und versucht es noch einmal: unter
+  Windows bei einem Programm, das sie ohne Freigabe geöffnet hat; anderswo bei
+  einem Schreib-Lease, das gerade aufgehoben wird, etwa einem Samba-Oplock oder
+  einer NFS-Delegation. Der Lauf besteht nicht, da ein Befund darin unbemerkt
+  bliebe. Einige Fälle lassen den Lauf auf diese Weise scheitern, obwohl mit
+  der Datei nichts falsch ist: eine Lease-Aufhebung, die länger als
+  0,2 Sekunden dauert, eine Datei, die auf ihre Löschung wartet, und eine Named
+  Pipe in einem Projekt auf einer `\\wsl$`-Freigabe, bei der jedes Lesen
+  zuerst etwa 10 Sekunden wartet;
+- `too_large`: eine Datei über 64 MiB, deren erste 64 MiB UTF-8-Text sind,
+  oder eine Datei, die über 64 MiB hinauswächst, während das Gate sie liest.
+  Der Lauf besteht aus demselben Grund nicht;
+- `not_utf8_text`: eine Datei, deren Bytes kein UTF-8-Text sind, etwa eine
+  UTF-16-Datei mit Byte-Order-Mark. Über 64 MiB entscheiden die ersten 64 MiB,
+  und eine Datei ist binär, wenn ein Viertel oder mehr ihrer ersten 8000 Bytes
+  NUL sind, etwa ein großes, mit Nullen gefülltes Image oder eine UTF-16-Datei
+  mit überwiegend lateinischem Text ohne Byte-Order-Mark, sodass sie den Lauf
+  nicht scheitern lässt; einige NUL-Bytes in Text zählen nicht;
+- `exempt`: eine Datei, die die Prüfungen bewusst auslassen: eine, deren
+  Endung sie als binär kennzeichnet, etwa ein Bild oder ein Archiv, und alles
+  unter einem Ordner `.apothem/plans`, `tests/conformity`, `tests/fixtures`,
+  `_vendor` oder `node_modules` in beliebiger Tiefe innerhalb des
+  Stammverzeichnisses. Die Prüfungen für `outside_project` und
+  `unsupported_name` kommen zuerst, sodass keine Ausnahme sie verbirgt.
+
+Besteht ein Lauf wegen `outside_project`, `unreadable` oder `too_large` nicht,
+nennt `files_not_passed` die Einträge hinter jedem dieser Gründe, so wie git
+sie auflistet, sortiert, bis zu 10 je Grund; `files_skipped` enthält die
+vollständige Anzahl. Eine Zeile auf stderr nennt diese Gründe und ihre Anzahl
+ebenfalls, sodass ein CI-Log, das nur stderr zeigt, sagt, warum der Lauf
+gescheitert ist.
+
+Die Ebenen jeder Datei werden direkt vor dem Lesen geprüft, und die geöffnete
+Datei muss die sein, die diese Prüfung gefunden hat. Eine Datei, die ein
+anderes Programm dazwischen austauscht, gegen eine andere Datei, einen Link
+oder eine Named Pipe, wird noch einmal nachgeschlagen und als `unreadable`
+gezählt, wenn sie erneut getauscht wird; ein eingetauschter symbolischer Link
+oder, unter Windows, Junction-Punkt wird beim zweiten Blick als `link`
+erkannt. Das Gate wartet nie auf eine Named Pipe und liest nie über einen Link,
+der den Platz der Datei eingenommen hat. Unter Windows wird eine Datei, die
+Data Deduplication oder ein Cloud-Synchronisierungsprogramm hinter einem
+Analysepunkt (Reparse Point) hält, wie üblich über dieses Programm gelesen; ist
+das Programm gestoppt, ist die Datei `unreadable`.
+
+Die Datei wird vom Stammverzeichnis aus Ebene für Ebene geöffnet, und keine
+Ebene wird über einen Link geöffnet; daher wird auch einem Ordner oberhalb der
+Datei, den ein anderes Programm zwischen der Prüfung und dem Öffnen gegen einen
+Link tauscht, nicht gefolgt: Die Datei zählt als `link`.
+
+Zwei Dinge sehen diese Prüfungen nicht. Ein harter Link liest sich wie eine
+gewöhnliche Datei, daher wird ein harter Link auf eine Datei an anderer Stelle
+gelesen; git erstellt keinen. Und unter Windows könnte auf einem
+Netzwerkdateisystem, das weder das Reparse-Tag noch die Datei-ID einer Datei
+liefert, aber symbolische Links enthält, eine Datei zwischen der Prüfung und
+dem Öffnen gegen einen Link getauscht werden, ohne dass das Gate es bemerkt.
+
+In diesem Lauf schlägt der Matcher `link-check` ein Linkziel nur innerhalb des
+Stammverzeichnisses nach: Ein relativer Link, der das Stammverzeichnis
+verlässt, zählt als extern, und die Suche nach einem Ordner
+`site/content/docs` hält am Stammverzeichnis an. In keinem Modus schlägt er
+einen Link nach, der einen Ort für sich allein benennt, etwa eine
+Netzwerkfreigabe (`\\host\share`), ein Laufwerk (`C:/notes.md`) oder eine
+`file:`-Adresse. Unter Windows sendet das Nachschlagen einer Freigabe Ihre
+Anmeldung an diesen Host. Unter Windows lässt er außerdem ein
+`/docs/`-Routensegment mit einem Doppelpunkt, den Windows als Laufwerk liest,
+ungeprüft, ebenso einen Link, den er nur über einen Teil findet, der auf einen
+Punkt oder ein Leerzeichen endet: Windows kann diese Endung weglassen
+(`ci.yml.` findet `ci.yml`), daher beweist der Fund nichts. Ein solcher Link,
+der nichts findet, wird wie üblich als tot gemeldet. Auf jedem System zählt
+eine `/docs/`-Route mit einem Segment `.` oder `..`, etwa `/docs/../x`, als
+extern und wird nicht nachgeschlagen.
+
+Jeder Aufruf von `git ls-files` erhält 60 Sekunden: der, den dieser Lauf macht,
+und der in `no-global-plans-grep`, dessen Bericht dann denselben `check_error`
+trägt und scheitert; scheitert git dort selbst, nennt seine Meldung den
+Exit-Code von git, nicht den eigenen Text von git. Ein Repository, dessen
+eigene Einstellungen git warten lassen, etwa ein `include.path`, das auf eine
+Named Pipe zeigt, hält jeden dieser Aufrufe höchstens so lange auf, auch unter
+Windows, wo das Limit auch das git stoppt, das der Launcher von Git gestartet
+hat. Ein `--all-perwrite`-Lauf, der keine Datei gelesen hat, besteht nicht: Er
+meldet `files_scanned: 0` mit `empty_scope_expected: false`. Kann die Liste der
+verfolgten Dateien nicht gelesen werden, nennt `check_error` einen festen
+Grund: git ist nicht gestartet, `git ls-files` ist mit einem bestimmten
+Exit-Code gescheitert, oder es wurde nicht rechtzeitig fertig. Um die eigene
+Meldung von git zu sehen, etwa wenn das Stammverzeichnis nicht in einem
+git-Arbeitsbaum liegt, führen Sie `git ls-files` im Stammverzeichnis aus; der
+Bericht lässt sie weg, weil sie Dateien außerhalb des Projekts nennen kann. Mit
+`--strict` endet ein Lauf, der nicht bestanden hat, mit `2`.
 
 ## Gate-Stufen
 
@@ -226,7 +654,8 @@ aus einem Terminal ausführen. Ein eigenständiger Validator nimmt ein
 Stammverzeichnis entgegen (das aktuelle Verzeichnis, wenn es weggelassen wird).
 `--list` zeigt, zu welcher Gruppe jeder Validator gehört.
 
-Der `--hook`-Modus (`python -m apothem.conformity.gate --hook`) ist der vom
+Der `--hook`-Modus (`<python> -E -s .../conformity/gate.py --hook`, wobei
+`<python>` der Interpreter ist, den die Installation gefunden hat) ist der vom
 Harness aufgerufene Einstiegspunkt: Er liest eine JSON-Nutzlast mit der
 Tool-Eingabe von stdin und führt die Matcher-Kette pro Schreibvorgang gegen den
 ausstehenden Schreibvorgang aus. Dies ist die Form, die der bereitgestellte
