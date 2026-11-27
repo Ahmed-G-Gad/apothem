@@ -42,7 +42,7 @@ async function loadComponent() {
   return import(`${pathToFileURL(OUT).href}?t=${Date.now()}`);
 }
 
-const { DisclosureFolder } = await loadComponent();
+const { DisclosureFolder, runsAnimation } = await loadComponent();
 
 function render({ defaultOpen, pathname = '/ja/docs/other' }) {
   const item = {
@@ -110,4 +110,16 @@ test('the button is named by the section link plus the hint in the page language
   assert.equal(ids.length, 2, 'aria-labelledby should name the link and the hint');
   for (const id of ids) assert.ok(elementById(html, id), `aria-labelledby names a missing id "${id}"`);
   assert.match(html, /ページを表示または非表示/);
+});
+
+test('a reduced-motion animation of 0.01 ms or less counts as no animation', () => {
+  const style = (animationName, animationDuration) => ({ animationName, animationDuration });
+  assert.equal(runsAnimation(style('none', '0s')), false);
+  assert.equal(runsAnimation(style('', '0.2s')), false);
+  assert.equal(runsAnimation(style('fd-collapsible-up', '1e-05s')), false);
+  assert.equal(runsAnimation(style('fd-collapsible-up', '0.01ms')), false);
+  assert.equal(runsAnimation(style('fd-collapsible-up', '0s')), false);
+  assert.equal(runsAnimation(style('fd-collapsible-up', '0.15s')), true);
+  assert.equal(runsAnimation(style('fd-collapsible-up', '150ms')), true);
+  assert.equal(runsAnimation(style('none, fd-collapsible-up', '0s, 0.15s')), true);
 });

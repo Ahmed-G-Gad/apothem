@@ -119,8 +119,10 @@ function FolderHeader({ item, listId }: { item: Folder; listId: string }) {
 // (`forceMount`, which also stops Radix hiding it) under an id of our own, and
 // the button always names that id. A closing list keeps showing until its
 // collapse animation ends and only then gets `hidden`, so the close animates
-// the same way the open does. When no animation runs (none is set, or the
-// stylesheet drops it for reduced motion), `hidden` is set at once. A
+// the same way the open does. When no animation runs (none is set), `hidden`
+// is set at once. The site's reduced-motion rule keeps the animation but
+// shortens it to 0.01 ms, so an animation that short is also treated as none
+// and `hidden` is set at once rather than on the next `animationend`. A
 // cancelled animation also settles the list, and a fallback timer sets
 // `hidden` even when no animation event ever fires (a page whose animation
 // timeline never advances, such as a background tab). The timer starts with
@@ -129,6 +131,27 @@ function FolderHeader({ item, listId }: { item: Folder; listId: string }) {
 // busy main thread to finish the animation first. A list that starts closed
 // is `hidden` in the server HTML.
 const SETTLE_FALLBACK_MS = 500;
+
+// The longest animation duration at or below which a closing list is treated
+// as not animating: the 0.01 ms the reduced-motion rule sets.
+const NO_ANIMATION_MS = 0.01;
+
+// Whether a computed style runs a collapse animation worth waiting for. Each
+// property may hold a comma-separated list, one entry per animation.
+export function runsAnimation(style: { animationName: string; animationDuration: string }): boolean {
+  const names = style.animationName.split(',').map((name) => name.trim());
+  if (names.every((name) => !name || name === 'none')) return false;
+  const longest = Math.max(
+    0,
+    ...style.animationDuration.split(',').map((entry) => {
+      const value = entry.trim();
+      const amount = Number.parseFloat(value);
+      if (!Number.isFinite(amount)) return 0;
+      return value.endsWith('ms') ? amount : amount * 1000;
+    }),
+  );
+  return longest > NO_ANIMATION_MS;
+}
 
 function useHiddenAfterClose(open: boolean) {
   const ref = useRef<HTMLDivElement>(null);
@@ -139,8 +162,7 @@ function useHiddenAfterClose(open: boolean) {
     // `ref` sits on the list's only child; the list is its parent.
     const node = ref.current?.parentElement;
     if (open || settled || !node) return;
-    const name = getComputedStyle(node).animationName;
-    if (!name || name === 'none') {
+    if (!runsAnimation(getComputedStyle(node))) {
       setSettled(true);
       return;
     }
