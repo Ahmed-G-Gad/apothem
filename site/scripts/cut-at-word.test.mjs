@@ -7,7 +7,11 @@
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
+import { fromMarkdown } from 'mdast-util-from-markdown';
+import { gfmFromMarkdown } from 'mdast-util-gfm';
+import { gfm } from 'micromark-extension-gfm';
 import { cutAtWord } from './cut-at-word.mjs';
+import { cutInputs } from './update-reference-inventory.mjs';
 
 describe('cutAtWord', () => {
 	it('returns text within the limit unchanged', () => {
@@ -31,27 +35,34 @@ describe('cutAtWord', () => {
 	});
 
 	it('keeps a closed bold run', () => {
-		assert.equal(cutAtWord('Keep **bold** and more words', 20), 'Keep **bold** and …');
+		assert.equal(cutAtWord('Keep **bold** and more words', 20), 'Keep **bold** and more …');
 	});
 
 	it('ignores asterisks inside code', () => {
 		assert.equal(cutAtWord('Use `**` for bold text in pages', 20), 'Use `**` for bold …');
 	});
 
-	it('drops an unclosed link label', () => {
-		assert.equal(cutAtWord('See [the install guide page](/docs/install) now', 24), 'See …');
+	it('keeps the label text of a link the cut lands in', () => {
+		assert.equal(cutAtWord('See [the install guide page](/docs/install) now', 24), 'See the install guide …');
 	});
 
-	it('drops a link cut inside its target, label included', () => {
-		assert.equal(cutAtWord('See [guide](/docs/install and more) words', 30), 'See …');
+	it('counts a link label, not its target, toward the limit', () => {
+		assert.equal(
+			cutAtWord('See [guide](/docs/a/very/long/target/path) and more words', 20),
+			'See [guide](/docs/a/very/long/target/path) and more …',
+		);
 	});
 
-	it('drops an unclosed parenthesis', () => {
-		assert.equal(cutAtWord('Some words (an aside that goes on) end', 24), 'Some words …');
+	it('leaves brackets that never formed a link as they are', () => {
+		assert.equal(cutAtWord('See [guide](/docs/install and more) words', 30), 'See [guide](/docs/install and …');
 	});
 
-	it('repeats until no unclosed fragment is left', () => {
-		assert.equal(cutAtWord('Start **bold [link label](/x y z) and', 30), 'Start …');
+	it('keeps an unclosed parenthesis, which is not markup', () => {
+		assert.equal(cutAtWord('Some words (an aside that goes on) end', 24), 'Some words (an aside …');
+	});
+
+	it('keeps markers that were literal text in the source', () => {
+		assert.equal(cutAtWord('Start **bold [link label](/x y z) and', 30), 'Start **bold [link label](/x …');
 	});
 
 	it('falls back to a hard cut that closes a long opening code span', () => {
@@ -60,16 +71,17 @@ describe('cutAtWord', () => {
 	});
 
 	it('falls back to a hard cut without unclosed markers', () => {
-		assert.equal(cutAtWord('**averyveryverylongboldword** rest', 12), 'averyveryv …');
+		assert.equal(cutAtWord('**averyveryverylongboldword** rest', 12), 'averyveryver …');
 	});
 
-	it('keeps only the label of a link whose target the hard cut splits', () => {
-		assert.equal(cutAtWord('[label](/very/long/url/path)', 15), 'label …');
-		assert.equal(cutAtWord('**[label](/very/long/url/path)** x', 15), 'label …');
+	it('keeps a link whose label fits, however long its target', () => {
+		assert.equal(cutAtWord('[label](/very/long/url/path)', 15), '[label](/very/long/url/path)');
+		assert.equal(cutAtWord('**[label](/very/long/url/path)** x', 15), '**[label](/very/long/url/path)** x');
+		assert.equal(cutAtWord('[](/very/long/url/path)', 10), '[](/very/long/url/path)');
 	});
 
-	it('keeps the target text of an empty-label link the hard cut splits', () => {
-		assert.equal(cutAtWord('[](/very/long/url/path)', 10), '/very/l …');
+	it('hard-cuts a long link label to plain text', () => {
+		assert.equal(cutAtWord('[averyveryverylonglabel](/x) rest', 10), 'averyveryv …');
 	});
 
 	it('drops an unclosed single-asterisk emphasis run', () => {
@@ -82,13 +94,13 @@ describe('cutAtWord', () => {
 	});
 
 	it('keeps closed emphasis runs', () => {
-		assert.equal(cutAtWord('a *b* c _d_ e and more words', 14), 'a *b* c _d_ e …');
+		assert.equal(cutAtWord('a *b* c _d_ e and more words', 14), 'a *b* c _d_ e and …');
 	});
 
 	it('removes unclosed emphasis markers from a hard cut', () => {
-		assert.equal(cutAtWord('*averyveryverylongitalicword* rest', 12), 'averyveryve …');
-		assert.equal(cutAtWord('_averyveryverylongitalicword_ rest', 12), 'averyveryve …');
-		assert.equal(cutAtWord('__averyveryverylongboldword__ rest', 12), 'averyveryv …');
+		assert.equal(cutAtWord('*averyveryverylongitalicword* rest', 12), 'averyveryver …');
+		assert.equal(cutAtWord('_averyveryverylongitalicword_ rest', 12), 'averyveryver …');
+		assert.equal(cutAtWord('__averyveryverylongboldword__ rest', 12), 'averyveryver …');
 	});
 
 	it('leaves underscores inside words and spaced asterisks alone', () => {
@@ -98,7 +110,7 @@ describe('cutAtWord', () => {
 
 	it('keeps a link whose target holds an underscore', () => {
 		assert.equal(
-			cutAtWord('see [docs](https://x.com/_private) and more words here', 45),
+			cutAtWord('see [docs](https://x.com/_private) and more words here', 20),
 			'see [docs](https://x.com/_private) and more …',
 		);
 		assert.equal(
@@ -131,4 +143,123 @@ describe('cutAtWord', () => {
 			assert.notEqual(cutAtWord(text, 10).trim(), '…');
 		}
 	});
+
+	it('keeps a whole link whose target has a title and an underscore', () => {
+		assert.equal(cutAtWord('See [a](/p/_x "t") and more words then y_ z', 20), 'See [a](/p/_x "t") and more …');
+	});
+
+	it('keeps a www autolink whose path holds an underscore', () => {
+		assert.equal(cutAtWord('Go to www.x.com/_a and some words then b_ c', 36), 'Go to www.x.com/_a and some words …');
+	});
+
+	it('drops a strikethrough run the cut lands in', () => {
+		assert.equal(cutAtWord('Tilde ~~strike text here~~ more', 18), 'Tilde …');
+		assert.equal(cutAtWord('Tilde ~~strike~~ and more words', 20), 'Tilde ~~strike~~ and …');
+	});
+
+	it('keeps a literal "** " that never opens bold', () => {
+		assert.equal(cutAtWord('** not bold and _x_ y z w', 12), '** not bold …');
+	});
+
+	it('never splits a backslash escape or a character reference', () => {
+		const text = `a ${BACKSLASH}*b c &amp; d e f g h`;
+		assert.equal(cutAtWord(text, 12), `a ${BACKSLASH}*b c &amp; d …`);
+	});
+
+	it('drops a code span the cut lands in after other text', () => {
+		assert.equal(cutAtWord('Run `a b c d e f g` now', 10), 'Run …');
+	});
+
+	it('leaves no markup literal that was not literal in the inventory excerpts', () => {
+		const inputs = cutInputs();
+		assert.ok(inputs.length > 100, `expected the inventory inputs, got ${inputs.length}`);
+		const random = seeded(281);
+		for (const { text, limit } of inputs) {
+			const limits = [limit, ...Array.from({ length: 12 }, () => 4 + Math.floor(random() * 200))];
+			for (const cut of limits) assertNoNewLiterals(text, cut);
+		}
+	});
+
+	it('leaves no markup literal that was not literal in random Markdown', () => {
+		const random = seeded(7);
+		for (let i = 0; i < 3000; i += 1) {
+			const text = randomMarkdown(random);
+			assertNoNewLiterals(text, 1 + Math.floor(random() * text.length));
+		}
+	});
 });
+
+const BACKSLASH = String.fromCharCode(92);
+const MARKUP = new Set(['*', '_', '~', '[', '`']);
+
+// A small deterministic generator (mulberry32), so a failure reproduces.
+function seeded(seed) {
+	let state = seed >>> 0;
+	return () => {
+		state = (state + 0x6d2b79f5) >>> 0;
+		let t = state;
+		t = Math.imul(t ^ (t >>> 15), t | 1);
+		t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+		return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+	};
+}
+
+const PIECES = [
+	'word', 'snake_case', 'a', 'go', 'longerword', '*', '_', '**', '__', '~', '~~', '`', '``', '[', ']', '(', ')',
+	'*em*', '_em_', '**bold**', '~~gone~~', '`code`', '`a b`', '[label](/x)', '[a b](/p/_x "t")', '<https://x.com/_a>',
+	'www.x.com/_a', 'https://y.com/_b_', '&amp;', `${BACKSLASH}*`, `${BACKSLASH}_`, '![alt](/i.png)', '5 * 3', '** ',
+];
+
+function randomMarkdown(random) {
+	const count = 2 + Math.floor(random() * 14);
+	let out = '';
+	for (let i = 0; i < count; i += 1) {
+		out += PIECES[Math.floor(random() * PIECES.length)];
+		if (random() < 0.7) out += ' ';
+	}
+	return out.trim() || 'word';
+}
+
+// The characters a page shows for `markdown`, each marked literal when it
+// comes from a text node (outside code, links' targets and other markup).
+function shownCharacters(markdown) {
+	const tree = fromMarkdown(markdown, { extensions: [gfm()], mdastExtensions: [gfmFromMarkdown()] });
+	const out = [];
+	const phrasing = new Set(['paragraph', 'heading', 'tableCell', 'emphasis', 'strong', 'delete', 'link', 'linkReference']);
+	const visit = (node) => {
+		if (node.type === 'text') for (const ch of node.value) out.push({ ch, literal: true });
+		else if (node.type === 'inlineCode' || node.type === 'html') for (const ch of node.value) out.push({ ch, literal: false });
+		else if (node.type === 'image' || node.type === 'imageReference') for (const ch of node.alt || '') out.push({ ch, literal: false });
+		else if (node.type === 'break') out.push({ ch: ' ', literal: false });
+		else if (node.type === 'footnoteReference') for (const ch of node.label || '') out.push({ ch, literal: false });
+		else if (node.children) {
+			node.children.forEach((child, index) => {
+				if (index > 0 && !phrasing.has(node.type)) out.push({ ch: ' ', literal: false });
+				visit(child);
+			});
+		}
+	};
+	visit(tree);
+	return out;
+}
+
+// Re-parse a cut and check that what it shows is the start of what the source
+// shows, and that every literal *, _, ~, [ or backtick in it was a literal
+// character at the same place in the source.
+function assertNoNewLiterals(text, limit) {
+	const result = cutAtWord(text, limit);
+	if (result === text) return;
+	const context = `cutAtWord(${JSON.stringify(text)}, ${limit}) = ${JSON.stringify(result)}`;
+	assert.ok(result.endsWith(' …'), context);
+	const body = result.slice(0, -2);
+	assert.ok(body.trim(), `${context}: empty cut`);
+	const shown = shownCharacters(body);
+	const original = shownCharacters(text);
+	shown.forEach(({ ch, literal }, index) => {
+		const at = original[index];
+		assert.ok(at && at.ch === ch, `${context}: shows ${JSON.stringify(ch)} at ${index}, not a prefix of the source`);
+		if (literal && MARKUP.has(ch)) {
+			assert.ok(at.literal, `${context}: ${JSON.stringify(ch)} at ${index} is literal only after the cut`);
+		}
+	});
+}

@@ -25,11 +25,14 @@ Run any of them from `site/`.
   regeneration (the CI docs-reference-sync drift gate enforces it). Do not
   hand-edit the generated pages or blocks.
 - **`cut-at-word.mjs`** — `cutAtWord`, which shortens the excerpts in the
-  generated reference tables on a word boundary. It drops a trailing unclosed
-  code span, `**`, `*`, `_`, `__`, `[` or `(` so no stray marker shows on the
-  page, and falls back to a hard cut when that would leave nothing (a link cut
-  inside its target keeps only its label). Covered by
-  `cut-at-word.test.mjs` under `npm test`.
+  generated reference tables on a word boundary. It parses the text as GFM
+  Markdown, counts only the characters the page shows, and keeps or drops
+  whole inline nodes at the cut, so no code span, emphasis, bold,
+  strikethrough or link is left open (a link the cut lands in keeps its label
+  as plain text). Each cut is parsed again and checked before it is used.
+  Covered by `cut-at-word.test.mjs` under `npm test`, which also cuts every
+  excerpt source that `update-reference-inventory.mjs` exports through
+  `cutInputs()` (the script writes pages only when run directly).
 - **`build-llms-txt.mjs`** — walks `content/docs/**` and emits the English-only
   `public/llms.txt` (compact index) and `public/llms-full.txt` (concatenated
   bodies). Runs in `prebuild`. `assertLocaleParity()` fails the build if its

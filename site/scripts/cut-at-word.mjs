@@ -3,180 +3,228 @@
 // Shorten Markdown text for the generated reference tables without leaving
 // markup the page would show as literal characters.
 //
-// `cutAtWord(text, limit)` cuts `text` to at most `limit` characters on a word
-// boundary and ends it with " …". A cut can land inside inline markup, and the
-// open half would then show on the page as a stray character: a backtick with
-// no partner, a "**" that never closes, a "*", "_" or "__" whose closer the
-// cut removed, a "[" or "(" from a half-cut link. The cut therefore drops a
-// trailing unclosed code span, bold run, emphasis run, link label or link
-// target. When that leaves nothing (the text opens with one long code span,
-// for example), it falls back to a hard cut at `limit` that closes an open
-// code span and removes any other unclosed marker, so the excerpt is never
-// just " …". A hard cut inside a link target ("[label](/very/lo") keeps only
-// the label, as plain text.
+// `cutAtWord(text, limit)` shortens `text` to at most `limit` visible
+// characters, on a word boundary, and ends it with " …". Visible characters
+// are what the page shows: text, code-span content and link labels, not the
+// markup around them or a link's target. Text that already fits is returned
+// unchanged.
 //
-// Emphasis follows CommonMark's flanking rules closely enough for one-line
-// table text: a "*", "_" or "__" opens only when a word follows it, and "_"
-// never opens or closes inside a word, so snake_case names and "5 * 3" are left
-// alone. Runs of three or more "*" or "_" are not treated as markup. Openers
-// and closers are paired over the whole uncut text, with code spans, link
-// targets, autolinks and bare URLs masked first, so a run counts as unclosed
-// only when it opens before the cut and its closer lies past it. A run that
-// never closes in the full text shows on the page as a literal character, and
-// the cut leaves it alone.
+// The text is parsed as GFM Markdown (micromark and mdast, the parser the docs
+// site already ships), so the cut sees the same inline nodes the page renders.
+// Every node that ends before the cut is kept as its exact source text. The one
+// node the cut lands in is handled whole, so no markup is ever left open:
+//
+//   - text keeps the part before the cut, sliced from its source so escapes
+//     and character references stay whole;
+//   - a code span, image, HTML tag or other atomic node is dropped;
+//   - an emphasis, bold or strikethrough run is dropped with its content;
+//   - a link keeps the part of its label before the cut, as plain text.
+//
+// When that leaves nothing (the text opens with one long code span or bold
+// run, for example), a second pass keeps more of the node the cut lands in: a
+// code span is shortened and closed again, and an emphasis, bold or
+// strikethrough run keeps the content before the cut without its markers. The
+// cut there is still on a word boundary when the first `limit` visible
+// characters hold a space, and a hard cut at `limit` otherwise.
 
-const BOLD = /\*\*/g;
+import { fromMarkdown } from 'mdast-util-from-markdown';
+import { gfmFromMarkdown, gfmToMarkdown } from 'mdast-util-gfm';
+import { toMarkdown } from 'mdast-util-to-markdown';
+import { gfm } from 'micromark-extension-gfm';
+import { decodeString } from 'micromark-util-decode-string';
 
-// Blank out the inside of each complete code span, keeping positions, so the
-// markers checked below are only the ones outside code.
-function maskCode(text) {
-	return text.replace(/`[^`]*`/g, (span) => ' '.repeat(span.length));
+// GFM's autolink-literal step also finds URLs the tokenizer skipped (after a
+// "[" or a code span, for example) by rewriting text nodes after the parse,
+// and the nodes it makes carry no source position. That step is left out: such
+// a URL stays plain text, which shows the same characters.
+const PARSE_OPTIONS = {
+	extensions: [gfm()],
+	mdastExtensions: gfmFromMarkdown().map((extension) =>
+		extension.transforms ? { ...extension, transforms: [] } : extension,
+	),
+};
+const SERIALIZE_OPTIONS = { extensions: [gfmToMarkdown()] };
+
+// Parents whose children are inline (phrasing) content. The children of any
+// other parent are blocks, which the visible text separates with one space.
+const PHRASING_PARENTS = new Set([
+	'paragraph',
+	'heading',
+	'tableCell',
+	'emphasis',
+	'strong',
+	'delete',
+	'link',
+	'linkReference',
+]);
+
+const WRAPPERS = new Set(['emphasis', 'strong', 'delete']);
+const LINKS = new Set(['link', 'linkReference']);
+
+export function parseMarkdown(text) {
+	return fromMarkdown(text, PARSE_OPTIONS);
 }
 
-function lastUnclosed(text, open, close) {
-	const stack = [];
-	for (let i = 0; i < text.length; i += 1) {
-		if (text[i] === open) stack.push(i);
-		else if (text[i] === close && stack.length > 0) stack.pop();
+// The text a node shows on the page.
+export function visibleText(node) {
+	switch (node.type) {
+		case 'text':
+		case 'inlineCode':
+		case 'html':
+			return node.value;
+		case 'image':
+		case 'imageReference':
+			return node.alt || '';
+		case 'break':
+			return ' ';
+		case 'footnoteReference':
+			return node.label || node.identifier || '';
+		default:
+			break;
 	}
-	return stack.length > 0 ? stack[stack.length - 1] : -1;
+	if (!node.children) return '';
+	const parts = node.children.map(visibleText);
+	return parts.join(PHRASING_PARENTS.has(node.type) ? '' : ' ');
 }
 
-const PUNCT = /[\p{P}\p{S}]/u;
-const SPACE = /\s/u;
+// The shown text of `node` as a string, and the indexes in it of the markup
+// characters (*, _, ~, [ and backtick) that show as literal text rather than
+// as code, a link target or other markup.
+const MARKUP = /[*_~[`]/g;
 
-// Fill the inside of each code span, link target ("](...)"), autolink
-// ("<https://...>") and bare URL with a letter, keeping positions and the
-// delimiters around it, so no "*" or "_" inside one reads as emphasis.
-function maskForEmphasis(text) {
-	const fill = (s) => 'x'.repeat(s.length);
-	return text
-		.replace(/`[^`]*`/g, (span) => `\`${fill(span.slice(1, -1))}\``)
-		.replace(/\]\([^()\s]*\)/g, (target) => `](${fill(target.slice(2, -1))})`)
-		.replace(/<[a-z][a-z0-9+.-]*:[^\s<>]*>/gi, (link) => `<${fill(link.slice(1, -1))}>`)
-		.replace(/\b(?:https?|ftp):\/\/[^\s<>()]+/gi, fill);
+function literalMarkup(node, out = { shown: '', literal: new Set() }) {
+	if (node.type === 'text') {
+		for (const m of node.value.matchAll(MARKUP)) out.literal.add(out.shown.length + m.index);
+		out.shown += node.value;
+	} else if (!node.children) {
+		out.shown += visibleText(node);
+	} else {
+		node.children.forEach((child, index) => {
+			if (index > 0 && !PHRASING_PARENTS.has(node.type)) out.shown += ' ';
+			literalMarkup(child, out);
+		});
+	}
+	return out;
 }
 
-// The emphasis pairs of the whole text, "*", "_" and "__" runs only ("**" is
-// left to the bold check): each opener's index, its closer's index and the run
-// width. An opener that never closes is literal text and is left out.
-function emphasisPairs(text) {
-	const masked = maskForEmphasis(text);
-	const stack = [];
-	const pairs = [];
-	for (const m of masked.matchAll(/\*+|_+/g)) {
-		const run = m[0];
-		const ch = run[0];
-		if (run.length > 2 || (ch === '*' && run.length === 2)) continue;
-		const before = masked[m.index - 1] ?? ' ';
-		const after = masked[m.index + run.length] ?? ' ';
-		const left = !SPACE.test(after) && (!PUNCT.test(after) || SPACE.test(before) || PUNCT.test(before));
-		const right = !SPACE.test(before) && (!PUNCT.test(before) || SPACE.test(after) || PUNCT.test(after));
-		const opens = ch === '*' ? left : left && (!right || PUNCT.test(before));
-		const closes = ch === '*' ? right : right && (!left || PUNCT.test(after));
-		const top = stack.findLastIndex((o) => o.run === run);
-		if (closes && top !== -1) {
-			pairs.push({ open: stack[top].index, close: m.index, width: run.length });
-			stack.splice(top);
-		} else if (opens) {
-			stack.push({ run, index: m.index });
+// Whether `cut` (a cut of the source, " …" included) shows the start of what
+// the source shows and no markup character as literal text that the source
+// did not show as literal text. A cut can change how the markup before it
+// pairs (a "_" closer that a following word turns into an inner-word "_"), so
+// every candidate is parsed again and checked.
+function faithful(cut, original) {
+	const result = literalMarkup(parseMarkdown(cut));
+	if (!result.shown.endsWith(' …')) return false;
+	const body = result.shown.slice(0, -2);
+	if (!original.shown.startsWith(body)) return false;
+	for (const index of result.literal) {
+		if (index < body.length && !original.literal.has(index)) return false;
+	}
+	return true;
+}
+
+function source(node, text) {
+	if (!node.position) return serialize(node);
+	return text.slice(node.position.start.offset, node.position.end.offset);
+}
+
+function serialize(node) {
+	return toMarkdown(node, SERIALIZE_OPTIONS).replace(/\n+$/, '');
+}
+
+// The source of a text node that shows its first `count` characters: the
+// shortest source prefix that decodes to them, so a backslash escape or a
+// character reference is never split. When no prefix decodes exactly (a
+// reference that decodes to two code units, cut between them), the shown
+// characters are serialized again instead.
+function textPrefix(node, text, count) {
+	const raw = source(node, text);
+	const want = node.value.slice(0, count);
+	for (let end = count; end <= raw.length; end += 1) {
+		const decoded = decodeString(raw.slice(0, end));
+		if (decoded === want) return raw.slice(0, end);
+		if (decoded.length > want.length + 32) break;
+	}
+	return serialize({ type: 'paragraph', children: [{ type: 'text', value: want }] });
+}
+
+// Render `tree` cut at visible offset `at`. `keepMore` is the second pass: a
+// code span the cut lands in is shortened and closed, and an emphasis, bold or
+// strikethrough run keeps its content without its markers.
+function render(tree, text, at, keepMore) {
+	let offset = 0;
+
+	// The rendered children of `node`, with the source between kept children
+	// (for blocks, the line breaks and markers between them); null when none
+	// is kept.
+	function children(node) {
+		const flow = !PHRASING_PARENTS.has(node.type);
+		let out = '';
+		let previous = null;
+		for (const child of node.children) {
+			if (flow && previous) offset += 1;
+			const rendered = emit(child);
+			if (rendered === null) break;
+			if (previous) out += text.slice(previous.position.end.offset, child.position.start.offset);
+			out += rendered;
+			previous = child;
 		}
+		return out.trim() ? out : null;
 	}
-	return pairs.sort((a, b) => a.open - b.open);
-}
 
-// The pairs that open inside the first `length` characters and whose closer
-// does not fit inside them, in opening order.
-function splitByCut(pairs, length) {
-	return pairs.filter((p) => p.open < length && p.close + p.width > length);
-}
-
-function countBackticks(text) {
-	return (text.match(/`/g) || []).length;
-}
-
-// Drop the trailing fragment that opens a construct the cut never closed,
-// repeating until nothing changes (dropping one fragment can expose another).
-// `full` is the uncut text, of which `text` is a prefix.
-function dropUnclosed(text, full) {
-	const pairs = emphasisPairs(full);
-	let cut = text;
-	for (;;) {
-		const before = cut;
-		if (countBackticks(cut) % 2 === 1) cut = cut.slice(0, cut.lastIndexOf('`'));
-		const masked = maskCode(cut);
-		const bold = [...masked.matchAll(BOLD)].map((m) => m.index);
-		const paren = lastUnclosed(masked, '(', ')');
-		const bracket = lastUnclosed(masked, '[', ']');
-		const emphasis = splitByCut(pairs, cut.length).at(-1);
-		if (bold.length % 2 === 1) {
-			cut = cut.slice(0, bold[bold.length - 1]);
-		} else if (emphasis) {
-			cut = cut.slice(0, emphasis.open);
-		} else if (paren !== -1) {
-			cut = cut.slice(0, paren);
-			// "[label](" cut inside the target: drop the label too, or the page
-			// shows "[label]" with its brackets.
-			if (cut.endsWith(']')) {
-				const open = lastUnclosed(maskCode(cut).slice(0, -1), '[', ']');
-				if (open !== -1) cut = cut.slice(0, open);
-			}
-		} else if (bracket !== -1) {
-			cut = cut.slice(0, bracket);
+	function emit(node) {
+		const start = offset;
+		const length = visibleText(node).length;
+		if (start >= at) return null;
+		if (start + length <= at) {
+			offset += length;
+			return source(node, text);
 		}
-		cut = cut.trimEnd();
-		if (cut === before) return cut;
-	}
-}
-
-// Keep the text of a hard cut but make its markup whole: remove the opener of
-// each "*", "_" or "__" run the cut splits from its closer (and any part of
-// that closer the cut kept), close an open code span, and remove the unclosed
-// "**", "[" and "(" markers (only the markers). An unclosed "(" right after a
-// "]" is a cut link target: the target and the label's "[" and "]" go, and
-// the label stays as plain text. `full` is the uncut text, of which `text` is
-// a prefix.
-function closeHardCut(text, full) {
-	let cut = text;
-	const ranges = [];
-	for (const p of splitByCut(emphasisPairs(full), cut.length)) {
-		ranges.push([p.open, p.open + p.width]);
-		if (p.close < cut.length) ranges.push([p.close, cut.length]);
-	}
-	for (const [start, end] of ranges.sort((a, b) => b[0] - a[0])) {
-		cut = cut.slice(0, start) + cut.slice(end);
-	}
-	if (countBackticks(cut) % 2 === 1) cut = `${cut.trimEnd()}\``;
-	for (;;) {
-		const masked = maskCode(cut);
-		const bold = [...masked.matchAll(BOLD)].map((m) => m.index);
-		let at = -1;
-		let width = 1;
-		if (bold.length % 2 === 1) {
-			at = bold[bold.length - 1];
-			width = 2;
-		} else {
-			const paren = lastUnclosed(masked, '(', ')');
-			if (paren > 0 && masked[paren - 1] === ']') {
-				const open = lastUnclosed(masked.slice(0, paren - 1), '[', ']');
-				if (open !== -1) {
-					// An empty label leaves the target's text instead.
-					const label = cut.slice(open + 1, paren - 1);
-					cut = cut.slice(0, open) + (label || cut.slice(paren + 1));
-					continue;
-				}
-			}
-			at = Math.max(paren, lastUnclosed(masked, '[', ']'));
+		const room = at - start;
+		if (node.type === 'text') {
+			offset += room;
+			return textPrefix(node, text, room);
 		}
-		if (at === -1) return cut.trim();
-		cut = cut.slice(0, at) + cut.slice(at + width);
+		if (node.type === 'inlineCode') {
+			const value = node.value.slice(0, room).trimEnd();
+			if (!keepMore || !value) return null;
+			offset += room;
+			return serialize({ type: 'inlineCode', value });
+		}
+		if (node.type === 'html' && keepMore) {
+			offset += room;
+			return node.value.slice(0, room);
+		}
+		if ((node.type === 'image' || node.type === 'imageReference') && keepMore) {
+			offset += room;
+			return serialize({ type: 'paragraph', children: [{ type: 'text', value: node.alt.slice(0, room) }] });
+		}
+		if (!node.children || !node.position) return null;
+		if (WRAPPERS.has(node.type)) return keepMore ? children(node) : null;
+		if (LINKS.has(node.type)) return children(node);
+		const inner = children(node);
+		if (inner === null || node.children.length === 0) return null;
+		// A block or paragraph keeps its own opening markers ("- ", "> ").
+		return text.slice(node.position.start.offset, node.children[0].position.start.offset) + inner;
 	}
+
+	return (emit(tree) ?? '').trim();
 }
 
 export function cutAtWord(text, limit) {
 	if (text.length <= limit) return text;
-	const hard = text.slice(0, limit);
-	const space = hard.lastIndexOf(' ');
-	const cut = dropUnclosed(space > 0 ? hard.slice(0, space) : hard, text);
-	return `${cut || closeHardCut(hard, text)} …`;
+	const tree = parseMarkdown(text);
+	const shown = visibleText(tree);
+	if (shown.length <= limit) return text;
+	const original = literalMarkup(tree);
+	const accept = (cut) => (cut && faithful(`${cut} …`, original) ? `${cut} …` : null);
+	// Each word boundary at or before the limit, latest first.
+	for (let at = shown.lastIndexOf(' ', limit - 1); at > 0; at = shown.lastIndexOf(' ', at - 1)) {
+		const cut = render(tree, text, at, false) || render(tree, text, at, true);
+		const result = accept(cut);
+		if (result) return result;
+	}
+	// No cut keeps the markup whole (a code span that opens with spaces, cut to
+	// one character, say): the text is left as it is rather than broken.
+	return accept(render(tree, text, limit, true)) ?? text;
 }
