@@ -370,9 +370,8 @@ blocks between Apothem's markers or marker lines Apothem cannot tell from your
 text, or when another harness was removed, otherwise `1`. An unexpected error
 (an exception, such as a backup that cannot be written) inside the first step
 of an Open-Claw, Antigravity or Kimi Code uninstall reports nothing that step
-did (see
-[An uninstall that did not finish](#an-uninstall-that-did-not-finish)): the
-uninstall prints `failed:` and exits `1` (`2` when another harness was
+did (see [An uninstall that did not finish](#an-uninstall-that-did-not-finish)):
+the uninstall prints `failed:` and exits `1` (`2` when another harness was
 removed), whatever the step had changed. When Open-Claw's rules-file step
 reports an error instead (a rules file it cannot rewrite, or an
 `openclaw.json` with comments), that is a failed step, as above: the uninstall

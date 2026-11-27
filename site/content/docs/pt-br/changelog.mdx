@@ -230,22 +230,24 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   two different blocks between Apothem's markers and a file with marker lines
   Apothem cannot tell from your text. Each gets a `✗ <harness> uninstall did
   not finish:` line and is added to the end of its `results` row's message;
-  an install with no record also gets its `Note:` line, with the check of the
-  `--project` folder before `apothem update`, and the row's `kept_reason`.
+  the line for the files of an earlier release's install or of an install
+  with no record also says how to fix, before `apothem update`, each file the
+  uninstall left with Apothem's markers in it. An install with no record also
+  gets its `Note:` line, with the check of the `--project` folder before
+  `apothem update`, and the row's `kept_reason`.
   When the reasons, the steps that failed before the stop included, name one
   link, that row carries it in `detail.symlink` and `detail.leads_to`, as
   does the row of an uninstall refused because a link leads its folder out of
   your home directory. Such a link, or such files, make it exit `2`, also when
   it removed nothing. Its warnings also name a link its steps left in place,
   as for one that ran all its steps. An error that stops the settings-file
-  step of Hermes,
-  Open-Claw, OpenCode or Qwen Code now reads `uninstall stopped: <error>`, as
-  one in a later step does. So does an error in the step OpenCode's uninstall
-  takes after the one that removes what the install record lists, which
-  closes an install recorded under another spelling of its folder: the
-  uninstall exits `2`, as it had removed files, and that install stays
-  recorded. A later run does not close it yet: OpenCode then reads as not
-  installed, so the uninstall skips it. Installing OpenCode at the folder
+  step of Hermes, Open-Claw, OpenCode or Qwen Code now reads `uninstall
+  stopped: <error>`, as one in a later step does. So does an error in the step
+  OpenCode's uninstall takes after the one that removes what the install
+  record lists, which closes an install recorded under another spelling of its
+  folder: the uninstall exits `2`, as it had removed files, and that install
+  stays recorded. A later run does not close it yet: OpenCode then reads as
+  not installed, so the uninstall skips it. Installing OpenCode at the folder
   again, with a profile outside the linked folder, and then uninstalling it
   closes that install.
 
