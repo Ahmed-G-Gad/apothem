@@ -2,7 +2,7 @@
 title: "플랫폼"
 description: "Apothem이 지원하는 운영 체제, 셸, 설치 프로그램 스크립트, 그리고 자체 완결형 런타임을 위한 시스템 Python 사전 요건."
 machineTranslated: true
-sourceHash: "40276e881e9e631c"
+sourceHash: "1c6e2bce2e1da696"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,8 +41,9 @@ Apothem은 어떤 Python 패키지도 설치하지 않습니다. 엔진 임포�
   보고하는 첫 번째 것을 수용합니다. Windows에서는 Microsoft Store 런처 심을
   거부하며, 번들된 `find-python` 로케이터도 동일한 하한을 적용합니다.
 - **런타임 라이브러리 임포트 가능.** 엔진은 시스템 인터프리터에서 `click`과 `rich`를 임포트합니다. 나머지 서드파티 의존성은 소스 트리에 포함(vendored)되어 있습니다. 설치 프로그램은 두 라이브러리가 임포트 가능한지 확인하고, 누락된 것을 알려 주며, 누락된 전제 조건을 대신 설치하도록 제안합니다 — 확인을 거치거나 `--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1`로 자동으로.
-- <strong><code>git</code></strong>은 네트워크 설치(스크립트가 소스 트리를 복제함)에만 필요합니다.
-  체크아웃으로부터의 로컬 설치는 `git`을 요구하지 않습니다.
+- <strong><code>git</code></strong>과 <strong><code>gpg</code></strong>는 네트워크 설치에만 필요합니다. 스크립트는 이 둘로 최신 릴리스를 찾고
+  서명된 태그를 확인하며, cosign이 없으면 소스 트리를 복제합니다.
+  체크아웃으로부터의 로컬 설치는 둘 다 요구하지 않습니다.
 
 인터프리터, 라이브러리, 또는 `git`이 없으면, 설치 프로그램은 추측하거나
 환경을 변경하는 대신 무엇을 제공해야 하는지 정확히 명시한 진단과 함께

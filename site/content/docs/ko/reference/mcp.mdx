@@ -2,7 +2,7 @@
 title: "MCP 서버"
 description: "Model Context Protocol 서버 구성 — 운영자 소유이며 각 도구의 네이티브 MCP 메커니즘을 통해 등록됩니다. 몇몇 어댑터는 공유 프로필의 MCP 인벤토리를 투영하고, 나머지는 서버 항목을 작성하지 않습니다."
 machineTranslated: true
-sourceHash: "1fbc48cd12ad0388"
+sourceHash: "0fdad1bd642d3d81"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -52,17 +52,21 @@ Model Context Protocol(MCP) 서버는 **운영자 소유**입니다. Apothem은 
 `OpenCode` 어댑터는 인벤토리를 `opencode.json`의 `mcp` 블록에 작성합니다.
 `OpenCode`는 구성에서 `${NAME}`이 아니라 `{env:NAME}`을 치환하므로, 어댑터는
 서버의 환경, 헤더 또는 URL에 있는 각 `${NAME}` 참조를 `{env:NAME}`으로
-작성합니다. 설정되지 않은 변수는 빈 문자열이 됩니다. 명령 인수는 쓰인 그대로
-복사됩니다. 환경 또는 헤더 값에 있는 `$NAME`과, `${NAME:-default}` 같은 다른
-`${...}` 형태는 쓰인 그대로 복사되며, `apothem install`은 값이 아니라 참조가 있는
-위치를 명시하여 `OpenCode`가 이를 확장하지 않는다고 경고합니다. `OpenCode`는
+작성합니다. 설정되지 않은 변수는 빈 문자열이 됩니다. 변수를 같은 이름 그대로 넘기기만
+하는 환경 항목(예: `GITHUB_TOKEN: ${GITHUB_TOKEN}`)은 생략됩니다. `OpenCode`는 서버를 자신의
+환경으로 시작하므로 설정되지 않은 변수는 설정되지 않은 상태로 남기 때문입니다. 이와
+다른 경우는 [OpenCode 페이지](/docs/harnesses/opencode)에 나열되어 있습니다. 명령 인수는
+쓰인 그대로 복사됩니다. 환경 또는 헤더 값에 있는 `$NAME`과, `${NAME:-default}`나 명령
+인수 안의 단순한 `${NAME}` 같은 다른 모든 `${...}` 형태는 쓰인 그대로 복사되며,
+`apothem install`은 값이 아니라 참조가 있는 위치를 명시하여 `OpenCode`가 이를 확장하지
+않는다고 경고합니다. `OpenCode`는
 `{env:NAME}` 값을 자신이 읽는 구성 텍스트에 이스케이프하지 않고 삽입합니다
 (`OpenCode` 2는 그 텍스트가 그렇지 않으면 파싱되지 않는 경우에만 이스케이프합니다).
 그래서 백슬래시, 큰따옴표 또는 제어 문자가 있는 값은 `OpenCode` 1이 파일을 읽지
 못하게 만들 수 있고, 두 버전 모두에서 그 안의 `\t` 또는 `\n`이 서버에 제어 문자로
-전달됩니다. `apothem install`은 그런 값에 대해 경고합니다. 다른 도구가 `${NAME}`
-참조를 유지하도록, 그 값은 `harnesses.opencode.mcp_servers.<name>` 아래에
-`{file:path}`로 설정하세요.
+전달됩니다. `apothem install`은 그런 값에 대해 경고합니다. 재정의는 서버 전체를
+대체하므로 그 서버 전체를 `harnesses.opencode.mcp_servers.<name>` 아래에 다시 적고,
+거기서 값을 `{file:path}`로 쓰세요. 다른 도구는 `${NAME}` 참조를 유지합니다.
 
 ## 도우미에 MCP 서버 접근 권한 부여하기
 
