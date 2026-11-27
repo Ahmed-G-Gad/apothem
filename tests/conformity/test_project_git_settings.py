@@ -1451,6 +1451,7 @@ _SAFE_OPEN_CTYPES_NAMES: Final[frozenset[str]] = frozenset(
         "c_int",
         "c_long",
         "c_size_t",
+        "c_ulonglong",
         "c_ubyte",
         "c_ushort",
         "c_void_p",
