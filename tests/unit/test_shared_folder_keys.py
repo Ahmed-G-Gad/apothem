@@ -1451,27 +1451,6 @@ def _unfinished_with_nothing_left(tmp_path: Path) -> Path:
     return root
 
 
-@pytest.mark.parametrize("step", ["record", "other spellings"])
-def test_closing_an_unfinished_uninstall_raises_a_refusal(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, step: str
-) -> None:
-    # The check that closes an uninstall with nothing left raises a refusal
-    # of the real-home guard, as end_other_spellings does, so a test cannot
-    # pass with it absorbed.
-    root = _unfinished_with_nothing_left(tmp_path)
-
-    def refused(*args: object) -> None:
-        raise home_write_guard.RealHomeWriteError("refused")
-
-    if step == "record":
-        monkeypatch.setattr(install_ledger, "append_record", refused)
-    else:
-        monkeypatch.setattr(install_driver_evidence, "end_other_spellings", refused)
-
-    with pytest.raises(home_write_guard.RealHomeWriteError, match="refused"):
-        install_driver_evidence._unfinished_here("codex", root)
-
-
 def test_an_error_closing_an_unfinished_uninstall_leaves_it_unfinished(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

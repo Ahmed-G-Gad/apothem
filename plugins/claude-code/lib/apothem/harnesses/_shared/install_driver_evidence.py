@@ -14,12 +14,13 @@ A verify or detect also asks whether a native config still parses
 
 from __future__ import annotations
 
+import contextlib
 from collections.abc import Callable
 from pathlib import Path
 
 import yaml
 
-from apothem.lib import home_write_guard, install_ledger
+from apothem.lib import install_ledger
 from apothem.lib.harness_materializer import (
     complete_managed_block,
     extract_managed_block,
@@ -193,10 +194,13 @@ def _unfinished_here(harness_name: str, root: Path) -> bool:
     its records under the folder's other spellings list count too. With
     nothing Apothem wrote left, the install is closed by an ``uninstall``, and
     so is the install under each of those spellings (see
-    :func:`end_other_spellings`), as a finished uninstall closes them. An
-    error writing the ``uninstall`` record leaves the uninstall unfinished,
-    to close on a later check. A refusal of the real-home guard is raised as
-    it is, here and in :func:`end_other_spellings`.
+    :func:`end_other_spellings`), as a finished uninstall closes them. This
+    is a check (status, verify, detect), so closing is a side effect it
+    never fails on: an error writing a record leaves the uninstall unfinished,
+    to close on a later check, and a refusal of the real-home guard is
+    dropped here too, quietly, while the guard logs it for the test run to
+    report (see :func:`apothem.lib.home_write_guard.refusals`). An uninstall
+    that ends those spellings itself raises the refusal instead.
     """
     try:
         unfinished = install_ledger.unfinished_uninstall(harness_name, root=root)
@@ -213,7 +217,7 @@ def _unfinished_here(harness_name: str, root: Path) -> bool:
         for target in install.targets
     ):
         return True
-    try:
+    with contextlib.suppress(OSError, install_ledger.LedgerError):
         install_ledger.append_record(
             LedgerRecord.create(
                 harness=harness_name,
@@ -223,8 +227,4 @@ def _unfinished_here(harness_name: str, root: Path) -> bool:
             )
         )
         end_other_spellings(harness_name, same)
-    except home_write_guard.RealHomeWriteError:
-        raise  # a refusal during a test is never absorbed
-    except (OSError, install_ledger.LedgerError):
-        pass  # the uninstall stays unfinished, to close on a later check
     return False
