@@ -21,6 +21,7 @@ import ctypes
 import errno
 import os
 import socket
+import stat
 import sys
 from collections.abc import Callable, Iterator
 from pathlib import Path
@@ -258,6 +259,32 @@ def test_a_file_swapped_in_for_a_folder_after_the_look_is_not_a_folder(
         read_project_bytes(project, _target(project))
 
     assert _project_paths.take_skipped_paths() == []
+
+
+@_POSIX_ONLY
+@pytest.mark.skipif(
+    not (hasattr(os, "O_PATH") or hasattr(os, "O_SEARCH")),
+    reason="this system opens a folder only to read it",
+)
+@pytest.mark.skipif(
+    hasattr(os, "geteuid") and os.geteuid() == 0,
+    reason="permissions do not apply to root",
+)
+def test_a_folder_that_can_be_searched_but_not_read_still_opens(
+    project: Path,
+) -> None:
+    """A folder with search permission alone (``--x``) was enough to open a
+    file below it by name, and is enough here."""
+    folders = [project, *(_level(project, depth) for depth in range(3))]
+    for folder in folders:
+        folder.chmod(stat.S_IXUSR)
+    try:
+        data = read_project_bytes(project, _target(project))
+    finally:
+        for folder in folders:
+            folder.chmod(stat.S_IRWXU)
+
+    assert data == _INSIDE
 
 
 @pytest.mark.parametrize(

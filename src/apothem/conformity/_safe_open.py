@@ -12,11 +12,13 @@ inside the folder already open, and the file last, and none of those opens
 follows a link.
 
 - POSIX: each level is looked at with ``fstatat`` and opened with ``openat``
-  and ``O_NOFOLLOW`` inside the folder opened just before it (folders with
-  ``O_DIRECTORY``, the file with ``O_NONBLOCK`` so a named pipe cannot make
-  the open wait). The opened level must be the one looked at (same device and
-  inode, same type), and the file must be a regular file; the file is then
-  set back to blocking reads.
+  and ``O_NOFOLLOW`` inside the folder opened just before it (the file with
+  ``O_NONBLOCK``, so a named pipe cannot make the open wait). A folder is
+  opened with ``O_PATH`` on Linux, or ``O_SEARCH`` where the system has it,
+  so it needs only search permission, as an open by name did; elsewhere it
+  must be readable too. The opened level must be the one looked at (same
+  device and inode, same type), and the file must be a regular file; the file
+  is then set back to blocking reads.
 - Windows: each level is opened with ``NtCreateFile`` inside the folder handle
   opened just before it, with ``FILE_OPEN_REPARSE_POINT``, so a reparse point
   is opened itself. One whose tag names another file or folder (a symbolic
@@ -177,6 +179,17 @@ if sys.platform != "win32":
     _SPECIAL_ERRNOS: Final[frozenset[int]] = frozenset(
         {errno.ENXIO, errno.ENODEV, errno.EOPNOTSUPP, errno.ENOTSUP}
     )
+    # A folder is only a place to open names in. O_PATH (Linux) and O_SEARCH
+    # need search permission alone, as an open by name did; without either, a
+    # folder must be readable too.
+    _FOLDER_FLAGS: Final[int] = (
+        (getattr(os, "O_PATH", 0) or getattr(os, "O_SEARCH", 0) or os.O_RDONLY)
+        | os.O_DIRECTORY
+        | os.O_CLOEXEC
+    )
+    _FILE_FLAGS: Final[int] = (
+        os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_NOCTTY | os.O_CLOEXEC
+    )
 
     def _same_entry(seen: os.stat_result, opened: os.stat_result) -> bool:
         """Return True when *opened* is the entry *seen* named (0 is no inode)."""
@@ -186,7 +199,7 @@ if sys.platform != "win32":
 
     def _open_root(root: Path) -> int:
         """Open the folder *root*, which the caller trusts, as given."""
-        return os.open(root, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+        return os.open(root, _FOLDER_FLAGS)
 
     def _check_kind(seen: os.stat_result, *, folder: bool, shown: Path) -> None:
         """Raise unless *seen* is the kind of entry wanted at *shown*.
@@ -226,12 +239,10 @@ if sys.platform != "win32":
         seen = _look(parent, name, shown)
         _check_kind(seen, folder=folder, shown=shown)
         if folder:
-            flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
+            flags = _FOLDER_FLAGS | os.O_NOFOLLOW
             wanted = stat.S_ISDIR
         else:
-            flags = (
-                os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_NOCTTY | os.O_CLOEXEC
-            )
+            flags = _FILE_FLAGS
             wanted = stat.S_ISREG
         try:
             fd = os.open(name, flags, dir_fd=parent)
