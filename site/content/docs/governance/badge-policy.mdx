@@ -39,8 +39,10 @@ Four forms cover every badge in the project:
    (license identifier, Python target version).
 4. **Registry and scorecard badges.** A badge whose value a third party
    computes from public data it already holds: the npm registry (version and
-   downloads, rendered by shields.io) and the OpenSSF Scorecard API. The
-   project publishes nothing for these; the third party is the source.
+   downloads, rendered by shields.io), the OpenSSF Scorecard API, and
+   bestpractices.dev, which serves the OpenSSF Best Practices badge from the
+   project's entry there. The project publishes nothing for these; the third
+   party is the source.
 
 Public-Gist publication of project metrics is excluded by design. Shields.io
 endpoints over the project-controlled domain are the canonical substitute.
@@ -60,6 +62,7 @@ Scorecard scans public repositories only.
 | npm version | registry | npm registry | `https://img.shields.io/npm/v/%40ahmed-g-gad%2Fapothem?color=10B981&label=npm` | No |
 | Coverage gate | shields.io static | `pyproject.toml` `fail_under = 80` | `https://img.shields.io/badge/coverage%20gate-%E2%89%A580%25-2563EB` | No |
 | OpenSSF Scorecard | scorecard | `.github/workflows/scorecard.yml` results | `https://api.securityscorecards.dev/projects/github.com/ahmed-g-gad/apothem/badge` | Yes |
+| OpenSSF Best Practices | third-party registry | the project's bestpractices.dev entry | `https://www.bestpractices.dev/projects/16427/badge` | No |
 | Feedback | shields.io static | GitHub Issues | `https://img.shields.io/badge/feedback-GitHub%20issues-7C3AED` | No |
 | Docs | shields.io static | the docs site | `https://img.shields.io/badge/docs-Fumadocs-0F172A` | No |
 | npm downloads | registry | npm registry | `https://img.shields.io/npm/dm/%40ahmed-g-gad%2Fapothem?color=10B981&label=downloads` | No |

@@ -22,6 +22,7 @@
   <a href="https://www.npmjs.com/package/@ahmed-g-gad/apothem"><img alt="npm version" src="https://img.shields.io/npm/v/%40ahmed-g-gad%2Fapothem?color=10B981&label=npm"></a>
   <a href="https://github.com/ahmed-g-gad/apothem/blob/main/pyproject.toml"><img alt="Coverage gate ≥80%" src="https://img.shields.io/badge/coverage%20gate-%E2%89%A580%25-2563EB"></a>
   <a href="https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem"><img alt="OpenSSF Scorecard" src="https://api.securityscorecards.dev/projects/github.com/ahmed-g-gad/apothem/badge"></a>
+  <a href="https://www.bestpractices.dev/projects/16427"><img alt="OpenSSF Best Practices" src="https://www.bestpractices.dev/projects/16427/badge"></a>
   <a href="https://github.com/ahmed-g-gad/apothem/issues"><img alt="Feedback: GitHub issues" src="https://img.shields.io/badge/feedback-GitHub%20issues-7C3AED"></a>
   <a href="https://apothem.ahmedgad.com/"><img alt="Documentation" src="https://img.shields.io/badge/docs-Fumadocs-0F172A"></a>
   <a href="https://www.npmjs.com/package/@ahmed-g-gad/apothem"><img alt="npm downloads" src="https://img.shields.io/npm/dm/%40ahmed-g-gad%2Fapothem?color=10B981&label=downloads"></a>

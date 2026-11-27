@@ -2,7 +2,7 @@
 title: "Политика бейджей"
 description: "Задаёт источники динамических и статических бейджей для README: нативный для GitHub статус рабочего процесса, JSON эндпоинта shields.io и статические формы бейджей."
 machineTranslated: true
-sourceHash: "e3ae990f58d3dd8e"
+sourceHash: "4ec8f4ae2e02624c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -45,8 +45,10 @@ sourceHash: "e3ae990f58d3dd8e"
    меняются редко (идентификатор лицензии, целевая версия Python).
 4. **Бейджи реестра и Scorecard.** Бейдж, значение которого вычисляет третья
    сторона на основе уже имеющихся у неё публичных данных: реестр npm (версия
-   и число загрузок, отрисовываемые shields.io) и API OpenSSF Scorecard. Для
-   них проект ничего не публикует; источником является третья сторона.
+   и число загрузок, отрисовываемые shields.io), API OpenSSF Scorecard и
+   bestpractices.dev, который выдаёт бейдж OpenSSF Best Practices по записи
+   проекта на этом сайте. Для них проект ничего не публикует; источником
+   является третья сторона.
 
 Публикация метрик проекта через публичные Gist исключена намеренно. Эндпоинты
 shields.io на домене, который контролирует проект, — каноническая замена.
@@ -67,6 +69,7 @@ GitHub отдаёт бейдж рабочего процесса приватн�
 | Версия npm | реестр | реестр npm | `https://img.shields.io/npm/v/%40ahmed-g-gad%2Fapothem?color=10B981&label=npm` | Нет |
 | Порог покрытия | статический shields.io | `pyproject.toml` `fail_under = 80` | `https://img.shields.io/badge/coverage%20gate-%E2%89%A580%25-2563EB` | Нет |
 | OpenSSF Scorecard | Scorecard | результаты `.github/workflows/scorecard.yml` | `https://api.securityscorecards.dev/projects/github.com/ahmed-g-gad/apothem/badge` | Да |
+| OpenSSF Best Practices | сторонний реестр | запись проекта на bestpractices.dev | `https://www.bestpractices.dev/projects/16427/badge` | Нет |
 | Обратная связь | статический shields.io | GitHub Issues | `https://img.shields.io/badge/feedback-GitHub%20issues-7C3AED` | Нет |
 | Документация | статический shields.io | сайт документации | `https://img.shields.io/badge/docs-Fumadocs-0F172A` | Нет |
 | Загрузки npm | реестр | реестр npm | `https://img.shields.io/npm/dm/%40ahmed-g-gad%2Fapothem?color=10B981&label=downloads` | Нет |

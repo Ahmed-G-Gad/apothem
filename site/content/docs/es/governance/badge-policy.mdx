@@ -2,7 +2,7 @@
 title: "Política de insignias"
 description: "Especifica las fuentes de insignias dinámicas y estáticas del README, que abarcan el estado de flujo de trabajo nativo de GitHub, el JSON de endpoint de shields.io y las formas de insignia estática."
 machineTranslated: true
-sourceHash: "e3ae990f58d3dd8e"
+sourceHash: "4ec8f4ae2e02624c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -46,8 +46,10 @@ Cuatro formas cubren cada insignia del proyecto:
    cambian (identificador de licencia, versión objetivo de Python).
 4. **Insignias de registro y de scorecard.** Una insignia cuyo valor calcula un
    tercero a partir de datos públicos que ya tiene: el registro de npm (versión
-   y descargas, renderizadas por shields.io) y la API de OpenSSF Scorecard. El
-   proyecto no publica nada para estas; el tercero es la fuente.
+   y descargas, renderizadas por shields.io), la API de OpenSSF Scorecard y
+   bestpractices.dev, que sirve la insignia OpenSSF Best Practices a partir de
+   la entrada del proyecto en ese sitio. El proyecto no publica nada para
+   estas; el tercero es la fuente.
 
 La publicación de métricas del proyecto en Gists públicos queda excluida por
 diseño. Los endpoints de shields.io sobre el dominio controlado por el proyecto
@@ -69,6 +71,7 @@ repositorios públicos.
 | Versión de npm | registro | registro de npm | `https://img.shields.io/npm/v/%40ahmed-g-gad%2Fapothem?color=10B981&label=npm` | No |
 | Umbral de cobertura | estática de shields.io | `pyproject.toml` `fail_under = 80` | `https://img.shields.io/badge/coverage%20gate-%E2%89%A580%25-2563EB` | No |
 | OpenSSF Scorecard | scorecard | resultados de `.github/workflows/scorecard.yml` | `https://api.securityscorecards.dev/projects/github.com/ahmed-g-gad/apothem/badge` | Sí |
+| OpenSSF Best Practices | registro de terceros | la entrada del proyecto en bestpractices.dev | `https://www.bestpractices.dev/projects/16427/badge` | No |
 | Comentarios | estática de shields.io | GitHub Issues | `https://img.shields.io/badge/feedback-GitHub%20issues-7C3AED` | No |
 | Documentación | estática de shields.io | el sitio de documentación | `https://img.shields.io/badge/docs-Fumadocs-0F172A` | No |
 | Descargas de npm | registro | registro de npm | `https://img.shields.io/npm/dm/%40ahmed-g-gad%2Fapothem?color=10B981&label=downloads` | No |

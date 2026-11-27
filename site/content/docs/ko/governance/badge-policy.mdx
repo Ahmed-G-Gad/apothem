@@ -2,7 +2,7 @@
 title: "배지 정책"
 description: "README의 동적 배지 소스와 정적 배지 소스를 지정합니다. GitHub 네이티브 워크플로 상태, shields.io 엔드포인트 JSON, 정적 배지 형식을 다룹니다."
 machineTranslated: true
-sourceHash: "e3ae990f58d3dd8e"
+sourceHash: "4ec8f4ae2e02624c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,8 +40,9 @@ sourceHash: "e3ae990f58d3dd8e"
    대상 버전)에만 사용합니다.
 4. **레지스트리 및 스코어카드 배지.** 서드파티가 이미 보유한 공개 데이터로 값을
    계산하는 배지입니다. npm 레지스트리(버전과 다운로드 수이며, shields.io가
-   렌더링)와 OpenSSF Scorecard API가 여기에 해당합니다. 프로젝트는 이 배지들을
-   위해 아무것도 게시하지 않으며, 서드파티가 소스입니다.
+   렌더링), OpenSSF Scorecard API, 그리고 해당 사이트의 프로젝트 항목으로
+   OpenSSF Best Practices 배지를 제공하는 bestpractices.dev가 여기에 해당합니다.
+   프로젝트는 이 배지들을 위해 아무것도 게시하지 않으며, 서드파티가 소스입니다.
 
 프로젝트 지표를 공개 Gist로 게시하는 방식은 설계상 제외됩니다. 프로젝트가
 제어하는 도메인을 통한 shields.io 엔드포인트가 표준 대체 수단입니다.
@@ -61,6 +62,7 @@ sourceHash: "e3ae990f58d3dd8e"
 | npm 버전 | 레지스트리 | npm 레지스트리 | `https://img.shields.io/npm/v/%40ahmed-g-gad%2Fapothem?color=10B981&label=npm` | 아니요 |
 | 커버리지 게이트 | shields.io 정적 | `pyproject.toml` `fail_under = 80` | `https://img.shields.io/badge/coverage%20gate-%E2%89%A580%25-2563EB` | 아니요 |
 | OpenSSF Scorecard | 스코어카드 | `.github/workflows/scorecard.yml` 결과 | `https://api.securityscorecards.dev/projects/github.com/ahmed-g-gad/apothem/badge` | 예 |
+| OpenSSF Best Practices | 서드파티 레지스트리 | bestpractices.dev의 프로젝트 항목 | `https://www.bestpractices.dev/projects/16427/badge` | 아니요 |
 | 피드백 | shields.io 정적 | GitHub Issues | `https://img.shields.io/badge/feedback-GitHub%20issues-7C3AED` | 아니요 |
 | 문서 | shields.io 정적 | 문서 사이트 | `https://img.shields.io/badge/docs-Fumadocs-0F172A` | 아니요 |
 | npm 다운로드 | 레지스트리 | npm 레지스트리 | `https://img.shields.io/npm/dm/%40ahmed-g-gad%2Fapothem?color=10B981&label=downloads` | 아니요 |

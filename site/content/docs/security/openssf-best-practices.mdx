@@ -10,7 +10,7 @@ This page lists the answers to keep in Apothem's entry on bestpractices.dev: eve
 
 ## Status
 
-Apothem is registered on bestpractices.dev as [project 16427](https://www.bestpractices.dev/en/projects/16427) and has held the passing badge since 2026-11-08. The entry also counts 13% of the silver criteria as met. The answers below cover every passing criterion:
+Apothem is registered on bestpractices.dev as [project 16427](https://www.bestpractices.dev/en/projects/16427) and has held the passing badge since 2026-11-08; the README header shows the badge next to the Scorecard badge. The entry also counts 13% of the silver criteria as met. The answers below cover every passing criterion:
 
 | Level | Met | N/A | Unmet |
 |---|---|---|---|
@@ -204,10 +204,9 @@ Scorecard reads the badge level through the bestpractices.dev API on each run an
 
 ## Remaining gaps
 
-These items are not blockers for the passing badge, and they need more than a statement in a repository file:
+This item is not a blocker for the passing badge, and it needs more than a statement in a repository file:
 
 - **`crypto_weaknesses` (SHOULD, Unmet).** The signed tag that the one-shot installers and the update scripts check names the release commit by a SHA-1 object ID, because the repository uses Git's SHA-1 object format, and the scripts pin the maintainer key by its OpenPGP v4 fingerprint, a SHA-1 hash; forging that pin would take a SHA-1 second preimage, not a collision. An install without cosign, and every install or update over an existing Apothem clone, installs a checkout of that commit, where every installed file rests on SHA-1. With cosign installed and no existing Apothem clone, the installed files rest on SHA-256 (the signed `SHA256SUMS`, checked by cosign against the tag's commit, and the archive digest), but the link from the maintainer's signed tag to that commit still rests on SHA-1. The gap stays open because the scripts check no maintainer-signed SHA-256 digest when they install a checkout, and the repository still uses Git's SHA-1 object format. Meeting the criterion needs a SHA-256 digest that the maintainer signs, checked on every default path, or a repository in Git's SHA-256 object format on a host that offers one, together with a way to pin the maintainer key that does not rest on SHA-1.
-- **README badge.** Registration gave the project ID 16427, and the passing badge is not yet in the README header. Add `[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/16427/badge)](https://www.bestpractices.dev/projects/16427)` next to the Scorecard badge. It is a third-party registry badge, so the change also adds its row to the per-badge table on the [Badge policy](/docs/governance/badge-policy) page.
 
 ## Keep the answers current
 
