@@ -218,7 +218,7 @@ Each is named by its symptom, and each is a finding. The detail rule sits in the
 - Filler cards drawn as outlines only ([layout and composition](layout-and-composition.md)).
 - Filler illustrations made of SVG or CSS shapes (`img-00.10`, [imagery and data](imagery-and-data.md)).
 - Grain or noise spread as atmosphere (`col-00.8`, [color and surfaces](color-and-surfaces.md)).
-- Stripes or grids repeated as backgrounds over empty space.
+- Stripes or grids repeated as backgrounds over empty space (`img-00.10`, [imagery and data](imagery-and-data.md)).
 - Emoji as bullets (`img-02.a`).
 - On any genre except product-minimal, the stock product look: a tight grotesk at weight 600 on paper of L 96 or lighter, one blue accent, a 1px border under a broad soft shadow ([color and surfaces](color-and-surfaces.md), section 7).
 - Gradient ramps posing as material (`col-01.b`).

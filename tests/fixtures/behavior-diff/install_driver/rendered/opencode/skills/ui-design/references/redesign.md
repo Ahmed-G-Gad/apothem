@@ -32,7 +32,7 @@ Pick one depth and write it in the build record's `depth:` field ([build record]
 - At `full` depth on app screens, recompose each screen inside its existing shell.
 - Starting over from nothing is a new build (`depth: new`), placed beside the old files. It is not a redesign.
 - A page this skill did not build takes none of these depths. Its repair (section 8) writes `depth: repair` in the check-only record ([build record](build-record.md), section 2).
-- Each depth changes some grades and decides whether the pass has a hero stage. The [rule catalog](rule-catalog.md), section "Flags and downgrades", lists both.
+- Each depth changes the grades the rule catalog lists and decides whether the pass has a hero stage. The [rule catalog](rule-catalog.md), section "Flags and downgrades", lists both.
 
 ## 3. Before-record
 

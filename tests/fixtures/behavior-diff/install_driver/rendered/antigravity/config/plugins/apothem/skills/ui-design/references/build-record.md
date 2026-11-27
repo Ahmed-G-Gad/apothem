@@ -20,7 +20,7 @@ The first write holds every field the plan settles, with `grades: pending` and n
    | direction: <source>; <axes code>; <colorway or default>; <mood phrase> | motion: <dial value>, <user-set | default>
    | hero: <posture slug> | nav: <variant slug> | footer: <variant slug> | color: <posture>
    | palette: <light | dark | light and dark>; paper <L C H>; ink <L C H>; accent <L C H>
-   | faces: display <family>; body <family>; outlier <family or none>
+   | faces: display <family>; body <family>; outlier <families or none>
    | fingerprint: <six axis values, joined by " / "> | signature: <the one memorable move>
    | declared: <each outlier face or declared device, with its one job; or none>
    | comp: <none | approved n of m; <largest gap and how it closed | not verified (no browser | no app)>>
@@ -58,7 +58,7 @@ The first write holds every field the plan settles, with `grades: pending` and n
 - Genre and scope follow [surface classes](surface-classes.md). Color posture follows [color and surfaces](color-and-surfaces.md).
 - `review` and `grades` come only from checks that ran (section 7). Until the run's last report, `grades` reads `pending`. The final form carries exactly one count per row of the rule catalog's Grades table, eleven in all, named and ordered as that table lists them. A record written before `note` was counted is read as written.
 - A page that needs a value other than one `DESIGN.md` sets uses a `Variants` entry the user approved, never a page-local override ([rule catalog](rule-catalog.md), section "Scope of taste").
-- Some frameworks strip comments from the CSS they emit. The record then lives in the authored source file, and checks MUST read that file, not the built output.
+- When a framework strips comments from the CSS it emits, the record lives in the authored source file, and checks MUST read that file, not the built output.
 - A rebuild rewrites the record. It does not stack a second one.
 - A version 1 record is read as written. Its fields are `theme`, a count-style `review`, and the literal legacy key spelled `colour`, which older records carry in that British form. The next build replaces it with version 2, whose key is `color`.
 
@@ -96,7 +96,7 @@ At Step 5, before the decision summary, score the planned page from 1 to 5 on si
 |------|-----------|-----------|
 | Point of view | It has a tone. | It makes a claim a reader can dispute. |
 | Hierarchy | It needs a second read. | It stays legible when blurred. |
-| Execution | A few details are loose. | It is clean on the first check. |
+| Execution | One to three details are loose. | It is clean on the first check. |
 | Specificity | It suits the category. | It fits only this product. |
 | Restraint | One ornament too many. | Something liked was given up. |
 | Variety | It sits exactly at the `rot-01.b` limit against the closest of the logged builds that `rot-01` compares. | It shares one axis value or none with each of them. |
@@ -138,7 +138,7 @@ Newest entry first. Every entry carries the same fields:
 ```markdown
 ## <YYYY-MM-DD> <page name>
 shape: <slug> | direction: <source>; <axes code>; <colorway or default>; <mood phrase> | fingerprint: <six axis values, joined by " / ">
-palette: <modes>; paper <L C H>; ink <L C H>; accent <L C H> | faces: display <family>; body <family>; outlier <family or none>
+palette: <modes>; paper <L C H>; ink <L C H>; accent <L C H> | faces: display <family>; body <family>; outlier <families or none>
 hero: <posture slug> | nav: <variant slug> | footer: <variant slug> | opening: <first section> | sections: <in order> | openers: <opener types used>
 signature: <the one memorable move> | photos: <ids> | imagery: <treatment, samples> | waivers: <clause ids>
 why: <one clause per choice a later session would question> | prompt: <the request, one line>

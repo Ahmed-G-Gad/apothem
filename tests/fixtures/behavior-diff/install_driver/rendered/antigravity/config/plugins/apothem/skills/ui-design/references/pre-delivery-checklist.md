@@ -100,7 +100,7 @@ This budget is the only one. [Hero](hero.md), section 9, cites it and does not r
 2. One fix batch per stage for everything its inspection found.
 3. One confirmation pass per stage that reruns only the checks its fixes touched.
 4. Each review, hero and finish, adds one review round. A verdict with findings also adds one fix batch and one fresh set of captures. A `ship` verdict with no findings closes that review with no fix batch and no recapture.
-5. A review gets a second round only when its verdict was `rebuild` or a finding cited a baseline id. A `recapture` verdict retakes the captures and does not count as a round.
+5. A review gets a second round only when its verdict was `rebuild` or a finding cited a baseline id. A `recapture` verdict retakes the captures and does not count as a round. A second `recapture` verdict on the same review counts as its round.
 6. Nothing runs past this budget without telling the user why and what remains open.
 
 ## 3. Fresh-context reviews

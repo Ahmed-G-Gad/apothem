@@ -72,7 +72,7 @@ When a page feels empty, enlarge the heading or the visual, or give the section 
 - A heading sits nearer to what it introduces than to what precedes it (`pol-01`). Aim for twice as much space above as below.
 - Flag an `h2` to `h4` whose top space is under 0.75 times its bottom space and short by 12 px or more (`pol-01`). Headings inside boxes under 200 px tall are exempt.
 - **Minimum inset.** Text inside a filled or side-bordered box larger than 100 x 30 px keeps at least `clamp(var(--space-3), 0.5em, var(--space-6))` from the sides and `clamp(var(--space-2), 0.3em, var(--space-4))` from the top and bottom. Chips, callouts, and bands take this minimum. Cards and wells take the card padding in "The ladder", which meets or exceeds it. Both clamps are token-derived forms under `tok-01`.
-- On a phone, running text stays at least 8 px from the screen edge. The `gutter` token there sets the default inset.
+- On a phone, the `gutter` token sets the inset of running text from the screen edge.
 - Icons, opening quotes, and large type align optically at edges, not by their boxes (`pol-06`).
 
 ## Page-wide invariants
@@ -80,7 +80,6 @@ When a page feels empty, enlarge the heading or the visual, or give the section 
 Each item below holds across the whole page (`lay-00.page-wide-invariants` unless an id is named):
 
 - Buttons: a single filled-primary recipe (`lay-06.b`).
-- Container: a single maximum width.
 - Column gap: below the hero, every grid uses the same one.
 - Corner radius: one value for each nesting depth. This invariant never fires `col-02.a` on its own ([color and surfaces](color-and-surfaces.md)).
 - Heading groups: centered ones never outnumber left-aligned ones.
@@ -160,7 +159,7 @@ Do not use white cards on a tinted page, cards inside cards, or bordered boxes i
 ## Overflow and stacking guards
 
 - **Overlap** (`lay-05`). No text is drawn under an opaque box, an image, or other text. Sticky and fixed chrome is excepted.
-- **Sticky stacking.** Never stick two elements at `top: 0`. Offset the second by `var(--nav-height)`, the Frame token in the [`DESIGN.md` template](design-md-template.md). The sticky nav takes the `z-header` layer. Every other sticky part takes `z-pin`, which sits below it (`tok-01`).
+- **Sticky stacking.** Never stick two elements at `top: 0`. Offset the second by the first one's Frame token in the [`DESIGN.md` template](design-md-template.md): `var(--nav-height)`, or `var(--strip-height)` under a sticky announcement strip. The sticky nav takes the `z-header` layer. Every other sticky part takes `z-pin`, which sits below it (`tok-01`).
 - **Focus not obscured** (`acc-13`). A sticky header, sticky bottom bar, banner, or toast never covers the whole of a focused element. Set `scroll-padding-top` on `html` from `var(--nav-height)`, plus `var(--strip-height)` when an announcement strip sticks. Every sticky bottom bar takes its height from `var(--bar-height)`, and `scroll-padding-bottom` reads the same token, so no literal length enters (`tok-01`). Check it by tabbing through the page at the full-page capture widths in the [pre-delivery checklist](pre-delivery-checklist.md), section 1.
 - **Content extremes** (`lay-08`). The layout holds at the longest and the shortest real content each field can carry, and at a test string 40 percent longer than the English: nothing clips, overlaps, or collapses. Check each of the three at the full-page capture widths in the [pre-delivery checklist](pre-delivery-checklist.md), section 1.
 - **Text spacing** (`acc-14`). Apply the four spacing overrides the `acc-14` row of the [rule catalog](rule-catalog.md) sets, then check at the full-page capture widths in the pre-delivery checklist, section 1. Nothing clips or overlaps. Every label set to `nowrap` still fits, or its row reflows.
@@ -189,7 +188,7 @@ A composition is an arrangement, not a component. Each one is drawn in the theme
 | 9 | Single statement | One sentence over two or three lines, with its attribution or one action. Once per page. | 8-10 columns wide. From `text-section` up to `text-display`. Poster scale only through the poster exception in the [`DESIGN.md` template](design-md-template.md), "Reference scale". |
 | 10 | Background band | A full-width background change around the normal container: alternate paper, ink, or the accent where the color posture allows it. The band carries the real action of the visitor's job. Examples: open booking slots, the purchase box, app-store badges next to a phone screen, or the date and place of the coming event. An email sign-up is never its default. | Padding `section-1` top and bottom. |
 | 11 | Form beside facts | Form fields across 6 or 7 of the 12 columns, beside the heading group and two to four facts. One primary action. | Fields on 6-7 columns. Inputs at `field-height`, inside the field-height column of the table in [interaction and motion](interaction-and-motion.md), section 4. 2-4 facts. |
-| 12 | Overflow rail | A horizontal strip that runs past the container edge so the next item is visibly cut: dates, issues, products, rooms, episodes. Scrolls by touch and keyboard with snap points. The scrollbar MUST stay visible, colored through `scrollbar-color` from tokens. When the items run past one screen width, previous and next buttons also sit beside the rail. | 5 or more items. |
+| 12 | Overflow rail | A horizontal strip that runs past the container edge so the next item is visibly cut: dates, issues, products, rooms, episodes. Scrolls by touch and keyboard with snap points. The scrollbar MUST NOT be hidden: no `scrollbar-width: none` and no `display: none` on `::-webkit-scrollbar`. Color it through `scrollbar-color` from tokens. When the items run past one screen width, previous and next buttons also sit beside the rail. | 5 or more items. |
 | 13 | Pinned visual, scrolling panels | One visual sticks across 6 or 7 of the 12 columns while short panels scroll past on the remaining columns. Each panel changes the visual: a state, a crop, or a step. | Visual on 6-7 columns. 3-4 panels. Static below 60rem. |
 | 14 | State switcher | One region whose states sit behind a segmented control: lunch or dinner, monthly or yearly, phone or watch, one schedule per day. Every state holds real content. The first state shows with scripting off (`prf-02`). | 2-5 states. |
 | 15 | Dense index | A tight list of the brief's own entries with facts in columns (issue, date, topic; project, year, client; episode, length). MAY filter. The leading row is set larger. | 6-20 rows. |

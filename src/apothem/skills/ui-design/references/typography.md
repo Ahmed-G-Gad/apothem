@@ -54,7 +54,7 @@ A default face is fine in two cases: the user named it, or the project already s
 
 ### Common first answers
 
-Some well-made faces are now the usual pick for their class. One of these MAY be used, but the log entry's `why:` line states the reason. A face counts as a common first answer when it is in the examples below, or when it is a sans that a software company released for its own product and it sets the whole page. It then reads as that company's look.
+Each face in the examples below is a common first pick for its class. One of these MAY be used, but the log entry's `why:` line states the reason. A face counts as a common first answer when it is in the examples below, or when it is a sans that a software company released for its own product and it sets the whole page. It then reads as that company's look.
 
 Examples: Syne, Playfair Display, Bebas Neue, Fraunces, Space Grotesk.
 

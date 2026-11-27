@@ -118,7 +118,7 @@ A photo is large or absent: at least 6 of 12 columns and 440px tall, or full-ble
 ### Page share
 
 - Product images do not count toward the share.
-- With three or more pictures present, photo coverage under the hero above 36% of the page area at 1440 wide is a finding (`img-03.a`). The limit is 45% on photo-led and project-cards shapes ([page shapes](page-shapes.md)).
+- With three or more pictures present, photo coverage above 36% of the page area under the hero, measured at 1440 wide, is a finding (`img-03.a`). The limit is 45% on photo-led and project-cards shapes ([page shapes](page-shapes.md)).
 - Two photo-led sections MUST NOT sit next to each other (`img-03.b`). The section between is carried by the theme's other material: type, figures, rules, color fields, tables, forms, or the product.
 - In doubt, remove the least useful picture and state its fact in large type.
 
@@ -225,6 +225,7 @@ Everything in this section is banned. An item that cites no id of its own grades
 - **Imitation materials:** a hero UI built from styled divs outside a position.
 - **Torn edges:** a `polygon()` clip-path with 12 or more vertices on an image, posing as a torn photo edge.
 - **Fake objects and grids:** bevel or emboss effects imitating objects; grid or stripe backgrounds with nothing beneath. A grid needs a canvas, map, or measuring tool under it.
+- A thick colored stripe down a card's side.
 - Illustration packs, mascots, 3D blobs, and isometric scenes.
 - Stock faces offered as proof, and invented customer logo walls (`cpy-02`).
 - Mesh-gradient blobs, glowing orbs, or aurora effects behind text (`col-00.4`, [color and surfaces](color-and-surfaces.md), section 4).
@@ -245,7 +246,6 @@ Real geometry stays allowed: diagrams, charts, an animated line.
 - On the icon side of a button, padding equals the button's vertical padding.
 - MUST NOT use emoji as icons (`img-02.a`).
 - No icon in a colored disc or tile, and no row of equal columns with an icon over each heading (`img-02.c`).
-- No thick colored stripe down a card's side (`img-00.11`).
 
 ### Logos
 

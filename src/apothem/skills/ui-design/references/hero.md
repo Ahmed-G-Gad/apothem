@@ -99,7 +99,7 @@ Narrow-screen sizing is in section 1.
 ## 8. Entrance
 
 - One settling movement (`mot-01.a`).
-- The entrance, stagger included, MUST meet the page-load reveal total in [interaction and motion](interaction-and-motion.md), section 13.6 (`hro-00.8`). Section 13.6 gives the formula and the ceiling; section 13.3 gives only the duration tokens and the stagger spacing.
+- The entrance, stagger included, MUST meet the page-load reveal total in [interaction and motion](interaction-and-motion.md), section 13.6 (`hro-00.8`). Section 13.6 gives the formula and the ceiling; section 13.3 gives the duration tokens and the stagger limits.
 - It starts from a state that is already visible. Content shows with script off, and a reveal hides content only under a class that script adds (`prf-02`).
 - A fade plus an 8px rise counts as one movement. Fade, sweep, and scale MUST NOT be layered on one element (`hro-00.8`).
 - No pointer-driven parallax (`mot-00.13.8`). No bounce or spring easing outside the playful waiver of `scl-00.genre-registers`. No starfields.
