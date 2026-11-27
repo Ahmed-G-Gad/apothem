@@ -48,6 +48,7 @@ from apothem.conformity._grep_base import (
     is_project_file,
     parse_root_args,
 )
+from apothem.conformity._safe_open import read_project_text
 
 # A bare ``${{ inputs.<name> }}`` expression — the reusable-workflow shape
 # where egress-policy is parameterized by a workflow_call input.
@@ -253,7 +254,7 @@ def _inspect_workflow(path: Path, root: Path) -> list[Finding]:
     """Parse a workflow file; return drift findings across all its jobs."""
     rel = str(path.relative_to(root)).replace("\\", "/")
     try:
-        text = path.read_text(encoding="utf-8")
+        text = read_project_text(root, path)
     except (OSError, UnicodeDecodeError) as exc:
         return [
             Finding(

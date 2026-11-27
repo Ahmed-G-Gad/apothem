@@ -70,6 +70,18 @@ class ProjectFileRefusedError(OSError):
     """
 
 
+# The errors that say the entry a caller checked is no longer the regular file
+# it found: a link or special file took its place (noted in the skip log), or
+# it, or a folder above it, is gone or changed kind. A caller that treats a
+# link as a missing file treats these the same way.
+REFUSED_OR_GONE: Final[tuple[type[OSError], ...]] = (
+    ProjectFileRefusedError,
+    FileNotFoundError,
+    NotADirectoryError,
+    IsADirectoryError,
+)
+
+
 def _refuse(shown: Path, why: str) -> NoReturn:
     """Note *shown* in the skip log and raise :class:`ProjectFileRefusedError`."""
     note_skipped(shown)

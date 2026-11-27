@@ -66,6 +66,7 @@ from apothem.conformity._grep_base import (
     parse_root_args,
     project_file_target,
 )
+from apothem.conformity._safe_open import read_project_text
 
 GREP_NAME: Final[str] = "registry-capability-consistency-grep"
 RULE_ANCHOR: Final[str] = (
@@ -163,7 +164,7 @@ def _load_manifest(root: Path) -> dict[str, Any]:
     if source is None:
         return {}
     try:
-        raw = source.read_text(encoding="utf-8")
+        raw = read_project_text(root, source)
     except OSError:
         return {}
     try:
@@ -205,7 +206,7 @@ def _materializer_authors_mcp(root: Path, package_key: str) -> bool:
     if source is None:
         return False
     try:
-        text = source.read_text(encoding="utf-8")
+        text = read_project_text(root, source)
     except OSError:
         return False
     if _MATERIALIZER_FUNCTION not in text:

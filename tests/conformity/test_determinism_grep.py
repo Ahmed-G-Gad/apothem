@@ -29,13 +29,13 @@ def test_signature_is_stable_across_repeated_reads() -> None:
 
 def test_pass_fixture_has_complete_deterministic_shape() -> None:
     """The conformant fixture produces zero findings."""
-    findings = dg._classify_surface(_PASS)
+    findings = dg._classify_surface(_PASS, root=_FIXTURES)
     assert findings == [], [str(f) for f in findings]
 
 
 def test_fail_fixture_missing_next_step_is_flagged() -> None:
     """The perturbed fixture fails with an incomplete-shape finding."""
-    findings = dg._classify_surface(_FAIL)
+    findings = dg._classify_surface(_FAIL, root=_FIXTURES)
     kinds = {f.kind for f in findings}
     assert "incomplete-shape" in kinds
     details = " ".join(f.detail for f in findings)

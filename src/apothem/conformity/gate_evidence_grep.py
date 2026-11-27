@@ -111,6 +111,7 @@ from apothem.conformity._grep_base import (
     parse_root_args,
     project_file_target,
 )
+from apothem.conformity._safe_open import read_project_text
 
 GREP_NAME: Final[str] = "gate-evidence-grep"
 RULE_ANCHOR: Final[str] = (
@@ -705,7 +706,7 @@ def _inspect_file(
 ) -> tuple[list[Finding], int] | None:
     """Return ``(findings, claims)`` for one file, or None when unreadable."""
     try:
-        lines = path.read_text(encoding="utf-8").splitlines()
+        lines = read_project_text(root, path).splitlines()
     except (OSError, UnicodeDecodeError):
         return None
     if path.suffix in _YAML_SUFFIXES:

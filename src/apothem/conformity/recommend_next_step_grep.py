@@ -42,6 +42,7 @@ from apothem.conformity._grep_base import (
     is_project_file,
     parse_root_args,
 )
+from apothem.conformity._safe_open import read_project_text
 
 GREP_NAME: Final[str] = "recommend-next-step-grep"
 RULE_ANCHOR: Final[str] = "rules/recommend-next-step.md"
@@ -139,10 +140,10 @@ def _count_recommended_markers(lines: list[str], start_index: int) -> int:
     return count
 
 
-def _classify_command_file(path: Path) -> Finding | None:
+def _classify_command_file(path: Path, *, root: Path) -> Finding | None:
     """Return a finding when the command file lacks a valid block."""
     try:
-        body = path.read_text(encoding="utf-8")
+        body = read_project_text(root, path)
     except (OSError, UnicodeDecodeError) as exc:
         return Finding(
             surface=str(path),
@@ -222,7 +223,7 @@ def check(root: Path) -> GrepResult:
             if path.name in EXCLUDED_FILES or not is_project_file(root, path):
                 continue
             files_inspected += 1
-            finding = _classify_command_file(path)
+            finding = _classify_command_file(path, root=root)
             if finding is not None:
                 findings.append(finding)
 
@@ -239,7 +240,7 @@ def check(root: Path) -> GrepResult:
     else:
         for path in sorted(child_folder_files(root, skills_dir, "SKILL.md")):
             files_inspected += 1
-            finding = _classify_command_file(path)
+            finding = _classify_command_file(path, root=root)
             if finding is not None:
                 findings.append(finding)
 

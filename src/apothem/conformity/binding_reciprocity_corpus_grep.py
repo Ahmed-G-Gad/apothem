@@ -64,6 +64,7 @@ from apothem.conformity._grep_base import (
     iter_prose_lines,
     parse_root_args,
 )
+from apothem.conformity._safe_open import read_project_text
 
 __all__ = ["EXIT_FAIL", "EXIT_PASS", "Finding", "check"]
 
@@ -220,7 +221,7 @@ def check(root: Path) -> RootGrepResult:
     cross_map: dict[str, set[str]] = {}
     for md in sorted(p for p in rules_dir.glob("*.md") if is_project_file(root, p)):
         try:
-            text = md.read_text(encoding="utf-8")
+            text = read_project_text(root, md)
         except (OSError, UnicodeDecodeError):
             continue
         cross_map[md.stem] = _cross_bound_citations(text)

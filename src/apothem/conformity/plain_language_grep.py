@@ -61,6 +61,7 @@ from apothem.conformity._grep_base import (
     iter_tree_files,
     parse_root_args,
 )
+from apothem.conformity._safe_open import read_project_text
 
 GREP_NAME: Final[str] = "plain-language-grep"
 RULE_ANCHOR: Final[str] = "rules/plain-language.md — user-facing prose"
@@ -474,7 +475,7 @@ def _scan_file(path: Path, root: Path) -> list[Finding]:
     on-disk artifact, not the vocabulary in prose.
     """
     try:
-        content = path.read_text(encoding="utf-8")
+        content = read_project_text(root, path)
     except (OSError, UnicodeDecodeError):
         return []
     try:
