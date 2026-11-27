@@ -500,3 +500,44 @@ def test_a_git_file_swapped_after_the_look_is_not_read(
     assert race.swapped is not None, "the check never answered for the target"
     assert state == _grep_base.GIT_ENTRY_BROKEN
     assert race.noted() in _skipped()
+
+
+def test_a_nested_folder_swapped_after_the_look_is_not_read_through(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The walk looks at a nested folder's ``.git`` file, then the folder is
+    swapped for a link to an outside folder whose ``.git`` file names a real
+    repository. Read through the link, that file would hide the folder as a
+    checkout. Read from the walk root, the link is refused and noted, and the
+    folder is not a checkout."""
+    repository = tmp_path / "repository"
+    repository.mkdir()
+    _git(repository, "init", "-q")
+    files = {"sub/.git": "gitdir: nowhere\n", "sub/page.md": "# Page\n"}
+    root = _write(tmp_path / "project", files)
+    outside = _write(
+        tmp_path / "outside",
+        {
+            "sub/.git": f"gitdir: {(repository / '.git').as_posix()}\n",
+            "sub/page.md": f"Version {_OUTSIDE_VERSION}\n",
+        },
+    )
+    race = _Race(root, root / "sub" / ".git", outside, "parent-link")
+    monkeypatch.setattr(
+        _grep_base,
+        "path_kind",
+        race.after(
+            _grep_base.path_kind,
+            lambda answer, path: path == race.target and answer == "file",
+        ),
+    )
+    _started(root)
+
+    walked = _within_deadline(
+        race, lambda: list(_grep_base.iter_tree_files(root, (".md",)))
+    )
+
+    assert race.swapped is not None, "the check never answered for the target"
+    assert _project_paths.take_skipped_checkouts() == []
+    assert race.noted() in _skipped()
+    assert walked == [root / "sub" / "page.md"]

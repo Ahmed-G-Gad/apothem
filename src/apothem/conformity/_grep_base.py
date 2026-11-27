@@ -597,7 +597,7 @@ def _linked_git_entry_state(entry: Path) -> str:
     return GIT_ENTRY_NONE
 
 
-def git_entry_state(directory: Path) -> str:
+def git_entry_state(directory: Path, *, root: Path | None = None) -> str:
     """Say what the ``.git`` entry of ``directory`` is to git's search.
 
     - :data:`GIT_ENTRY_REPOSITORY`: git stops here and uses it. A ``.git``
@@ -621,8 +621,11 @@ def git_entry_state(directory: Path) -> str:
     The entry is looked at with ``os.lstat``. What a ``.git`` link names
     is looked at by its kind only (``Path.stat``), never read. A ``.git``
     file is read only up to git's size limit plus one byte, and through
-    the guarded open (``_safe_open``): an entry swapped for a link or a
-    named pipe after the look is not read, and is broken.
+    the guarded open (``_safe_open``) from *root*, the folder the caller
+    trusts (``directory`` itself when no *root* is given): every level from
+    *root* down is opened without following a link, so an entry, or a folder
+    between *root* and it, swapped for a link or a named pipe after the look
+    is not read, is noted in the skip log, and the entry is broken.
     """
     entry = directory / GIT_ENTRY
     kind = path_kind(entry)
@@ -633,7 +636,11 @@ def git_entry_state(directory: Path) -> str:
     if kind != FILE_ENTRY:
         return GIT_ENTRY_NONE
     try:
-        content = read_project_bytes(directory, entry, max_bytes=_GITFILE_MAX_BYTES + 1)
+        content = read_project_bytes(
+            directory if root is None else root,
+            entry,
+            max_bytes=_GITFILE_MAX_BYTES + 1,
+        )
     except OSError:
         return GIT_ENTRY_BROKEN
     if len(content) > _GITFILE_MAX_BYTES:
@@ -1011,10 +1018,13 @@ def is_git_entry(path: Path, listed: frozenset[str]) -> bool:
     return os.path.samestat(variant, exact)
 
 
-def nested_checkout(folder: Path, entries: list[tuple[Path, EntryKind]]) -> bool:
+def nested_checkout(
+    folder: Path, entries: list[tuple[Path, EntryKind]], *, root: Path
+) -> bool:
     """Return True when a walk skips *folder*, listed as *entries*, as a checkout.
 
-    *folder* is below the root. Its ``.git`` entry, as listed (see
+    *folder* is below *root*, the folder the walk started from, and was built
+    from it; a ``.git`` file is read from *root* down, one level at a time. Its ``.git`` entry, as listed (see
     :func:`is_git_entry`), decides. A link (dangling or not) or a special
     file marks a checkout for git too, but the folder is then left out
     because of that entry, so the entry is noted in the skip log. A ``.git``
@@ -1034,7 +1044,7 @@ def nested_checkout(folder: Path, entries: list[tuple[Path, EntryKind]]) -> bool
     linked = [path for path, kind in git_entries if kind not in (DIR_ENTRY, FILE_ENTRY)]
     for path in linked:
         note_skipped(path)
-    if linked or git_entry_state(folder) == GIT_ENTRY_REPOSITORY:
+    if linked or git_entry_state(folder, root=root) == GIT_ENTRY_REPOSITORY:
         note_checkout(folder)
         return True
     return False
@@ -1103,7 +1113,7 @@ def iter_tree_files(
         # below it that holds or names a repository marks a nested checkout,
         # which is skipped whole (:func:`nested_checkout`).
         listed = frozenset(path.name for path, _ in entries)
-        if prune and not is_root and nested_checkout(folder, entries):
+        if prune and not is_root and nested_checkout(folder, entries, root=root):
             continue
         files: list[Path] = []
         folders: list[Path] = []
