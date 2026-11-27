@@ -2,7 +2,7 @@
 title: "Zed"
 description: "Adaptor harness Apothem untuk Zed (GA)."
 machineTranslated: true
-sourceHash: "2536a5b3796fa036"
+sourceHash: "aa756b204fdf4f52"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -62,8 +62,8 @@ Folder-folder ini dipakai bersama. Folder ini tidak privat bagi proyek:
 - `--project` memilih berkas instruksi yang ditulis dan proyek tempat instalasi
   itu berada. Opsi ini tidak mengubah ke mana skill ditulis.
 - Instalasi tidak menambahkan berkas skill atau aturan ke repositori Anda.
-  Proyek mendapatkan berkas instruksi, ditambah folder data `.apothem/` yang
-  dibuat oleh setiap instalasi proyek.
+  Proyek mendapatkan berkas instruksi, ditambah folder data yang
+  dibuat oleh setiap instalasi proyek, `.apothem/` secara default.
 - Folder home ditulis lebih dulu. Jika itu gagal, misalnya karena sebuah
   folder di jalur tersebut adalah tautan yang keluar dari direktori home Anda
   (tautan yang tetap berada di dalamnya diikuti) atau tidak dapat ditulisi,
@@ -169,8 +169,16 @@ yang menjadi kosong dihapus. Setiap folder dicadangkan di bawah
 ## Gerbang konformitas
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Jalankan dari folder proyek Anda. Di Windows, gunakan `python` sebagai pengganti
+`python3` dan jalur lengkapnya, karena Windows PowerShell dan cmd tidak mengekspansi
+`~`: `$HOME\.apothem\src\apothem\conformity\gate.py` di PowerShell, atau
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` di cmd. Jalur itu adalah
+tempat installer menaruh engine, dan `-E -s` menjauhkan `PYTHONPATH` serta
+site-packages pengguna Anda dari gerbang; [Gerbang konformitas](/docs/conformity-gate)
+menjelaskan keduanya dan instalasi lainnya.
 
 ## Pemecahan masalah
 

@@ -2,7 +2,7 @@
 title: "Gemini CLI"
 description: "Adapter harness Apothem untuk Gemini CLI (GA)."
 machineTranslated: true
-sourceHash: "231513ffdb2dcb22"
+sourceHash: "4b2afa3f4a237f9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,6 +33,10 @@ GEMINI.md
 .gemini/skills/
 .gemini/.apothem/support/
 ```
+
+Proyek juga mendapatkan folder data yang dibuat setiap instalasi proyek,
+`.apothem/` secara default, yang berisi `contexts/`, `learning/`, `memory/`, dan
+`plans/`.
 
 ## Pemetaan profil ke konfigurasi native
 
@@ -77,6 +81,14 @@ sudah menjangkau setiap server MCP.
 profil Gemini global. Adapter Gemini CLI hanya menulis ke proyek yang
 diteruskan melalui `--project`.
 
+Gemini CLI juga memuat dua tempat di direktori home Anda yang ditulis oleh instalasi
+Apothem lain: `~/.agents/skills/`, bagian dari tingkat skill penggunanya, tempat
+beberapa instalasi menulis skill Apothem ([registri harness](/docs/reference/harness-registry#shared-roots)
+mencantumkannya), dan `~/.gemini/GEMINI.md`, tempat instalasi
+[Antigravity](/docs/harnesses/antigravity) menulis blok Apothem. Bila salah satu tempat
+itu sudah memuat konten Apothem, memasang `gemini-cli` mencetak catatan yang menyebut
+tempat itu dan instalasi yang menulisnya.
+
 ## Verifikasi
 
 ```bash
@@ -115,11 +127,28 @@ tetap ada. Sebelum perubahan dilakukan, salinan setiap berkas dengan cap waktu
 disimpan di bawah `~/.apothem/backups/`; tidak ada berkas cadangan yang
 tertinggal di proyek. YAML profil bersama dan mesin Apothem tidak terpengaruh.
 
+Rilis sebelumnya ([changelog](/docs/changelog) menyebutkannya) juga menghapus
+`skills/AGENTS.md` milik proyek (di root proyek, bukan di bawah `.gemini/`) pada setiap
+instalasi dan pembaruan, setelah menyalinnya ke satu set cadangan di bawah
+`~/.apothem/backups/<timestamp>/gemini_cli/`. Rilis saat ini membiarkan berkas itu.
+Untuk mendapatkannya kembali, salin `~/.apothem/backups/` ke tempat lain sebelum Anda
+menjalankan Apothem lagi, lalu salin berkas itu dari salinan tersebut kembali ke proyek
+secara manual. [Changelog](/docs/changelog#data-loss-in-earlier-releases-recover-your-files)
+memuat langkah pemulihan lengkapnya.
+
 ## Gerbang konformitas
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Jalankan dari folder proyek Anda. Di Windows, gunakan `python` sebagai pengganti
+`python3` dan jalur lengkapnya, karena Windows PowerShell dan cmd tidak mengekspansi
+`~`: `$HOME\.apothem\src\apothem\conformity\gate.py` di PowerShell, atau
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` di cmd. Jalur itu adalah
+tempat installer menaruh engine, dan `-E -s` menjauhkan `PYTHONPATH` serta
+site-packages pengguna Anda dari gerbang; [Gerbang konformitas](/docs/conformity-gate)
+menjelaskan keduanya dan instalasi lainnya.
 
 ## Pemecahan masalah
 

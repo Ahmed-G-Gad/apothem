@@ -1,13 +1,13 @@
 ---
 title: "Pengaturan"
-description: "Konfigurasi harness Claude Code di settings.json yang mencakup izin tool, pengabelan hook, variabel lingkungan, dan templat baris status."
+description: "Konfigurasi harness Claude Code di settings.json yang mencakup izin tool dan pengabelan hook."
 machineTranslated: true
-sourceHash: "986e09594ded6bad"
+sourceHash: "ece5596a2a8b8bc1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-`settings.json` membawa konfigurasi harness Claude Code: pengabelan hook, izin
-tool, variabel lingkungan, dan pengaturan baris status.
+`settings.json` membawa konfigurasi harness Claude Code yang digabungkan Apothem
+ke dalam berkas Anda: izin tool dan pengabelan hook.
 
 Referensi kanonik lengkap berada di
 [settings-reference.md](/docs/reference/settings-reference). Halaman ini meringkas kontraknya
@@ -17,10 +17,14 @@ dan menunjuk ke referensi yang lebih mendalam.
 
 | Bagian | Tujuan |
 |---------|---------|
+| `$schema` | URL schema yang dipakai editor untuk memeriksa berkas |
 | `permissions` | Daftar putih dan daftar hitam tool per matcher |
 | `hooks` | Tabel perintah hook berkunci peristiwa (pengabelan kanonik) |
-| `env` | Variabel lingkungan per sesi |
-| `statusLine` | Templat baris status yang dirender host |
+
+Templat Apothem tidak menetapkan kunci lain, sehingga kunci seperti `env` dan `statusLine`
+tetap milik Anda. Perender baris status disalin ke `~/.claude/statuslines/`
+tetapi tidak disambungkan; [halaman Claude Code](/docs/harnesses/claude-code) menunjukkan
+entri `statusLine` yang perlu Anda tambahkan sendiri.
 
 ## Invarian templat tunggal
 

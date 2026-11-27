@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "Adapter harness Apothem untuk Cursor (GA)."
 machineTranslated: true
-sourceHash: "817b5e32ce317949"
+sourceHash: "0aa24ff454d74139"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -195,6 +195,10 @@ menggantikan kedua jalur tersebut:
 "/path/to/python" -E -s "/path/to/project/.apothem/support/cursor/hooks/dispatch.py" --contract cursor sessionStart
 ```
 
+`-E -s` membuat Python mengabaikan `PYTHONPATH` dan variabel `PYTHON*` lainnya
+serta melewati site-packages pengguna Anda, sehingga tidak ada berkas di proyek yang
+dapat dimuat ke dalam hook.
+
 Pada host Windows, perintah diawali dengan `& `, operator panggilan PowerShell,
 karena aplikasi desktop Cursor menjalankan perintah hook melalui PowerShell, di
 mana baris yang diawali jalur program yang dikutip bukanlah sebuah panggilan.
@@ -255,7 +259,8 @@ Anda tambahkan setelah blok tersebut dipertahankan pada setiap sinkronisasi.
 
 ## Catatan kompatibilitas
 
-Cursor 0.45+ mendukung instruksi tingkat proyek melalui `.cursor/rules/`.
+Cursor membaca instruksi tingkat proyek dari `.cursor/rules/`, sesuai
+[dokumentasi aturan Cursor](https://cursor.com/docs/rules).
 Adapter menulis ke direktori `.cursor/rules/` berlingkup proyek secara default;
 Cursor tidak memiliki jalur aturan global-pengguna berbasis berkas yang
 terdokumentasi untuk dikelola oleh adapter ini.
@@ -362,8 +367,16 @@ yang menjadi kosong dihapus. Setiap folder dicadangkan di bawah
 ## Gerbang konformitas
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Jalankan dari folder proyek Anda. Di Windows, gunakan `python` sebagai pengganti
+`python3` dan jalur lengkapnya, karena Windows PowerShell dan cmd tidak mengekspansi
+`~`: `$HOME\.apothem\src\apothem\conformity\gate.py` di PowerShell, atau
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` di cmd. Jalur itu adalah
+tempat installer menaruh engine, dan `-E -s` menjauhkan `PYTHONPATH` serta
+site-packages pengguna Anda dari gerbang; [Gerbang konformitas](/docs/conformity-gate)
+menjelaskan keduanya dan instalasi lainnya.
 
 ## Pemecahan masalah
 
