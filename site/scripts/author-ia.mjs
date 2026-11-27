@@ -18,6 +18,7 @@ import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { HIDDEN_ROOT_PAGES } from '../lib/hidden-pages.mjs';
+import { DEFAULT_LOCALE, ROUTED_LOCALES } from '../lib/i18n.ts';
 
 // Anchor to the script's own location, not the caller's cwd, so the generator
 // resolves the docs tree identically regardless of the directory it is invoked
@@ -219,22 +220,10 @@ function livePageKeys(dir) {
 // Top-level keys the root meta must account for: every root-level `.md`/`.mdx`
 // singleton plus every non-locale subdirectory under content/docs/. Routed
 // locale subtrees (`es`, `zh-cn`, …) are their own content roots, not sections
-// of the English IA. Their names come from ROUTED_LOCALES in lib/i18n.ts, the
-// site's one locale list, so an English section with a two-letter name is never
-// mistaken for a locale.
-function routedLocaleDirs() {
-  const src = readFileSync(join(SITE_ROOT, 'lib', 'i18n.ts'), 'utf8');
-  const match = src.match(/export const ROUTED_LOCALES[^=]*=\s*\[([^\]]*)\]/);
-  if (!match) {
-    throw new Error('author-ia: could not read ROUTED_LOCALES from lib/i18n.ts');
-  }
-  const defaultMatch = src.match(/export const DEFAULT_LOCALE\s*=\s*'([^']+)'/);
-  const defaultLocale = defaultMatch ? defaultMatch[1] : 'en';
-  return [...match[1].matchAll(/'([^']+)'/g)]
-    .map((m) => m[1])
-    .filter((locale) => locale !== defaultLocale);
-}
-const LOCALE_DIRS = routedLocaleDirs();
+// of the English IA. Their names are ROUTED_LOCALES, imported from
+// lib/i18n.ts (the site's one locale list; Node strips its types on import), so
+// an English section with a two-letter name is never mistaken for a locale.
+const LOCALE_DIRS = ROUTED_LOCALES.filter((locale) => locale !== DEFAULT_LOCALE);
 
 function liveRootKeys() {
   const keys = [];
