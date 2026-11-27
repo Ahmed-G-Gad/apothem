@@ -90,13 +90,13 @@ sourceHash: "a7175abd0e0c77ac"
 तीन वैलिडेटर बढ़ती कठोरता के साथ हुक सरफ़ेस को कवर करते हैं:
 
 ```bash
-# संरचनात्मक + Python स्वच्छता (तेज़, ऑफ़लाइन)
+# Structural + Python-hygiene (fast, offline)
 python scripts/dev/validate_hooks.py
 
-# पूर्ण इकोसिस्टम (संरचना + frontmatter + प्रत्यायोजित हुक जाँच)
+# Full ecosystem (structure + frontmatter + delegated hook checks)
 python scripts/dev/validate_ecosystem.py
 
-# प्रतिकूल स्वीप (प्रत्येक कॉन्फ़िगर किए गए हुक कमांड पर अवक्रमित इनपुट से प्रहार करता है)
+# Adversarial sweep (storms every configured hook command with degraded inputs)
 python scripts/dev/chaos_pass.py
 ```
 
