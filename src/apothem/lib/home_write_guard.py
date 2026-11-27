@@ -58,9 +58,10 @@ names the variable that turned the guard on.
 
 A path is compared as written and as resolved through links, afresh on every
 check, so a folder swapped for a link during a test counts at once. The
-protected folders' own resolved spellings are kept only while each home and
-its ``.config``, and the folder either leads to when it is a link, stay as
-they were (see :func:`_layout`).
+protected folders' own resolved spellings are kept only while each home,
+its ``.config``, each folder above a protected folder or path, and the
+folder any of them leads to when it is a link, stay as they were (see
+:func:`_layout`).
 
 On Windows a ``\\\\?\\``, ``\\\\.\\`` or ``\\??\\`` prefix (with either
 slash), a loopback admin share (``\\\\localhost\\C$``, ``\\\\127.0.0.1\\C$``,
@@ -217,7 +218,7 @@ _LOOPBACK_V4 = re.compile(r"127\.\d{1,3}\.\d{1,3}\.\d{1,3}")
 #: The domain Windows ends an IPv6 address with in a UNC host name.
 _IPV6_LITERAL = ".ipv6-literal.net"
 
-#: How long, in nanoseconds, a home and its ``.config`` must have stayed
+#: How long, in nanoseconds, the folders :func:`_layout` reads must have stayed
 #: unchanged before the protected folders resolved under them are reused. A
 #: change within one tick of the file system clock (up to about 16 ms) can
 #: leave a folder's timestamp as it was.
@@ -1035,36 +1036,47 @@ def _roots(
 ) -> tuple[tuple[tuple[str, ...], str], ...]:
     """Return ``(spellings, shown)`` for every protected folder, as they are now.
 
-    The resolved spellings are reused while :func:`_layout` finds each home
-    and its ``.config`` as they were, and built afresh otherwise.
+    The protected folders are read once here (:func:`_registry_roots`). Their
+    resolved spellings are reused while :func:`_layout` finds each folder
+    that holds one as it was, and built afresh otherwise.
     """
     homes = (*([home] if home else []), *extra)
-    layout, settled = _layout(homes)
+    names = (*APOTHEM_ROOTS, *_registry_roots())
+    layout, settled = _layout(homes, names)
     if settled:
-        return _resolved_roots(homes, layout)
-    return _resolved_roots.__wrapped__(homes, layout)
+        return _resolved_roots(homes, layout, names)
+    return _resolved_roots.__wrapped__(homes, layout, names)
 
 
-def _layout(homes: tuple[str, ...]) -> tuple[tuple[object, ...], bool]:
-    """Return what each home and its ``.config`` are now, and whether it settled.
+def _layout(
+    homes: tuple[str, ...], names: tuple[str, ...] | None = None
+) -> tuple[tuple[object, ...], bool]:
+    """Return what the folders holding protected folders are now, and if settled.
 
-    A protected folder sits in a home or in its ``.config``. Swapping one of
-    them, or ``.config``, for a link (or back) changes the folder that holds
-    it: its timestamp, or, for a home swapped itself, its identity. A change
-    within the same tick of the file system clock can leave the timestamp as
-    it was, so a folder changed less than :data:`_SETTLE_NS` ago has not
-    settled, and nothing resolved under it is reused.
+    *names* are the protected folders and paths below a home (by default
+    :data:`APOTHEM_ROOTS` and :func:`_registry_roots`). Each home, its
+    ``.config`` and every folder above one of *names* up to the home is read
+    (see :func:`_watched`). Swapping a protected folder, or a folder above
+    it, for a link (or back) changes the folder that holds it: its
+    timestamp, or, for a home swapped itself, its identity. A change within
+    the same tick of the file system clock can leave the timestamp as it was,
+    so a folder changed less than :data:`_SETTLE_NS` ago has not settled, and
+    nothing resolved under it is reused.
 
-    A home or a ``.config`` that is itself a link (a dotfiles folder, say)
-    records the link, so the folder it leads to is read as well: a protected
-    folder swapped inside it, or the link pointed elsewhere, changes that
-    folder's timestamp or identity. Links above a home are not looked at.
+    A watched folder that is itself a link (a dotfiles folder, say) records
+    the link, so the folder it leads to is read as well: a protected folder
+    swapped inside it, or the link pointed elsewhere, changes that folder's
+    timestamp or identity. Links above a home are not looked at.
     """
+    if names is None:
+        names = (*APOTHEM_ROOTS, *_registry_roots())
     now = time.time_ns()
     found: list[object] = []
     settled = True
+    watched = _watched(names)
     for home in homes:
-        for folder in (home, os.path.join(home, ".config")):
+        for name in watched:
+            folder = os.path.join(home, *name.split("/")) if name else home
             link = _read(os.lstat, folder)
             infos = [link]
             if link is not None and _is_link(link):
@@ -1076,6 +1088,24 @@ def _layout(homes: tuple[str, ...]) -> tuple[tuple[object, ...], bool]:
                 found.append((info.st_dev, info.st_ino, info.st_mode, info.st_mtime_ns))
                 settled = settled and now - info.st_mtime_ns >= _SETTLE_NS
     return tuple(found), settled
+
+
+def _watched(names: tuple[str, ...]) -> tuple[str, ...]:
+    """Return the folders below a home that :func:`_layout` reads, home first.
+
+    The home (``""``) and its ``.config`` always, and every folder above one
+    of *names*, the folder that holds it included: ``.antigravity`` for
+    ``.antigravity/profile.yaml``, and ``Library`` and
+    ``Library/Application Support`` for ``Library/Application Support/<tool>``.
+    A protected folder itself is not read: swapping it changes the folder
+    above it.
+    """
+    watched = dict.fromkeys(("", ".config"))
+    for name in names:
+        parts = name.split("/")
+        for count in range(1, len(parts)):
+            watched["/".join(parts[:count])] = None
+    return tuple(watched)
 
 
 def _read(read: Callable[[str], os.stat_result], folder: str) -> os.stat_result | None:
@@ -1093,9 +1123,9 @@ def _is_link(info: os.stat_result) -> bool:
 
 @functools.lru_cache(maxsize=8)
 def _resolved_roots(
-    homes: tuple[str, ...], layout: tuple[object, ...]
+    homes: tuple[str, ...], layout: tuple[object, ...], names: tuple[str, ...]
 ) -> tuple[tuple[tuple[str, ...], str], ...]:
-    """Return ``(spellings, shown)`` for every protected folder of *homes*.
+    """Return ``(spellings, shown)`` for each of *names* below each of *homes*.
 
     Each folder is compared as written and as resolved through links, and the
     home is resolved as well, so a link inside the home (a ``.config`` that
@@ -1103,7 +1133,7 @@ def _resolved_roots(
     cache (see :func:`_layout`).
     """
     del layout
-    relative = dict.fromkeys((*APOTHEM_ROOTS, *_registry_roots()))
+    relative = dict.fromkeys(names)
     found: list[tuple[tuple[str, ...], str]] = []
     for base in homes:
         real_base = _realpath(base)
@@ -1162,9 +1192,10 @@ def _derived_roots() -> tuple[str, ...]:
 def derive_roots(paths: list[str]) -> tuple[str, ...]:
     """Return the home folders that registry-style *paths* (``~/...``) name.
 
-    A folder that many programs share is never one: below ``.config`` the
-    folder is the next part (``.config/opencode``), and below ``Library`` the
-    part after next (``Library/Application Support/<tool>``).
+    A folder that many programs share is never returned whole: below
+    ``.config`` the returned folder is the next part (``.config/opencode``),
+    and below ``Library`` the part after next
+    (``Library/Application Support/<tool>``).
     """
     names: dict[str, None] = {}
     for path in paths:
@@ -1180,8 +1211,9 @@ def derive_roots(paths: list[str]) -> tuple[str, ...]:
     return tuple(sorted(names))
 
 
-#: Home folders that many programs share, each with how many parts below it
-#: still belong to no one program (see :func:`derive_roots`).
+#: Home folders that many programs share, each with how many parts below it a
+#: protected folder takes, the last being one program's own (see
+#: :func:`derive_roots`).
 _SHARED_PARENTS = {".config": 1, "Library": 2}
 
 

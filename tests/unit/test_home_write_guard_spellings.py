@@ -113,6 +113,11 @@ def test_a_link_that_becomes_a_plain_folder_is_allowed_again(
     assert _everything_in(fake_home / ".claude") == []
 
 
+def _names() -> tuple[str, ...]:
+    """Return the protected folders and paths below a home, as the guard reads."""
+    return (*home_write_guard.APOTHEM_ROOTS, *home_write_guard._registry_roots())
+
+
 def _settled(folder: Path) -> None:
     """Date *folder* an hour back, like a home that has not changed lately."""
     past = time.time_ns() - 3600 * 10**9
@@ -194,6 +199,81 @@ def test_a_folder_swapped_inside_a_linked_config_is_seen_at_once(
     assert _everything_in(third) == []
 
 
+@pytest.mark.parametrize(
+    "linked", ["Library/Application Support", "Library/Application Support/Tool"]
+)
+def test_a_folder_swapped_below_library_is_seen_at_once(
+    fake_home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, linked: str
+) -> None:
+    """A protected folder two parts below ``Library``: a link swap there counts.
+
+    Swapping ``Library/Application Support``, or the tool's folder in it,
+    changes only a folder below the home, so with no settling time only a
+    layout that reads that folder sees the swap.
+    """
+    monkeypatch.setattr(home_write_guard, "_SETTLE_NS", 0)
+    monkeypatch.setattr(
+        home_write_guard,
+        "_registry_roots",
+        lambda: (*home_write_guard.FALLBACK_ROOTS, "Library/Application Support/Tool"),
+    )
+    home_write_guard._resolved_roots.cache_clear()
+    tool = fake_home / "Library" / "Application Support" / "Tool"
+    tool.mkdir(parents=True)
+    third = tmp_path / "third"
+    target = third / "x" if linked.endswith("Tool") else third / "Tool" / "x"
+    target.parent.mkdir(parents=True)
+    for folder in (fake_home, fake_home / "Library", tool.parent, tool):
+        _settled(folder)
+    assert home_write_guard.would_refuse(tool / "x")
+    assert not home_write_guard.would_refuse(target)
+    assert not home_write_guard.would_refuse(target)
+    swapped = fake_home / linked
+    for folder in (tool, tool.parent) if swapped == tool.parent else (tool,):
+        folder.rmdir()
+    _link_folder(swapped, third)
+    try:
+        assert home_write_guard.would_refuse(target)
+        with pytest.raises(home_write_guard.RealHomeWriteError):
+            atomic_io.write_bytes_atomically(target.parent / "settings.json", b"data")
+    finally:
+        _remove_folder_link(swapped)
+    assert _everything_in(target.parent) == []
+
+
+def test_a_protected_file_swapped_for_a_link_is_seen_at_once(
+    fake_home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``.antigravity/profile.yaml`` swapped for a link: its folder is read.
+
+    Only ``.antigravity`` changes, so with no settling time only a layout
+    that reads the folder above a protected path sees the swap.
+    """
+    monkeypatch.setattr(home_write_guard, "_SETTLE_NS", 0)
+    profile = fake_home / ".antigravity" / "profile.yaml"
+    profile.parent.mkdir()
+    profile.write_bytes(b"kept\n")
+    target = tmp_path / "elsewhere" / "profile.yaml"
+    target.parent.mkdir()
+    target.write_bytes(b"theirs\n")
+    _settled(profile.parent)
+    _settled(fake_home)
+    assert home_write_guard.would_refuse(profile)
+    assert not home_write_guard.would_refuse(target)
+    profile.unlink()
+    try:
+        profile.symlink_to(target)
+    except OSError:
+        pytest.skip("this host cannot create a file link")
+    try:
+        assert home_write_guard.would_refuse(target)
+        with pytest.raises(home_write_guard.RealHomeWriteError):
+            atomic_io.write_bytes_atomically(target, b"data")
+    finally:
+        profile.unlink()
+    assert target.read_bytes() == b"theirs\n"
+
+
 def test_the_layout_reads_where_a_linked_config_leads(
     fake_home: Path, tmp_path: Path
 ) -> None:
@@ -207,11 +287,11 @@ def test_the_layout_reads_where_a_linked_config_leads(
     finally:
         _remove_folder_link(fake_home / ".config")
     plain, _ = home_write_guard._layout((str(fake_home),))
-    # The home, the link, and the folder the link leads to.
-    assert len(before) == 3
+    # One more entry than the plain layout: the folder the link leads to.
+    assert len(before) == len(plain) + 1
     assert after != before
     assert not settled
-    assert len(plain) == 2
+    assert len(plain) == len(home_write_guard._watched(_names()))
 
 
 # Short (8.3) names -----------------------------------------------------------
