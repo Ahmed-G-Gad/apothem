@@ -604,6 +604,19 @@ Keep-a-Changelog convention. The release commit's CHANGELOG edit:
 - Confirms the version section uses the `## [X.Y.Z] - YYYY-MM-DD` heading
   (a hyphen; `bump_version.py` writes it, and `extract_release_notes.py`
   matches the `## [X.Y.Z]` prefix).
+- Needs no trimming for the GitHub Release page. GitHub refuses a release
+  body over 125,000 characters, so the release job's `extract_release_notes.py`
+  shortens a longer section to 120,000: it keeps the `###` headings, cuts
+  entries to their bold titles (Security and the data-loss section last),
+  drops entries only when titles are not enough, says how many it left out,
+  and links the full notes in the tagged `CHANGELOG.md`. It shortens only
+  notes made of `###` sections of `- ` entries whose other lines start with
+  two spaces. When notes that need shortening hold any other line (text
+  before the first heading, a `####` heading, a paragraph, another list
+  marker, a tab, a rule or heading underline, a code fence, an HTML block or
+  a link definition), it stops with an
+  error that names the line. A CI test runs every release in the
+  `CHANGELOG.md` through it, so such a line fails before the tag.
 - Confirms the standard headings — Added, Changed, Deprecated, Removed,
   Fixed, Security — are used where applicable. Empty headings are dropped from
   the rendered file.
@@ -613,6 +626,23 @@ Keep-a-Changelog convention. The release commit's CHANGELOG edit:
 
 A CHANGELOG section that survived the maintainer's review reads as
 the release-notes anchor for the announcement narrative.
+
+After the release merges, the version's section is closed. A branch cut
+before the release can merge the release in without a conflict and leave
+its entry inside the released section, so move each such entry back under
+`[Unreleased]` by hand after the merge. The `quality / ubuntu-latest /
+py3.12` check runs `check_changelog_released_sections.py`, which fails a
+pull request that changes a released section and names it. CI does not run
+again on a pull request when main moves, and re-running its checks tests
+the same old merge, so after a release, merge main into each open pull
+request (or close and reopen it) before it merges. The same check runs on
+each push to main, against the tip before the push, and reports a section
+that changed there; a push run that a newer push cancels checks nothing. A
+deliberate correction to released notes passes when a commit carries the
+trailer `Changelog-Released-Edit: <version> <reason>`, which allows that
+version's section only. Git reads trailers from a message's last
+paragraph, so when that pull request is squash-merged, end the squash
+message with the trailer, beside `Signed-off-by`.
 
 ## 5. Install-path smoke
 

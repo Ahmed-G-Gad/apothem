@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -21,6 +22,7 @@ from apothem.harnesses._shared.install_driver import (
     MaterializationResult,
     check_fidelity,
 )
+from apothem.harnesses._shared.install_driver_blocks import LEFT_AS_IS
 from apothem.harnesses._shared.install_driver_jsonmerge import is_handler_map
 from apothem.harnesses.open_claw import OpenClawAdapter, rules_file
 from apothem.harnesses.open_claw.install import install
@@ -40,8 +42,11 @@ from apothem.harnesses.open_claw.rules_file import (
 )
 from apothem.lib import install_ledger
 from apothem.lib.harness_materializer import (
+    APOTHEM_BLOCK_BEGIN,
     APOTHEM_BLOCK_END,
+    complete_managed_block,
     extract_managed_block,
+    whole_blocks,
 )
 from apothem.lib.profile import load_profile_file
 from apothem.schemas import profile_minimal_path
@@ -814,6 +819,87 @@ def test_operator_text_beside_the_block_counts_against_the_limit(
 
     assert any("bootstrapMaxChars" in m for m in _messages(run))
     assert target.read_text(encoding="utf-8").strip() == note
+
+
+def test_the_size_check_reads_a_recorded_unclear_file_as_the_write_does(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    """wiring-4, diff-5, tests-8: a file that fits keeps its hook entry.
+
+    The block sits in a code block of yours, one line edited, so only the
+    install record keeps the merge from appending a second block. The plan
+    must size the file as that merge leaves it: unchanged.
+    """
+    workspace = _workspace(home / ".openclaw" / "workspace")
+    adapter.install({})
+    target = workspace / RULES_FILE_RELATIVE
+    text = target.read_bytes().decode("utf-8")
+    at = text.index(APOTHEM_BLOCK_BEGIN) + len(APOTHEM_BLOCK_BEGIN) + 1
+    edited = text[:at] + "a line I added\n" + text[at:]
+    fenced = (
+        f"My notes:\n\n```\nmake test\n\n{edited}\nMore examples:\n\n```sh\nls\n```\n"
+    )
+    target.write_bytes(fenced.encode())
+    config = _config(home)
+    config["agents"] = {"defaults": {"bootstrapMaxChars": chars(fenced) + 10}}
+    _write_config(home, config)
+    body, _ = rules_file.rules_text(home / ".openclaw", {})
+
+    fits = rules_file.fits_somewhere(
+        body,
+        rules_file.read_config(_config_path(home)),
+        home,
+        harness_root=home / ".openclaw",
+    )
+    run = adapter.update({})
+
+    assert fits
+    assert target.read_bytes() == fenced.encode()
+    assert _entry(home) == {"enabled": True, "paths": [RULES_FILE_RELATIVE]}
+    assert not any("fits no workspace" in message for message in _messages(run))
+
+
+def test_the_size_check_reads_an_unreadable_ledger_as_the_write_does(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    """docs-tests-1: no test pinned how the size check reads the install record.
+
+    The block sits in a code block of yours, one line edited, and the install
+    ledger cannot be read. The write reads such a ledger as a record that lists
+    the file, so it leaves the file as it is. The size check and the hook
+    registration must read the ledger the same way. The limit leaves room for
+    the file as it is, not for a second block appended to it. Read as no
+    record, the ledger makes the run refuse the file as too large and say it
+    fits no workspace, with no warning that it left the file as it is.
+    """
+    workspace = _workspace(home / ".openclaw" / "workspace")
+    adapter.install({})
+    target = workspace / RULES_FILE_RELATIVE
+    text = target.read_bytes().decode("utf-8")
+    at = text.index(APOTHEM_BLOCK_BEGIN) + len(APOTHEM_BLOCK_BEGIN) + 1
+    fenced = _fenced(text[:at] + "a line I added\n" + text[at:])
+    target.write_bytes(fenced.encode())
+    config = _config(home)
+    config["agents"] = {"defaults": {"bootstrapMaxChars": chars(fenced) + 10}}
+    _write_config(home, config)
+    ledger = install_ledger.ledger_path("open_claw")
+    lines = ledger.read_bytes().splitlines(keepends=True)
+    ledger.write_bytes(b"".join([lines[0], b"{not json\n", *lines]))
+    with pytest.raises(install_ledger.LedgerError):
+        install_ledger.read_records("open_claw")
+    space = rules_file.Workspace(workspace)
+    body, _ = rules_file.rules_text(home / ".openclaw", {})
+
+    sized = rules_file.file_text(space, body, harness_root=home / ".openclaw")
+    reason = rules_file.refusal(sized, config, space)
+    run = adapter.update({})
+
+    assert sized == fenced
+    assert reason is None
+    assert target.read_bytes() == fenced.encode()
+    [held] = [warning for warning in run.warnings if warning.path == str(target)]
+    assert held.detail.get(LEFT_AS_IS) == "1", held.message
+    assert not any("fits no workspace" in message for message in _messages(run))
 
 
 def test_a_glob_that_matches_the_rules_file_does_not_count_it_twice(
@@ -1907,3 +1993,451 @@ def test_an_unreadable_ledger_keeps_the_hand_removal_error(
     run = adapter.uninstall()
 
     assert [r for r in run.results if r.outcome == "error"], run.results
+
+
+def test_an_install_keeps_your_text_after_a_rules_file_begin_with_no_end(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    workspace = _workspace(home / "ws-a")
+    _write_config(home, {"agents": {"defaults": {"workspace": "~/ws-a"}}})
+    adapter.install({})
+    target = workspace / RULES_FILE_RELATIVE
+    cut = target.read_bytes().replace(APOTHEM_BLOCK_END.encode(), b"")
+    target.write_bytes(cut + b"my own line\n")
+    before = target.read_bytes()
+
+    run = adapter.install({})
+    damaged = adapter.verify()
+
+    assert target.read_bytes().startswith(before)
+    assert target.read_bytes().count(APOTHEM_BLOCK_END.encode()) == 1
+    assert any(
+        APOTHEM_BLOCK_END in w.message and str(workspace) in w.message
+        for w in run.warnings
+    ), run.warnings
+    assert damaged is False
+
+
+def test_an_update_that_cannot_retire_a_file_with_two_blocks_says_what_comes_next(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    # An update or install tells you the next run retries; it never says to
+    # run the uninstall, which would remove the whole harness. An uninstall
+    # still says to run itself again.
+    old = _workspace(home / "ws-a")
+    _workspace(home / "ws-b")
+    _write_config(home, {"agents": {"defaults": {"workspace": "~/ws-a"}}})
+    adapter.install({})
+    target = old / RULES_FILE_RELATIVE
+    quoted = f"{APOTHEM_BLOCK_BEGIN}\nmy example\n{APOTHEM_BLOCK_END}\n"
+    target.write_bytes(target.read_bytes() + b"\n" + quoted.encode())
+    before = target.read_bytes()
+    _move_default_workspace(home, "~/ws-b")
+
+    updated = [m for m in _messages(adapter.update({})) if str(target) in m]
+    uninstalled = [m for m in _messages(adapter.uninstall()) if str(target) in m]
+
+    assert target.read_bytes() == before
+    (update_note,) = updated
+    assert "The next install, update or uninstall then takes" in update_note
+    assert "uninstall again" not in update_note
+    (uninstall_note,) = uninstalled
+    assert "Then run the uninstall again" in uninstall_note
+
+
+def test_an_update_that_retires_a_file_names_a_begin_marker_it_leaves(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    """advice-3: the update took Apothem's block out and said nothing more.
+
+    A BEGIN marker that starts no whole block (what is left of an older block,
+    or a line of yours) sits above Apothem's block in a workspace the config
+    moved away from. The update takes the block out and now names the file
+    and the marker it leaves, as an uninstall does.
+    """
+    old = _workspace(home / "ws-a")
+    _workspace(home / "ws-b")
+    _write_config(home, {"agents": {"defaults": {"workspace": "~/ws-a"}}})
+    adapter.install({})
+    target = old / RULES_FILE_RELATIVE
+    stray = f"{APOTHEM_BLOCK_BEGIN}\nold apothem text\n\n"
+    target.write_bytes(stray.encode() + target.read_bytes())
+    _move_default_workspace(home, "~/ws-b")
+
+    named = [m for m in _messages(adapter.update({})) if str(target) in m]
+
+    left = target.read_text(encoding="utf-8")
+    assert left.startswith(stray.rstrip("\n"))
+    assert left.count(APOTHEM_BLOCK_BEGIN) == 1
+    assert APOTHEM_BLOCK_END not in left
+    (note,) = named
+    assert "still holds a line that reads as the Apothem BEGIN marker" in note
+
+
+def _update_json() -> tuple[int, dict[str, object]]:
+    from click.testing import CliRunner
+
+    from apothem.cli import main
+
+    profile = str(profile_minimal_path())
+    result = CliRunner().invoke(
+        main, ["update", "--harness", "open-claw", "--profile", profile, "--json"]
+    )
+    envelope: dict[str, object] = json.loads(result.output)
+    return result.exit_code, envelope
+
+
+def test_an_update_that_retires_a_file_says_verify_fails_until_the_marker_goes(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    """The reason given was the uninstall's, and neither half of it held.
+
+    It said the tool still reads the old text and an install keeps it, but
+    OpenClaw no longer loads a rules file in a workspace the config moved
+    away from, and no install writes there. An earlier install record still
+    lists the file, so verify names it until the BEGIN marker is gone, and
+    the warning now says so.
+    """
+    old = _workspace(home / "ws-a")
+    _workspace(home / "ws-b")
+    _write_config(home, {"agents": {"defaults": {"workspace": "~/ws-a"}}})
+    adapter.install({})
+    target = old / RULES_FILE_RELATIVE
+    stray = f"# mine\n{APOTHEM_BLOCK_BEGIN}\nold apothem text\n\nmy line\n\n"
+    target.write_bytes(stray.encode() + target.read_bytes())
+    _move_default_workspace(home, "~/ws-b")
+
+    code, envelope = _update_json()
+    verified, payload = _verify_json()
+
+    assert code == 0, envelope
+    (note,) = [m for m in _warning_messages(envelope) if str(target) in m]
+    flat = " ".join(note.split())
+    assert "Apothem BEGIN marker at line 2" in flat
+    assert "apothem verify fails for this tool until you change it." in flat
+    assert "A1. Change line 2: add a word inside its comment." in flat
+    assert "the tool still reads that text" not in note
+    assert target.read_text(encoding="utf-8") == stray.rstrip("\n") + "\n"
+    assert verified == 1, payload
+    assert _stray_files(payload) == [target]
+
+
+def _fenced(text: str) -> str:
+    """Return the rules file *text* with its block in a code block of yours."""
+    at = text.index(APOTHEM_BLOCK_BEGIN)
+    return (
+        f"{text[:at]}My notes:\n\n```\nmake test\n\n{text[at:]}\nMore:\n\n"
+        "```sh\nls\n```\n"
+    )
+
+
+def _another_pair(text: str) -> str:
+    """Return the rules file *text* with a marker pair of yours below the block."""
+    return f"{text}\n{APOTHEM_BLOCK_BEGIN}\nmy example\n{APOTHEM_BLOCK_END}\n"
+
+
+def _lost_end(text: str) -> str:
+    """Return the rules file *text* without its END marker, and a line of yours."""
+    return text.replace(APOTHEM_BLOCK_END, "") + "my own line\n"
+
+
+def _pair_below_a_quoted_end(text: str) -> str:
+    """Return the rules file *text* between a BEGIN marker of yours and your pair.
+
+    Above the block, a BEGIN marker of yours with your note below it; below
+    it, an END marker you quote in code, then a marker pair of yours.
+    """
+    return (
+        f"my own text above\n{APOTHEM_BLOCK_BEGIN}\nmy note\n\n{text}How the "
+        f"markers look:\n\n```md\n{APOTHEM_BLOCK_END}\n```\n\nmy own text below\n"
+        f"\nMy example:\n{APOTHEM_BLOCK_BEGIN}\nMY EXAMPLE\n{APOTHEM_BLOCK_END}\n"
+    )
+
+
+@pytest.mark.parametrize(
+    "shape",
+    [
+        pytest.param(_fenced, id="unclear"),
+        pytest.param(_another_pair, id="two-blocks"),
+        pytest.param(_lost_end, id="lost-end"),
+        pytest.param(_pair_below_a_quoted_end, id="pair-below-a-quoted-end"),
+    ],
+)
+def test_a_preview_says_it_would_leave_a_rules_file_it_cannot_retire(
+    adapter: OpenClawAdapter, home: Path, shape: Callable[[str], str]
+) -> None:
+    """docs-7: the preview said Apothem 'left' the file, or would take its block out.
+
+    A rules file in a workspace the config moved away from, whose markers
+    Apothem cannot place, or which holds another whole block: the update
+    leaves it as it is, and its preview now says it would.
+    """
+    old = _workspace(home / "ws-a")
+    _workspace(home / "ws-b")
+    _write_config(home, {"agents": {"defaults": {"workspace": "~/ws-a"}}})
+    adapter.install({})
+    target = old / RULES_FILE_RELATIVE
+    target.write_text(shape(target.read_text(encoding="utf-8")), encoding="utf-8")
+    before = target.read_bytes()
+    _move_default_workspace(home, "~/ws-b")
+
+    run = install(adapter.output_path, {}, dry_run=True)
+
+    named = [r for r in run.results if str(target) in f"{r.path} {r.message}"]
+    assert target.read_bytes() == before
+    assert [r.outcome for r in named] == ["warning"], named
+    assert "would leave the file as it is" in named[0].message
+    assert "left the file" not in named[0].message
+
+
+# --- a rules file whose block lost its END marker -------------------------------
+
+
+def _verify_json() -> tuple[int, dict[str, object]]:
+    from click.testing import CliRunner
+
+    from apothem.cli import main
+
+    result = CliRunner().invoke(main, ["verify", "--harness", "open-claw", "--json"])
+    payload: dict[str, object] = json.loads(result.output)
+    return result.exit_code, payload
+
+
+def _stray_files(payload: dict[str, object]) -> list[Path]:
+    results = payload["results"]
+    assert isinstance(results, list)
+    [row] = results
+    return [Path(path) for path in row["stray_begin"]["files"]]
+
+
+def test_a_lost_end_over_the_limit_names_the_file_and_the_old_text(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    """lifecycle-4: the size warning blamed your text, and verify named no file.
+
+    The text below a BEGIN marker that lost its END marker is old Apothem
+    text, which an update keeps beside the fresh block it writes, so the file
+    no longer fits the limit: it is not written or registered. The warning
+    now names the file, that marker by its line (fixes-r6-7, lifecycle-r6-6:
+    it named no line) and that text, and verify names the file. The marker
+    may be yours, and that text need not be all of the overage, so the
+    warning still offers shorter custom rules (docs-5).
+    """
+    workspace = _workspace(home / ".openclaw" / "workspace")
+    adapter.install({})
+    target = workspace / RULES_FILE_RELATIVE
+    text = target.read_text(encoding="utf-8")
+    lost = text.replace(APOTHEM_BLOCK_END + "\n", "")
+    target.write_text(lost, encoding="utf-8")
+    line = lost.split("\n").index(APOTHEM_BLOCK_BEGIN) + 1
+    config = _config(home)
+    config["agents"] = {"defaults": {"bootstrapMaxChars": chars(text) + 200}}
+    _write_config(home, config)
+
+    run = adapter.update({})
+    code, payload = _verify_json()
+
+    [size] = [
+        m for m in _messages(run) if "bootstrapMaxChars" in m and str(target) in m
+    ]
+    assert (
+        f"{target} holds an Apothem BEGIN marker at line {line} that starts no "
+        "whole block (its END marker is gone, or the marker is yours), and the "
+        "old Apothem text below it counts against the limit: change line "
+        f"{line} by adding a word inside its comment and delete that old text by "
+        "hand, keeping your own text, or shorten the profile's custom rules, or "
+        "raise the limit."
+    ) in size
+    assert "text you keep beside the Apothem block" not in size
+    assert code == 1, payload
+    assert _stray_files(payload) == [target]
+
+
+def test_the_size_refusal_names_each_begin_marker_that_starts_no_block(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    """advice-8: with two such markers it said "that marker line", and no line.
+
+    Changing one left the other, and the next update still refused the file.
+    The refusal now names both lines and says to change each.
+    """
+    workspace = _workspace(home / ".openclaw" / "workspace")
+    adapter.install({})
+    target = workspace / RULES_FILE_RELATIVE
+    text = target.read_text(encoding="utf-8")
+    lost = text.replace(APOTHEM_BLOCK_END + "\n", "")
+    stray = f"# mine\n{APOTHEM_BLOCK_BEGIN}\nolder apothem text\n\n"
+    target.write_text(stray + lost, encoding="utf-8")
+    later = (stray + lost).split("\n").index(APOTHEM_BLOCK_BEGIN, 2) + 1
+    config = _config(home)
+    config["agents"] = {"defaults": {"bootstrapMaxChars": chars(text) + 200}}
+    _write_config(home, config)
+
+    run = adapter.update({})
+
+    [size] = [
+        m for m in _messages(run) if "bootstrapMaxChars" in m and str(target) in m
+    ]
+    assert (
+        f"{target} holds Apothem BEGIN markers at lines 2 and {later} that start "
+        "no whole block (their END markers are gone, or the markers are yours), "
+        "and the old Apothem text below them counts against the limit: change "
+        f"lines 2 and {later} by adding a word inside each comment and delete "
+        "that old text by hand"
+    ) in size
+
+
+def test_verify_says_the_update_writes_a_rules_file_only_once_it_fits(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    """fixes-r6-1: verify promised an update that the size limit then refused.
+
+    For a rules file over OpenClaw's per-file limit whose block lost its END
+    marker, the verify and doctor note said the next update adds Apothem's
+    block once the marker line changes. The old Apothem text left below that
+    line still counts against the limit, so the update refused the file
+    again. The note now says the update writes the block only if the file
+    then fits, and that the old text counts against the limit; done as the
+    note and the update's refusal say, the update writes the block.
+    """
+    workspace = _workspace(home / ".openclaw" / "workspace")
+    adapter.install({})
+    target = workspace / RULES_FILE_RELATIVE
+    text = target.read_text(encoding="utf-8")
+    lost = text.replace(APOTHEM_BLOCK_END + "\n", "")
+    target.write_text(lost, encoding="utf-8")
+    line = lost.split("\n").index(APOTHEM_BLOCK_BEGIN) + 1
+    config = _config(home)
+    config["agents"] = {"defaults": {"bootstrapMaxChars": chars(text) + 200}}
+    _write_config(home, config)
+
+    adapter.update({})
+    code, payload = _verify_json()
+    results = payload["results"]
+    assert isinstance(results, list)
+    note = " ".join(str(results[0]["stray_begin"]["message"]).split())
+    changed = lost.split("\n")[: line - 1]
+    target.write_text(
+        "".join(f"{kept}\n" for kept in changed)
+        + APOTHEM_BLOCK_BEGIN.replace(" -->", " (example) -->")
+        + "\n",
+        encoding="utf-8",
+    )
+    adapter.update({})
+    again, again_payload = _verify_json()
+
+    assert code == 1, payload
+    assert f"A1. Change line {line}: add a word inside its comment." in note
+    assert (
+        "Apothem then reads none of these lines as its markers, and the next "
+        "update writes its block at the end of the file if the file then fits "
+        "OpenClaw's per-file limit (bootstrapMaxChars), which old Apothem text "
+        "you keep counts against."
+    ) in note
+    assert again == 0, again_payload
+    assert complete_managed_block(target.read_text(encoding="utf-8")) is not None
+
+
+def test_verify_names_an_earlier_rules_file_an_update_cannot_retire(
+    adapter: OpenClawAdapter, home: Path
+) -> None:
+    """lifecycle-7: each update named the file, while verify passed.
+
+    The workspace moved, and the rules file Apothem wrote in the old one
+    holds a marker pair it cannot place, so no update can take its block
+    out. An earlier install record lists that file, so verify names it too.
+    """
+    old = _workspace(home / "ws-a")
+    _workspace(home / "ws-b")
+    _write_config(home, {"agents": {"defaults": {"workspace": "~/ws-a"}}})
+    adapter.install({})
+    target = old / RULES_FILE_RELATIVE
+    text = target.read_text(encoding="utf-8")
+    at = text.index(APOTHEM_BLOCK_BEGIN)
+    target.write_text(
+        f"{text[:at]}My notes:\n\n```\nmake test\n\n{text[at:]}\nMore:\n\n```sh\n"
+        "ls\n```\n",
+        encoding="utf-8",
+    )
+    _move_default_workspace(home, "~/ws-b")
+
+    run = adapter.update({})
+    code, payload = _verify_json()
+
+    assert [m for m in _messages(run) if str(target) in m]
+    assert code == 1, payload
+    assert _stray_files(payload) == [target]
+
+
+# --- a pair of yours below an END marker you quote ----------------------------
+
+
+def _note(envelope: dict[str, object], target: Path) -> str:
+    """Return the one warning of *envelope* that names *target*, flattened."""
+    (note,) = [m for m in _warning_messages(envelope) if str(target) in m]
+    return " ".join(note.split())
+
+
+@pytest.mark.parametrize(
+    ("command", "exits"),
+    [
+        pytest.param("update", (0, 0, 0), id="update"),
+        pytest.param("uninstall", (2, 2, 0), id="uninstall"),
+    ],
+)
+def test_a_rules_file_with_your_pair_below_a_quoted_end_keeps_it_to_the_end(
+    adapter: OpenClawAdapter, home: Path, command: str, exits: tuple[int, ...]
+) -> None:
+    """advice-1: the retire took Apothem's block out and named only your BEGIN marker.
+
+    A rules file in a workspace the config moved away from holds a BEGIN
+    marker of yours above Apothem's block, an END marker you quote in code
+    below it, and a marker pair of yours further down. Once Apothem's block
+    is out, that BEGIN marker and the quoted END marker read as a pair with
+    yours after it, so no block was certain, and the retire went ahead.
+    Deleting the BEGIN marker as its text said left your pair the one block
+    in the file, which the next update retired as Apothem's block. The run
+    now leaves the file as it is and names both whole blocks; done as each
+    warning says, it retires the file, a later install keeps every line of
+    yours, and verify passes.
+    """
+    old = _workspace(home / "ws-a")
+    _workspace(home / "ws-b")
+    _write_config(home, {"agents": {"defaults": {"workspace": "~/ws-a"}}})
+    adapter.install({})
+    target = old / RULES_FILE_RELATIVE
+    shaped = _pair_below_a_quoted_end(target.read_text(encoding="utf-8"))
+    target.write_bytes(shaped.encode())
+    _move_default_workspace(home, "~/ws-b")
+    run = _update_json if command == "update" else _uninstall_json
+    [(inner, inner_end), (mine, mine_end)] = whole_blocks(shaped)
+    lines = shaped.split("\n")
+    outer = lines.index(APOTHEM_BLOCK_BEGIN) + 1
+
+    first, first_envelope = run()
+    kept = target.read_bytes()
+    lines[mine - 1], lines[mine_end - 1] = "BEGIN (my example)", "END (my example)"
+    target.write_bytes("\n".join(lines).encode())
+    second, second_envelope = run()
+    del lines[outer - 1]
+    target.write_bytes("\n".join(lines).encode())
+    third, third_envelope = run()
+    left = target.read_text(encoding="utf-8")
+    adapter.install({})
+    verified, payload = _verify_json()
+
+    assert (first, second, third) == exits, (first_envelope, second_envelope)
+    assert kept == shaped.encode()
+    assert (
+        f"holds 2 whole blocks between Apothem's markers (lines {inner} to "
+        f"{inner_end}, and lines {mine} to {mine_end})"
+    ) in _note(first_envelope, target)
+    assert f"A1. Change line {outer}: add a word inside its comment." in _note(
+        second_envelope, target
+    )
+    assert not [m for m in _warning_messages(third_envelope) if str(target) in m]
+    assert APOTHEM_BLOCK_BEGIN not in left
+    for line in ("my own text above", "my note", "my own text below", "MY EXAMPLE"):
+        assert line in left
+    assert target.read_text(encoding="utf-8") == left
+    assert verified == 0, payload

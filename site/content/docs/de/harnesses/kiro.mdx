@@ -180,7 +180,7 @@ Der Befehl in der Hook-Datei sieht so aus, mit Ihrem Interpreter- und
 Projektpfad anstelle der beiden Pfade:
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
 ```
 
 `--contract kiro` lässt den Dispatcher den Kontext als reinen Text ausgeben, was

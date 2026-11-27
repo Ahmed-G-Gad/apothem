@@ -21,14 +21,15 @@ from pathlib import Path
 from typing import Final
 
 from apothem.lib import home_write_guard, install_ledger
-from apothem.lib.harness_materializer import (
-    APOTHEM_BLOCK_BEGIN,
-    APOTHEM_BLOCK_END,
-    extract_managed_block,
-)
+from apothem.lib.harness_materializer import extract_managed_block, whole_blocks
 from apothem.lib.install_ledger import LedgerRecord
 
-from .install_driver_blocks import endless_block_warning
+from .install_driver_blocks import (
+    another_block_at,
+    another_block_report,
+    endless_block_warning,
+)
+from .install_driver_blocktext import unlisted_block_report
 from .install_driver_types import (
     MaterializationResult,
     _handle_rm_error,
@@ -246,6 +247,25 @@ BOLT_ON_ANCHORS: Final[tuple[str, ...]] = (
 )
 
 
+#: What follows the fix in the warning for a bolt-on anchor no install record
+#: lists whose second block shows only once Apothem's is out (see
+#: :func:`unlisted_block_warnings`). Once the marker lines it names are fixed,
+#: the file holds Apothem's block alone, which the uninstall still leaves.
+_UNLISTED_THEN = (
+    "then delete Apothem's block by hand if you no longer want it: no install "
+    "record lists the file, so the uninstall leaves it as it is"
+)
+
+#: The same for such a file that holds two or more whole blocks: the update,
+#: then the uninstall again. The text names each whole block, not a BEGIN
+#: marker of the operator's above Apothem's block and an END marker below it:
+#: once Apothem's block was deleted by hand, those two would make one block,
+#: and the next update would replace the lines between them. Once the update
+#: has recorded the file, the uninstall run again names them first (see
+#: :func:`install_driver_blocks.another_block_report`).
+_UNLISTED_AGAIN = "then run apothem update, then apothem uninstall again"
+
+
 def unlisted_block_warnings(
     root: Path, *, skip: Collection[str] = ()
 ) -> list[MaterializationResult]:
@@ -256,8 +276,24 @@ def unlisted_block_warnings(
     names it without stopping the uninstall. A block that lost its END marker
     gets the warning for that instead (see
     :func:`install_driver_blocks.endless_block_warning`): no line shows where
-    it ends. A path in *skip* (one the uninstall handled already) and a file
-    that cannot be read are passed over.
+    it ends. A BEGIN marker outside code whose END marker reads as code, with
+    another pair after it (rule 3), gets the warning that names each marker
+    pair instead (see :func:`install_driver_blocks.unclear_block_warning`):
+    either pair may be Apothem's block. A file with two or more whole blocks,
+    or with a second block that shows only once Apothem's is out, gets the
+    text that names each block and how to fix the file (see
+    :func:`install_driver_blocks.another_block_report`): deleting the lines
+    from the first BEGIN marker to the next END marker there would take out a
+    marker pair of the operator's, or their text between two marker lines
+    around Apothem's block. With two or more whole blocks, that text ends
+    with the update and the uninstall again, not with deleting Apothem's
+    block by hand (see :data:`_UNLISTED_AGAIN`). A file with one whole block
+    and no other gets a numbered step that deletes that block by its lines,
+    checked on the file first, or the text that numbers no edit when the
+    check fails (see :func:`install_driver_blocktext.unlisted_block_report`).
+    Like that text, the two-block text carries no ``detail``, so it changes
+    nothing else the uninstall does. A path in *skip* (one the uninstall handled
+    already) and a file that cannot be read are passed over.
     """
     warnings: list[MaterializationResult] = []
     for relative in BOLT_ON_ANCHORS:
@@ -270,16 +306,18 @@ def unlisted_block_warnings(
             continue
         if extract_managed_block(text) is None:
             continue
-        endless = endless_block_warning(anchor, "surgical_uninstall")
-        if endless is not None:
-            warnings.append(endless)
+        found = whole_blocks(text)
+        if not found:
+            endless = endless_block_warning(anchor, "surgical_uninstall")
+            if endless is not None:
+                warnings.append(endless)
             continue
-        message = (
-            f"{anchor} still holds Apothem's managed block: no install record "
-            "lists the file, so the uninstall leaves it as it is; delete the "
-            f"lines from {APOTHEM_BLOCK_BEGIN} to {APOTHEM_BLOCK_END} by hand if "
-            "you no longer want them"
-        )
+        if len(found) > 1:
+            message = another_block_report(anchor, then=_UNLISTED_AGAIN)
+        elif another_block_at(anchor):
+            message = another_block_report(anchor, then=_UNLISTED_THEN)
+        else:
+            message = unlisted_block_report(anchor, text, found[0])
         warnings.append(_result("warning", "surgical_uninstall", anchor, message))
     return warnings
 

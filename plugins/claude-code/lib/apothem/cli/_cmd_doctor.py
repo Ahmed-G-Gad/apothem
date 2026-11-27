@@ -4,9 +4,12 @@
 
 doctor judges what is installed, not what could be. An uninstalled harness is
 informational. An installed harness must pass its adapter's ``verify``, and
-every hook command its install registered must start with a no-op payload
-(see :mod:`apothem.cli._doctor_hooks`). A present profile must validate. Any
-failed check exits 1; a machine with one healthy harness exits 0.
+every hook command its install registered that doctor can trust must start
+with a no-op payload; a hook command it cannot trust, or whose install it
+finds no record of, is reported as not checked, with the reason (see
+:mod:`apothem.cli._doctor_hooks`). A
+present profile must validate. Any failed check exits 1; a machine with one
+healthy harness exits 0.
 """
 
 from __future__ import annotations
@@ -30,10 +33,12 @@ from apothem.cli._common_flags import (
     get_console,
     resolve_format,
 )
-from apothem.cli._doctor_hooks import probe_hooks, registered_hook_argvs
+from apothem.cli._doctor_hook_text import RegisteredHooks
+from apothem.cli._doctor_hooks import LedgerOpenError, probe_hooks, registered_hooks
 from apothem.cli._epilogs import _EP_DOCTOR
 from apothem.cli._helpers import (
     _EXIT_EXPECTED,
+    _Adapter,
     _CliUserError,
     _emit_expected_error,
     _harness_roots,
@@ -43,8 +48,15 @@ from apothem.cli._helpers import (
     _resolve_project_root,
 )
 from apothem.cli._json_formatter import emit_json
+from apothem.cli._stray_begin_report import (
+    markers_to_fix_by_hand,
+    record_lists,
+    size_limited,
+    stray_begin_note,
+    stray_begin_paths,
+)
 from apothem.lib.harness_registry import HarnessRegistryEntry
-from apothem.lib.install_ledger import LedgerError
+from apothem.lib.install_ledger import LedgerError, ledger_path
 from apothem.lib.profile import ProfileValidationError, load_profile_file
 from apothem.lib.shell_quote import shell_quoted
 
@@ -96,21 +108,60 @@ def _update_fix(
     *,
     lead: str = "Run",
     then: str = "then run doctor again",
+    same_prefix: bool = True,
 ) -> str:
     """Return the fix that runs :func:`_update_command`: *lead*, then *then*.
 
     The command ends the fix, after a colon, with no quotes or punctuation of
     its own around it, so a quoted root ends where the line does. A root the
-    quotes cannot carry ends the fix in its place, named as it is.
+    quotes cannot carry ends the fix in its place, named as it is. With
+    *same_prefix*, the fix says to run it as the install was run.
     """
-    prefix = "with the same command prefix you installed with"
+    prefix = " with the same command prefix you installed with" if same_prefix else ""
     command = _update_command(harness, project)
     if command is None:
         return (
-            f"{lead} update --harness {harness} {prefix} and this folder as "
+            f"{lead} update --harness {harness}{prefix} and this folder as "
             f"--project, {then}: {project}"
         )
-    return f"{lead} this command {prefix}, {then}: {command}"
+    return f"{lead} this command{prefix}, {then}: {command}"
+
+
+def _unchecked_fix(
+    name: str, project: Path | None, hooks: RegisteredHooks, reason: str
+) -> str:
+    """Return the fix for the ``hook.unchecked`` line that says *reason*."""
+    # A file too large or not a regular file, or a link or stray file in the
+    # hook folder, keeps its own fix: an update keeps such a file as it is.
+    if reason in hooks.fixes:
+        return hooks.fixes[reason]
+    # A link the operator did not make is removed, then the update runs.
+    if reason in hooks.update_leads:
+        return _update_fix(name, project, lead=hooks.update_leads[reason])
+    # Run under the same Python, an update would record that Python inside the
+    # project again, and doctor starts no such one unless it runs under it.
+    # The update runs from a folder outside the project, which the command
+    # names by its absolute root: a `python -m apothem` run in the project
+    # folder would import an `apothem` package committed there, whatever
+    # prefix started it. An active project environment puts its Python first
+    # on PATH, where the npx shim finds it unless APOTHEM_PYTHON names one.
+    if reason in hooks.run_with:
+        return _update_fix(
+            name,
+            project,
+            lead="If the project's virtual environment is active, "
+            "deactivate it. Then from a folder outside the project, "
+            "with an Apothem that runs under a Python outside the "
+            "project (not one installed into the project's own "
+            "environment; for npx, set APOTHEM_PYTHON to that "
+            "Python), run",
+            same_prefix=False,
+        )
+    return _update_fix(
+        name,
+        project,
+        lead="Check the hook command or file named here. If Apothem installed it, run",
+    )
 
 
 def _probe_harness(
@@ -162,7 +213,36 @@ def _probe_harness(
         return row
     row["verified"] = verified
     if not verified:
-        row["status"] = "verify_failed"
+        _report_verify_failure(entry, adapter, project_root, row, checks)
+        return row
+    checks.append(_check("harness.verified", "pass", f"{name} verifies.", harness=name))
+    row["status"] = "ok"
+    _probe_install_hooks(entry, adapter, project_root, row, checks)
+    return row
+
+
+def _report_verify_failure(
+    entry: HarnessRegistryEntry,
+    adapter: _Adapter,
+    project_root: Path | None,
+    row: dict[str, object],
+    checks: list[dict[str, object]],
+) -> None:
+    """Record why an installed harness does not verify, with the fix.
+
+    A file that holds a BEGIN marker with no END marker, two or more whole
+    blocks, or marker pairs no rule can place gets its own check, whose fix
+    names each such file: an update keeps that marker, or leaves such a file
+    as it is, so the generic "run update" fix would not clear it. Such a
+    marker leaves the rest of the install in place, so the harness's hooks
+    are still started; its status stays ``verify_failed``, and the Hooks
+    column shows how they did.
+    """
+    name = entry.public_id
+    project = project_root if entry.scope == "project" else None
+    row["status"] = "verify_failed"
+    stray = stray_begin_paths(entry, adapter, project_root)
+    if not stray:
         checks.append(
             _check(
                 "harness.verify_failed",
@@ -170,18 +250,52 @@ def _probe_harness(
                 f"{name} is installed but does not verify: managed files are "
                 "missing or changed.",
                 harness=name,
-                fix=fix,
+                fix=_update_fix(name, project),
             )
         )
-        return row
-    checks.append(_check("harness.verified", "pass", f"{name} verifies.", harness=name))
-    row["status"] = "ok"
+        return
+    held = "a file holds" if len(stray) == 1 else f"{len(stray)} files hold"
+    what = (
+        "Apothem markers to fix by hand"
+        if any(markers_to_fix_by_hand(path) for path in stray)
+        else "an Apothem BEGIN marker with no END marker"
+    )
+    checks.append(
+        _check(
+            "harness.stray_begin",
+            "fail",
+            f"{name} is installed but does not verify: {held} {what}.",
+            harness=name,
+            fix=stray_begin_note(
+                stray,
+                then=_update_fix(name, project, lead="run"),
+                listed=record_lists(entry, adapter, project_root),
+                limited=size_limited(entry),
+            ),
+        )
+    )
+    _probe_install_hooks(entry, adapter, project_root, row, checks)
+    row["status"] = "verify_failed"
+
+
+def _probe_install_hooks(
+    entry: HarnessRegistryEntry,
+    adapter: _Adapter,
+    project_root: Path | None,
+    row: dict[str, object],
+    checks: list[dict[str, object]],
+) -> None:
+    """Start the hooks of the install doctor examined; record the outcome on *row*.
+
+    Its root is the one :func:`_harness_roots` resolves: the harness folder of a
+    user-scope harness, the ``--project`` root of a project-scope one (see
+    :func:`_probe_registered_hooks`).
+    """
     harness_root, scoped_project = _harness_roots(entry, adapter, project_root)
     install_root = harness_root if harness_root is not None else scoped_project
     if install_root is None:  # pragma: no cover - a project scope needs --project
-        return row
+        return
     _probe_registered_hooks(entry, install_root, row, checks)
-    return row
 
 
 def _probe_registered_hooks(
@@ -193,35 +307,51 @@ def _probe_registered_hooks(
     """Start the hooks the install at *install_root* registered; record the outcome.
 
     *install_root* is the root doctor examined: the harness folder of a
-    user-scope harness, the ``--project`` root of a project-scope one.
+    user-scope harness, the ``--project`` root of a project-scope one. Runs for
+    a harness that verifies, and for one a stray BEGIN marker fails (see
+    :func:`_report_verify_failure`). A ledger that cannot be read, damaged or
+    not opened, is reported as ``ledger.unreadable`` (see
+    :func:`_ledger_unreadable`).
     """
     name = entry.public_id
     project = install_root if entry.scope == "project" else None
     fix = _update_fix(name, project)
     try:
-        argvs = registered_hook_argvs(
-            entry.package_key,
-            root=install_root,
-            within=install_root if entry.scope == "project" else None,
+        hooks = registered_hooks(
+            entry.package_key, root=install_root, project=project is not None
         )
     except LedgerError as exc:
         row.update(status="error", hooks=None)
+        checks.append(_ledger_unreadable(entry, project, exc))
+        return
+    except LedgerOpenError as exc:
+        row.update(status="error", hooks=None)
+        cause = exc.__cause__
         checks.append(
-            _check(
-                "ledger.unreadable",
-                "fail",
-                f"{name}: the install ledger cannot be read ({exc}).",
-                harness=name,
-                fix=_update_fix(
-                    name,
-                    project,
-                    lead="Move the damaged ledger file aside, then run",
-                    then="to record a fresh install",
-                ),
+            _ledger_unreadable(
+                entry, project, cause if isinstance(cause, Exception) else exc
             )
         )
         return
-    if argvs is None:
+    except OSError as exc:
+        # Not the ledger: a lookup failed while doctor checked the hook
+        # commands (a path, the project root or the interpreter), so they go
+        # unchecked rather than blamed on the ledger.
+        row["hooks"] = None
+        checks.append(
+            _check(
+                "hook.unchecked",
+                "info",
+                f"{name}: doctor could not finish checking the hook commands "
+                f"({exc}), so they were not checked.",
+                harness=name,
+                fix=f"Make {exc.filename} readable, then run doctor again."
+                if exc.filename
+                else "Fix the error named here, then run doctor again.",
+            )
+        )
+        return
+    if hooks is None:
         row["hooks"] = None
         checks.append(
             _check(
@@ -234,7 +364,17 @@ def _probe_registered_hooks(
             )
         )
         return
-    probes = probe_hooks(argvs)
+    for reason in hooks.unchecked:
+        checks.append(
+            _check(
+                "hook.unchecked",
+                "info",
+                f"{name}: {reason}.",
+                harness=name,
+                fix=_unchecked_fix(name, project, hooks, reason),
+            )
+        )
+    probes = [*hooks.unstartable, *probe_hooks(hooks.argvs)]
     failed = [probe for probe in probes if not probe.ok]
     row["hooks"] = {
         "probed": len(probes),
@@ -248,7 +388,13 @@ def _probe_registered_hooks(
                 f"{name}: a registered hook command cannot start: {probe.command} "
                 f"({probe.detail}).",
                 harness=name,
-                fix="Check that the interpreter in the hook command exists and "
+                fix=_update_fix(
+                    name,
+                    project,
+                    then="to put the hook scripts back, then run doctor again",
+                )
+                if probe.detail == "the hook script does not exist"
+                else "Check that the interpreter in the hook command exists and "
                 f"runs, then {fix[0].lower()}{fix[1:]}",
             )
         )
@@ -263,6 +409,39 @@ def _probe_registered_hooks(
                 harness=name,
             )
         )
+
+
+def _ledger_unreadable(
+    entry: HarnessRegistryEntry, project: Path | None, exc: Exception
+) -> dict[str, object]:
+    """Return the ``ledger.unreadable`` check for *exc*, with the fix that suits it.
+
+    A damaged ledger (:class:`LedgerError`) is moved aside, and an update
+    records a fresh install. A ledger the system will not open (another
+    program holds it open without read sharing, or a permission is missing)
+    is not damaged: the fix names the file and says to make it readable.
+    """
+    name = entry.public_id
+    if isinstance(exc, LedgerError):
+        fix = _update_fix(
+            name,
+            project,
+            lead="Move the damaged ledger file aside, then run",
+            then="to record a fresh install",
+        )
+    else:
+        fix = (
+            f"Make {ledger_path(entry.package_key)} readable (close any program "
+            "that holds it open, or give your account read access to it), then "
+            "run doctor again."
+        )
+    return _check(
+        "ledger.unreadable",
+        "fail",
+        f"{name}: the install ledger cannot be read ({exc}).",
+        harness=name,
+        fix=fix,
+    )
 
 
 @dataclass(frozen=True)
@@ -388,11 +567,28 @@ def _print_summary(
     every check passed when one did not run.
     """
     installed_count = sum(1 for row in harness_rows if row["installed"])
-    unchecked = [str(c["harness"]) for c in checks if c["code"] == "hook.unchecked"]
+    # A harness can carry several unchecked reasons; it is named once.
+    unchecked = list(
+        dict.fromkeys(
+            str(c["harness"]) for c in checks if c["code"] == "hook.unchecked"
+        )
+    )
     if unchecked:
+        # "some" where the harness also started hook commands that passed.
+        started: set[str] = set()
+        for row in harness_rows:
+            hooks = row.get("hooks")
+            if isinstance(hooks, dict) and hooks.get("probed"):
+                started.add(str(row["name"]))
+        named = ", ".join(
+            f"some hook commands of {harness}"
+            if harness in started
+            else f"the hook commands of {harness}"
+            for harness in unchecked
+        )
         con.print(
-            f"[yellow]No check failed[/] ({installed_count} installed), but the "
-            f"hook commands of {', '.join(unchecked)} were not checked."
+            f"[yellow]No check failed[/] ({installed_count} installed), but "
+            f"{named} were not checked."
         )
     elif installed_count:
         con.print(f"[green]All checks passed[/] ({installed_count} installed).")

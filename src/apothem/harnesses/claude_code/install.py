@@ -50,6 +50,9 @@ from typing import Any
 
 from apothem.harnesses._shared import install_driver
 from apothem.harnesses._shared.install_driver import MaterializationRun
+from apothem.harnesses._shared.install_driver_blocks import (
+    stray_begin_install_warnings,
+)
 from apothem.harnesses._shared.install_driver_layout import with_support_announcement
 from apothem.harnesses._shared.install_driver_types import _result, resolve_source
 from apothem.lib.claude_agent_mcp import agent_mcp_grants, grant_problems
@@ -153,13 +156,19 @@ def install(
         allowed_root=harness_root.parent,
         dry_run=dry_run,
     )
+    anchor = [
+        anchor_result,
+        *stray_begin_install_warnings([anchor_result], dry_run=dry_run),
+    ]
     if dry_run:
-        return run.extend([anchor_result])
-    return install_driver.finalize_install(
-        run.extend([anchor_result]),
-        root=harness_root,
-        missing_before=missing,
-    )
+        return run.extend(anchor)
+    # The record keeps the interpreter this pass wrote into hook commands.
+    with install_driver.content_tokens(PYTHON_BIN=python_bin):
+        return install_driver.finalize_install(
+            run.extend(anchor),
+            root=harness_root,
+            missing_before=missing,
+        )
 
 
 def plan(output_path: Path) -> list[dict[str, str]]:

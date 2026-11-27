@@ -18,6 +18,7 @@ planted file is in scope by path and only the nested-checkout rule excludes it.
 
 from __future__ import annotations
 
+import contextlib
 import os
 from collections.abc import Callable, Iterator
 from pathlib import Path
@@ -168,15 +169,14 @@ def test_iter_tree_files_visits_siblings_in_name_order(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The order comes from the walk, not from how the filesystem lists a directory."""
-    real_walk = os.walk
+    real_scandir = os.scandir
 
-    def reversed_walk(top: Path) -> Iterator[tuple[str, list[str], list[str]]]:
-        for dirpath, dirnames, filenames in real_walk(top):
-            dirnames.reverse()
-            filenames.reverse()
-            yield dirpath, dirnames, filenames
+    @contextlib.contextmanager
+    def reversed_scandir(path: Path) -> Iterator[Iterator[os.DirEntry[str]]]:
+        with real_scandir(path) as listing:
+            yield iter(list(listing)[::-1])
 
-    monkeypatch.setattr(os, "walk", reversed_walk)
+    monkeypatch.setattr(os, "scandir", reversed_scandir)
     for rel in ("m.md", "k.md", "c/2.md", "c/1.md", "a/2.md", "a/1.md", "b/1.md"):
         _write(tmp_path / rel)
 
@@ -364,14 +364,13 @@ def test_walkers_never_descend_into_a_nested_checkout(
 ) -> None:
     """The walk prunes a nested checkout without listing it, so it stays fast."""
     visited: list[Path] = []
-    real_walk = os.walk
+    real_scandir = os.scandir
 
-    def spy(top: Path) -> Iterator[tuple[str, list[str], list[str]]]:
-        for entry in real_walk(top):
-            visited.append(Path(entry[0]))
-            yield entry
+    def spy(path: Path) -> object:
+        visited.append(Path(path))
+        return real_scandir(path)
 
-    monkeypatch.setattr(os, "walk", spy)
+    monkeypatch.setattr(os, "scandir", spy)
     _write(tmp_path / "README.md", "# Title\n")
     make_worktree(tmp_path / ".claude" / "worktrees" / "wt")
     _write(tmp_path / ".claude" / "worktrees" / "wt" / "deep" / "a.md")
@@ -381,6 +380,6 @@ def test_walkers_never_descend_into_a_nested_checkout(
 
     check(tmp_path)
 
-    assert visited, "the validator did not walk the tree through os.walk"
+    assert visited, "the validator did not list the tree through os.scandir"
     skipped = {"deep", "pkg", "node_modules"}
     assert [p for p in visited if skipped & set(p.relative_to(tmp_path).parts)] == []

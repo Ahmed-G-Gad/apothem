@@ -119,10 +119,10 @@ def completion(shell: str) -> None:
     """Print a shell-completion script for SHELL to stdout.
 
     Supported shells: bash, zsh, fish, powershell. Every script is generated
-    by Click's env-var completion protocol — PowerShell through the
-    completion class registered above, since Click ships none natively.
-    Enabling completion is opt-in: this command only prints the script — pipe
-    or append it to the shell's completion file yourself (see ``--help``).
+    by Click's env-var completion protocol; for PowerShell, Apothem registers
+    its own completion class, since Click ships none. Enabling completion is
+    opt-in: this command only prints the script; pipe or append it to your
+    shell's completion file yourself.
     """
     target = shell.lower()
     completion_cls = get_completion_class(target)

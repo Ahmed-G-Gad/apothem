@@ -288,7 +288,7 @@ Matcher-Blöcken zu:
         {
           "type": "command",
           "command": "${PYTHON_BIN}",
-          "args": ["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "<EventName>", "<message-name>"],
+          "args": ["-E", "-s", "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "<EventName>", "<message-name>"],
           "timeout": <seconds>,
           "statusMessage": "<short human-readable label>"
         }
@@ -305,7 +305,7 @@ Die Form `-m apothem.hooks.dispatch` ist für die Entwicklung aus einem Quell-Ch
 | `matcher` | string | Tool-Namensmuster (oder `"*"` für tool-unabhängige Ereignisse) | `"Write"` |
 | `hooks[].type` | Literal `"command"` | Der derzeit einzige unterstützte Hook-Handler-Typ | `"command"` |
 | `hooks[].command` | string | Ausführbarer Befehl; Apothem verwendet den Platzhalter `${PYTHON_BIN}`, der bei der Installation aufgelöst wird | `"${PYTHON_BIN}"` |
-| `hooks[].args` | Array von Strings | Argumente in Exec-Form: ein Skriptpfad unter `${HARNESS_ROOT}/.apothem/support/`, danach seine Argumente | `["${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
+| `hooks[].args` | Array von Strings | Argumente in Exec-Form: ein Skriptpfad unter `${HARNESS_ROOT}/.apothem/support/`, danach seine Argumente | `["-E", "-s", "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
 | `hooks[].timeout` | Ganzzahl in Sekunden | Maximale Laufzeit, bevor der Host den Hook beendet | `30` |
 | `hooks[].statusMessage` | string | Kurzes Label, das in der Host-Oberfläche angezeigt wird | `"Session start"` |
 

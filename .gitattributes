@@ -1,6 +1,9 @@
 # SPDX-License-Identifier: MIT
 
 # Auto-detect text files and normalize line endings to LF on commit.
+# Keep eol=lf covering every .gitattributes file: the installers compare
+# them byte for byte with git's copy, and a CRLF checkout (core.autocrlf)
+# would stop every update in place.
 * text=auto eol=lf
 
 # Force LF for script files across all platforms.

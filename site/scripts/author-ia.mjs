@@ -92,17 +92,17 @@ const sections = {
     'installer-environment-variables', 'evals',
   ]],
   harnesses: ['Harnesses', [
-    'index', 'claude-code', 'cursor', 'gemini-cli', 'github-copilot',
-    'codex', 'windsurf', 'zed', 'opencode', 'qwen-code', 'kiro', 'trae',
-    'codebuddy', 'antigravity', 'hermes', 'kimi-code', 'open-claw', 'glm',
+    'index', 'claude-code', 'cursor', 'gemini-cli', 'github-copilot', 'codex',
+    'windsurf', 'zed', 'opencode', 'qwen-code', 'kiro', 'trae', 'codebuddy',
+    'antigravity', 'hermes', 'open-claw', 'kimi-code', 'glm',
   ]],
   // `pipeline` is not authored here: update-reference-inventory.mjs generates
   // pipeline/meta.json (English and every locale) from the shipped command
   // definitions, so a new command cannot land without a nav entry.
   concepts: ['Concepts', [
-    'index', 'ai-platform-agnosticism', 'agent-architecture',
-    'review-fortress', 'cognitive-identity', 'seriousness-tiers',
-    'resumable-planning',
+    'index', 'ai-platform-agnosticism', 'resumable-planning',
+    'agent-architecture', 'review-fortress', 'cognitive-identity',
+    'seriousness-tiers',
   ]],
   architecture: ['Architecture', [
     'index', 'source-layout', 'shared-profile-schema',
@@ -113,24 +113,24 @@ const sections = {
   reference: ['Reference', [
     'index', 'cli', 'profile-fields', 'harness-registry', 'rules', 'skills',
     'commands', 'agents', 'hooks', 'output-styles', 'mcp', 'settings',
-    'settings-reference', 'doctor', 'naming-conventions', 'frontmatter-schema',
+    'settings-reference', 'naming-conventions', 'frontmatter-schema',
     'markdown-conventions', 'prose-conventions', 'commit-conventions',
     'artifact-schema', 'artifact-registries', 'directory-tree', 'claude-md',
     'ai-conventions', 'authorship-header', 'dependency-pinning-manifest',
     'plans-discipline',
   ]],
   'cli-reference': ['CLI reference', [
-    'index', 'quickstart', 'install', 'uninstall', 'update', 'verify',
-    'status', 'diff', 'rollback', 'backups', 'migrate-workspace', 'doctor',
-    'harnesses', 'profile', 'completion',
+    'index', 'quickstart', 'install', 'uninstall', 'update', 'rollback',
+    'backups', 'verify', 'status', 'diff', 'doctor', 'harnesses', 'profile',
+    'migrate-workspace', 'completion',
   ]],
   comparison: ['Comparison', [
     'index', 'vs-other-harness-frameworks', 'vs-raw-claude-code',
     'vs-raw-cursor', 'vs-raw-gemini-cli', 'vs-raw-github-copilot',
     'vs-raw-codex', 'vs-raw-windsurf', 'vs-raw-zed', 'vs-raw-opencode',
     'vs-raw-qwen-code', 'vs-raw-kiro', 'vs-raw-trae', 'vs-raw-codebuddy',
-    'vs-raw-antigravity', 'vs-raw-hermes', 'vs-raw-kimi-code',
-    'vs-raw-open-claw', 'vs-raw-glm',
+    'vs-raw-antigravity', 'vs-raw-hermes', 'vs-raw-open-claw',
+    'vs-raw-kimi-code', 'vs-raw-glm',
   ]],
   governance: ['Governance', [
     'index', 'positioning', 'cross-cutting-mandates', 'pre-emission-gate-registry',
@@ -158,7 +158,7 @@ const sections = {
     'index', 'roadmap', 'discussions', 'code-of-conduct',
   ]],
   blog: ['Blog', [
-    'index', 'posts/v1-0-1-release', 'posts/multi-harness-adapter-design',
+    'index', 'posts/v1-6-0-release', 'posts/multi-harness-adapter-design',
     'posts/cross-harness-convention-convergence',
   ]],
   'conformity-gate': ['Conformity gate', ['index']],

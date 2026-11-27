@@ -24,18 +24,28 @@ from apothem.lib.propagation import (
 )
 
 from .install_driver_backup import refuse_bookkeeping_in_real_home
-from .install_driver_blocks import install_may_be_open
+from .install_driver_blocks import (
+    install_may_be_open,
+    stray_begin_at,
+    stray_begin_files,
+    whole_blocks_at,
+)
 from .install_driver_datahome import (
     _data_home_for,
     _remove_data_home,
 )
-from .install_driver_evidence import _entry_proves_install, _unfinished_here
+from .install_driver_evidence import (
+    _entry_proves_install,
+    _unfinished_here,
+    listed_in_record,
+)
 from .install_driver_expected import expected_lookup
 from .install_driver_hookfile import (
     HOOK_FILE_MODE,
     registration_present,
     release_native_hooks,
 )
+from .install_driver_keys import made_dirs, one_install
 from .install_driver_layout import _load_rules
 from .install_driver_merge import render_content_tokens
 from .install_driver_outcome import (
@@ -119,8 +129,12 @@ def verify_install(
     not-installed. *native_config* (the adapter's dynamically-rendered config
     file, which is not a manifest entry) is checked the same way when supplied.
     A user-level entry passes when its folders are in place whichever harness
-    wrote them (see :func:`user_level_entry_ok`). Returns False on the first
-    unsatisfied target.
+    wrote them (see :func:`user_level_entry_ok`). A file this install keeps a
+    managed block in fails it while it holds a BEGIN marker that starts no
+    whole block, two or more whole blocks, or a marker pair no rule can place
+    (see :func:`stray_begin_files`): install and update keep such a marker, or
+    leave such a file as it is, so only the operator can clear it. Returns
+    False on the first unsatisfied target.
     """
     rules = _load_rules(harness_name)
     if native_config is not None:
@@ -154,7 +168,9 @@ def verify_install(
                 return False
         elif not target.exists():
             return False
-    return True
+    return not stray_begin_files(
+        harness_name, harness_root=harness_root, project_root=project_root
+    )
 
 
 def detect_install(
@@ -188,12 +204,14 @@ def detect_install(
     rules = _load_rules(harness_name)
     root = _root_for(harness_root, project_root)
     install_open = functools.partial(install_may_be_open, harness_name, root)
+    listed = functools.partial(listed_in_record, harness_name, root)
     if any(
         _entry_proves_install(
             entry,
             harness_root=harness_root,
             project_root=project_root,
             install_open=install_open,
+            listed=listed,
         )
         for entry in rules.install
     ) or any(_stale_path_proves_install(root / legacy) for legacy in rules.stale_sweep):
@@ -222,8 +240,10 @@ def _profile_anchor_targets(
     manifest (claude_code's ``CLAUDE.md``, the single-file-config adapters'
     ``apothem/rules/00-apothem-profile.md``): the ones the current install
     record lists, so a deleted bolt-on reads as missing. Without a record (an
-    install from before the ledger) a bolt-on counts only when present. An
-    adapter that projects no profile content (GLM) has no anchors.
+    install from before the ledger) a bolt-on counts only when present, and
+    ``CLAUDE.md`` only for claude_code: at a project root it is the project's
+    own file, which no other tool's install writes. An adapter that projects
+    no profile content (GLM) has no anchors.
     """
     rules = _load_rules(harness_name)
     root = _root_for(harness_root, project_root)
@@ -247,6 +267,8 @@ def _profile_anchor_targets(
         )
         return targets
     for relative in BOLT_ON_ANCHORS:
+        if relative == "CLAUDE.md" and harness_name != "claude_code":
+            continue
         bolt_on = root / relative
         if bolt_on.is_file():
             targets.append(bolt_on)
@@ -266,8 +288,14 @@ def check_fidelity(
     the freshly-projected managed-block body to appear verbatim inside the
     on-disk anchor's managed block. An anchor whose projected content was edited
     on disk (so the freshly-projected body is no longer a substring) reads as
-    ``drifted``; an absent anchor or one with no managed block reads as
-    ``missing``; an exact carry reads as ``faithful``. This is what makes the CLI
+    ``drifted``, and so does one that also holds a BEGIN marker that starts no
+    whole block, or a second whole block (an update leaves that file as it
+    is, so the tool would load a stale copy beside the block checked here);
+    an absent anchor or one with no managed block reads as ``missing``; an
+    exact carry reads as ``faithful``. Line endings do not count:
+    an anchor saved with CRLF or CR endings carries the body as well as one with
+    LF endings, and an update that leaves the block as it is keeps those
+    endings. This is what makes the CLI
     ``verify`` answer "is the profile faithfully installed?" rather than merely
     "does a file exist".
     """
@@ -291,7 +319,12 @@ def check_fidelity(
         block = extract_managed_block(text)
         if block is None:
             results.append(FidelityResult(_path_text(target), "missing"))
-        elif expected and expected in block:
+        elif (
+            expected
+            and expected in block.replace("\r\n", "\n").replace("\r", "\n")
+            and not stray_begin_at(target)
+            and len(whole_blocks_at(target)) < 2
+        ):
             results.append(FidelityResult(_path_text(target), "faithful"))
         else:
             results.append(FidelityResult(_path_text(target), "drifted"))
@@ -347,17 +380,14 @@ def run_uninstall(
     """Remove Apothem-generated targets declared for *harness_name*.
 
     ``write_text`` / ``sentinel_merge`` operator-owned targets are cleaned
-    surgically: only Apothem's contribution is stripped (the sentinel-delimited
-    managed block for Markdown anchors; Apothem's keys / hook handlers for JSON
-    and YAML configs), operator prose and operator-authored keys survive, and a
-    file reduced to Apothem-only content is deleted rather than left as a stub.
-    The pre-mutation file is copied into the Apothem backup root first — no
-    whole-file ``.bak`` sibling is left in the operator's directory. Directory
-    discovery surfaces are cleaned child-by-child, and each child only as far
+    surgically: only Apothem's contribution is stripped (the managed block of
+    a Markdown anchor; Apothem's keys / hook handlers in JSON and YAML), the
+    operator's prose and keys survive, and a file left with Apothem-only
+    content is deleted. The file is backed up first, never to a ``.bak``
+    sibling. Directory surfaces are cleaned child by child, each only as far
     as the install record shows Apothem wrote it (see :func:`remove_written`):
-    a file goes only while it still has the recorded SHA-256, so a file the
-    operator added or changed stays, with a warning. Removed entries are
-    backed up first.
+    a file goes only while it has the recorded SHA-256, so one the operator
+    added or changed stays, with a warning.
 
     The pass is ledger-driven: the latest install record for this harness+root
     is the source of truth for which single-file targets were actually written,
@@ -371,40 +401,31 @@ def run_uninstall(
     shared data home (memory / contexts / learning) is backed up and removed
     only when last-referenced, at the home the latest install recorded (see
     :func:`_data_home_for`). The directories the installs since the last
-    uninstall created are removed once empty.
+    uninstall created are removed once empty. This harness's records under
+    another spelling of the root's folder are this install too (see
+    :func:`one_install`): what they list goes, and they end.
 
-    Returns every removal's :class:`MaterializationResult` so callers can
-    surface path-escape, backup, and write failures instead of reporting an
-    unconditional success. A ``kind="uninstall"`` record is appended only when
-    no removal errored and nothing Apothem wrote stays behind a link;
-    otherwise, and when the pass raises, an ``uninstall-incomplete`` record is
-    appended instead (see :func:`record_uninstall`): the install stays
-    active, so verify, status, rollback and a second uninstall keep operating
-    against it. A pass stopped by an error or Ctrl-C appends that record
-    even when it had changed nothing (a refusal, below, does not). A
-    native-config uninstall stopped at its settings-file step, before this
-    pass, appends one only when the step before it changed or backed up a
-    file, and one whose first step reports an error appends one in any case
-    (see :func:`~.wrapper_factories.make_native_config_uninstall`); the
-    install stays active either way. Either record references every backup
-    the uninstall took, including those in *prior_results*: removals the
-    caller made just before this pass, such as a native config stripped of
-    Apothem's keys. An error in *prior_results* also makes the uninstall
+    Returns every :class:`MaterializationResult`. A ``kind="uninstall"``
+    record is appended only when no removal errored and nothing Apothem wrote
+    stays behind a link; otherwise ``uninstall-incomplete`` is appended (see
+    :func:`record_uninstall`), so verify, status, rollback and a second
+    uninstall keep operating against the install. A pass stopped by an error
+    or Ctrl-C appends it even when it changed nothing; for a stop at a
+    native-config step before this pass, see
+    :func:`~.wrapper_factories.make_native_config_uninstall`. Either record
+    references every backup the uninstall took, those in *prior_results*
+    (removals the caller made just before, such as a native config stripped
+    of Apothem's keys) included, and an error there also makes the uninstall
     unfinished. An ordinary error that stops the pass is raised as a
-    :class:`MaterializationError`, with the error as its cause, whose ``run``
-    holds *prior_results*, this pass's results and what its removals kept
-    (see :func:`~.install_driver_outcome.left_before_a_stop`): the CLI then
-    reports what the caller's steps and this pass did before it stopped, a
-    file behind a link that a step before it found included.
+    :class:`MaterializationError` from it, whose ``run`` holds
+    *prior_results*, this pass's results and what its removals kept (see
+    :func:`~.install_driver_outcome.left_before_a_stop`).
 
-    A refusal of the real-home guard (see :mod:`apothem.lib.home_write_guard`)
-    is raised as it is: it changed nothing in the protected folder. When the
-    pass, or the caller just before it, had already removed files elsewhere,
-    an ``uninstall-incomplete`` record is appended first, so their backups
-    stay referenced; a refusal before any removal records nothing, and a
-    failure to write that record does not replace the refusal. A project root
-    that is the account home is refused before the pass starts, and so is a
-    backup root or ledger in a protected folder.
+    A refusal of the real-home guard (:mod:`apothem.lib.home_write_guard`)
+    is raised as it is, after an ``uninstall-incomplete`` record when files
+    elsewhere were already removed, so their backups stay referenced. A
+    project root that is the account home, and a backup root or ledger in a
+    protected folder, are refused before the pass starts.
     """
     if project_root is not None:
         home_write_guard.refuse_project_root_at_home(
@@ -421,7 +442,7 @@ def run_uninstall(
     own: list[LedgerRecord] = []
     record_pass = functools.partial(record_uninstall, harness_name, root, own=own)
     try:
-        active = install_ledger.active_install_records(harness_name, root=root)
+        active, same = one_install(harness_name, root)
         record = active[-1] if active else None
         _remove_installed(
             harness_name,
@@ -430,13 +451,16 @@ def run_uninstall(
             results,
             harness_root=harness_root,
             project_root=project_root,
+            same=same,
             already=frozenset(result.path for result in prior_results),
         )
         # The warnings are built before the record, so a failure here leaves
         # the uninstall recorded as unfinished, as the CLI then reports it.
         kept = left_behind(results, active, floor=root_floor, prior=prior_results)
         finished = not left_unfinished([*prior_results, *results])
-        kept += record_pass(record, [*prior_results, *results], finished=finished)
+        kept += record_pass(
+            record, [*prior_results, *results], finished=finished, same=same
+        )
         if finished:
             # Housekeeping after the final record: any failure here leaves
             # older backup sets for the next pass or ``backups prune``, and the
@@ -466,10 +490,9 @@ def _record_before_refusal(
     record: LedgerRecord | None,
     done: list[MaterializationResult],
 ) -> None:
-    """Record an unfinished uninstall when *done* changed or backed up a file.
+    """Record an unfinished uninstall if *done* changed or backed up a file.
 
-    Called while a refusal of the real-home guard is raised. A second refusal,
-    or any error writing the record, is dropped so the first one propagates.
+    A second refusal, or an error writing the record, is dropped.
     """
     if any(result.changed or result.backup_path is not None for result in done):
         with contextlib.suppress(OSError, install_ledger.LedgerError):
@@ -484,6 +507,7 @@ def _remove_installed(
     *,
     harness_root: Path | None,
     project_root: Path | None,
+    same: tuple[str, ...] = (),
     already: frozenset[str] = frozenset(),
 ) -> None:
     """Remove what *record* shows this install wrote, appending to *results*.
@@ -527,6 +551,7 @@ def _remove_installed(
         root=root,
         harness_root=harness_root,
         project_root=project_root,
+        same_install=same,
     )
     if record is not None:
         blocked = gate.ledger_blocked(target.path for target in record.targets)
@@ -628,9 +653,19 @@ def _remove_installed(
     # Remove the directories the installs since the last uninstall created,
     # now that their contents are gone — only the empty ones, deepest first, so
     # a directory still holding operator content or another harness's data
-    # stays.
+    # stays. The user-level folders an install that has let go of them created
+    # go the same way: tidy leaves them here when the boundary is the home.
     created = {Path(path) for install in active for path in install.created_dirs}
-    results.extend(remove_created_dirs(created, allowed_root=allowed_root))
+    made = made_dirs(
+        gate.bases.values(),
+        {install.install_id for install in active},
+        boundary=allowed_root,
+    )
+    results.extend(
+        remove_created_dirs(
+            created | made, allowed_root=allowed_root, inherited=made - created
+        )
+    )
     results.extend(gate.tidy(created))
 
 

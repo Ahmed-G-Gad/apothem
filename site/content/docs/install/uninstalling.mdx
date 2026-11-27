@@ -120,11 +120,13 @@ does. The message depends on the reason:
 - `✗ <harness> uninstall did not finish:` names Apothem files it left behind a
   link (a symlink or junction), files that an earlier release's install
   recorded and that differ from what this release writes, the files of an
-  install with no record at all, a file that holds another block between
-  Apothem's markers, or removal steps that reported errors. For a link, an
-  earlier release's files or an install with no record it also gives the
-  number of paths it left. After an uninstall that stopped, the lines for
-  links, kept files and failed steps follow one of the two lines below.
+  install with no record at all, files that hold two different blocks between
+  Apothem's markers, files whose marker lines Apothem cannot tell from your
+  text, or removal steps that reported errors. For a link, an earlier
+  release's files, an install with no record, or files with two blocks or
+  with such marker lines it also gives the number of paths it left. After an
+  uninstall that stopped, the lines for links, kept files and failed steps
+  follow one of the two lines below.
 - `✗ <harness> uninstall stopped after removing files:` means a removal step
   stopped the uninstall after it had removed some files, or taken Apothem's
   entries or block out of a file such as `openclaw.json`.
@@ -134,14 +136,32 @@ does. The message depends on the reason:
   Antigravity or Kimi Code uninstall, which reports nothing it did.
 
 It exits `2` when it removed or changed files, left Apothem's own files behind
-a link, or kept the files of an earlier release's install or of an install
-with no record, or when another harness was removed, and `1` when it stopped
-before changing anything for any other reason. An unexpected error in that
-first step exits `1` (`2` when another harness was removed), whatever the step
-had changed. Fix what the message names, then run the same `apothem uninstall`
-command again: it removes what the first run left. For an earlier release's
-install or an install with no record, first copy any listed file you edited or
-added, then run `apothem update`, then the uninstall. The
+a link, kept the files of an earlier release's install or of an install with
+no record, or left a file with two different blocks between Apothem's markers
+or with marker lines Apothem cannot tell from your text, or when another
+harness was removed, and `1` when it stopped before changing anything for any
+other reason. An unexpected error in that first step exits `1` (`2` when
+another harness was removed), whatever the step had changed. Fix what the
+message names, then run the same `apothem uninstall` command again: it removes
+what the first run left. For a file with two blocks, or one whose marker
+lines Apothem cannot tell from your text, the warning gives numbered fixes,
+one for each case: pick the one whose case is true and do its steps in the order given,
+before you run the uninstall again (see
+[Follow a numbered fix](/docs/install/troubleshooting#follow-a-numbered-fix)).
+Do not delete Apothem's block to keep a marker pair of yours, since the next
+uninstall would then take your pair out. For an earlier release's install or an
+install with no record, first copy any listed file you edited or added and
+fix each file a warning names for an Apothem marker, as that warning says,
+then run `apothem update`, then the uninstall. With no record, Apothem's block
+in `CLAUDE.md` or a profile document stays, and its warning gives a numbered
+fix that deletes the block's lines by hand if you no longer want the block
+(or, when no such fix keeps your lines reading as before, says to change
+every Apothem marker line in the file instead). When that file holds two or
+more whole blocks, the warning names each and ends with that update and
+uninstall instead, and the uninstall then names any marker lines of yours
+around Apothem's block before it takes the block out. An update keeps a BEGIN
+marker with no END and the text below it, and does not fix a file that holds
+two different blocks. The
 [uninstall reference](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish)
 describes each case, and its
 [exit codes](/docs/cli-reference/uninstall#exit-codes) table lists what `1`

@@ -51,7 +51,11 @@ from apothem.harnesses._shared.install_driver import (
     MaterializationRun,
 )
 from apothem.harnesses._shared.install_driver_backup import REMOVED_APOTHEM_ONLY_FILE
-from apothem.harnesses._shared.install_driver_blocks import ANOTHER_BLOCK, MARKER_LEFT
+from apothem.harnesses._shared.install_driver_blocks import (
+    ANOTHER_BLOCK,
+    MARKER_LEFT,
+    UNCLEAR_BLOCK,
+)
 from apothem.harnesses._shared.install_driver_types import KEPT_REASON
 from apothem.harnesses._shared.install_driver_written import UNPROVEN_REASONS
 from apothem.lib import home_write_guard
@@ -142,8 +146,13 @@ def _warning_groups(run: MaterializationRun) -> list[dict[str, object]]:
     Paths kept for the same link (all the files under a linked folder), and
     paths kept for the same reason, form one group with their count; any
     other warning is a group of one. Each group is the first warning's
-    dictionary with the grouped ``message``, ``count`` and ``paths``.
+    dictionary with the grouped ``message``, ``count`` and ``paths``. A group
+    of paths no record shows are Apothem's, whose next step is apothem update,
+    says to fix first each file a warning names for an Apothem marker
+    (:func:`_marker_fix`), as the failure line does.
     """
+    marker_fix = _marker_fix(run)
+    fix = f". Before you run apothem update, {marker_fix}" if marker_fix else ""
     groups: dict[tuple[str, str], list[MaterializationResult]] = {}
     for warning in run.warnings:
         link = warning.detail.get("symlink")
@@ -155,13 +164,17 @@ def _warning_groups(run: MaterializationRun) -> list[dict[str, object]]:
         else:
             key = ("message", warning.message)
         groups.setdefault(key, []).append(warning)
-    return [_group(key, members) for key, members in groups.items()]
+    return [_group(key, members, fix) for key, members in groups.items()]
 
 
 def _group(
-    key: tuple[str, str], members: list[MaterializationResult]
+    key: tuple[str, str], members: list[MaterializationResult], fix: str = ""
 ) -> dict[str, object]:
-    """Return one reported warning for the *members* grouped under *key*."""
+    """Return one reported warning for the *members* grouped under *key*.
+
+    *fix* ends the message of a group of paths kept for a reason apothem
+    update settles (see :func:`_warning_groups`).
+    """
     group = members[0].to_dict()
     count = len(members)
     kind, value = key
@@ -172,6 +185,8 @@ def _group(
         )
     elif count > 1 and kind == "kept":
         group["message"] = _KEPT_GROUP_LINES[value].format(count=count)
+    if kind == "kept" and value in UNPROVEN_REASONS:
+        group["message"] = f"{group['message']}{fix}"
     group["count"] = count
     group["paths"] = [member.path for member in members]
     if kind == "kept":
@@ -183,16 +198,47 @@ def _group(
     return group
 
 
-def _warning_lines(run: MaterializationRun) -> list[str]:
+def _warning_lines(run: MaterializationRun) -> list[tuple[str, bool]]:
     """Return the warnings to print, one per group (see :func:`_warning_groups`).
 
     A group of kept paths lists every file under its line, so the advice that
     names them ("copy any you edited") points at files the reader can see. A
-    link that keeps Apothem's own files is reported as a failure instead.
+    link that keeps Apothem's own files is reported as a failure instead. Each
+    line comes with whether it names an Apothem marker left in a file.
     """
     return [
-        _with_files(group) for group in _warning_groups(run) if not _is_blocked(group)
+        (_with_files(group), _names_marker(group))
+        for group in _warning_groups(run)
+        if not _is_blocked(group)
     ]
+
+
+def _names_marker(group: dict[str, object]) -> bool:
+    """Return True for a warning that names an Apothem marker left in a file."""
+    detail = group.get("detail")
+    return isinstance(detail, dict) and bool(detail.get(MARKER_LEFT))
+
+
+def _print_warnings(
+    harness_id: str,
+    run: MaterializationRun,
+    con: Console,
+    *,
+    no_color: bool,
+    loud: bool,
+) -> None:
+    """Print *run*'s warnings on *con*, or on standard error under ``--quiet``.
+
+    Under ``--quiet`` a warning prints there only when *loud* (an uninstall
+    that did not finish, so the paths its advice is about stay in view) or
+    when it names an Apothem marker left in a file: a later install keeps
+    such a marker, and verify fails until the operator changes it, so it is
+    not informational.
+    """
+    err = get_error_console(no_color=no_color)
+    for line, marked in _warning_lines(run):
+        listing = err if con.quiet and (loud or marked) else con
+        listing.print(f"[yellow]Warning:[/] {harness_id} - {escape(line)}")
 
 
 def _with_files(group: dict[str, object]) -> str:
@@ -305,8 +351,8 @@ def _one_named_link(run: MaterializationRun, blocked: Counter[str]) -> dict[str,
 
 
 #: The failure line for the paths :func:`_earlier_release_paths` counts;
-#: ``{fix}`` is :data:`_FIX_MARKED` when a warning names a file with an Apothem
-#: marker the uninstall left, otherwise empty.
+#: ``{fix}`` is ``", and "`` with :func:`_marker_fix` when a warning names a
+#: file with an Apothem marker the uninstall left, otherwise empty.
 _UNPROVEN_PATHS = (
     "{count} path(s) stay because no record shows whether Apothem wrote them "
     "(the install was recorded by an earlier release, or not at all). apothem "
@@ -316,27 +362,95 @@ _UNPROVEN_PATHS = (
     "apothem uninstall again"
 )
 
-#: Why a file a warning names for an Apothem marker the uninstall left (a BEGIN
-#: marker with no END after it, or another block between the markers) is
-#: fixed before an update.
-_MARKER_RISK = (
-    "until a later release, an update rewrites a managed block from a BEGIN "
-    "marker with no END marker to the end of the file, cutting your text after it"
+#: What to do first with each file whose warning names a BEGIN marker with no
+#: END after it (``marker_left`` without ``kept_reason`` ``another-block``): an
+#: update keeps that marker and the text after it, so it is safe, but only the
+#: operator clears the marker, by the numbered step each warning gives (it
+#: changes that marker line), and verify fails until then.
+_FIX_STRAY = (
+    "fix the {count} file(s) whose warnings name a BEGIN marker with no END "
+    "after it: an update keeps that marker and the text below it as they are, "
+    "and apothem verify fails until you follow the numbered step in each "
+    "warning, which changes that marker line so it no longer reads as a marker"
 )
 
-#: What :data:`_UNPROVEN_PATHS` adds for those files.
-_FIX_MARKED = (
-    ", and fix the {count} file(s) whose warnings name an Apothem marker: "
-    + _MARKER_RISK
+#: What to do first with each file that holds two different blocks
+#: (``kept_reason`` ``another-block``): an update does not fix such a file. It
+#: leaves a file with two whole blocks as it is (Apothem writes one block per
+#: file), and in a file whose second block shows only once Apothem's is out
+#: (a BEGIN marker above Apothem's block and an END marker below it) it
+#: rewrites Apothem's block and keeps those two marker lines. So the operator
+#: follows one numbered fix of the file's warning, which changes marker
+#: lines in place (those of each block that is not Apothem's, or every one),
+#: before any update.
+_FIX_ANOTHER = (
+    "fix the {count} file(s) that hold two different blocks as each warning "
+    "says (follow one of its numbered fixes, which change marker lines in "
+    "place): an update does not fix such a file, and apothem verify fails "
+    "until you fix it"
 )
+
+#: What to do first with each file whose marker pairs Apothem cannot place
+#: (``kept_reason`` ``unclear-block``): an update leaves such a file as it is,
+#: and verify fails until the operator fixes the marker lines its warning
+#: names (each pair and where it reads, each BEGIN marker that starts no pair,
+#: and a numbered fix for each case).
+_FIX_UNCLEAR = (
+    "fix the marker lines the warnings name in the {count} file(s) where "
+    "Apothem cannot tell its block from your text: an update leaves those "
+    "files as they are, and apothem verify fails until you fix them"
+)
+
+
+def _marker_fix(run: MaterializationRun) -> str:
+    """Return what to fix before apothem update in the files a warning names.
+
+    ``""`` when no warning names an Apothem marker the uninstall left. A BEGIN
+    marker with no END (:data:`_FIX_STRAY`), two different blocks
+    (:data:`_FIX_ANOTHER`) and a marker pair Apothem cannot place
+    (:data:`_FIX_UNCLEAR`) each get their own advice, since an update keeps
+    the first and leaves the file as it is for the other two.
+    """
+    another = _another_block_paths(run)
+    unclear = _kept_paths(run, UNCLEAR_BLOCK)
+    stray = [path for path in _marked_files(run) if path not in another + unclear]
+    parts = [
+        *([_FIX_STRAY.format(count=len(stray))] if stray else []),
+        *([_FIX_ANOTHER.format(count=len(another))] if another else []),
+        *([_FIX_UNCLEAR.format(count=len(unclear))] if unclear else []),
+    ]
+    return ", and ".join(parts)
+
 
 #: The failure line for files that hold another block between Apothem's
 #: markers (``kept_reason`` ``another-block``).
 _ANOTHER_BLOCK_LINE = (
-    "{count} file(s) hold another block between Apothem's markers that is not "
-    "a copy of Apothem's own, so Apothem left them as they are; delete it by "
-    "hand (or the marker pair you quoted), then run apothem uninstall again"
+    "{count} file(s) hold two different blocks between Apothem's markers, so "
+    "Apothem left them as they are; fix each as its warning says, keeping your "
+    "own text (follow one of its numbered fixes, which change marker lines in "
+    "place), then run apothem uninstall again"
 )
+
+
+#: The failure line for files whose marker pairs Apothem cannot place
+#: (``kept_reason`` ``unclear-block``): one of those pairs may be Apothem's
+#: block, so the uninstall stays unfinished until the operator fixes them.
+_UNCLEAR_BLOCK_LINE = (
+    "{count} file(s) hold marker lines Apothem cannot tell from your text, so "
+    "Apothem left them as they are; fix the marker lines each warning names, "
+    "keeping your own text, then run apothem uninstall again"
+)
+
+
+def _another_block_paths(run: MaterializationRun) -> list[str]:
+    """Return each file left because it holds two different marked blocks."""
+    return _kept_paths(run, ANOTHER_BLOCK)
+
+
+def _kept_paths(run: MaterializationRun, reason: str) -> list[str]:
+    """Return each file a warning of *run* says was kept for *reason*."""
+    held = (w.path for w in run.warnings if w.detail.get("kept_reason") == reason)
+    return list(dict.fromkeys(held))
 
 
 def _marked_files(run: MaterializationRun) -> list[str]:
@@ -375,19 +489,22 @@ def _kept_lines(run: MaterializationRun, earlier: int) -> list[str]:
     First the *earlier* paths no record shows are Apothem's (see
     :func:`_earlier_release_paths`), whose next step is to run apothem
     update; when a warning names a file with an Apothem marker the uninstall
-    left, that step says to fix the file first (:data:`_FIX_MARKED`). Then
-    the files that hold another block between Apothem's markers.
+    left, that step says to fix the file first (:func:`_marker_fix`). Then a
+    line for the files with two different marked blocks, and one for the
+    files with marker pairs Apothem cannot place: the operator fixes each by
+    hand, then runs the uninstall again.
     """
     lines: list[str] = []
     if earlier:
-        marked = len(_marked_files(run))
-        fix = _FIX_MARKED.format(count=marked) if marked else ""
+        marker_fix = _marker_fix(run)
+        fix = f", and {marker_fix}" if marker_fix else ""
         lines.append(_UNPROVEN_PATHS.format(count=earlier, fix=fix))
-    another = sum(
-        1 for w in run.warnings if w.detail.get("kept_reason") == ANOTHER_BLOCK
-    )
+    another = _another_block_paths(run)
     if another:
-        lines.append(_ANOTHER_BLOCK_LINE.format(count=another))
+        lines.append(_ANOTHER_BLOCK_LINE.format(count=len(another)))
+    unclear = _kept_paths(run, UNCLEAR_BLOCK)
+    if unclear:
+        lines.append(_UNCLEAR_BLOCK_LINE.format(count=len(unclear)))
     return lines
 
 
@@ -485,9 +602,11 @@ def _report_run(
     Each warning is added to *warnings*; the printed lines are grouped. A
     failure returns one ``uninstall`` error row for the harness, then one row
     per failed step. The uninstall is partial when it removed files before the
-    failure, or when installed files stay because they are reached through a
-    link (most tools still load them). An install with no record is unfinished
-    too (see :func:`_earlier_release_paths`): its error row carries
+    failure, when installed files stay because they are reached through a
+    link (most tools still load them), when files stay that no record shows
+    are Apothem's (see :func:`_earlier_release_paths`), when a file holds two
+    different marked blocks, or when a file holds marker pairs Apothem cannot
+    place. For an install with no record, the error row carries
     ``kept_reason`` ``no-record``, and a ``Note:`` line says what was kept and
     what was still removed.
     """
@@ -503,13 +622,9 @@ def _report_run(
     earlier = _earlier_release_paths(run)
     problems = _problems(harness_id, run, blocked, earlier)
     if fmt != "json":
-        # Under --quiet the warnings are not printed, so an unfinished
-        # uninstall prints the paths its advice is about with the failure.
-        listing = (
-            get_error_console(no_color=no_color) if con.quiet and problems else con
-        )
-        for line in _warning_lines(run):
-            listing.print(f"[yellow]Warning:[/] {harness_id} - {escape(line)}")
+        # Under --quiet an unfinished uninstall prints the paths its advice is
+        # about with the failure (see _print_warnings).
+        _print_warnings(harness_id, run, con, no_color=no_color, loud=bool(problems))
         for line, paths in problems.items():
             listed = kept_listing(line, paths, None)
             get_error_console(no_color=no_color).print(
@@ -538,8 +653,26 @@ def _report_run(
     if detail:
         summary["detail"] = detail
     removed = any(result.outcome == "updated" for result in run.results)
-    partial = bool(blocked) or bool(earlier) or removed
-    return [summary, *_step_rows(harness_id, run)], partial
+    # Each of these stays until the operator acts, so a retry that removes
+    # nothing more is graded as the first run was.
+    waiting = _waiting(run, blocked, earlier)
+    return [summary, *_step_rows(harness_id, run)], waiting or removed
+
+
+def _waiting(run: MaterializationRun, blocked: Counter[str], earlier: int) -> bool:
+    """Return True when *run* kept paths that stay until the operator acts.
+
+    A link that keeps installed paths in place, paths no record shows are
+    Apothem's, a file with two different marked blocks, or a file with marker
+    pairs Apothem cannot place: each makes the uninstall partial, also when it
+    removed nothing.
+    """
+    return (
+        bool(blocked)
+        or bool(earlier)
+        or bool(_another_block_paths(run))
+        or bool(_kept_paths(run, UNCLEAR_BLOCK))
+    )
 
 
 def _note_no_record(
@@ -598,16 +731,17 @@ def _failed_adapter(
     finish`` line for each link that keeps Apothem's files in place, then for
     each group of failed steps (with the files Apothem wrote that they could
     not remove, and the link a step refused at a link names), then for the
-    paths no record shows are Apothem's and for the files that hold another
-    block between Apothem's markers, each added to the end of the row's message
+    paths no record shows are Apothem's, for the files that hold two different
+    marked blocks and for those whose marker pairs Apothem cannot place
+    (see :func:`_kept_lines`), each added to the end of the row's message
     too. The row's ``detail`` names the link when it is the only one the run
     names, one a step that failed before the stop names included (see
     :func:`_one_named_link`). Such a link that keeps Apothem's files in place,
-    and such paths, make the uninstall partial, also when it removed nothing,
-    as in :func:`_report_run`. Paths kept because no install record matched get
-    the ``Note:`` line and the row's ``kept_reason`` too, with the check of the
-    ``--project`` folder for a project-scope harness (*project*; see
-    :func:`_note_no_record`).
+    and such paths and files, make the uninstall partial, also when it removed
+    nothing, as in :func:`_report_run` (see :func:`_waiting`). Paths kept
+    because no install record matched get the ``Note:`` line and the row's
+    ``kept_reason`` too, with the check of the ``--project`` folder for a
+    project-scope harness (*project*; see :func:`_note_no_record`).
     """
     run = getattr(exc, "run", None)
     run = run if isinstance(run, MaterializationRun) else None
@@ -628,12 +762,11 @@ def _failed_adapter(
         said = _refused_step(exc, run)
         problems = _problems(harness_id, run, blocked, earlier, said=said)
         named = _one_named_link(run, blocked)
-        partial = partial or bool(blocked) or bool(earlier)
+        partial = partial or _waiting(run, blocked, earlier)
     if fmt != "json":
         err = get_error_console(no_color=no_color)
-        listing = err if con.quiet else con
-        for line in _warning_lines(run) if run is not None else []:
-            listing.print(f"[yellow]Warning:[/] {harness_id} - {escape(line)}")
+        if run is not None:
+            _print_warnings(harness_id, run, con, no_color=no_color, loud=True)
         # A file changed (Apothem's entries taken out) counts as removed.
         verb = "stopped after removing files" if removed else "failed"
         err.print(f"[red]✗[/] {harness_id} uninstall {verb}: {escape(str(exc))}")
@@ -705,7 +838,7 @@ def _no_record_message(
     still removed; the grouped warning line and the failure line already
     count the paths kept. The next step (update, then uninstall again) is on
     the failure line, with the files to fix first when a warning names an
-    Apothem marker the uninstall left (see :data:`_FIX_MARKED`); for a
+    Apothem marker the uninstall left (see :func:`_marker_fix`); for a
     project-scope harness (*project* is its ``--project`` folder) this adds
     the check that ``--project`` names the folder installed into, since an
     update in the wrong folder installs there, and repeats that those files

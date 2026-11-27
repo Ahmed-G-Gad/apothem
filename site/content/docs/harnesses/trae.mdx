@@ -47,7 +47,7 @@ These folders are shared. They are not private to the project:
   install belongs to. It does not change where the skills go.
 - The install adds no skill or rule file to your repository. The project
   gets the rules file and the subagent files in `.trae/agents/`, plus the
-  `.apothem/` data folder every project install creates.
+  data folder every project install creates, `.apothem/` by default.
 - The home folders are written first. If that fails, for example because a
   folder in the path is a link that leaves your home directory (a link that
   stays inside it is followed) or cannot be written, the install stops
@@ -198,8 +198,17 @@ folder is backed up under `~/.apothem/backups/` before it is removed.
 ## Conformity gate
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Run it from your project folder. On Windows, use `python` in place of
+`python3` and the full path, since Windows PowerShell and cmd do not expand
+`~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` in PowerShell, or
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` in cmd. The path is
+where the installer puts the engine, and `-E -s` keeps your `PYTHONPATH` and
+user site-packages out of the gate; [Conformity gate](/docs/conformity-gate)
+explains both and the other installs.
 
 ## Troubleshooting
 

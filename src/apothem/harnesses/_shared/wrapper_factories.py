@@ -50,6 +50,7 @@ from .install_driver import (
     MaterializationRun,
 )
 from .install_driver_backup import refuse_bookkeeping_in_real_home
+from .install_driver_blocks import stray_begin_install_warnings
 from .install_driver_outcome import record_uninstall
 from .install_driver_ownership import RelocatedFn
 from .install_driver_shared import shared_scope
@@ -931,6 +932,10 @@ def make_native_config_install(
                 native_result,
                 *support_results,
                 profile_result,
+                # The support run's own warnings are dropped above.
+                *stray_begin_install_warnings(
+                    [*support_results, profile_result], dry_run=dry_run
+                ),
                 *extra_results,
             ),
         )

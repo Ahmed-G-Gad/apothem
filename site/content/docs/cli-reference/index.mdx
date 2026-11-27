@@ -68,7 +68,7 @@ it can return.
 |---|---|
 | 0 | Success |
 | 1 | Expected failure: a validation, profile, harness, project, or adapter error |
-| 2 | Partial result: a batch wrote or removed something before a failure (only the commands whose page lists it) |
+| 2 | Partial result: the command did only part of its work, such as a run that wrote, removed or restored files before a failure, a `status` or `harnesses list` run in which an adapter failed to report, or an uninstall that left some of Apothem's files in place (only the commands whose page lists it) |
 | 64 | Usage error: an unknown option or command, a missing required option, or an invalid option value |
 
 A usage error never touches the filesystem. Under `--json` (or

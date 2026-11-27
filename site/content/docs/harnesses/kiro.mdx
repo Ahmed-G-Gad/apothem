@@ -162,8 +162,12 @@ The command in the hook file looks like this, with your interpreter and project
 path in place of the two paths:
 
 ```text
-"/path/to/python" "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
+"/path/to/python" -E -s "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
 ```
+
+`-E -s` makes Python ignore `PYTHONPATH` and the other `PYTHON*` variables
+and skip your user site-packages, so no file in the project can load into
+the hook.
 
 `--contract kiro` makes the dispatcher print the context as plain text, which is
 what Kiro adds to the context for `SessionStart`. Kiro documents no shell for
@@ -225,6 +229,14 @@ front matter and never clobbers Kiro's operator-authored foundation files
 (`product.md`, `tech.md`, `structure.md`). Kiro specs (`.kiro/specs/`) are
 operator-owned; Apothem does not write them. It writes one hook file,
 `.kiro/hooks/apothem.json`, and no other file in `.kiro/hooks/`.
+
+Kiro also reads the `AGENTS.md` file at the workspace root, and the
+[Kimi Code](/docs/harnesses/kimi-code) install writes an Apothem block into the
+project `AGENTS.md`, so in a project with both installs that block reaches Kiro
+too. When the file already holds the block, installing `kiro` prints a note that
+names it and the install that wrote it. The
+[harness registry](/docs/reference/harness-registry#shared-roots) lists the
+other tools that load the file.
 
 Kiro documents `~/.kiro/skills/` for global skills and does not mention
 `~/.agents/skills/`, so the install writes the Kiro folder and not the
@@ -303,8 +315,17 @@ folder is backed up under `~/.apothem/backups/` before it is removed.
 ## Conformity gate
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Run it from your project folder. On Windows, use `python` in place of
+`python3` and the full path, since Windows PowerShell and cmd do not expand
+`~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` in PowerShell, or
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` in cmd. The path is
+where the installer puts the engine, and `-E -s` keeps your `PYTHONPATH` and
+user site-packages out of the gate; [Conformity gate](/docs/conformity-gate)
+explains both and the other installs.
 
 ## Troubleshooting
 

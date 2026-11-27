@@ -38,6 +38,16 @@ vendored, virtual-environment, cache and build-output trees in
 :data:`PRUNED_SEGMENTS`. Files below a nested checkout belong to another
 repository, so a root-level finding on one is a false positive, and a walk that
 descends into ``node_modules`` or a built site costs minutes.
+
+Project files only. A project can arrive with its files from someone else, in
+an archive or a shared folder, so every validator reads and lists only what
+the project itself holds: regular files and real folders below its root. The
+walk lists each folder with ``os.scandir`` and never follows a link, and the
+helpers in ``_project_paths`` (re-exported here: :func:`is_project_file`,
+:func:`is_project_dir`, :func:`project_file_target`,
+:func:`list_real_entries`, :func:`child_folder_files`) treat a symbolic link,
+a Windows junction, a named pipe, a device or a socket as if it were not
+there. A root report lists what they left out under ``skipped_links``.
 """
 
 from __future__ import annotations
@@ -52,6 +62,37 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Final, NoReturn, Protocol
 
+from apothem.conformity._project_paths import (
+    DIR_ENTRY,
+    FILE_ENTRY,
+    LINK_ENTRY,
+    SKIPPED_FOLDER_ENTRY,
+    as_opened,
+    linked_git_entry,
+    note_root_spelling,
+    note_skipped,
+    path_kind,
+    scan_entries,
+    start_skip_log,
+    take_skipped_paths,
+)
+from apothem.conformity._project_paths import (
+    NAME_SURROGATE_TAG_BIT as NAME_SURROGATE_TAG_BIT,
+)
+from apothem.conformity._project_paths import (
+    child_folder_files as child_folder_files,
+)
+from apothem.conformity._project_paths import is_link as is_link
+from apothem.conformity._project_paths import is_project_dir as is_project_dir
+from apothem.conformity._project_paths import is_project_file as is_project_file
+from apothem.conformity._project_paths import (
+    list_real_entries as list_real_entries,
+)
+from apothem.conformity._project_paths import no_files as no_files
+from apothem.conformity._project_paths import (
+    project_file_target as project_file_target,
+)
+
 EXIT_PASS: Final[int] = 0
 EXIT_FAIL: Final[int] = 2
 # A command-line usage error (unknown flag, missing file or root): distinct
@@ -59,11 +100,81 @@ EXIT_FAIL: Final[int] = 2
 EXIT_USAGE: Final[int] = 3
 STDIN_FLAG: Final[str] = "--stdin"
 
+# Report key emitted only when the run left out links or special files: their
+# paths relative to the root (see ``_project_paths``).
+SKIPPED_KEY: Final[str] = "skipped_links"
 # Report key every root-based validator emits: how many targets it inspected.
 INSPECTED_KEY: Final[str] = "inspected"
 # Report key emitted only when nothing was inspected: whether the validator
 # declared that an empty scope is expected (True) or not (False, a failure).
 EMPTY_SCOPE_KEY: Final[str] = "empty_scope_expected"
+# Report key emitted only when a check could not finish, for example because a
+# git command ran past its time limit or the gate stopped the validator. The
+# value says why; a report that carries it does not pass.
+CHECK_ERROR_KEY: Final[str] = "check_error"
+
+# Seconds a ``git ls-files`` run may take. Listing reads only the index, so
+# even a large repository lists in about a second; the rest is room for a slow
+# or busy machine. The checked repository's own configuration can still make
+# git wait for ever, for example through an ``include.path`` that names a
+# FIFO, and the limit ends such a run.
+GIT_LS_FILES_TIMEOUT_SECONDS: Final[int] = 60
+
+
+class GitCheckError(Exception):
+    """A git command a check needs gave no answer, so the check could not finish.
+
+    The message names the command and what happened, in fixed words: it never
+    repeats git's own error output, which a checked repository can shape. A
+    validator reports the message as its ``check_error``; a check whose git
+    never answered has not earned a pass.
+    """
+
+
+class GitTimeoutError(GitCheckError):
+    """A git command ran past its time limit.
+
+    A repository's own configuration can make git wait for ever, for example
+    through an ``include.path`` that names a FIFO. The message reads, for
+    example, ``git log did not finish within 60 seconds``.
+    """
+
+    def __init__(self, command: str, seconds: float) -> None:
+        """Name the git *command* that did not finish within *seconds*."""
+        super().__init__(f"{command} did not finish within {seconds} seconds")
+
+
+class GitFailedError(GitCheckError):
+    """A git command failed in a repository that is there.
+
+    git refuses a repository it may not read (one another user owns, a bad
+    line in its configuration, an included file it cannot open). That is not
+    the exempt state of a folder with no repository or no commit: the history
+    is there but was not read. The message reads, for example,
+    ``git log failed with exit code 128``.
+    """
+
+    def __init__(self, command: str, returncode: int) -> None:
+        """Name the git *command* that exited with *returncode*."""
+        super().__init__(f"{command} failed with exit code {returncode}")
+
+
+class GitNameError(GitCheckError):
+    """A file name git listed cannot be given back to git as an argument.
+
+    Windows passes arguments as UTF-16, so a name that is not valid UTF-8 (one
+    from an index made on another system) reaches git as other bytes and git
+    finds no such file. The file's content was not read, which is not the same
+    as a file with nothing to report. The message reads, for example,
+    ``git cat-file cannot read a file whose name is not UTF-8 on Windows``; it
+    never repeats the name, which a checked repository shapes.
+    """
+
+    def __init__(self, command: str) -> None:
+        """Name the git *command* that could not be given the file name."""
+        super().__init__(
+            f"{command} cannot read a file whose name is not UTF-8 on Windows"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -182,6 +293,13 @@ def parse_root_args(
     if not root.is_dir():
         parser.error(f"root is not an existing directory: {root}")
     args.root = root.resolve()
+    start_skip_log(args.root)
+    # The root as typed, made absolute but not resolved: an absolute link may
+    # be written through this spelling.
+    # ``..`` is not collapsed by name: through a link it can name another
+    # folder, so such a spelling is not recorded at all.
+    typed = root if root.is_absolute() else Path.cwd() / root
+    note_root_spelling(typed if ".." not in typed.parts else args.root, args.root)
     return args
 
 
@@ -192,6 +310,7 @@ def finish_root_report(
     inspected: int,
     empty_scope_expected: bool = False,
     advisory: bool = False,
+    check_error: str | None = None,
 ) -> int:
     """Stamp the ``inspected`` count on a root report, print it, return the exit.
 
@@ -200,23 +319,41 @@ def finish_root_report(
     ``empty_scope_expected`` is True only when the validator documents that
     an empty scope is legitimate (for example a gitignored plans tree that a
     clean checkout does not carry). ``advisory`` validators report findings
-    without failing.
+    without failing. ``check_error`` is why the check could not finish (a
+    git command that ran past its time limit, say), or None when it finished.
     Post-conditions: the printed payload carries ``inspected``. When nothing
     was inspected it also carries ``empty_scope_expected``; an unexpected empty
     scope sets ``passed`` to false and returns :data:`EXIT_FAIL` even for an
     advisory validator, because a validator that inspected nothing has not
-    earned a pass. Otherwise the return is :data:`EXIT_PASS` for a pass or an
-    advisory validator, and :data:`EXIT_FAIL` for a failing blocking one.
+    earned a pass. A ``check_error`` is stamped on the payload and fails the
+    run the same way, advisory or not: a check that could not finish has not
+    earned a pass either. Otherwise the return is :data:`EXIT_PASS` for a pass
+    or an advisory validator, and :data:`EXIT_FAIL` for a failing blocking one.
+    When the run left out links or special files, the payload lists them under
+    ``skipped_links`` (relative to the root, or by full path for an entry
+    outside it, such as a linked ``.git`` above the root), so a link never hides a file
+    without a trace. A run that inspected nothing while it left a link out
+    does not pass, even when an empty scope is expected: a fixed folder that
+    is a link must not pass as a folder that is not there yet.
     """
     payload = json.loads(report_json)
     payload[INSPECTED_KEY] = inspected
-    vacuous = inspected == 0 and not empty_scope_expected
+    skipped = take_skipped_paths()
+    if skipped:
+        payload[SKIPPED_KEY] = skipped
+    # A scope that is empty because a link was in the way is not the empty
+    # scope a validator expects: the files may be there, behind the link.
+    scope_expected = empty_scope_expected and not skipped
+    vacuous = inspected == 0 and not scope_expected
     if inspected == 0:
-        payload[EMPTY_SCOPE_KEY] = empty_scope_expected
-    if vacuous:
+        payload[EMPTY_SCOPE_KEY] = scope_expected
+    if check_error is not None:
+        payload[CHECK_ERROR_KEY] = check_error
+    unearned = vacuous or check_error is not None
+    if unearned:
         payload["passed"] = False
     print(json.dumps(payload, indent=2))
-    if vacuous:
+    if unearned:
         return EXIT_FAIL
     if advisory or passed:
         return EXIT_PASS
@@ -272,47 +409,598 @@ def has_git_entry(directory: Path) -> bool:
     return os.path.lexists(directory / GIT_ENTRY)
 
 
+# What the ``.git`` entry of a folder is to git's search for a repository.
+GIT_ENTRY_NONE: Final[str] = "none"
+GIT_ENTRY_REPOSITORY: Final[str] = "repository"
+GIT_ENTRY_BROKEN: Final[str] = "broken"
+_GITFILE_PREFIX: Final[bytes] = b"gitdir: "
+# git refuses a ``.git`` file larger than this ("too large to be a .git file").
+_GITFILE_MAX_BYTES: Final[int] = 1 << 20
+# On Windows a path that starts with two separators is a network path
+# (``\\host\share``) or a device path (``\\?\``, ``\\.\``). One that starts
+# with ``\??\`` is an NT path, which can name a host as well
+# (``\??\UNC\host\share``); Python's path joining turns ``/??/`` and the
+# mixed forms into ``\??\``. On POSIX all of these are local paths.
+_NON_LOCAL_START: Final[re.Pattern[str]] = re.compile(r"[\\/](?:[\\/]|\?\?[\\/])")
+
+
+def _names_non_local_path(text: str) -> bool:
+    """Return True when *text* is a network, device or NT path on Windows.
+
+    Looking such a path up makes Windows connect to the named host and offer
+    the user's sign-in. Git for Windows refuses a ``gitdir:`` line in the
+    local device forms ``\\\\?\\C:\\...`` and ``\\\\.\\C:\\...`` and in the
+    NT form ``\\??\\C:\\...`` ("may refer to a non-local directory"); the
+    tests run git on those. They never run git on a line that names a real
+    share, so whether git refuses one before it connects is not tested.
+
+    Only the text is read, so these cases still reach a share:
+
+    - a ``gitdir:`` line that names a mapped network drive (``Z:\\repo``);
+    - a ``.git`` that is a symbolic link to a share, which is followed
+      before the file is read;
+    - a ``gitdir:`` line, with a drive or relative (``C:\\link\\repo``,
+      ``../link/repo``), whose path passes through a symbolic link to a
+      share;
+    - a checked folder that is itself on a share or reached through such a
+      link;
+    - Python built for MSYS2 or Cygwin, where ``os.name`` is ``"posix"``
+      and no path is refused.
+    """
+    return os.name == "nt" and _NON_LOCAL_START.match(text) is not None
+
+
+# A drive prefix such as ``C:``, which Git for Windows skips before it checks
+# a path.
+_DRIVE_PREFIX: Final[re.Pattern[str]] = re.compile(r"[A-Za-z]:")
+# Characters Git for Windows refuses anywhere in a path after the drive: a
+# colon (an NTFS stream such as ``::$INDEX_ALLOCATION``), the wildcard and
+# redirection characters, and the control characters.
+_REFUSED_WIN32_CHARACTERS: Final[re.Pattern[str]] = re.compile(r'[:<>"|?*\x01-\x1f]')
+# Device names Git for Windows refuses as a path name, in any case, alone or
+# before spaces, a dot, a colon or a separator. Git for Windows refuses
+# ``lpt`` before any digit, ``lpt0`` too, but ``com`` only before 1 to 9.
+_RESERVED_WIN32_NAMES: Final[frozenset[str]] = frozenset(
+    {"aux", "con", "conin$", "conout$", "nul", "prn"}
+    | {f"com{digit}" for digit in range(1, 10)}
+    | {f"lpt{digit}" for digit in range(0, 10)}
+)
+
+
+def _refused_by_git_for_windows(text: str) -> bool:
+    """Return True when Git for Windows refuses *text* as a path.
+
+    Git for Windows checks each path it opens (``is_valid_win32_path``). It
+    refuses a name that ends in a dot or a space, other than ``.`` and
+    ``..``, and a colon or another refused character after the drive. Windows
+    itself drops such a dot and reads such a colon as a stream, so a lookup
+    of ``../repo/.git.`` or ``../repo/.git::$INDEX_ALLOCATION`` finds the
+    repository git refuses. It also refuses a reserved device name (``aux``,
+    ``con``, ``conin$``, ``conout$``, ``nul``, ``prn``, ``com1`` to ``com9``,
+    ``lpt0`` to ``lpt9``) in any case, alone or before a dot, such as
+    ``aux.d``, which newer Windows opens as an ordinary folder. On POSIX git
+    takes every such name as written, so nothing is refused.
+    """
+    if os.name != "nt":
+        return False
+    rest = text[2:] if _DRIVE_PREFIX.match(text) else text
+    if _REFUSED_WIN32_CHARACTERS.search(rest):
+        return True
+    for name in re.split(r"[\\/]", rest):
+        if name in {".", ".."}:
+            continue
+        if name.endswith((".", " ")):
+            return True
+        if name.split(".", 1)[0].rstrip(" ").lower() in _RESERVED_WIN32_NAMES:
+            return True
+    return False
+
+
+def _decode_gitdir(raw: bytes) -> str | None:
+    """Return the path a ``gitdir:`` line names, as git reads its bytes.
+
+    Git for Windows reads the line as UTF-8 (``xutftowcsn``). A byte that
+    is not part of valid UTF-8 stands for itself: from 0xA0 up it becomes
+    the character of that number (Latin-1), and below that its two
+    lowercase hex digits, so ``caf\\x9f`` names the folder ``caf9f``. git
+    also reads an encoded surrogate (``ED A0 80`` to ``ED BF BF``) as that
+    surrogate. Two that form a pair name the one character they stand for.
+    A surrogate left alone makes git stop with an error, so None is
+    returned. On POSIX git hands the bytes to the system as they are, so
+    they are kept (``os.fsdecode``) and a name in another encoding still
+    finds its folder.
+    """
+    if os.name != "nt":
+        return os.fsdecode(raw)
+    text: list[str] = []
+    rest = raw
+    while rest:
+        try:
+            text.append(rest.decode("utf-8", "surrogatepass"))
+            break
+        except UnicodeDecodeError as error:
+            text.append(rest[: error.start].decode("utf-8", "surrogatepass"))
+            byte = rest[error.start]
+            text.append(chr(byte) if byte >= 0xA0 else f"{byte:02x}")
+            rest = rest[error.start + 1 :]
+    # A round trip through UTF-16 joins each pair and fails on a lone one.
+    try:
+        return "".join(text).encode("utf-16-le", "surrogatepass").decode("utf-16-le")
+    except UnicodeDecodeError:
+        return None
+
+
+def _holds_repository(git_dir: Path) -> bool:
+    """Return True when *git_dir* looks like a repository to git.
+
+    git asks for a ``HEAD`` and for the object and reference stores, which a
+    linked work tree's folder borrows through its ``commondir`` file. The
+    caller makes sure *git_dir* is no network, device or NT path on Windows.
+    """
+    if not (git_dir / "HEAD").is_file():
+        return False
+    if (git_dir / "commondir").is_file():
+        return True
+    return (git_dir / "objects").is_dir() and (git_dir / "refs").is_dir()
+
+
+def git_entry_state(directory: Path) -> str:
+    """Say what the ``.git`` entry of ``directory`` is to git's search.
+
+    - :data:`GIT_ENTRY_REPOSITORY`: git stops here and uses it. A ``.git``
+      folder that holds a repository, or a ``.git`` file whose ``gitdir:``
+      line names one (a linked work tree, a submodule).
+    - :data:`GIT_ENTRY_BROKEN`: git stops here with an error. A ``.git`` file
+      that names no repository, that does not start with ``gitdir:`` and
+      one space, that is larger than git reads (1 MiB), or, on Windows,
+      whose path, alone or joined to a folder with no drive, is a network,
+      device or NT path. That last path is never looked up, so Windows does
+      not connect to a host the file names. On Windows a path Git for
+      Windows refuses (a name that ends in a dot or a space, a colon after
+      the drive) is broken too, and is not looked up either.
+    - :data:`GIT_ENTRY_NONE`: git looks further up. No entry, a ``.git``
+      folder that holds no repository (an empty one, say), or a ``.git`` link
+      that leads nowhere.
+
+    A ``.git`` file is read only up to git's size limit plus one byte.
+    """
+    entry = directory / GIT_ENTRY
+    if entry.is_dir():
+        return GIT_ENTRY_REPOSITORY if _holds_repository(entry) else GIT_ENTRY_NONE
+    if not entry.is_file():
+        return GIT_ENTRY_NONE
+    try:
+        with entry.open("rb") as handle:
+            content = handle.read(_GITFILE_MAX_BYTES + 1)
+    except OSError:
+        return GIT_ENTRY_BROKEN
+    if len(content) > _GITFILE_MAX_BYTES:
+        return GIT_ENTRY_BROKEN
+    # git reads the whole file. It must start with "gitdir: ", one space.
+    # git drops only the CR and LF bytes at the end; the rest is the path as
+    # written, so a second line, a tab or a second space stays in it. git
+    # reads the path as a C string, so it ends at the first NUL byte.
+    if not content.startswith(_GITFILE_PREFIX):
+        return GIT_ENTRY_BROKEN
+    raw = content[len(_GITFILE_PREFIX) :].rstrip(b"\r\n")
+    if not raw:
+        return GIT_ENTRY_BROKEN  # git: "no path in gitfile"
+    named = _decode_gitdir(raw.split(b"\0", 1)[0])
+    if named is None:
+        return GIT_ENTRY_BROKEN
+    if _names_non_local_path(named) or _refused_by_git_for_windows(named):
+        return GIT_ENTRY_BROKEN
+    target = directory / named
+    # A folder with a root but no drive (``\\``) turns a relative line such as
+    # ``??/UNC/host/share`` into an NT path. A folder with a drive is left
+    # out: a long-path folder (``\\\\?\\C:\\...``) is local.
+    if not directory.drive and _names_non_local_path(str(target)):
+        return GIT_ENTRY_BROKEN
+    return GIT_ENTRY_REPOSITORY if _holds_repository(target) else GIT_ENTRY_BROKEN
+
+
+# git stops its search for a repository at a folder on another file system.
+# Git for Windows does not: its file status carries no device number.
+_STOPS_AT_FILE_SYSTEM: Final[bool] = os.name != "nt"
+
+
+def _device(folder: Path) -> int | None:
+    """Return the number of the file system ``folder`` is on, or None."""
+    try:
+        return folder.stat().st_dev
+    except OSError:
+        return None
+
+
+# A whole number as git reads one: an optional sign, decimal, hexadecimal
+# (0x) or octal (leading 0) digits, and an optional k, m or g for a multiple
+# of 1024.
+_GIT_INTEGER: Final[re.Pattern[str]] = re.compile(r"([-+]?)(0x[0-9a-f]+|\d+)[kmg]?")
+
+
+def _git_flag_is_set(name: str) -> bool:
+    """Return True unless git would read the environment variable as false.
+
+    git takes ``true``, ``yes``, ``on`` and any number other than zero as
+    true, and ``false``, ``no``, ``off``, zero and an empty value as false. On
+    any other value git stops with an error. That reads as true here: the
+    search for a checkout then stops nowhere git might have gone on, and the
+    git command the caller runs reports the error itself.
+    """
+    value = os.environ.get(name, "").lower()
+    if value in {"", "false", "no", "off"}:
+        return False
+    number = _GIT_INTEGER.fullmatch(value)
+    if number is None:
+        return True
+    digits = number.group(2)
+    base = 16 if digits.startswith("0x") else 8 if digits.startswith("0") else 10
+    try:
+        return int(digits, base) != 0
+    except ValueError:
+        return True
+
+
+def _git_reads_as_full_path(entry: str) -> bool:
+    """Return True when git takes *entry* as a full path.
+
+    Elsewhere than Windows that is a path that starts with ``/``. Git for
+    Windows also takes a path that starts with a separator and has no drive
+    letter, and one that starts with a drive letter and a colon.
+    """
+    if os.name != "nt":
+        return entry.startswith("/")
+    return entry[:1] in ("\\", "/") or (entry[:1].isalpha() and entry[1:2] == ":")
+
+
+def _ceiling_folders(start: Path) -> tuple[frozenset[str], frozenset[str]]:
+    """Return the folders ``GIT_CEILING_DIRECTORIES`` names, as git reads them.
+
+    *start* is the folder git would run in, as it is named: its full path
+    with links and mapped drive letters left as they are. git ignores an entry
+    that is not a full path. Up to the first empty entry it resolves each
+    entry (links, ``..``, a missing drive letter) and drops one it cannot
+    resolve; those come back first, in the platform's case form. A Windows
+    entry with no drive letter is read on the drive of *start*, which is
+    git's current folder: not on the drive this process happens to be on, and
+    not on the drive a mapped letter resolves to. After an
+    empty entry git compares each entry as it is written, with forward
+    slashes, against its own current folder; those come back second, without
+    the one slash git lets such an entry end with (an entry that ends with
+    two never matches a folder, for git as here).
+    """
+    resolved: set[str] = set()
+    as_written: set[str] = set()
+    resolve = True
+    for entry in os.environ.get("GIT_CEILING_DIRECTORIES", "").split(os.pathsep):
+        if not entry:
+            resolve = False
+        elif not _git_reads_as_full_path(entry):
+            continue
+        elif not resolve:
+            ends_with_slash = entry.endswith("/") and len(entry) > 1
+            as_written.add(entry[:-1] if ends_with_slash else entry)
+        else:
+            try:
+                real = str(Path(_on_drive_of(start, entry)).resolve(strict=True))
+            except OSError:
+                continue
+            resolved.add(os.path.normcase(_without_long_path_prefix(real)))
+    return frozenset(resolved), frozenset(as_written)
+
+
+def _on_drive_of(start: Path, entry: str) -> str:
+    r"""Return a Windows path that has no drive letter with the drive of *start*.
+
+    ``\work\projects`` names a folder on the current drive, and for git that
+    is the drive of the folder it runs in. A path that names its own drive or
+    server (``C:\work``, ``\\server\share``), and any path elsewhere than
+    Windows, comes back unchanged.
+    """
+    if os.name != "nt":
+        return entry
+    rooted = entry[:1] in ("\\", "/") and entry[1:2] not in ("\\", "/")
+    return start.drive + entry if rooted else entry
+
+
+def _without_long_path_prefix(path: str) -> str:
+    r"""Return a Windows path without its ``\\?\`` long-path prefix.
+
+    ``\\?\C:\work`` names ``C:\work`` and ``\\?\UNC\server\share`` names
+    ``\\server\share``. Git for Windows drops the prefix from a ceiling entry
+    before it compares. Elsewhere the path comes back unchanged.
+    """
+    if os.name != "nt":
+        return path
+    if path.startswith("\\\\?\\UNC\\"):
+        return "\\\\" + path[8:]
+    if path.startswith("\\\\?\\"):
+        return path[4:]
+    return path
+
+
+def checkout_search_folders(directory: Path) -> Iterator[Path]:
+    """Yield ``directory`` and the folders above it that git would search.
+
+    These are the folders git looks in for a repository when it runs in
+    ``directory``, nearest first, with links resolved as in git's own current
+    folder. The walk stops where git's search stops: below a folder that
+    ``GIT_CEILING_DIRECTORIES`` names, and, outside Windows, at a folder on
+    another file system unless ``GIT_DISCOVERY_ACROSS_FILESYSTEM`` is set.
+    """
+    start = directory.resolve()
+    # The drive of a ceiling entry with no drive letter is the drive git runs
+    # on: the folder as it is named, not as it resolves. A mapped drive letter
+    # (``subst V:``) resolves to the folder behind it on another drive.
+    resolved, as_written = _ceiling_folders(directory.absolute())
+    one_file_system = _STOPS_AT_FILE_SYSTEM and not _git_flag_is_set(
+        "GIT_DISCOVERY_ACROSS_FILESYSTEM"
+    )
+    device = _device(start) if one_file_system else None
+    yield start
+    for folder in start.parents:
+        if os.path.normcase(str(folder)) in resolved or folder.as_posix() in as_written:
+            return
+        if device is not None and _device(folder) != device:
+            return
+        yield folder
+
+
+def in_checkout(directory: Path) -> bool:
+    """Return True iff ``directory`` or a folder above it holds a ``.git`` entry.
+
+    The walk covers :func:`checkout_search_folders`, the folders git searches
+    for a repository when it runs in ``directory``, so a git command that
+    fails there failed inside a checkout and its data was not read, also when
+    ``directory`` is a subfolder of the checkout. A folder with no repository
+    of its own, mounted below one, is outside a checkout here as it is for
+    git. Differences from git remain, among them: a ``.git`` folder that
+    holds no repository counts here, while git looks past it; and ``GIT_DIR``
+    or ``GIT_WORK_TREE`` in the environment, which tell git where the
+    repository is, are not read.
+    """
+    return any(has_git_entry(folder) for folder in checkout_search_folders(directory))
+
+
+# What git's own repository test (``validate_headref``) accepts in ``HEAD``:
+# ``ref:``, then only the blanks git's ``isspace`` takes (space, tab, line
+# feed, carriage return), then ``refs/``; or an object id (SHA-1, or the
+# first 40 digits of a SHA-256 one). git reads 255 bytes of ``HEAD``.
+_HEAD_SYMREF: Final[re.Pattern[bytes]] = re.compile(rb"ref:[ \t\n\r]*refs/")
+_HEAD_OBJECT_ID: Final[re.Pattern[bytes]] = re.compile(rb"[0-9a-fA-F]{40}")
+_HEAD_READ_BYTES: Final[int] = 255
+# git reads the whole ``commondir`` file; a longer one is not judged here.
+_COMMONDIR_MAX_BYTES: Final[int] = 64 * 1024
+
+
+def _read_at_most(path: Path, limit: int) -> bytes | None:
+    """Return up to *limit* + 1 bytes of the regular file *path*; None on error."""
+    try:
+        with path.open("rb") as handle:
+            return handle.read(limit + 1)
+    except OSError:
+        return None
+
+
+def _repository_verdict(git_dir: Path) -> bool | Path:
+    """Say whether git's search stops at *git_dir* as a repository.
+
+    True only when *git_dir* passes a test at least as strict as git's own
+    (``is_git_directory``): a ``HEAD`` git accepts, and the object and
+    reference stores, found through a ``commondir`` file read as git reads
+    it (the whole file, trailing carriage returns and line feeds trimmed,
+    cut at a NUL). False when it fails that test or the test cannot be sure
+    (a read error, a file too large to judge, a line break left in the
+    ``commondir`` path): git may look past *git_dir*, so the walk goes on.
+
+    A link among the parts git reads (``HEAD``, ``commondir``, the folder
+    ``commondir`` names, ``objects``, ``refs``) is returned: git would follow
+    it, so the caller refuses it as it refuses a ``.git`` link. Nothing is
+    followed: each part is looked at with ``os.lstat`` before it is read.
+    """
+    head_path = git_dir / "HEAD"
+    head_kind = path_kind(head_path)
+    if head_kind == LINK_ENTRY:
+        return head_path
+    if head_kind != FILE_ENTRY:
+        return False
+    head = _read_at_most(head_path, _HEAD_READ_BYTES)
+    if head is None:
+        return False
+    head = head[:_HEAD_READ_BYTES]
+    if not (_HEAD_SYMREF.match(head) or _HEAD_OBJECT_ID.match(head)):
+        return False
+    stores = git_dir
+    commondir = git_dir / "commondir"
+    commondir_kind = path_kind(commondir)
+    if commondir_kind == LINK_ENTRY:
+        return commondir
+    if commondir_kind is not None:
+        if commondir_kind != FILE_ENTRY:
+            return False
+        data = _read_at_most(commondir, _COMMONDIR_MAX_BYTES)
+        if not data or len(data) > _COMMONDIR_MAX_BYTES:
+            return False
+        named = data.rstrip(b"\r\n").split(b"\0", 1)[0]
+        if not named or b"\n" in named or b"\r" in named:
+            return False
+        try:
+            stores = git_dir / os.fsdecode(named)
+        except UnicodeDecodeError:
+            return False
+        stores_kind = path_kind(stores)
+        if stores_kind == LINK_ENTRY:
+            return stores
+        if stores_kind != DIR_ENTRY:
+            return False
+    for store in (stores / "objects", stores / "refs"):
+        store_kind = path_kind(store)
+        if store_kind == LINK_ENTRY:
+            return store
+        if store_kind != DIR_ENTRY:
+            return False
+    return True
+
+
+def nearest_linked_git_entry(root: Path) -> Path | None:
+    """Return the linked entry git would read its repository through, and note it.
+
+    git looks for the repository in *root* and then in each folder above it
+    (:func:`checkout_search_folders`), and in each folder it looks first at
+    the ``.git`` entry and then at the folder itself, which may be a bare
+    repository. This walk does the same and stops where git would stop:
+
+    - a ``.git`` link (to a folder or a file, a junction, or one that
+      dangles), or a link among the parts git reads in the repository it
+      stops at (see :func:`_repository_verdict`): the link is noted in the
+      skip log and returned;
+    - a ``.git`` folder or a folder that passes the repository test, or a
+      ``.git`` file (git uses the repository it names, or stops with an
+      error): None.
+
+    The repository test is at least as strict as git's, never looser, so the
+    walk never stops where git goes on. A ``.git`` folder git would not take
+    as a repository (an empty one, a ``HEAD`` that names nothing under
+    ``refs/``, a ``commondir`` that leads nowhere) is looked past, as git
+    does. Where the test is stricter than git, the walk goes on past a
+    repository git would use, and a ``.git`` link above it is refused though
+    git never reaches it. That false refusal is deliberate: it fails closed.
+
+    The checks run git with *discover* set (``run_git``), which leaves out
+    ``GIT_DIR`` and the other location variables, so git finds the repository
+    from *root* as this walk did. A ``.git`` file's ``gitdir:`` target is
+    taken as written: it is a path the file states, not a link.
+
+    Every check that runs git calls this before git and before
+    :func:`in_checkout`, and treats an entry as no checkout, so a run on a
+    subfolder of a project behaves like a run on the project itself.
+    """
+    if linked_git_entry(root):
+        return root / GIT_ENTRY
+    for folder in checkout_search_folders(root):
+        entry = folder / GIT_ENTRY
+        kind = path_kind(entry)
+        if kind == LINK_ENTRY:
+            note_skipped(entry)
+            return entry
+        if kind == DIR_ENTRY:
+            verdict = _repository_verdict(entry)
+        elif kind is not None and git_entry_state(folder) != GIT_ENTRY_NONE:
+            return None
+        else:
+            verdict = False
+        if verdict is False:
+            verdict = _repository_verdict(folder)
+        if isinstance(verdict, Path):
+            note_skipped(verdict)
+            return verdict
+        if verdict:
+            return None
+    return None
+
+
+def linked_git_label(root: Path, entry: Path) -> str:
+    """Return how a report names *entry*, as the skip log names it.
+
+    Relative to *root* when it lies inside it (``.git``, ``.git/HEAD``), and
+    by its full path otherwise, such as a linked ``.git`` above the root.
+    """
+    try:
+        return entry.relative_to(root).as_posix()
+    except ValueError:
+        return entry.as_posix()
+
+
+def linked_git_message(root: Path, entry: Path) -> str:
+    """Return the sentence for a check that did not run git through *entry*.
+
+    It names *entry* (see :func:`linked_git_label`) and nothing git printed;
+    the root's own ``.git`` keeps the sentence it always had.
+    """
+    if entry == root / GIT_ENTRY:
+        return "the .git entry is a link, so git would read another repository"
+    label = linked_git_label(root, entry)
+    if entry.name == GIT_ENTRY:
+        return f"the .git entry {label} is a link, so git would read another repository"
+    return f"{label}, which git reads, is a link, so git would read another repository"
+
+
 def iter_tree_files(
     root: Path,
     suffixes: Iterable[str] = (),
     *,
     names: Iterable[str] = (),
     extra_prune: Iterable[str] = (),
+    prune: bool = True,
+    include_links: bool = False,
 ) -> Iterator[Path]:
-    """Yield the matching files below ``root``, skipping pruned subtrees.
+    """Yield the matching regular files below ``root``, skipping pruned subtrees.
 
     Pre-conditions: ``root`` is an existing directory. ``suffixes`` are file
     name endings (``".md"``) and ``names`` exact file names (``"README.md"``);
     a file matching either is yielded, and with both empty every file is.
     Matching follows the host's file-name case rules, as ``Path.rglob`` does.
     ``extra_prune`` adds directory names to :data:`PRUNED_SEGMENTS`.
-    Post-conditions: yields existing regular files as ``root``-prefixed paths,
+    ``prune=False`` drops the default pruning, so nested checkouts and the
+    names in :data:`PRUNED_SEGMENTS` are walked too (``extra_prune`` still
+    applies): the files a former ``Path.rglob`` caller saw, minus links.
+    ``include_links=True`` yields each link by its own name, never entering
+    it, for a caller that checks names and reads nothing.
+    Post-conditions: yields regular files as ``root``-prefixed paths,
     directory by directory in name order, so a run is deterministic. The walk
     never enters a nested checkout (a directory below ``root`` that holds a
     ``.git`` file or directory; ``root`` itself is never nested, even when its
-    ``.git`` is a file), a directory named in the pruned set, or a symbolic
-    link to a directory. A directory it cannot read is skipped.
+    ``.git`` is a file), a directory named in the pruned set, or a link to a
+    folder (a symbolic link or a Windows junction), and never yields a link, a
+    named pipe, a device or a socket; each one it leaves out is noted in the
+    skip log (see ``_project_paths``). A link that points inside ``root`` is
+    skipped too; what it points to is yielded under its own path when the
+    walk reaches it. A directory it cannot read is skipped.
     """
-    pruned = PRUNED_SEGMENTS.union(extra_prune)
+    pruned = PRUNED_SEGMENTS.union(extra_prune) if prune else frozenset(extra_prune)
     wanted_suffixes = tuple(os.path.normcase(suffix) for suffix in suffixes)
     wanted_names = frozenset(os.path.normcase(name) for name in names)
     match_all = not wanted_suffixes and not wanted_names
-    for position, (dirpath, dirnames, filenames) in enumerate(os.walk(root)):
-        # Position 0 is the root itself; its own ``.git`` marks the checkout
-        # being inspected, not a nested one.
-        if position and (GIT_ENTRY in dirnames or GIT_ENTRY in filenames):
-            dirnames.clear()
+
+    def wanted(name: str) -> bool:
+        folded = os.path.normcase(name)
+        return match_all or folded in wanted_names or folded.endswith(wanted_suffixes)
+
+    # Depth first, files before folders, each in name order: the order a
+    # top-down os.walk with sorted folder names gives. Each folder is listed
+    # with os.scandir and every entry is classified without following it.
+    stack: list[tuple[Path, bool]] = [(root, True)]
+    while stack:
+        folder, is_root = stack.pop()
+        entries = scan_entries(folder)
+        # The root's own ``.git`` marks the checkout being inspected; one
+        # below it marks a nested checkout, which is skipped whole.
+        if prune and not is_root and any(path.name == GIT_ENTRY for path, _ in entries):
             continue
-        dirnames[:] = sorted(name for name in dirnames if name not in pruned)
-        for filename in sorted(filenames):
-            folded = os.path.normcase(filename)
-            if not (
-                match_all or folded in wanted_names or folded.endswith(wanted_suffixes)
-            ):
+        files: list[Path] = []
+        folders: list[Path] = []
+        for path, kind in sorted(entries, key=lambda entry: entry[0].name):
+            if path.name in pruned and kind in (DIR_ENTRY, LINK_ENTRY):
+                if kind == LINK_ENTRY:
+                    note_skipped(path)
                 continue
-            candidate = Path(dirpath, filename)
-            if candidate.is_file():
-                yield candidate
+            if kind == DIR_ENTRY:
+                folders.append(path)
+            elif kind == FILE_ENTRY:
+                if wanted(path.name):
+                    files.append(path)
+            elif kind == LINK_ENTRY and include_links and wanted(path.name):
+                # A caller that checks names only gets the link by its own
+                # name; the walk still never enters it.
+                files.append(path)
+            elif kind in (LINK_ENTRY, SKIPPED_FOLDER_ENTRY) or wanted(
+                as_opened(path.name)
+            ):
+                # A link may hide a folder or a file; a pipe, device or socket
+                # with a wanted name would make the read wait or never end.
+                note_skipped(path)
+        yield from files
+        stack.extend((path, False) for path in reversed(folders))
 
 
 # ---------------------------------------------------------------------------
@@ -383,9 +1071,11 @@ class GrepResult:
     """Canonical path-based matcher report.
 
     Pre-conditions: ``findings`` holds the matcher-specific finding dataclasses
-    (each a frozen ``@dataclass``). Post-conditions: ``to_json`` emits the
-    canonical ``{grep, path, passed, findings}`` payload, including ``note``
-    only when it is not ``None``.
+    (each a frozen ``@dataclass``). ``check_error``, when set, says why the
+    check could not finish, and the caller sets ``passed`` to false with it.
+    Post-conditions: ``to_json`` emits the canonical ``{grep, path, passed,
+    findings}`` payload, including ``note`` and ``check_error`` only when they
+    are not ``None``.
     """
 
     grep: str
@@ -393,6 +1083,7 @@ class GrepResult:
     passed: bool
     findings: list[Any] = field(default_factory=list)
     note: str | None = None
+    check_error: str | None = None
 
     def to_json(self) -> str:
         """Return this report as a two-space-indented JSON string.
@@ -400,7 +1091,8 @@ class GrepResult:
         Post-conditions: the payload carries ``{grep, path, passed,
         findings}``; each finding is flattened through ``dataclasses.asdict``.
 
-        ``note`` is emitted only when it is not ``None``.
+        ``note`` and ``check_error`` are emitted only when they are not
+        ``None``.
         """
         payload: dict[str, object] = {
             "grep": self.grep,
@@ -410,6 +1102,8 @@ class GrepResult:
         }
         if self.note is not None:
             payload["note"] = self.note
+        if self.check_error is not None:
+            payload[CHECK_ERROR_KEY] = self.check_error
         return json.dumps(payload, indent=2)
 
 

@@ -19,15 +19,28 @@ Two mechanisms keep the stub honest, and these tests pin both:
    `.github/workflows/scripts/assert-docs-only.sh`, which fails when any gated
    surface is in the PR diff, so the stub can never report a required check
    green over a real code or config change.
+
+`ci.yml`'s `coverage` job combines what the `coverage-shard` cells measured,
+each on its part of `pytest --shard=K/N`. Three more tests pin that the cells
+cover every part and cannot read as passed when they fail, that the job combines
+every part's data file by name and enforces the coverage floor with nothing that
+lets a failure pass, and that the job runs, and fails, when a shard did not
+pass: GitHub would skip it otherwise, and a skipped required check counts as
+passed.
 """
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import yaml
 
 _WORKFLOWS = Path(__file__).resolve().parents[2] / ".github" / "workflows"
+
+# A set command that turns -e off for the rest of a step: "set +e", "set +xe",
+# "set -x +e" or "set +o errexit".
+_ERREXIT_OFF = re.compile(r"\bset\b[^\n;&|#]*\+(?:[a-z]*e|o\s+errexit\b)")
 
 
 def _on(doc: dict) -> dict:
@@ -74,6 +87,90 @@ def test_stub_reports_the_required_context_names() -> None:
     ci = _load("ci.yml")
     assert jobs["quality"]["name"] == ci["jobs"]["quality"]["name"]
     assert jobs["coverage"]["name"] == ci["jobs"]["coverage"]["name"]
+
+
+def _shard_parts(ci: dict) -> list[int]:
+    """Return 1 to N, with N read from the coverage-shard job's --shard=K/N."""
+    job = ci["jobs"]["coverage-shard"]
+    run = "\n".join(step.get("run", "") for step in job["steps"])
+    split = re.search(r"--shard=\$\{\{ matrix\.shard \}\}/(\d+)\b", run)
+    assert split, "coverage-shard must run pytest --shard=${{ matrix.shard }}/N"
+    return list(range(1, int(split.group(1)) + 1))
+
+
+def test_the_coverage_shards_cover_every_part_of_the_suite() -> None:
+    # Each cell passes its matrix value as K of --shard=K/N. A value of 1 to N
+    # missing from the matrix would leave that part's tests unmeasured.
+    ci = _load("ci.yml")
+    job = ci["jobs"]["coverage-shard"]
+    parts = _shard_parts(ci)
+    assert job["strategy"]["matrix"]["shard"] == parts
+    name = re.fullmatch(
+        r"coverage shard \$\{\{ matrix\.shard \}\} of (\d+)", job["name"]
+    )
+    assert name, job["name"]
+    assert int(name.group(1)) == len(parts), "the job name gives another N"
+    # continue-on-error would make a failed shard read as success to the
+    # coverage job, which would then check the floor without that shard's data.
+    assert "continue-on-error" not in job
+    for step in job["steps"]:
+        assert "continue-on-error" not in step, step.get("name")
+
+
+def test_the_coverage_check_combines_every_shard_and_enforces_the_floor() -> None:
+    # Naming each data file makes a missing one fail the combine; a glob would
+    # combine the files that are there, and half the suite can still clear the
+    # floor. coverage report takes fail_under = 80 from pyproject, and a
+    # --fail-under or an "|| true" would lower or skip that floor.
+    # continue-on-error on the job or a step, or a set +e or set +o errexit in a
+    # step, would let a missing data file or a floor failure end this required
+    # check green. So would a shell without -e, such as "bash {0}": the xml and
+    # html commands after a failed report succeed and the step ends green. With
+    # no shell, or "bash", GitHub runs the script with -e. An if: on the step
+    # would skip it.
+    ci = _load("ci.yml")
+    parts = _shard_parts(ci)
+    job = ci["jobs"]["coverage"]
+    steps = job["steps"]
+    [step] = [s for s in steps if "coverage combine" in s.get("run", "")]
+    assert "if" not in step
+    run = step["run"]
+    combine = re.search(r"python -m coverage combine (.*)", run)
+    assert combine, run
+    assert combine.group(1).split() == [
+        f"coverage-data/.coverage.shard-{k}" for k in parts
+    ]
+    # The shards measure all of src/apothem; the report keeps the engine
+    # files (tests/scripts/test_metrics_reuses_shard_coverage.py pins the
+    # list) and nothing else on the line.
+    assert re.search(
+        r'^python -m coverage report --include="\$\{engine\}"$', run, re.MULTILINE
+    ), run
+    assert "--fail-under" not in run
+    assert "|| true" not in run
+    assert "continue-on-error" not in job
+    for each in steps:
+        assert "continue-on-error" not in each, each.get("name")
+        assert not _ERREXIT_OFF.search(each.get("run", "")), each.get("name")
+        assert each.get("shell", "bash") == "bash", each.get("name")
+    for defaults in (ci.get("defaults", {}), job.get("defaults", {})):
+        assert defaults.get("run", {}).get("shell", "bash") == "bash", defaults
+
+
+def test_the_coverage_check_fails_unless_every_shard_passed() -> None:
+    # GitHub skips a job when a job it needs failed or was cancelled, and a
+    # skipped required check counts as passed. The required job runs always()
+    # and fails itself, right after the harden-runner step, unless the shards'
+    # result is success.
+    job = _load("ci.yml")["jobs"]["coverage"]
+    assert job["needs"] == ["coverage-shard"]
+    assert job["if"] == "always()"
+    check = job["steps"][1]
+    # An if: on this step would skip the check of the shards' result.
+    assert "if" not in check
+    assert check["env"]["SHARD_RESULT"] == "${{ needs.coverage-shard.result }}"
+    assert '[ "${SHARD_RESULT}" != "success" ]' in check["run"]
+    assert "exit 1" in check["run"]
 
 
 def test_stub_quality_matrix_mirrors_ci_for_context_parity() -> None:

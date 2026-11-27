@@ -33,6 +33,7 @@ staged-diff check.
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import contextlib
 import functools
 import importlib.util
@@ -90,14 +91,27 @@ if __package__ in (None, ""):
         _support_package.__path__ = [str(_PACKAGE_DIR)]
         sys.modules["apothem"] = _support_package
 
-from apothem.conformity._git import run_git
+from apothem.conformity._bounded_run import run_bounded
+from apothem.conformity._corpus import (
+    FAILING_SKIPS,
+    SKIP_EXEMPT,
+    SKIP_OUTSIDE,
+    SKIP_REASONS,
+    CorpusListError,
+    TrackedEntry,
+    leaves_root,
+    read_entry,
+)
+from apothem.conformity._corpus import tracked_entries as _corpus_tracked_files
 from apothem.conformity._grep_base import (
+    CHECK_ERROR_KEY,
     EMPTY_SCOPE_KEY,
     EXIT_FAIL,
     EXIT_PASS,
     EXIT_USAGE,
     INSPECTED_KEY,
     STDIN_FLAG,
+    GitCheckError,
     make_parser,
     read_path_arguments,
 )
@@ -257,6 +271,19 @@ def _is_harness_state_path(target: Path | None, scopes: tuple[Path, ...]) -> boo
     return False
 
 
+class _RootedCheckCallable(Protocol):
+    """Shape of a matcher's ``check()`` that also takes the corpus root."""
+
+    def __call__(
+        self,
+        content: str,
+        path: Path | None = None,
+        *,
+        root: Path | None = None,
+    ) -> Any:  # noqa: ANN401  # GrepResult instances are duck-typed across modules.
+        """Scan *content*; what the matcher looks up on disk stays in *root*."""
+
+
 class _CheckCallable(Protocol):
     """Shape of every grep module's `check()` callable."""
 
@@ -354,6 +381,20 @@ STANDALONE_MODULES: Final[tuple[str, ...]] = (
 # has its own 10s ceiling and the orchestrator avoids hard-killing a
 # grep mid-scan.
 PER_GREP_BUDGET_SECONDS: Final[float] = 0.520
+
+# Seconds one standalone validator may run, in --all or --check, before the
+# gate stops it. Unlike the per-grep budget this is a hard stop: it ends a
+# validator that would never finish, such as one whose git command waits on a
+# FIFO that the checked repository's own ``include.path`` names. The slowest
+# validator takes about a minute on this repository on a busy machine, so the
+# limit leaves room for slower machines and larger projects. The validators
+# that run git give each git command a shorter limit of their own, so a stalled
+# repository normally ends there first.
+STANDALONE_TIMEOUT_SECONDS: Final[int] = 600
+
+# Exit code after an interrupt (Ctrl+C): 128 plus SIGINT's number, as a shell
+# reports a program that SIGINT ended.
+EXIT_INTERRUPTED: Final[int] = 130
 
 # Maximum per-matcher flagged-file sample carried in the ``--all-perwrite``
 # payload. ``file_count`` is the full tally; ``files`` is a bounded sample and
@@ -576,6 +617,10 @@ _PER_SUFFIX_APPLICABILITY: Final[dict[str, frozenset[str]]] = {
     # GitHub Actions pinning applies to workflow YAML only.
     "unpinned_action_grep": frozenset({".yml", ".yaml"}),
 }
+
+# Matchers whose ``check()`` also takes the corpus root, so what they look up
+# on disk (a link target, for one) stays inside the project in a corpus run.
+_ROOTED_MATCHERS: Final[frozenset[str]] = frozenset({"link_check"})
 
 # File suffixes whose bytes are opaque to the text matchers; the corpus runner
 # skips them entirely (it cannot decode them as UTF-8 text). Mirrors the binary
@@ -1017,6 +1062,27 @@ def _strict_exit_with_advisory(
     return _gate_exit(blocking_passed, strict=strict)
 
 
+def _report_files_not_passed(payload: dict[str, object]) -> None:
+    """Say on stderr which skip reasons kept a corpus run from passing.
+
+    The JSON report on stdout names the files; this line makes the cause
+    visible in a CI log that shows only stderr.
+    """
+    not_passed = payload.get("files_not_passed")
+    skipped = payload.get("files_skipped")
+    if not isinstance(not_passed, dict) or not not_passed:
+        return
+    counts = skipped if isinstance(skipped, dict) else {}
+    reasons = ", ".join(
+        f"{reason} ({counts.get(reason, len(names))})"
+        for reason, names in not_passed.items()
+    )
+    sys.stderr.write(
+        f"conformity-gate: the run did not pass: tracked files it could not "
+        f"check: {reasons}; files_not_passed in the report names them\n"
+    )
+
+
 def _resolve_validator(name: str) -> tuple[str, bool]:
     """Resolve a short or full validator name to its canonical form.
 
@@ -1057,9 +1123,19 @@ def _list_validators() -> str:
 # makes the ``apothem`` package importable the same way it does for the gate
 # itself, then runs the validator module as ``__main__`` with the remaining
 # arguments. A child process therefore resolves its imports without relying on
-# the parent's ``PYTHONPATH`` or on an installed package.
+# the parent's ``PYTHONPATH`` or on an installed package. The child starts with
+# ``-E -s`` (see :func:`_run_standalone`), which also ignores
+# ``PYTHONSAFEPATH``, so the launcher drops the ``''`` entry ``-c`` puts first
+# on ``sys.path`` itself. ``-E`` ignores ``PYTHONIOENCODING`` and
+# ``PYTHONUTF8`` too, so the child also starts with ``-X utf8``: a validator
+# then reads git output and files as UTF-8 under any locale code page. The
+# launcher still sets the child's output streams to UTF-8, which is how the
+# gate reads them.
 _STANDALONE_LAUNCHER: Final[str] = (
     "import sys; sys.path[:1] = [] if sys.path[:1] == [''] else sys.path[:1]\n"
+    "for _stream in (sys.stdout, sys.stderr):\n"
+    "    if hasattr(_stream, 'reconfigure'):\n"
+    "        _stream.reconfigure(encoding='utf-8')\n"
     "import runpy\n"
     "gate_path, module = sys.argv[1], sys.argv[2]\n"
     "sys.argv = [module, *sys.argv[3:]]\n"
@@ -1089,11 +1165,13 @@ def _is_full_path_entry(entry: str, *, windows: bool = os.name == "nt") -> bool:
 def _standalone_env() -> dict[str, str]:
     """Return the environment for a standalone-validator child process.
 
-    ``PYTHONSAFEPATH`` stops Python 3.11+ from adding the working directory to
-    ``sys.path``. A user ``PYTHONPATH`` keeps only its full-path entries (see
-    :func:`_is_full_path_entry`), because an empty, relative, rooted or
-    drive-relative entry depends on the working directory or drive; the
-    variable is dropped when none remain.
+    The child itself starts with ``-E -s`` and reads none of these variables.
+    The environment still reaches any process a validator starts, so it is
+    narrowed here too: ``PYTHONSAFEPATH`` stops Python 3.11+ from adding the
+    working directory to ``sys.path``, and a user ``PYTHONPATH`` keeps only its
+    full-path entries (see :func:`_is_full_path_entry`), because an empty,
+    relative, rooted or drive-relative entry depends on the working directory
+    or drive; the variable is dropped when none remain.
     """
     env = {**os.environ, "PYTHONSAFEPATH": "1"}
     kept = [
@@ -1108,6 +1186,28 @@ def _standalone_env() -> dict[str, str]:
     return env
 
 
+def _stopped_report(name: str) -> str:
+    """Return the JSON report for a validator the gate stopped at its limit.
+
+    The validator printed no report of its own, so the gate writes one in its
+    place: not passed, with a ``check_error`` that says why. The gate learns
+    whether a validator is advisory only from that validator's own report, so
+    this one carries no ``advisory`` field; its ``passed: false`` fails the
+    run either way, as an unfinished advisory check does.
+    """
+    return json.dumps(
+        {
+            "grep": name,
+            "passed": False,
+            CHECK_ERROR_KEY: (
+                f"{name} did not finish within {STANDALONE_TIMEOUT_SECONDS} "
+                "seconds and was stopped"
+            ),
+        },
+        indent=2,
+    )
+
+
 def _run_standalone(name: str, root: Path) -> tuple[bool, str]:
     """Invoke a standalone validator via subprocess; return (passed, output).
 
@@ -1117,31 +1217,45 @@ def _run_standalone(name: str, root: Path) -> tuple[bool, str]:
     before resolving the script path so ``--all`` and ``--check`` both
     locate the script regardless of which form the caller supplied. The
     validator runs through :data:`_STANDALONE_LAUNCHER` against *root*,
-    which the caller has already resolved to an absolute directory. The child
-    writes no bytecode cache (``-B``), as this file run as a program writes
-    none (see the bootstrap at the top of this file).
+    which the caller has already resolved to an absolute directory. The
+    child starts with ``-E -s``: no ``PYTHON*`` variable (so no
+    ``PYTHONPATH`` entry) and no user site-packages folder can load code into
+    it. ``-X utf8`` puts back the UTF-8 text default that an ignored
+    ``PYTHONUTF8`` would have given, so git output and file text decode the
+    same way under every locale code page. The child writes no bytecode cache
+    (``-B``), as this file run as a program writes none (see the bootstrap at
+    the top of this file). It gets :data:`STANDALONE_TIMEOUT_SECONDS`: a
+    validator still running then is stopped, together with every program it
+    started (it runs in a session of its own, or a Windows job object; see
+    :func:`~apothem.conformity._bounded_run.run_bounded`), and does not pass.
+    The output is then the gate's report in its place (see
+    :func:`_stopped_report`).
     """
     module = name.replace("-", "_")
     script = TOOLS_DIR / f"{module}.py"
     if not script.exists():
         return False, f"{name}: script absent at {script}"
     try:
-        completed = subprocess.run(  # noqa: S603 — trusted invocation: sys.executable + a constant launcher + this file's path + a validated STANDALONE_MODULES name
+        completed = run_bounded(
             [
                 sys.executable,
                 "-B",
+                "-E",
+                "-s",
+                "-X",
+                "utf8",
                 "-c",
                 _STANDALONE_LAUNCHER,
                 str(Path(__file__).resolve()),
                 module,
                 str(root),
             ],
-            capture_output=True,
-            text=True,
-            check=False,
-            encoding="utf-8",
             env=_standalone_env(),
+            timeout=STANDALONE_TIMEOUT_SECONDS,
+            new_session=True,
         )
+    except subprocess.TimeoutExpired:
+        return False, _stopped_report(name)
     except OSError as exc:
         return False, f"{name}: invocation failed: {exc}"
     output = completed.stdout or completed.stderr or ""
@@ -1176,12 +1290,14 @@ def _advisory_verdict(output: str) -> dict[str, object] | None:
 
 
 def _inspection_fields(output: str) -> dict[str, object]:
-    """Return a validator report's ``inspected`` / empty-scope fields, if any.
+    """Return a validator report's inspection fields, if any.
 
     Every standalone validator stamps ``inspected`` (how many targets it
     examined) on its JSON report, plus ``empty_scope_expected`` when it
-    examined none. Lifting them into the ``--all`` result entry lets a consumer
-    see a vacuous run without parsing each embedded ``output`` string.
+    examined none, and ``check_error`` when its check could not finish (the
+    gate's own report for a validator it stopped carries ``check_error`` too).
+    Lifting them into the ``--all`` result entry lets a consumer see a vacuous
+    or unfinished run without parsing each embedded ``output`` string.
     """
     try:
         payload = json.loads(output)
@@ -1190,8 +1306,28 @@ def _inspection_fields(output: str) -> dict[str, object]:
     if not isinstance(payload, dict):
         return {}
     return {
-        key: payload[key] for key in (INSPECTED_KEY, EMPTY_SCOPE_KEY) if key in payload
+        key: payload[key]
+        for key in (INSPECTED_KEY, EMPTY_SCOPE_KEY, CHECK_ERROR_KEY)
+        if key in payload
     }
+
+
+# Caps the side-by-side validator processes, so a many-core host does not start
+# every validator at once and starve the git reads some of them time out on.
+_MAX_VALIDATOR_WORKERS = 8
+
+
+def _run_standalones(names: tuple[str, ...], root: Path) -> list[tuple[bool, str]]:
+    """Run each named standalone validator against *root*; keep *names*' order.
+
+    Each validator is its own child process that only reads the tree, so they
+    run side by side, at most eight at once and one per CPU; the slowest one sets the run's
+    length rather than the sum of all of them. The results come back in the
+    order of *names*, so the report reads the same as a one-by-one run.
+    """
+    workers = max(1, min(len(names), os.cpu_count() or 1, _MAX_VALIDATOR_WORKERS))
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
+        return list(pool.map(lambda name: _run_standalone(name, root), names))
 
 
 def _run_all(root: Path) -> tuple[bool, str]:
@@ -1207,12 +1343,20 @@ def _run_all(root: Path) -> tuple[bool, str]:
     ``advisory`` / ``advisory_passed`` / ``findings`` and aggregated into the
     top-level ``advisory_findings_present`` flag so the drift is visible
     without parsing each validator's embedded ``output``.
+
+    A validator whose check could not finish (one the gate stopped at
+    :data:`STANDALONE_TIMEOUT_SECONDS`, or one whose own git command ran past
+    its time limit or found a checkout git refused) does not pass, advisory or
+    not, and its entry carries the reason as ``check_error``. Such an entry
+    reports no advisory findings, so it leaves ``advisory_findings_present``
+    alone.
     """
     results: list[dict[str, object]] = []
     overall_passed = True
     advisory_findings_present = False
-    for name in STANDALONE_MODULES:
-        passed, output = _run_standalone(name, root)
+    for name, (passed, output) in zip(
+        STANDALONE_MODULES, _run_standalones(STANDALONE_MODULES, root), strict=True
+    ):
         if not passed:
             overall_passed = False
         entry: dict[str, object] = {
@@ -1226,7 +1370,7 @@ def _run_all(root: Path) -> tuple[bool, str]:
             entry["advisory"] = True
             entry["advisory_passed"] = verdict["passed"]
             entry["findings"] = verdict["findings"]
-            if not verdict["passed"]:
+            if not verdict["passed"] and CHECK_ERROR_KEY not in entry:
                 advisory_findings_present = True
         results.append(entry)
     payload = {
@@ -1241,26 +1385,6 @@ def _run_all(root: Path) -> tuple[bool, str]:
     return overall_passed, json.dumps(payload, indent=2)
 
 
-def _corpus_tracked_files(root: Path) -> list[Path]:
-    """Return the git-tracked files under *root* as resolved absolute Paths.
-
-    Uses ``git ls-files`` so the corpus is exactly the tracked working tree —
-    ignored artifacts (``dist/``, caches, ``.plans/`` ephemera) are excluded by
-    construction. The invocation is read-only, and :func:`run_git` keeps the
-    checked repository's own git settings from starting a program. When git is
-    unavailable or *root* is not a work tree, returns an empty list (the caller
-    treats an empty corpus as a clean pass — there is nothing tracked to scan).
-    """
-    try:
-        completed = run_git(["ls-files", "-z"], cwd=root)
-    except (OSError, ValueError):
-        return []
-    if completed.returncode != EXIT_PASS:
-        return []
-    rels = [entry for entry in completed.stdout.split("\0") if entry]
-    return [(root / rel).resolve() for rel in rels]
-
-
 def _is_corpus_fixture_path(path: Path) -> bool:
     """Return True for deliberately-malformed conformity-test fixture files.
 
@@ -1273,10 +1397,10 @@ def _is_corpus_fixture_path(path: Path) -> bool:
     content held to the quality bar.
     """
     parts = path.parts
-    if "tests" not in parts:
-        return False
-    tail = parts[parts.index("tests") + 1 :]
-    return bool(tail) and tail[0] in {"conformity", "fixtures"}
+    return any(
+        parts[i] == "tests" and parts[i + 1] in {"conformity", "fixtures"}
+        for i in range(len(parts) - 1)
+    )
 
 
 def _matcher_applies_to(module_name: str, path: Path) -> bool:
@@ -1294,6 +1418,68 @@ def _matcher_applies_to(module_name: str, path: Path) -> bool:
     return path.suffix.lower() in suffixes
 
 
+def _run_matcher(module_name: str, content: str, path: Path, root: Path) -> Any:  # noqa: ANN401  # GrepResult instances are duck-typed across modules.
+    """Run one matcher on one corpus file; a root-aware one also gets *root*."""
+    check = _load_check(module_name)
+    if module_name in _ROOTED_MATCHERS:
+        return cast(_RootedCheckCallable, check)(content, path, root=root)
+    return check(content, path)
+
+
+def _is_corpus_exempt(inside: Path) -> bool:
+    """Return True for a path inside the root that the corpus run leaves out.
+
+    That is a binary suffix, a plan suite, a conformity or test fixture, and
+    vendored or third-party trees, which carry upstream conventions, not the
+    apothem quality bar (``schemas/header-exceptions.txt``: ``**/_vendor/**``,
+    ``**/node_modules/**``).
+    """
+    return (
+        inside.suffix.lower() in _CORPUS_BINARY_SUFFIXES
+        or _is_plan_suite_path(inside)
+        or _is_corpus_fixture_path(inside)
+        or "_vendor" in inside.parts
+        or "node_modules" in inside.parts
+    )
+
+
+def _record_file_findings(
+    content: str,
+    abs_path: Path,
+    root: Path,
+    *,
+    blocking: dict[str, dict[str, object]],
+    advisory: dict[str, dict[str, object]],
+) -> None:
+    """Run every applicable per-write matcher on one file the corpus run read,
+    adding its findings to the *blocking* or *advisory* tally of that matcher.
+    """
+    rel = str(abs_path.relative_to(root))
+    for module_name in GREP_MODULES:
+        if not _matcher_applies_to(module_name, abs_path):
+            continue
+        try:
+            result = _run_matcher(module_name, content, abs_path, root)
+        except Exception:  # noqa: S112, BLE001, RUF100 — fail-open isolation: one matcher's internal error (load failure or check() raise) must never fail-close the corpus run; the matcher contributes no finding for this file and the run proceeds, mirroring run_orchestrator's per-matcher isolation boundary (BLE001 is the intent marker; RUF100 self-suppresses because ruff's BLE family is not active)
+            continue
+        if getattr(result, "note", None) is not None:
+            # A matcher's scope-not-resolvable skip — not a finding.
+            continue
+        findings = getattr(result, "findings", None) or []
+        if not findings:
+            continue
+        bucket = blocking if module_name in _BLOCKING_PER_WRITE_GREPS else advisory
+        entry = bucket.setdefault(
+            module_name,
+            {"finding_count": 0, "file_count": 0, "files": []},
+        )
+        entry["finding_count"] = cast(int, entry["finding_count"]) + len(findings)
+        entry["file_count"] = cast(int, entry["file_count"]) + 1
+        sample = entry["files"]
+        if isinstance(sample, list) and len(sample) < _PERWRITE_FILE_SAMPLE_CAP:
+            sample.append(rel)
+
+
 def _run_all_perwrite(root: Path) -> tuple[bool, str]:
     """Run every per-Write matcher over the git-tracked corpus under *root*.
 
@@ -1304,63 +1490,68 @@ def _run_all_perwrite(root: Path) -> tuple[bool, str]:
     matcher and split into a blocking tally and an advisory tally per the
     ``_BLOCKING_PER_WRITE_GREPS`` / ``_ADVISORY_PER_WRITE_GREPS`` partition.
 
-    Returns ``(blocking_clean, payload)`` where ``blocking_clean`` is True iff
-    zero blocking matchers flagged a finding. Advisory findings are reported
-    (so drift is never silent) but never affect ``blocking_clean``. A matcher
-    result carrying a ``note`` (a matcher's "scope not resolvable" skip) is not a
-    finding. The caller maps ``blocking_clean`` to an exit code under the
-    advisory-by-default posture (``--strict`` makes a non-clean blocking run
-    exit non-zero).
+    Returns ``(passed, payload)`` where ``passed`` is True iff the run read at
+    least one file and zero blocking matchers flagged a finding. Advisory
+    findings are reported (so drift is never silent) but never affect
+    ``passed``. A matcher result carrying a ``note`` (a matcher's "scope not
+    resolvable" skip) is not a finding. A run that read no file has checked
+    nothing, so it does not pass: the payload then carries
+    ``empty_scope_expected: false``, as a standalone validator's does, plus
+    ``check_error`` when the tracked-file list cannot be read. Only regular
+    files inside *root* are read (see :func:`_corpus.read_entry`), and
+    ``files_skipped`` counts every other listed path by reason. An index
+    entry with an empty, ``.``, ``..`` or ``.git`` part (a leading ``/``
+    among them) also fails the run: git never writes one, so the index was
+    written by hand. So does a text file over the size limit or one that
+    cannot be read, since a finding it holds would go unseen; the payload's
+    ``files_not_passed`` names the entries behind each such reason, at most
+    ``_PERWRITE_FILE_SAMPLE_CAP`` of them (``files_skipped`` has the count).
+    The caller
+    maps ``passed`` to an exit code under the advisory-by-default posture
+    (``--strict`` makes a run that did not pass exit non-zero).
     """
-    files = _corpus_tracked_files(root)
+    check_error: str | None = None
+    try:
+        entries = _corpus_tracked_files(root)
+    except (CorpusListError, GitCheckError) as exc:
+        entries, check_error = [], str(exc)
     # matcher -> {"finding_count": int, "file_count": int, "files": [rel, ...]}
     blocking: dict[str, dict[str, object]] = {}
     advisory: dict[str, dict[str, object]] = {}
     files_scanned = 0
-    for abs_path in files:
-        if abs_path.suffix.lower() in _CORPUS_BINARY_SUFFIXES:
+    skipped = dict.fromkeys(SKIP_REASONS, 0)
+    # reason -> names of the entries that fail the run for it.
+    not_passed: dict[str, list[str]] = {}
+
+    def count_skip(reason: str, tracked: TrackedEntry) -> None:
+        skipped[reason] += 1
+        if reason in FAILING_SKIPS:
+            not_passed.setdefault(reason, []).append(
+                tracked.name or tracked.path.as_posix()
+            )
+
+    for tracked in entries:
+        abs_path = tracked.path
+        if tracked.skip is not None or leaves_root(root, abs_path):
+            # Counted before the exemptions below, so none of them can hide
+            # an entry that leaves the project or a name this system cannot
+            # hold.
+            count_skip(tracked.skip or SKIP_OUTSIDE, tracked)
             continue
-        if _is_plan_suite_path(abs_path) or _is_corpus_fixture_path(abs_path):
+        # The exemptions are judged on the path inside the project, so a
+        # project that itself sits under tests/fixtures or node_modules is
+        # read as usual.
+        if _is_corpus_exempt(abs_path.relative_to(root)):
+            skipped[SKIP_EXEMPT] += 1
             continue
-        if "_vendor" in abs_path.parts or "node_modules" in abs_path.parts:
-            # Vendored / third-party trees carry upstream conventions, not the
-            # apothem quality bar — exempt per schemas/header-exceptions.txt
-            # (`**/_vendor/**`, `**/node_modules/**`).
-            continue
-        try:
-            content = abs_path.read_text(encoding="utf-8")
-        except (OSError, UnicodeDecodeError):
-            # Undecodable-as-text tracked file (an unlisted binary suffix);
-            # there is nothing for the text matchers to scan.
+        content, reason = read_entry(root, tracked)
+        if content is None:
+            count_skip(cast(str, reason), tracked)
             continue
         files_scanned += 1
-        try:
-            rel = str(abs_path.relative_to(root))
-        except ValueError:
-            rel = str(abs_path)
-        for module_name in GREP_MODULES:
-            if not _matcher_applies_to(module_name, abs_path):
-                continue
-            try:
-                result = _load_check(module_name)(content, abs_path)
-            except Exception:  # noqa: S112, BLE001, RUF100 — fail-open isolation: one matcher's internal error (load failure or check() raise) must never fail-close the corpus run; the matcher contributes no finding for this file and the run proceeds, mirroring run_orchestrator's per-matcher isolation boundary (BLE001 is the intent marker; RUF100 self-suppresses because ruff's BLE family is not active)
-                continue
-            if getattr(result, "note", None) is not None:
-                # A matcher's scope-not-resolvable skip — not a finding.
-                continue
-            findings = getattr(result, "findings", None) or []
-            if not findings:
-                continue
-            bucket = blocking if module_name in _BLOCKING_PER_WRITE_GREPS else advisory
-            entry = bucket.setdefault(
-                module_name,
-                {"finding_count": 0, "file_count": 0, "files": []},
-            )
-            entry["finding_count"] = cast(int, entry["finding_count"]) + len(findings)
-            entry["file_count"] = cast(int, entry["file_count"]) + 1
-            sample = entry["files"]
-            if isinstance(sample, list) and len(sample) < _PERWRITE_FILE_SAMPLE_CAP:
-                sample.append(rel)
+        _record_file_findings(
+            content, abs_path, root, blocking=blocking, advisory=advisory
+        )
     blocking_clean = not blocking
     blocking_results = [
         {
@@ -1393,12 +1584,23 @@ def _run_all_perwrite(root: Path) -> tuple[bool, str]:
         for name in sorted(_ADVISORY_PER_WRITE_GREPS)
         if name in advisory
     ]
-    payload = {
+    passed = (
+        blocking_clean
+        and files_scanned > 0
+        and not any(skipped[reason] for reason in FAILING_SKIPS)
+    )
+    payload: dict[str, object] = {
         "orchestrator": "conformity-gate",
         "mode": "all-perwrite",
         "root": str(root),
-        "passed": blocking_clean,
+        "passed": passed,
         "files_scanned": files_scanned,
+        "files_skipped": skipped,
+        # A bounded, sorted sample per reason; ``files_skipped`` has the count.
+        "files_not_passed": {
+            reason: sorted(names)[:_PERWRITE_FILE_SAMPLE_CAP]
+            for reason, names in sorted(not_passed.items())
+        },
         "blocking_matcher_count": len(_BLOCKING_PER_WRITE_GREPS),
         "advisory_matcher_count": len(_ADVISORY_PER_WRITE_GREPS),
         "blocking_findings_present": not blocking_clean,
@@ -1406,7 +1608,11 @@ def _run_all_perwrite(root: Path) -> tuple[bool, str]:
         "blocking": blocking_results,
         "advisory": advisory_results,
     }
-    return blocking_clean, json.dumps(payload, indent=2)
+    if files_scanned == 0:
+        payload[EMPTY_SCOPE_KEY] = False
+    if check_error is not None:
+        payload[CHECK_ERROR_KEY] = check_error
+    return passed, json.dumps(payload, indent=2)
 
 
 def _silent_pass(path: Path | None) -> int:
@@ -1565,11 +1771,17 @@ def main(argv: list[str] | None = None) -> int:
     Post-conditions: returns :data:`EXIT_PASS` when no blocking finding was
     raised, or when findings exist but strict mode is off — the advisory
     default reports without failing a build. Returns the findings-block code
-    under ``--strict``, and the usage-error code :data:`EXIT_USAGE` for an
+    under ``--strict`` for a blocking finding, and for an ``--all-perwrite`` run
+    that did not pass because it read no file, met an index entry that
+    leaves the root, or met a file it could not read or a text file over
+    the size limit; and the usage-error code :data:`EXIT_USAGE` for an
     unknown flag or validator name, a conflicting flag pair, a file that does
     not exist, or a root that is not an existing directory — kept distinct so
     a caller can tell a misspelled selector or path from a real finding.
-    ``--help`` prints usage and returns 0.
+    ``--help`` prints usage and returns 0. An interrupt (Ctrl+C) prints one
+    line and returns 130, after the running validator has been stopped; a
+    ``SIGTERM`` or ``SIGHUP`` while a validator runs returns 128 plus the
+    signal number the same way.
     """
     if argv is None:
         argv = sys.argv
@@ -1584,6 +1796,9 @@ def main(argv: list[str] | None = None) -> int:
     except SystemExit as exc:
         # ``parser.error`` exits EXIT_USAGE after printing its one-line message.
         return exc.code if isinstance(exc.code, int) else EXIT_USAGE
+    except KeyboardInterrupt:
+        sys.stderr.write("conformity-gate: interrupted\n")
+        return EXIT_INTERRUPTED
 
 
 def _dispatch(
@@ -1608,6 +1823,7 @@ def _dispatch(
     if args.all_perwrite:
         passed, payload = _run_all_perwrite(_resolve_root(parser, args.target))
         print(payload)
+        _report_files_not_passed(json.loads(payload))
         return _strict_exit_with_advisory(
             blocking_passed=passed,
             advisory_present=advisory_findings_present(json.loads(payload)),
@@ -1688,7 +1904,7 @@ def _dispatch(
 
 
 def _force_utf8_streams() -> None:
-    """Pin stdout/stderr to UTF-8 for the deployed-hook / CLI entry.
+    """Pin stdin/stdout/stderr to UTF-8 for the deployed-hook / CLI entry.
 
     The gate emits a machine-facing JSON report on stdout and a human-facing
     findings summary on stderr; the summary carries em-dashes and other
@@ -1696,14 +1912,22 @@ def _force_utf8_streams() -> None:
     console code page (cp1252), so an em-dash leaves the process as byte 0x97
     rather than its UTF-8 encoding — a UTF-8-reading consumer (the harness that
     surfaces the hook's stderr to the operator, or a test that captures it) then
-    fails to decode it. Every *file* the gate touches is already opened
-    ``encoding="utf-8"``; this closes the one remaining gap, the process's own
-    standard streams. Scoped to the ``__main__`` entry so an in-process
-    ``main()`` call (the package-invocation tests) leaves the interpreter's
-    streams — and any pytest capture wrapper standing in for them — untouched.
-    Guarded and idempotent: a stream without ``reconfigure`` is skipped, and a
-    detached stream is best-effort only.
+    fails to decode it. The harness writes its payload to stdin as UTF-8 JSON,
+    and the hook command starts Python with ``-E``, which ignores
+    ``PYTHONUTF8`` and ``PYTHONIOENCODING``, so stdin is read as UTF-8 here too
+    (``utf-8-sig`` drops a leading byte-order mark; a byte that is not UTF-8
+    reads as U+FFFD instead of failing the read). Every *file* the gate touches
+    is already opened ``encoding="utf-8"``; this closes the one remaining gap,
+    the process's own standard streams. Scoped to the ``__main__`` entry so an
+    in-process ``main()`` call (the package-invocation tests) leaves the
+    interpreter's streams — and any pytest capture wrapper standing in for
+    them — untouched. Guarded and idempotent: a stream without ``reconfigure``
+    is skipped, and a detached stream is best-effort only.
     """
+    stdin_reconfigure = getattr(sys.stdin, "reconfigure", None)
+    if stdin_reconfigure is not None:
+        with contextlib.suppress(ValueError, OSError):
+            stdin_reconfigure(encoding="utf-8-sig", errors="replace")
     for stream in (sys.stdout, sys.stderr):
         reconfigure = getattr(stream, "reconfigure", None)
         if reconfigure is None:

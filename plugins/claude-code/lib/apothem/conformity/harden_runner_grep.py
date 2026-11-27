@@ -42,6 +42,13 @@ from typing import Final
 
 import yaml
 
+from apothem.conformity._grep_base import (
+    finish_root_report,
+    is_project_dir,
+    is_project_file,
+    parse_root_args,
+)
+
 # A bare ``${{ inputs.<name> }}`` expression — the reusable-workflow shape
 # where egress-policy is parameterized by a workflow_call input.
 _INPUTS_EXPR: Final[re.Pattern[str]] = re.compile(
@@ -308,7 +315,7 @@ def check_root(root: Path) -> GrepResult:
     ``not_yet_materialised=True``.
     """
     workflows_dir = root / WORKFLOWS_SUBPATH
-    if not workflows_dir.is_dir():
+    if not is_project_dir(root, workflows_dir):
         return GrepResult(
             grep=GREP_NAME,
             root=str(root),
@@ -316,7 +323,11 @@ def check_root(root: Path) -> GrepResult:
             not_yet_materialised=True,
         )
     findings: list[Finding] = []
-    candidates = sorted([*workflows_dir.glob("*.yml"), *workflows_dir.glob("*.yaml")])
+    candidates = sorted(
+        p
+        for p in [*workflows_dir.glob("*.yml"), *workflows_dir.glob("*.yaml")]
+        if is_project_file(root, p)
+    )
     for workflow_path in candidates:
         findings.extend(_inspect_workflow(workflow_path, root))
     return GrepResult(
@@ -329,10 +340,6 @@ def check_root(root: Path) -> GrepResult:
 
 
 def _main(argv: list[str]) -> int:
-    # Imported here, not at module top: ``check_root()`` stays importable
-    # without the package; only the command-line entry needs the parser.
-    from apothem.conformity._grep_base import finish_root_report, parse_root_args
-
     root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     result = check_root(root)
     return finish_root_report(

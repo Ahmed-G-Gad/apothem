@@ -46,6 +46,7 @@ from .install_driver_datahome import (
     _remove_data_home,
     refuse_data_home_removal,
 )
+from .install_driver_keys import made_dirs
 from .install_driver_pathsafety import (
     _allowed_write_root,
     _is_lexically_within,
@@ -500,8 +501,10 @@ def rollback_install(
     the home, and only when no other install still lists it: a ``created`` flag
     alone is not enough, because a later install may have claimed the target.
     A target this install only found in place goes too when an install that has
-    let go of it created it (:meth:`UserLevelGate.inherited`), so rolling back
-    every holder does not strand the folder. An unreadable ledger stops the
+    let go of it created it (:meth:`UserLevelGate.inherited`), and so, once
+    empty, do the folders that install created to hold it (see
+    :func:`~.install_driver_keys.made_dirs`), so rolling back every holder
+    does not strand the folder. An unreadable ledger stops the
     rollback before anything changes, and so does a link that leads a
     user-scope root spelled inside the home out of it (``CODEX_HOME=~/a/b/codex``
     after ``~/a`` became a link to a folder outside the home): the one result
@@ -608,6 +611,13 @@ def rollback_install(
         )
         if removal is not None and removal.outcome != "unchanged":
             results.append(removal)
-    results.extend(remove_created_dirs(created, allowed_root=allowed_root))
+    # Once empty, the user-level folders an install that has let go of them
+    # created go too: tidy leaves them here when the boundary is the home.
+    made = made_dirs(gate.bases.values(), {record.install_id}, boundary=allowed_root)
+    results.extend(
+        remove_created_dirs(
+            created | made, allowed_root=allowed_root, inherited=made - created
+        )
+    )
     results.extend(gate.tidy(created))
     return results

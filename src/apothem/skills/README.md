@@ -53,7 +53,7 @@ selectively.
 ## The skill convention
 
 - **One folder per skill**, named in kebab-case, under `skills/`.
-- **Entry point is always `SKILL.md`** with YAML frontmatter validated against [`../schemas/skill.schema.json`](../schemas/skill.schema.json). Required frontmatter fields (per `skill.schema.json`): `name`, `version`, `updated`, `description` (the detection signal), `archetype` (the skill's shape class, e.g. `audit-template`, `workflow-template`), `userInvocable`, `disable-model-invocation`, and `allowed-tools`; the optional `argument-hint` field may also appear.
+- **Entry point is always `SKILL.md`** with YAML frontmatter validated against [`../schemas/skill.schema.json`](../schemas/skill.schema.json). Required frontmatter fields (per `skill.schema.json`): `name`, `version`, `updated`, `description` (the detection signal), `archetype` (the skill's shape class, e.g. `audit-template`, `workflow-template`), `userInvocable` (the Claude Code emission spells it `user-invocable`; the schema requires exactly one of the two spellings), `disable-model-invocation`, and `allowed-tools`; the optional `argument-hint` field may also appear.
 - **Supporting files** live alongside `SKILL.md` in the same folder. The `plan-suite/` skill ships `master-template.md` — the canonical plan-suite template the `/plan` pipeline stages consume.
 - Every file carries the canonical single-line SPDX license header.
 

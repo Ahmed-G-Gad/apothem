@@ -20,203 +20,31 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-### Data loss in earlier releases: recover your files
-
-- **Releases 1.0.1 to 1.5.0 deleted folders that hold your own files.** Every
-  `apothem install` and `apothem update` of these adapters removed the whole
-  folder, with everything you had placed in it:
-  - Claude Code: `~/.claude/commands/` (your slash commands), `~/.claude/hooks/`
-    (your hook scripts; a `settings.json` entry that runs one now points at
-    nothing), and `scripts/`, `templates/`, `tools/`, `lib/`, `docs/`,
-    `config/`, `src/`, `tests/`, `schemas/`, `conformity/`, `packaging/`,
-    `mcp/`, `examples/`, `assets/`, `site/` and `public/` under `~/.claude/`,
-    plus the `AGENTS.md` files in `~/.claude/{agents,rules,skills,statuslines,output-styles}/`.
-  - Codex: `~/.codex/rules/` (Codex's own `.rules` execution policies) and
-    `~/.codex/commands/`, plus `~/.config/apothem/hooks/` and
-    `~/.agents/skills/AGENTS.md`.
-  - Gemini CLI: a project's own `skills/AGENTS.md`.
-  - Hermes: `~/.hermes/cli-config.yaml` and `~/.hermes/profile.yaml`. Open-Claw:
-    `~/.open-claw/config.yaml`.
-  - Antigravity: `~/.gemini/antigravity/`, the Antigravity App's own data folder
-    (MCP sign-in tokens, session transcripts, skills).
-
-  No release ever installed a file into any of these places, so this release
-  stops removing them. It keeps sweeping only folders in Apothem's own
-  namespace that a release wrote into (`apothem/rules/` under the OpenCode,
-  Qwen Code, Hermes and Open-Claw folders, and Kimi Code's
-  `.kimi-code/.apothem/support/{skills,agents}/`).
-
-  **To recover:** each removed folder was copied first to
-  `~/.apothem/backups/<timestamp>/<harness>/`, under its path relative to your
-  home, or to the project for a project install (for example
-  `claude_code/.claude/commands/`). Releases 1.2.0 to 1.5.0 keep only the newest
-  10 backup sets per harness and add one on every install, update, uninstall
-  and rollback, so older sets may already be gone; 1.0.x and 1.1.0 kept every
-  set. This release never deletes a backup set that holds one of these paths,
-  automatically or through `apothem backups prune`.
-
-  1. Copy `~/.apothem/backups/` somewhere else before you run Apothem again.
-  2. Copy the files you need from that copy back to their place by hand.
-  3. Run `apothem update` afterwards.
-
-  `apothem rollback --install-id ID` is not a recovery step for this: it
-  reverses the whole old install, including the files that install wrote or
-  changed, such as `settings.json` and `CLAUDE.md`. For the swept folder alone,
-  rollback now puts back each missing file and keeps every file that is there.
-
-- **Releases 1.0.1 to 1.5.0 removed your text below a broken managed block.**
-  An `apothem uninstall` of a file where Apothem keeps a managed block
-  (`CLAUDE.md`, `AGENTS.md` and the like) whose END marker line was gone
-  removed everything from the BEGIN marker line to the end of the file, your
-  own text below it included. A BEGIN marker line left above a whole block
-  took the text between the two with it.
-
-  **To recover:** the uninstall copied the file first, to
-  `~/.apothem/backups/<timestamp>/<harness>/`. That set is not kept for good:
-  releases 1.2.0 to 1.5.0 kept only the newest 10 sets per harness, and this
-  release does the same for it unless an install record it keeps refers to
-  it, so it may already be gone. Every install, update, uninstall and
-  rollback adds a set.
-
-  1. Copy `~/.apothem/backups/` somewhere else before you run Apothem again.
-  2. Copy your text from that copy back into the file by hand.
-
-### Added
-
-- **OpenClaw now loads Apothem's rules.** The Open-Claw install writes
-  `apothem/AGENTS.md` into each OpenClaw workspace and lists that path in the
-  bundled `bootstrap-extra-files` hook's entry in `openclaw.json`
-  (`hooks.internal.entries.bootstrap-extra-files`). The file holds the profile's
-  managed block and the pointer to the installed rule index. Because it is named
-  `AGENTS.md`, OpenClaw also loads it in cron and sub-agent sessions. The
-  workspace's own `AGENTS.md` is never edited.
-  - **Workspaces:** the default workspace and each `agents.entries` (or older
-    `agents.list`) workspace that exists in the home directory, resolved as
-    OpenClaw does: ids normalized, and the entry marked `default: true` or a
-    sole entry uses the default workspace.
-    One OpenClaw has not created yet is filled by the next `apothem update`
-    (`apothem verify` fails until then). One outside the home directory, or
-    reached through a link, is skipped with a warning. When a workspace leaves
-    the config, the next install or update takes the Apothem block out of the
-    file it wrote there.
-  - **Hook settings:** left alone, with a warning, when internal hooks are off,
-    the hook's entry is off, or `hooks.internal.enabled: true` names no hook
-    (naming one would switch the others off).
-  - **Size limits:** a rules file that OpenClaw would cut or skip is not written,
-    and an earlier copy is taken out. That covers the per-file limit
-    (`bootstrapMaxChars`, 20,000 by default) and the room the six workspace
-    files and the entry's other extra files leave in the total
-    (`bootstrapTotalMaxChars`, 60,000), with each entry's own limits and
-    characters counted as OpenClaw counts them. When the file fits no
-    workspace, no path is registered.
-  - **Upgrading with a commented `openclaw.json`:** Apothem cannot add the hook
-    entry to a file with comments or other JSON5 syntax without dropping them.
-    If you added the `skills.load.extraDirs` entry by hand, as these docs said
-    before, install and update now print the hook entry to add as well;
-    `apothem verify` fails until you add it.
-  - **Uninstall** removes the managed blocks, the files and folders they
-    leave empty, and only the hook entries Apothem added. Apothem's entries
-    in a commented `openclaw.json` stop it before anything changes, with an
-    error naming what to remove; a rules file behind a link is left in place
-    and the uninstall reported unfinished (exit 2); a rules file Apothem
-    cannot rewrite gets an error that names it, and the uninstall cleans the
-    other workspaces' rules files, records their backups and stops before
-    `openclaw.json` changes. When the step that changes `openclaw.json` stops
-    with an error after the rules files changed (a backup that cannot be
-    written, say), the uninstall records itself unfinished with their backups,
-    so retention keeps them, and exits 2 with `uninstall stopped after
-    removing files`; an interrupt (`Ctrl+C`) there is recorded the same way.
-    The command then prints `Aborted!` and exits 1, though files were removed;
-    run the uninstall again to finish it. An error inside the rules-file step
-    itself leaves the backups it took before the error unrecorded. In each
-    case the install record stays, so a second uninstall after the hand fix
-    finishes. `apothem verify` reports a missing file or registration.
-
-- **The operator-file parsers are fuzzed.** Five Atheris fuzz targets in
-  `tests/fuzz/` cover the JSONC / JSON5 config reader, the hook-file merge and
-  removal (Kiro, GitHub Copilot, Cursor), the shared-profile loader, the install
-  ledger and the frontmatter probe. Each checks invariants, not just crashes:
-  the config reader parses whatever `json.loads` accepts to the same value, a
-  second install leaves a hook file byte for byte the same and keeps the
-  operator's hooks in order, a loaded profile normalizes to itself, and a ledger
-  record reads back unchanged. ClusterFuzzLite (`.clusterfuzzlite/`,
-  `.github/workflows/fuzzing.yml`) fuzzes each pull request that touches
-  `src/apothem/` for five minutes and runs a fifteen-minute batch every day, and
-  `tests/fuzz/test_fuzz_seed_replay.py` replays every target's seeds in the
-  ordinary test run. The OpenSSF Scorecard Fuzzing check credits the setup.
-- **An answer sheet for the OpenSSF Best Practices badge.** The new
-  [OpenSSF Best Practices badge](https://apothem.ahmedgad.com/docs/security/openssf-best-practices)
-  page answers all 67 passing criteria from bestpractices.dev (Met, N/A or
-  Unmet), each with a one-line justification and a link to the file or page
-  that shows it, and lists the steps to register the project. The answers
-  meet every MUST criterion; the one Unmet SHOULD criterion,
-  `crypto_weaknesses`, is explained there, along with the other remaining
-  gaps. The CII-Best-Practices row on the Scorecard page links to it.
-  CONTRIBUTING.md now states that a pull request adding functionality adds
-  tests for it, and that a bug fix adds a regression test.
-- **Every docs link with a `#section` is checked against the page it opens.**
-  `scripts/dev/check_site_anchor_links.py` reads the English pages and the
-  eleven translations, makes each heading's id the way the site does (a Python
-  port of github-slugger, `scripts/dev/github_slugger.py`), and fails when a
-  link names a heading the page it opens does not have. It also fails a
-  translation that records the current English text but has other headings than
-  the English page, and a component that links into `/docs` past the link
-  localization below. `tests/unit/docs/test_site_anchor_links.py` runs it in the
-  `quality` job with Python alone, and `scripts/dev/check_built_docs_links.py`
-  repeats the check on the built site in `docs-build`, where it also fails a
-  translated page whose link still opens the English page. Before, nothing read
-  heading ids until the site was built, and 252 links on translated pages named
-  a heading that exists only on the translated copy.
-- **The Marketplace publish can use Trusted Publishing.** With the
-  repository variable `VSCE_AUTH=oidc`, the VS Code publish job runs
-  `vsce publish --oidc`, which exchanges the job's GitHub OIDC token for a
-  short-lived Marketplace credential: no stored secret and no Azure setup.
-  The publisher adds one Trusted Publishing policy for this repository, the
-  publish workflow and the `release` environment. The job first checks that
-  the vsce release locked in `tools/vsce` supports the final token
-  exchange, and stops with a plain error when it does not. The Entra route
-  and the `VSCE_PAT` token stay as alternatives. An unrecognised
-  `VSCE_AUTH` value now logs a warning, without echoing the value. The
-  release-cycle runbook gains the setup procedure.
-- **The weekly convention monitor watches each tool's release channels.**
-  OpenCode 2 shipped as the npm package `@opencode/cli`, with its first
-  GitHub Release, v2.2.0, on 2026-10-27, and the pins did not record it for a
-  week. `scripts/dev/vendor-release-channels.json` now has an entry for every
-  harness: its release channels (an npm package and its dist-tag, a GitHub
-  repository's latest release or, for a channel with a tag pattern, its
-  newest stable release with a matching tag among the newest 100, a PyPI
-  project, or an installer address whose redirect is watched), or the reason
-  it has none. Each channel records the version last reviewed (the one its
-  pin names or, where the pin names none, the one the registry served when
-  the channel was recorded), the date, and the phrase of the pin that cites
-  it. Each week `scripts/dev/check_vendor_releases.py` asks every registry
-  for the current version, and each installer address where it redirects. A
-  new major version, a release past a trigger the file names, an installer
-  address that redirects somewhere else, or a package, dist-tag, release or
-  address that no longer exists files an issue, and so does a check that
-  cannot run, with the reason. A newer minor or patch version is listed in
-  the run summary and does not fail the check, and a registry that does not
-  answer, or whose answer breaks off partway, is reported as unreachable.
-  OpenCode has four channels: `opencode-ai` for OpenCode 1, `@opencode/cli`
-  for OpenCode 2, the GitHub releases of `anomalyco/opencode`, where a new
-  major line shows whatever npm package it ships as, and
-  `opencode.ai/install`. Two of them watch the OpenCode decision's second
-  signal, OpenCode 1's installer or npm package moving to OpenCode 2: the
-  check fails when `opencode-ai`'s `latest` version moves past major version
-  1, or when `opencode.ai/install` stops redirecting to the OpenCode 1
-  installer script. The decision's first signal, a date to remove OpenCode
-  2's translation of OpenCode 1's formats, stays a check by hand.
-  Antigravity, Cursor, Kiro, Trae and Windsurf have no release channel a
-  script can query, and the file gives the reason for each. The check job
-  sends the workflow's `GITHUB_TOKEN` to the GitHub API with read access
-  only, and a separate job files the issue. The Claude Code, CodeBuddy,
-  Codex, Gemini CLI, Hermes, OpenClaw and Zed pins now cite the vendor page
-  that names their package or release repository, and the OpenCode pin
-  records where `opencode.ai/install` redirects and how that script picks the
-  version it installs.
-
 ### Changed
 
+- **The CI metrics job reuses the coverage shards' data instead of running the
+  test suite again.** The `ci.yml` metrics job ran the whole suite under
+  coverage on one runner in 18 to 30 minutes, and its 30-minute limit cancelled
+  some runs. The two coverage shards now measure all of `src/apothem`, and the
+  metrics job combines their data and reports the same per-package figures and
+  floors in about a minute, so the suite runs under coverage once per CI run
+  instead of twice. The `coverage` job's reports keep only the engine folders,
+  read from `[tool.coverage.run] source` in `pyproject.toml`, so the engine
+  figure and its 80% floor stay the same.
+- **CI fails a pull request that edits released release notes.** A release
+  renames `[Unreleased]` in `CHANGELOG.md` to the new version. A branch cut
+  before the release could then merge the release in with no conflict and
+  leave its entry inside the released section. A new step in the required
+  `quality / ubuntu-latest / py3.12` check compares every released section
+  with the base branch and names the section that changed. A commit trailer
+  `Changelog-Released-Edit: <version> <reason>` allows a deliberate
+  correction to that version's notes only.
+- **`python -m apothem.conformity.gate --all` takes seconds, not minutes.**
+  The gate now runs its standalone validators side by side, at most eight at once, and
+  still reports them in the same order. `redundancy-grep` skips paragraph pairs
+  whose distinct-word counts rule out a match, with the same findings as before.
+  A full `gate --all .` on this repository went from about 100 seconds to about
+  12 on Windows.
 - **Apothem refuses to write into the real home while pytest runs.** While
   `PYTEST_CURRENT_TEST` is set and not empty (a test), or `PYTEST_VERSION`
   holds the running pytest's version (the whole session: collection,
@@ -298,10 +126,604 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   the child's environment. `tests/README.md` lists what the refusal does not
   cover, such as a bind mount of the home, a refusal absorbed in a child
   process and a folder swapped for a link between the check and the write.
+
+### Fixed
+
+- **The conformity gate reads every byte of a path name, and a failed
+  `git diff` does not pass from a subfolder.** The gate read git's lists of
+  path names as text, which turned a carriage return in a name into a line
+  feed and a byte that is not UTF-8 into the replacement character. The
+  changed name matched no file, so `semver-stability-grep --staged` skipped
+  that module and passed a staged change that dropped a public function, and
+  `--all-perwrite` left the file out. `--all-perwrite`, `no-global-plans-grep`
+  and both `--staged` checks now read each name byte for byte.
+  `production-ready-pr-grep` matches each of its rules against the whole name,
+  so a name that ends in a line break, such as `CHANGELOG.md` followed by one,
+  does not count as the changelog, and a code file with a line break inside its
+  name counts as code. On Windows, git cannot be handed a name
+  that is not UTF-8 (only an index made on another system holds one), so
+  `semver-stability-grep --staged` reports a `check_error` for it and does not
+  pass, and `--all-perwrite` counts such a file as `missing` without reading
+  it. The history read of `agents-md-coverage-grep` still gets a name with a
+  control character in git's quoted form, and a byte that is not UTF-8 as the
+  replacement character. Both `--staged` checks read the staged names from the
+  top of the work tree whatever your `diff.relative` setting is: with it on, a
+  run from a subfolder got names the check could not use, and it passed.
+  Both `--staged` checks, and `agents-md-coverage-grep` on a subfolder, now
+  look for the checkout in the folders above the one they run in, up to where
+  git stops looking (a `GIT_CEILING_DIRECTORIES` folder, or another file
+  system outside Windows): run from a subfolder, a `git` that failed, for
+  example on `diff.renameLimit = abc`, was read as no staged change and
+  passed. `conventional-commit-grep` run on a subfolder of a checkout passed
+  without reading any commit; it now reads the repository above, as git does,
+  when that repository tracks or stages a file in the subfolder. Where the
+  repository ignores case, as on Windows and macOS, a tracked subfolder whose
+  name was changed on disk only in upper or lower case counts too. The check
+  reads the case setting only when git lists no file in the subfolder, so a
+  tracked subfolder costs one `git` command. A folder the
+  repository above does not track, such as a new project inside a home-folder
+  dotfiles repository, still passes. An empty `.git` folder above it, with no
+  repository further up, makes it fail with `git-failed`.
+  `semver-stability-grep --staged` looked for `src/apothem` below the current
+  folder only, so from a subfolder it ran no git and passed whatever was
+  staged; it now also looks in the folders above,
+  up to the nearest folder that holds a repository or where git stops
+  looking, and runs git in the nearest folder that holds
+  `src/apothem/__init__.py`. It reads the version file from that folder too:
+  it read `src/apothem/__init__.py` from the top of the repository, so for a
+  package below the top it never saw a MAJOR version bump. When a `.git` file
+  that git refuses lies between the current folder and the package, git runs
+  in the current folder instead, stops at that file, and the check reports a
+  `check_error`. The search reads a `.git` file as git does: it must start
+  with `gitdir:` and one space, only the line endings at its end are dropped,
+  and a file over 1 MiB is refused. On Windows, a `.git` file that names a
+  network, device or NT path (`\\host\share`, `\\?\`, `\??\`) is refused, and
+  the search itself never looks that path up, so it does not connect to the
+  host the file names. On Windows the search also refuses, without looking it
+  up, a path that Git for Windows refuses: one with a name that ends in a dot
+  or a space or that is a device name such as `aux`, `aux.d`, `lpt0` or
+  `CONIN$` (but not `com0`, which Git for Windows accepts), or
+  with a `:`, a control character or one of `<>"|?*` after the drive. A byte
+  that is not UTF-8 is read as Git for Windows reads it: from `0xA0` up as
+  that character, a lower one as its two hex digits (`0x9F` reads `9f`), an
+  encoded surrogate pair as the character it stands for, and a lone encoded
+  surrogate refused. On Linux and macOS it is read byte for byte, as git
+  reads it. So such a worktree is not taken for a broken one. A project
+  without the package still passes without running git. The check also names
+  `src/apothem` after `--`, so git reads it as a path where that folder is
+  missing.
+- **`agents-md-coverage-grep` judges a re-created companion and a subfolder
+  root as it should.** A per-folder `AGENTS.md` that a commit deleted and that
+  was written again was timed by the deleting commit, so the new file was
+  reported stale before it was ever committed. It now counts as new until you
+  commit it. A run on a subfolder treated that subfolder's own `AGENTS.md` as
+  the canon and passed it, while a run on the whole repository reported it;
+  only the `AGENTS.md` at the top of the repository is the canon now, so both
+  runs agree for a subfolder that has a README of its own.
+- **An uninstall that stops part way is recorded and reported like one that
+  ran all its steps.** An uninstall that an unexpected error (an exception,
+  such as a backup that cannot be written) or `Ctrl+C` stops in the step that
+  removes what the install record lists appends an `uninstall-incomplete`
+  record, also when it had changed nothing, so running it again finishes the
+  job. One stopped before that step appends the record only when a step
+  before the one that stopped had changed or backed up a file: an Open-Claw
+  uninstall stopped at `openclaw.json` appends it when its rules-file step had
+  taken Apothem's block out of a workspace's rules file, and nothing when that
+  step changed nothing (also when it found Apothem's rules file behind a
+  link). One stopped inside that rules-file step, or inside the older-layout
+  sweep of Antigravity or Kimi Code, appends nothing and exits `1`, whatever
+  the step had changed, as it reports nothing the step did; the backups that
+  step took stay under `~/.apothem/backups/` with no record. A rules-file step
+  that reports an error instead (a rules file it cannot rewrite, or an
+  `openclaw.json` with comments) is a failed step: the uninstall records
+  itself unfinished with that step's backups, prints `did not finish:` and
+  exits `2` when that step had changed a file or found Apothem's rules file
+  behind a link, otherwise `1`. An uninstall that stops after taking
+  Apothem's entries out of a file such as `openclaw.json` exits `2` with
+  `uninstall stopped after removing files`, as one that removed files does;
+  one stopped by `Ctrl+C` prints `Aborted!` and exits `1`. A stopped uninstall
+  now also reports what it found that leaves it unfinished: each step that
+  failed before it stopped, each link keeping Apothem's own files in place,
+  the files of an earlier release's install that differ from what this
+  release writes, the files of an install with no record, a file that holds
+  two different blocks between Apothem's markers and a file with marker lines
+  Apothem cannot tell from your text. Each gets a `✗ <harness> uninstall did
+  not finish:` line and is added to the end of its `results` row's message;
+  an install with no record also gets its `Note:` line, with the check of the
+  `--project` folder before `apothem update`, and the row's `kept_reason`.
+  When the reasons, the steps that failed before the stop included, name one
+  link, that row carries it in `detail.symlink` and `detail.leads_to`, as
+  does the row of an uninstall refused because a link leads its folder out of
+  your home directory. Such a link, or such files, make it exit `2`, also when
+  it removed nothing. An error that stops the settings-file step of Hermes,
+  Open-Claw, OpenCode or Qwen Code now reads `uninstall stopped: <error>`, as
+  one in a later step does. So does an error in the step OpenCode's uninstall
+  takes after the one that removes what the install record lists, which
+  closes an install recorded under another spelling of its folder: the
+  uninstall exits `2`, as it had removed files, and that install stays
+  recorded. A later run does not close it yet: OpenCode then reads as not
+  installed, so the uninstall skips it. Installing OpenCode at the folder
+  again, with a profile outside the linked folder, and then uninstalling it
+  closes that install.
+
+### Security
+
+- **`apothem doctor --project` reads project hook files more carefully.**
+  Doctor now reads each hook command from the keys the tool itself reads (an
+  `args` list only for Claude Code, the one tool that runs one) and takes at
+  most 100 commands from one file. It reads no hook file larger than 4 MB or
+  that is not a regular file, and no project hook file reached through a link.
+  When the tool runs hooks from such a file (including a settings file the
+  hooks are merged into), a `hook.unchecked` line names it; for a link, the
+  line also names the link on the path. An update keeps the file as it is, so
+  the fix says to shrink or replace the file, or to check where the link leads
+  and replace it, or remove only the link itself and run the `update` command
+  the fix ends with. A link, or a Python file the install did not write, in the
+  hook script's folder gets a fix that says to remove it (for a link, only the
+  link itself), since an update keeps it too. A hook script the install
+  recorded outside the project is not started, and its line says so. Doctor
+  follows no link to the files a hook command runs, and a command whose known
+  paths cannot be looked up is reported as `hook.unchecked`. A missing hook
+  script's fix now runs `update` to put the scripts back, and the last line
+  says "some hook commands" of a harness that also started others that passed.
+  For a recorded interpreter inside the project, the fix runs `apothem update`
+  from a folder outside the project, with an Apothem that runs under a Python
+  outside the project, which records that Python instead. Before that, you
+  deactivate the project's virtual environment if it is active; for npx,
+  `APOTHEM_PYTHON` picks the Python. The update runs outside the project
+  because `python -m apothem`, run in the project folder, would start a folder
+  named `apothem` committed there. A ledger doctor cannot open, or an
+  error while it checks the hook files, is now named as such instead of
+  stopping the check.
+- **The conformity gate's `--all-perwrite` reads only regular files inside the
+  project it checks.** It lists the tracked files with `git ls-files`, and git
+  lists each entry exactly as the repository's index holds it. A project that
+  came with its `.git` folder from someone else, in an archive or a shared
+  folder, was able to list a `../` or absolute path, or track a link to a file
+  elsewhere, and the gate read that file and printed its path. A link to
+  `/dev/zero` made the gate read until it ran out of memory, a named pipe made
+  it wait forever, and a huge file with no data written in it used up memory.
+  The gate now reads a listed path only when it is a regular file of at most 64
+  MiB holding UTF-8 text, reached through real folders inside the project. It
+  counts every path it skips, by reason, under `files_skipped`: entries that
+  leave the project, symbolic links and Windows junctions at any level (even
+  ones that point inside it, and entries the index marks as links), submodules,
+  named pipes and devices, missing and unreadable files, larger files, files
+  that are not UTF-8 text, and the files it leaves out by design (binary
+  suffixes, plan suites, test fixtures and vendored trees, judged on the path
+  inside the project). An entry with an empty, `.` or `..` part (a leading `/`
+  among them), or a part that names `.git` on Windows (`.git` in any case,
+  `.git.`, `GIT~1`), also fails the run, because git refuses each of these by
+  default; on Windows, a name the system cannot hold as written, such as
+  `a:b.md`, or one Windows reads as a device or a short name (`CON`, `NUL`,
+  `GIT~2`), is counted as an unsupported name instead, which does not fail the
+  run. A text file over the size limit, or one that cannot be read, also fails
+  the run, since a finding it holds would go unseen, and the report names those
+  entries under `files_not_passed` and their reasons on stderr; a file another
+  program holds (on Windows, open without sharing it; elsewhere, a write lease
+  being broken) is tried again once, after 0.2 seconds. Over the size limit, a
+  file counts as binary when a quarter or more of its first 8000 bytes are NUL,
+  so a large zero-filled image or a mostly Latin UTF-16 file does not fail the
+  run while text with a stray NUL still does. A file swapped for another file, a
+  link or a named pipe between its check and its open is looked up once more
+  and, swapped again, counted as unreadable; the gate never waits on the pipe or
+  reads through a link at the file's own name, while a Windows file that
+  deduplication or cloud tiering keeps behind a reparse point is read through
+  its program, and is unreadable when that program is stopped. A tracked file a
+  link points to is still checked under its own path. Each `git ls-files` call,
+  in `--all-perwrite` and in `no-global-plans-grep`, now stops after 60 seconds,
+  so a repository setting that makes git wait, such as an `include.path` that
+  points at a named pipe, holds up each call for that long at most;
+  `no-global-plans-grep` reports its timeout as `check_error` and, when git
+  fails, gives git's exit code instead of git's own text. A `--all-perwrite` run
+  that read no file reports `passed: false` with `empty_scope_expected: false`,
+  plus a `check_error` with a fixed reason when the file list cannot be read:
+  git missing, git failing with a given exit code, or the time limit. git's own
+  message is left out, because it can name files outside the project. Such a run
+  exits `2` under `--strict`; it used to pass with nothing checked.
+- **`link-check` no longer looks up a link to a network share.** It resolved
+  every link in a checked file against the disk, so a Markdown link to
+  `\\host\share\page.md` in any file of a checked project made Windows open a
+  network connection to that host, which sends the user's sign-in to it and can
+  wait about 21 seconds per host. A link that names a place by itself (a
+  network share, a drive such as `C:`, a backslash-rooted path or a `file:`
+  address) is now counted as external and never looked up, and a relative link
+  is resolved by its name instead of by following links on disk. In
+  `--all-perwrite`, `link-check` also looks up nothing outside the project: a
+  link that leaves it counts as external, and the search for a
+  `site/content/docs` folder stops at the project folder.
+- **A stalled validator or `git` command no longer holds up the conformity
+  gate's `--all` and `--check` runs, and no longer counts as a pass.**
+  `--all` and `--check` ran each standalone validator as a program of its
+  own with no time limit, so one that never finished stopped the whole run.
+  A project that came with its `.git` folder from someone else, in an
+  archive or a shared folder, can cause that: an `include.path` in its
+  `.git/config` that names a named pipe makes `git` wait for ever. The gate
+  now gives each standalone validator 10 minutes. One still running then is
+  stopped together with every program it started, and reported with `passed:
+  false` and a `check_error` that says it did not finish. Each validator
+  runs in a session of its own on Linux and macOS, where a `SIGTERM` or
+  `SIGHUP` to the gate stops it before the gate exits, even one that arrives
+  while the gate starts or stops it (the exit code stays 128 plus the
+  signal's number when a Ctrl+C follows during that step), and in a job
+  object on Windows, which ends its programs when the gate ends too. On
+  Windows, when Windows grants the job, each program the gate starts waits,
+  suspended, until it is in the job, so a program it starts at once, such as
+  the real `git` behind Git for Windows' launcher, is stopped with it. A
+  program the gate cannot resume is stopped, and the error says whether it
+  is in the job. A `git` that cannot be resumed, or that something else told
+  to end before it was resumed, even with exit code `0`, counts as a failed
+  `git` with exit code `128`, never as a missing one or as `git`'s own
+  answer, so the `git` checks named next fail rather than pass. A `git`
+  ended just after the resume cannot be told apart from one that ran, and
+  its exit code counts. So does one ended just before the resume when the
+  gate reads its exit code more than 1 ms after the resume, for example on a
+  busy machine or while other threads in the calling process are busy, and
+  one ended with exit code `259`, the code Windows gives a running program,
+  while Windows is still ending it. A `git` that ran and printed its answer
+  is not taken for one that was ended when the machine or other threads in
+  the calling process are busy. On every platform, when the gate itself
+  starts the program, a Ctrl+C that arrives during the start waits until the
+  program runs (on Windows, until the gate has tried to resume it), so it
+  does not leave a program suspended or running past its time limit, and a
+  start that fails once Popen has the program's process ID stops that
+  program. A second Ctrl+C that arrives while the gate stops a program waits
+  until the stop is done. One that arrives just before the stop begins makes
+  the gate try the stop again, up to three times, and then stop the program
+  without holding signals back, again up to three times, so one more Ctrl+C
+  does not skip the stop. A handler the calling process set for another
+  signal can still leave the program running (on Windows, suspended), when
+  its error lands in the few microseconds after the program starts, before
+  the gate records it. When the gate changes its own signal handlers, a
+  signal that arrives mid-change no longer leaves a handler changed, such as
+  Ctrl+C ignored for the rest of the process. On Linux and macOS the gate
+  blocks Ctrl+C, `SIGTERM` and `SIGHUP`, and no other signal, for the few
+  microseconds the change takes, so such a signal waits and meets the
+  handlers then in place. The gate then unblocks only the signals it
+  blocked. For any other signal, on Windows, and for a signal that arrived
+  just before the block, a change the signal stopped is made again, up to
+  three times. When putting its handlers back fails at every try, the gate
+  makes one last try for each handler left. A handler stays changed when an
+  error stops that last try too, such as a `TimeoutError` from a timer the
+  calling process set that fires each time, and in rare cases when several
+  signals whose handlers raise arrive back to back, within microseconds, and
+  skip the last try. An error that comes back at every try, such as a
+  `RecursionError` near Python's recursion limit, ends the change within two
+  tries and goes on. The gate puts its handlers back with calls no deeper
+  than the ones that changed them, so near that limit it does not leave
+  Ctrl+C ignored. A `SIGTERM` handler that the calling process sets during a
+  run stays in place. On Linux and macOS, in a Python subinterpreter, where
+  no signal handler may be set, the gate runs its programs without changing
+  handlers; on Windows, Python cannot read a program's output from an
+  isolated subinterpreter, which allows no daemon threads. After a stop the
+  gate waits up to half a second for the stopped program to end, so on Linux
+  and macOS it does not linger as a defunct process, and a Ctrl+C during
+  that wait does not replace a termination already under way. Ctrl+C prints
+  one line and exits `130`. The `git` commands of
+  `conventional-commit-grep`, `agents-md-coverage-grep` and the `--staged`
+  checks of `production-ready-pr-grep` and `semver-stability-grep` had
+  limits of 5 or 10 seconds, but a command that ran past its limit passed:
+  the commit-subject check took it for a folder without history, the
+  companion check skipped its freshness test, and the `--staged` checks read
+  an empty change set or skipped the file. On Windows, where `git` on `PATH`
+  is usually the launcher Git installs, the limit did not even end the wait.
+  Each of these commands now has 1 minute, far more than it takes, the limit holds
+  on every platform, and a command past it reports `passed: false` with a
+  `check_error` that names the command. So does a `git` that refuses a
+  checkout it found, such as one another user owns or one with a bad
+  configuration line, which used to count as a repository with no commit.
+  This can turn a run that passed red: a folder whose `.git` entry git
+  cannot open, such as an empty `.git` folder outside any other checkout or
+  a `.git` file that names a folder that no longer exists, now fails these
+  checks, because the history they need may be there unread.
+  `agents-md-coverage-grep` exits `2` for either although its findings are
+  otherwise advisory, and its read of the whole history now gets 5 minutes,
+  so a large history is slow rather than a failure. A plain folder that is
+  not inside any git checkout, a repository with no commit yet, a partial
+  clone, where any failed history read counts as history that is not
+  available, or a machine without `git` still passes these checks.
+  `no-global-plans-grep` still fails, as before, outside a checkout git can
+  read or without `git`. The gate's advisory default still exits `0` on such
+  a result, and `--strict` exits `2`.
+
+- **The conformity gate's `--all` validators open and list only real files
+  inside the project they check.** A project that came from someone else, in
+  an archive or a shared folder, can hold symbolic links and, on Windows,
+  junctions that lead out of it. The shared tree walk entered junctions,
+  returned linked files and looked up the target of each symbolic link, so
+  `dynamism-grep` read a linked page outside the project, and a junction back
+  to a folder above it made the walk go round the tree until the path grew too
+  long. Most validators that look in fixed places, such as
+  `.github/workflows/`, `.apothem/plans/`, `src/apothem/rules/` or
+  `pyproject.toml`, read through links of either kind, and many opened
+  whatever sat at the path, so a named pipe there made the gate wait forever
+  and a link to `/dev/zero` made a read that never ended. Every `--all`
+  validator now opens and lists only regular files and real folders that it
+  reaches through real folders below the root, and never follows a link. A
+  link, a named pipe, a device, a socket, or on Windows a name ending in a dot
+  or a space, counts as missing. A few checks still use a link without
+  entering it: for a fixed file that is a symbolic link, such as a
+  `CLAUDE.md` that points at another file, the gate reads the link's text and
+  opens the named file only when it is a regular file inside the project (a
+  linked `.gitattributes` still counts as missing, because git does not read
+  it); `no-global-plans-grep` reports a plans folder or an `.apothem` folder
+  that is a link, by name; `no-toplevel-docs-grep` reports a root `docs` link;
+  and `naming-grep` checks a link's own name. Each report lists the links and
+  special files it left out under `skipped_links`, and a validator whose
+  folder is a link fails instead of passing as if the folder were not there
+  yet. The checks that run git read the `.git` folder through git itself.
+  When the `.git` entry git would use, in the root or in a folder above it,
+  or a file git reads in that repository, is a link, the three `--all`
+  validators that run git do not run it and list the link under
+  `skipped_links`, `no-global-plans-grep` reports it as a failing finding,
+  and `--all-perwrite` lists no tracked files and fails with a
+  `check_error`. A `GIT_DIR` set in the environment, as in a hook, no longer
+  points these validators' git somewhere else.
+
+## [1.6.0] - 2026-11-26
+
+### Data loss in earlier releases: recover your files
+
+- **Releases 1.0.1 to 1.5.0 deleted folders that hold your own files.** Every
+  `apothem install` and `apothem update` of these adapters removed the whole
+  folder, with everything you had placed in it:
+  - Claude Code: `~/.claude/commands/` (your slash commands), `~/.claude/hooks/`
+    (your hook scripts; a `settings.json` entry that runs one now points at
+    nothing), and `scripts/`, `templates/`, `tools/`, `lib/`, `docs/`,
+    `config/`, `src/`, `tests/`, `schemas/`, `conformity/`, `packaging/`,
+    `mcp/`, `examples/`, `assets/`, `site/` and `public/` under `~/.claude/`,
+    plus the `AGENTS.md` files in
+    `~/.claude/{agents,rules,skills,statuslines,output-styles}/`.
+  - Codex: `~/.codex/rules/` (Codex's own `.rules` execution policies) and
+    `~/.codex/commands/`, plus `~/.config/apothem/hooks/` and
+    `~/.agents/skills/AGENTS.md`.
+  - Gemini CLI: a project's own `skills/AGENTS.md`.
+  - Hermes: `~/.hermes/cli-config.yaml` and `~/.hermes/profile.yaml`. Open-Claw:
+    `~/.open-claw/config.yaml`.
+  - Antigravity: `~/.gemini/antigravity/`, the Antigravity App's own data folder
+    (MCP sign-in tokens, session transcripts, skills).
+
+  No release ever installed a file into any of these places, so this release
+  stops removing them. It still sweeps the folders in Apothem's own namespace
+  that a release wrote into, files of yours in them included, after saving
+  them under `~/.apothem/backups/`: `apothem/rules/` under the OpenCode,
+  Qwen Code, Hermes and Open-Claw folders, Kimi Code's
+  `.kimi-code/.apothem/support/{skills,agents}/`, and Antigravity's earlier
+  plugin folder, `~/.gemini/antigravity-cli/plugins/apothem/`. Every install
+  and update of OpenCode, Qwen Code, Hermes and Open-Claw deletes each file in
+  that tool's `apothem/rules/` folder except the profile document Apothem
+  writes there (`00-apothem-profile.md`), so keep your own files elsewhere.
+  Every Antigravity install, update and uninstall also still backs up and
+  removes `~/.antigravity/profile.yaml`, a path no release installed into.
+
+  **To recover:** each removed folder was copied first to
+  `~/.apothem/backups/<timestamp>/<harness>/`, under its path relative to your
+  home, or to the project for a project install (for example
+  `claude_code/.claude/commands/`). Releases 1.2.0 to 1.5.0 keep only the newest
+  10 backup sets per harness and add one on every install, update, uninstall
+  and rollback, so older sets may already be gone; 1.0.x and 1.1.0 kept every
+  set. This release never deletes a backup set that holds one of these paths,
+  automatically or through `apothem backups prune`.
+
+  1. Copy `~/.apothem/backups/` somewhere else before you run Apothem again.
+  2. Copy the files you need from that copy back to their place by hand.
+  3. Run `apothem update` afterwards.
+
+  `apothem rollback --install-id ID` is not a recovery step for this: it
+  reverses the whole old install, including the files that install wrote or
+  changed, such as `settings.json` and `CLAUDE.md`. For the swept folder alone,
+  rollback now puts back each missing file and keeps every file that is there.
+
+- **Releases 1.0.1 to 1.5.0 removed your text below a broken managed block.**
+  An `apothem uninstall` of a file where Apothem keeps a managed block
+  (`CLAUDE.md`, `AGENTS.md` and the like) whose END marker line was gone
+  removed everything from the BEGIN marker line to the end of the file, your
+  own text below it included. A BEGIN marker line left above a whole block
+  took the text between the two with it.
+
+  **To recover:** the uninstall copied the file first, to
+  `~/.apothem/backups/<timestamp>/<harness>/`. That set is not kept for good:
+  releases 1.2.0 to 1.5.0 kept only the newest 10 sets per harness, and this
+  release does the same for it unless an install record it keeps refers to
+  it, so it may already be gone. Every install, update, uninstall and
+  rollback adds a set.
+
+  1. Copy `~/.apothem/backups/` somewhere else before you run Apothem again.
+  2. Copy your text from that copy back into the file by hand.
+
+- **Releases 1.0.1 to 1.5.0 wrote over a marker example of yours.** In a file
+  where Apothem keeps a managed block (`CLAUDE.md`, `AGENTS.md` and the like),
+  they took the first BEGIN marker, and the END marker after it, for
+  Apothem's block, wherever the two were. When the file held a marker pair
+  you quote, in a code example say, above Apothem's block or before any
+  install wrote one, `apothem install` and `apothem update` wrote Apothem's
+  block over that pair and the text between its markers, and
+  `apothem uninstall` removed them and left Apothem's block in place.
+
+  **To recover:** each of these commands copied the file first, to
+  `~/.apothem/backups/<timestamp>/<harness>/`. Those sets are not kept for
+  good: releases 1.2.0 to 1.5.0 kept only the newest 10 sets per harness, and
+  this release does the same for them unless an install record it keeps
+  refers to one, so the copy you need may already be gone. Every install,
+  update, uninstall and rollback adds a set.
+
+  1. Copy `~/.apothem/backups/` somewhere else before you run Apothem again.
+  2. In that copy, find the newest backup of the file that still holds your
+     example, and copy the example back into the file by hand, in place of
+     any Apothem text written over it.
+
+### Added
+
+- **OpenClaw now loads Apothem's rules.** The Open-Claw install writes
+  `apothem/AGENTS.md` into each OpenClaw workspace and lists that path in the
+  bundled `bootstrap-extra-files` hook's entry in `openclaw.json`
+  (`hooks.internal.entries.bootstrap-extra-files`). The file holds the profile's
+  managed block and the pointer to the installed rule index. Because it is named
+  `AGENTS.md`, OpenClaw also loads it in cron and sub-agent sessions. The
+  workspace's own `AGENTS.md` is never edited.
+  - **Workspaces:** the default workspace and each `agents.entries` (or older
+    `agents.list`) workspace that exists in the home directory, resolved as
+    OpenClaw does: ids normalized, and the entry marked `default: true` or a
+    sole entry uses the default workspace.
+    One OpenClaw has not created yet is filled by the next `apothem update`
+    (`apothem verify` fails until then). One outside the home directory, or
+    reached through a link, is skipped with a warning. When a workspace leaves
+    the config, the next install or update takes the Apothem block out of the
+    file it wrote there. A BEGIN marker with no END marker that stays in that
+    file (a line of yours, or what is left of an older block) is named by its
+    line in a warning, with a numbered step that changes that line by adding a
+    word inside its comment; any old Apothem text below it is then yours to
+    delete by hand.
+  - **Hook settings:** left alone, with a warning, when internal hooks are off,
+    the hook's entry is off, or `hooks.internal.enabled: true` names no hook
+    (naming one would switch the others off).
+  - **Size limits:** a rules file that OpenClaw would cut or skip is not
+    written, and an earlier copy is taken out. That covers the per-file limit
+    (`bootstrapMaxChars`, 20,000 by default) and the room the six workspace
+    files and the entry's other extra files leave in the total
+    (`bootstrapTotalMaxChars`, 60,000), with each entry's own limits and
+    characters counted as OpenClaw counts them. When the file fits no
+    workspace, no path is registered. When a rules file over the per-file
+    limit holds a BEGIN marker that starts no whole block (its END marker is
+    gone, or the marker is yours), the warning names that file and each such
+    marker by its line, says that the old Apothem text below it counts against
+    the limit, and says to change that line by adding a word inside its
+    comment and delete that text by hand, to shorten the profile's custom
+    rules, or to raise the limit. The `verify` note and the `doctor`
+    fix for such a file say that the next update writes Apothem's block if
+    the file then fits the limit, which old Apothem text you keep counts
+    against.
+  - **Upgrading with a commented `openclaw.json`:** Apothem cannot add the hook
+    entry to a file with comments or other JSON5 syntax without dropping them.
+    If you added the `skills.load.extraDirs` entry by hand, as these docs said
+    before, install and update now print the hook entry to add as well;
+    `apothem verify` fails until you add it.
+  - **Uninstall** removes the managed blocks, the files and folders they leave
+    empty, and only the hook entries Apothem added. Apothem's entries in a
+    commented `openclaw.json` stop it before anything changes, with an error
+    naming what to remove; a rules file behind a link, or one where Apothem
+    cannot tell its block from your text, is left in place and the uninstall
+    reported unfinished (exit 2); a rules file Apothem cannot rewrite
+    gets an error that names it, and the uninstall cleans the other
+    workspaces' rules files, records their backups and stops before
+    `openclaw.json` changes. In each case the install record stays, so a second
+    uninstall after the hand fix finishes. `apothem verify` reports a missing
+    file or registration, and a rules file with an Apothem marker to fix by
+    hand, also in a workspace the install no longer uses.
+
+- **The operator-file parsers are fuzzed.** Five Atheris fuzz targets in
+  `tests/fuzz/` cover the JSONC / JSON5 config reader, the hook-file merge and
+  removal (Kiro, GitHub Copilot, Cursor), the shared-profile loader, the install
+  ledger and the frontmatter probe. Each checks invariants, not just crashes:
+  the config reader parses whatever `json.loads` accepts to the same value, a
+  second install leaves a hook file byte for byte the same and keeps the
+  operator's hooks in order, a loaded profile normalizes to itself, and a ledger
+  record reads back unchanged. ClusterFuzzLite (`.clusterfuzzlite/`,
+  `.github/workflows/fuzzing.yml`) fuzzes each pull request that touches
+  `src/apothem/` for five minutes and runs a fifteen-minute batch every day, and
+  `tests/fuzz/test_fuzz_seed_replay.py` replays every target's seeds in the
+  ordinary test run. The OpenSSF Scorecard Fuzzing check credits the setup.
+- **An answer sheet for the OpenSSF Best Practices badge.** The new
+  [OpenSSF Best Practices
+  badge](https://apothem.ahmedgad.com/docs/security/openssf-best-practices)
+  page answers all 67 passing criteria from bestpractices.dev (Met, N/A or
+  Unmet), each with a one-line justification and a link to the file or page
+  that shows it, and lists the steps to register the project. The answers
+  meet every MUST criterion; the one Unmet SHOULD criterion,
+  `crypto_weaknesses`, is explained there, along with the other remaining
+  gaps. It is Unmet because the one-shot installers and the update scripts
+  check a signed tag that names its commit by a SHA-1 object ID, pin the
+  maintainer key by its OpenPGP v4 fingerprint, also a SHA-1 hash, and,
+  for an install without cosign or any install or update over an existing
+  Apothem clone, install a git checkout in which every file rests on SHA-1.
+  The `crypto_keylength`, `crypto_working` and `crypto_published` answers
+  name the same SHA-1 uses, the TLS rows name the programs that make
+  Apothem's TLS connections (pip and npm included), and `delivery_mitm` says
+  which release files carry SLSA provenance and when the cosign check runs.
+  The CII-Best-Practices row on the Scorecard page links to the sheet.
+  CONTRIBUTING.md now states that a pull request adding functionality adds
+  tests for it, and that a bug fix adds a regression test.
+- **Every docs link with a `#section` is checked against the page it opens.**
+  `scripts/dev/check_site_anchor_links.py` reads the English pages and the
+  eleven translations, makes each heading's id the way the site does (a Python
+  port of github-slugger, `scripts/dev/github_slugger.py`), and fails when a
+  link names a heading the page it opens does not have. It also fails a
+  translation that records the current English text but has other headings than
+  the English page, and a component that links into `/docs` past the link
+  localization below. `tests/unit/docs/test_site_anchor_links.py` runs it in the
+  `quality` job with Python alone, and `scripts/dev/check_built_docs_links.py`
+  repeats the check on the built site in `docs-build`, where it also fails a
+  translated page whose link still opens the English page. Before, nothing read
+  heading ids until the site was built, and 252 links on translated pages named
+  a heading that exists only on the translated copy.
+- **The Marketplace publish can use Trusted Publishing.** With the
+  repository variable `VSCE_AUTH=oidc`, the VS Code publish job runs
+  `vsce publish --oidc`, which exchanges the job's GitHub OIDC token for a
+  short-lived Marketplace credential: no stored secret and no Azure setup.
+  The publisher adds one Trusted Publishing policy for this repository, the
+  publish workflow and the `release` environment. The job first checks that
+  the vsce release locked in `tools/vsce` supports the final token
+  exchange, and stops with a plain error when it does not. The Entra route
+  and the `VSCE_PAT` token stay as alternatives. An unrecognised
+  `VSCE_AUTH` value now logs a warning, without echoing the value. The
+  release-cycle runbook gains the setup procedure. `tools/vsce` now locks
+  vsce 4.1.1, so `VSCE_AUTH=oidc` works from this release.
+- **The weekly convention monitor watches each tool's release channels.**
+  OpenCode 2 shipped as the npm package `@opencode/cli`, with its first
+  GitHub Release, v2.2.0, on 2026-10-27, and the pins did not record it for a
+  week. `scripts/dev/vendor-release-channels.json` now has an entry for every
+  harness: its release channels (an npm package and its dist-tag, a GitHub
+  repository's latest release or, for a channel with a tag pattern, its
+  newest stable release with a matching tag among the newest 100, a PyPI
+  project, or an installer address whose redirect is watched), or the reason
+  it has none. Each channel records the version last reviewed (the one its
+  pin names or, where the pin names none, the one the registry served when
+  the channel was recorded), the date, and the phrase of the pin that cites
+  it. Each week `scripts/dev/check_vendor_releases.py` asks every registry
+  for the current version, and each installer address where it redirects. A
+  new major version, a release past a trigger the file names, an installer
+  address that redirects somewhere else, or a package, dist-tag, release or
+  address that no longer exists files an issue, and so does a check that
+  cannot run, with the reason. A newer minor or patch version is listed in
+  the run summary and does not fail the check, and a registry that does not
+  answer, or whose answer breaks off partway, is reported as unreachable.
+  OpenCode has four channels: `opencode-ai` for OpenCode 1, `@opencode/cli`
+  for OpenCode 2, the GitHub releases of `anomalyco/opencode`, where a new
+  major line shows whatever npm package it ships as, and
+  `opencode.ai/install`. Apothem writes OpenCode 1 formats for both lines,
+  and two of these channels flag when that should change: the check fails
+  when `opencode-ai`'s `latest` version moves past major version 1, or when
+  `opencode.ai/install` stops redirecting to the OpenCode 1 installer script.
+  A date for OpenCode 2 to stop translating OpenCode 1's formats is checked
+  by hand.
+  Antigravity, Cursor, Kiro, Trae and Windsurf have no release channel a
+  script can query, and the file gives the reason for each. The check job
+  sends the workflow's `GITHUB_TOKEN` to the GitHub API with read access
+  only, and a separate job files the issue. The Claude Code, CodeBuddy,
+  Codex, Gemini CLI, Hermes, OpenClaw and Zed pins now cite the vendor page
+  that names their package or release repository, and the OpenCode pin
+  records where `opencode.ai/install` redirects and how that script picks the
+  version it installs.
+
+### Changed
+
+- **The CI coverage check runs the test suite in two halves at once.** The
+  `ci.yml` coverage job ran the whole suite under coverage on one runner in 14
+  to 30 minutes, so its 30-minute limit cancelled some runs. Two jobs,
+  `coverage shard 1 of 2` and `coverage shard 2 of 2`, now run in parallel,
+  each on half the tests, picked with the new `pytest --shard=K/N` option, and
+  upload their coverage data. The `coverage` job, still the required check,
+  combines the two, holds the engine to its 80% floor and uploads the same XML
+  and HTML reports. It fails unless both halves passed, because GitHub would
+  otherwise skip it after a failed half, and a skipped required check counts as
+  passed. A hash of each test's node id picks its half, the same on every
+  machine, so the halves never overlap or leave a test out. The
+  `home-isolation` job's limit goes from 20 to 30 minutes: 20 cancelled it on
+  `main` and on pull requests.
 - **The Windows test cells in CI get 120 minutes.** The Windows cells of the
   `ci.yml` quality job take 64 to 88 minutes, and the 90-minute limit
-  cancelled cells whose tests had passed. They now get 120, as the CI Matrix
-  Windows cells already do; the other cells keep 90. The workflow
+  cancelled cells whose tests had passed. They now get 120, and so do the CI
+  Matrix Windows cells; the other cells keep 90. The workflow
   validator (`workflow-concurrency-grep`) accepts this one form for a matrix
   job's limit, `${{ matrix.os == 'windows-latest' && N || M }}`, with N at
   most 120 and M at most 90, and still flags any other expression. Every
@@ -317,9 +739,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   language has one. Before, every such link on a translated page opened the
   English page. A page the language has not translated still opens in English,
   as does a link to a section of a translation whose headings differ from the
-  English page. A cross-page `#section` in a translation is the English id, which the
-  site maps to the translated heading by position; the internationalization page
-  says how.
+  English page. A cross-page `#section` in a translation is the English id,
+  which the site maps to the translated heading by position; the
+  internationalization page says how.
 - **Dependabot checks the vsce packager weekly.** The `tools/vsce` lockfile
   was checked monthly, so a new vsce release waited up to a month after its
   seven-day cooldown before a pull request proposed it. It is now checked
@@ -335,9 +757,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **CI installs pip from a hash-locked file.** Every workflow upgrades pip
   with `--require-hashes` from `scripts/ci/requirements-ci-pip.txt` instead
   of a version pin, so the download is checked against its published hash,
-  and Dependabot proposes pip upgrades with their hashes. The same pip,
-  26.2.1, still runs in CI; the lock holds it at 26.2 or later, which fixes
-  CVE-2026-13346. `check_pip_pin_drift.py` now checks the lock file and the
+  and Dependabot proposes pip upgrades with their hashes. CI runs the pip
+  version the lock holds, 26.2 or later, which fixes CVE-2026-13346.
+  `check_pip_pin_drift.py` now checks the lock file and the
   workflows' install lines instead of the per-workflow version setting, and
   `pip-audit.yml` audits the lock. The PowerShell steps that install it now
   stop on a failed install.
@@ -429,23 +851,34 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **`apothem doctor` starts GitHub Copilot's hooks, and Cursor's on Windows.**
+  Doctor looked for a hook's command line only under `command` (and Codex's
+  `commandWindows` on Windows). GitHub Copilot keeps its lines under `bash`
+  and `powershell`, so doctor never started Copilot's hooks and passed a
+  project whose Copilot hook could not run. It now starts the `powershell`
+  line on Windows and the `bash` line on macOS and Linux. On Windows,
+  Cursor's hook line starts with PowerShell's `&`, which doctor took for the
+  program to start, so it reported a working Cursor hook as unable to start.
+  Doctor now leaves the `&` out there.
 - **The Windows installer checks out releases whose paths pass 260
   characters.** `install.ps1` checks a release out in a staging folder beside
   `APOTHEM_HOME`, or in the temporary folder for a dry run, before it moves
-  the tree into place. That folder adds 57 characters to every path, and
-  v1.5.0 holds paths up to 170 characters long, so with a home folder path of
-  33 characters or more (a temporary folder path of 40 or more, for a dry
-  run) the checkout passed Windows' 260-character limit: Git for Windows
-  stopped with `Filename too long`, and the installer with `Could not check
-  out the v1.5.0 tag`. Every git command the installers and the updaters run
-  on a clone now sets `core.longpaths`, so Git for Windows writes and reads
-  such paths; git on other systems ignores the setting. Under Git Bash,
-  `install.sh` and `update.sh` set it too: their shorter staging folder put
-  fewer installs past the limit, but could let such an install go on without
-  the files git could not write. `install.ps1` also removes its staging and
-  scratch folders, and an earlier tree it replaces, through the long form of
-  the path (`\\?\C:\...`), since Windows PowerShell 5.1 cannot reach a path
-  past 260 characters otherwise on a machine where long paths are off.
+  the tree into place. That folder adds 58 characters to every path, plus the
+  length of `APOTHEM_HOME`'s own name (66 in all for the default `.apothem`),
+  and v1.5.0 holds paths up to 170 characters long, so with the default
+  `APOTHEM_HOME` and a home folder path of 24 characters or more (a temporary
+  folder path of 40 or more, for a dry run) the checkout passed Windows'
+  260-character limit: Git for Windows stopped with `Filename too long`, and
+  the installer with `Could not check out the v1.5.0 tag`. Every git command
+  the installers and the updaters run on a clone now sets `core.longpaths`, so
+  Git for Windows writes and reads such paths; git on other systems ignores
+  the setting. Under Git Bash, `install.sh` and `update.sh` set it too: their
+  shorter staging folder put fewer installs past the limit, but could let such
+  an install go on without the files git could not write. `install.ps1` also
+  removes its staging and scratch folders, and an earlier tree it replaces,
+  through the long form of the path (`\\?\C:\...`), since Windows
+  PowerShell 5.1 cannot reach a path past 260 characters otherwise on a
+  machine where long paths are off.
 - **A deleted project no longer lets an install overwrite your own skill.**
   After you deleted a project (or a `CODEX_HOME`) that had an Apothem install,
   a skill folder you then put in a shared skills folder (`~/.agents/skills/`,
@@ -472,6 +905,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   as present through the shared folders it writes there. A Codex install into
   a removed or emptied `~/.codex` skips such a folder too: the files it had
   just written there no longer make its old install count as present.
+  Outside these four shared skills folders, such as in `~/.claude/skills/` or
+  Kimi Code's `.kimi-code/skills/`, an install or update still replaces a
+  skill folder of yours that has an Apothem skill's name, after saving it
+  under `~/.apothem/backups/`, and an uninstall does not put it back.
 - **`apothem doctor` checks the hooks of the install it is looking at.** It
   read the newest install record of a harness from any folder. When that
   record came from another folder (another project, a `CODEX_HOME`, or one you
@@ -489,9 +926,6 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   quote `--project` the same way; when the quotes cannot carry the folder,
   `quickstart` prints the command up to `--project` and names the folder in
   words after it.
-- **`apothem doctor` starts Cursor's hook command on Windows.** The command a
-  Windows install writes begins with PowerShell's `&`, which doctor tried to
-  start as a program, so every healthy Cursor install failed the hook check.
 - **The conformity validators that read git's output read it correctly.**
   `agents-md-coverage-grep` never reported a stale per-folder `AGENTS.md`:
   Python's `str.splitlines()` also breaks lines at the record marker its
@@ -587,18 +1021,6 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   in a string, but the reader rejected them, so an OpenCode or OpenClaw config
   holding one read as unparseable and the install refused to merge into a valid
   file. Found by the new fuzzer.
-- **The OpenSSF Best Practices answer sheet describes the installers' checks
-  accurately.** The `crypto_weaknesses` answer and its Remaining gaps entry say
-  that the one-shot installers and the update scripts check a signed tag that
-  names its commit by a SHA-1 object ID, that they pin the maintainer key by
-  its OpenPGP v4 fingerprint, also a SHA-1 hash, and that an install without
-  cosign, and every install or update over an existing Apothem clone,
-  installs a git checkout in which every file rests on SHA-1. The
-  `crypto_keylength`, `crypto_working` and `crypto_published` answers name the
-  same SHA-1 uses, the TLS rows name the programs that make Apothem's TLS
-  connections (pip and npm included), and `delivery_mitm` says which release
-  files carry SLSA provenance and when the cosign check runs. Every answer
-  stays as it was; `crypto_weaknesses` is still Unmet.
 - **Deeply nested input is a parse error, not a crash.** The config reader now
   stops at 200 levels of objects and arrays with a `LenientJSONError`, and the
   install-ledger reader reports a line nested too deeply to parse as invalid
@@ -618,7 +1040,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
     symlink or a Windows junction), a file where a folder was or the other
     way round, or a path whose backup is gone, is left in place. The
     rollback still exits 0 and prints a `Warning:` line (a `warnings` entry
-    under `--json`) naming the backup to copy from by hand.
+    under `--format json`) naming the backup to copy from by hand.
   - Retention, and `apothem backups prune`, now keep every backup set that
     holds a path releases 1.0.1 to 1.5.0 removed whole, for every adapter
     and for Codex under a custom `CODEX_HOME` too. They include the old
@@ -632,8 +1054,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   - The docs say rollback reaches an install only while its record is among
     the newest 10 kept, and that the install deletes any file it did not put
     in the `apothem/rules/` folders OpenCode, Qwen Code, Hermes and Open-Claw
-    use, or in Kimi Code's old support folders.
-- **The launch-size metric follows six more tools' loading rules.** The
+    use, in Kimi Code's old support folders, or in Antigravity's earlier
+    plugin folder.
+- **The always-on bytes metric follows six more tools' loading rules.** The
   metrics collector, which reports how many bytes of instructions each tool
   loads at launch, now counts:
   - OpenClaw's bootstrap files by name and in order, with its per-file and
@@ -649,7 +1072,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
     bytes.
 
   No published number changes: Apothem's installs write none of these files.
-- **The launch-size metric counts Antigravity's plugin rules.** The five
+- **The always-on bytes metric counts Antigravity's plugin rules.** The five
   always-on rules in `~/.gemini/config/plugins/apothem/rules/` now count, so
   Antigravity's figure rises by 38,395 bytes and 5 files. The rest of its
   figure is `~/.gemini/GEMINI.md`, whose size depends on the install path it
@@ -667,16 +1090,6 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `apothem install --harness codex` again so the files land where Codex reads
   them; the files an earlier release wrote under your home folder stay until
   you delete them.
-- **The install note for a project `AGENTS.md` now counts the project folder
-  for Claude Code.** Claude Code also loads a project's `AGENTS.md` when a
-  session starts in a folder above the project and its Read tool opens a file
-  in it, as long as the project folder, like the working folder and the folders
-  above it, has no `CLAUDE.md`, `.claude/CLAUDE.md` or `CLAUDE.local.md`. The Kimi Code install note's condition for Claude Code now
-  names the project folder, and the Claude Code and harness registry pages
-  describe that load and the sessions that read no `AGENTS.md`. The Claude Code
-  pin records the plugin ID that releases v2.1.277 to v2.1.284 use for the
-  **Project instructions** setting.
-
 - **The Antigravity install writes its plugin where the CLI loads it.**
   Current Antigravity CLI releases load plugins from
   `~/.gemini/config/plugins/<name>/`. On CLI 1.2.7, `agy plugin install` put
@@ -761,13 +1174,284 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   that, the file no longer makes the tool read as installed. A whole block is
   found from its END marker back to the nearest BEGIN marker, and each exact
   copy of it is taken out too (a block pasted in twice used to leave one, so
-  the tool still read as installed); another block between the markers, such
-  as a pair you quote, is left with the file and named, and the uninstall
-  stays unfinished until you remove it. A BEGIN marker of yours left with no
-  END once Apothem's block is out is named too: an install or update that
-  writes such a file again still replaces everything from that marker to the
-  end of the file. When the uninstall's next step is to run `apothem update`
-  and a warning names such a file, that step says to fix the file first.
+  the tool still read as installed). A second, different block between the
+  markers, such as a pair you quote outside a code block, is left with the
+  file and named, with each block by its lines, and the uninstall stays
+  unfinished (exit code `2`, a second run included) until you fix the file as
+  the warning says: change the marker lines of a pair of yours, and delete only
+  an older or pasted Apothem block (see the entry on two whole blocks below).
+  A BEGIN marker left with no END once Apothem's block is out (a line
+  of yours, or what is left of an older block that lost its END marker) is
+  named too, also when the uninstall stops part way, and under `--quiet` on
+  standard error; the warning names the marker's line and gives a numbered
+  step that changes it (see the entry on checked steps below), and says the
+  tool still reads the old Apothem text below it. When the uninstall's next
+  step is to run `apothem update` and a warning names such a file, the step,
+  and the warning of each path it keeps for that reason, say to fix the file
+  first: an update keeps a BEGIN marker with no END and does not fix a file that holds
+  two different blocks, and `verify` fails until you fix either. An OpenClaw
+  update that cannot retire a rules file with two blocks says the next
+  install, update or uninstall tries again, not to run the uninstall. An
+  OpenClaw update that takes Apothem's block out of a rules file in a
+  workspace the install no longer uses names a BEGIN marker it leaves there
+  too, and says that `verify` fails until you change it.
+- **Install and update no longer cut your text after a BEGIN marker with no
+  END.** They replaced everything from such a marker to the end of the file,
+  with any text you had written below it (a backup was kept). They now keep
+  that text as it is, write Apothem's block apart from it, and print a warning
+  that names the file and the marker's line, gives a numbered step that
+  changes that line, and says not to add the END marker back instead (the
+  file would then hold two Apothem blocks). A dry run reads the file before
+  anything is written, so over a file with no whole block yet it says to put
+  no line of yours between the two markers if you add the END marker back
+  instead (the next run would replace or take out every line between them),
+  and not to add it back at all once an install or update has written
+  Apothem's block apart from it. While an install record
+  lists a file that also holds a marker pair in code and no whole block, they
+  leave the file as it is instead (see the next
+  entry). `verify` fails until the stray marker is changed,
+  including a BEGIN marker of yours above or below a whole block, and for a
+  file the current install writes, `status --profile` shows drift until then
+  too. This covers every file where Apothem keeps a managed block:
+  `CLAUDE.md`, the profile documents, `AGENTS.md` and the other instruction
+  files, and the rules file in each OpenClaw workspace. Apothem now
+  reads a marker only as a line of its own outside code, as it writes them and
+  as a Markdown viewer reads them: a marker you quote in a fenced code block (a
+  longer outer fence or a fence in a list included), or in code indented four
+  columns past its list item (or the margin) after a blank line, is not taken
+  for its block, and neither is a BEGIN and an END marker you quote in two
+  separate code blocks. A tab after a list bullet, a line such as `* * *`, and
+  an HTML comment on a line of its own above a numbered list read as they do
+  in a Markdown viewer. Apothem closes a code fence that a rule in your profile
+  leaves open at the end of the block it writes; in a block an earlier release
+  wrote, such a fence hides the END marker only when another marker pair
+  follows (see the next entry). A code fence left open to the end of the file
+  is read as text, however many there are, unless a BEGIN marker outside code
+  above it has its END marker in code and another marker pair follows them. A
+  byte order mark at the start of the file (as Notepad's "UTF-8 with BOM"
+  writes it) does not hide a marker on the first line. Markers inside an HTML
+  block or a block quote, or after a list item whose text goes on at the left
+  margin, can still be read differently from a Markdown viewer. `verify` and
+  `doctor` name each file that holds a stray marker and say to delete the
+  marker line and the old Apothem text below it, and not to add the END marker
+  back with a line of yours between the two markers, nor at all once an
+  install or update has written Apothem's block apart from it
+  (`doctor` reports it as `harness.stray_begin` and still starts that tool's
+  hooks); only the files a tool's install keeps its block in count, the files
+  an earlier install record lists included until an uninstall finishes.
+- **Install and update no longer take a marker pair you quote in code for
+  Apothem's block.** Release 1.5.0 took the first BEGIN marker in a file, and
+  the END marker after it, for its block wherever they were: an update wrote
+  over a marker pair you quote in a code example above the block, and the
+  uninstall took that pair out and left the block (to recover such an
+  example, see "Data loss in earlier releases" above). It also updated
+  Apothem's block in place when the block sat inside a code block of yours (a
+  code fence you left open above it, closed by a fence you added below it),
+  and the uninstall removed it. Apothem now reads its markers only outside
+  code (see the entry above), so it cannot tell its block inside your code
+  block from a pair you quote there. While an install record lists the file
+  (until an uninstall finishes; an install ledger that cannot be read counts
+  as one; a record made under another spelling of the folder, such as your
+  home reached through a link, counts too, as it does for the uninstall, when
+  the spelling you run under has an install of its own still in place and the
+  tool writes the shared folders in your home directory), install
+  and update now leave such a file as
+  it is and print a warning that names each marker pair in it by the lines of
+  its two markers and says where each of those lines reads: inside a code
+  block that opens at a given line, in indented code, as part of the
+  paragraph above it, or outside code. It then gives its fixes as numbered
+  steps (see the entry "Each fix for marker lines Apothem cannot place changes
+  marker lines in place" below): one for each pair whose two marker lines
+  read outside code, for the case that it is Apothem's block, where the
+  layout of the file shows it then reads whole, and one that changes every
+  BEGIN marker line. The same happens, record or
+  not, when a BEGIN marker outside code has its END marker in code and another
+  marker pair follows. A block an earlier release wrote from a rule in your
+  profile that opens a code block and never closes it can cause that; no fix
+  keeps that older block, since a line of yours below it closes its code
+  block and would open one once the next update replaced the block.
+  This release closes such a code block at the
+  end of the block it
+  writes, so that block stays whole beside a marker example of yours. That
+  closing line, or one a rule writes, can still close a code block of yours
+  that opens above Apothem's block and never closes. The block then reads as
+  code from its BEGIN marker on, and the install or update that writes it
+  prints the warning at once, whose fix changes that BEGIN marker line, so
+  the next update writes Apothem's block at the end of the file. So does an
+  update that writes its block below an
+  older block that lost its END marker, where a rule left a code block open;
+  its warning also names that older BEGIN marker. The warning also names,
+  before the pairs, each BEGIN marker that starts no marker pair (its END
+  marker is gone, or the marker is yours), and each fix changes it: left in
+  place, it can pair with an END marker below it once the pairs are fixed.
+  Such a BEGIN marker does not change what install and update do while an
+  install record lists the file, even when every marker pair is quoted in code
+  below it: a pair in code may be Apothem's block inside a code block of
+  yours, so the file is left as it is.
+  An install or update that leaves such a file as it is ends as partial,
+  since the tool gets no current Apothem block from it: in place of its `✓`
+  line it prints a `✗` line on standard error that names the file, its
+  `--format json` `status` is `"partial"` (the file's warning carries
+  `"detail": {"left_as_is": "1"}`), and it exits with code `2`; a dry run
+  still ends with `status` `"dry_run"` and exit code `0`. A `quickstart`
+  whose install leaves such a file as it is ends as partial too, after it
+  prints its recommended next steps, which then start with fixing each file
+  the install left and running `apothem update`, in place of
+  `apothem verify`, which fails until you fix the file. Without `--quiet`,
+  the summary line
+  that ends a `--harness all` run then starts with `!` and counts the files
+  left as they are. `install --clean` then does not print its next step,
+  `apothem verify`, which fails until you fix the file. The warning says
+  that install and update leave the file as it is, and end as partial, until
+  you fix those marker lines (from the next run on, in the warning of a run
+  that wrote the file and ends as a success), and that a marker example of
+  yours in a code block, or one that reads as part of a paragraph, holds the
+  file back the same way until you change its BEGIN marker line: while an
+  install record lists the file, nothing else ends that.
+  Until you fix those lines, `verify` fails, `doctor` reports the file (as
+  `harness.stray_begin`) and, for a file the current install writes,
+  `status --profile` shows drift; then run `apothem update` again. A dry run's
+  warning says Apothem would leave the file as it is. With no install record,
+  `verify` and `doctor` do not check `CLAUDE.md` or the profile documents,
+  since only the record shows that the install wrote them; the OpenClaw verify
+  still checks the rules file in each workspace it finds, and fails without
+  naming the file. With an install record, the uninstall leaves such a file as
+  it is, removes the rest of the install, and stays unfinished (exit code `2`,
+  a second run included), so the install record stays and a later install
+  still leaves the file as it is. While the install ledger cannot be read,
+  such a file counts as an install too: the uninstall stops on the damaged
+  ledger and names it (exit code `1`), and `doctor` reports the install.
+  `doctor` names the ledger in its `ledger.unreadable` check when it goes on
+  to start the tool's hooks, as it does for a tool that verifies and for one
+  whose failed check names files with Apothem markers; a ledger it cannot
+  open (another program holds it open, say) gets that check too, with a fix
+  that says to make the file readable. The uninstall's warning for such a
+  file gives numbered fixes the same way, then says to run the uninstall
+  again, which then finishes: any marker pair left in the file keeps it
+  unfinished, one of yours included, so each fix changes the BEGIN marker line
+  of every pair it does not call Apothem's block. With no install record,
+  only such a BEGIN marker gets the uninstall's warning, and the uninstall
+  stays unfinished (exit code `2`) for it and for the paths no record shows; a
+  marker pair you quote in code is then your text, and the install adds its
+  block after it (in a rules file that Apothem writes with frontmatter, that
+  frontmatter and the block go at the top instead), unless that pair holds
+  exactly the block the install writes: then the install leaves the file as it
+  is, with the warning. So if the install record is gone, delete Apothem's
+  block from your code block by hand: a later install treats it as your text.
+- **Install and update leave a file with two whole blocks as it is.** Release
+  1.5.0 took the first marker pair in a file for Apothem's block (see "Data
+  loss in earlier releases" above), so in a file with two whole blocks between
+  Apothem's markers it rewrote the first one. A file gets there from a marker
+  pair of yours outside code, a block pasted in twice, or an old block whose
+  END marker you put back after an update had written a fresh block below it.
+  Apothem writes one block per file and cannot tell which one is its own, so
+  install and update now leave such a file as it is and print a warning that
+  names each block by its lines, for example "holds 2 whole blocks between
+  Apothem's markers (lines 1 to 32, and lines 36 to 67)". Such a run ends as
+  partial (exit code `2`, `status` `"partial"`), as for a file where Apothem
+  cannot tell its block from your text (see the entry above). The warning
+  gives one numbered fix for each block, for the case that it is Apothem's
+  block: the fix changes the BEGIN marker line of each other block, which
+  keeps a marker pair of yours as your text, and leaves an older or pasted
+  Apothem block's text for you to delete by hand (in a file that starts with
+  Apothem's frontmatter, Apothem's block is the one right below it). Do not
+  delete Apothem's block to keep a pair of yours: the next run would then
+  read your pair as Apothem's block. The uninstall gives the same text. When
+  a BEGIN marker above Apothem's block and an END marker below it make a
+  second block only once Apothem's block is out, the uninstall's warning
+  names Apothem's block and those two marker lines, and its one fix changes
+  that BEGIN marker line, not Apothem's block. An update
+  does not fix such a file either. Every line number these warnings give
+  counts lines as Apothem reads the file, where a line ends at CRLF, at LF or
+  at a CR on its own, so in a file with CR endings, or one stray CR, the
+  marker lines named are the ones around Apothem's block, not its own.
+  Until you fix the file, `verify` and `verify --profile` fail, `doctor`
+  reports the file (as `harness.stray_begin`, with "Apothem markers to fix by
+  hand") and, for a file the current install writes, `status --profile` shows
+  drift.
+- **Each fix for marker lines Apothem cannot place changes marker lines in
+  place.** The warnings for a file whose marker lines Apothem cannot place,
+  for a file with two or more whole blocks, for a BEGIN marker with no END
+  marker, and for the block an uninstall with no install record leaves, from
+  `install`, `update`, `uninstall`, `verify` and `doctor` and an OpenClaw
+  update that retires a rules file, give each fix as numbered steps under a
+  label that names its case, such as "Fix A, if lines 1 to 32 are Apothem's
+  block: A1. Change line 36: add a word inside its comment." Each step adds
+  a word inside the comment of a BEGIN marker line, so the line no longer
+  reads as a marker; that adds and removes no line, so a Markdown viewer
+  reads every other line as before. An END marker with no BEGIN marker above
+  it marks nothing, so no step names one, and an END marker you quote stays
+  as you wrote it. Line numbers are those of the file as it is, and the steps
+  run from the bottom of the file up. A fix that keeps a block changes every
+  other BEGIN marker line, and a warning gives it only where the layout of
+  the file shows that the block then reads as the one whole block: the next
+  update then replaces it, and the uninstall run again takes it out. No fix
+  keeps a block that a code block of yours left open to the end of the file
+  holds, or an older block whose END marker a rule hid in code, since the
+  next update would change how the lines around it read. A fix that keeps no
+  block changes every BEGIN marker line in the file: Apothem then finds no
+  block of its own there, and the next update writes its block at the end of
+  the file. When the file ends inside a code block that no line closes, that
+  fix first adds the code block's closing line below the last line, so the
+  block written at the end is no code. Any old Apothem text below a line you
+  change, with its END marker line, is then yours to delete by hand. A BEGIN
+  marker you quote in a code block is changed too, so it cannot pair with an
+  END marker once the uninstall takes Apothem's block out. OpenClaw's size
+  refusal for a rules file names the same marker lines and closing line as
+  the other warnings for that file. Where a line above the code block a
+  file ends in may start an HTML block (any line that starts with a tag
+  counts, except a link in angle brackets, a tag on a line right below a
+  line of plain text, and HTML in a code block), or a list item's text
+  goes on at the left margin above it and an indented line follows, a
+  Markdown viewer can read that code block otherwise than Apothem, so the
+  closing line could start a code block in a viewer:
+  that fix then says it cannot give numbered steps and names the line that
+  opens the code block. The fixes are built from the file's
+  lines, with no Markdown reading of their own, and each reading of a file
+  for its markers is kept for the rest of the command, so a warning for a
+  file of 1 MB takes well under a second. The troubleshooting page lists the
+  step formats under "Follow a numbered fix".
+- **The uninstall no longer hangs on a copy of its block after a `---`
+  line.** A file with two copies of Apothem's block, each followed by a `---`
+  line, and a BEGIN marker below them made the uninstall loop for ever. It
+  now stops once it can take no more copies out.
+- **The uninstall keeps opening lines of yours that only look like
+  frontmatter.** A file that opened with a `---` line, a list item and
+  another `---` line right above Apothem's block lost those lines, and with
+  nothing else in it the file was deleted. Only frontmatter that holds keys,
+  as Apothem's own rule files have, now goes with the block. So does
+  frontmatter that YAML cannot read when a line of it starts with one of the
+  keys Apothem's rule files write, such as `globs: **/*.ts` in Cursor's.
+- **The installers and update scripts finish a run that ends as partial.**
+  `apothem install` and `apothem update` exit with code `2` when they leave a
+  file as it is because of its marker lines, or when they stop after they
+  have written something. `install.sh`, `install.ps1`, `update.sh` and
+  `update.ps1` then print one line. The line says that the engine ended as
+  partial, that its messages above name the files it left as they are or the
+  error that stopped it, and to fix what they name, then run
+  `apothem update --harness <name>` again. The installers then run verify,
+  place the `apothem` command and print their closing banner, and the update
+  scripts print "Update complete.", as after a full success. Each script then
+  ends with exit code `2`. A piped PowerShell run (`irm ... | iex`) leaves
+  `$LASTEXITCODE` at `2` instead and keeps your PowerShell session open. The
+  PowerShell scripts do the same when your session sets
+  `$PSNativeCommandUseErrorActionPreference` to `$true`. A piped run puts
+  that setting and `$ErrorActionPreference` back as they were when the run
+  ends or stops on an error. A one-shot `pwsh -Command "irm ... | iex"`
+  reports a partial run only through `$LASTEXITCODE`: end it with
+  `; exit $LASTEXITCODE`, or run the script by path with `-File`, to get exit
+  code `2` from the process. From PowerShell, bash or another POSIX shell,
+  put that command in single quotes, so the calling shell does not replace
+  `$LASTEXITCODE`. From cmd.exe, double quotes are fine. Any other non-zero
+  exit code from the engine stops the script there.
+- **`install.ps1 -DryRun` no longer prints "Installation complete."** A dry
+  run printed that line and the next-step banner after "Dry-run complete -
+  no changes were made.", although it installs nothing and places no
+  `apothem` command. It now ends after its dry-run line, as `install.sh` does.
+- **`verify --profile` and `status --profile` no longer report drift for a
+  project's own `CLAUDE.md`.** A project-scope tool with no install record on
+  this machine read the project's `CLAUDE.md` as its own profile file and
+  reported drift.
 - **An instruction file holding Apothem's block no longer breaks `status`,
   `verify` or `uninstall` when it has bytes that are not UTF-8.** Since 1.2.0
   the check whether a tool is installed read such a file as strict UTF-8 and
@@ -776,86 +1460,53 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   looking at anything; it now removes the rest and exits 2, and names that
   file, left in place, with the fix: save it as UTF-8 or delete the Apothem
   block in it by hand, then run the uninstall again.
-- **Uninstall removes only the files Apothem wrote.** Each install now records
-  the SHA-256 of every file it copies into place (skills, commands, rules
-  and the like), and an uninstall removes a file only while it still has
-  that content. A file you added to an Apothem folder, an Apothem file you
-  edited, and a file of your own with an Apothem name stay, with a warning,
-  and so does the folder that holds them. Before, an uninstall removed the
-  whole folder, and after a partial uninstall followed by cleaning up by
-  hand it could remove files you had put there since. For an install recorded
-  by an earlier release, which does not say which files Apothem wrote, the
-  uninstall removes the files that have the same bytes as what this release
-  writes there; a file that differs leaves the uninstall unfinished (exit
-  `2`) with the next step: copy any of those files you edited and move your
-  own files out of Apothem's folders (an update replaces them), then run
-  `apothem update` and `apothem uninstall` again. An uninstall that does not
-  finish (a failed step, an error or an interrupt, or Apothem's own files
-  reached through a link) appends an `uninstall-incomplete` record to the
-  install ledger, so running it again finishes the job. One that an unexpected
-  error (an exception, such as a backup that cannot be written) or `Ctrl+C`
-  stops before the step that removes what the install record lists appends it
-  only when a step before the one that stopped had changed or backed up a
-  file: an Open-Claw uninstall stopped at `openclaw.json` appends it when its
-  rules-file step had taken Apothem's block out of a workspace's rules file,
-  and nothing when that step changed nothing (also when it found Apothem's
-  rules file behind a link). One stopped inside that rules-file step, or
-  inside the older-layout sweep of Antigravity or Kimi Code, appends nothing,
-  whatever the step had changed. When nothing is appended, the ledger stays as
-  it was, so the install stays active and running the uninstall again finishes
-  the job. A rules-file step that reports an error instead (a rules file it
-  cannot rewrite, or an `openclaw.json` with comments) is a failed step: the
-  uninstall records itself unfinished with that step's backups, prints `did
-  not finish:` and exits `2` when that step had changed a file or found
-  Apothem's rules file behind a link, otherwise `1`. An install, update,
-  rollback or finished uninstall replaces the state of an unfinished
-  uninstall, and so does removing the files by hand. A file where Apothem
-  keeps a managed block (such as `CLAUDE.md`) counts as Apothem's while the
-  block is there, even after you add text of your own beside it, so the second
-  run still finishes the job. A linked folder that holds only your own files
-  no longer stops an uninstall: it is left in place with a warning and the
-  uninstall finishes. An uninstall that removed files before a step failed now
-  exits `2` with the status `partial`, and the `--format json` warnings are
-  grouped like the printed ones, with `count` and `paths`. An uninstall that
-  stops with an error after removing files, or after taking Apothem's entries
-  out of a file such as `openclaw.json`, exits `2` too; one stopped by an
-  unexpected error inside the rules-file step of Open-Claw or the older-layout
-  sweep of Antigravity or Kimi Code exits `1`, whatever that step had changed,
-  as it reports nothing the step did, and one stopped by `Ctrl+C` exits `1`
-  with `Aborted!`. A stopped uninstall now also reports what it found that
-  leaves it unfinished, as one that ran all its steps does: each step that
-  failed before it stopped, each link keeping Apothem's own files in place,
-  the files of an earlier release's install that differ from what this release
-  writes, the files of an install with no record, and a file that holds
-  another block between Apothem's markers. Each gets a `✗ <harness> uninstall
-  did not finish:` line and is added to the end of its `results` row's
-  message, and an install with no record also gets its `Note:` line, with the
-  check of the `--project` folder before `apothem update`, and the row's
-  `kept_reason`; when the reasons, the steps that failed before the stop
-  included, name one link, that row carries it in `detail.symlink` and
-  `detail.leads_to`, as does the row of an uninstall refused because a link
-  leads its folder out of your home directory. Such a link, or such files of
-  an earlier release's install or of an install with no record, make it exit
-  `2`, also when it removed nothing; otherwise one that changed nothing exits
-  `1`. Its warnings also name a link its steps left in place and a file left
-  with a BEGIN marker of yours and no END after it, whose fix the update step
-  then puts first, as for one that ran all its steps. An error that stops the
-  settings-file step of Hermes, Open-Claw, OpenCode or Qwen Code now reads
-  `uninstall stopped: <error>`, as one in a later step does, whether or not an
-  earlier step found something to report. So does an error in the step
-  OpenCode's uninstall takes after the one that removes what the install
-  record lists, which closes an install recorded under another spelling of its
-  folder: the uninstall exits `2`, as it had removed files, and that install
-  stays recorded. A later run does not close it yet: OpenCode then reads as
-  not installed, so the uninstall skips it. Installing OpenCode at the folder
-  again, with a profile outside the linked folder, and then uninstalling it
-  closes that install. `apothem rollback` now undoes the newest install still
-  in place, so a second rollback undoes the one before, refuses an
-  `--install-id` that was already rolled back or uninstalled, and removes a
-  file an install created only while it still has the content that
-  install wrote. Uninstalling a tool from one project no longer removes the
-  shared memory, contexts and learning stores in your home folder while the
-  same tool installed in another project still uses them.
+- **Uninstall removes only the files Apothem wrote.** Each install now
+  records the SHA-256 of every file it copies into place (skills, commands,
+  rules and the like),
+  and an uninstall removes a file only while it still has that content. A file
+  you added to an Apothem folder, an Apothem file you edited, and a file of
+  your own with an Apothem name stay, with a warning, and so does the folder
+  that holds them. An install or update, though, replaces a file or skill
+  folder of yours with the same name as one Apothem copies into that folder,
+  an Apothem file you edited included, after saving it under
+  `~/.apothem/backups/`; the uninstall then removes Apothem's copy and does
+  not put yours back. That holds in the folders Apothem copies helpers,
+  commands, skills or rules into, such as `~/.claude/agents/`, Kimi Code's
+  `.kimi-code/skills/` and `.kimi-code/agents/`, and the project helper
+  folders of CodeBuddy, Cursor, GitHub Copilot, Kiro, Trae and Windsurf. A
+  Codex install or update also removes a `.md` file in its `agents/` folder
+  that has an Apothem helper's name. Only in `~/.agents/skills/`,
+  `~/.codebuddy/skills/`, `~/.kiro/skills/` and `~/.trae/skills/` does the
+  install skip a skill folder Apothem did not write, with a warning, instead
+  of replacing it.
+  Before, an uninstall removed the whole folder, and after a
+  partial uninstall followed by cleaning up by hand it could remove files you
+  had put there since. For an install recorded by an earlier release, which
+  does not say which files Apothem wrote, the uninstall removes the files that
+  have the same bytes as what this release writes there; a file that differs
+  leaves the uninstall unfinished (exit `2`) with the next step: copy any of
+  those files you edited and move your own files out of Apothem's folders
+  (an update replaces them), then run `apothem update` and `apothem uninstall`
+  again. An uninstall that does not finish
+  (a failed step, an error, or Apothem's own files reached through a link)
+  appends an `uninstall-incomplete` record to the install ledger, so running
+  it again finishes the job; an install, update, rollback or finished
+  uninstall replaces that state, and so does removing the files by hand. A
+  file where Apothem keeps a managed block (such as `CLAUDE.md`) counts as
+  Apothem's while the block is there, even after you add text of your own
+  beside it, so the second run still finishes the job. A
+  linked folder that holds only your own files no longer stops an uninstall:
+  it is left in place with a warning and the uninstall finishes. An uninstall
+  that removed files before a step failed now exits `2` with the status
+  `partial`, and the `--format json` warnings are grouped like the printed
+  ones, with `count` and `paths`. An uninstall that stops with an error after
+  removing files exits `2` too. `apothem rollback` now undoes the newest
+  install still in place, so a second rollback undoes the one before, refuses
+  an `--install-id` that was already rolled back or uninstalled, and removes a
+  file an install created only while it still has the content that install
+  wrote. Uninstalling a tool from one project no longer removes the shared
+  memory, contexts and learning stores in your home folder while the same tool
+  installed in another project still uses them.
 - **Uninstall checks more strictly which files are Apothem's.** An install
   recorded by an earlier release does not say which files Apothem wrote, so
   the uninstall compares them with what this release writes. In the two places
@@ -886,7 +1537,24 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   uninstall with the unfinished ones after it. With no install record in
   place, Apothem's managed block in `~/.claude/CLAUDE.md`, or in the profile
   document of a tool configured through one settings file, stays as it is,
-  and a warning now names the file so you can delete the block by hand.
+  and a warning now names the file and Apothem's block by its lines, and
+  gives a numbered fix that changes the block's BEGIN marker line, so you can
+  take that block's text out by hand and keep a BEGIN marker of yours, or a
+  marker pair you quote, above it. The fix also changes those BEGIN marker
+  lines of yours, which would otherwise read as Apothem's once the block is
+  out. When that file holds two different blocks between
+  Apothem's markers, the warning names each block, or Apothem's block and the
+  marker lines around it, with the fix for such a file (see the entry on two
+  whole blocks above): deleting from the first BEGIN marker to the next END
+  marker would take a marker pair of yours, or your text above Apothem's
+  block, with it. When it names Apothem's block and the marker lines around
+  it, it then says to delete Apothem's block by hand. When it names two or
+  more whole blocks, it says instead to run `apothem update`, then
+  `apothem uninstall` again: a BEGIN marker of yours above Apothem's block and
+  an END marker below it, which that text does not name, would make one block
+  once Apothem's block was deleted by hand, and the next update would replace
+  the lines between them. The uninstall run again names those marker lines
+  first.
 - **Uninstall and rollback list every file they keep.** The plain output of
   `apothem uninstall` and `apothem rollback` now lists every file kept (paths
   left behind a link are counted, not listed), also when a rollback's restore
@@ -926,16 +1594,18 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   damaged rather than cut short stays for the ledger reader to report, and a
   new record is never joined to a last line Apothem cannot check. On Windows,
   records now end with a plain newline, as they do elsewhere.
-- **Rollback no longer restores a folder Apothem has stopped removing.** An
+- **Rollback no longer replaces a folder Apothem has stopped removing.** An
   install record from an earlier release can name a folder that release
   removed as a leftover, such as `~/.gemini/antigravity/`. Restoring that
-  record's copy would replace what is in the folder now with the older copy,
-  so `apothem rollback` leaves such a folder in place, reports it as skipped
-  with the path of its copy, and prints a note in plain output. An install,
-  update, uninstall or `--dry-run` also leaves a leftover path in place when
-  it is a link (on Windows, a junction) to a folder the install writes now,
-  and an install that exists only in an earlier layout's folder still counts
-  as installed, so `apothem uninstall` reaches it.
+  record's copy whole would replace what is in the folder now with the older
+  copy, so `apothem rollback` copies back only the files the folder no longer
+  has and keeps every file that is there. A path that is now a link, a file
+  where a folder was (or the other way round), or a path whose copy is gone
+  is left in place with a warning, which names the copy when there is one.
+  An install, update, uninstall or `--dry-run` also leaves a leftover path in
+  place when it is a link (on Windows, a junction) to a folder the install
+  writes now, and an install that exists only in an earlier layout's folder
+  still counts as installed, so `apothem uninstall` reaches it.
 - **Codex installs say when an `AGENTS.override.md` hides the Apothem block.**
   In its home folder (`~/.codex`, or the folder `CODEX_HOME` names), Codex
   loads only the first of `AGENTS.override.md` and `AGENTS.md` that has text,
@@ -958,12 +1628,16 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - **The Kimi Code install says that Claude Code also loads the project
   `AGENTS.md`.** From Claude Code v2.1.277, under its default Project
   instructions setting, Claude Code loads `AGENTS.md` when no `CLAUDE.md`,
-  `.claude/CLAUDE.md` or
-  `CLAUDE.local.md` is in the working folder or a folder above it, and
-  `~/.claude/CLAUDE.md` keeps loading alongside it. So the Kimi Code install's
-  note now names Claude Code with that condition among the tools that load the
-  file it writes, and the harness registry, Claude Code and Kimi Code pages say
-  so.
+  `.claude/CLAUDE.md` or `CLAUDE.local.md` is in the working folder or a
+  folder above it, and `~/.claude/CLAUDE.md` keeps loading alongside it. It
+  also loads a project's `AGENTS.md` when a session starts in a folder above
+  the project and its Read tool opens a file in it, as long as the project
+  folder has none of those files either. So the Kimi Code install's note now
+  names Claude Code, with a condition that covers the project folder, among
+  the tools that load the file it writes. The harness registry, Claude Code
+  and Kimi Code pages describe both loads and the sessions that read no
+  `AGENTS.md`. The Claude Code pin records the plugin ID that releases
+  v2.1.277 to v2.1.284 use for the **Project instructions** setting.
 - **The quality and CI Matrix test jobs start node before pytest.** On a fresh
   Windows runner the first launch of `node` can take more than a minute while
   the test workers keep the machine busy. The VS Code publish workflow's vsce
@@ -1058,14 +1732,14 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   `agents.entries.<id>.subagents.allowAgents`, and the Open-Claw page names the
   `agents.entries.<id>.skills` list. OpenClaw also loads `AGENTS.md` and five
   other files from each agent's workspace. The pin now records them. The
-  install still writes none of them, and whether it should is an open question
-  for the maintainer. CodeBuddy moved its IDE Rules page, and that page
-  describes one folder per rule holding a `RULE.mdc` file. The CodeBuddy rules
-  file and docs now link the CodeBuddy Code memory page, which documents the
-  plain `.md` rule files the install writes. The docs say Apothem has not
-  confirmed that the IDE loads them. Kimi Code 2.4.0 through 2.5.2, the latest
-  release on 2026-11-07, change nothing the install relies on. No file the
-  install writes moves.
+  install does not write these files; it adds its own `apothem/AGENTS.md`
+  through the `bootstrap-extra-files` hook (see Added). CodeBuddy moved its
+  IDE Rules page, and that page describes one folder per rule holding a
+  `RULE.mdc` file. The CodeBuddy rules file and docs now link the CodeBuddy
+  Code memory page, which documents the plain `.md` rule files the install
+  writes. The docs say Apothem has not confirmed that the IDE loads them.
+  Kimi Code 2.4.0 through 2.5.2, the latest release on 2026-11-07, change
+  nothing the install relies on. No file the install writes moves.
 - **Dependabot can update the vsce and channel-smoke lockfiles.** They moved
   from `.github/vsce` and `.github/channel-smoke` to `tools/vsce` and
   `tools/channel-smoke`. Dependabot cannot open pull requests for npm
@@ -1091,6 +1765,17 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   package never held them. Updating an archive install made by an installer
   from release 1.5.0 or earlier keeps its old `tests/` folder, because the
   installers keep every folder they cannot tell is theirs; you can delete it.
+- **The provenance check says when it skipped a check.**
+  `scripts/release/verify-provenance.sh` and `verify-provenance.ps1` printed
+  `chain OK` even when a run skipped cosign or slsa-verifier because the tool
+  was missing. They now print
+  `verify-provenance: chain OK (3 of 3 layers verified: ...)` only when all
+  three checks ran. Otherwise they print a line that starts
+  `verify-provenance: partial check` and names the checks that ran and the
+  ones skipped. A partial check still exits 0 unless you pass the new
+  `--require-all` flag (`-RequireAll` for the PowerShell script); with it, a
+  partial check exits 1, so a script can rely on the exit status alone. The
+  SLSA check now also covers `apothem.vsix` when the release has it.
 - **The pipeline overview's command index is current in every translation.**
   The docs generator wrote the index of shipped commands into the English page
   only, so the eleven translated overviews kept older summaries for every
@@ -1196,6 +1881,57 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   it, and the install now follows it. On Windows a home folder that is a
   junction, as moving a user profile to another drive makes it, is followed
   the same way.
+- **An uninstall keeps the shared folders another install still uses when the
+  home folder is a link.** When the home folder is a link (`/home` leading to
+  `/var/home` on Fedora Silverblue, or a Windows profile moved behind a
+  junction), one install could run with the home spelled through the link and
+  another with the folder it leads to. Apothem compared the two spellings as
+  text, so uninstalling the first said `no other Apothem install uses it` and
+  removed `~/.agents/skills/` and `~/.config/apothem/rules/` and `templates/`
+  while the second install still used them. Apothem now compares the folder
+  each path names, so the uninstall keeps them and names the other install,
+  and the install note `Installs using it now` counts both. One tool
+  installed both ways is one install: uninstalling it, with the home spelled
+  either way, removes what either install wrote and ends both of its install
+  records, so no record is left that keeps the folders. An uninstall that
+  stops unfinished ends neither record; once you fix what stopped it, the next
+  uninstall ends both, and so does `apothem status` or `apothem verify` when
+  it finds nothing of Apothem's left. When the ledger cannot take the second
+  ending, the uninstall still finishes and warns, naming the record left
+  active; uninstalling with the home spelled that way ends it.
+- **A rollback keeps the shared folders the same tool's other install uses.**
+  When one tool was installed twice with the home spelled in two cases
+  (`C:\Users\gad` and `C:\Users\Gad` on Windows, `/Users/gad` and
+  `/Users/Gad` on macOS), `apothem rollback` under one spelling treated both
+  installs as the one it rolled back. It removed `~/.agents/skills/` and
+  `~/.config/apothem/rules/` and `templates/` while the other install still
+  used them, and that install then failed `apothem verify`. A rollback now
+  reverses only the install recorded with the home spelled exactly as it is
+  for that run, and keeps the shared folders for the other, on macOS too
+  when it rolls back the install that created them. Rolling back the install
+  that first wrote the tool's own files still removes the ones the other
+  install left as they were, such as `~/.codex/hooks/`, and keeps with a
+  warning the ones that install rewrote, such as `~/.codex/AGENTS.md`. The
+  other install then fails `apothem verify` until you run `apothem update`
+  with the home spelled its way.
+- **Rolling back every tool that uses the shared folders removes them.** When
+  the tool that created `~/.agents/skills/` and the other shared folders was
+  rolled back or uninstalled first, they were kept for the tool that still
+  used them, but Apothem then dropped the record that showed it had created
+  them. Rolling back that second tool kept them too, and later uninstalls said
+  nothing was installed, so the folders stayed for good. Apothem now keeps
+  that record, also when the first tool is installed again, updated, or
+  installed more than ten times, and the last rollback or uninstall removes
+  them, with the empty folders an install made to hold them, such as
+  `~/.agents/`. A folder Apothem removed and you put back yourself is kept.
+- **`install --clean` refuses a home folder that leads to the root of a drive
+  or file system.** The clean-slate step refused a home directory that is the
+  root of a drive or file system only as spelled, so a home that is a link or
+  a junction to one passed the check. It now follows the link first and stops
+  before it backs up or removes anything, and before it creates the starter
+  profile. It also stops when the home is reached through a link that loops,
+  and when the home is not a full path, and the error says to set the home
+  directory to the full path of your own folder.
 - **A refused uninstall is reported as failed.** When the write guard, a
   failed backup or an unreadable install record stopped part of an uninstall,
   `apothem uninstall` still printed `Uninstalled` and exited 0, while the files
@@ -1240,13 +1976,13 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   names what would make it write OpenCode 2's own shapes instead. The page also
   states that OpenCode 1 loads the Claude Code block in `~/.claude/CLAUDE.md`.
 - **The always-on bytes metric counts only the instruction files Hermes and
-  Codex load.** Hermes loads one kind of project context per session, the
+  Codex load.** Hermes loads one type of project context per session, the
   first with a non-empty file: `.hermes.md` or `HERMES.md` (the first of the
-  two that exists is the only candidate of its kind), `AGENTS.override.md` or
+  two that exists is the only candidate of its type), `AGENTS.override.md` or
   `AGENTS.md`, `CLAUDE.md`, then `.cursorrules` with every
   `.cursor/rules/*.mdc`. The metrics collector added up `.hermes.md`,
   `AGENTS.md` and `CLAUDE.md` together and left out the other files. It now
-  counts `~/.hermes/SOUL.md` plus that one kind. Codex loads the first
+  counts `~/.hermes/SOUL.md` plus that one type. Codex loads the first
   non-empty of `AGENTS.override.md` and `AGENTS.md` in its home folder, and in
   the project the first of `AGENTS.override.md`, `AGENTS.md` and its
   `project_doc_fallback_filenames` names that exists, where an empty one loads
@@ -1366,6 +2102,27 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Security
 
+- **`apothem doctor --project` starts only hook commands that run Apothem's
+  own code.** Doctor started any command in a project's hook files that named
+  a `hooks/dispatch.py`, so a command someone else committed to
+  `.cursor/hooks.json`, `.github/hooks/apothem.json` or `.kiro/hooks/`, or a
+  changed script in `.apothem/support/`, ran when you ran doctor, even if you
+  never opened the project in the tool. Doctor now takes hook commands only
+  from the places the tool reads them, and starts one only when its
+  interpreter is the one the install recorded (outside the project) or the
+  Python Apothem runs under, its options run no code, its script is the hook
+  script the install wrote, in a folder whose files still match the SHA-256
+  checksums the install recorded and that holds no other Python file and no
+  link, and its arguments are the ones Apothem writes. It starts those known
+  paths rather than the text it read, and looks up no other path a hook
+  command names, such as a network share. A recorded interpreter or script
+  that is gone is reported as unable to start, without anything being
+  started; any other command is reported as `hook.unchecked`, which the plain
+  output now shows too, with any control character in it spelled out. Install
+  records now keep the interpreter written into hook commands, so hooks
+  installed by an earlier release stay unchecked until you run
+  `apothem update`. An install now keeps only a true or false `enabled` flag
+  on Kiro's hooks, so no other value can ride along in the file.
 - **A checked project's git settings no longer make the conformity gate start
   a program.** `--all`, `--all-perwrite`, three standalone validators
   (`no-global-plans-grep`, `conventional-commit-grep` and
@@ -1489,9 +2246,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   install back to that release. `APOTHEM_ALLOW_UNVERIFIED` does not bypass
   that check, but because it lets an unsigned tag, or one signed by another
   key, through, the check protects only tags that carry the maintainer
-  key's signature. The installers check out the tag by its full `refs/tags/` name
-  and confirm the checkout is the tag's commit. A missing `gpg` is now named
-  as such.
+  key's signature. The installers check out the tag by its full `refs/tags/`
+  name and confirm the checkout is the tag's commit. A missing `gpg` is now
+  named as such.
 - **A new release check needs both signatures.** `APOTHEM_VERIFY=release`
   first checks the release tag against the maintainer key, then downloads the
   platform archive, `SHA256SUMS` and `SHA256SUMS.cosign.bundle`. cosign must
@@ -1508,28 +2265,28 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   clone at `APOTHEM_HOME` on the tag check; `signature` and `checksum` stay
   available. The checks pass under cosign v2 and v3, and a CI job runs them
   against the real cosign binaries.
-- **An existing clone is no longer checked out before its tag is checked.**
-  In releases up to 1.5.0, `install.sh`, `install.ps1`, `update.sh` and
+- **An existing clone is no longer checked out before its tag is checked.** In
+  releases up to 1.5.0, `install.sh`, `install.ps1`, `update.sh` and
   `update.ps1` fetched into an existing clone at `APOTHEM_HOME`, checked out
-  the new tag, and only then checked its signature. When the check failed,
-  the clone stayed at that tag, and the `apothem` command runs its code from
+  the new tag, and only then checked its signature. When the check failed, the
+  clone stayed at that tag, and the `apothem` command runs its code from
   there. They now fetch, check the tag, and check it out only when the check
   passes, so a failed check leaves the clone as it was. The checkout also no
-  longer forces: a clone with changes to tracked files stops the update,
-  with a message to commit or stash them, instead of losing them. A failed
+  longer forces: a clone with changes to tracked files stops the update, with
+  a message to commit or stash them, instead of losing them. A failed
   `git fetch` now stops the run. A non-release ref such as `main` on an
   existing clone follows origin's copy of the branch, and a `.git` file (a
   linked worktree) counts as a clone. Before the fetch, the update in place
   also stops when files are marked assume-unchanged or skip-worktree, which
   hides their changes from git, when the clone's work tree is not
-  `APOTHEM_HOME`, or when the clone's own `.git/config` sets `gpg.program`,
-  `gpg.openpgp.program`, `core.fsmonitor`, `core.hooksPath`, `include.*` or
-  `includeIf.*`, any of which makes git run a program or read other config
-  during the update. Every git command on the clone runs with its hooks
-  turned off, and a git clone of anything other than Apothem is no longer
-  treated as an Apothem clone. The installers also ignore git's redirecting
-  and config environment variables (`GIT_DIR`, `GIT_CONFIG_PARAMETERS` and
-  similar) and refuse an `APOTHEM_REPO` that starts with `-`.
+  `APOTHEM_HOME`, or when the clone's own git config holds a setting that
+  could make git run a program or read other config during the update (see the
+  entry on the clone's own setup below). Every git command on the clone runs
+  with its hooks turned off, and a git clone of anything other than Apothem is
+  no longer treated as an Apothem clone. The installers also ignore git's
+  redirecting and config environment variables (`GIT_DIR`,
+  `GIT_CONFIG_PARAMETERS` and similar) and refuse an `APOTHEM_REPO` that
+  starts with `-`.
 - **`APOTHEM_VERIFY=checksum` now needs `APOTHEM_ALLOW_UNVERIFIED=1`.**
   This is a behaviour change for anyone who sets `APOTHEM_VERIFY=checksum`:
   add `APOTHEM_ALLOW_UNVERIFIED=1`, or the installer stops and says so.
@@ -1545,54 +2302,246 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   source is now checked in a staging folder beside `APOTHEM_HOME`, swapped in
   only after every check passes, and everything in the earlier Apothem install
   that is not part of its source tree is kept. If a step fails or the run is
-  interrupted, the earlier install is put back unchanged, or the message says
-  where it was left. `--yes` on a folder that holds no Apothem install no
-  longer merges the new files into it: the folder moves, unchanged, to
-  `<APOTHEM_HOME>.before-apothem-<time>` and the install starts fresh. A
-  symbolic link at `APOTHEM_HOME` (on Windows, a symbolic link or a junction)
-  is refused when the install would replace it, since replacing it would
-  replace the link and not the folder it leads to; an existing clone behind a
-  link is still updated in place. `--yes` no longer replaces a git clone with
-  a release archive while the clone holds local work (changes, stashes,
-  unpushed commits, or untracked files in its source tree), also in a dry run,
-  and when it replaces a clone, the clone's own tree moves to
-  `<APOTHEM_HOME>.before-apothem-<time>` instead of being deleted.
-  A folder that holds only the engine's data (`backups`, `state`, `plans`,
-  `memory`, `contexts`, `learning`, `providers`) is updated without `--yes`.
-  On Linux and macOS, a file or folder to carry over whose name has a space
-  or another special character stops the install. A re-run in an archive
-  mode updates an earlier archive install without `--yes`, and the update
-  scripts tell an archive install to re-run the installer. `--dry-run`
-  (`-DryRun`) now checks the release in a temporary folder, applies the same
-  refusals as a real run, and leaves `APOTHEM_HOME` unchanged. The
+  stopped by Ctrl+C or a termination signal, the earlier install is put back
+  unchanged, or the message says where it was left; a forced kill or a power
+  loss can leave folders that the next fetched install reports (see below).
+  `--yes` on a folder that holds no Apothem install no longer merges the new
+  files into it: the folder moves, unchanged, into a new
+  `<APOTHEM_HOME>.before-apothem-<time>` folder, under its own name, and the
+  install starts fresh. A symbolic link at `APOTHEM_HOME` (on Windows, a
+  symbolic link or a junction) is refused when the install would replace it,
+  since replacing it would replace the link and not the folder it leads to; an
+  existing clone behind a link is still updated in place. `--yes` no longer
+  replaces a git clone with a release archive while the clone holds local work
+  (changes, stashes, unpushed commits, or untracked files in its source tree),
+  also in a dry run, and when it replaces a clone, the clone's own tree moves
+  into a new `<APOTHEM_HOME>.before-apothem-<time>` folder, under its own
+  name, instead of being deleted. A folder that holds only the engine's data
+  (`backups`, `state`, `plans`, `memory`, `contexts`, `learning`, `providers`)
+  is updated without `--yes`. On Linux and macOS, a file or folder to carry
+  over whose name has a space or another special character stops the install.
+  A re-run in an archive mode updates an earlier archive install without
+  `--yes`, and the update scripts tell an archive install to re-run the
+  installer. `--dry-run` (`-DryRun`) now checks the release in a temporary
+  folder and leaves `APOTHEM_HOME` unchanged. It makes the same checks as a
+  real run, except that it does not fetch into an existing clone, and so does
+  not check it for changes to tracked files. The
   [install guide](https://apothem.ahmedgad.com/docs/install#trust-model)
   explains each mode.
-- **OpenCode helpers no longer turn off the `.env` read prompt.** OpenCode
-  allows every tool by default and asks before reading `.env` and `.env.*`
-  files. A helper's rules come after those defaults and after the operator's
-  own `permission` config, and the last matching rule wins, in OpenCode 1
+- **OpenCode helpers no longer turn off the `.env` read prompt
+  (GHSA-qpmp-8g2h-296c).** OpenCode allows every tool by default and asks
+  before reading `.env` and `.env.*` files. A helper's rules come after those
+  defaults and after the operator's own `permission` config, and the last
+  matching rule wins, in OpenCode 1
   (v1.19.5) and OpenCode 2 (v2.2.5). Every helper the OpenCode install wrote
   carried `read: allow`, which turned that prompt off, and `allow` rules for
   the other tools it may use, which overrode a stricter rule the operator set,
   such as a global `bash: ask`. Helpers now carry only `deny` rules, for the
   tools they must not use, so the `.env` prompt and the operator's rules apply
-  to them.
+  to them. Releases 1.0.1 to 1.5.0 are affected. Upgrading leaves the
+  installed helpers as they are: after the upgrade, run `apothem update` (or
+  `apothem install --harness opencode`), then check that no Apothem helper
+  still has an `allow` line. The helpers are in the `agents` folder under
+  the OpenCode config folder (`$XDG_CONFIG_HOME/opencode` when that is set,
+  else `~/.config/opencode`). Earlier releases ignored `XDG_CONFIG_HOME`, so
+  the helpers they wrote are in `~/.config/opencode/agents`.
 - **The VS Code packaging tool's lockfile takes the `minimatch` fix.** The
   locked `vsce` toolchain (`tools/vsce`) moves its transitive `minimatch` from
   10.2.6 to 11.0.1, which fixes GHSA-g3hv-75wg-m249 (a denial of service
-  through a crafted glob pattern). vsce 4.0.0 and 4.1.0 still require
+  through a crafted glob pattern). vsce 4.0.0, 4.1.0 and 4.1.1 still require
   `minimatch` 10.x, which has no fixed release, so `tools/vsce/package.json`
   overrides it. vsce did not reach the affected code, which runs only at
   optimization level 2 or higher: it matches its own ignore list and the
   extension's `.vscodeignore` at the default level. The packaged extension is
   unchanged.
-- **The website builds with Next.js 16.4.5.** Next.js 16.4.5 fixes seven
+- **Hooks no longer read your `PYTHON*` variables or your user site-packages.**
+  A hook runs in whatever folder the assistant opened, on every tool call, and
+  an empty entry in `PYTHONPATH` stands for that folder, so a file such as
+  `sitecustomize.py` placed there could run inside the hook. Every hook command
+  now starts Python with `-E -s`: `-E` makes Python ignore `PYTHONPATH` and the
+  other `PYTHON*` variables, and `-s` leaves out the user site-packages. The
+  same flags apply to the Claude Code plugin's bootstrap script and its
+  interpreter probe, and to the commands the Claude Code, Codex, CodeBuddy,
+  Cursor, GitHub Copilot, Kiro, Qwen Code and Windsurf adapters write. The hooks
+  use only the standard library and their own files, so nothing they need is
+  lost. Because `-E` also turns off `PYTHONUTF8` and `PYTHONIOENCODING`, the
+  dispatcher and the conformity gate now read their input as UTF-8 themselves,
+  which also fixes non-ASCII hook payloads on Windows. `-E` also ignores
+  `PYTHONDONTWRITEBYTECODE`, so the dispatcher and the conformity gate turn
+  bytecode writing off themselves. When an uninstall removes a Python module
+  that Apothem wrote (a hook, the statusline renderer or a part of the
+  conformity gate), it also removes that module's bytecode
+  (`__pycache__/<module>.*.pyc` beside it), such as an earlier release's hooks
+  left, then the `__pycache__` folder if it is left empty; it removes no other
+  cache file. The conformity gate now starts each of its standalone validators
+  with `-E -s` too, plus `-X utf8`, so a validator still reads git output and
+  files as UTF-8 under any Windows code page; the docs run the gate by its
+  script path with `-E -s`, which keeps the checked project's Python files and
+  your `PYTHONPATH` out of the gate. An install made by an earlier release
+  keeps its old
+  hook commands until you run `apothem install` or `apothem update`; an update
+  replaces them without touching your own hooks, and an uninstall removes the
+  old and the new form. The Claude Code statusline snippet in
+  `~/.claude/statuslines/conformity.json` also starts Python with `-E -s`, and
+  its renderer reads its input as UTF-8. No install or update writes the
+  `statusLine` setting, so if you copied an earlier snippet's command into your
+  `settings.json`, add `-E -s` after the interpreter yourself.
+- **An update in place checks more of the clone's own setup, and sooner.**
+  `install.sh`, `install.ps1`, `update.sh` and `update.ps1` now read both
+  `.git/config` and `.git/config.worktree` of an existing clone and accept only
+  the settings `git clone` and `git init` write there for a full clone, branch
+  settings, `user.name`, `user.email`, `maintenance.auto`,
+  `maintenance.strategy`, `pull.rebase` and `pull.ff`; `extensions.refStorage`
+  must be `files` or `reftable`, and a branch's `remote` and `pushRemote` must
+  be `origin`. Any other setting stops the run, since it could make git run a
+  program, read settings, hooks, attributes or objects from another place, or
+  connect somewhere else. A partial clone, made with `--filter`, stops the run
+  too: clone again without `--filter`. The message names the setting and the
+  file, and the [troubleshooting
+  page](https://apothem.ahmedgad.com/docs/install/troubleshooting) of the
+  install guide lists the accepted settings. A setting whose name holds a line
+  break stops the run with its own message, since a reader could take it for two
+  settings. The run also stops on a `filter=` or `diff=` line in
+  `.git/info/attributes` (`git diff` can run a program a diff driver names; the
+  update's own `git diff` turns that off, and the check keeps such a driver out
+  of the clone), which every script reads byte by byte as git does, so a
+  UTF-16 byte-order mark hides nothing; on that file or a config file that is
+  not a plain file, such as a named pipe that could hand git other text than
+  the check read; on a clone that
+  borrows objects from another repository (`objects/info/alternates` or
+  `http-alternates`, as `--reference` and `--shared` write), where git would
+  read objects under settings nothing checks; and on a clone that holds a
+  submodule, recorded in its index or kept in `.git/modules`: a release tree has
+  none, and git would run inside it under settings nothing checks. The settings,
+  attributes and object checks run before any git command that reads the clone's
+  index or objects, so a configured file-system monitor cannot run first, and
+  they run, with the submodule check, before `--yes` replaces a clone, so `git
+  status` never runs inside a submodule there. Before any git command that
+  applies the work tree's `.gitattributes` files, the run stops on one that git
+  does not track or that differs from the committed copy, in any folder of the
+  clone, or whose committed copy git cannot read, or reads as bytes that do not
+  match its ID (git does not check that as it reads an object), and on one
+  whose committed or work-tree copy names a filter or diff driver. Every script
+  reads both copies byte by byte, so a carriage return inside a line hides
+  nothing, and the PowerShell scripts read the committed copy through a git
+  program even when `git` in your session is a function or a script, such as a
+  wrapper in your profile; with no git program on `PATH`, the run stops and says
+  so. It also stops on a git repository in the clone that git does not track,
+  since git lists nothing inside it but would apply its `.gitattributes` files
+  to what a release adds there. Neither check reads the engine's own data
+  folders (`backups`, `state`, `plans`, `memory`, `contexts`, `learning` and
+  `providers`), where no release writes, unless the clone tracks files there,
+  so a `--clean` backup of a folder that holds a git clone does not stop an
+  update. `--yes` makes these checks too before it replaces a clone. The
+  PowerShell scripts read git's output as UTF-8 for the whole run, whatever the
+  console's code page, so a clone whose git folder or files have non-ASCII names
+  gets every one of these checks. Before the fetch, it stops on files under
+  `src` (spelled in any case, since a file system that ignores case reads `Src`
+  as `src`) that git does not track, ignored files included, and lists them,
+  since the engine could load them; after the checkout, it removes the Python
+  cache folders (`__pycache__`) under `src` before the engine first runs from
+  the clone, so no bytecode from before the update loads. A dry run of the
+  installers makes all of these checks. Every git command on the clone now runs
+  with no pager, no automatic maintenance, the file-system monitor off and no
+  submodule recursion, and `git diff` and `git status` skip submodules; the
+  check for changes runs `git diff` with no text conversion or external diff
+  program. For the whole run, the installers and updaters set
+  `GIT_NO_LAZY_FETCH=1`, so git never fetches a missing object from the remote
+  on its own, and `GIT_ALLOW_PROTOCOL` to the file, git, http, https and ssh
+  transports, so neither a value in your environment nor an address in the
+  clone's config can widen that list or make git run a helper program such as
+  `ext::`; `APOTHEM_REPO` must use one of those transports. The installers and
+  updaters also clear `GIT_CONFIG`,
+  `GIT_CONFIG_GLOBAL` and `GIT_CONFIG_SYSTEM`, so a value inherited from your
+  environment can no longer point git at another config file, and
+  `GIT_ATTR_SOURCE`, and every git command on the clone empties `attr.tree`, so
+  git never reads attributes from another tree. Every git command on the clone
+  also empties `core.attributesFile`, and the run sets `GIT_ATTR_NOSYSTEM=1`, so
+  git reads no attributes file outside the clone: a macro that your own or the
+  system's attributes file defines with a filter (`[attr]name filter=...`)
+  applies to nothing in the clone. Nor do the line-ending settings there
+  (`eol` and `text`), so an update can report `has changes to tracked files`
+  for a clone you never changed: run `git -C ~/.apothem status` once, then run
+  the update again. The PowerShell scripts put the variables
+  they clear, the ones they set (`GIT_NO_REPLACE_OBJECTS`, `GIT_NO_LAZY_FETCH`,
+  `GIT_ALLOW_PROTOCOL` and `GIT_ATTR_NOSYSTEM`) and the console's output
+  encoding back when the run ends, so an `irm ... | iex` run leaves your
+  session as it was.
+  `GIT_CONFIG_NOSYSTEM` stays as you set it. If you set `GIT_CONFIG_GLOBAL` for
+  the installer, it is now ignored; git still reads your own global and system
+  config from the usual places, and `git`, `gpg` and `cosign` are the ones your
+  `PATH` finds. A clone that another user owns now stops the run with an
+  explanation and what to do, in place of git's raw "dubious ownership" error.
+  The install guide now says that `APOTHEM_HOME` must be a folder only you can
+  write: on Windows, a folder made at the root of a drive, such as `C:\apothem`,
+  can be changed by every user who signs in, under Windows' default permissions.
+  The installers now warn, without stopping, when users other than you can write
+  to `APOTHEM_HOME` or the folder holding it, since they can then change the
+  code Apothem runs as you. The warning also names the user who owns either
+  folder when that is someone else: on Linux and macOS a user other than you or
+  root, on Windows an account other than you, SYSTEM, Administrators and
+  TrustedInstaller. Linux and macOS read the permission bits and, where
+  `getfacl` is installed, the access list, whose entry for the folder's group
+  decides whether that group is named (`ls` shows the list's mask in the group
+  bits), and take each name `getfacl` writes with escapes as it is, such as a
+  domain account's `CORP\alice`, so your own entry is never named; Windows names
+  every account or group that a permission entry lets write, other than those,
+  CREATOR OWNER, OWNER RIGHTS and your own sign-in session, as the Security tab
+  names it, and names a folder made at a drive's root, such as `C:\apothem`.
+  `install.sh` and `update.sh` do not check under Git Bash, MSYS2 or Cygwin; on
+  Windows the warning comes from `install.ps1` and `update.ps1`.
+- **A second install, update or uninstall script can no longer run on the same
+  `APOTHEM_HOME`, and a stopped run is reported.** Each run of `install.sh`,
+  `update.sh`, `uninstall.sh` and their PowerShell versions now holds a lock,
+  `<APOTHEM_HOME>.lock`, for its whole length and gives it up on success,
+  failure, Ctrl+C and a termination signal. A second run stops and says so. On
+  POSIX the lock is a folder that holds the process ID and the environment of
+  the run; a lock left by a run that was killed is reported with how to remove
+  it, and never taken over, and a lock made in another environment (WSL and Git
+  Bash on one machine, or another container) is reported as one whose process
+  cannot be checked from there. On Windows PowerShell the lock is a file that
+  Windows closes and deletes when the process ends; a POSIX script that finds
+  such a file under Git Bash, MSYS2, Cygwin or WSL says that a PowerShell run
+  holds it. When `APOTHEM_HOME` is a symbolic link or a junction, every script
+  takes the lock beside the folder it leads to, so a Git Bash run and a
+  PowerShell run on the same folder stop each other. Because the lock sits
+  beside `APOTHEM_HOME`, every run, an update in place, an uninstall and a dry
+  run included, now needs write access to the folder that holds `APOTHEM_HOME`.
+  The folder that receives an earlier install when `--yes` replaces it is now
+  created by the run itself, and the earlier tree moves inside it, to
+  `<APOTHEM_HOME>.before-apothem-<time>/<name>`, where `<name>` is the last part
+  of `APOTHEM_HOME`. A forced kill or a power loss during a swap can still leave
+  the earlier install or other entries of `APOTHEM_HOME` in the staging folders
+  beside it, which are now named `.apothem-old.<name>.*`,
+  `.apothem-extract.<name>.*` and `.apothem-clone.<name>.*`. The next fetched
+  install for that `APOTHEM_HOME`, a dry run included, now stops before it
+  changes anything, names each folder and the entries that were moved into it,
+  and says how to move them back. It deletes nothing. The staging folders of
+  another `APOTHEM_HOME` in the same parent folder are left out (on Windows and
+  macOS, a name that differs only in capital letters counts as the same home,
+  whatever the file system), and a staging folder whose name does not say which
+  home it belongs to is listed with a note to check what it holds. The POSIX
+  installer also checks, after each move in a swap, that the tree landed where
+  it was going and not inside a folder of that name that appeared meanwhile; if
+  it did not, the tree moves back and the run stops.
+- **The commit that is checked out is the commit that was verified.** The
+  installers and updaters read the release tag once, record the commit it
+  names, verify the tag, check that commit out by ID, and require `HEAD` to be
+  that commit, in place, on a fresh clone and in the update scripts. A tag
+  that moves between the check and the checkout no longer changes what is
+  installed. The message for a tag signed by another key now names the key
+  that signed it and the one that is required. On Windows PowerShell 5.1 and
+  7, a download that is redirected through any address that is not https is
+  refused, at every step of the redirect, as the POSIX installers' `curl`
+  already did; on 5.1 the message names that address, and on 7 it says the
+  download was redirected to an http:// address.
+- **The website builds with Next.js 16.4.6.** Next.js 16.4.5 fixed seven
   moderate advisories, among them GHSA-mfr8-8qww-v76h, GHSA-pc58-hwjq-p385 and
   GHSA-7qx7-33qx-rqx2. They concern Next.js running as a server (its caches,
   image optimization, Edge routes and self-hosted response forwarding). The
   site is published as static files with no Next.js server, so none of them
-  reached it. The same update moves Fumadocs (`fumadocs-core` and
-  `fumadocs-ui` to 16.18.4, `fumadocs-mdx` to 15.5.3) and Tailwind CSS
+  reached it. The same updates move Fumadocs (`fumadocs-core` and
+  `fumadocs-ui` to 16.19.3, `fumadocs-mdx` to 15.6.2) and Tailwind CSS
   (`tailwindcss` and `@tailwindcss/postcss` to 4.3.5).
 
 ## [1.5.0] - 2026-10-28
@@ -3036,7 +3985,8 @@ harnesses behind a conformity governance gate and signed, reproducible releases.
   constraints and document an inspect-first alternative to the pipe-to-shell
   one-liner.
 
-[Unreleased]: https://github.com/ahmed-g-gad/apothem/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/ahmed-g-gad/apothem/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.6.0
 [1.5.0]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.5.0
 [1.4.0]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.4.0
 [1.3.0]: https://github.com/ahmed-g-gad/apothem/releases/tag/v1.3.0

@@ -192,7 +192,7 @@ def test_the_command_runs_the_installed_dispatcher_under_the_contract(
     ).as_posix()
     operator = python_call_tokens()["CALL_OP"]
     assert _ours(_load(project)) == [
-        f'{operator}"{python}" "{dispatcher}" --contract cursor sessionStart'
+        f'{operator}"{python}" -E -s "{dispatcher}" --contract cursor sessionStart'
     ]
     assert Path(dispatcher).is_file()
 
