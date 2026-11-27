@@ -144,6 +144,15 @@ class GitTimeoutError(GitCheckError):
         super().__init__(f"{command} did not finish within {seconds} seconds")
 
 
+class GitEntryUnreadableError(GitCheckError):
+    """A ``.git`` entry on git's search path could not be looked at.
+
+    The check did not run git (see ``nearest_linked_git_entry``), and it has
+    not earned a pass: the message is the sentence ``linked_git_message``
+    gives, naming the entry.
+    """
+
+
 class GitFailedError(GitCheckError):
     """A git command failed in a repository that is there.
 
@@ -792,8 +801,10 @@ def nearest_linked_git_entry(root: Path) -> Path | None:
         except OSError as exc:
             if _absent(exc, entry):
                 continue
+            _unreadable_entries.add(os.fspath(entry))
             return entry
         except ValueError:
+            _unreadable_entries.add(os.fspath(entry))
             return entry
         if is_link(info):
             note_skipped(entry)
@@ -821,22 +832,26 @@ def _absent(exc: OSError, entry: Path) -> bool:
         return False
     try:
         holder = os.lstat(entry.parent)
-    except FileNotFoundError:
-        return True
+    except FileNotFoundError as missing:
+        return getattr(missing, "winerror", None) in (None, 2, 3)
     except (OSError, ValueError):
         return False
     return not stat.S_ISDIR(holder.st_mode)
 
 
+# The .git entries :func:`nearest_linked_git_entry` returned because
+# ``os.lstat`` could not look at them, by exact spelling.
+_unreadable_entries: set[str] = set()
+
+
 def git_entry_unreadable(entry: Path) -> bool:
-    """Return True when ``os.lstat`` cannot look at *entry* for a reason but absence."""
-    try:
-        os.lstat(entry)
-    except OSError as exc:
-        return not _absent(exc, entry)
-    except ValueError:
-        return True
-    return False
+    """Return True when :func:`nearest_linked_git_entry` could not look at *entry*.
+
+    Such an entry is not a link: it is not in the skip log, and it gets its
+    own sentence (:func:`linked_git_message`). The answer is what the guard
+    found, not a second look.
+    """
+    return os.fspath(entry) in _unreadable_entries
 
 
 def linked_git_label(root: Path, entry: Path) -> str:
@@ -872,31 +887,23 @@ def linked_git_message(root: Path, entry: Path) -> str:
     )
 
 
-# Whether file names on this host match without regard to case: NTFS, and
-# APFS and HFS+ as macOS formats them by default.
-_NAMES_FOLD_CASE: Final[bool] = os.name == "nt" or sys.platform == "darwin"
+def _is_git_entry(path: Path) -> bool:
+    """Return True when the listed entry *path* is the ``.git`` of its folder.
 
-
-def _walk_name(name: str) -> str:
-    """Return *name* as the host's file system matches it."""
-    return name.casefold() if _NAMES_FOLD_CASE else name
-
-
-def _names_git(name: str) -> bool:
-    """Return True when the folder entry *name* is a ``.git`` git would use.
-
-    ``.git`` in any case where names fold case, and on Windows also a short
-    name such as ``GIT~1``, as ``_corpus._names_git`` judges an index name.
+    ``.git`` as listed, or another spelling of it in case (``.GIT``) only
+    when the file system opens ``.git`` there as that same entry: a
+    case-sensitive folder (NTFS, APFS) holds two entries, and git uses only
+    ``.git``. Both are looked at with ``os.lstat``. A folder listing gives
+    long names only, so a short name such as ``GIT~2`` is a name of its own.
     """
-    folded = _walk_name(name)
-    if folded == GIT_ENTRY:
+    if path.name == GIT_ENTRY:
         return True
-    return (
-        os.name == "nt"
-        and folded.startswith("git~")
-        and folded[4:].isascii()
-        and folded[4:].isdigit()
-    )
+    if path.name.lower() != GIT_ENTRY:
+        return False
+    try:
+        return os.path.samestat(os.lstat(path), os.lstat(path.parent / GIT_ENTRY))
+    except (OSError, ValueError):
+        return False
 
 
 def iter_tree_files(
@@ -931,12 +938,15 @@ def iter_tree_files(
     skipped too; what it points to is yielded under its own path when the
     walk reaches it. A directory it cannot read is skipped.
     """
+    # Names match as the host's path rules spell them (os.path.normcase);
+    # ``.git`` is judged on its own (:func:`_is_git_entry`).
+    extra = frozenset(extra_prune)
     pruned = frozenset(
-        _walk_name(name)
-        for name in (
-            PRUNED_SEGMENTS.union(extra_prune) if prune else frozenset(extra_prune)
-        )
+        os.path.normcase(name)
+        for name in (PRUNED_SEGMENTS.union(extra) if prune else extra)
+        if name != GIT_ENTRY
     )
+    prune_git = prune or GIT_ENTRY in extra
     wanted_suffixes = tuple(os.path.normcase(suffix) for suffix in suffixes)
     wanted_names = frozenset(os.path.normcase(name) for name in names)
     match_all = not wanted_suffixes and not wanted_names
@@ -954,13 +964,14 @@ def iter_tree_files(
         entries = scan_entries(folder)
         # The root's own ``.git`` marks the checkout being inspected; one
         # below it marks a nested checkout, which is skipped whole.
-        if prune and not is_root and any(_names_git(path.name) for path, _ in entries):
+        if prune and not is_root and any(_is_git_entry(path) for path, _ in entries):
             continue
         files: list[Path] = []
         folders: list[Path] = []
         for path, kind in sorted(entries, key=lambda entry: entry[0].name):
             if (
-                _walk_name(path.name) in pruned or (prune and _names_git(path.name))
+                os.path.normcase(path.name) in pruned
+                or (prune_git and _is_git_entry(path))
             ) and kind in (DIR_ENTRY, LINK_ENTRY):
                 if kind == LINK_ENTRY:
                     note_skipped(path)
