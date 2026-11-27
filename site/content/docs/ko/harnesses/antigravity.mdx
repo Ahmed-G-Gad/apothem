@@ -2,15 +2,15 @@
 title: "Antigravity"
 description: "Antigravity(미리 보기)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "a97b457853f5e1e2"
+sourceHash: "c5d8a954306518e0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-- **벤더:** Antigravity
+- **벤더:** Google
 - **설치 이름:** `antigravity`
 - **상태:** 미리 보기
 - **네이티브 구성:** `~/.gemini/GEMINI.md` 및
-  `~/.gemini/antigravity-cli/plugins/apothem/`
+  `~/.gemini/config/plugins/apothem/`
 
 ## 설치
 
@@ -19,20 +19,37 @@ apothem install --harness antigravity
 ```
 
 어댑터는 공유 프로필을 `~/.gemini/GEMINI.md`로 렌더링하고 Apothem 지원
-코호트를 Antigravity CLI 플러그인으로 설치합니다.
+코호트를 Antigravity 플러그인으로 설치합니다. 플러그인 폴더는 Antigravity CLI,
+App, IDE가 함께 사용하므로 세 가지 모두 플러그인을 로드합니다.
 
 **작성되는 파일:** `~/.gemini/GEMINI.md`,
-`~/.gemini/antigravity-cli/plugins/apothem/plugin.json`,
-`~/.gemini/antigravity-cli/plugins/apothem/skills/`,
-`~/.gemini/antigravity-cli/plugins/apothem/rules/`,
+`~/.gemini/config/plugins/apothem/plugin.json`,
+`~/.gemini/config/plugins/apothem/skills/`,
+`~/.gemini/config/plugins/apothem/rules/`,
 플러그인 내부의 변환된 로컬 도우미 정의,
-`~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/templates/`,
-`~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/hooks/`.
+`~/.gemini/config/plugins/apothem/.apothem/support/templates/`,
+`~/.gemini/config/plugins/apothem/.apothem/support/hooks/`. 설치는 또한
+Apothem 데이터 폴더(기본값 `~/.gemini/.apothem/`)를 만들고 그 안에
+`contexts/`, `learning/`, `memory/`, `plans/`를 둡니다.
 
 `~/.gemini/GEMINI.md`의 Apothem 블록은 Apothem 지원 파일 섹션으로 끝나며, 이
 섹션은 저장소 스타일의 각 인용이 해석되는 기준 절대 디렉터리를 명시합니다.
 `rules/<name>.md`는 플러그인의 `rules/` 아래, `templates/...`와 `hooks/...`는
 플러그인의 `.apothem/support/` 아래입니다.
+
+**플러그인 폴더.** Antigravity는 등록 단계 없이
+`~/.gemini/config/plugins/<name>/`에서 플러그인을 로드하며
+([Antigravity 플러그인 문서](https://antigravity.google/docs/plugins)),
+어댑터는 Apothem 플러그인을 그곳에 작성합니다. 현재 CLI 릴리스는 이 폴더에서
+플러그인을 로드합니다. CLI는 스스로 업데이트되므로,
+`AGY_CLI_DISABLE_AUTO_UPDATE=true`로 업데이트를 꺼 두었다면 플러그인에 의존하기
+전에 CLI를 업데이트하세요. Antigravity App과 IDE도 같은 폴더를 로드하므로, 항상
+적용되는 규칙, 스킬, 도우미 정의를 담은 Apothem 플러그인은 세 가지 모두에
+적용됩니다. Antigravity는 플러그인에 대한 도구별 스위치를 문서화하지 않습니다.
+`plugin.json`에는 플러그인을 그중 하나로 제한하는 필드가 없습니다. 이전 Apothem
+릴리스는 플러그인을 CLI 자체 데이터 폴더인
+`~/.gemini/antigravity-cli/plugins/apothem/`에 작성했습니다. 그러한 설치 위에서
+설치나 업데이트를 실행하면 그 폴더를 백업한 뒤 제거합니다([제거](#제거) 참조).
 
 **플러그인 규칙.** Antigravity는 플러그인의 `rules/` 디렉터리에 있는 파일 중
 유효한 `trigger`로 시작하지 않는 파일을 모두 버리므로
@@ -48,8 +65,11 @@ apothem install --harness antigravity
 불러오는 포인터로 바꿉니다. 다섯 개의 규칙은 약 11,000토큰이므로 어느 것도
 포인터로 바뀌지 않습니다.
 
-**플러그인 매니페스트.** `plugin.json`은 Antigravity의 플러그인 스키마가
-허용하는 두 키인 `name`과 `description`만 담습니다.
+**플러그인 매니페스트.** `plugin.json`은 `name`과 `description`만 담습니다.
+Antigravity의 [Build plugins 페이지](https://antigravity.google/docs/build-plugins)에
+게시된 플러그인 스키마는 `name`을 필수로 요구하고, `displayName`, `version`,
+`author` 같은 키도 나열하며, 그 밖의 키는 허용하지 않습니다. 그래서
+`agy plugin validate`는 목록에 없는 키를 보고합니다.
 
 **플러그인 도우미.** 플러그인의 `agents/` 디렉터리에 있는 도우미 정의는
 `name`과 `description`을 담습니다. Antigravity의 `tools` 목록은 자체 도구
@@ -59,9 +79,10 @@ apothem install --harness antigravity
 도우미의 설명에서는 "읽기 전용" 레이블이 빠집니다.
 
 **공유 사용자 앵커.** `~/.gemini/GEMINI.md`는 Gemini 계열 도구의 사용자 범위
-앵커이기도 합니다. Antigravity 어댑터는 추가 Apothem 자료를
-`~/.gemini/antigravity-cli/plugins/` 아래의 `apothem` 플러그인 안에 두므로
-일반 Gemini CLI 프로젝트 디렉터리를 점유하지 않습니다. 둘 이상의 도구가
+앵커이기도 합니다. Antigravity 어댑터는 규칙, 스킬, 도우미 정의, 템플릿, 훅
+파일을 `~/.gemini/config/plugins/` 아래의 `apothem` 플러그인 안에 두므로
+일반 Gemini CLI 프로젝트 디렉터리를 점유하지 않습니다. Apothem 데이터 폴더는
+플러그인 밖, 기본값 `~/.gemini/.apothem/`에 있습니다. 둘 이상의 도구가
 `~/.gemini/GEMINI.md`를 로드하므로, 그곳의 Apothem 블록은 어느 한 도구도
 독자로 지칭하지 않는 전역 지침으로 작성됩니다.
 
@@ -86,10 +107,16 @@ apothem verify --harness antigravity
 
 verify 명령은 다음을 확인합니다.
 
-1. 네이티브 컨텍스트 파일이 예상 경로에 존재합니다.
-2. 플러그인 매니페스트 `plugin.json`이 존재하고, 비어 있지 않으며, JSON으로
-   파싱됩니다. 검증은 플러그인 이름을 확인하지 않으므로, 이름을 바꾼 뒤에는 그
+1. 네이티브 컨텍스트 파일 `~/.gemini/GEMINI.md`가 존재하고 비어 있지 않습니다.
+2. 플러그인 폴더의 각 관리 대상이 제자리에 있습니다. 플러그인 매니페스트
+   `plugin.json`이 존재하고, 비어 있지 않으며, JSON으로 파싱되고, 플러그인의
+   `skills/`, `rules/`, `agents/`, `.apothem/support/templates/`,
+   `.apothem/support/hooks/` 폴더가 존재합니다. 폴더가 하나라도 없으면 검사가
+   실패합니다. 검증은 플러그인 이름을 확인하지 않으므로, 이름을 바꾼 뒤에는 그
    필드를 직접 확인하세요.
+
+설치된 파일이 해당 프로필과 일치하는지도 확인하려면 `--profile PATH`를
+추가하세요.
 
 ## 업데이트
 
@@ -109,18 +136,62 @@ apothem uninstall --harness antigravity
 
 `~/.gemini/GEMINI.md`에서 Apothem 블록을 제거하고, 그 안의 나머지 텍스트는
 그대로 둡니다. 파일은 그 안에 다른 내용이 하나도 남지 않은 경우에만 삭제됩니다.
-또한 플러그인 폴더 `~/.gemini/antigravity-cli/plugins/apothem/`의
+또한 플러그인 폴더 `~/.gemini/config/plugins/apothem/`의
 `plugin.json`에서 Apothem의 키를 제거하고 사용자가 추가한 키는 그대로 두며, 그
 폴더의 하위 폴더인 `skills/`, `rules/`, `agents/`, `.apothem/support/`에 있는
-Apothem 파일을 제거합니다. 그곳의 다른 파일은 그대로 남습니다. 각 파일은 변경
-또는 제거되기 전에 `~/.apothem/backups/` 아래에 백업됩니다. 공유 프로필 YAML과
-Apothem 엔진은 영향을 받지 않습니다.
+Apothem 파일을 제거합니다. 그곳의 다른 파일은 그대로 남습니다. 데이터 폴더의
+`memory/`, `contexts/`, `learning/` 저장소도 제거되며, 다른 Apothem 설치가 아직
+사용 중이면 남습니다. 각 파일은 변경 또는 제거되기 전에
+`~/.apothem/backups/` 아래에 백업됩니다. 공유 프로필 YAML과 Apothem 엔진은
+영향을 받지 않습니다.
+
+이전 릴리스로 만든 설치는 플러그인을 CLI 자체 데이터 폴더인
+`~/.gemini/antigravity-cli/plugins/apothem/`에 둡니다. 그러한 설치 위에서 설치,
+업데이트 또는 제거를 실행하면 그 폴더를 `~/.apothem/backups/` 아래에 백업한 뒤,
+그 안에 있는 여러분의 파일까지 포함해 제거합니다. 그 경로, 그 상위 경로 또는 폴더
+안에 있는 심볼릭 링크나 Windows 정션은 그대로 두고 그 이름을 밝히는 경고를
+출력하며, 링크가 가리키는 대상은 변경하거나 백업하지 않습니다. 그 경로에 있으면서
+현재 플러그인 폴더를 가리키는 링크는 매번 실행할 때마다 경고와 함께 그대로 둡니다.
+이 링크는 제거 후에도 남으므로, 더 이상 아무것도 이전 경로를 사용하지 않으면 직접
+삭제하세요. 따라서 제거는 이전 폴더를 제거하고, 현재 폴더에서는 위에서 설명한
+Apothem 파일만 제거합니다. 제거는 각 경고를 출력하며, 이전 폴더 제거가 실패하면
+성공 대신 실패를 보고합니다.
+
+모든 설치, 업데이트, 제거는 또한 `~/.antigravity/profile.yaml`을
+`~/.apothem/backups/` 아래에 백업한 뒤 제거합니다. 어떤 Apothem 릴리스도 그
+파일을 작성하지 않으므로, 이 명령 중 하나를 실행하기 전에 그곳에 둔 여러분의
+파일을 옮기세요.
+
+설치, 업데이트, 제거는 Antigravity App의 데이터 폴더인 `~/.gemini/antigravity/`를
+절대 건드리지 않습니다. (CLI의 데이터 폴더는 `~/.gemini/antigravity-cli/`이고
+IDE의 데이터 폴더는 `~/.gemini/antigravity-ide/`입니다.) App의 폴더에는 MCP
+서버용 로그인 토큰(`mcp_oauth_tokens.json`), 세션 기록(`brain/`), 레거시 전역
+스킬 폴더(`skills/`), `sidecar_data/`가 들어 있습니다. 이전 릴리스는 그 폴더를
+Apothem이 첫 릴리스 전에 사용하던 레이아웃으로 취급하여, 설치와 업데이트 때마다
+`~/.apothem/backups/` 아래에 백업한 뒤 제거했습니다. `~/.gemini/antigravity-cli/`에
+있는 CLI 자체 설정과 세션 기록은 영향을 받지 않았습니다.
+
+App 로그인, 세션 기록 또는 여러분의 스킬이 사라졌다면 사본은
+`~/.apothem/backups/<timestamp>/antigravity/.gemini/antigravity/`에 있습니다.
+그 폴더를 발견한 이전 설치나 업데이트마다 한 세트씩 있으며, 각 세트는 당시 상태의
+폴더를 담고 있습니다. Apothem은 최신 Antigravity 백업 세트 10개만 보관하므로
+오래된 설치의 사본은 이미 사라졌을 수 있으며, 다음 설치, 업데이트, 제거 또는
+롤백이 다시 정리합니다. 필요한 세트를 먼저 `~/.apothem/backups/` 밖으로
+복사하세요.
 
 ## 적합성 게이트
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+프로젝트 폴더에서 실행하세요. Windows에서는 `python3` 대신 `python`과 전체 경로를
+사용하세요. Windows PowerShell과 cmd는 `~`를 확장하지 않기 때문입니다.
+PowerShell에서는 `$HOME\.apothem\src\apothem\conformity\gate.py`, cmd에서는
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`입니다. 이 경로는
+설치 프로그램이 엔진을 두는 곳이며, `-E -s`는 여러분의 `PYTHONPATH`와 사용자
+site-packages가 게이트에 닿지 않게 합니다. [적합성 게이트](/docs/conformity-gate)에서
+둘 다와 다른 설치 방식을 설명합니다.
 
 ## 문제 해결
 

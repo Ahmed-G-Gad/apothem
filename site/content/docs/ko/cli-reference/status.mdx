@@ -34,7 +34,7 @@ apothem status [--profile PATH] [--project PATH]
 | 값 | 의미 |
 |---|---|
 | `in-sync` | 설치된 구성이 새로 투영한 공유 프로필을 그대로 담고 있음. |
-| `drift` | 하니스는 설치되어 있지만 투영된 프로필 내용이 더 이상 현재 공유 프로필과 일치하지 않음. 또는 현재 설치가 관리 블록을 두는 파일에 완전한 블록을 시작하지 않는 BEGIN 마커, Apothem의 마커 사이에 있는 둘 이상의 완전한 블록, 또는 Apothem이 여러분의 텍스트와 구별할 수 없는 마커 쌍이 있음. 이전 설치 기록에만 나열된 파일(설치가 더 이상 사용하지 않는 OpenClaw 워크스페이스의 규칙 파일 등)은 여기서 세지 않으며, `apothem verify`와 `apothem doctor`가 그 파일을 알려 줍니다. 현재 프로필을 적용하려면 `apothem update`를 실행하고, 그런 마커는 직접 수정하세요([문제 해결](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker), [파일의 Apothem 마커 사이에 블록이 두 개 있음](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers), [Apothem이 자신의 블록과 여러분의 텍스트를 구별할 수 없음](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text) 참조). |
+| `drift` | 하니스는 설치되어 있지만 투영된 프로필 내용이 더 이상 현재 공유 프로필과 일치하지 않음. 또는 현재 설치가 관리 블록을 두는 파일에 완전한 블록을 시작하지 않는 BEGIN 마커, Apothem의 마커 사이에 있는 둘 이상의 완전한 블록, 또는 Apothem이 여러분의 텍스트와 구별할 수 없는 마커 쌍이 있음. 이전 설치 기록에만 나열된 파일(설치가 더 이상 사용하지 않는 OpenClaw 워크스페이스의 규칙 파일 등)은 여기서 세지 않으며, `apothem verify`와 `apothem doctor`가 그 파일을 알려 줍니다. 현재 프로필을 적용하려면 `apothem update`를 실행하고, 그런 마커는 직접 수정하세요([문제 해결](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker), [파일이 Apothem의 마커 사이에 두 블록을 담고 있음](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers), [Apothem이 자신의 블록과 여러분의 텍스트를 구별할 수 없음](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text) 참조). |
 | `absent` | 하니스가 설치되어 있지 않으므로 비교할 대상이 없음. |
 | `needs-project` | 프로젝트 범위 하니스가 `--project` 없이 보고되어 그 대상을 해석할 수 없음. 검사하려면 `--project PATH`를 전달하세요. |
 | `unknown` | 기본 프로필을 로드할 수 없어, 설치된 하니스에 비교할 기준이 없음. 드리프트 판정을 복구하려면 프로필을 수정하세요. |

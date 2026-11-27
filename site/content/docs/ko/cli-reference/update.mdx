@@ -2,7 +2,7 @@
 title: "update"
 description: "apothem update 명령에 대한 CLI 참조."
 machineTranslated: true
-sourceHash: "0f47915f4f7819de"
+sourceHash: "7e96f7b81b7e328d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,15 +19,76 @@ apothem update --harness NAME|all [--profile PATH] [--dry-run]
 
 `update`는 현재 공유 프로필로부터 하니스 출력을 다시 머티리얼라이즈합니다.
 `install`과 같은 프로필 검증, `--harness all` 선택, 프로젝트 범위 검사, 드라이
-런 동작, JSON 봉투를 사용합니다.
+런 동작, JSON 봉투를 사용하며, 같은 권고도 출력합니다. 여기에는 여러분의 파일
+때문에 도구가 Apothem이 쓴 내용을 불러오지 못할 때 나오는 `instruction_override`
+안내도 포함됩니다([`install`](/docs/cli-reference/install) 참조). `install`처럼
+해석된 `--project` 폴더를 기록하고, 그 폴더의 다른 표기로 기록된 설치를 그
+폴더로 옮깁니다. 또한 뒤에 END 마커가 없는 BEGIN 마커를 담은 파일에 대해서도
+경고합니다. 그 마커 뒤의 텍스트는 그대로 유지되고 Apothem의 블록은 그와 따로
+쓰이므로, 경고는 그 마커의 줄을 알려 주고, 그 줄을 바꾸는 번호 매긴 단계를
+제시하며, 대신 END 마커를 다시 추가하지 말라고 안내합니다. 그렇게 하면 Apothem
+블록이 두 개 남게 되기 때문입니다
+([문제 해결](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)
+참조). Apothem의 마커 사이에 완전한 블록을 둘 이상 담은 파일은 그대로 두며,
+각 블록을 줄 번호로 알려 주는 경고를 냅니다
+([파일이 Apothem의 마커 사이에 두 블록을 담고 있음](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)
+참조). Apothem이 자신의 블록과 여러분의 텍스트를 구별할 수 없는 파일, 예를 들어
+여러분의 코드 블록 안에 Apothem의 블록이 들어 있는 파일은 설치 기록이 그 파일을
+나열하는 동안 그대로 둡니다(읽을 수 없는 설치 원장도 기록 하나로 칩니다. 링크를
+통해 접근한 홈처럼 같은 폴더의 다른 표기로 만든 기록도, 제거 때와 마찬가지로,
+여러분이 실행하는 표기에 자체 설치가 아직 남아 있고 그 도구가
+[홈 디렉터리의 공유 폴더](/docs/cli-reference/install#folders-in-your-home-directory)에
+쓰는 경우에는 기록으로 칩니다). 이때 경고는 파일 안의 각 마커 쌍과 고치는 방법을
+알려 줍니다
+([Apothem이 자신의 블록과 여러분의 텍스트를 구별할 수 없음](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)
+참조). 이는 END 마커를 잃은 뒤 남은 Apothem 블록처럼 어떤 마커 쌍도 시작하지
+않는 BEGIN 마커가 함께 있을 때도 마찬가지입니다. 경고는 그 BEGIN 마커를 먼저
+알려 주고, 경고의 번호 매긴 각 해결책은 그 마커를 바꿉니다. 설치 기록이
+없으면 여러분이 코드 안에 인용한 마커 쌍은 여러분의 텍스트이며, update는 그런
+BEGIN 마커가 있든 없든 그 뒤에 자신의 블록을 추가합니다. 단, 그 쌍이 update가
+쓰는 블록과 정확히 같은 내용을 담고 있으면 경고와 함께 파일을 그대로 둡니다.
+코드 바깥의 BEGIN 마커의 END 마커가 코드 안에 있고 그 뒤에 다른 마커 쌍이 있는
+파일은 기록이 있든 없든 경고와 함께 그대로 둡니다. 프로필의 규칙이 코드 블록을
+열고 닫지 않더라도 update가 쓰는 블록에서는 그런 일이 생기지 않습니다. update가
+블록 끝에서 그 코드 블록을 닫기 때문입니다. 이전 릴리스가 그런 규칙으로 쓴
+블록에는 그런 닫는 줄이 없으므로 그런 일이 생길 수 있습니다. Apothem 블록 위에서
+열리고 닫히지 않는 여러분의 코드 블록은 다른 경우입니다. 블록 안의 닫는 줄이 그
+코드 블록을 닫으므로 블록이 코드로 읽히며, 그런 블록을 쓰는 update는 즉시
+경고하고 BEGIN 마커 위에서 닫아야 할 코드 블록을 알려 줍니다. 드라이 런은
+아무것도 쓰기 전에 파일을 읽으므로, 블록이 쓰인 뒤 코드로 읽히게 된다는 점은
+보여 주지 않습니다. 드라이 런에서 그대로 두는 파일에 대한 경고는 Apothem이
+"would leave the file as it is"(파일을 그대로 둘 것)라고 말합니다.
+
+마커 줄 때문에 파일을 그대로 두는 업데이트(완전한 블록이 둘 이상이거나,
+Apothem이 위치를 정할 수 없는 마커 쌍이 있는 경우)는 설치와 마찬가지로 부분
+완료로 끝납니다. 도구는 그 파일에서 현재 Apothem 블록을 얻지 못하므로, `✓` 줄
+대신 그 파일을 알려 주는 `✗` 줄을 표준 오류에 출력하고, `--format json` 봉투의
+`status`는 `"partial"`이 되며 그 파일의 경고는 `"detail": {"left_as_is": "1"}`을
+담고, 종료 코드는 `2`입니다. 경고가 알려 주는 마커 줄을 고칠 때까지 모든
+업데이트가 그렇게 끝납니다. 코드 블록 안에 있는 여러분의 마커 예시도 그 BEGIN
+마커 줄을 바꿀 때까지 그런 파일을 붙잡아 둡니다. `--quiet` 없이 `--harness all`로
+실행한 그런 업데이트는 `✓` 대신 `!`로 시작하고 그대로 둔 파일 수를 세는 요약
+줄로 끝납니다:
+`! Updated <n> harnesses (<m> files written); <k> file(s) left as they are, named above.`
+드라이 런은 여전히 `status` `"dry_run"`과 종료 코드 `0`으로 끝납니다.
+
+Apothem이 쓰는 각 폴더(스킬 폴더, `.apothem/support/` 아래의 지원 파일)에서
+`update`는 자신이 쓰는 모든 항목을 비교합니다. 파일 항목은 달라졌을 때 다시
+쓰입니다. 폴더 항목(스킬, 명령의 스킬 폴더, 또는 `hooks/lib/` 같은 지원 파일 안의
+폴더)은 그 안의 무엇이든 이 릴리스가 거기에 쓰는 것과 다르면 통째로 교체됩니다.
+update는 먼저 그것을 `~/.apothem/backups/` 아래에 백업하므로, 그 안에 여러분이
+추가한 파일이나 여러분이 편집한 Apothem 파일은 이후 그 폴더에서 사라집니다. 그런
+파일은 백업 세트에서 복사하거나, 업데이트하기 전에 옮겨 두세요. Apothem이 쓰는
+폴더 바로 아래에 있는 여러분의 파일(예: `.apothem/support/hooks/mine.py`)과
+Apothem 폴더 옆에 있는 여러분 자신의 폴더는 건드리지 않습니다.
 
 홈 디렉터리에 스킬을 쓰는 프로젝트 범위 어댑터의 경우
 ([`install`](/docs/cli-reference/install#folders-in-your-home-directory) 참조),
 `update`는 그 폴더들도 최신 상태로 맞추고 그 폴더들의 이름을 알려 주는 같은
 `Note:`를 출력합니다. 스킬을 쓰기 전에 설치된 어댑터는 다음 업데이트 때 스킬을
-받습니다. Apothem이 쓰지 않은 스킬 폴더는
-[`install`](/docs/cli-reference/install#folders-in-your-home-directory)에서처럼 경고와 함께
-건너뜁니다. 이전에 공유 스킬 폴더를 쓴 설치는 다음 업데이트 때 모든 설치가
+받습니다. Apothem이 쓰지 않았거나 썼음을 증명할 수 없는 스킬 폴더는
+[`install`](/docs/cli-reference/install#folders-in-your-home-directory)에서처럼 해결
+방법을 알려 주는 경고와 함께 건너뜁니다. 이전에 공유 스킬 폴더를 쓴 설치는 다음 업데이트 때 모든 설치가
 공유하는 형태로 다시 쓰입니다. 바뀌는 각 폴더는 먼저 백업됩니다.
 
 연속형 별칭 `apothem updating`(`apothem Updating`으로도 받아들여짐)은 같은
@@ -67,7 +128,9 @@ apothem update --harness NAME|all [--profile PATH] [--dry-run]
 }
 ```
 
-`--dry-run`은 `status: "dry_run"`과 `files_written: []`를 반환합니다.
+`--dry-run`은 `status: "dry_run"`과 `files_written: []`를 반환합니다. Apothem
+마커 줄 때문에 파일을 그대로 둔 업데이트는 `status: "partial"`을 반환하고 코드
+`2`로 종료합니다.
 
 ## 예제
 
@@ -85,7 +148,7 @@ apothem updating --harness claude-code   # lowercase variant
 |---|---|
 | 0 | 어댑터가 성공적으로 업데이트되었거나 드라이 런이 문제없이 계획됨 |
 | 1 | 예상된 검증, 프로필, 하니스, 프로젝트, 또는 어댑터 오류 |
-| 2 | 적어도 한 번 쓴 뒤에 발생한 부분적인 일괄 머티리얼라이즈 |
+| 2 | 부분 완료: 적어도 한 번 쓴 뒤에 일괄 작업이 멈췄거나, Apothem이 블록을 두는 파일을 그 Apothem 마커 줄 때문에 업데이트가 그대로 둠. `status`는 `"partial"` |
 | 64 | 사용법 오류: 알 수 없는 옵션이나 명령, 또는 누락되었거나 잘못된 옵션 값. `--json`에서는 오류가 코드 `cli.usage`를 담은 JSON 봉투로 반환됩니다. |
 
 ## 함께 보기
