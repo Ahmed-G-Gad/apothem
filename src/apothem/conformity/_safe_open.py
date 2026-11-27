@@ -21,10 +21,11 @@ follows a link.
   opened just before it, with ``FILE_OPEN_REPARSE_POINT``, so a reparse point
   is opened itself. One whose tag names another file or folder (a symbolic
   link, a junction) is refused. Any other reparse point, such as a cloud
-  placeholder or a deduplicated file, is opened once more without the flag so
-  its filter gives the real content, and the second handle must name the same
-  file. Names are taken as written: Win32 does not rewrite a trailing dot, and
-  ``CON`` is a file name there, not a device.
+  placeholder or a deduplicated file, is opened once more, from that first
+  handle and not by name, without the flag so its filter gives the real
+  content; the second handle must name the same file (the 128-bit file ID
+  where the file system gives one). Names are taken as written: Win32 does not
+  rewrite a trailing dot, and ``CON`` is a file name there, not a device.
 
 A refusal raises :class:`ProjectFileRefusedError` (``ELOOP``) and notes the level
 that was refused in the skip log, so the report lists it under
@@ -274,8 +275,10 @@ if sys.platform == "win32":
     _FILE_FLAG_BACKUP_SEMANTICS: Final[int] = 0x02000000
     _SECURITY_SQOS_IDENTIFICATION: Final[int] = 0x00100000 | 0x00010000
     _OPEN_EXISTING: Final[int] = 3
-    # The FILE_INFO_BY_HANDLE_CLASS value of a file's attributes and reparse tag.
+    # The FILE_INFO_BY_HANDLE_CLASS values of a file's attributes and reparse
+    # tag, and of its volume and 128-bit file ID.
     _FILE_ATTRIBUTE_TAG_INFO: Final[int] = 9
+    _FILE_ID_INFO: Final[int] = 18
     # The Windows errors a file system gives for an information class it does
     # not have: invalid function, not supported, invalid parameter.
     _QUERY_NOT_SUPPORTED: Final[frozenset[int]] = frozenset({1, 50, 87})
@@ -321,6 +324,14 @@ if sys.platform == "win32":
         """``FILE_ATTRIBUTE_TAG_INFO``: a file's attributes and reparse tag."""
 
         _fields_ = (("attributes", wintypes.DWORD), ("tag", wintypes.DWORD))
+
+    class _FileIdInfo(ctypes.Structure):
+        """``FILE_ID_INFO``: a file's volume and 128-bit file ID."""
+
+        _fields_ = (
+            ("volume", ctypes.c_ulonglong),
+            ("file_id", ctypes.c_ubyte * 16),
+        )
 
     class _ByHandleFileInformation(ctypes.Structure):
         """``BY_HANDLE_FILE_INFORMATION``, of which the file ID is used."""
@@ -423,7 +434,11 @@ if sys.platform == "win32":
     def _create_relative(
         parent: int, name: str, access: int, options: int, shown: Path
     ) -> int:
-        """Open *name* inside the open folder *parent* with ``NtCreateFile``."""
+        """Open *name* inside the open folder *parent* with ``NtCreateFile``.
+
+        An empty *name* opens *parent* itself once more, by its handle: the
+        same file, whatever its name now leads to.
+        """
         size = len(name.encode("utf-16-le"))
         text = _UnicodeString(size, size, name)
         quality = _SecurityQualityOfService(
@@ -465,33 +480,48 @@ if sys.platform == "win32":
     def _close_handle(handle: int) -> None:
         _kernel32().CloseHandle(handle)
 
+    def _query(handle: int, info_class: int, info: ctypes.Structure) -> bool:
+        """Fill *info* with the record *info_class* of the open file *handle*.
+
+        Return False when the file system does not have that record; any other
+        failure raises ``OSError``, so the entry is not used.
+        """
+        query = _kernel32().GetFileInformationByHandleEx
+        if query(handle, info_class, ctypes.byref(info), ctypes.sizeof(info)):
+            return True
+        error = ctypes.get_last_error()
+        if error in _QUERY_NOT_SUPPORTED:
+            return False
+        raise ctypes.WinError(error)
+
     def _reparse_tag(handle: int) -> int | None:
         """Return the reparse tag of the open file *handle*: 0 for none, or None
         when the file system does not give one.
 
         ``os.fstat`` reports no tag on Windows, so the attribute and tag record
-        (``FileAttributeTagInfo``) is read from the handle. Any other failure
-        raises ``OSError``, so the entry is not used.
+        (``FileAttributeTagInfo``) is read from the handle.
         """
         info = _AttributeTagInfo()
-        query = _kernel32().GetFileInformationByHandleEx
-        if not query(
-            handle, _FILE_ATTRIBUTE_TAG_INFO, ctypes.byref(info), ctypes.sizeof(info)
-        ):
-            error = ctypes.get_last_error()
-            if error in _QUERY_NOT_SUPPORTED:
-                return None
-            raise ctypes.WinError(error)
+        if not _query(handle, _FILE_ATTRIBUTE_TAG_INFO, info):
+            return None
         if not info.attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT:
             return 0
         return int(info.tag)
 
     def _file_id(handle: int) -> tuple[int, int]:
-        """Return the volume and file index of the open file *handle*."""
-        info = _ByHandleFileInformation()
-        if not _kernel32().GetFileInformationByHandle(handle, ctypes.byref(info)):
+        """Return the volume and file ID of the open file *handle*.
+
+        The 128-bit ID (``FileIdInfo``) comes first: on ReFS, which a Dev
+        Drive uses, the 64-bit file index is not unique. A file system without
+        that record gives the 64-bit index.
+        """
+        info = _FileIdInfo()
+        if _query(handle, _FILE_ID_INFO, info):
+            return int(info.volume), int.from_bytes(bytes(info.file_id), "little")
+        basic = _ByHandleFileInformation()
+        if not _kernel32().GetFileInformationByHandle(handle, ctypes.byref(basic)):
             raise ctypes.WinError(ctypes.get_last_error())
-        return info.volume_serial, (info.index_high << 32) | info.index_low
+        return basic.volume_serial, (basic.index_high << 32) | basic.index_low
 
     def _open_level(parent: int, name: str, *, folder: bool, shown: Path) -> int:
         """Open *name* inside the open folder *parent* without following it.
@@ -500,9 +530,11 @@ if sys.platform == "win32":
         another file or folder is refused; a plain entry is used through that
         handle. Any other reparse point, or an entry whose file system gives no
         tag, is opened again without the flag, so its filter gives the real
-        content, and the second handle must name the same entry; when no
-        filter claims the tag (its program is stopped), that open fails and
-        the entry is unreadable rather than read as its empty stub.
+        content. That second open starts from the first handle with an empty
+        name, so it reaches the same file even when the name was swapped for a
+        junction in between, and the second handle must name the same file;
+        when no filter claims the tag (its program is stopped), that open
+        fails and the entry is unreadable rather than read as its empty stub.
         """
         access = _FOLDER_ACCESS if folder else _FILE_ACCESS
         options = _FILE_SYNCHRONOUS_IO_NONALERT
@@ -517,7 +549,7 @@ if sys.platform == "win32":
                 _refuse(shown, "a link is in the way")
             if tag == 0:
                 return first
-            second = _create_relative(parent, name, access, options, shown)
+            second = _create_relative(first, "", access, options, shown)
             try:
                 if _file_id(second) != _file_id(first):
                     _refuse(shown, "the entry changed between opens")

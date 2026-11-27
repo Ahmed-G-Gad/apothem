@@ -9,13 +9,15 @@ follows a link. These tests put each kind of entry (a real folder, a folder
 link or junction, a file, a missing name, a named pipe, a file link) at each
 level of a four-level path and check what the open does; they check that a
 reparse point that is not a link (a cloud placeholder, a deduplicated file) is
-read through its filter on Windows, that the text read matches
-``Path.read_text``, and that no folder stays open between reads, so a folder
-swapped for a link after one read is refused at the next.
+read through its filter on Windows, reopened from its first handle and not by
+name, that the text read matches ``Path.read_text``, and that no folder stays
+open between reads, so a folder swapped for a link after one read is refused
+at the next.
 """
 
 from __future__ import annotations
 
+import ctypes
 import errno
 import os
 import sys
@@ -323,7 +325,7 @@ def test_a_reparse_point_that_is_not_a_link_is_read_through_its_filter(
 
     def file_id(handle: int) -> tuple[int, int]:
         volume, index = real_id(handle)
-        if not same_id and handle not in tagged and options_seen[-1][0] == shown.name:
+        if not same_id and handle not in tagged and options_seen[-1][0] == "":
             return volume, index + 1
         return volume, index
 
@@ -334,10 +336,105 @@ def test_a_reparse_point_that_is_not_a_link_is_read_through_its_filter(
     if outcome == "read":
         assert read_project_bytes(project, _target(project)) == _INSIDE
         flags = [flag for name, flag in options_seen if name == shown.name]
-        assert flags == [_safe_open.FILE_OPEN_REPARSE_POINT, 0]
+        assert flags == [_safe_open.FILE_OPEN_REPARSE_POINT]
+        # The second open starts from the first handle, with no name.
+        assert ("", 0) in options_seen
     else:
         with pytest.raises(ProjectFileRefusedError):
             read_project_bytes(project, _target(project))
+
+
+def _final_path(handle: int) -> str:
+    """Return the path Windows gives for the open *handle*."""
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    final = kernel32.GetFinalPathNameByHandleW
+    final.argtypes = (
+        ctypes.c_void_p,
+        ctypes.c_wchar_p,
+        ctypes.c_uint32,
+        ctypes.c_uint32,
+    )
+    final.restype = ctypes.c_uint32
+    buffer = ctypes.create_unicode_buffer(32768)
+    if not final(handle, buffer, len(buffer), 0):
+        raise ctypes.WinError(ctypes.get_last_error())
+    return buffer.value.removeprefix("\\\\?\\")
+
+
+@_WINDOWS_ONLY
+@pytest.mark.parametrize("depth", range(len(_LEVELS)))
+def test_a_reparse_point_swapped_for_a_junction_between_opens_is_not_followed(
+    project: Path, monkeypatch: pytest.MonkeyPatch, depth: int
+) -> None:
+    """A level whose tag is not a link is opened a second time. When its name
+    is swapped for a junction out of the project between the two opens, the
+    second open still reaches the file the first one opened, never the
+    junction's target."""
+    shown = _level(project, depth)
+    outside = project.parent / "outside"
+    tagged: set[int] = set()
+    reached: list[str] = []
+    real_create, real_tag = _safe_open._create_relative, _safe_open._reparse_tag
+
+    def creating(parent: int, name: str, access: int, options: int, at: Path) -> int:
+        handle = real_create(parent, name, access, options, at)
+        reached.append(_final_path(handle))
+        if at == shown and options & _safe_open.FILE_OPEN_REPARSE_POINT and not tagged:
+            tagged.add(handle)
+            shown.rename(shown.with_name(shown.name + ".moved"))
+            target = _level(outside, depth)
+            _link_folder(shown, target if depth < len(_LEVELS) - 1 else target.parent)
+        return handle
+
+    monkeypatch.setattr(_safe_open, "_create_relative", creating)
+    monkeypatch.setattr(
+        _safe_open,
+        "_reparse_tag",
+        lambda handle: 0x9000001A if handle in tagged else real_tag(handle),
+    )
+
+    try:
+        data: bytes | None = read_project_bytes(project, _target(project))
+    except ProjectFileRefusedError:
+        data = None
+
+    assert tagged, "the first open never reached the level"
+    base = os.path.normcase(os.path.realpath(outside))
+    assert [path for path in reached if os.path.normcase(path).startswith(base)] == []
+    assert data in (None, _INSIDE)
+
+
+@_WINDOWS_ONLY
+def test_the_file_id_compared_is_the_128_bit_one(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Two files whose IDs differ only above the low 64 bits (ReFS) differ."""
+
+    def query(handle: int, info_class: int, info: ctypes.Structure) -> bool:
+        assert info_class == _safe_open._FILE_ID_INFO
+        info.volume = 7  # type: ignore[attr-defined]
+        info.file_id[15] = handle  # type: ignore[attr-defined]
+        return True
+
+    monkeypatch.setattr(_safe_open, "_query", query)
+
+    assert _safe_open._file_id(1) == (7, 1 << 120)
+    assert _safe_open._file_id(1) != _safe_open._file_id(2)
+
+
+@_WINDOWS_ONLY
+def test_a_file_system_without_the_128_bit_id_gives_the_64_bit_index(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(_safe_open, "_query", lambda handle, info_class, info: False)
+    with open_project_file(project, _target(project)) as handle:
+        import msvcrt
+
+        volume, index = _safe_open._file_id(msvcrt.get_osfhandle(handle.fileno()))
+        info = os.fstat(handle.fileno())
+
+    assert index == info.st_ino & ((1 << 64) - 1)
+    assert volume == info.st_dev & 0xFFFFFFFF
 
 
 # ---------------------------------------------------------------------------
