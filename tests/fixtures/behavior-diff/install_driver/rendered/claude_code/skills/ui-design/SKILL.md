@@ -1,6 +1,6 @@
 ---
 name: "ui-design"
-description: "Designs, redesigns, or audits a user interface to a banded floor. Reads the project first, asks one intake question, sets scope and genre, and builds the hero first. Records each decision in a build record and a build log; writes DESIGN.md only when asked. Use when the user asks to 'design a landing page', 'redesign this page', 'restyle', 'build this component with all its states', 'audit this UI', or 'pick a palette and type scale'. Not for critique-only review (design-critic) or backend logic."
+description: "Designs, redesigns, or audits a user interface to a banded floor. Reads the project first, asks one intake question, sets scope and genre, and builds the hero first. Records each decision in a build record and a build log; writes DESIGN.md only when asked or a multi-page redesign needs it. Use when the user asks to 'design a landing page', 'redesign this page', 'restyle', 'build this component with all its states', 'audit this UI', or 'pick a palette and type scale'. Not for critique-only review (design-critic) or backend logic."
 user-invocable: true
 argument-hint: "[surface or page] [--scope page|component|app] [--genre editorial|product-minimal|atmospheric|playful] [--redesign full|restyle|polish] [--custom] [--fast] [--verbatim]"
 disable-model-invocation: false
@@ -15,7 +15,7 @@ metadata:
 
 ## Purpose
 
-Design, redesign, or audit an interface so that it meets a stated brief and a banded floor. Every rule sits in one of the bands `references/rule-catalog.md` defines. Every build leaves a build record and, for a page, a build log entry (`references/build-record.md`) for later sessions. `DESIGN.md` is the optional locked system; once it exists, its tokens win over any new direction.
+Design, redesign, or audit an interface so that it meets a stated brief and a banded floor. Every build leaves a build record and, for a page, a build log entry (`references/build-record.md`) for later sessions. `DESIGN.md` is the optional locked system; once it exists, its tokens win over any new direction.
 
 ## Detection Signal
 
@@ -32,7 +32,7 @@ The user asks to design, restyle, redesign, or audit a page, screen, component, 
 
 ## Workflow
 
-The steps run in order; each waits for the one before it.
+The steps run in order; each waits for the one before it. `--scope` and `--genre` set their record fields and skip detection; `--redesign` sets `depth:`; `--verbatim` sets `copy: verbatim` (catalog, "Flags and downgrades").
 
 ### 0. Pre-flight scan
 
@@ -90,7 +90,7 @@ Run the sweep in `references/pre-delivery-checklist.md`, then the finish review,
 
 ### Fast mode
 
-On `--fast`: a one-line intake note instead of the question, and three lines of narration at most. Fast mode does not wait at Step 5. It changes only the grades the catalog's "Flags and downgrades" lists. `--custom` with `--fast` runs the custom route of direction, section 6, in fast mode; every matching list applies. The build record, tokens, and build log still apply.
+On `--fast`: a one-line intake note instead of the question, and three lines of narration at most. It changes only the grades the catalog's "Flags and downgrades" lists. `--custom` with `--fast` runs the custom route of direction, section 6, in fast mode; every matching list applies. The build record, tokens, and build log still apply.
 
 ### Redesign, audit, component, and app scope
 
@@ -140,8 +140,6 @@ Refuse to ship:
 - A faked success state: a form, button, or flow that shows success without the work behind it.
 - Invented proof: figures, quotes, customers, logos, or awards the user did not supply.
 
-These lists match `rules/code-craft-ui.md` §2 and §3; the full baseline is in `references/rule-catalog.md`.
-
 ## Agent operations
 
 - **Run gate, for every step.** A development server, a project script or check (type check, build, tests), or a simulator runs only when the host offers the tool and the step installs nothing. The user approves the folder and the exact command first; Step 0 asks for that approval. A step that needs a command Step 0 did not approve asks once, naming the folder and the command. A server takes a free port and stops after the captures. Without approval, ask for a running URL or for the results, and continue from source (catalog, "Hosts with no browser").
@@ -153,7 +151,7 @@ These lists match `rules/code-craft-ui.md` §2 and §3; the full baseline is in 
 
 ## Missing lookups
 
-Search for an outside palette, font, or pattern only when the brief needs one, with generic terms. An archive-photo search always asks the user first (`references/imagery-and-data.md`, section 1); any other search asks before a query that names the client or the product. When a search finds nothing or cannot run, say defaults were used. An invented value is never presented as sourced, and a font or image is never claimed licensed without a license record. Brand values come only from a fetched source or from the user, never from memory. A brand fetch runs only through the host's fetch tool as `references/direction-and-themes.md`, section "Safe fetching", qualifies it, on a URL that section accepts, after the skill names the URL and the user approves it. With no fetch tool, or when the user declines, ask the user for hex values and font names.
+Search for an outside palette, font, or pattern only when the brief needs one, with generic terms. An archive-photo search always asks the user first (`references/imagery-and-data.md`, section 1); any other search asks before a query that names the client or the product. When a search finds nothing or cannot run, say defaults were used. An invented value is never presented as sourced, and a font or image is never claimed licensed without a license record. Brand values come only from the project's brand spec, a fetched source, or the user, never from memory. A brand fetch needs a host fetch tool that `references/direction-and-themes.md`, "Safe fetching", qualifies (the host states its private-address refusal and redirect handling), a URL that section accepts, and the user's approval of the URL the skill names. Otherwise ask the user for hex values and font names.
 
 ## Return Contract
 

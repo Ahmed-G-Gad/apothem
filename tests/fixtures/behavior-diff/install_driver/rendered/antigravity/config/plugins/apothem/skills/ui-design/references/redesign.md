@@ -32,7 +32,7 @@ Pick one depth and write it in the build record's `depth:` field ([build record]
 - At `full` depth on app screens, recompose each screen inside its existing shell.
 - Starting over from nothing is a new build (`depth: new`), placed beside the old files. It is not a redesign.
 - A page this skill did not build takes none of these depths. Its repair (section 8) writes `depth: repair` in the check-only record ([build record](build-record.md), section 2).
-- Each depth changes some grades and decides whether the pass has a hero stage. The [rule catalog](rule-catalog.md), section "Flags and downgrades", lists both: a restyle or a polish pass has no hero stage, and neither does a repair.
+- Each depth changes some grades and decides whether the pass has a hero stage. The [rule catalog](rule-catalog.md), section "Flags and downgrades", lists both.
 
 ## 3. Before-record
 
@@ -126,9 +126,9 @@ When a restyle or a full redesign covers several pages:
 When fixing a page built by the project or by another generator:
 
 1. Infer the scope (page, app, or component) and the genre from [surface classes](surface-classes.md), and say both. A tie between two genres resolves as [surface classes](surface-classes.md), section "Genre routing", states. The [rule catalog](rule-catalog.md), section "Flags and downgrades", sets how the page grades at that scope and genre, in before mode and after it.
-2. Write the check-only record ([build record](build-record.md), section 2) with `depth: repair`, `grades: pending`, and no `review:` field. It goes in the file and at the position that the [build record](build-record.md), section 1, sets. The sweep needs it in place.
+2. Write the check-only record ([build record](build-record.md), section 2) with `depth: repair`, `grades: pending`, and no `review:` field. It goes in the file and at the position that the [build record](build-record.md), section 1, sets. The sweep needs it in place. Before the first edit, list the page's wiring and content items in the form of the section 3 inventory; `rds-01` and `rds-02` compare against that list, and a drop line is allowed.
 3. Repair in place only the surface layer: tokens, color, typography, motion, states, and contrast. Single-element repairs are also in scope: merge an announcer label into its heading, add focus styling, replace a gradient with a flat fill, tint a flat gray.
 4. Do not restructure. Report structural findings instead: hero and fold, page shape, section rhythm, repeated compositions, chrome, word budget. Cite each at its `file:line` and propose the repair in one sentence. The user decides. A long page is one of these findings; `cpy-05` grades as the catalog's "Redesign, any depth" route sets.
 5. Run the sweep and its fix batch.
-6. Run the finish review in its variant for pages this skill did not build, with the check-only record as it stands. [Review protocols](review-protocols.md), section 5, sets its question and the verdicts it may return. The [pre-delivery checklist](pre-delivery-checklist.md), section 2, counts it in the budget.
+6. Run the finish review in its variant for pages this skill did not build, with the check-only record as it stands. [Review protocols](review-protocols.md), section 5, sets its question and the verdicts it can return. The [pre-delivery checklist](pre-delivery-checklist.md), section 2, counts it in the budget.
 7. Fill the record's `review:` field with the review's outcome. The run's last report, [pre-delivery checklist](pre-delivery-checklist.md), section 8, replaces `pending` with the counts.

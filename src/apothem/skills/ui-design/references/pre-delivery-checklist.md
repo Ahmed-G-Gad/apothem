@@ -28,7 +28,7 @@ Run these first. They need no browser.
 - Settle every `static` rule, and the static half of every `static plus render` rule.
 - Confirm the record sits where the [build record](build-record.md), section 1, places it: the build record, or on a repair of an outside page the check-only record of that file's section 2. Without it, the sweep stops until the record is written. Before mode is the one exception. A record that reads `grades: pending` is complete for this check; section 8 writes the counts.
 - Check every exception line against the grounds in the [rule catalog](rule-catalog.md), section "Exception lines", and recompute each waiver's guard. Remove each rejected line and report it with its ground; its finding stays open. In before mode, report each rejected line with its ground and leave it in place, since before mode edits no file.
-- Compute each contrast pair from the token values, in every shipped mode. The arithmetic needs a tool: a host shell, run through the host's own approval (`SKILL.md`, section "Agent operations"), or a subagent the host offers that has a shell. Such a subagent call is not a review and spends no round. With neither, the static half of `acc-01` grades `not checked` with the reason "no tool", and the report gives no ratio ([rule catalog](rule-catalog.md), section "Checks that need a computation").
+- Compute each contrast pair from the token values, in every shipped mode. The arithmetic needs a tool: a host shell, run through the host's own approval (`SKILL.md`, section "Agent operations"), or a general-purpose subagent the host offers that has a shell, asked only for the ratios, never `design-critic`. Such a subagent call is not a review and spends no round. With neither, the static half of `acc-01` grades `not checked` with the reason "no tool", and the report gives no ratio ([rule catalog](rule-catalog.md), section "Checks that need a computation").
 
 ### Render checks
 
@@ -55,7 +55,7 @@ Each threshold lives in the section the last column names; this table says only 
 |-------|------|----------------|----------------|
 | Fold fit | `hro-01.a`, `hro-01.b` | On `first-1280x800.png`, find the headline, supporting line, primary action, and the visual's focal point. Measure the gap from the lowest hero element to the fold | [hero](hero.md), sections 3 and 4 |
 | Dead band | `hro-01.c` | On `first-1440x900.png`, measure the empty space below the lowest hero element, to the fold or to the hero's bottom edge, whichever comes first | [hero](hero.md), section 4 |
-| Accent share | `col-01.a` | On `first-1280x800.png`, add the accent's solid fills, large accent headings, and accent bands, then divide by the viewport area | [color and surfaces](color-and-surfaces.md), section 2 |
+| Accent share | `col-01.a` | On `first-1280x800.png`, add the accent areas the threshold home counts, then divide by the viewport area | [color and surfaces](color-and-surfaces.md), section 2 |
 | Contrast | `acc-01` | Sample each rendered text and non-text pair on its computed ground, with any texture or overlay in place, in every shipped mode | [rule catalog](rule-catalog.md), `acc-01` |
 | Overlap | `lay-05` | At each sweep width, look for a line of text drawn under another element (section 7) | [rule catalog](rule-catalog.md), `lay-05` |
 | Words per band | `cpy-05` | On the 1440-wide full-page capture, cut consecutive bands from the top, each of the height the threshold home sets, and count the visible words in each band. Skip text the threshold home marks as not counted | [copy and honesty](copy-and-honesty.md), section 2 |
@@ -73,7 +73,7 @@ Each threshold lives in the section the last column names; this table says only 
 | Targets | `tgt-01`, `tgt-04` | Measure each target's box and its `::after` extension or label, then run the spacing test for any target under the `tgt-01` size. Repeat under emulated `(pointer: coarse)` | [rule catalog](rule-catalog.md), `tgt-01` and `tgt-04` |
 | Zoom | `acc-09` | On the zoom capture, scroll the page. Text grows, nothing clips or overlaps, and the page scrolls in one direction only | [rule catalog](rule-catalog.md), `acc-09` |
 | Failed submit | `frm-02` | Type into every field, submit with at least one invalid value, then check the error text beside each field, the kept input, and where focus moves | [rule catalog](rule-catalog.md), `frm-02` |
-| Layout shift | `prf-01` | Reload the page with the network throttled, then compare the first frame with the settled page. Nothing above the fold moves | [rule catalog](rule-catalog.md), `prf-01` |
+| Layout shift | `prf-01`, `img-00.12` | Reload the page with the network throttled, then compare the first frame with the settled page. Nothing above the fold moves. At each sweep width, name the largest paint and whether it loads lazily | [rule catalog](rule-catalog.md), `prf-01`; [imagery and data](imagery-and-data.md), section 12 |
 | Reduced motion | `acc-08` | Capture the first screen and one reveal with `prefers-reduced-motion: reduce` emulated. No travel, parallax, or zoom remains | [interaction and motion](interaction-and-motion.md), section 13.7 |
 | Color alone | `acc-02` | Capture the full page in grayscale. Every status, series, and selected state still reads | [rule catalog](rule-catalog.md), `acc-02` |
 | Flashing | `acc-16` | Watch every animation, blink, and video segment, and read their cycle lengths in the source. No cycle alternates light and dark faster than `acc-16` allows | [rule catalog](rule-catalog.md), `acc-16` |
@@ -138,7 +138,7 @@ When the host has no subagents, or no `design-critic` agent, or no folder is kno
 
 - The mode line `review: finish`.
 - The absolute paths of `review-protocols.md` and `rule-catalog.md`.
-- The absolute paths of the captures from section 1. With no captures, none.
+- The absolute paths of the first-screen, full-page, and zoom captures from section 1, never the sweep captures. With no captures, none.
 - The page source.
 - The build record, with the hero review findings and their statuses, or `hero not run (scope)` or `hero not run (depth)`.
 - At page scope, the same build log entries as the hero review inputs. Component and app scope are not logged and pass none.
@@ -155,6 +155,7 @@ A repair of an outside page ([redesign](redesign.md), section 8) runs one finish
 - The absolute paths of the captures from section 1, when captures exist.
 - The page source, in every case.
 - The check-only record as it stands, written before the sweep ([build record](build-record.md), section 2), and the inferred genre.
+- `DESIGN.md`, when one exists.
 
 ### Acting on a verdict
 

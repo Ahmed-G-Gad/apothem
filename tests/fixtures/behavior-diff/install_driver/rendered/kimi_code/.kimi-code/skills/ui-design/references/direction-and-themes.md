@@ -154,12 +154,12 @@ The wider rules live in [imagery and data](imagery-and-data.md) and [copy and ho
 
 When the host can generate images, comps MAY be made once the decision summary is out. They are optional.
 
-- Make two comps, or three only when the direction truly forks. Each shows the opening screen only, at 1280x800.
+- Make two comps, or three only when the direction forks. Each shows the opening screen only, at 1280x800.
 - Write the prompt from the planned decisions, not from the user's request. Name where each element sits and how large it is.
 - State the idea, and give ground and accent as plain color names. Give the display class instead of a face name, and the structure as a composition instruction.
 - End the prompt with one negative clause that names the category's usual look.
 - Change exactly one compositional variable between comps (weight placement, symmetry, type-led against picture-led). Keep the system fixed.
-- Show them side by side with one line on how they differ, and wait. Nothing is built past an unapproved comp.
+- Show them side by side with one line on how they differ, and wait. Nothing is built past an unapproved comp. A headless or fast run makes no comps.
 - If neither is right, ask which came closer and regenerate once. After two rounds, build without a comp and say so.
 - Comps are throwaway: never shipped, never committed. Borrow layout from a comp, never rule compliance.
 
@@ -168,7 +168,7 @@ When the host can generate images, comps MAY be made once the decision summary i
 For each of the six to eight regions in the approved comp, write down how it will be made:
 
 - **Code.** Rules, type, geometry, diagrams, and anything that moves or reflows.
-- **Raster.** Materials, grain, fabric, paper, photographs, painted or sculpted surfaces, real depth. It needs a real source: a user asset, an open-archive photo fetched after the user approves ([imagery and data](imagery-and-data.md)), or a generated still. A CSS gradient is not a texture.
+- **Raster.** Materials, grain, fabric, paper, photographs, painted or sculpted surfaces, real depth. It needs a real source: a user asset, an open-archive photo fetched after the user approves ([imagery and data](imagery-and-data.md)), or a generated still the user asked for ([imagery and data](imagery-and-data.md), section 1). A CSS gradient is not a texture.
 - **Neither.** Regions the comp invented that the copy cannot support. Remove them before building.
 
 No region changes medium during the build without saying so.
@@ -181,9 +181,9 @@ Before building below the fold, and when the host offers a browser, screenshot t
 2. **Interval.** Do the gaps take the same share of the height?
 3. **Entry.** Is the first element a viewer looks at the one the comp leads with?
 
-Name the biggest difference, then fix it or argue why the build is better. Divergence with no stated reason is not allowed. Write the outcome into the build record's `comp:` field ([build record](build-record.md)).
+Name the biggest difference, then fix it or argue why the build is better. Every divergence names its reason in the `comp:` field. Write the outcome into the build record's `comp:` field ([build record](build-record.md)).
 
-With no browser, skip the check. The `comp:` field adds `not verified (no browser)` after the approved comp, and the report says so.
+With no browser, or no page to open, skip the check. The `comp:` field adds `not verified (no browser)`, or `not verified (no app)` when no page can be opened, after the approved comp, and the report says so.
 
 ## 8. Real-brand capture
 
@@ -203,16 +203,16 @@ Derive the direction from the spec. The primary anchors the accent, clamped by t
 
 This section is procedure ([rule catalog](rule-catalog.md), "Grade words in topic files"). The skill does not pre-approve any fetch tool. Every fetch goes through the host's fetch tool: a brand page, an archive photo, or a platform mark. The skill pre-approves no shell, and it never uses one for an address lookup, so it never resolves host names itself. The fetch tool's own guard MUST keep requests off private and reserved addresses.
 
-These checks govern the fetch tool only. The render pass's browser MAY open a local development URL that the user supplied ([pre-delivery checklist](pre-delivery-checklist.md), section 1).
+These checks govern the fetch tool and any download tool. The render pass's browser MAY open a local development URL that the user supplied ([pre-delivery checklist](pre-delivery-checklist.md), section 1).
 
 #### Address checks for every fetch
 
-- The brand URL comes from the user or from the project's own files, such as a manifest's homepage field or a link already in the site. An address recalled from memory is never treated as the brand's. An address the skill proposes, or one read from project files, is unverified. The skill shows its source (`file:line` for a project file) and its punycode host, says it is unverified, and asks the user to confirm it is the brand's official site.
+- The brand URL comes from the user or from the project's own files, such as a manifest's homepage field or a link already in the site. An address recalled from memory is never treated as the brand's. An address read from project files is unverified. The skill shows its source (`file:line`) and its ASCII host, says it is unverified, and asks the user to confirm it is the brand's official site.
 - Before each fetch, ask the user and name the exact URL, whether or not the host prompts. That covers every URL in the run: the homepage, each stylesheet, each font-service stylesheet, each archive page, and each file. Fetch nothing the user did not approve.
-- A fetch tool qualifies when the host designates it built-in or first-party, never on its own tool description. Any other fetch tool qualifies only after the user confirms it, before the first fetch. A name can pass every check here and still resolve to a private address (DNS rebinding), so the tool's guard MUST refuse the address ranges in the table below after it resolves the host name. When the host does not state that its tool does this, the skill names that residual risk with the URL and fetches only on an explicit yes. The tool MUST also report each redirect, or follow only one that keeps the same host, `https`, and port 443. When the skill cannot confirm that, it treats the tool as following every redirect and asks the user before using it.
+- A fetch tool qualifies when the host designates it built-in or first-party, never on its own tool description. Any other fetch tool qualifies only after the user confirms it, before the first fetch. A name can pass every check here and still resolve to a private address (DNS rebinding), so the tool's guard MUST refuse the address ranges in the table below after it resolves the host name. The tool MUST also report each redirect, or follow only one that keeps the same host, `https`, and port 443. The skill fetches only when the host states both behaviors for the tool; otherwise it fetches nothing and falls back to the next bullet.
 - When the host has no qualifying fetch tool, or the user declines, ask the user for what the fetch would have brought: hex values and font names, or the file itself.
 - Parse the URL as raw text before any other check, in this order. Refuse a backslash, a control character, or whitespace anywhere. The scheme MUST be `https`: refuse plain HTTP, with no fallback, and every other scheme. The authority is the text between `https://` and the first `/`, `?`, or `#`, or the end of the URL. Refuse any `@` in the authority, which catches user info such as `https://brand.example@other.example/`. An `@` in the query, such as a font-service axis list, is allowed; one in the path or fragment is refused. Refuse a bracketed IPv6 authority. Split off a trailing `:<digits>` port and refuse any port other than 443. What remains is the bare host; refuse a percent-escape in it.
-- Every host check below runs on the bare host after normalization: lowercase it, convert an internationalized name to punycode (`xn--`), and strip one trailing dot. Then refuse any empty label: a leading dot, `..`, or a dot still trailing. Show the user the punycode form, so a look-alike host shows plainly.
+- Every host check below runs on the bare host after normalization. Map and convert the host with the WHATWG host parser (UTS #46, domain to ASCII), then refuse any label with a character outside a-z, 0-9, and hyphen. Strip one trailing dot, then refuse any empty label: a leading dot, `..`, or a dot still trailing. Show the user the ASCII form, so a look-alike host shows plainly.
 - Refuse every IP literal. That covers every numeric IPv4 form: dotted decimal, a single integer such as `2130706433`, octal such as `0177.0.0.1`, hex such as `0x7f.0.0.1`, a mix of these, and forms with fewer than four parts such as `127.1`. After normalization, a host whose last label is a number in any of these forms is an IP literal.
 - After normalization, refuse a single-label host with no dot, such as `https://router/`. Refuse `localhost` and every host under `.localhost`, `.local`, `.localdomain`, `.internal`, `.intranet`, `.corp`, `.home`, `.private`, `.test`, `.lan`, `.onion`, `.invalid`, `.example`, or `.alt`, and every name under `.arpa`.
 - Redirects. A reported redirect that changes the host, the scheme, or the port is discarded. Run every check above on the new URL, then name it to the user and ask again before fetching it.
@@ -227,7 +227,7 @@ These checks govern the fetch tool only. The render pass's browser MAY open a lo
 | Platform mark ([imagery and data](imagery-and-data.md), section 11) | One fetch of the platform's own brand or press page, to read the mark's file address. Then one raster file of the mark, PNG or WebP, from that address. When the user supplies the exact file URL instead, only that file is fetched. Never an SVG | A raster file in the project |
 
 - Each fetch stays inside its own row. A brand fetch never brings an image, an archive fetch never opens a second archive page, and a platform-mark fetch opens one brand or press page at most.
-- Saving a fetched file into the project needs a host download tool. Without one, the skill names the file's address and a project path, and asks the user to save the file there.
+- Saving a fetched file into the project needs a host download tool. Without one, the skill names the file's address and a project path, and asks the user to save the file there. The download tool takes only the exact URL already approved and checked, and meets the same qualification and redirect rules.
 - An SVG from any outside source is never inlined or served: a fetch, a published icon set not yet in the project, or a file handed over during the run. Convert it to a raster file when the host offers a tool for it, or ask the user for a raster. An SVG already in the project, such as the user's committed logo, an icon set in use, or a file the user placed there, is project material ([imagery and data](imagery-and-data.md), section 1). So is an icon package the user adds as a project dependency, by the route in [imagery and data](imagery-and-data.md), section 11, "Icons".
 - Strip EXIF and XMP metadata, location above all, from every raster file that a fetch or the user supplies, before it is served. Use the host's tool when it offers one. Otherwise the material request asks the user to strip it.
 - A fetch tool MAY return processed text, such as a summary, instead of raw CSS. Where the tool allows it, ask it to quote the declarations verbatim. The saved spec marks every value from such text as unverified and its usage counts as inexact. The palette and font names go to the user for confirmation before they reach the token sheet. A value that never appears in the returned text is asked for, not guessed.

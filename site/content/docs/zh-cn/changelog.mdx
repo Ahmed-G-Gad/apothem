@@ -65,12 +65,12 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   the host's fetch tool. The skill names the address first, and the fetch runs
   only after you approve it. With no fetch tool that meets the skill's safety
   checks, or when you decline, the skill asks you for the brand's color values
-  and font names. A fetch uses HTTPS only. When the host does not say its fetch
-  tool refuses private and reserved addresses, the skill names that risk with
-  the address and fetches only on an explicit yes. A development server, a
-  project script or a browser check runs only when the host offers the tool
-  and you approve the folder and the exact command. Otherwise the skill lists
-  the screens it needs and continues from the source.
+  and font names. A fetch uses HTTPS only, through a fetch tool the host says
+  refuses private and reserved addresses and reports each redirect or follows
+  none that leaves the host. A development server, a project script or a
+  browser check runs only when the host offers the tool and you approve the
+  folder and the exact command. Otherwise the skill lists the screens it needs
+  and continues from the source.
 
 ### Security
 

@@ -23,7 +23,7 @@ The first write holds every field the plan settles, with `grades: pending` and n
    | faces: display <family>; body <family>; outlier <family or none>
    | fingerprint: <six axis values, joined by " / "> | signature: <the one memorable move>
    | declared: <each outlier face or declared device, with its one job; or none>
-   | comp: <none | approved n of m; largest gap and how it closed>
+   | comp: <none | approved n of m; <largest gap and how it closed | not verified (no browser | no app)>>
    | imagery: <photo count and sources; treatment; sample ids and positions>
    | review: hero <verdict | not run (scope) | not run (depth)> (via: <subagent | same-thread>; input: <captures | source-only>), finish <verdict> (via: <subagent | same-thread>; input: <captures | source-only>)
    | grades: <pending | fail n, habit-open n, warn n, waived n, dismissed n, confirmed n, dropped n, acknowledged n, open polish n, not checked n, note n> */
@@ -36,7 +36,7 @@ The first write holds every field the plan settles, with `grades: pending` and n
 /* drop rds-02@#pricing h2 | reason: <why this page no longer carries the item> */
 ```
 
-- The five exception lines follow the one syntax in the [rule catalog](rule-catalog.md), section "Exception lines". A line in any other form is rejected. A drop line appears only in a redesign. A confirmation line closes only a `judgment` `warn`, and only after the user confirmed in chat.
+- The five exception lines follow the one syntax in the [rule catalog](rule-catalog.md), section "Exception lines". A line in any other form is rejected. A drop line appears only in a redesign or a repair. A confirmation line closes only a `judgment` `warn`, and only after the user confirmed in chat.
 - `hero` takes a posture slug from the posture table in [hero](hero.md), section 2. `nav` and `footer` take a variant slug that [copy and honesty](copy-and-honesty.md), section 10 or 11, names, in its variant list or its prose, such as `colophon`. A posture or variant that those sections do not name is written `custom`. `rep-03` compares these slugs exactly.
 - At component or app scope, a field with nothing to record is written `none (scope)`. That covers `shape`, `hero`, `nav`, `footer`, and `fingerprint`, and `imagery` when the build shows no picture.
 - `palette` first names the modes the page ships. Then it holds the paper, ink, and accent tokens of the first mode as OKLCH lightness, chroma, and hue, for example `paper 97 0.006 250`. The first mode is light, or dark for a direction that is dark by design. An ink accent is written as the ink's values.
@@ -46,7 +46,7 @@ The first write holds every field the plan settles, with `grades: pending` and n
 - Field values name the choice. They do not argue for it. Reasons go in the `why:` line of the build log entry (section 5). `DESIGN.md` holds no reasons. Component and app scope are not logged, so they put their reasons in the closing report instead.
 - A font substitution ([typography](typography.md)) names the wanted face and its substitute on the log entry's `why:` line. Component and app scope name it in the closing report.
 - `scope`, `copy`, `depth`, `mode`, and a `custom` direction source drive the downgrades in the rule catalog, section "Flags and downgrades". A new build writes `depth: new`.
-- `direction` names its source: `DESIGN.md`, a brand spec, candidate n of 3, or `custom`. Then it names the axes code, its three axes joined by ` / `, the colorway the page used (`default` when the direction has one), and the mood phrase ([direction and themes](direction-and-themes.md)).
+- `direction` names its source: `DESIGN.md`, a brand spec, a direction the user named, candidate n of 3, or `custom`. Then it names the axes code, its three axes joined by ` / `, the colorway the page used (`default` when the direction has one), and the mood phrase ([direction and themes](direction-and-themes.md)).
 - `review` records each review's verdict with its own two facts, because the hero and finish reviews can differ. `via` says who reviewed: the subagent, or the building thread on the same-thread route ([pre-delivery checklist](pre-delivery-checklist.md), section 3). `input` says what was read: captures, or the source alone when no capture could be passed. Both can apply at once, for example `finish fix (via: same-thread; input: source-only)`.
 - Component and app scope run no hero review and write `hero not run (scope)`, with no `via` or `input` for it. A redesign at `depth: restyle` or `depth: polish` writes `hero not run (depth)` the same way ([rule catalog](rule-catalog.md), section "Flags and downgrades").
 - A review still pending, because the build has not reached it, is left out of the field. A review skipped for good is written `not run (<reason>)`, for example `finish not run (budget spent)`, with no `via` or `input`.

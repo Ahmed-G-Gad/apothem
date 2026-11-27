@@ -35,7 +35,7 @@ Every pointer target meets the WCAG floor of `tgt-01`. A stand-alone target also
 
 A target that `tgt-04` exempts takes no `::after` extension. A link inside running text is one: an extension would cover the lines above and below it. It still meets `tgt-01`.
 
-A control that looks small keeps its look and gains an invisible `::after`, positioned absolutely inside a parent set to `position: relative`. Derive the inset per control and per axis. For a control `s` px tall, the block inset is `min(0px, (s - H) / 2)`, with each `H` written as its own declaration inside its pointer query. The inline inset follows the same formula with the control's width. A control already `H` or larger in an axis takes no inset in that axis.
+A control that looks small keeps its look and gains an invisible `::after`, positioned absolutely on a control set to `position: relative`. Derive the inset per control and per axis. For a control `s` px tall, the block inset is `min(0px, (s - H) / 2)`, with each `H` written as its own declaration inside its pointer query. The inline inset follows the same formula with the control's width. A control already `H` or larger in an axis takes no inset in that axis.
 
 Native checkboxes and radios are replaced elements and take no `::after`. Their hit area comes from the associated `<label>`, sized to `H` in both axes, or from a wrapping element that carries the `::after`. A click on the label activates the input, so the label counts as the target. A text input, textarea, or select renders no `::after` either; section 5 gives its route. A range input counts its own box alone (`tgt-04`): its box stands at least `H` in the cross axis, with the track and thumb styled through their pseudo-elements.
 
@@ -94,7 +94,6 @@ Text inputs, textareas, selects, and comboboxes take the states the `lay-02` row
 ## 6. Form behavior
 
 - Every field has a visible `<label>` above it, tied to the field by `for` and `id` or by wrapping it. Checkboxes, radios, and switches carry it beside the input (`frm-01`). A placeholder never replaces a label, and it never carries the only format hint. A format, such as `12 Mar 2026`, goes in the persistent helper line (`frm-01`). A placeholder MAY repeat it, never an instruction.
-- Validation timing follows section 11, "Validation".
 - Focus alone changes nothing on the page. A changed value opens no page, submits no form, and moves no focus, unless text beside the field says so first (`acc-25`).
 - An error says what failed, why, and how to fix it. It is linked to the field with `aria-describedby` and sets `aria-invalid` (`frm-02`).
 - A required field carries the native `required` attribute and a visible word, not a lone asterisk. When custom messages replace the browser's, the form sets `novalidate`. `aria-required="true"` is for custom widgets only (`acc-05`).
@@ -159,10 +158,10 @@ Duration tokens are defined in section 13.3.
 - **Toast lifetime.** A toast that carries an action, such as undo or retry, stays until dismissed. An information toast whose message exists nowhere else also stays until dismissed, unless the message also lands in a persistent place such as a status line or a history list (`acc-17`). An information toast whose message persists elsewhere lingers 4 to 6 seconds. Every toast pauses while hovered or focused, and exits at 65% of the entrance time. An error toast carries one retry and never dismisses itself. While a modal is open, the toast renders inside the dialog (`acc-10`).
 - **Modal.** The backdrop fades while the panel scales from 0.96 to 1 over `long`, or over `short` on an app screen, with ease-out. It closes faster, ease-in.
 - **Menu.** Opens over `short` and closes faster. Up to 8 items MAY stagger by 30ms, never on an app screen. Flips within 16px of an edge.
-- **Tooltip.** On hover it waits 800 to 1000ms, then fades in over `short`. On keyboard focus it appears at once, with no delay and no fade. Moving the pointer onto the tooltip keeps it open, and Escape closes it. It stays open until the pointer and focus leave or Escape is pressed, and it never times out (`acc-15`). The hover delay SHOULD exceed the focus delay, which is zero.
-- **Tabs.** The indicator moves with `translateX` and `scaleX`, never by animating `width`. The outgoing panel fades over `micro` before the next appears.
+- **Tooltip.** On hover it waits 800 to 1000ms, then fades in over `short`. On keyboard focus it appears at once, with no delay and no fade. Moving the pointer onto the tooltip keeps it open, and Escape closes it. It stays open until the pointer and focus leave or Escape is pressed, and it never times out (`acc-15`).
+- **Tabs.** The indicator moves with `translateX` and `scaleX`, never by animating `width`. The outgoing panel fades over `micro` before the next appears. On an app screen the panels swap at once.
 - **Accordion.** Animate `grid-template-rows` from `0fr` to `1fr`, never `height`.
-- **Number tick-up.** Only real figures. On data load, run 400 to 800ms from the prior value (from zero the first time), ease-out on the number, locale-formatted. The motion character of section 13.4 never scales this range. Assistive technology hears only the end value, through a polite live region (`acc-10`). Under reduced motion the end value shows at once.
+- **Number tick-up.** Only real figures. On data load, run 400 to 800ms from the prior value (from zero the first time), ease-out on the number, locale-formatted. The motion character of section 13.4 never scales this range. On an app screen the tick-up runs within `short`. Assistive technology hears only the end value, through a polite live region (`acc-10`). Under reduced motion the end value shows at once.
 - **Copy to clipboard.** The label changes to a confirmation word for 2.5 seconds, and the same word goes to a polite live region (`acc-10`). No toast.
 - **Drag to reorder.** The handle shows on hover or focus, and the cursor goes from `grab` to `grabbing`. A half-opacity copy of the row tracks the pointer. A 1px accent rule shows where it will land. On release the item snaps into place over `short`, with no spring. Beside the handle, Move up and Move down buttons, or a row menu with a position choice, make the same move by single clicks or taps (`tgt-03`, WCAG 2.5.7). Arrow keys also move a focused row, and a live region announces each move. The keyboard path adds to the pointer path and never replaces it.
 - **Live search.** Query 250ms after the last keystroke. Until results arrive, a spinner shows in the field's inline-end zone of `space-6`, set with `padding-inline-end` (section 5), and a polite live region says "Searching" (`acc-10`). The border MAY also sit one step darker beside the spinner, never the only cue (`acc-02`). Matches are wrapped in `<mark>`. The match count is announced once typing pauses, not on each key.
@@ -181,7 +180,7 @@ Each animation clarifies, directs attention, or confirms. Ask what an instant ch
 
 ### 13.2 Properties and easing
 
-- Animate `transform` and `opacity`. Blur and other filters, `box-shadow`, `mask`, and `clip-path` are acceptable only when they render smoothly on that element alone.
+- Animate `transform` and `opacity`. Blur and other filters, `box-shadow`, `mask`, and `clip-path` MAY animate on one element at a time.
 - Banned: `transition: all`, and animation of layout properties such as `width`, `height`, `top`, and `left` (`mot-00.13.2`). Animating `margin` or `padding` is flagged unless the outer height stays constant.
 - One layout animation is permitted: `grid-template-rows` from `0fr` to `1fr` on a disclosure panel, as the accordion in section 11 uses. It collapses the panel to its content height with no height measured in script.
 - Arrivals decelerate (`ease-out`). Departures accelerate (`ease-in`). Two-way toggles use `ease-in-out`. The browser's default `ease` is not used. `linear` is kept for progress bars and scrubbing.
@@ -214,7 +213,7 @@ The genre sets a default character: read it from the Character column of the Dia
 
 | Character | Feel | Scale |
 |-----------|------|-------|
-| Still | Nothing moves. A typing caret MAY blink; it stops blinking before the `acc-11` time limit has passed since it started, then holds solid. | no motion |
+| Still | Nothing moves but state changes. A typing caret MAY blink; it stops blinking before the `acc-11` time limit has passed since it started, then holds solid. | no motion beyond state changes, which keep `micro` and `short` at x1.0 |
 | Severe | Quick and snapping. No spring. | x0.7 to 0.75 |
 | Brisk | Technical, like an instrument. | x0.85 to 0.9 |
 | Calm | Gentle. | x1.0 to 1.3 |
@@ -225,7 +224,7 @@ A page uses three motion primitives at most. A typical set is a reveal, a hover 
 
 ### 13.6 One page-load reveal
 
-- A page has one entrance choreography at most (`mot-01.a`). It is staggered in document order through an index custom property and runs once. Its total, the last item's delay plus that item's scaled duration, is 800ms or less. There is no floor, so a single item at a severe or brisk scale passes. The stagger ceiling comes from that 800ms limit alone: the last delay is 800ms minus the last item's scaled duration. With `long` at x1.0 that leaves 380ms or less; at x1.3, 254ms or less. The 500ms stagger cap of section 13.3 still holds. On the hero, that total grades under `hro-00.8`. It runs only when the theme allows motion; a still character skips it.
+- A page has one entrance choreography at most (`mot-01.a`). It is staggered in document order through an index custom property and runs once. Its total, the last item's delay plus that item's scaled duration, MUST be 800ms or less. There is no floor, so a single item at a severe or brisk scale passes. The stagger ceiling comes from that 800ms limit alone: the last delay is 800ms minus the last item's scaled duration. With `long` at x1.0 that leaves 380ms or less; at x1.3, 254ms or less. The 500ms stagger cap of section 13.3 still holds. On the hero, that total grades under `hro-00.8`. It runs only when the theme allows motion; a still character skips it.
 - Trigger it with `IntersectionObserver`. Use a passive, throttled scroll listener only when scroll direction matters.
 - Content shows with script off (`prf-02`). Hide elements only under a class that script adds. Otherwise animate from a visible state with a self-running CSS animation or `@starting-style`. Content that is hidden at rest and needs script to appear fails `prf-02`.
 - Under reduced motion the reveal shows its end state at once, with no delay, and screenshots are taken that way.

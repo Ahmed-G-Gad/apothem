@@ -44,7 +44,7 @@ Deliver two things:
 1. The component, written to the project's existing conventions for file layout, naming, and styling. When the build writes no stylesheet, the build record opens the component's own source file ([build record](build-record.md), section 1).
 2. A preview file that stacks every interactive state, each in its own labeled row.
 
-The preview MUST show, for each control, every state its kind needs under the `lay-02` row of the [rule catalog](rule-catalog.md), which is the only list of those sets. Each row forces its state through a helper class. The component CSS targets the helper class and the real pseudo-class in the same selector, for example `.btn:hover, .btn.is-hover`. The reviewer then sees every state at once, and the live states still work.
+The preview MUST show, for each control, every state its kind needs under the `lay-02` row of the [rule catalog](rule-catalog.md), which is the only list of those sets. Each row forces its state through a helper class. The component CSS targets the helper class and the real pseudo-class in the same selector, for example `.btn:hover, .btn.is-hover`. The reviewer then sees every state at once, and the live states still work. Helper classes live only in the preview file's stylesheet, so the component's own CSS keeps its ring on `:focus-visible` alone (`acc-03`).
 
 ## App scope
 
@@ -108,12 +108,12 @@ Each register sets accent footprint, layout, motion, copy voice, allowed and ref
 ### Editorial
 
 - **Accent:** one, kept to its posture's footprint.
-- **Layout:** asymmetric, with large type and thin rules instead of card borders. Column ratios such as 2:5 and 3:7.
+- **Layout:** asymmetric, with large type and thin rules instead of card borders. Column spans such as 4+8 and 3+9.
 - **Motion:** quiet, with one orchestrated entrance.
 - **Copy:** specific, with one literary turn per section at most. Verbs over adjectives.
 - **Allowed:** hairlines, printer's flowers, drop caps, double rules, italics in running text, asymmetric columns, treated photos with factual captions, headlines set to an edge, one highlighter band behind the lowercase letters.
 - **Refused:** gradient pills; a fully centered hero, unless the material is itself a centered poster; frosted glass (`col-02.b`); pure black or pure white tokens (`col-03.b`).
-- **Chrome:** nav `masthead` or `edge-split`; footer `colophon` on the prose-document and manifesto shapes, otherwise `dated-signoff`.
+- **Chrome:** nav `masthead` or `edge-split`; footer `colophon` on the prose-document and manifesto shapes, `dated-signoff` on the letter shape, otherwise `closing-sentence`.
 
 ### Product-minimal
 
@@ -127,7 +127,7 @@ Each register sets accent footprint, layout, motion, copy voice, allowed and ref
 
 ### Atmospheric
 
-- **Accent:** one hue, on the canvas treatment, focus rings, and small tags. Accent on display text is flagged (`scl-00.genre-registers`); a waiver line that meets the material guard, naming the accented word, closes it.
+- **Accent:** one hue, on the canvas treatment and focus rings. Accent on display text is flagged (`scl-00.genre-registers`); a waiver line that meets the material guard, naming the accented word, closes it.
 - **Layout:** canvas first, tool second. A centered hero works when type is the visual. A visual beside the text is a split hero and fires `lay-04.a`. Its guard is met only when the visual is the brief's strongest real asset, named in `signature:`, and a waiver line closes it. Display type takes the [template](design-md-template.md)'s type-as-visual exception only when type is the hero visual.
 - **Motion:** fades only.
 - **Copy:** direct and specific. One figurative line on the first screen at most.

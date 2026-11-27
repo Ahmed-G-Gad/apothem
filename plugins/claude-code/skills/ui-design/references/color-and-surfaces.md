@@ -43,12 +43,14 @@ A declared surface color never counts toward the accent's area.
 
 ### Accent footprint
 
-Under `signal-only`, the accent marks seven things only:
+Under `signal-only`, the accent marks nine things only:
 
 - the active nav item;
 - the focus ring;
 - the hover underline on links;
 - the main control;
+- the current selection;
+- a status mark;
 - the one data series that carries a chart's point;
 - scroll progress, such as the progress spine of [interaction and motion](interaction-and-motion.md), section 13.10;
 - the drop position during a drag.
@@ -78,8 +80,8 @@ The WCAG ratio is the only pass line. A perceptual-contrast figure never replace
 
 A ratio comes from a tool, never from hand arithmetic. The routes, and the `not checked` grade when no route exists, are in the [pre-delivery checklist](pre-delivery-checklist.md), section 1, "Static checks".
 
-- A rule that puts an element on a dark background MUST also set that element's text color (`col-00.3`).
-- A page MUST NOT set gray text on a colored background (`col-00.3`).
+- A rule that puts an element on a dark background MUST also set that element's text color (`acc-01`).
+- A page MUST NOT set gray text on a colored background (`acc-01`).
 - Button text meets its `acc-01` ratio against its fill in every enabled state.
 - Where the accent carries text, an on-accent ink token MUST exist (`acc-01`, `tok-01`).
 - Red against green is never the only cue for a status (`acc-02`). Add an icon, a word, or a shape.
@@ -131,7 +133,6 @@ Prompts about warm, bookish, or family subjects pull hardest toward this look. T
 
 Each item below is flagged as a sign of a generated page:
 
-- the warm trio above, under its own condition;
 - monospace labels on a direction not built from monospace (`typ-00.9`, [typography](typography.md), section 9);
 - labels or controls in tracked capitals (`typ-01`);
 - one heading word picked out by color or weight (`typ-03.b`);
@@ -233,14 +234,14 @@ Texture is a material with a ration. It is not there for mood.
 
 | Placement | Highest opacity |
 |-----------|-----------------|
-| Any layer under running text, whatever its placement | 0.05, or none |
+| Any layer under or over running text, whatever its placement | 0.05, or none |
 | Whole page, where no body text sits above the layer | 0.08 |
 | Whole page, low-frequency wash (base frequency 0.02 or lower), where no body text sits above the layer | 0.12 |
 | Inside one card or plate, where no body text sits above the layer | 0.15 |
 
 A whole-page layer lies under running text wherever the page carries prose, so it takes the 0.05 cap. The higher caps apply only where body text sits on a texture-free panel or nowhere above the layer.
 
-- Texture never moves and never takes pointer events. Assistive technology never sees it.
+- Texture never moves and never takes pointer events, except the one misregistration settle in the families table. Assistive technology never sees it.
 - It is pure CSS or inline SVG, with no image requests. Measure contrast with the texture in place.
 
 ### The five families
@@ -253,4 +254,4 @@ A whole-page layer lies under running text wherever the page carries prose, so i
 | Scanlines | A fixed overlay over the whole page: a repeating gradient of 2px clear and then a 1px line at 5% ink alpha, inside the running-text cap | Only on a direction built on screen-era material, with scanlines named in the waiver line's guard and in `declared:`. It sets a mood; it never draws a monitor frame |
 | Deckled edge | A 6px radial mask repeating on a 12 x 24 tile along one side of a ticket or stub | One element class per page. It marks an object; it is not a general border |
 
-The motion rules for the misregistration settle are in [interaction and motion](interaction-and-motion.md). Photo treatments are in [imagery and data](imagery-and-data.md).
+Photo treatments are in [imagery and data](imagery-and-data.md).

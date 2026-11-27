@@ -19,7 +19,7 @@ Copy beside a picture is the posture generated pages fall into by default. The s
 | # | Posture (`hero:` slug) | Layout | Suits |
 |---|---------|--------|-------|
 | 1 | **Balanced split** (`balanced-split`) | Fills the screen below the nav (the sizing rule in section 1). Copy on 6 columns, visual on 6, both centered vertically. | A product whose picture carries the page. |
-| 2 | **Wide-visual split** (`wide-visual-split`) | Copy on 5 columns, visual on 7 at the size in section 6. The visual MAY bleed past the outer edge. Flip the sides when a headline set at `text-display` needs the room. | Screens, objects, and photos that reward size. |
+| 2 | **Wide-visual split** (`wide-visual-split`) | Copy on 5 columns, visual on 7 at the size in section 6. The visual MAY bleed past the outer edge. Give the copy the 7 columns when a headline set at `text-display` needs the room. | Screens, objects, and photos that reward size. |
 | 3 | **Short header** (`short-header`) | Ends at the short-header limit in section 3, so the first section shows above the fold. | Reference material, docs, and utilities. |
 | 4 | **Bottom-anchored** (`bottom-anchored`) | A full-height field with the headline set at its foot. At 1920 wide the headline reaches its maximum size before anything else grows. | Statement pages, studios, and events. |
 | 5 | **Narrow centered column** (`narrow-centered-column`) | Fills the screen below the nav (the sizing rule in section 1), one column no wider than 44ch. With no picture, type is the hero's main visual, so the headline MAY take the type-as-visual ceiling in the display exceptions of the [`DESIGN.md` template](design-md-template.md), "Reference scale". | One message, one action. |
@@ -37,7 +37,7 @@ A custom hero is allowed. It names itself `custom` in the record. It is exempt f
 
 - The hero SHOULD equal one screen: the next section begins between y=760 and y=900.
 - The vertical centers of the visual and the text block stay inside the split center offset in [layout and composition](layout-and-composition.md), "Balance and height".
-- The gap from text to visual is no more than 120px.
+- The gap from text to visual is no more than `section-1`.
 - The visual does not hug the window edge.
 
 The full-bleed-image, bottom-anchored, and short-header postures, and custom heroes, are exempt from the last three points. The short header is also exempt from the first and follows its own limit instead.
@@ -75,7 +75,7 @@ Prefer at most two centered items, plus one item placed off the axis on purpose:
 - **Size.** The visual spans 6 or 7 columns and stands at 60% of screen height or more: at least 540px tall at 1440x900. An upright object, such as a cover, a phone, or a bottle, MAY instead stand at 75% of screen height over 4 or 5 columns.
 - **Alignment.** At 1440x900, its center meets the split center offset that section 3 cites.
 - **Grid.** The hero grid has two tracks and its own gap, matching the posture: `1fr 1fr` for the balanced split, `5fr 7fr` for the wide-visual split. The gap alone separates copy from visual. It runs from `space-8` to `section-1`. On narrow screens the gap turns vertical at `space-7`. Every gap comes from a spacing token (`tok-01`), whose value the [`DESIGN.md` template](design-md-template.md), "Reference scale", sets.
-- **Subject.** The visual shows the actual subject: the room, the cover, the product, the dates ([imagery and data](imagery-and-data.md)). It stays inside the accent budget (`col-01.a`, [color and surfaces](color-and-surfaces.md)). It weighs under 2MB. When it moves, it has a reduced-motion fallback (`acc-08`).
+- **Subject.** The visual shows the actual subject: the room, the cover, the product, the dates ([imagery and data](imagery-and-data.md)). It stays inside the accent budget (`col-01.a`, [color and surfaces](color-and-surfaces.md)). A still weighs under 2MB; video follows [imagery and data](imagery-and-data.md), section 12. When it moves, it has a reduced-motion fallback (`acc-08`).
 - **Forms.** A working form belongs in a later section or the close, not in the hero by default. The action-as-visual posture is the exception.
 - When the visual misses a check, change the visual. Do not change the copy to compensate.
 
@@ -102,7 +102,7 @@ Narrow-screen sizing is in section 1.
 - The entrance, stagger included, MUST meet the page-load reveal total in [interaction and motion](interaction-and-motion.md), section 13.6 (`hro-00.8`). Section 13.6 gives the formula and the ceiling; section 13.3 gives only the duration tokens and the stagger spacing.
 - It starts from a state that is already visible. Content shows with script off, and a reveal hides content only under a class that script adds (`prf-02`).
 - A fade plus an 8px rise counts as one movement. Fade, sweep, and scale MUST NOT be layered on one element (`hro-00.8`).
-- No pointer-driven parallax (`mot-00.13.8`). No bounce or spring easing (`scl-00.genre-registers`). No starfields.
+- No pointer-driven parallax (`mot-00.13.8`). No bounce or spring easing outside the playful waiver of `scl-00.genre-registers`. No starfields.
 - No carousel that advances by itself. Hero motion that runs past the time limit of `acc-11` meets that row.
 - Under reduced motion the hero appears in its final state. See [interaction and motion](interaction-and-motion.md).
 

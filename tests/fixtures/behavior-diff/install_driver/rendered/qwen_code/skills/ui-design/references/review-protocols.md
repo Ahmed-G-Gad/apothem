@@ -11,7 +11,7 @@ This file holds procedure only, so it has no file code in the [rule catalog](rul
 - Change no file. Read for 10 turns at most.
 - The first input line names the mode: `review: hero`, `review: finish`, or `review: finish (outside page)`. Run the section that line names. With no mode line, reply `error: no mode line` and review nothing.
 - Read this file and the rule catalog at the absolute paths the invoker passed. Do not resolve them from the project's working directory. When a passed path is not absolute, or does not open, reply `error: <the path> does not open` and review nothing.
-- Beside the passed `rule-catalog.md`, in the same folder, sit the files its file-code table names. The reviewer MAY open those topic files, and only to grade a cited rule: a rule or section that a finding cites, or that a question of its mode names, such as the headline budget of hero question 1. Open no other skill file.
+- Beside the passed `rule-catalog.md`, in the same folder, sit the files its file-code table names. The reviewer MAY open those topic files, and only to grade a cited rule: a rule or section that a finding cites, or that a question of its mode names, such as the headline budget of hero question 1. The reviewer MAY also open `build-record.md` there, for the record, log, and fingerprint formats that `rot-01` and hero question 7 read. Open no other skill file.
 - Captures arrive as the absolute paths of the image files that the [pre-delivery checklist](pre-delivery-checklist.md), section 1, saves. Read those files first. Open the source only to locate or quote a finding. A same-thread review reads the captures it took.
 - With no captures, read the source and write the first line as `<verdict> (source-only)` (section 2).
 - Grade against the [rule catalog](rule-catalog.md). Cite a rule id for each finding. Use `taste` only when no rule applies; a `taste` finding never blocks.
@@ -55,7 +55,7 @@ Questions:
 1. Would the headline still be true on a competitor's page? Does it keep to the headline budget in [copy and honesty](copy-and-honesty.md), section 2?
 2. Does the hero meet the vertical balance its posture takes in [hero](hero.md), section 4, with no dead band under its lowest element (`hro-01`)?
 3. Does the visual show the real subject, beside or behind the text, at the size [hero](hero.md), section 6, sets? When the shape keeps pictures off the first screen, does type fill it instead?
-4. Which template tells show? Look for the stock centered stack that [hero](hero.md), section 5, names, or a pill or small label set over the headline. Look for a soft decorative shape behind the heading, or a flat tinted rectangle where a picture belongs. Look for an illustration drawn in code, a row of tally marks, or two filled buttons (`lay-06`).
+4. Which template tells show? Look for the stock centered stack that [hero](hero.md), section 5, names, or a pill or small label set over the headline. Look for a soft decorative shape behind the heading, or a flat tinted rectangle where a picture belongs. Look for an illustration drawn in code, a row of tally marks, or two filled buttons (`lay-06.a`).
 5. Is the signature on this screen? Imagine the picture removed. When the screen's message survives unchanged, the picture is not doing its job.
 6. Does the typography carry the direction?
 7. Does the screen look finished? Does it differ from the build log entries passed in the inputs, by their fingerprint, hero, nav, and footer fields? With `log: none`, ask only whether the screen looks finished.
@@ -74,7 +74,7 @@ Questions:
 1. Step through the page one screen at a time. A screen with nothing large enough to earn its height outranks any small detail.
 2. Which headings would stay true on a competitor's site?
 3. Does the stated direction describe this page? Name the largest gap.
-4. If something must survive the fixes, name it in the one `keep` line of section 2.
+4. If something has to survive the fixes, name it in the one `keep` line of section 2.
 
 Variants:
 
@@ -92,4 +92,4 @@ Inputs: everything the invoker passed after the mode line and the two paths. The
 - Ask one question: does anything still look machine-made?
 - Grade each finding against the rule catalog, as in section 1.
 - `rebuild` is not available, because the repair does not restructure. Instead, cite a structural finding at its `file:line` and propose the repair in a single sentence.
-- Return findings up to the cap in section 2, in its reply format. If something must survive the fixes, name it in the one `keep` line.
+- Return findings up to the cap in section 2, in its reply format. If something has to survive the fixes, name it in the one `keep` line.

@@ -72,7 +72,7 @@ A display face defines the direction. A custom build MUST NOT choose a display f
 - **Axes.** A weight or optical-size axis lets one file serve several roles.
 - **License.** The license is free for commercial web use, or the user has confirmed a paid one.
 
-Starting points, a few per class. Each is open-license; check that it passes the criteria before you use it:
+Starting points, two or three per class. Each is open-license; check that it passes the criteria before you use it:
 
 | Class | Examples |
 |-------|----------|
@@ -175,12 +175,12 @@ Monospace belongs to code, figures, and measurements. Monospace anywhere else is
 - A lone italic word inside an upright heading fires `typ-03.a`; fix the heading.
 - One word or phrase picked out by color, weight, highlight, or underline fires `typ-03.b`. Its guard is in the [rule catalog](rule-catalog.md).
 - Build emphasis from a line break, or from a second line at another size.
-- A fully italic display system is flagged (`typ-00.10`); a waiver line that meets the material guard closes it. A waived system applies to every heading at that level, in a true italic, with synthesis turned off.
+- A fully italic display system is flagged (`typ-00.10`); a waiver line that meets the material guard closes it. A shape that requires an italic line, as page shapes sets for quote-hero and letter, does not fire it. A waived system applies to every heading at that level, in a true italic, with synthesis turned off.
 
 ## 11. Font loading
 
 - Ship only the weights the page uses.
-- Self-host the font files when the license allows it. Load from a font service only when the license forbids self-hosting or the user asks for the service. The closing report then names its privacy cost: the service receives the IP address of every visitor.
+- Self-host the font files when the license allows it, from files already in the project or supplied by the user; otherwise list the files in the material request and load from the service. Load from a font service also when the license forbids self-hosting or the user asks for the service. The closing report then names its privacy cost: the service receives the IP address of every visitor.
 - A font-service request uses one stylesheet link per family, each with `display=swap`, plus one preconnect per font host.
 - Self-hosted faces use `font-display: swap`. Give each one a fallback face of similar build: an `@font-face` rule whose `src` is `local()` of named system fonts. Use `local("Arial")` or `local("Helvetica Neue")` for a grotesk, and `local("Georgia")` for a serif.
 - Tune that fallback face with `size-adjust` and the three metric overrides: `ascent-override`, `descent-override`, and `line-gap-override`. The first screen then keeps its layout when the web font arrives. Take these values from the project's font files or docs, from the user, or from a WebSearch result; never guess them. When none of these gives them, leave out `size-adjust` and the three overrides, and list the missing metrics in the material request.

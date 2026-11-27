@@ -27,7 +27,7 @@ Every section aligns to one shared 12-column grid with a `col-gap` column gap. W
 | 8 columns | 864 px |
 | 10 columns | 1088 px |
 
-Alignment runs unbroken from the nav to the footer. A section that invents its own grid breaks the page.
+Alignment runs unbroken from the nav to the footer. A section below the hero that invents its own grid breaks the page; the hero grid of [hero](hero.md), section 6, is the one exception.
 
 ### Two layers per section
 
@@ -162,7 +162,7 @@ Do not use white cards on a tinted page, cards inside cards, or bordered boxes i
 - **Overlap** (`lay-05`). No text is drawn under an opaque box, an image, or other text. Sticky and fixed chrome is excepted.
 - **Sticky stacking.** Never stick two elements at `top: 0`. Offset the second by `var(--nav-height)`, the Frame token in the [`DESIGN.md` template](design-md-template.md). The sticky nav takes the `z-header` layer. Every other sticky part takes `z-pin`, which sits below it (`tok-01`).
 - **Focus not obscured** (`acc-13`). A sticky header, sticky bottom bar, banner, or toast never covers the whole of a focused element. Set `scroll-padding-top` on `html` from `var(--nav-height)`, plus `var(--strip-height)` when an announcement strip sticks. Every sticky bottom bar takes its height from `var(--bar-height)`, and `scroll-padding-bottom` reads the same token, so no literal length enters (`tok-01`). Check it by tabbing through the page at the full-page capture widths in the [pre-delivery checklist](pre-delivery-checklist.md), section 1.
-- **Content extremes** (`lay-08`). The layout holds at the longest and the shortest real content each field can carry, and at a test string 40 percent longer than the English: nothing clips, overlaps, or collapses. Check each of the three at 375 and 1440 wide.
+- **Content extremes** (`lay-08`). The layout holds at the longest and the shortest real content each field can carry, and at a test string 40 percent longer than the English: nothing clips, overlaps, or collapses. Check each of the three at the full-page capture widths in the [pre-delivery checklist](pre-delivery-checklist.md), section 1.
 - **Text spacing** (`acc-14`). Apply the four spacing overrides the `acc-14` row of the [rule catalog](rule-catalog.md) sets, then check at the full-page capture widths in the pre-delivery checklist, section 1. Nothing clips or overlaps. Every label set to `nowrap` still fits, or its row reflows.
 - **Radio tabs.** CSS-only tabs built on radios positioned absolutely at `top: 0` make the page jump on each click. Keep the radios in normal flow at the size [interaction and motion](interaction-and-motion.md), section 7, sets, or focus with `preventScroll` from a script.
 - **Overflow.** Grid columns that hold images use `minmax(0, 1fr)`, not `1fr`. Display headings get `min-width: 0` plus `overflow-wrap: break-word` (not the `anywhere` value). Shrinkable flex items take `min-width: 0`; icons and images take `flex-shrink: 0`.

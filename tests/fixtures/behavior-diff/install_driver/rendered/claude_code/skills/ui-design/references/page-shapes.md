@@ -4,12 +4,7 @@
 
 Reference for the [`ui-design`](../SKILL.md) skill. A page shape is a complete set of structural decisions for a page. The entries below name finished structures; they are not options to pick from. Rule ids come from the [rule catalog](rule-catalog.md). This file's catch-all is `shp-00`.
 
-Name a shape in this order:
-
-1. Write down the material and the structure the brief calls for first (section 3, step 0).
-2. Then find the entry that structure resembles and use its name, so the [build log](build-record.md) can recognize it and rotation (`rot-01`) can work.
-3. If no shape matches, describe the page on the six axes below and coin a short kebab-case name for it.
-4. The domain table in section 3 applies only when step 1 of section 3 finds no brief phrase that points at a shape.
+Name a shape by the steps in section 3; coin a kebab-case name when none matches.
 
 - You MUST NOT start a build by picking from this list. Starting from the menu pulls every brief toward the same few shapes.
 - Read only the entry of the shape that applies. Skip the others.
@@ -42,15 +37,15 @@ Pick one divider language per page. Vary its weight and position from seam to se
 
 ### One reveal per shape
 
-- Each shape allows one reveal pattern at most (`mot-01.a`), on one element by default: the first caption, the first claim, or the first sample. Everything else is simply there.
+- Each shape allows one reveal pattern at most (`mot-01.a`), on one element by default: the first caption, the first claim, or the first sample. Everything else is there.
 - A page has at most one scroll-driven pattern (`mot-01.c`). A sticky or pinned sequence uses up that allowance.
 - The final content is in the markup, and the page reads correctly with script off (`prf-02`) and under reduced motion (`acc-08`). See [interaction and motion](interaction-and-motion.md).
 
 ## 2. The shapes
 
-Each entry gives what the shape is, where it fits, where it does not, and any hard condition. A hard condition is not negotiable: without it, the shape is not used. Figures and quotes follow [copy and honesty](copy-and-honesty.md); captures and placeholders follow [imagery and data](imagery-and-data.md).
+Each entry gives what the shape is, where it fits, where it does not, and any hard condition. A hard condition is not negotiable: without it, the shape is not used. An uncited hard condition that is broken is flagged (`shp-00.2`). Figures and quotes follow [copy and honesty](copy-and-honesty.md); captures and placeholders follow [imagery and data](imagery-and-data.md).
 
-- **Modular grid** (`modular-grid`). 6 to 9 blocks spanning 1x1, 2x1, 1x2, or 2x2, under a display heading. The grid starts inside the hero or as the first section after it. At 1440x900 its first row begins below the fold by no more than the dead-band limit in [hero](hero.md), section 4. Grid gap only, no rules. An outlined button in the hero, verb-first text links on tiles. Images cropped tight inside blocks (columns `minmax(0, 1fr)`), never full bleed. No reveal, or one fade as the grid appears.
+- **Modular grid** (`modular-grid`). 6 to 9 blocks spanning 1x1, 2x1, 1x2, or 2x2, under a display heading. The grid starts inside the hero or as the first section after it. At 1440x900 its first row begins inside the window in [hero](hero.md), section 3. Grid gap only, no rules. An outlined button in the hero, verb-first text links on tiles. Images cropped tight inside blocks (columns `minmax(0, 1fr)`), never full bleed. No reveal, or one fade as the grid appears.
   - Fits: many equal entry points, such as feature pages and SaaS landings. Not for: one big idea.
   - Hard: figure and quote blocks exist only when the user supplied them (`cpy-02`).
 - **Prose document** (`prose-document`). Reads as a memo, letter, or journal, with no marketing apparatus. Headings are short bold phrases that run into the paragraph. One column, at the prose-led measure and leading in [typography](typography.md), section 8. Whitespace divides, with one centered ornament at most. The action is a verb-first link inside a sentence, the only action on the first screen. That link meets `tgt-04` through the running-text exemption of its row in the [rule catalog](rule-catalog.md); `tgt-01` still applies. Images in the flow at text width. No motion.
@@ -85,7 +80,7 @@ Each entry gives what the shape is, where it fits, where it does not, and any ha
   - Fits: SaaS feature pages, developer tools pairing prose with code. Not for: narrative or photo-led brands.
 - **Sticky pane** (`sticky-pane`). A left pane holds the heading while the right pane scrolls 3 to 6 detailed captures per section, paced like film. The pane re-anchors per section, offset below any sticky nav. The action appears in the pane at the section's last capture; without script it is always visible. No fades: the sticky scroll is the page's one scroll pattern. Below 60rem the pane becomes a heading over its stacked captures.
   - Fits: premium products, detailed feature stories. Risky for mobile-first readers unless the fallback holds.
-- **Typeface demo** (`typeface-demo`). The face is the design. The hero sets it at several sizes; the body walks through display size, text size, italic, language support, and OpenType features. Each sample has a caption under it, never a label over it. One outlined purchase action on the first screen and again at the bottom. No imagery. One text unmask on the first sample.
+- **Typeface demo** (`typeface-demo`). The face is the design. The hero sets it at three sizes; the body walks through display size, text size, italic, language support, and OpenType features. Each sample has a caption under it, never a label over it. One outlined purchase action on the first screen and again at the bottom. No imagery. One text unmask on the first sample.
   - Hard: a custom or distinctive face.
 - **Project cards** (`project-cards`). Project cards in a responsive grid (columns `minmax(0, 1fr)`), equal or varied in span, under a short line that is not display type. A filter row above is the only divider. Each card links to its case study; no global action, so the first card's link is the first-screen action. Cards fade when filters change.
   - Fits: studios, agencies, photographers. Not for: products.
@@ -108,7 +103,7 @@ Each entry gives what the shape is, where it fits, where it does not, and any ha
 
 Keep the chosen structure unless the material conflicts with it. Name any substitution and its reason in the decision summary and the build record.
 
-Two different briefs MUST produce visibly different sites, not one template in two colors.
+Rotation against the build log (`rot-01`) keeps two briefs from producing one template in two colors.
 
 ### Domain fallback
 

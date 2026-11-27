@@ -79,7 +79,7 @@ A real screen persuades better, and more honestly, than a picture of one.
    - Mobile apps: the simulator.
    - Command-line tools: real terminal output, set as text in a code block.
 5. **Check each capture** for personal data, stray error states, and debug overlays.
-6. **Take several:** the main screen for the hero, a large cropped detail further down, a second screen, and the phone layout.
+6. **Take four:** the main screen for the hero, a large cropped detail further down, a second screen, and the phone layout.
 
 A rebuild is allowed only when the product cannot run yet, or when captures would expose private data. The handoff then lists the screens to capture ([build record](build-record.md)).
 
@@ -117,7 +117,7 @@ A photo is large or absent: at least 6 of 12 columns and 440px tall, or full-ble
 
 ### Page share
 
-- Under the hero, photos cover 25 to 33% of the page area at 1440 wide. Photo-led and project-cards shapes ([page shapes](page-shapes.md)) MAY reach 45%.
+- Under the hero, photos cover 33% or less of the page area at 1440 wide. Photo-led and project-cards shapes ([page shapes](page-shapes.md)) MAY reach 45%.
 - Product images do not count toward the share.
 - With three or more pictures present, coverage above 36% is a finding (`img-03.a`). The limit is 45% on photo-led and project-cards shapes.
 - Two photo-led sections MUST NOT sit next to each other (`img-03.b`). The section between is carried by the theme's other material: type, figures, rules, color fields, tables, forms, or the product.
@@ -154,7 +154,7 @@ The filters stay mild by rule. Sepia stays at or below 0.3. Saturation stays bet
 - **Plates.** Duotone and tint add a `multiply` plate beneath and a `lighten` plate on top, both from theme tokens. A tint on a dark page runs from paper to the token. On a light page it runs from the token mixed 55% toward `ink` to the token mixed 82% toward `paper`, so no literal color enters the mix (`tok-01`).
 - **Tonal range.** Pick images with a broad tonal range. A duotone or tint flattens pale subjects, such as snow or white walls, into empty fields.
 - **Pseudo-elements.** When the plates use both pseudo-elements, the keyline or scrim moves to a sibling.
-- **Adjustments.** A treatment MAY add numeric adjustments. Each takes a value n inside its range and maps to a filter as below. The ranges keep a lone adjustment inside the limits above. When filters stack, their factors multiply: the product of every `saturate()`, of every `contrast()`, and of every `brightness()` in the chain stays inside those limits, and the chain holds one `sepia()` at most.
+- **Adjustments.** A treatment MAY add numeric adjustments. Each takes a value n inside its range and maps to a filter as below. The ranges keep a lone adjustment inside the limits above. When filters stack, their factors multiply: the product of every `saturate()`, of every `contrast()`, and of every `brightness()` in the chain stays inside those limits, and the chain holds one `sepia()` at most. On a grayscale base, the contrast product stays between 1.1 and 1.2.
 
 | Adjustment | Range of n | Filter |
 |------------|------------|--------|
@@ -209,11 +209,11 @@ Each image points at a real file.
 ## 9. Responsive images and loading
 
 - Every image has explicit `width` and `height` (`prf-01`). Every image has `srcset` with `w` descriptors. Use `picture` for alternate crops.
-- Set `sizes` to the real layout, capped at the container. A half-width image takes `(width > 90rem) 640px, (width < 60rem) 100vw, 50vw`. A full-bleed image takes `100vw`. `vw` inside a `sizes` attribute is a layout hint; the `100vw` ban in [layout and composition](layout-and-composition.md), "Viewport units and safe areas", governs CSS widths only.
+- Set `sizes` to the real layout, capped at the container. A half-width image takes `(width >= 90rem) 640px, (width < 60rem) 100vw, 50vw`. A full-bleed image takes `100vw`. `vw` inside a `sizes` attribute is a layout hint; the `100vw` ban in [layout and composition](layout-and-composition.md), "Viewport units and safe areas", governs CSS widths only.
 - Offer widths 960, 1280, and 1920. Hero and full-bleed images add 2400 and 2880, which covers 1440 at 2x. Offer no width wider than the original.
 - Hero and full-bleed sources need at least 2400px on the long edge. 1920px looks soft.
 - Crop with the container: `aspect-ratio` on it, `object-fit: cover`, and an `object-position` that keeps the subject in view.
-- The hero image is the largest paint. It gets `fetchpriority="high"` and is never lazy (`img-00.12`). An LCP video's poster is preloaded. Every other image below the fold is lazy.
+- The hero image is the largest paint. It gets `fetchpriority="high"`; a lazy hero image is the `warn` source of section 12 (`img-00.12`). An LCP video's poster is preloaded. Every other image below the fold is lazy.
 
 ## 10. Banned imagery
 
@@ -222,7 +222,6 @@ Everything in this section is banned. An item that cites no id of its own grades
 - **Drawn illustrations** larger than an icon: objects, plants, animals, people, products, buildings, landscapes, scenes. Replace each with a photo, the product, or large type. Abstract filler art where a product view belongs is `img-02.b`.
 - **The drawn-illustration test.** The render check treats a text-free SVG of 120px or more as drawn in two cases: it has 3 or more curved paths, or it has 6 or more shapes with 3 or more fills.
 - SVG is limited to icons from one set, the user's logo, labeled charts and diagrams of real data or systems, and plain geometry: rules, grids, dot texture.
-- **Empty pictures:** a wash or gradient in an image's place outside a named position (section 8).
 - **Counting devices:** a quantity shown as a run of identical marks, 24 or more, such as dots, ticks, squares, or bars. Write the number instead. Charts whose marks vary in size or color are exempt.
 - **Imitation materials:** a hero UI built from styled divs outside a position.
 - **Torn edges:** a `polygon()` clip-path with 12 or more vertices on an image, posing as a torn photo edge.
@@ -312,6 +311,6 @@ Hand-write each chart as inline SVG for its data. No chart library.
 
 - Use real numbers. A missing figure gets a marked blank ([copy and honesty](copy-and-honesty.md), section 13). An invented series is worse than a gap (`cpy-02`).
 - Axes follow `dat-01` as the [rule catalog](rule-catalog.md) row states it. A zoomed axis label names its start value, for example "axis starts at 94%".
-- Sample data appears only inside a rebuilt product sample or in code. It is internally consistent: totals add up, dates run in order. The [build record](build-record.md) marks it as sample.
+- Sample data appears only inside a rebuilt product sample or in code. It is internally consistent: totals add up, dates run in order. The material request lists it as sample ([build record](build-record.md), section 6).
 
 **Dashboards.** A dashboard shows fewer, truer numbers: one lead figure tile, one supporting chart, and one table. Not a wall of KPI gauges.

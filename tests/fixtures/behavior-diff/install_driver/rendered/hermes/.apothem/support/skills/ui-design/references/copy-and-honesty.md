@@ -21,7 +21,7 @@ Reference for the [`ui-design`](../SKILL.md) skill. All scopes. It covers the wo
 | Section intro | One line |
 | Paragraph | Two short sentences |
 | Bulleted list | 4 entries, each a three-word label plus a line of 12 words at most. A composition's rows keep that composition's own limits ([layout and composition](layout-and-composition.md), "Compositions") |
-| Steps | 5 entries; more than that becomes a table |
+| Steps | 5 entries; more than that becomes a table; the process-steps composition keeps the stage limit of [layout and composition](layout-and-composition.md), composition 8 |
 | Table | 5 rows of filler; the dense index composition and any set the user supplies keep their own limits ([layout and composition](layout-and-composition.md)) |
 | Page | 450 visible words |
 | Band | 80 visible words in each band. Render the full page at 1440 wide and cut it into consecutive 900 px bands from the top. Labels, captions, and table cells count |
@@ -138,7 +138,7 @@ The stock nav (wordmark left, links inline, button right, thin rule below; slug 
 
 Constraints:
 
-- One row, 56 to 80px high, set by the `nav-height` token and sized to the destinations the page really has. No padding links.
+- Except `masthead` and `side-rail`, one row, 56 to 80px high, set by the `nav-height` token and sized to the destinations the page has. No padding links.
 - Links keep one weight in every state. Hover shows through color or a light background tint, never a filled primary button. Focus also shows the ring of [interaction and motion](interaction-and-motion.md), section 2 (`acc-03`).
 - The current page's link carries `aria-current="page"` and a cue beyond color: an underline, a bar, or a shape change (`acc-02`).
 - A tab row in the nav follows the overflow rule of [interaction and motion](interaction-and-motion.md), section 4.

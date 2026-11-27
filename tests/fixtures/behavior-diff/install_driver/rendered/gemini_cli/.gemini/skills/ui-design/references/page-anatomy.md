@@ -16,7 +16,7 @@ Shape follows inventory. A picture-rich inventory opens with pictures. A word-ba
 
 ## 2. The visitor's job
 
-Name the job in one word from the list below. The job sets three things:
+Name the job with one entry from the list below. The job sets three things:
 
 - where the main action sits: the hero, a sticky bar, beside the content, or at the end;
 - which sections native to the category anchor the page;
@@ -36,7 +36,7 @@ The stock sequence is a statistics strip, a three-step explainer, and an email-c
 
 | Job | Main action | Native sections | Close |
 |-----|-------------|-----------------|-------|
-| **Subscribe** (newsletter, waitlist, podcast) | The sign-up sits at the top. It MAY be the whole hero: name, one line, an email input. A podcast puts the newest episode with a play control below it. | A recent issue shown as a reader receives it; the author; the back catalog as a dated list; a subscriber count only if supplied, set the way a magazine prints its readership. | The archive, or a second email input placed after it. Subscribe is the one job where closing on an email input fits. |
+| **Subscribe** (newsletter, waitlist, podcast) | The sign-up sits at the top. It MAY be the whole hero: name, one line, an email input. A podcast puts the newest episode with a play control below it. | A recent issue shown as a reader receives it; the author; the back catalog as a dated list; a subscriber count only if supplied, set the way a magazine prints its readership. | The archive, or a second email input placed after it. |
 | **Book** (restaurant, class, clinic, studio) | A reservation picker (party size, date, time) reachable from nav and hero, or open slots as buttons. Repeated beside the menu or timetable, never only at the foot. | Photos of the room or the food with few headings; the menu, by sitting or as priced rows; the class timetable; directions; a section for opening hours and address. | Hours, location, and the reservation control again. An upscale venue MAY need only one photo, the menu, and booking. |
 | **Visit** (shop, gallery, venue, place) | Today's opening hours and the street address in nav or hero. Tickets or donations only if supplied. | The current show or offer as the lead image; upcoming items as dated rows or a this-week and next-week toggle; a shop's real stock as a side scroller or grid; how to get there. | Visiting details and address, or a mailing list for future events. |
 | **Attend** (event, festival, race, conference) | A ticket link in the nav from the first screen. Date and place form the headline. | Line-up or speakers with names set large; a day-by-day schedule; priced ticket tiers; venue and travel; FAQ. Figures only if supplied. | Tickets again, the FAQ, or sign-up for next year. Between editions the page shrinks to date, place, and list. |
@@ -45,7 +45,7 @@ The stock sequence is a statistics strip, a three-step explainer, and an email-c
 | **Sign up** (software, API, developer tool) | A start-free button in nav and hero, terms in one line beneath. A developer tool MAY make its install command the main action. | The product in operation, captured or rebuilt; capabilities, each with a name and a moment; sample code or an integration; pricing with a monthly and annual toggle; FAQ. See section 9. | A slim band that repeats the hero's action, or the code example. Never a newsletter. |
 | **Hire** (studio, freelancer, architect) | A plain contact route in the nav and again after the work: email, phone, or a link that invites a conversation. A form is optional. | The work carries the page: a project list (name, client, year, place) with images, one opened into a case study; a short services list; location. | Contact details, one set per office when there are several. |
 | **Join** (club, community, membership) | Join, or book a first visit, at the top. | An ordinary session, shown rather than described; times and places as a schedule or venue list; membership tiers as priced rows; a guide for first-timers; people shown only in the user's own photos. | The first-visit invitation, the tiers, or a sign-up input. |
-| **Listen** (band, film, podcast, publication) | The latest release or issue, with listen, watch, and order buttons in one row. | The work itself (cover, track list, contents); tour or screening dates as rows linking to tickets; earlier releases as covers in a scroller or grid; videos. | Upcoming dates, more releases, or a mailing list. An artist's page MAY run to three sections. With no release to show, lead with the act, treat the job as hiring them, and close on an enquiry. |
+| **Listen** (band, film, podcast, publication) | The latest release or issue, with listen, watch, and order buttons in one row. | The work itself (cover, track list, contents); tour or screening dates as rows linking to tickets; earlier releases as covers in a scroller or grid; videos. | Upcoming dates, more releases, or a mailing list. An artist's page MAY run to three sections. With no release to show, lead with the act, treat the job as hiring them, and close on an inquiry. |
 
 ## 3. Endings
 
@@ -63,7 +63,7 @@ A final email sign-up section is flagged (`pag-00.3`) unless one of these holds:
 
 - The job runs on lists: subscribe, join, attend, listen, or visit, and its anatomy wants one.
 - The user asked for it.
-- The form does real work: it books, sends an enquiry, places an order, or starts the product.
+- The form does real work: it books, sends an inquiry, places an order, or starts the product.
 
 ## 4. Sample content for missing sections
 
@@ -75,13 +75,13 @@ A sample shows shape. It asserts nothing that reads as true. Prices, dates, peop
 
 - Order follows the argument of the page shape, never the stock run of hero, three features, an action band, then footer.
 - The strongest real asset goes directly after the hero. Every fact sits where it is useful.
-- A steps section appears only for a process visitors really go through: reserving, joining, buying a ticket.
+- A steps section appears only for a process visitors go through: reserving, joining, buying a ticket.
 - A figures row appears only when the brief states at least three numbers outright. A number inferred from wording, such as 365 from "every day", does not count.
 - Generated pages carry a steps section and a figures row by reflex. On this skill's pages each one is a decision, recorded in the section list.
 
 ## 6. The first screen
 
-- **One visible action.** The opening screen shows exactly one primary action (`lay-04.b`, `lay-06`). In a list shape it is the first item's link. In a prose shape it is the first inline link. Elsewhere it is the hero button. Where the shape asks for it, the same action appears once more at the end, with the same label and target, and counts once (`lay-06.a`).
+- **One visible action.** The opening screen shows exactly one primary action (`lay-04.b`, `lay-06.a`). In a list shape it is the first item's link. In a prose shape it is the first inline link. Elsewhere it is the hero button. Where the shape asks for it, the same action appears once more at the end, with the same label and target, and counts once (`lay-06.a`).
 - **The signature.** Decide what a visitor will remember. It is the brief's strongest real asset at full strength. Examples: the photo that defines the place, the product doing its central task, a control the visitor can try. When the price is what is sold, the signature is the price set at display size. Render the signature in the theme's materials and place it in the opening viewport. Log it in the decision summary and in the build record's `signature:` field. A quantity drawn as rows of marks is a gimmick, not a signature.
 
 ## 7. Pacing and variety
