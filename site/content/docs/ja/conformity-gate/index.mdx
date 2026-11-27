@@ -2,7 +2,7 @@
 title: "コンフォーミティゲート"
 description: "Apothem のコンフォーミティゲート — 出力されるすべてのアーティファクトが合格しなければならない、15 バーの事前出力ゲート（M1-M15）のうち機械的に判定される部分。"
 machineTranslated: true
-sourceHash: "3327d1105c04f8e3"
+sourceHash: "4abccec00243f36d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,16 +30,18 @@ sourceHash: "3327d1105c04f8e3"
 
 ## 重大度の段階
 
-ゲートには、クリティカル・重要・助言という重大度の段階も、2 件の検出事項というしきい値もありません。`--strict`（または `APOTHEM_CONFORMITY_STRICT=1`）を付けない場合、ゲートは検出事項を報告し、`0` で終了します。`--strict` を付けると、単一ファイルまたはフックのチェックは、いずれかのマッチャーが不合格のとき `2` で終了し、コーパス実行（`--all` または `--all-perwrite`）は、ブロッキングのバリデーターまたはマッチャーが不合格のとき `2` で終了します。助言的な検出事項は報告されるだけです。インストールされた Write/Edit フックは `--strict` を渡さないため、検出事項を報告し、書き込みは続行されます。ただし、そのフックの環境で `APOTHEM_CONFORMITY_STRICT=1` が設定されている場合は除きます。
+ゲートには、クリティカル・重要・助言という重大度の段階も、2 件の検出事項というしきい値もありません。`--strict`（または `APOTHEM_CONFORMITY_STRICT=1`）を付けない場合、ゲートは検出事項を報告し、`0` で終了します。`--strict` を付けると、単一ファイルまたはフックのチェックは、いずれかのマッチャーが不合格のとき `2` で終了し、コーパス実行（`--all` または `--all-perwrite`）は、ブロッキングのバリデーターまたはマッチャーが不合格のとき `2` で終了します。助言的な検出事項は報告されるだけです。ファイルを 1 つも読み取らなかった、プロジェクトの外を指すインデックスのエントリーに出会った、または読み取れないファイルやサイズ上限を超えるテキストファイルに出会った `--all-perwrite` 実行は、`passed: false` を報告します。追跡対象ファイルの一覧を読み取れない場合（たとえば git の作業ツリーの外にあるフォルダーで）は `check_error` も付きます。そのため `--strict` を付けると、これも `2` で終了します。インストールされた Write/Edit フックは `--strict` を渡さないため、検出事項を報告し、書き込みは続行されます。ただし、そのフックの環境で `APOTHEM_CONFORMITY_STRICT=1` が設定されている場合は除きます。
+
+`--all` および `--check` の実行では、完了できなかった standalone バリデーターも合格しません。10 分経っても実行中のものは停止され、自身の `git` コマンドが制限時間を超えて実行されたもの、または見つけたチェックアウトで失敗したものは、そのことを報告します。どちらの結果も `passed: false` と、理由を示す `check_error` を持つため、`--strict` を付けると、これも `2` で終了します。上限は[コンフォーミティゲートの実行](/docs/usage/conformity-gate)に一覧があります。
 
 ## バリデーター
 
 機械的に判定される部分は [`src/apothem/conformity/`](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/conformity) にあり、[`src/apothem/conformity/gate.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/gate.py) によってオーケストレーションされます。
 各バリデーターは、次の 3 つの方法のいずれかで実行されます。
 
-- **per-write**: 保留中のすべての書き込みに対して（`--hook`）、または `--all-perwrite` を指定した場合は追跡対象のすべてのファイルに対して実行されます。
+- **per-write**: 保留中のすべての書き込みに対して（`--hook`）、または `--all-perwrite` を指定した場合は追跡対象のすべてのファイルに対して実行されます。後者はプロジェクト内の通常のファイルだけを読み取り、スキップしたパス（リンク、名前付きパイプ、デバイス、プロジェクトの外を指すエントリー）を数えます。
 - **standalone**: `--all` でリポジトリ全体に対して、または `--check <name>` で 1 つずつ実行されます。
-- **change-set**: ステージされた差分に対して、ゲートを経由せず、`python -m apothem.conformity.semver_stability_grep --staged` として直接実行されます。
+- **change-set**: ステージされた差分に対して、ゲートを経由せず、チェックアウトのルートから `PYTHONPATH=src python -m apothem.conformity.semver_stability_grep --staged` として直接実行されます。
 
 以下の表は、バリデーターモジュールから生成されます。
 
@@ -113,33 +115,46 @@ The conformity package ships 54 validators: 22 per-write, 31 standalone and 1 ch
 `~/.claude/.apothem/support/conformity/gate.py` にあるマテリアライズされたコピーを呼び出します。
 ゲートがチェックするのは、フックのスコープ内の書き込みだけであり、スコープ外の書き込みは無言で合格します。
 そのスコープは、[コンフォーミティゲートの実行](/docs/usage/conformity-gate)に一覧があります。
-ソースチェックアウトからは、モジュール形式で同じコードを実行します。
-以下の `python` コマンドには、それぞれ先頭に `PYTHONPATH=src` を付けてください。
+
+ゲートは、以下の例のように、スクリプトのパスを指定して `-E -s` 付きで実行してください。`python -m apothem.conformity.gate` としては実行しないでください。
+チェックするプロジェクトには、ゲートのモジュールのいずれかと同じ名前のファイルが含まれている可能性があり、Python がそれを読み込んではなりません。
+`-m` は現在のフォルダーを Python のモジュール検索パスの先頭に置きます。スクリプトとして起動すると、代わりにスクリプト自身のフォルダーがそこに置かれます。
+それだけでは十分ではありません。`PYTHONPATH` 内の空のエントリーや相対パスのエントリーも、現在のフォルダーを指すからです。
+`-E` は Python に `PYTHONPATH` とその他の `PYTHON*` 変数を無視させ、`-s` はユーザーの site-packages を除外します。ゲートはどちらからも何も必要としません。
+これらのフラグがプロジェクトのファイルを締め出すのは、ゲート自身の Python コードからだけです。ゲートが実行する `git` については後述します。
+スクリプトによるインストールの後、スクリプトは `~/.apothem/src/apothem/conformity/gate.py` にあります（Windows では `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` で、`python3` の代わりに `python` で実行します）。チェックアウトでは `src/apothem/conformity/gate.py` です。
+ゲートは各 standalone バリデーターを独自のプロセスで起動し、そこでも `-E -s` を付け、現在のフォルダーを検索パスから外します。
 ゲートはデフォルトでは助言的です。検出事項を報告し、`0` で終了します。
 ブロッキングの検出事項があった場合に `2` で終了させるには、`--strict` を追加します。不明なバリデーター名を指定すると `3` で終了します。
 
+`--all`、`--all-perwrite`、3 つの standalone バリデーター、および `--staged` の change-set チェックは、チェック対象のプロジェクトで `git` を実行します。
+それぞれは、`PATH` のフルパスのエントリーからのみ git を起動し、そのリポジトリの `.git/config` のうちプログラムを起動することが知られているすべての設定を無効にし、欠落したオブジェクトの取得をブロックします。そのため、他人から `.git` フォルダーごと受け取ったプロジェクトが、それらの設定を通じてプログラムを起動させることはできません。
+[コンフォーミティゲートの実行](/docs/usage/conformity-gate)には、それらの設定と、残る 2 つの制約が一覧されています。git は、リポジトリが任意の設定やファイルで指定するパス（`include.path`、`core.worktree`、`.git` ファイルの `gitdir:` 行など）を引き続き読み取れること、そして今後の git のリリースが新しい設定を追加しうることです。
+
 ```shell
+gate=~/.apothem/src/apothem/conformity/gate.py   # or src/apothem/conformity/gate.py
+
 # Every standalone validator across the repository:
-python -m apothem.conformity.gate --all .
+python3 -E -s "$gate" --all .
 
 # The same sweep, failing on a blocking finding (the CI form):
-python -m apothem.conformity.gate --all --strict .
+python3 -E -s "$gate" --all --strict .
 
 # Every per-write validator against every tracked file:
-python -m apothem.conformity.gate --all-perwrite .
+python3 -E -s "$gate" --all-perwrite .
 
 # One validator by name (names come from --list):
-python -m apothem.conformity.gate --check naming-grep .
+python3 -E -s "$gate" --check naming-grep .
 
 # List every registered validator as JSON:
-python -m apothem.conformity.gate --list
+python3 -E -s "$gate" --list
 
 # Single-file dispatch (mimics the PreToolUse hook):
 echo '{"tool_input": {"file_path": "path/to/file", "content": "..."}}' \
-    | python -m apothem.conformity.gate --hook
+    | python3 -E -s "$gate" --hook
 ```
 
-`python -m apothem.conformity.gate --help` は使用方法の概要を表示します。
+`python3 -E -s "$gate" --help` は使用方法の概要を表示します。
 完全な手順については、[コンフォーミティゲートの実行](/docs/usage/conformity-gate)を参照してください。
 
 ## リファレンス

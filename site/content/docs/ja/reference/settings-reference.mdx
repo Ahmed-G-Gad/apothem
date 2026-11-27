@@ -90,13 +90,13 @@ sourceHash: "a7175abd0e0c77ac"
 3 つのバリデータが、厳格さを増しながらフック面をカバーします。
 
 ```bash
-# 構造 + Python 衛生（高速・オフライン）
+# Structural + Python-hygiene (fast, offline)
 python scripts/dev/validate_hooks.py
 
-# エコシステム全体（構造 + frontmatter + 委譲フックチェック）
+# Full ecosystem (structure + frontmatter + delegated hook checks)
 python scripts/dev/validate_ecosystem.py
 
-# 敵対的スイープ（構成済みの各フックコマンドを劣化した入力で攻撃）
+# Adversarial sweep (storms every configured hook command with degraded inputs)
 python scripts/dev/chaos_pass.py
 ```
 

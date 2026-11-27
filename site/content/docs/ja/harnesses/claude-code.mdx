@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Claude Code（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "42277b35237235a2"
+sourceHash: "4e5a2944b6820b60"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,7 +24,10 @@ apothem install --harness claude-code
 レンダラーは `~/.claude/statuslines/` にコピーされますが、接続はされません。Claude Code は
 ステータスラインを `statusLine` 設定から読み取り、アダプターはこの設定を未設定のままにします。
 有効にするには、`~/.claude/statuslines/render.py` を実行する `"type": "command"` の `statusLine`
-エントリーを `settings.json` に追加してください。スニペットの `commandWindows` の値は Windows で
+エントリーを `settings.json` に追加してください。スニペットのコマンドは、フックと同様に
+`-E -s` 付きで Python を起動します。インストールや更新が `statusLine` を変更することはないため、
+`-E -s` のない以前のスニペットのコマンドをコピーした場合は、インタープリターの後に自分で `-E -s` を
+追加してください。その `commandWindows` の値は Windows で
 実行され、インタープリターを引用符なしで指定します。インタープリターのパスに空白が含まれる場合、
 ボリュームが 8.3 形式の短い名前を持っていれば、インストールはその値に Windows 8.3 形式の短い形式を
 書き込みます。`settings.json` のフックのエントリーは、完全なパスのまま残ります。
@@ -33,8 +36,10 @@ apothem install --harness claude-code
 `agents/`、`rules/`、`skills/`、`statuslines/`、`output-styles/`、および `.apothem/support/`
 サポートサブツリー（`.apothem/support/hooks/`、`.apothem/support/conformity/`、
 `.apothem/support/schemas/`、`.apothem/support/templates/`）。
+インストールでは Apothem のデータフォルダー（デフォルトは `~/.claude/.apothem/`）も作成され、
+その中に `contexts/`、`learning/`、`memory/`、`plans/` が置かれます。
 コマンドファイルは子スキルディレクトリに変換されます。
-フックディスパッチャーとコンフォーミティゲートは、それぞれのマテリアライズされたコピーから実行されます。`settings.json` のフックエントリは `~/.claude/.apothem/support/hooks/dispatch.py` と `~/.claude/.apothem/support/conformity/gate.py` を絶対パスで呼び出すため、ホスト上にインポート可能な `apothem` パッケージは必要ありません。
+フックディスパッチャーとコンフォーミティゲートは、それぞれのマテリアライズされたコピーから実行されます。`settings.json` のフックエントリは `~/.claude/.apothem/support/hooks/dispatch.py` と `~/.claude/.apothem/support/conformity/gate.py` を絶対パスで呼び出すため、ホスト上にインポート可能な `apothem` パッケージは必要ありません。各エントリーは `-E -s` 付きで Python を起動するため、`PYTHONPATH`、その他の `PYTHON*` 変数、あなたのユーザー site-packages がフックに届くことはありません。
 
 `~/.claude/CLAUDE.md` は引き続きオペレーターの所有です。
 アダプターはそこに、センチネルで区切られた Apothem ブロックを 1 つ書き込み、センチネルの外側のすべての行を一字一句そのまま保持します。このブロックには、プロファイルの投影（アイデンティティ、プリファレンス、ルール、シリアスネス、オプトインした振る舞い）と Apothem サポートファイルのセクションが含まれます。
@@ -50,7 +55,22 @@ OpenCode 1 も、その設定フォルダー（デフォルトでは `~/.config/
 Apothem が管理する既存の一致する子要素は、置き換えの前にバックアップされます。無関係なオペレーター作成のエントリは保持されます。
 `settings.json` はマージされるため、オペレーターが作成したキーは復元可能なままです。
 
-オペレーターが作成したファイルは、以下のフォルダの外にのみ保持されます。インストールと更新のたびに、`~/.claude/` 配下に存在する次の各フォルダが、Apothem が書き込んだかどうかにかかわらず削除されます：`src/`、`conformity/`、`schemas/`、`hooks/`、`config/`、`scripts/`、`tools/`、`lib/`、`templates/`、`docs/`、`tests/`、`packaging/`、`mcp/`、`examples/`、`assets/`、`site/`、`public/`、`commands/`。また、`statuslines/__init__.py` と、`agents/`、`rules/`、`skills/`、`statuslines/`、`output-styles/` にある `AGENTS.md` ファイルも削除されます。削除されたフォルダは、その中に配置したファイルを含めて丸ごと削除されます。`commands/` に保持したスラッシュコマンドも削除され、Apothem は独自のコマンドプロンプトを `skills/` 配下のスキルとしてインストールします。`hooks/` に保持したフックスクリプトも削除されるため、それを呼び出す `settings.json` のエントリーは何も指さない状態になります。このスイープは、インストールが独自のファイルを書き込む前に実行されます。削除された各パスは、まず `~/.apothem/backups/` にコピーされ、インストール記録にそのコピーの場所が記載されます。アンインストールでは復元されません。削除されたパスを復元するには、そのパスを削除したインストールに対して `apothem rollback --harness claude-code --install-id ID` を実行します（[ロールバックのリファレンス](/docs/cli-reference/rollback)に記載されています）。単に `apothem rollback` を実行すると、最新のインストールのみが取り消されます。インストール記録とそのコピーは、直近の 10 回分のインストールについて保持されるため、削除されたパスは、そのインストールが保持範囲に含まれている間だけ復元できます。インストールの前に `apothem diff --harness claude-code` を実行すると、これらの削除が `Prune stale files` として一覧に表示されます。
+インストールと更新は、`commands/` 内のスラッシュコマンドや `hooks/` 内のフックスクリプトを含め、`~/.claude/` 配下にあるあなた自身のファイルに手を触れません。
+以前のリリースは、インストールと更新のたびに、そこにあるフォルダー（`commands/`、`hooks/`、`scripts/`、`templates/` など）を、あなたが置いたファイルごと丸ごと削除していました。該当するリリースは[変更履歴](/docs/changelog)に記載されています。
+[以前のリリースが削除したファイルの復旧](#recovering-files-an-earlier-release-removed)を参照してください。
+
+### 以前のリリースが削除したファイルの復旧 [#recovering-files-an-earlier-release-removed]
+
+削除された各フォルダーは、事前に
+`~/.apothem/backups/<timestamp>/claude_code/.claude/<folder>/` にコピーされています。現在の
+リリースはそのようなフォルダーを保持するバックアップセットを削除することはありませんが、以前の
+リリースの保持ポリシーによって、古いセットがすでに削除されている可能性があります。復旧するには、次のようにします。
+
+1. Apothem を再度実行する前に、`~/.apothem/backups/` を別の場所にコピーします。
+2. 必要なファイルを、そのコピーから `~/.claude/` に手で戻します。
+3. その後、`apothem update` を実行します。
+
+`apothem rollback --install-id` は、`settings.json` と `CLAUDE.md` を含め、以前のインストール全体を取り消すため、これらのファイルを復旧する方法ではありません。
 
 インストールされたスキルと、Claude Code プラグインに同梱されたスキルは、ソースコーパスの `userInvocable` の代わりに `user-invocable` を持ちます。Claude Code はハイフン付きのキーしか読み取らないためです。
 2 つのテンプレートコンテナー（`plan-suite`、`research-suite`）はこれを `false` に設定しているため、`/` メニューには表示されません。
@@ -125,6 +145,16 @@ python scripts/dev/measure_claude_skills.py --check  # exit 1 on a breach
 インストールでは、プロファイルが整形式であること、および settings.json 内のすべてのフックバインディングが解決可能であることを検証します。
 アダプターは MCP サーバーのエントリを一切作成しません。サーバーは `claude mcp add` で登録してください（[MCP サーバー](/docs/reference/mcp)を参照）。
 
+Claude Code は、その[メモリのページ](https://code.claude.com/docs/en/memory#agents-md)が挙げるリリース以降、プロジェクトの `AGENTS.md` も読み込みます。
+デフォルトの **Project instructions** 設定では、作業フォルダーまたはその上位のフォルダーに `CLAUDE.md`、`.claude/CLAUDE.md`、`CLAUDE.local.md` のいずれもない場合にのみ、これを読み込みます。
+そこにある `AGENTS.md` ファイルはセッションの開始時に読み込まれ、作業フォルダーより下のフォルダーの `AGENTS.md` は、その Read ツールがそのフォルダー内のファイルを開き、かつそのフォルダーにこれら 3 つのファイルがない場合に読み込まれます。
+`~/.claude/CLAUDE.md` は数に入らないため、そこにある Apothem ブロックは、プロジェクトの `AGENTS.md` と並んで読み込まれ続けます。
+Kimi Code のインストールはプロジェクトの `AGENTS.md` に Apothem ブロックを書き込むため、そのようなプロジェクトでは Claude Code は両方のブロックを読み込みます。[ハーネスレジストリ](/docs/reference/harness-registry#shared-roots)は、そのファイルの読み手とその条件を一覧表示します。
+
+**Project instructions** はプロジェクトごとではなくユーザー全体の設定です。`/config` でこれを `claude-md` に設定すると、Claude Code はすべてのプロジェクトで自身の `CLAUDE.md` ファイルだけを読み込み、`claude-md-and-agents-md` に設定すると、どこにあっても両方の種類のファイルを読み込みます。
+設定にかかわらず `AGENTS.md` を読み込まないセッションもあります。それを読み込む組み込みプラグインを無効にしたセッション、それを読み込めなかったリリースからのアップグレード後の一部の最初のセッション、そして初期のリリースでは、Amazon Bedrock 上のセッションやテレメトリーを無効にしたセッションの一部です。
+メモリのページはそれらを一覧にし、該当するリリースを挙げています。
+
 `~/.claude/agents/` は `Claude Code` が所有する共有ルートであり、`~/.claude/skills/` と `~/.claude/CLAUDE.md` も同様です。他のサポート対象ツールがこれらを読み込むため、`Claude Code` のインストールがそこに書き込むエージェント、スキル、Apothem ブロックはそれらのツールにも現れ、インストールはそれらのツールを挙げるメモを表示します。
 [ハーネスレジストリ](/docs/reference/harness-registry)は、各ルートの読み手を一覧表示します。
 
@@ -178,8 +208,16 @@ apothem uninstall --harness claude-code
 ## コンフォーミティゲート
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+プロジェクトのフォルダーから実行します。Windows では、`python3` の代わりに `python` を使い、
+フルパスを指定します。Windows PowerShell と cmd は `~` を展開しないためです。
+PowerShell では `$HOME\.apothem\src\apothem\conformity\gate.py`、
+cmd では `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` です。このパスは
+インストーラーがエンジンを置く場所で、`-E -s` はあなたの `PYTHONPATH` とユーザーの
+site-packages をゲートから締め出します。両者とその他のインストールについては
+[コンフォーミティゲート](/docs/conformity-gate)で説明しています。
 
 リポジトリに対して実行すると、ゲートはすべてのルール、コマンド、ヘルパー、スキルに `## Bindings` セクションを要求します。
 インストールされた `~/.claude/` ツリーに対して実行すると、インストールがそのセクションを省くため、セクションのないルールやスキルのコピーを受け入れ、存在するセクションは引き続き検査します。
