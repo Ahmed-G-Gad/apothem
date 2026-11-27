@@ -622,6 +622,21 @@ def test_the_protected_folders_follow_the_registry_and_the_manifest() -> None:
     assert home_write_guard._registry_roots() == home_write_guard.FALLBACK_ROOTS
 
 
+def test_a_shared_parent_folder_is_never_protected_whole() -> None:
+    # A folder many programs share is never protected as a whole: the
+    # protected folder is the tool's own folder below it.
+    assert home_write_guard.derive_roots(
+        [
+            "~/.config/opencode/opencode.json",
+            "~/Library/Application Support/Tool/settings.json",
+            "~/Library/Application Support",
+            "~/.config",
+            "~/.claude/settings.json",
+            "~/.config/{name}/x",
+        ]
+    ) == (".claude", ".config/opencode", "Library/Application Support/Tool")
+
+
 def test_the_root_of_a_user_scope_harness_is_its_first_target_folder(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

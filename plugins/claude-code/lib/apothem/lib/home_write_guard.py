@@ -33,8 +33,9 @@ its first write, and :func:`refuse_data_home_in_home` a data home right in the
 home under any name (a profile with the ``user-home`` workspace scope and its
 own ``directory_name``), or one that is a link to the home itself, before it is
 created or its stores are removed. Nothing else is refused: reads, dry runs and
-previews, the temporary folder, the checkout, and the rest of the home all stay
-allowed.
+previews stay allowed, and so do writes to the temporary folder, the checkout
+and the rest of the home, each only while it lies outside those folders (a
+checkout under ``~/.claude``, say, has its writes refused).
 
 The running pytest's version is the ``__version__`` of its ``_pytest``
 package, the string pytest puts in ``PYTEST_VERSION``, so a stale
@@ -1159,7 +1160,12 @@ def _derived_roots() -> tuple[str, ...]:
 
 
 def derive_roots(paths: list[str]) -> tuple[str, ...]:
-    """Return the home folders that registry-style *paths* (``~/...``) name."""
+    """Return the home folders that registry-style *paths* (``~/...``) name.
+
+    A folder that many programs share is never one: below ``.config`` the
+    folder is the next part (``.config/opencode``), and below ``Library`` the
+    part after next (``Library/Application Support/<tool>``).
+    """
     names: dict[str, None] = {}
     for path in paths:
         if not path.startswith("~/"):
@@ -1167,12 +1173,16 @@ def derive_roots(paths: list[str]) -> tuple[str, ...]:
         parts = [part for part in path[2:].split("/") if part]
         if not parts or "{" in parts[0] or " " in parts[0]:
             continue
-        if parts[0] == ".config":
-            if len(parts) > 1 and "{" not in parts[1]:
-                names[f".config/{parts[1]}"] = None
+        depth = _SHARED_PARENTS.get(parts[0], 0)
+        if len(parts) <= depth or any("{" in part for part in parts[: depth + 1]):
             continue
-        names[parts[0]] = None
+        names["/".join(parts[: depth + 1])] = None
     return tuple(sorted(names))
+
+
+#: Home folders that many programs share, each with how many parts below it
+#: still belong to no one program (see :func:`derive_roots`).
+_SHARED_PARENTS = {".config": 1, "Library": 2}
 
 
 def manifest_paths(manifest: Mapping[str, Any], entries: Iterable[Any]) -> list[str]:
