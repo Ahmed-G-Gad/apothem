@@ -50,6 +50,90 @@ Validator alur kerja melakukan hal yang sama ketika proyek belum memiliki
 direktori `.github/workflows/`, dan validator subjek commit melakukannya ketika
 root tidak memiliki riwayat commit.
 
+Sebuah proyek bisa datang dengan berkas buatan orang lain, dalam arsip atau
+folder bersama, sehingga setiap validator `--all` hanya membuka dan mendaftar
+berkas biasa dan folder nyata yang dicapainya melalui folder nyata di bawah
+root. Validator tidak pernah mengikuti tautan simbolik atau, di Windows,
+junction, dan di tingkat mana pun di bawah root ia memperlakukan setiap hal
+berikut sebagai tidak ada:
+
+- tautan, bahkan tautan yang menunjuk ke dalam root. Penelusuran atau daftar
+  folder melewatinya, sehingga tujuannya hanya diperiksa di tempat validator
+  mencapainya melalui jalurnya sendiri;
+- pipa bernama, perangkat, atau soket, tempat pembacaan akan menunggu atau
+  tidak pernah selesai;
+- di Windows, nama yang diakhiri titik atau spasi, karena Windows akan membuka
+  entri lain dengan nama itu.
+
+Beberapa pemeriksaan masih memakai tautan tanpa memasukinya:
+
+- untuk berkas tetap yang berupa tautan simbolik, seperti `CLAUDE.md` yang
+  menunjuk ke berkas lain, gate membaca teks tautan itu sendiri dan membuka
+  berkas yang disebutnya hanya jika itu berkas biasa di dalam proyek, yang
+  dicapai melalui folder nyata. Tautan `README.md` per folder dihitung dengan
+  cara yang sama. Tautan absolut dihitung jika ditulis melalui folder proyek
+  sebagaimana folder itu terselesaikan, atau di Windows melalui jalur yang
+  sama dengan huruf besar-kecil berbeda; validator yang dijalankan sendiri
+  juga menerima folder seperti yang Anda ketik, kecuali jalur itu memuat `..`,
+  sedangkan gate menyelesaikan folder sebelum memulai setiap validator.
+  `.gitattributes` yang ditautkan tetap dihitung tidak ada, karena git tidak
+  membacanya;
+- pemeriksaan rencana tersesat di `no-global-plans-grep` melaporkan folder
+  rencana atau folder `.apothem` yang berupa tautan, dengan namanya, ke mana
+  pun tautan itu mengarah;
+- `no-toplevel-docs-grep` melaporkan tautan `docs` di root dengan namanya;
+- `naming-grep` memeriksa nama tautan itu sendiri.
+
+Laporan setiap validator mencantumkan tautan dan berkas khusus yang
+ditinggalkannya di bawah `skipped_links`, sehingga tautan tidak pernah
+menyembunyikan berkas tanpa jejak. Di sana juga dicantumkan folder yang tidak
+dapat didaftarnya (tanpa akses, jalur terlalu panjang, galat baca), dan entri
+`.git` dari folder yang dilewatinya sebagai checkout bersarang jika entri itu
+berupa tautan atau berkas khusus. Validator yang lolos saat foldernya tidak
+ada, seperti validator workflow, tidak lolos saat folder itu berupa tautan:
+berkasnya mungkin ada di baliknya, sehingga proses gagal seperti proses yang
+tidak memeriksa apa pun. Tautan keras adalah berkas biasa dan dibaca seperti
+itu. Pemeriksaan ini melihat setiap tingkat saat mencapainya lalu membuka
+berkas berdasarkan namanya, sehingga pengguna kedua yang dapat menulis ke
+proyek saat gate berjalan bisa menukar berkas atau folder yang sudah diperiksa
+dengan tautan sebelum dibuka; gate tidak menjaga dari hal itu. Pada `--all` dan
+`--all-perwrite`, gate sendiri hanya membuka berkas biasa di dalam root,
+memeriksa setiap folder di jalan dengan `lstat`, termasuk setiap jalur yang
+didaftar git, dan tidak pernah membaca di dalam entri `.git`. Sebelum
+menjalankan git, tiga validator `--all` yang menjalankan git, dan dua
+pemeriksaan `--staged`, melihat dengan `lstat` entri `.git` dari root dan dari
+setiap folder di atasnya yang ditelusuri git, sebagaimana pohon pada saat itu;
+jika salah satunya berupa tautan, atau tidak dapat dilihat, mereka tidak
+menjalankan git. Ini juga menolak proyek yang akan ditangani git dengan aman,
+seperti setiap proyek di bawah folder home yang `.git`-nya berupa tautan,
+bahkan yang memiliki repositori sendiri: itulah harga yang disengaja dari aturan
+sederhana. Mereka menjalankan git tanpa `GIT_DIR` dan variabel lain yang
+menyebut repositori, penyimpanannya, atau indeksnya. Repositori mana yang
+kemudian dibaca git tidak diperiksa: baris `gitdir:`, `commondir`, alternates,
+`core.worktree`, include, atau tautan di dalam folder git dapat menyebut
+repositori lain, dan git mengikutinya, sehingga git bisa mencapai jalur
+jaringan atau menunggu sampai batas waktunya. Gate memakai keluaran git hanya
+sebagai nama, mode, huruf status, subjek commit terakhir, waktu commit, dan
+beberapa pengaturan, dan tidak pernah membuka jalur yang dicetak git tanpa
+memeriksa setiap tingkat di dalam root. Ketika tautan ditemukan, masing-masing
+mencantumkannya di bawah `skipped_links` (relatif terhadap root jika berada di
+dalamnya, dengan jalur lengkap jika berada di atasnya).
+`conventional-commit-grep` kemudian melaporkan `not-a-git-repo`, seperti di
+luar checkout, tetapi tidak lolos: ia memberi `check_error` yang menyebut
+tautan itu. `no-global-plans-grep` melaporkan tautan sebagai temuan dan gagal,
+dan pemeriksaan berkas pendamping melewati uji kebaruannya, seperti saat tidak
+ada riwayat. `--all-perwrite` juga tidak mendaftar berkas yang dilacak: ia
+gagal dengan `check_error` yang menyebut tautan itu, begitu pula dua
+pemeriksaan `--staged`, yang membaca repositori yang disebut `GIT_DIR` milik
+hook tetapi tetap menolak tautan di jalur pencarian dari folder tempat mereka
+berjalan. Entri `.git` yang tidak dapat dilihat gate (jalur terlalu panjang,
+share yang tidak terjangkau, tanpa akses) bukan tautan dan tidak dicantumkan
+di bawah `skipped_links`: `conventional-commit-grep` gagal dengan status
+`git-failed` dan `check_error`; pemeriksaan berkas pendamping,
+`--all-perwrite`, dan dua pemeriksaan `--staged` gagal dengan `check_error`
+yang menyatakan entri itu tidak dapat dilihat, dan `no-global-plans-grep`
+melaporkannya sebagai temuan.
+
 Enam validator mulai dari root repositori dan menelusuri seluruh pohon untuk
 mencari berkas yang mereka periksa:
 

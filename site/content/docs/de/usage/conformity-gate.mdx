@@ -50,6 +50,94 @@ sind eine Ausnahme: Plan-Suites liegen im per gitignore ausgeschlossenen Baum
 dasselbe, wenn das Projekt noch kein Verzeichnis `.github/workflows/` hat, und der
 Commit-Subject-Validator, wenn das Stammverzeichnis keine Commit-Historie hat.
 
+Ein Projekt kann Dateien enthalten, die jemand anderes erstellt hat, in einem
+Archiv oder einem freigegebenen Ordner. Deshalb öffnet und listet jeder
+`--all`-Validator nur reguläre Dateien und echte Ordner, die er über echte
+Ordner unterhalb des Stammverzeichnisses erreicht. Er folgt nie einem
+symbolischen Link oder, unter Windows, einem Junction-Punkt, und auf jeder Ebene
+unterhalb des Stammverzeichnisses behandelt er jedes der folgenden Elemente als
+fehlend:
+
+- einen Link, auch einen, der in das Stammverzeichnis zeigt. Ein Durchlauf oder
+  eine Ordnerauflistung überspringt ihn, sodass sein Ziel nur dort geprüft
+  wird, wo der Validator es unter seinem eigenen Pfad erreicht;
+- eine benannte Pipe, ein Gerät oder einen Socket, bei denen ein Lesevorgang
+  warten oder nie enden würde;
+- unter Windows einen Namen, der auf einen Punkt oder ein Leerzeichen endet,
+  weil Windows unter diesem Namen einen anderen Eintrag öffnen würde.
+
+Einige Prüfungen nutzen einen Link dennoch, ohne ihn zu betreten:
+
+- bei einer festen Datei, die ein symbolischer Link ist, etwa eine `CLAUDE.md`,
+  die auf eine andere Datei zeigt, liest das Gate den Text des Links selbst und
+  öffnet die genannte Datei nur, wenn sie eine reguläre Datei innerhalb des
+  Projekts ist, die über echte Ordner erreicht wird. Ein ordnerbezogener
+  `README.md`-Link zählt genauso. Ein absoluter Link zählt, wenn er über den
+  Projektordner so geschrieben ist, wie dieser aufgelöst wird, oder unter
+  Windows über denselben Pfad in anderer Groß- und Kleinschreibung; ein
+  einzeln ausgeführter Validator akzeptiert außerdem den Ordner so, wie Sie
+  ihn eingegeben haben, sofern dieser Pfad kein `..` enthält, während das Gate
+  den Ordner auflöst, bevor es jeden Validator startet. Eine verlinkte
+  `.gitattributes` zählt weiterhin als fehlend, weil git sie nicht liest;
+- die Prüfung auf verirrte Pläne in `no-global-plans-grep` meldet einen
+  Plan-Ordner oder einen `.apothem`-Ordner, der ein Link ist, mit seinem
+  Namen, wohin der Link auch führt;
+- `no-toplevel-docs-grep` meldet einen `docs`-Link im Stammverzeichnis mit
+  seinem Namen;
+- `naming-grep` prüft den eigenen Namen eines Links.
+
+Der Bericht jedes Validators listet die Links und Sonderdateien, die er
+ausgelassen hat, unter `skipped_links` auf, sodass ein Link nie eine Datei
+spurlos verbirgt. Dort stehen auch ein Ordner, den er nicht auflisten konnte
+(kein Zugriff, ein zu langer Pfad, ein Lesefehler), und der `.git`-Eintrag
+eines Ordners, den er als verschachtelten Checkout übersprungen hat, wenn
+dieser Eintrag ein Link oder eine Sonderdatei ist. Ein Validator, der besteht,
+wenn sein Ordner fehlt, etwa die Workflow-Validatoren, besteht nicht, wenn
+dieser Ordner ein Link ist: Die Dateien könnten dahinter liegen, daher scheitert
+der Lauf wie einer, der nichts geprüft hat. Ein harter Link ist eine reguläre
+Datei und wird wie eine gelesen. Diese Prüfungen betrachten jede Ebene, wenn
+sie sie erreichen, und öffnen die Datei dann über ihren Namen. Ein zweiter
+Benutzer, der während des Gate-Laufs in das Projekt schreiben kann, kann daher
+eine geprüfte Datei oder einen geprüften Ordner vor dem Öffnen gegen einen Link
+tauschen; davor schützt das Gate nicht. In `--all` und `--all-perwrite` öffnet
+das Gate selbst nur reguläre Dateien innerhalb des Stammverzeichnisses, prüft
+jeden Ordner auf dem Weg mit `lstat`, auch jeden Pfad, den git auflistet, und
+liest nie innerhalb eines `.git`-Eintrags. Bevor sie git ausführen, betrachten
+die drei `--all`-Validatoren, die git ausführen, und die beiden
+`--staged`-Prüfungen mit `lstat` den `.git`-Eintrag des Stammverzeichnisses und
+jedes darüberliegenden Ordners, den git durchsucht, so wie der Baum in diesem
+Moment ist; ist einer davon ein Link oder kann er nicht betrachtet werden,
+führen sie git nicht aus. Das lehnt auch Projekte ab, die git sicher behandeln
+würde, etwa jedes Projekt unterhalb eines Home-Ordners, dessen `.git` ein Link
+ist, auch eines mit eigenem Repository: Das ist der bewusste Preis einer
+einfachen Regel. Sie führen git ohne `GIT_DIR` und die anderen Variablen aus,
+die das Repository, seine Speicher oder seinen Index benennen. Welches
+Repository git dann liest, wird nicht geprüft: Eine `gitdir:`-Zeile,
+`commondir`, Alternates, `core.worktree`, ein Include oder ein Link im
+git-Ordner kann ein anderes benennen, und git folgt ihnen, sodass git einen
+Netzwerkpfad erreichen oder bis zu seinem Zeitlimit warten kann. Das Gate
+verwendet die Ausgabe von git nur als Namen, Modi, Statusbuchstaben, den Betreff
+des letzten Commits, Commit-Zeiten und einige Einstellungen und öffnet nie einen
+Pfad, den git ausgibt, ohne jede Ebene innerhalb des Stammverzeichnisses zu
+prüfen. Wird ein Link gefunden, listet jede Prüfung ihn unter `skipped_links`
+auf (relativ zum Stammverzeichnis, wenn er darin liegt, mit vollem Pfad, wenn
+er darüber liegt). `conventional-commit-grep` meldet dann `not-a-git-repo`, wie
+außerhalb eines Checkouts, besteht aber nicht: Es gibt einen `check_error` aus,
+der den Link nennt. `no-global-plans-grep` meldet den Link als Befund und
+scheitert, und die Prüfung der Begleitdateien überspringt ihren
+Aktualitätstest, wie ohne Historie. `--all-perwrite` listet die verfolgten
+Dateien ebenfalls nicht auf: Es scheitert mit einem `check_error`, der den Link
+nennt, und ebenso die beiden `--staged`-Prüfungen, die das Repository lesen,
+das das `GIT_DIR` eines Hooks nennt, aber dennoch einen Link auf dem Suchpfad
+ab dem Ordner ablehnen, in dem sie laufen. Ein `.git`-Eintrag, den das Gate
+nicht betrachten kann (ein zu langer Pfad, eine nicht erreichbare Freigabe,
+kein Zugriff), ist kein Link und steht nicht unter `skipped_links`:
+`conventional-commit-grep` scheitert mit dem Status `git-failed` und einem
+`check_error`, die Prüfung der Begleitdateien, `--all-perwrite` und die beiden
+`--staged`-Prüfungen scheitern mit einem `check_error`, der sagt, dass der
+Eintrag nicht betrachtet werden konnte, und `no-global-plans-grep` meldet ihn
+als Befund.
+
 Sechs Validatoren beginnen im Wurzelverzeichnis des Repositorys und durchsuchen
 den gesamten Baum nach den Dateien, die sie prüfen:
 
