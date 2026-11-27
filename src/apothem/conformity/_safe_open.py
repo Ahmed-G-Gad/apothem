@@ -190,6 +190,15 @@ if sys.platform != "win32":
     _FILE_FLAGS: Final[int] = (
         os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_NOCTTY | os.O_CLOEXEC
     )
+    # Each level is looked at and opened inside the folder opened before it
+    # (fstatat without following, openat). Every supported system has both;
+    # where one is missing, a read fails as unreadable rather than with
+    # NotImplementedError, which no validator catches.
+    _OPENS_INSIDE_A_FOLDER: Final[bool] = (
+        os.open in os.supports_dir_fd
+        and os.stat in os.supports_dir_fd
+        and os.stat in os.supports_follow_symlinks
+    )
 
     def _same_entry(seen: os.stat_result, opened: os.stat_result) -> bool:
         """Return True when *opened* is the entry *seen* named (0 is no inode)."""
@@ -199,6 +208,12 @@ if sys.platform != "win32":
 
     def _open_root(root: Path) -> int:
         """Open the folder *root*, which the caller trusts, as given."""
+        if not _OPENS_INSIDE_A_FOLDER:
+            raise OSError(
+                errno.ENOTSUP,
+                "this system cannot open a file inside an open folder",
+                str(root),
+            )
         return os.open(root, _FOLDER_FLAGS)
 
     def _check_kind(seen: os.stat_result, *, folder: bool, shown: Path) -> None:

@@ -46,6 +46,7 @@ _POSIX_ONLY = pytest.mark.skipif(
     os.name == "nt", reason="named pipes exist only on POSIX systems"
 )
 _WINDOWS_ONLY = pytest.mark.skipif(sys.platform != "win32", reason="Windows opens")
+_POSIX_OPENS = pytest.mark.skipif(sys.platform == "win32", reason="POSIX opens")
 
 
 @pytest.fixture(autouse=True)
@@ -285,6 +286,20 @@ def test_a_folder_that_can_be_searched_but_not_read_still_opens(
             folder.chmod(stat.S_IRWXU)
 
     assert data == _INSIDE
+
+
+@_POSIX_OPENS
+def test_a_system_without_opens_inside_a_folder_fails_as_unreadable(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Where ``openat`` or ``fstatat`` is missing, a read raises ``OSError``,
+    which the validators handle, not ``NotImplementedError``."""
+    monkeypatch.setattr(_safe_open, "_OPENS_INSIDE_A_FOLDER", False)
+
+    with pytest.raises(OSError, match="inside an open folder") as caught:
+        read_project_bytes(project, _target(project))
+
+    assert caught.value.errno == errno.ENOTSUP
 
 
 @pytest.mark.parametrize(
