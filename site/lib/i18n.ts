@@ -98,6 +98,29 @@ export const ROUTED_NON_DEFAULT_LOCALES: readonly string[] = ROUTED_LOCALES.filt
 );
 
 /**
+ * The action half of each sidebar section's open/close button name, per routed
+ * locale. The button is named by its section's link plus this hidden text
+ * ("Install show or hide pages"), so a screen reader tells it apart from the
+ * link that goes to the section's overview page (see
+ * `components/sidebar-folder.tsx`). The site gives Fumadocs no translation
+ * dictionary, so the strings live here.
+ */
+export const SIDEBAR_TOGGLE_HINT: Readonly<Record<string, string>> = {
+  en: 'show or hide pages',
+  es: 'mostrar u ocultar páginas',
+  'zh-cn': '显示或隐藏页面',
+  'pt-br': 'mostrar ou ocultar páginas',
+  fr: 'afficher ou masquer les pages',
+  de: 'Seiten ein- oder ausblenden',
+  ja: 'ページを表示または非表示',
+  ko: '페이지 표시 또는 숨기기',
+  ru: 'показать или скрыть страницы',
+  id: 'tampilkan atau sembunyikan halaman',
+  hi: 'पृष्ठ दिखाएँ या छिपाएँ',
+  ar: 'إظهار الصفحات أو إخفاؤها',
+};
+
+/**
  * The routed locale a URL path belongs to: its first segment when that is a
  * routed non-default locale (`/ja/docs/x` → `ja`), else the default locale
  * (English is served at the root). For client components that render above the
