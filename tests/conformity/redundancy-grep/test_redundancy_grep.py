@@ -23,6 +23,7 @@ points against it.
 from __future__ import annotations
 
 import importlib.util
+import random
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -174,3 +175,63 @@ def test_main_exit_codes(tmp_path: Path, capsys) -> None:
     assert _MOD._main(["prog", str(clean_root)]) == _MOD.EXIT_PASS
     # Each invocation emitted its JSON report to stdout.
     assert capsys.readouterr().out.count('"grep": "redundancy-grep"') == 2
+
+
+def _every_pair(root: Path, threshold: float) -> list[tuple[list[str], float]]:
+    """Compare every paragraph pair with no shortcut; return (files, similarity)."""
+    entries = [
+        (path, tokens)
+        for path in _MOD._walk_corpus(root)
+        for _text, tokens in _MOD._extract_paragraphs(path)
+    ]
+    found: list[tuple[list[str], float]] = []
+    for i, (path_i, tokens_i) in enumerate(entries):
+        for path_j, tokens_j in entries[i + 1 :]:
+            if path_i == path_j or _MOD._are_sibling_variants(path_i, path_j):
+                continue
+            sim = len(tokens_i & tokens_j) / len(tokens_i | tokens_j)
+            if sim >= threshold:
+                pair = sorted({path_i.as_posix(), path_j.as_posix()})
+                found.append((pair, round(sim, 4)))
+    return found
+
+
+def test_findings_match_an_every_pair_comparison(tmp_path: Path) -> None:
+    # check_corpus skips pairs whose sizes alone rule out a match and caches the
+    # sibling verdict per file pair. Its findings must equal a plain comparison
+    # of every pair, in the same order, across paragraph sizes, overlaps,
+    # sibling and non-sibling files, one folder and several.
+    rng = random.Random(20261124)  # noqa: S311 - a fixed corpus, not a secret
+    vocabulary = [
+        "".join(rng.choice("abcdefghijklmnopqrstuvwxyz") for _ in range(7))
+        for _ in range(160)
+    ]
+    core = vocabulary[:40]
+
+    def paragraph() -> str:
+        extra = rng.sample(vocabulary[40:], rng.randint(0, 80))
+        kept = rng.sample(core, rng.randint(30, 40))
+        return " ".join(kept + extra)
+
+    names = [
+        ("src/apothem/rules", "alpha-guidance.md"),
+        ("src/apothem/rules", "alpha-directive.md"),  # sibling of the first
+        ("src/apothem/rules", "alpha-guidance-extra.md"),  # companion form
+        ("src/apothem/rules", "beta-notes.md"),
+        ("src/apothem/commands", "alpha-guidance.md"),  # same stem, other folder
+        ("src/apothem/skills/gamma", "SKILL.md"),
+        ("src/apothem/hooks/messages", "stop.md"),
+    ]
+    for subtree, name in names:
+        body = "\n\n".join(paragraph() for _ in range(rng.randint(2, 4)))
+        _write_corpus_file(tmp_path, subtree, name, body)
+
+    for threshold in (0.3, 0.45, 0.6, 0.8):
+        expected = _every_pair(tmp_path, threshold)
+        result = _MOD.check_corpus(tmp_path, threshold=threshold)
+        got = [(finding.files, finding.similarity) for finding in result.findings]
+        assert got == expected, threshold
+    # The corpus is not vacuous: the low thresholds report pairs, and some
+    # pairs sit in one folder, so the sibling exemption is exercised.
+    assert _every_pair(tmp_path, 0.3)
+    assert _every_pair(tmp_path, 0.3) != _every_pair(tmp_path, 0.6)
