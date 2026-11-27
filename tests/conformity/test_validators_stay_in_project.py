@@ -14,7 +14,15 @@ link to ``/dev/zero`` could make a read wait or never end.
 How the tests see it. Each run starts all the validators one after another in
 one child process, under a Python audit hook that records every file opened
 (``open``) and every folder listed (``os.scandir`` and ``os.listdir``). The
-pathlib reads, globs and walks the validators use all go through those calls.
+pathlib globs and walks the validators use all go through those calls. Their
+reads go through the guarded open (``_safe_open``), which opens each level
+inside the folder opened before it; its level opens are wrapped so each one is
+recorded by its full path (a file as ``open``, a folder as ``open-folder``).
+The hook also records every open by name (``named-open``: ``io.open``, so
+``Path.read_text``, or Windows' ``CreateFile``), every ``os.open``
+(``os-open``) and every ``os.open`` that would follow a link at its last level
+(``following-open``: no ``O_NOFOLLOW``, which Windows does not have), so a read
+of a project file that skips the guarded open fails the control run.
 The project holds the same files as an outside copy, reached through links:
 
 - every top-level folder is a link into the outside copy;
@@ -337,9 +345,17 @@ if int(limit):
         pass
 log = open(events_path, "a", encoding="utf-8", buffering=1)
 current = ["-"]
+_NOFOLLOW = getattr(os, "O_NOFOLLOW", 0)
+
+
+def note(event, path):
+    log.write(json.dumps([current[0], event, path]) + "\n")
 
 
 def hook(event, args):
+    # From 3.11 the _winapi.CreateFile audit event carries a correct path.
+    if event == "_winapi.CreateFile" and sys.version_info >= (3, 11):
+        event = "open"
     if event not in ("open", "os.scandir", "os.listdir") or not args:
         return
     target = args[0]
@@ -349,9 +365,32 @@ def hook(event, args):
         text = os.fsdecode(os.fspath(target))
     except TypeError:
         return
-    log.write(json.dumps([current[0], event, os.path.abspath(text)]) + "\n")
+    if event == "open" and len(args) > 1 and args[1] is None:
+        # os.open. The guarded open's own opens name a level inside an open
+        # folder; its wrapper below records them by their full path.
+        if not (_NOFOLLOW and len(args) > 2 and args[2] & _NOFOLLOW):
+            note("following-open", text)
+        note("os-open", text)
+        return
+    if event == "open":
+        note("named-open", os.path.abspath(text))
+    note(event, os.path.abspath(text))
 
 
+# The guarded open's level opens, each recorded by its full path once it
+# succeeds: a refused level was never opened.
+from apothem.conformity import _safe_open
+
+_real_open_level = _safe_open._open_level
+
+
+def _logged_open_level(parent, name, *, folder, shown):
+    handle = _real_open_level(parent, name, folder=folder, shown=shown)
+    note("open-folder" if folder else "open", os.path.abspath(os.fspath(shown)))
+    return handle
+
+
+_safe_open._open_level = _logged_open_level
 sys.addaudithook(hook)
 results = {}
 for module in modules:
@@ -448,6 +487,33 @@ def test_every_validator_reaches_the_files_when_they_are_real(
     expected = set(STANDALONE_MODULES) - _READS_NO_PROJECT_FILE
 
     assert sorted(expected - reached) == []
+    assert _unguarded_reads(events, outside) == []
+
+
+def _unguarded_reads(events: _Events, root: Path) -> list[str]:
+    """Return each project read that did not go through the guarded open.
+
+    That is an open by name (``io.open``, so ``Path.read_text``, or Windows'
+    ``CreateFile``) of a path below *root*, an ``os.open`` of a path below
+    *root* by its full name, and an ``os.open`` that would follow a link at
+    its last level (no ``O_NOFOLLOW``) other than of *root* itself: a name
+    relative to an open folder, or a path below *root*. The root is the folder
+    the run was pointed at and is opened as given.
+    """
+    found: list[str] = []
+    for label, event, path in events:
+        if label in ("-", "control"):
+            continue
+        if event == "named-open" and _is_below(path, root):
+            found.append(f"{label}: {event} {path}")
+        elif event in ("os-open", "following-open") and Path(path).is_absolute():
+            if _is_below(path, root):
+                found.append(f"{label}: {event} {path}")
+        elif event == "following-open" and path != os.devnull:
+            # A program's input is the null device, which Windows names
+            # without a folder (``nul``).
+            found.append(f"{label}: {event} {path}")
+    return sorted(set(found))
 
 
 _Builder = Callable[[Path, Path], list[Path]]
@@ -642,6 +708,11 @@ events_path, root = sys.argv[1:3]
 modules = sys.argv[3:]
 log = open(events_path, "a", encoding="utf-8", buffering=1)
 current = ["-"]
+_NOFOLLOW = getattr(os, "O_NOFOLLOW", 0)
+
+
+def note(event, path):
+    log.write(json.dumps([current[0], event, path]) + "\n")
 
 
 def hook(event, args):
@@ -649,7 +720,7 @@ def hook(event, args):
         started = args[0] if args[0] is not None else args[1]
         if isinstance(started, (list, tuple)):
             started = started[0]
-        log.write(json.dumps([current[0], event, os.fsdecode(started)]) + "\n")
+        note(event, os.fsdecode(started))
         return
     # From 3.11 the _winapi.CreateFile audit event carries a correct path: a
     # second net beside the wrapper below, for a caller that binds it early.
@@ -664,23 +735,50 @@ def hook(event, args):
         text = os.fsdecode(os.fspath(target))
     except TypeError:
         return
-    log.write(json.dumps([current[0], event, os.path.abspath(text)]) + "\n")
+    if event == "open" and len(args) > 1 and args[1] is None:
+        # os.open. The guarded open's own opens name a level inside an open
+        # folder; its wrapper below records them by their full path.
+        if not (_NOFOLLOW and len(args) > 2 and args[2] & _NOFOLLOW):
+            note("following-open", text)
+        note("os-open", text)
+        return
+    if event == "open":
+        note("named-open", os.path.abspath(text))
+    note(event, os.path.abspath(text))
 
 
-# On Windows the corpus run opens each file with _winapi.CreateFile. Its
-# audit event is no help: Python 3.10 passes it a garbled path. So the call
-# itself is wrapped, before the gate is imported; _corpus looks it up when
-# it calls it.
+# Nothing in the gate opens a file with _winapi.CreateFile any more, and its
+# audit event is no help on Python 3.10, which passes it a garbled path. So
+# the call itself is wrapped, before the gate is imported, as an open by name.
 if sys.platform == "win32":
     import _winapi
 
     _real_create_file = _winapi.CreateFile
 
     def _logged_create_file(file_name, *args):
-        log.write(json.dumps([current[0], "open", os.path.abspath(file_name)]) + "\n")
+        note("named-open", os.path.abspath(file_name))
+        note("open", os.path.abspath(file_name))
         return _real_create_file(file_name, *args)
 
     _winapi.CreateFile = _logged_create_file
+
+# The guarded open (every validator read and the corpus run) opens each level
+# inside the folder opened before it: os.open with a folder descriptor, or
+# NtCreateFile on Windows, neither of which an audit event names in full. Its
+# level opens are wrapped instead, each recorded by its full path once it
+# succeeds: a refused level was never opened.
+from apothem.conformity import _safe_open
+
+_real_open_level = _safe_open._open_level
+
+
+def _logged_open_level(parent, name, *, folder, shown):
+    handle = _real_open_level(parent, name, folder=folder, shown=shown)
+    note("open-folder" if folder else "open", os.path.abspath(os.fspath(shown)))
+    return handle
+
+
+_safe_open._open_level = _logged_open_level
 
 from apothem.conformity import gate
 
@@ -1018,7 +1116,7 @@ def test_a_foreign_repository_reaches_no_file_outside(
         f"{label}: {event} {path}"
         for label, event, path in events
         if label not in ("-", "control")
-        and event in ("open", "stat", "os.scandir", "os.listdir")
+        and event in ("open", "open-folder", "stat", "os.scandir", "os.listdir")
         # A stat outside this test's folders is the host's own business,
         # such as the search for git along PATH.
         and (event != "stat" or tmp_path in Path(path).parents)
@@ -1043,5 +1141,6 @@ def test_a_foreign_repository_reaches_no_file_outside(
     }
 
     assert offenders == []
+    assert _unguarded_reads(events, root) == []
     assert programs
     assert programs <= {"git", "git.exe"}
