@@ -52,9 +52,9 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   that is not UTF-8 (only an index made on another system holds one), so
   `semver-stability-grep --staged` reports a `check_error` for it and does not
   pass, and `--all-perwrite` counts such a file as `missing` without reading
-  it. The history read of `agents-md-coverage-grep` still gets a name with a
-  control character in git's quoted form, and a byte that is not UTF-8 as the
-  replacement character. Both `--staged` checks read the staged names from the
+  it. The history read of `agents-md-coverage-grep` reads each name byte for
+  byte too, so a name git would quote, one with a quote, a backslash or a
+  control character, keeps its commit time. Both `--staged` checks read the staged names from the
   top of the work tree whatever your `diff.relative` setting is: with it on, a
   run from a subfolder got names the check could not use, and it passed.
   Both `--staged` checks, and `agents-md-coverage-grep` on a subfolder, now
@@ -343,6 +343,24 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   with the status `git-failed` and a `check_error`, the companion coverage
   check and `--all-perwrite` fail with a `check_error` that says the entry
   could not be looked at, and `no-global-plans-grep` reports it as a finding.
+- **The two `--staged` checks follow the same rule for a `.git` link, and a
+  skipped folder is always named.** `production-ready-pr-grep --staged` and
+  `semver-stability-grep --staged` ran git in the current folder without
+  looking at its `.git` entry, so a `.git` link there, or in a folder above it
+  that git searches, made them read another repository's staged names and
+  files. They now look first and fail with a `check_error` that names the link,
+  or says the entry could not be looked at, without running git; they still
+  read the repository a hook's `GIT_DIR` names. `conventional-commit-grep`
+  keeps the status `not-a-git-repo` for a `.git` link but now gives a
+  `check_error` that names it. A folder whose `.git` entry is a link, a
+  dangling one included, was left out of every tree walk as a nested checkout
+  with nothing in the report; `skipped_links` now names that `.git` entry, in
+  the walk and in the stray-plans check of `no-global-plans-grep`. A folder
+  the walk cannot list (no access, a path too long, a read error) is named
+  there too, where before it read as empty. The `--all` validators still check
+  each level and then open a file by name, so someone writing to the project
+  while the gate runs can swap a checked entry for a link; the usage page now
+  says so.
 
 ## [1.6.0] - 2026-11-26
 
