@@ -26,8 +26,9 @@ Run any of them from `site/`.
   hand-edit the generated pages or blocks.
 - **`cut-at-word.mjs`** — `cutAtWord`, which shortens the excerpts in the
   generated reference tables on a word boundary. It drops a trailing unclosed
-  code span, `**`, `[` or `(` so no stray marker shows on the page, and falls
-  back to a hard cut when that would leave nothing. Covered by
+  code span, `**`, `*`, `_`, `__`, `[` or `(` so no stray marker shows on the
+  page, and falls back to a hard cut when that would leave nothing (a link cut
+  inside its target keeps only its label). Covered by
   `cut-at-word.test.mjs` under `npm test`.
 - **`build-llms-txt.mjs`** — walks `content/docs/**` and emits the English-only
   `public/llms.txt` (compact index) and `public/llms-full.txt` (concatenated

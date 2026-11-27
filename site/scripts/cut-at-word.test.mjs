@@ -63,6 +63,39 @@ describe('cutAtWord', () => {
 		assert.equal(cutAtWord('**averyveryverylongboldword** rest', 12), 'averyveryv …');
 	});
 
+	it('keeps only the label of a link whose target the hard cut splits', () => {
+		assert.equal(cutAtWord('[label](/very/long/url/path)', 15), 'label …');
+		assert.equal(cutAtWord('**[label](/very/long/url/path)** x', 15), 'label …');
+	});
+
+	it('keeps the target text of an empty-label link the hard cut splits', () => {
+		assert.equal(cutAtWord('[](/very/long/url/path)', 10), '/very/l …');
+	});
+
+	it('drops an unclosed single-asterisk emphasis run', () => {
+		assert.equal(cutAtWord('a *italic phrase that runs long* end', 20), 'a …');
+	});
+
+	it('drops unclosed underscore emphasis and bold runs', () => {
+		assert.equal(cutAtWord('a _italic phrase that runs long_ end', 20), 'a …');
+		assert.equal(cutAtWord('a __bold phrase that runs long__ end', 20), 'a …');
+	});
+
+	it('keeps closed emphasis runs', () => {
+		assert.equal(cutAtWord('a *b* c _d_ e and more words', 14), 'a *b* c _d_ e …');
+	});
+
+	it('removes unclosed emphasis markers from a hard cut', () => {
+		assert.equal(cutAtWord('*averyveryverylongitalicword* rest', 12), 'averyveryve …');
+		assert.equal(cutAtWord('_averyveryverylongitalicword_ rest', 12), 'averyveryve …');
+		assert.equal(cutAtWord('__averyveryverylongboldword__ rest', 12), 'averyveryv …');
+	});
+
+	it('leaves underscores inside words and spaced asterisks alone', () => {
+		assert.equal(cutAtWord('use snake_case_name and more words here', 20), 'use snake_case_name …');
+		assert.equal(cutAtWord('5 * 3 is fifteen and more words', 18), '5 * 3 is fifteen …');
+	});
+
 	it('never returns only the cut mark', () => {
 		for (const text of ['`aaaaaaaaaaaaaaaaaaaaaaaa`', '[bbbbbbbbbbbbbbbbbbbbbbbbbb](c)', '(dddddddddddddddddddddd)']) {
 			assert.notEqual(cutAtWord(text, 10).trim(), '…');
