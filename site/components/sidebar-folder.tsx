@@ -42,10 +42,10 @@ import { cn } from '@/lib/utils';
  * tells it apart from the link (strings: `SIDEBAR_TOGGLE_HINT` in
  * `lib/i18n.ts`). The list stays in the page while closed, hidden with the
  * `hidden` attribute once its close animation ends, so the button's
- * `aria-controls` always points at an element that exists. A folder without an overview page keeps Fumadocs'
- * own trigger, which is already a button. The classes and offsets mirror
- * Fumadocs' docs-layout sidebar (`layouts/docs/slots/sidebar.js`) so the
- * sidebar looks the same.
+ * `aria-controls` always points at an element that exists. A folder without
+ * an overview page keeps Fumadocs' own trigger, which is already a button.
+ * The classes and offsets mirror Fumadocs' docs-layout sidebar
+ * (`layouts/docs/slots/sidebar.js`) so the sidebar looks the same.
  */
 
 const ITEM =
@@ -120,9 +120,14 @@ function FolderHeader({ item, listId }: { item: Folder; listId: string }) {
 // the button always names that id. A closing list keeps showing until its
 // collapse animation ends and only then gets `hidden`, so the close animates
 // the same way the open does. When no animation runs (none is set, or the
-// stylesheet drops it for reduced motion), `hidden` is set at once. A list
-// that starts closed is `hidden` in the server HTML.
-export function useHiddenAfterClose(open: boolean) {
+// stylesheet drops it for reduced motion), `hidden` is set at once. A
+// cancelled animation also settles the list, and a fallback timer a little
+// longer than Fumadocs' 150 ms collapse sets `hidden` even when no animation
+// event ever fires (a page whose animation timeline never advances, such as a
+// background tab). A list that starts closed is `hidden` in the server HTML.
+const SETTLE_FALLBACK_MS = 300;
+
+function useHiddenAfterClose(open: boolean) {
   const ref = useRef<HTMLDivElement>(null);
   const [settled, setSettled] = useState(!open);
   if (open && settled) setSettled(false);
@@ -132,7 +137,21 @@ export function useHiddenAfterClose(open: boolean) {
     const node = ref.current?.parentElement;
     if (open || settled || !node) return;
     const name = getComputedStyle(node).animationName;
-    if (!name || name === 'none') setSettled(true);
+    if (!name || name === 'none') {
+      setSettled(true);
+      return;
+    }
+    const settle = () => setSettled(true);
+    // React has no `onAnimationCancel` prop, so listen on the list directly.
+    const onCancel = (event: Event) => {
+      if (event.target === node) settle();
+    };
+    node.addEventListener('animationcancel', onCancel);
+    const timer = setTimeout(settle, SETTLE_FALLBACK_MS);
+    return () => {
+      node.removeEventListener('animationcancel', onCancel);
+      clearTimeout(timer);
+    };
   }, [open, settled]);
 
   const onAnimationEnd = (event: AnimationEvent<HTMLDivElement>) => {
