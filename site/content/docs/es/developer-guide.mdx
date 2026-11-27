@@ -2,7 +2,7 @@
 title: "Contribuir a Apothem — Guía del desarrollador"
 description: "Mantén y extiende el ecosistema de Apothem creando reglas, comandos, ayudantes, skills y hooks con esquemas canónicos, requisitos de frontmatter y procedimientos de validación."
 machineTranslated: true
-sourceHash: "82cbd13f4a28f8cb"
+sourceHash: "a2dea5f7e64b7fbc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -63,8 +63,12 @@ diff muestre la diferencia de comportamiento.
 El driver de instalación compartido valida cada origen y cada destino antes de
 la primera escritura. Rechaza las fuentes de manifiesto faltantes, los
 recorridos fuera del destino, las rutas de destino fuera de la raíz seleccionada
-y los cruces de enlaces simbólicos. Los dry-runs ejecutan la misma validación y
-devuelven resultados estructurados `skipped` o `unchanged` sin crear archivos.
+y los cruces de enlaces simbólicos; una unión (junction) de Windows se comprueba
+como un enlace simbólico. Las excepciones son los enlaces que crean los gestores
+de dotfiles en `~/.config`, o en una carpeta compartida de skills, reglas o
+plantillas o por encima de ella, que se siguen mientras permanezcan dentro del
+directorio personal. Los dry-runs ejecutan la misma validación y devuelven
+resultados estructurados `skipped` o `unchanged` sin crear archivos.
 
 ## Ocultación y datos de ejemplo
 
@@ -131,8 +135,10 @@ Patrón: minúsculas, guiones entre palabras, sin espacios ni guiones bajos.
   eventos están escritos en Python. Cada comando de hook de la plantilla
   `settings.json` de Claude Code usa la forma exec: `command` es el marcador de
   posición del intérprete `${PYTHON_BIN}`, que se resuelve en el momento de la
-  instalación, y `args` contiene la ruta del script y sus argumentos. Esa
-  plantilla ejecuta
+  instalación, y `args` contiene `-E`, `-s`, la ruta del script y sus
+  argumentos. Las dos opciones mantienen `PYTHONPATH`, las demás variables
+  `PYTHON*` y los site-packages del usuario fuera de cada hook; consérvalas en
+  cualquier hook que añadas. Esa plantilla ejecuta
   `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` y
   `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` por ruta absoluta,
   así que la copia instalada no necesita un paquete `apothem` importable. El
@@ -656,12 +662,191 @@ Usa el formateador / linter `Ruff` para los archivos Python. Para Markdown, usa
 ```bash
 python -m pytest                      # unit, integration, property, conformity, scripts
 python -m pytest tests/property       # Hypothesis properties (profile loader, frontmatter, merge)
+python -m pytest tests/fuzz           # replay each fuzz target's seed inputs (no Atheris needed)
 ```
+
+Los objetivos de fuzzing de `tests/fuzz/` se ejecutan con Atheris en la CI. Para
+hacer fuzzing de uno en tu propia máquina (Linux o macOS, Python 3.11 o
+posterior), instala Atheris, pon el checkout en la ruta y apunta el objetivo a
+una copia de sus semillas:
+
+```bash
+python -m pip install atheris
+export PYTHONPATH="$PWD/src:$PWD/src/apothem/_vendor"
+mkdir -p /tmp/corpus && cp tests/fuzz/seeds/lenient-json/*.txt /tmp/corpus/
+python tests/fuzz/fuzz_lenient_json.py -max_total_time=60 /tmp/corpus
+```
+
+`tests/fuzz/README.md` enumera los objetivos y qué hacer cuando uno encuentra un
+fallo.
 
 La suite es hermética: pasa con el checkout bajo `$TMPDIR` y con un `python` en
 `PATH` que carece de los requisitos previos de la CLI, porque las pruebas de
 integración ejecutan el intérprete que ejecuta pytest y tokenizan las rutas
 temporales y de código fuente anidadas de la más larga a la más corta.
+
+### Las pruebas nunca escriben en tu directorio personal real
+
+Un script de sondeo o un asistente automatizado nunca debe ejecutar los
+instaladores ni los adaptadores de Apothem contra tu directorio personal real.
+Ejecuta el comportamiento dentro de una prueba bajo `tests/`, donde
+`tests/conftest.py` apunta el directorio personal, el registro de instalaciones
+y la raíz de respaldos a carpetas temporales.
+
+Apothem también rechaza por sí mismo estas escrituras mientras se ejecuta
+pytest, así que un archivo de prueba copiado fuera de `tests/` y ejecutado sin
+`tests/conftest.py` no puede llegar al directorio personal real a través de
+Apothem. Mientras `PYTEST_CURRENT_TEST` esté definido y no esté vacío (una
+prueba), o `PYTEST_VERSION` contenga la versión del pytest en ejecución (toda la
+sesión, incluidos la recolección y los hooks de sesión), una escritura,
+eliminación, copia, cambio de nombre o archivo de bloqueo en `~/.apothem` o
+`~/.config/apothem` de la cuenta, en una carpeta de herramienta que el registro
+de entornos nombra en el directorio personal (`~/.claude`, `~/.qwen`,
+`~/.config/opencode` y las demás) o en un archivo fuera de esas carpetas que el
+manifiesto de propagación cambia (el `~/.antigravity/profile.yaml` que escribía
+una versión anterior) se detiene antes de que cambie nada, con un error como
+este:
+
+```text
+RealHomeWriteError: Apothem refused to create the lock file
+C:\Users\you\.apothem\state\codex\<id>.install.lock: it is inside or holds
+C:\Users\you\.apothem, a protected path in this account's real home, while a
+pytest test is running (PYTEST_CURRENT_TEST is set:
+test_probe.py::test_install (call)). Nothing in C:\Users\you\.apothem was
+changed. ...
+```
+
+Un `PYTEST_VERSION` con cualquier otro valor, como una versión fijada del tipo
+`8.2` que exporta un shell o un trabajo de CI, no cuenta, y tampoco un
+`PYTEST_CURRENT_TEST` vacío. Fuera de cualquier prueba, el error dice
+`PYTEST_VERSION holds
+the version of the pytest imported in this process, <version>, outside any
+test` en lugar de la prueba; no afirma que se esté ejecutando una sesión de
+pytest, ya que un proceso puede importar pytest sin ejecutar ninguna. Un
+`PYTEST_VERSION` que un shell o un trabajo de CI exporta con la versión exacta
+del pytest instalado cuenta igualmente, también fuera de pytest, y en un proceso
+que no ha importado pytest el error dice entonces `PYTEST_VERSION holds the installed pytest's
+version, <version>, though no pytest runs in this process`.
+
+Una instalación, actualización, desinstalación o rollback con alcance de
+proyecto cuya raíz de proyecto es el propio directorio personal de la cuenta se
+rechaza de la misma manera, antes de escribir nada: de lo contrario, sus
+archivos de proyecto acabarían directamente en el directorio personal. Una
+carpeta de proyecto dentro del directorio personal sigue permitida. También se
+rechaza una carpeta de datos situada directamente en el directorio personal,
+sea cual sea el nombre que le dé el perfil (`workspace.scope: user-home` con un
+`directory_name` propio), antes de crearla y antes de eliminar sus almacenes.
+Una carpeta de datos que es un enlace (una unión en Windows) a una carpeta
+situada directamente en el directorio personal se rechaza de la misma manera, y
+también una que lleva al propio directorio personal, directamente o a través de
+una cadena de enlaces, cuyos almacenes acabarían directamente en el directorio
+personal.
+
+Cuentan estas formas de escribir una carpeta protegida: un enlace o una unión
+hacia ella, y una carpeta sustituida por un enlace durante la prueba. En
+Windows también cuentan las mayúsculas y minúsculas, los nombres cortos (8.3),
+los prefijos `\\?\`, `\\.\` y `\??\`, un recurso compartido administrativo de
+bucle invertido como `\\localhost\C$` o `\\--1.ipv6-literal.net\C$`, un recurso
+compartido al que se llega por una de las direcciones propias de la máquina o a
+través de una unidad asignada, y un flujo de datos alternativo (`.apothem:name`),
+y también una ruta de dispositivo detrás de uno de esos prefijos
+(`GLOBALROOT\Device\HarddiskVolume2` o `Volume{GUID}`). En macOS también se
+ignoran las mayúsculas y minúsculas y la normalización Unicode, y
+`/System/Volumes/Data/<path>` se lee como `/<path>`. Solo estas reglas de
+cadenas no establecen ningún contacto de red: una ruta de recurso compartido, o
+una ruta en una unidad asignada, se comprueba preguntando al host del recurso
+compartido. `tests/README.md` enumera las formas que la comprobación no ve, como
+un enlace duro a un archivo de una carpeta protegida, un montaje bind del
+directorio personal y un montaje de Linux que no distingue mayúsculas y
+minúsculas.
+
+La CLI lanza el error tal cual, también en una desinstalación. Algunas pasadas
+comprueban sus rutas antes del primer cambio, así que un rechazo ahí lo deja
+todo como estaba. Una limpieza de obsoletos comprueba cada ruta obsoleta. Un
+rollback comprueba cada ruta que nombra su registro de instalación (incluso una
+que dejaría en su sitio), los almacenes de datos que eliminaría y las carpetas
+de nivel de usuario del directorio personal que ordenaría al final. Un rollback
+y una desinstalación comprueban la raíz de respaldos y el registro, y una
+desinstalación de OpenClaw también comprueba `openclaw.json` y cada archivo de
+reglas del espacio de trabajo. Una desinstalación rechazada registra una
+desinstalación sin terminar en el registro solo cuando ya había cambiado
+archivos fuera de las carpetas protegidas, también en un paso anterior a la
+eliminación compartida (el primer paso de una desinstalación de configuración
+nativa, por ejemplo), de modo que los respaldos de esos archivos siguen
+referenciados. Algunos llamadores internos absorben el error a propósito (una
+línea del registro de mejor esfuerzo, por ejemplo), así que cada rechazo también
+queda anotado, y `tests/conftest.py` hace fallar la prueba tras la cual se anotó
+uno, incluso cuando la prueba está marcada como `xfail`. Uno anotado fuera de
+cualquier prueba mientras pytest recolecta un nodo hace fallar la recolección de
+ese nodo. Cualquier otro anotado fuera de cualquier prueba, al inicio de la
+sesión, entre dos informes de recolección, después de la recolección, entre dos
+pruebas, después de la última prueba, en el resumen o en `pytest_unconfigure`,
+se informa cuando termina la sesión, con el nombre del lugar donde ocurrió, y
+hace fallar la ejecución, también cuando un hook termina después la ejecución
+con `pytest.exit(returncode=0)` o `sys.exit(0)` (o, en cualquier sistema, un
+código que un sistema POSIX recorta a 0 o 5, como 256), también después de que
+otro hook terminara el final de la sesión con `sys.exit` o una excepción, y
+también cuando un proceso de trabajo paralelo (`-n`) lo anota, antes o después
+de entregar sus rechazos al proceso principal. Un proceso de trabajo escribe
+cada rechazo, en cuanto lo tiene, en un archivo que lee el proceso principal,
+así que uno que tenía antes de fallar o de detenerse antes de esa entrega, o
+antes de que un hook de final de sesión lo detuviera ahí, sigue haciendo fallar
+la ejecución. Tres casos siguen apareciendo solo en `stderr` y dejan el código
+de salida como está: uno anotado después del `yield` de un contenedor
+`tryfirst` de `pytest_unconfigure` que pytest registró después de la guarda,
+uno anotado en una limpieza registrada con `config.add_cleanup` (cada uno salvo
+que un `sys.exit` que pasa termine después la ejecución, o que uno terminara
+antes el final de la sesión), y uno que un proceso de trabajo anota pero ni
+entrega ni escribe en ese archivo, porque el proceso de trabajo terminó o se
+detuvo antes (un hook de final de sesión lo anotó y después hizo fallar el
+proceso de trabajo, por ejemplo) o porque ese archivo no se pudo crear ni
+escribir (cuando la última escritura del proceso de trabajo en él falla a
+medias, la parte que llegó al archivo se queda, y el proceso principal hace
+fallar la ejecución por ella, igual que cuando esa escritura dejó el archivo
+vacío, salvo que la copia escrita junto a la entrega ya lo hubiera dejado vacío
+y el proceso principal tomara la salida del proceso de trabajo). En ese último
+caso la salida contiene solo los rechazos que el proceso de trabajo entregó:
+uno que encuentra después de la entrega, cuya escritura vuelve a dejar el
+archivo vacío, aparece solo en el `stderr` del proceso de trabajo, y en ningún
+sitio cuando el proceso de trabajo falla durante esa escritura; la ejecución
+sigue fallando por los rechazos que entregó. Al final de la ejecución, el
+proceso principal indica a cada proceso de trabajo que salga; un proceso de
+trabajo que sigue ejecutando código Python 5 segundos después se interrumpe (en
+Windows, no uno bloqueado en una espera u otra llamada), y cualquier proceso de
+trabajo que siga en ejecución después de 10 segundos se detiene. La guarda no
+puede cambiar el código de salida de una ejecución que termina mediante
+`os._exit` en el proceso principal (en un hook, una limpieza o un manejador
+`atexit`), mediante un contenedor `tryfirst` de `pytest_cmdline_main` que pytest
+registró después de la guarda, o mediante un hook `pytest_cmdline_main` que
+retorna antes de que se ejecute ninguna sesión; con `os._exit` también puede
+perderse el informe de terminal de la guarda, y en el primer y el último caso un
+rechazo que la guarda aún no ha informado aparece solo como su línea de
+`stderr`. El registro se lleva por proceso: un rechazo que absorbe un proceso
+hijo de Apothem aparece solo como una línea en el `stderr` del hijo, y la prueba
+no falla por ello.
+
+El directorio personal es el que el sistema operativo registra para la cuenta,
+no `HOME` ni `USERPROFILE`. Las lecturas, los dry runs y las vistas previas
+siguen funcionando; la única comprobación de estado que registra una
+desinstalación terminada en el registro es una escritura, así que se rechaza en
+silencio y se informa. Una prueba que deba ejecutar a propósito una instalación
+real inicia Apothem sin `PYTEST_CURRENT_TEST` ni `PYTEST_VERSION` en el entorno
+del hijo.
+
+El rechazo no cubre las carpetas que `CODEX_HOME`, `CLAUDE_CONFIG_DIR` o
+`XDG_CONFIG_HOME` alejan de sus nombres predeterminados, fuera del directorio
+personal o dentro de él (`XDG_CONFIG_HOME=~/xdg` coloca la carpeta de OpenCode en
+`~/xdg/opencode`), la carpeta de estado de los hooks, ni los programas que no
+son de Python, como los instaladores de shell. La comprobación se ejecuta antes
+de la escritura, por ruta, así que no se ve una carpeta sustituida por un enlace
+entre ambas. Cuando el sistema no tiene registro del directorio personal de la
+cuenta (un usuario de contenedor sin entrada en `passwd`), el directorio
+personal de la cuenta no está protegido en absoluto. Un checkout situado dentro
+de una carpeta protegida (bajo `~/.claude`, por ejemplo) tiene sus escrituras de
+Apothem rechazadas durante las pruebas. El rechazo no hace nada fuera de pytest,
+es decir, cuando el entorno no contiene ni un `PYTEST_CURRENT_TEST` que no esté
+vacío ni la versión del pytest instalado en `PYTEST_VERSION`, por eso la regla
+anterior sigue aplicándose. `tests/README.md` enumera cada carencia.
 
 ### Cobertura por paquete
 
@@ -682,7 +867,7 @@ la cobertura aumente; nunca bajes uno para que un cambio pase. Para comprobarlo
 localmente:
 
 ```bash
-python -m pytest --cov=src/apothem --cov-report=json:coverage.json
+python -m pytest --cov=src/apothem --cov-fail-under=0 --cov-report=json:coverage.json
 python scripts/dev/collect_metrics.py --coverage-json coverage.json --check-floors \
   --skip-hooks --skip-coldstart --harness zed
 ```
@@ -690,7 +875,9 @@ python scripts/dev/collect_metrics.py --coverage-json coverage.json --check-floo
 ### El artefacto de métricas
 
 El trabajo `metrics` de la CI ejecuta `scripts/dev/collect_metrics.py` en cada
-push y cada pull request y sube `metrics.json` (`schema_version: 1`). Cada valor
+push y cada pull request una vez que pasan los dos fragmentos de cobertura,
+usando los datos de cobertura que midieron, y sube `metrics.json`
+(`schema_version: 1`). Cada valor
 que es `null` lleva su motivo bajo `nulls`.
 
 | Clave | Qué mide |
@@ -708,13 +895,25 @@ texto de la regla también se escribe en el artefacto bajo
 
 ```text
 antigravity     ~/.gemini/{GEMINI,AGENTS}.md, ~/.gemini/config/{GEMINI,AGENTS}.md,
-                ~/.gemini/config/rules/*.md with trigger: always_on, project
-                GEMINI.md and AGENTS.md. The plugin rules/ folder is not a
-                documented launch surface.
+                ~/.gemini/config/rules/*.md with trigger: always_on, and in the
+                project GEMINI.md, AGENTS.md, .agents/{GEMINI,AGENTS}.md and
+                .agents/rules/*.md with trigger: always_on, plus, for each
+                plugin in ~/.gemini/config/plugins/ with a plugin.json not
+                marked disabled: true, its rules/AGENTS.md (else
+                rules/GEMINI.md) and its rules/*.md with trigger: always_on.
+                A rule file counts only when its first line opens the
+                frontmatter. Each file counted up to 24,000 bytes. @ includes
+                are not expanded, the user's own plugin on/off choice is not
+                read, and the 20,000-token budget across always-on rules is
+                not modeled.
 claude-code     ~/.claude/CLAUDE.md and ~/.claude/rules/**/*.md without paths:
-                frontmatter, plus the project equivalents.
-codebuddy       .codebuddy/rules/**/*.md (project and home) unless
-                alwaysApply: false, plus CODEBUDDY.md.
+                frontmatter, plus the project equivalents and CLAUDE.local.md;
+                the project AGENTS.md and .claude/AGENTS.md only when the
+                project has no CLAUDE.md, .claude/CLAUDE.md or CLAUDE.local.md.
+codebuddy       .codebuddy/rules/**/*.md (project and home) unless enabled:
+                false or alwaysApply: false, ~/.codebuddy/CODEBUDDY.md, the
+                project CODEBUDDY.local.md, and the first of CODEBUDDY.md and
+                .codebuddy/CODEBUDDY.md, else AGENTS.md.
 codex           The first non-empty of ~/.codex/AGENTS.override.md and
                 ~/.codex/AGENTS.md, plus the first of AGENTS.override.md,
                 AGENTS.md and the project_doc_fallback_filenames names that
@@ -723,16 +922,26 @@ codex           The first non-empty of ~/.codex/AGENTS.override.md and
 cursor          .cursor/rules/**/*.mdc with alwaysApply: true, and AGENTS.md.
 gemini-cli      ~/.gemini/GEMINI.md and the project GEMINI.md.
 github-copilot  .github/copilot-instructions.md and the project AGENTS.md.
-hermes          ~/.hermes/SOUL.md, plus the first of these kinds in the project
-                with a non-empty file (Hermes loads one): .hermes.md or
-                HERMES.md (the first of the two that exists is the only
-                candidate), AGENTS.override.md or AGENTS.md, CLAUDE.md, then
-                .cursorrules with .cursor/rules/*.mdc. The support tree and
-                apothem/rules/ are not launch surfaces.
-kimi-code       ~/.kimi-code/AGENTS.md, project AGENTS.md and .kimi-code/AGENTS.md.
+hermes          ~/.hermes/SOUL.md when it holds text, plus the first of these
+                kinds in the project with a non-empty file (Hermes loads one):
+                .hermes.md or HERMES.md (the first of the two that exists is
+                the only candidate), AGENTS.override.md or AGENTS.md,
+                CLAUDE.md, then .cursorrules with .cursor/rules/*.mdc. The
+                support tree and apothem/rules/ are not launch surfaces.
+kimi-code       ~/.kimi-code/AGENTS.md, the first non-empty of
+                ~/.agents/AGENTS.md and ~/.agents/agents.md, and the project
+                .kimi-code/AGENTS.md and AGENTS.md; blank files load nothing.
+                Kimi also reads AGENTS.md in each folder from the git root
+                down; the scratch project has no .git, so only its root is
+                read.
 kiro            .kiro/steering/**/*.md with inclusion: always or no inclusion
                 key, and the project AGENTS.md.
-open-claw       Workspace bootstrap files ~/.openclaw/workspace/*.md.
+open-claw       The non-blank bootstrap files in ~/.openclaw/workspace/, in
+                order: AGENTS.md, SOUL.md, IDENTITY.md, USER.md, BOOTSTRAP.md,
+                MEMORY.md; each up to 20,000 characters (USER.md 4,000),
+                60,000 in all. Approximate: OpenClaw's own trimming,
+                head-and-tail truncation, missing-file markers and per-session
+                filtering are not modeled.
 opencode        ~/.config/opencode/AGENTS.md, the project AGENTS.md, and every
                 file the instructions globs in opencode.json match.
 qwen-code       The context files named by context.fileName in

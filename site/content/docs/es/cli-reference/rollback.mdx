@@ -2,7 +2,7 @@
 title: "rollback"
 description: "Referencia de la CLI para el comando apothem rollback."
 machineTranslated: true
-sourceHash: "398c0c678cace0b4"
+sourceHash: "a11c2a565e94b5b4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,16 +18,50 @@ apothem rollback --harness NAME|all [--install-id ULID | --last] [--yes]
 ```
 
 `rollback` devuelve cada entorno seleccionado al estado en el que estaba antes
-de la pasada de instalación registrada: la más reciente por defecto, o la
-indicada por `--install-id`. Al recorrer el registro de esa instalación en el
+de la pasada de instalación registrada: por defecto, la instalación más
+reciente que sigue vigente, o la indicada por `--install-id`. Por eso, un
+segundo `rollback` deshace la instalación anterior a la que deshizo el primero.
+Un `--install-id` que nombra una instalación que un rollback o una
+desinstalación ya revirtió se rechaza con `rollback.already_reversed` (código de
+salida 1), y nada cambia. Al recorrer el registro de esa instalación en el
 libro mayor, empezando por el cambio más reciente, el comando:
 
 - restaura cada archivo y cada directorio que la instalación sobrescribió a
   partir de la copia de seguridad que la instalación capturó, en su ruta
   registrada (un directorio que la instalación reemplazó se restaura
   exactamente, sin los archivos que la instalación agregó en él);
-- elimina cada archivo y cada directorio que la instalación creó, y devuelve a
-  su lugar cualquier ruta de la estructura heredada que la instalación barrió;
+- elimina cada archivo y cada directorio que la instalación creó, siempre que
+  todavía tenga el contenido que esa instalación escribió: un archivo que
+  creaste en esa ruta desde entonces, o uno que editaste, se conserva con una
+  línea `Warning:` (una entrada de `warnings` con `--json`), y lo mismo ocurre
+  con una carpeta que lo contiene. Una carpeta vacía dentro de una carpeta que
+  la instalación creó se elimina, incluida una que hayas creado tú. La línea
+  lista cada archivo que conservó, incluidos los archivos dentro de una carpeta
+  conservada, haya fallado o no una restauración, y la entrada de `warnings` los
+  lista como `files`. Una instalación registrada por un lanzamiento anterior no
+  indica qué escribió, y rollback no compara nada con este lanzamiento, así que
+  lo que creó se conserva: cada una de esas rutas recibe una línea `Warning:`
+  que dice que rollback no puede saber si es de Apothem. También devuelve a su
+  lugar cualquier ruta de la estructura heredada que la instalación barrió.
+  Una ruta que el lanzamiento actual ya no barre (una carpeta que puede
+  contener tus propios archivos) se restaura solo donde faltan archivos: cada
+  archivo que está ahí ahora se conserva, y la salida nombra la copia de
+  seguridad usada. Un archivo que no puede escribir se lista para que lo copies
+  a mano, y el rollback termina entonces con código 2 (parcial) cuando escribió
+  cualquier otro archivo.
+  Una ruta que ahora es un enlace (un enlace simbólico o una junction de
+  Windows), o un archivo donde la copia de seguridad tiene una carpeta o al
+  revés, nunca se escribe a través de ella. Ahí no se restaura nada, y tampoco
+  se restaura nada cuando la copia de seguridad de la ruta ya no existe. El
+  rollback igualmente termina con código 0 e imprime una línea `Warning:` (una
+  entrada de `warnings` con `--json`) que nombra la copia de seguridad desde la
+  que copiar a mano. Rollback alcanza esa instalación solo mientras su registro
+  esté entre los 10 más recientes que se conservan (más abajo).
+  `apothem backups prune --keep N` reduce a `N` una vez; la siguiente
+  instalación, actualización, desinstalación o rollback vuelve a reducir a 10.
+  El conjunto de copias de seguridad en sí se conserva incluso después de que
+  el registro desaparece, así que copiar a mano los archivos desde él es la
+  forma fiable de volver atrás;
 - elimina los almacenes de datos compartidos (`memory`, `contexts`, `learning`)
   que la instalación creó, a menos que otro entorno instalado todavía los use;
 - elimina los directorios que la instalación creó, una vez que están vacíos.
@@ -39,10 +73,38 @@ todavía lo liste, y lo restaura o elimina solo para la última instalación que
 usa. Una carpeta que esta instalación encontró ya en su lugar (una segunda
 herramienta instalada después de la primera) desaparece con la última
 instalación que la usa cuando la creó una instalación que desde entonces la ha
-soltado, de modo que revertir todas las herramientas no deja nada atrás. Cuando
-no se puede leer el registro de una instalación que podría usar la carpeta,
-rollback se detiene con un error antes de cambiar nada y no escribe ningún
-registro `rollback`; repara el registro y vuelve a ejecutarlo.
+soltado, de modo que revertir todas las herramientas no deja nada atrás,
+incluso cuando la herramienta que creó la carpeta se volvió a instalar o se
+actualizó entretanto. Una carpeta que Apothem eliminó y que tú volviste a
+poner, por ejemplo desde una copia de seguridad, es tuya: un rollback la
+conserva. Un rollback revierte solo la instalación registrada con tu directorio
+personal escrito tal como está cuando se ejecuta el rollback. Cuando la misma
+herramienta también se instaló con tu directorio personal escrito de otra forma
+(a través de un enlace a él, o con otras mayúsculas y minúsculas en Windows o
+macOS), esa instalación todavía usa las carpetas compartidas y las conserva.
+Los archivos de la carpeta propia de la herramienta se tratan uno por uno:
+revertir la instalación que los escribió primero elimina los que la otra
+instalación dejó como estaban, como sus scripts de hook, y conserva con una
+advertencia los que la otra instalación reescribió, como su archivo de
+instrucciones. Después, ejecuta `apothem update` con tu directorio personal
+escrito de la otra forma, para que esa instalación vuelva a pasar
+`apothem verify`. Un rollback ejecutado con tu directorio personal escrito de
+esa forma también revierte esa instalación. Cuando no se puede leer el registro
+de una instalación que podría usar la carpeta, rollback se detiene con un error
+antes de cambiar nada y no escribe ningún registro `rollback`; repara el
+registro y vuelve a ejecutarlo.
+
+Un rollback también se detiene antes de cambiar nada, y no escribe ningún
+registro `rollback`, cuando un enlace lleva la carpeta de la herramienta fuera
+de tu directorio personal: un `CODEX_HOME` o un `XDG_CONFIG_HOME` escrito dentro
+de tu directorio personal, como `~/work/tool`, donde `~/work` pasó a ser un
+enlace a otra unidad después de la instalación. En Windows, una junction cuenta
+como enlace. El error dice `rollback
+refused: target path crosses a link` y nombra el enlace y la carpeta a la que
+lleva, y el comando termina con código 1 sin pedir confirmación antes. Haz que
+el enlace lleve a una carpeta dentro de tu directorio personal, o reemplázalo
+por la propia carpeta, y vuelve a ejecutar el rollback. Una carpeta que escribes
+como una ruta fuera de tu directorio personal se sigue.
 
 Todo lo que rollback elimina o reemplaza se copia primero en la raíz de copias
 de seguridad de Apothem (`~/.apothem/backups/`), de modo que una reversión puede
@@ -60,9 +122,8 @@ instalación más antigua ya no puede revertirse por id e informa
 reduce ese límite a petición, y nunca elimina la copia de seguridad desde la
 cual restaura la instalación más reciente.
 
-Los registros escritos por un lanzamiento de Apothem anterior a que se agregara
-este comportamiento no indican qué archivos creó la instalación; revertir uno de
-esos registros restaura solo los archivos sobrescritos.
+Un registro de instalación de un lanzamiento anterior que no marca qué archivos
+creó la instalación se revierte restaurando solo los archivos sobrescritos.
 
 Se solicita confirmación por cada entorno, a menos que se proporcione `--yes`.
 Cuando no es posible mostrar una solicitud —`--format json` (el texto de la
@@ -79,8 +140,8 @@ Una reversión con `--harness all` es exhaustiva de forma deliberada: abarca cad
 | Opción | Descripción |
 |---|---|
 | `--harness NAME` | Adaptador de entorno que se revierte, o `all` para el conjunto de todo el registro (obligatorio). |
-| `--install-id ULID` | Revierte la pasada de instalación indicada. Por defecto, la instalación registrada más reciente. |
-| `--last` | Revierte la instalación registrada más reciente (el valor por defecto, en su forma explícita). Mutuamente excluyente con `--install-id`. |
+| `--install-id ULID` | Revierte la pasada de instalación indicada, si sigue vigente. Por defecto, la instalación más reciente que sigue vigente. |
+| `--last` | Revierte la instalación más reciente que sigue vigente (el valor por defecto, en su forma explícita). Mutuamente excluyente con `--install-id`. |
 | `--yes` | Omite la solicitud de confirmación por entorno. |
 | `--project PATH` | Raíz del proyecto para los entornos con alcance de proyecto. Obligatoria cuando el conjunto seleccionado incluye adaptadores con alcance de proyecto. |
 | `--quiet`, `-q` | Suprime la salida informativa; solo se emiten errores. |
@@ -116,9 +177,32 @@ Cada destino restaurado o eliminado aparece en `results` con
 `files_written`); el `message` indica si la ruta se restauró o se eliminó. Una
 restauración fallida (por ejemplo, una copia de seguridad que se borró) es
 `"outcome": "error"`. Una instalación que no registró cambios se informa con
-`"outcome": "skipped"`. Cuando no existe ningún registro de instalación
+`"outcome": "skipped"`. Una ruta barrida donde no se restauró nada (ahora es
+un enlace, hay un archivo donde la copia de seguridad tiene una carpeta o al
+revés, o su copia de seguridad ya no existe) es una fila `skipped` en `results`
+y también una entrada en `warnings`, y el rollback igualmente termina con
+código 0:
+
+```json
+{
+  "harness": "claude-code",
+  "outcome": "advisory",
+  "operation": "rollback",
+  "path": "C:\\Users\\Example\\.claude\\commands",
+  "message": "left in place: C:\\Users\\Example\\.claude\\commands is now a link, so nothing was restored there; copy what you need from C:\\Users\\Example\\.apothem\\backups\\20261001T000000Z\\claude_code\\.claude\\commands"
+}
+```
+
+Un resultado rechazado en un enlace nombra el enlace en `detail.symlink` y la
+carpeta a la que lleva en `detail.leads_to`, como en
+[`apothem install`](/docs/cli-reference/install#json-output).
+
+Cuando no existe ningún registro de instalación
 coincidente para un único entorno indicado por su nombre, el comando informa un
-error `rollback.no_record` con `"status": "error"`. Con `--harness all`, en
+error `rollback.no_record` con `"status": "error"`, y un `--install-id` de una
+instalación ya revertida o desinstalada informa `rollback.already_reversed`.
+Una vez que el libro mayor ha recortado ese registro (consulta más arriba), ese
+id informa `rollback.no_record` en su lugar. Con `--harness all`, en
 cambio, un entorno sin ningún registro coincidente es una fila
 `"outcome": "error"` en `results`.
 
@@ -134,7 +218,7 @@ apothem rollback --harness cursor --project . --last --json
 
 | Código | Significado |
 |---|---|
-| 0 | Revertido correctamente, o nada que revertir (la instalación no registró cambios) |
+| 0 | Revertido correctamente, o nada que revertir (la instalación no registró cambios); también cuando una ruta barrida se dejó en su lugar con una línea `Warning:` (una entrada de `warnings` con `--json`) |
 | 1 | Error esperado: no hay registro de instalación, selectores en conflicto, entorno desconocido, raíz del proyecto ausente, o confirmación rechazada o no disponible (modo no interactivo o JSON sin `--yes`) |
 | 2 | Resultado parcial: se revirtió al menos un destino y también se registró un fallo (una restauración fallida o, con `--harness all`, un entorno sin registro de instalación) |
 | 64 | Error de uso: una opción o un comando desconocidos, o un valor de opción ausente o no válido. Con `--json`, el error es un sobre JSON con el código `cli.usage`. |
@@ -144,4 +228,4 @@ apothem rollback --harness cursor --project . --last --json
 - [apothem install](/docs/cli-reference/install) — instala una configuración de entorno
 - [apothem update](/docs/cli-reference/update) — reinstala a partir del perfil compartido actual
 - [apothem uninstall](/docs/cli-reference/uninstall) — elimina una configuración de entorno
-- [apothem status](/docs/cli-reference/status) — informa el estado de instalación, de verificación y de desviación
+- [apothem status](/docs/cli-reference/status) — informa el estado de instalación, de verificación y de deriva

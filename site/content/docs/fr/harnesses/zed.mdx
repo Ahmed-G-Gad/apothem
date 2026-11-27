@@ -2,7 +2,7 @@
 title: "Zed"
 description: "Adaptateur d'environnement Apothem pour Zed (GA)."
 machineTranslated: true
-sourceHash: "2536a5b3796fa036"
+sourceHash: "aa756b204fdf4f52"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -62,8 +62,8 @@ Ces dossiers sont partagés. Ils ne sont pas propres au projet :
 - `--project` choisit le fichier d'instructions à écrire et le projet auquel
   l'installation appartient. Il ne change pas l'emplacement des skills.
 - L'installation n'ajoute aucun fichier de skill ni de règle à votre dépôt. Le
-  projet reçoit le fichier d'instructions, plus le dossier de données
-  `.apothem/` que crée toute installation de projet.
+  projet reçoit le fichier d'instructions, plus le dossier de données que crée
+  toute installation de projet, `.apothem/` par défaut.
 - Les dossiers du répertoire personnel sont écrits en premier. Si cela échoue,
   par exemple parce qu'un dossier du chemin est un lien qui sort de votre
   répertoire personnel (un lien qui reste à l'intérieur est suivi) ou ne peut
@@ -175,8 +175,18 @@ dossier est sauvegardé sous `~/.apothem/backups/` avant d'être supprimé.
 ## Portail de conformité
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Exécutez-le depuis le dossier de votre projet. Sous Windows, utilisez `python` à
+la place de `python3` et le chemin complet, car Windows PowerShell et cmd ne
+développent pas `~` :
+`$HOME\.apothem\src\apothem\conformity\gate.py` dans PowerShell, ou
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` dans cmd. Ce chemin est
+l'emplacement où l'installateur place le moteur, et `-E -s` tient votre
+`PYTHONPATH` et vos site-packages utilisateur à l'écart du portail ;
+[Portail de conformité](/docs/conformity-gate) explique les deux, ainsi que les
+autres installations.
 
 ## Dépannage
 

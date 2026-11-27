@@ -2,7 +2,7 @@
 title: "سير العمل الأساسية"
 description: "سير عمل Apothem الأساسية الأربعة — الملف التعريفي، والقواعد، والخطط، وبوابة المطابقة."
 machineTranslated: true
-sourceHash: "a53e8d62d7df7ef4"
+sourceHash: "2c2b69afe24907e5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -70,16 +70,22 @@ apothem verify --harness claude-code
 
 ## بوابة المطابقة
 
-من نسخة مسحوبة من <bdi>Apothem</bdi>، شغّل:
+من نسخة مسحوبة من <bdi>Apothem</bdi>، شغّلها من جذر النسخة المسحوبة (يقرأ <bdi>`python -m`</bdi>
+الوحدات من المجلد الحالي أولًا، لذا استخدم مجلدًا تثق به):
 
 ```bash
 PYTHONPATH=src python -m apothem.conformity.gate --all .
 ```
 
-بعد التثبيت بالسكربت، شغّل:
+بعد التثبيت بالسكربت، شغّل البوابة عبر مسار السكربت الخاص بها مع <bdi>`-E -s`</bdi>، من
+المشروع الذي تريد فحصه. على <bdi>Windows</bdi>، استخدم <bdi>`python`</bdi> بدلًا من
+<bdi>`python3`</bdi>، و<bdi>`$HOME\.apothem\...`</bdi> في <bdi>PowerShell</bdi> أو
+<bdi>`%USERPROFILE%\.apothem\...`</bdi> في <bdi>cmd</bdi> بدلًا من <bdi>`~/.apothem/...`</bdi>، لأنّ
+<bdi>Windows PowerShell</bdi> و<bdi>cmd</bdi> لا يوسّعان <bdi>`~`</bdi>؛ ويشرح
+[بوابة المطابقة](/docs/conformity-gate) هذه الخيارات:
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python3 -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
 
 يُشغِّل جميع فحوص المطابقة الميكانيكية ويُبلِغ عن النجاح/الفشل لكل شريط.

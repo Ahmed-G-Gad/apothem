@@ -2,7 +2,7 @@
 title: "Vue d'ensemble de la CLI"
 description: "Vue d'ensemble de la CLI d'Apothem — toutes les sous-commandes et options."
 machineTranslated: true
-sourceHash: "23e6a1450707e054"
+sourceHash: "ce86e94ba98910b5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,13 @@ partagé et les adaptateurs d'environnement.
 | Option | Description |
 |------|-------------|
 | `--version` | Affiche la version d'Apothem et quitte |
-| `--help` | Affiche l'aide de la commande |
+| `-h`, `--help` | Affiche l'aide de la commande |
+
+Les sections ci-dessous couvrent `install`, `update`, `uninstall`, `verify`,
+`status`, `profile`, `harnesses` et `doctor`. Le tableau généré à la fin de
+cette page et la [référence de la CLI](/docs/cli-reference) listent toutes les
+commandes, y compris `quickstart`, `diff`, `rollback`, `backups`,
+`migrate-workspace` et `completion`.
 
 ## Sous-commandes
 
@@ -135,8 +141,13 @@ apothem status [--profile PATH] [--project PATH]
 | `--profile PATH` | Profil partagé à utiliser comme référence de dérive. Un profil par défaut illisible dégrade la dérive en `unknown` plutôt que d'interrompre le balayage. |
 | `--project PATH` | Racine du projet pour les environnements à portée de projet. Sans cette option, ces environnements signalent `needs-project`. |
 
-Chaque ligne associe un indicateur `installed` à un indicateur `verified`, et les
-deux se combinent pour donner l'état de dérive :
+Chaque ligne porte un indicateur `installed`, un indicateur `verified` et un
+état de dérive. Une ligne dont l'indicateur `installed` est faux signale
+`absent`, `needs-project` ou `error` ; `in-sync`, `drift` et `unknown`
+n'apparaissent que sur les lignes installées. L'état de dérive ne dépend jamais
+de l'indicateur `verified`. Pour un environnement installé, il compare la
+configuration installée au profil de référence, ou indique pourquoi aucune
+comparaison n'a eu lieu :
 
 | État | Signification |
 |-------|---------|
@@ -145,6 +156,7 @@ deux se combinent pour donner l'état de dérive :
 | `drift` | Installé mais plus conforme — corrigez avec `apothem update`. |
 | `unknown` | Installé, mais le profil de référence n'a pas pu être lu. |
 | `needs-project` | Un environnement à portée de projet a été signalé sans `--project`, de sorte que sa cible ne peut pas être résolue. |
+| `error` | L'adaptateur a échoué pendant sa vérification ; `status` signale l'erreur et se termine avec `2`. |
 
 `installed` répond à « Apothem a-t-il effectué une installation ici ? », et non à
 « cet environnement est-il présent sur la machine ? ». Il repose sur les propres

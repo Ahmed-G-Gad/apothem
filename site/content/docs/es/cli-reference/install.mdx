@@ -2,7 +2,7 @@
 title: "install"
 description: "Referencia de la CLI para el comando apothem install."
 machineTranslated: true
-sourceHash: "16be1a92f6de53b3"
+sourceHash: "5ba6f0eafa4b1b6f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,12 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 Carga y valida el perfil compartido, selecciona un adaptador por su nombre o el
 conjunto `all` de todo el registro, valida el plan de materialización y escribe
 la configuración nativa del entorno junto con las cohortes de soporte. Los
-adaptadores de alcance de proyecto requieren `--project PATH`.
+adaptadores de alcance de proyecto requieren `--project PATH`. La carpeta se lee
+siguiendo sus enlaces y con `~` expandido, y el registro de la instalación la
+nombra de esa forma. Una instalación registrada con otra escritura de la
+carpeta, como un enlace que conservaba código de Python o una versión anterior,
+se traslada a esa escritura una vez que la instalación supera sus
+comprobaciones (consulta [`uninstall`](/docs/cli-reference/uninstall)).
 
 El alias en forma continua `apothem installing` (que también se acepta como
 `apothem Installing`) se resuelve en el mismo manejador.
@@ -57,6 +62,36 @@ la instalación. Con `--clean`, el paso de borrón y cuenta nueva se ejecuta
 primero bajo su propia confirmación por destino: escribe una copia de seguridad
 en `~/.apothem/backups` y elimina los destinos que confirma. Esas eliminaciones y
 la copia de seguridad se mantienen cuando se rechaza la solicitud de instalación.
+Los destinos son las carpetas de herramientas de tu directorio personal que
+lista la solicitud, entre ellas `~/.agents` y `~/.config/apothem`.
+Un destino que es en sí mismo un enlace, incluida una unión de Windows, pierde
+solo el enlace, y un enlace dentro de un destino se elimina sin entrar en él.
+Cuando `~/.config` es un enlace que sale de tu directorio personal, el paso de
+borrón y cuenta nueva se detiene con `Clean-slate removal was refused` antes de
+hacer una copia de seguridad o eliminar nada, ya que eliminar
+`~/.config/apothem` borraría la carpeta al otro extremo de ese enlace. El error
+nombra el enlace: reemplázalo por una carpeta real o haz que lleve a una
+carpeta dentro de tu directorio personal. El paso también se detiene antes de
+cambiar nada, y antes de crear el perfil inicial, cuando tu directorio personal
+no es una ruta completa, es la raíz de una unidad o de un sistema de archivos,
+es un enlace o una unión que lleva a una, o se alcanza a través de un enlace que
+forma un bucle.
+
+El paso de borrón y cuenta nueva elimina el perfil predeterminado,
+`~/.config/apothem/profile.yaml`, junto con `~/.config/apothem`, y lo vuelve a
+escribir después. Un perfil que no eliminó, como uno que pasas con
+`--profile PATH` desde otra carpeta, no se escribe en absoluto. La reescritura
+sigue la misma regla que cualquier otra escritura del perfil: se rechaza cuando
+un enlace la llevaría fuera de tu directorio personal. Cuando el perfil no se
+puede volver a escribir, el comando sale con 1 y el error nombra la copia de
+seguridad que lo contiene. El código de error es
+`clean_slate.profile_restore_refused` cuando un enlace rechazó la escritura, y
+`clean_slate.profile_restore_failed` cuando falló la propia escritura. Cuando
+una eliminación se detiene a medias, por ejemplo en un archivo que otro programa
+mantiene abierto, primero se vuelve a escribir el perfil. Después, el comando
+sale con 1 con el código de error `clean_slate.removal_failed`, y el error
+nombra la carpeta de copia de seguridad. Si el perfil no se puede volver a
+escribir, el error es en su lugar uno de los dos códigos de perfil anteriores.
 
 ## Carpetas en tu directorio personal
 
@@ -88,12 +123,40 @@ all seven                               ->  ~/.config/apothem/rules/ and templat
   carpeta de skill a medio escribir con su nombre definitivo. Vuelve a ejecutar
   la instalación para terminar; reemplaza cualquier carpeta de staging que haya
   quedado.
-- Un enlace simbólico en una de estas carpetas o por encima de ella, como los que
-  crean los gestores de dotfiles para `~/.config` o `~/.agents`, se sigue cuando
-  lleva a algún lugar dentro de tu directorio personal. Un enlace que sale de tu
-  directorio personal detiene la instalación con
-  `target escapes the allowed materialization root`, y lo mismo ocurre con un
-  enlace dentro de una carpeta de skill.
+- Un enlace en una de estas carpetas o por encima de ella, como los que crean
+  los gestores de dotfiles para `~/.config` o `~/.agents`, se sigue cuando lleva
+  a algún lugar dentro de tu directorio personal. En Windows una unión cuenta
+  como enlace. Un enlace que sale de tu directorio personal detiene la
+  instalación con `target escapes the
+  allowed materialization root`, seguido del enlace, la carpeta a la que lleva y
+  la corrección: reemplazar el enlace por una carpeta real. Una carpeta de skill
+  que es en sí misma un enlace nunca se escribe a través de él: la instalación
+  la omite con una advertencia, o se detiene cuando Apothem ya escribió esa
+  skill allí antes. Un enlace dentro de una carpeta de skill que escribió
+  Apothem se reemplaza por una carpeta la próxima vez que la instalación
+  escribe esa skill.
+- Una carpeta de entorno bajo `~/.config`, como `~/.config/opencode/` de
+  OpenCode o un `CODEX_HOME` allí, también sigue un enlace en `~/.config` que
+  lleva a algún lugar dentro de tu directorio personal. Un enlace en `~/.config`
+  que sale de tu directorio personal detiene la instalación antes de que escriba
+  ningún archivo, y lo mismo ocurre con un enlace en una ruta que la instalación
+  escribe dentro de la carpeta del entorno. En una primera ejecución, el perfil
+  inicial, también bajo `~/.config`, tampoco se escribe a través de un enlace
+  que sale de tu directorio personal: la ejecución se detiene con `Apothem could
+  not create the starter profile`, como hacen `apothem quickstart`, `apothem profile
+  init`, `apothem profile set` y `apothem profile edit`. Para mantener el
+  perfil fuera de tu directorio personal, créalo primero allí con `apothem
+  profile init --profile PATH`, escribiendo PATH como su propia ruta fuera de tu
+  directorio personal, y pasa el mismo `--profile PATH` a cada comando. Eso solo
+  permite superar el paso del perfil: una instalación que escribe bajo
+  `~/.config` sigue deteniéndose en el enlace. Para OpenCode, establece también
+  `XDG_CONFIG_HOME` (consulta [OpenCode](/docs/harnesses/opencode)). Un entorno
+  cuya instalación siempre escribe `~/.config/apothem/` necesita en cambio que
+  el enlace lleve dentro de tu directorio personal; su página de entorno lo
+  indica.
+- Una carpeta personal que es en sí misma un enlace, como un perfil de usuario
+  de Windows trasladado a otra unidad detrás de una unión, se sigue: cada
+  escritura se queda dentro de la carpeta a la que lleva.
 - La instalación no añade ningún archivo de skill ni de regla a tu repositorio.
   El proyecto recibe el archivo de reglas del adaptador, además de la carpeta de
   datos `.apothem/` que crea toda instalación de proyecto.
@@ -102,6 +165,47 @@ all seven                               ->  ~/.config/apothem/rules/ and templat
   `--format json` lleva una entrada de `warnings` con `"outcome": "warning"` y
   `"operation": "skill_conflict"` que nombra la carpeta. Cámbiale el nombre a la
   carpeta o muévela y luego ejecuta [`update`](/docs/cli-reference/update).
+- Esta regla cubre cada carpeta de skills compartida de la tabla anterior:
+  `~/.agents/skills/`, `~/.codebuddy/skills/`, `~/.kiro/skills/` y
+  `~/.trae/skills/`. Un registro de instalación demuestra que una carpeta de
+  skill allí es de Apothem mientras su carpeta de instalación (un proyecto o un
+  `CODEX_HOME`) está activa: existe y todavía contiene uno de los archivos que
+  esa instalación registró en ella, con el contenido de Apothem. Un archivo que
+  pertenece a Apothem cuenta mientras exista. Un archivo que es tuyo, como un
+  archivo de instrucciones al que Apothem añadió su bloque, cuenta solo mientras
+  siga conteniendo ese bloque o, para un archivo sin bloque, el contenido que
+  registró Apothem, de modo que un proyecto clonado de nuevo que conserva solo su
+  propia copia del archivo no está activo. Los archivos de soporte que una
+  instalación escribe bajo `.apothem/support/` cuentan; los almacenes de datos
+  bajo `.apothem/` (memoria, contextos, planes) no, y tampoco un archivo al que
+  se llega a través de un enlace dentro de la carpeta de instalación.
+- Cualquier otro registro, cuya carpeta de instalación ya no existe, no contiene
+  archivos de Apothem o no se puede leer (una unidad o un recurso compartido de
+  red que no responde, un error de permisos), demuestra que una carpeta de skill
+  es de Apothem solo mientras esa carpeta contenga exactamente los archivos que
+  esa instalación registró, sin cambios, sin ningún archivo añadido y sin ningún
+  enlace dentro. Una carpeta que ya contiene lo que escribe esta versión se
+  conserva tal cual, de modo que una carpeta sin editar escrita por una versión
+  anterior no se ve afectada mientras siga coincidiendo con lo que escribe esta
+  versión.
+- Las propias carpetas compartidas nunca cuentan como archivos de una carpeta de
+  instalación, de modo que un proyecto instalado en la carpeta personal no está
+  activo solo porque exista `~/.agents/skills/` o `~/.config/apothem/`.
+- Así, cuando solo esos registros listan una carpeta de skill, la instalación la
+  omite y la deja intacta en tres casos: pusiste allí tu propia skill, la
+  editaste (cambiaste, añadiste o eliminaste un archivo), o una versión anterior
+  que no registraba sus archivos la escribió y esta versión escribe algo
+  distinto. Lo mismo ocurre cuando solo la listaba una instalación anterior en la
+  misma carpeta: una instalación que omitió la carpeta no la lista, y sigue sin
+  estar demostrada a menos que contenga exactamente los archivos que registró
+  esa instalación anterior.
+  La advertencia de la instalación, la actualización y la ejecución en seco da
+  la causa y las dos formas de continuar, con las mismas palabras que
+  [`verify`](/docs/cli-reference/verify), que informa del entorno como no
+  verificado y nombra esas carpetas. Para conservar tu skill, déjala allí. Para
+  usar la versión de Apothem, mueve la carpeta fuera de la carpeta de skills y
+  luego ejecuta [`update`](/docs/cli-reference/update) para ese entorno (con
+  `--project` si es uno con alcance de proyecto).
 - Cada una de estas instalaciones, actualizaciones y ejecuciones en seco imprime
   una `Note:` que nombra las carpetas que escribe fuera de `--project`. En el
   sobre JSON es una entrada de `warnings` con `"operation": "user_level_write"` y
@@ -116,9 +220,55 @@ silencio. En modo plain, esto es una única nota agrupada por entorno (por ejemp
 con `--verbose`, cada capacidad imprime su propia línea de justificación.
 Cualquier otra advertencia del adaptador se imprime también en modo plain en su
 propia línea `Warning:`, por ejemplo la advertencia de Zed que nombra un archivo
-de instrucciones que el nuevo `.rules` oculta. El sobre de `--format json`
-siempre lleva la lista `warnings` completa, independientemente del nivel de
-detalle.
+de instrucciones que el nuevo `.rules` oculta, y la advertencia que nombra un
+archivo que contiene un marcador BEGIN de Apothem sin END después: la
+instalación conserva el texto que sigue a ese marcador y escribe el bloque de
+Apothem aparte de él, así que la advertencia nombra la línea del marcador, da
+pasos numerados que cambian esa línea y cada una de las demás líneas de
+marcador BEGIN salvo la que abre el bloque de Apothem (también un marcador
+BEGIN que cites en código), e indica no volver a añadir el marcador END en su
+lugar, lo que dejaría entonces dos bloques de Apothem (consulta
+[Solución de problemas](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
+Lo mismo hacen la advertencia para un archivo que contiene dos o más bloques
+completos entre los marcadores de Apothem, que nombra cada bloque por sus
+líneas (consulta
+[Un archivo contiene dos bloques entre los marcadores de Apothem](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)),
+y la advertencia para un archivo en el que Apothem no puede distinguir su
+bloque de tu texto, que nombra cada par de marcadores y cómo corregirlo
+(consulta
+[Apothem no puede distinguir su bloque de tu texto](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)):
+la instalación deja ese archivo tal como está (para los pares de marcadores,
+mientras un registro de instalación liste el archivo; consulta
+[`update`](/docs/cli-reference/update)). Una instalación que deja ese archivo
+tal como está termina como parcial, ya que la herramienta no recibe ningún
+bloque actual de Apothem de ese archivo: en lugar de la línea `✓` imprime una
+línea `✗` en la salida de error estándar que nombra el archivo (así que
+`--quiet` la conserva), el `status` del sobre de `--format json` es
+`"partial"` y la advertencia de ese archivo lleva
+`"detail": {"left_as_is": "1"}`, y el código de salida es `2`. Cada
+instalación y actualización termina así hasta que corrijas las líneas de
+marcador que nombra la advertencia. Sin `--quiet`, una instalación así con
+`--harness all` termina con una línea de resumen que empieza con `!` en lugar
+de `✓` y cuenta los archivos que se dejaron tal como están:
+`! Installed <n> harnesses (<m> files written); <k> file(s) left as they are, named above.`
+Con `--clean`, una instalación así no imprime su siguiente paso,
+`apothem verify`, que falla hasta que corrijas el archivo. En una ejecución en
+seco, la advertencia para un archivo que se deja tal como está dice que Apothem
+"would leave the file as it is", y la ejecución sigue terminando con `status`
+`"dry_run"` y código de salida `0`. Una regla de tu perfil que abre un bloque
+de código y nunca lo cierra no oculta el marcador END del bloque que escribe la
+instalación: la instalación cierra ese bloque de código al final del bloque. Un
+bloque que una versión anterior escribió a partir de una regla así no tiene esa
+línea de cierre. Un bloque de código tuyo que se abre por encima del bloque de
+Apothem y nunca se cierra es un caso distinto: una línea de cierre dentro del
+bloque lo cierra, de modo que el bloque se lee como código. La instalación
+advierte sobre un bloque así en cuanto lo escribe, y la advertencia nombra el
+bloque de código que hay que cerrar por encima del marcador BEGIN (consulta
+[Apothem no puede distinguir su bloque de tu texto](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+Una ejecución en seco lee el archivo antes de que se escriba nada, así que no
+muestra que el bloque se leería como código una vez escrito.
+El sobre de `--format json` siempre lleva la lista `warnings` completa,
+independientemente del nivel de detalle.
 
 La instalación y la actualización también imprimen avisos como líneas `Note:`. Un
 aviso nunca cambia lo que escribe la instalación. Cuando una instalación escribe
@@ -157,6 +307,32 @@ el comando ejecutara un archivo distinto, así que la instalación (y `--dry-run
 se detiene con un error que nombra la ruta y no escribe nada; mueve o cambia el
 nombre del proyecto y vuelve a ejecutarla. Un espacio o un apóstrofo en una ruta
 no son problema.
+
+Algunas herramientas cargan solo el primer archivo con texto de una lista fija
+en una carpeta, de modo que un archivo tuyo que va antes del que escribe
+Apothem impide que la herramienta cargue el bloque de Apothem. Por ejemplo,
+[una herramienta compatible](/docs/harnesses/codex#compatibility-notes) lee un
+`AGENTS.override.md` que tiene texto en lugar del `AGENTS.md` que Apothem
+escribe junto a él en la carpeta personal de esa herramienta. La instalación y
+la actualización imprimen entonces una nota que nombra ese archivo, también en
+las ejecuciones en seco. Un archivo de anulación vacío se omite, y también un
+enlace simbólico a `AGENTS.md`; un enlace duro o una copia reciben la nota,
+porque una instalación que reescribe `AGENTS.md` lo deja como un archivo
+separado. OpenCode 1 funciona de otra manera: una lista `instructions` en un
+`opencode.jsonc`, incluso una vacía, reemplaza la lista que Apothem escribe en
+`opencode.json` en la misma carpeta. Un `config.json`, `opencode.json` u
+`opencode.jsonc` allí que no puede leer ni analizar, cuyo nivel superior no es
+un objeto, cuyo valor `instructions` no es una lista de texto, o con un
+`{file:path}` que nombra un archivo que no puede leer le impide cargar
+cualquier parte de su configuración, y lo mismo ocurre con una carpeta con uno
+de esos nombres. La instalación y la actualización imprimen también una nota
+`instruction_override` para cada uno de esos archivos, excepto un
+`opencode.json` que no pueden analizar ni siquiera como JSON5, que rechazan con
+un error `config.unparseable`
+([notas sobre OpenCode](/docs/harnesses/opencode#compatibility-notes)). La nota
+es una entrada de `warnings` con `"outcome": "advisory"` y `"operation": "instruction_override"`,
+el `harness`, la `path` del archivo al que se refiere la nota, el `target` que
+escribe la instalación y un `message`.
 
 Los servidores MCP del perfil reciben tres avisos, cada uno de los cuales nombra
 el campo del perfil:
@@ -235,6 +411,10 @@ documento JSON en stdout:
 }
 ```
 
+Una instalación que dejó un archivo tal como está por sus líneas de marcador de
+Apothem tiene `status` `"partial"` y sale con el código `2` (consulta
+[Notas sobre capacidades](#notas-sobre-capacidades)).
+
 Con `--dry-run` no se escribe nada y `results` lista cada ruta que la
 instalación escribiría, cada una con el resultado que tendría (`created`,
 `updated` o `unchanged`) y, para un archivo que tú también editas, el diff
@@ -262,6 +442,11 @@ unificado en `detail.diff` — el mismo plan que muestra
   "error": null
 }
 ```
+
+Un resultado rechazado en un enlace nombra el enlace en `detail.symlink` y la
+ruta a la que lleva en `detail.leads_to`. Un resultado rechazado porque un
+enlace lleva la carpeta de una herramienta fuera de tu directorio personal
+también lleva la corrección en `detail.fix`.
 
 Cuando se proporciona `--clean`, el sobre lleva además un objeto `clean` que
 describe la fase de eliminación — la lista de disposiciones por destino, si la
@@ -325,7 +510,7 @@ apothem Installing --harness claude-code   # capitalized variant
 |---|---|
 | 0 | Adaptador instalado correctamente o ejecución en seco planificada sin problemas |
 | 1 | Error previsto de validación, de perfil, de entorno, de proyecto o de adaptador |
-| 2 | Materialización parcial del lote después de al menos una escritura |
+| 2 | Parcial: un lote se detuvo después de al menos una escritura, o la instalación dejó tal como está un archivo en el que Apothem guarda su bloque por sus líneas de marcador de Apothem (consulta [Notas sobre capacidades](#notas-sobre-capacidades)); `status` es `"partial"` |
 | 64 | Error de uso: una opción o un comando desconocidos, o un valor de opción ausente o no válido. Con `--json`, el error es un sobre JSON con el código `cli.usage`. |
 
 ## Véase también

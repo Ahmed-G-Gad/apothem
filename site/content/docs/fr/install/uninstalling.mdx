@@ -2,7 +2,7 @@
 title: "Désinstallation"
 description: "Supprimer Apothem et nettoyer les configurations d'environnement."
 machineTranslated: true
-sourceHash: "60208ca7c4c5f168"
+sourceHash: "e1f5ac4a5447a167"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -129,3 +129,69 @@ natif de l'environnement documenté sur les
 [pages de référence des environnements](/docs/harnesses) après avoir vérifié que
 vous avez sauvegardé toutes les règles, tous les auxiliaires ou fichiers de
 profil personnalisés que vous souhaitez conserver.
+
+## Si la désinstallation signale qu'elle ne s'est pas terminée
+
+Une désinstallation peut s'arrêter en cours de route ; elle conserve alors
+l'installation enregistrée. Le message dépend de la raison :
+
+- `✗ <harness> uninstall did not finish:` nomme les fichiers Apothem laissés
+  derrière un lien (un lien symbolique ou une jonction), les fichiers qu'une
+  installation d'une version antérieure a enregistrés et qui diffèrent de ce
+  qu'écrit cette version, les fichiers d'une installation sans aucun
+  enregistrement, les fichiers qui contiennent deux blocs différents entre les
+  marqueurs d'Apothem, les fichiers dont Apothem ne peut pas distinguer les
+  lignes de marqueur de votre texte, ou les étapes de suppression qui ont
+  signalé des erreurs. Pour un lien, les fichiers d'une version antérieure, une
+  installation sans enregistrement, ou des fichiers à deux blocs ou avec de
+  telles lignes de marqueur, il indique aussi le nombre de chemins laissés.
+  Après une désinstallation qui s'est arrêtée, les lignes pour les liens, les
+  fichiers conservés et les étapes en échec suivent l'une des deux lignes
+  ci-dessous.
+- `✗ <harness> uninstall stopped after removing files:` signifie qu'une étape de
+  suppression a arrêté la désinstallation après avoir supprimé certains
+  fichiers, ou retiré les entrées ou le bloc d'Apothem d'un fichier tel que
+  `openclaw.json`.
+- `✗ <harness> uninstall failed:` signifie qu'une étape de suppression a arrêté
+  la désinstallation avant qu'elle ne modifie quoi que ce soit, ou qu'une erreur
+  inattendue (une exception, comme une sauvegarde impossible à écrire) a arrêté
+  la première étape d'une désinstallation d'Open-Claw, d'Antigravity ou de Kimi
+  Code, qui ne signale rien de ce qu'elle a fait.
+
+Elle se termine avec le code `2` lorsqu'elle a supprimé ou modifié des
+fichiers, laissé les propres fichiers d'Apothem derrière un lien, conservé les
+fichiers d'une installation d'une version antérieure ou d'une installation sans
+enregistrement, ou laissé un fichier avec deux blocs différents entre les
+marqueurs d'Apothem ou avec des lignes de marqueur qu'Apothem ne peut pas
+distinguer de votre texte, ou lorsqu'un autre environnement a été supprimé, et
+avec `1` lorsqu'elle s'est arrêtée avant de modifier quoi que ce soit pour toute
+autre raison. Une erreur inattendue dans cette première étape se termine avec
+`1` (`2` lorsqu'un autre environnement a été supprimé), quoi que l'étape ait
+modifié. Corrigez ce que nomme le message, puis exécutez à nouveau la même
+commande `apothem uninstall` : elle supprime ce que la première exécution a
+laissé. Pour un fichier à deux blocs, ou dont Apothem ne peut pas distinguer les
+lignes de marqueur de votre texte, l'avertissement donne des correctifs
+numérotés, un pour chaque cas : choisissez celui dont le cas est vrai et suivez
+ses étapes dans l'ordre indiqué, avant de relancer la désinstallation (voir
+[Suivre une correction numérotée](/docs/install/troubleshooting#follow-a-numbered-fix)).
+Ne supprimez pas le bloc d'Apothem pour conserver une paire de marqueurs à vous,
+car la désinstallation suivante retirerait alors votre paire. Pour une
+installation d'une version antérieure ou une installation sans enregistrement,
+copiez d'abord tout fichier listé que vous avez modifié ou ajouté et corrigez
+chaque fichier qu'un avertissement signale pour un marqueur Apothem, comme le
+dit cet avertissement, puis exécutez `apothem update`, puis la désinstallation.
+Sans enregistrement, le bloc d'Apothem dans `CLAUDE.md` ou dans un document de
+profil reste en place, et son avertissement donne un correctif numéroté qui
+supprime à la main les lignes du bloc si vous ne voulez plus du bloc (ou,
+lorsqu'aucun tel correctif ne garde vos lignes lisibles comme avant, indique de
+modifier plutôt chaque ligne de marqueur Apothem du fichier). Lorsque ce fichier
+contient deux blocs entiers ou plus, l'avertissement nomme chacun d'eux et se
+termine plutôt par cette mise à jour et cette désinstallation, et la
+désinstallation nomme alors toutes vos lignes de marqueur autour du bloc
+d'Apothem avant de retirer le bloc. Une mise à jour conserve un marqueur BEGIN
+sans END ainsi que le texte qui le suit, et ne corrige pas un fichier qui
+contient deux blocs différents. La
+[référence de la désinstallation](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish)
+décrit chaque cas, et son tableau des
+[codes de sortie](/docs/cli-reference/uninstall#exit-codes) indique ce que
+signifient `1` et `2`.

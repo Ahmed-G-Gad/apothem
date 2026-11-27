@@ -2,7 +2,7 @@
 title: "Branch-Schutz"
 description: "Apothem-Branch-Schutz auf main: die aktuell geltende Schutzregel, ihre erforderlichen Statusprüfungen und die Prüfungen, deren Aufnahme aussteht."
 machineTranslated: true
-sourceHash: "7d54aae6581f03ec"
+sourceHash: "a8e8cbd39d06d78f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,7 +22,7 @@ Diese Seite hält die aktuell geltenden Einstellungen exakt fest, wie sie zuletz
 | **Bestehen von Statusprüfungen erforderlich** | `required_status_checks` | ✅ | Die 12 Kontexte, die unter [Erforderliche Statusprüfungen](#erforderliche-statusprüfungen) aufgeführt sind, müssen bestehen. |
 | **Branches müssen vor dem Merge aktuell sein** | `required_status_checks.strict` | ❌ | Ein Pull Request kann gemergt werden, wenn seine erforderlichen Prüfungen gegen einen älteren Stand von `main` bestanden haben. Die Workflows, die bei einem Push auf `main` laufen, testen dann das gemergte Ergebnis. |
 | **Auflösung von Konversationen vor dem Merge erforderlich** | `required_conversation_resolution` | ✅ | Offene Review-Threads blockieren den Merge. |
-| **Signierte Commits erforderlich** | `required_signatures` | ❌ | Release-Commits werden lokal signiert. Die Durchsetzung wartet, bis die Onboarding-Dokumentation für Mitwirkende die Einrichtung der SSH- oder GPG-Signierung beschreibt. |
+| **Signierte Commits erforderlich** | `required_signatures` | ❌ | Release-Commits erreichen `main` als Squash-Merges, die GitHub mit seinem eigenen Schlüssel signiert; die Signatur des Maintainers steht auf dem Release-Tag. Die Durchsetzung wartet, bis die Onboarding-Dokumentation für Mitwirkende die Einrichtung der SSH- oder GPG-Signierung beschreibt. |
 | **Lineare Historie erforderlich** | `required_linear_history` | ✅ | Hält die öffentliche Historie von `main` als eine einzige Linie. |
 | **Branch sperren** | `lock_branch` | ❌ | `main` nimmt Merges an. |
 | **Umgehen der obigen Einstellungen nicht zulassen** | `enforce_admins` | ❌ | Die obigen Einstellungen binden keinen Repository-Administrator. Ein Administrator kann ohne die erforderlichen Prüfungen mergen oder direkt auf `main` pushen. |

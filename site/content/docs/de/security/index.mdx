@@ -2,7 +2,7 @@
 title: "Sicherheit"
 description: "Apothems Sicherheitshaltung — OpenSSF-Scorecard-Ziel, Schwachstellenmeldung, Härtungsoberflächen."
 machineTranslated: true
-sourceHash: "0b4ba23080c1c9b9"
+sourceHash: "13f553f7cbd0b241"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -16,7 +16,7 @@ jeder Harness liest. Diese eine Funktion begrenzt, was es als vertrauenswürdig
 behandelt und was nicht.
 
 - **Was Apothem als vertrauenswürdig behandelt.** Das gemeinsame Profil, das Sie verfassen, und den gebündelten Quellbaum, den der Installer ablegt. Das Profil ist Ihre erklärte Absicht; die Engine behandelt es nach der Schemavalidierung als maßgebliche Eingabe.
-- **Was Apothem nicht als vertrauenswürdig behandelt.** Profilinhalte erreichen das Dateisystem erst nach der Validierung: Schemafehler, unbekannte Harness-IDs, unsichere Projektpfade, fehlende Manifestquellen, Ziel-Traversierung und Symlink-Überschreitungen stoppen alle vor jedem Schreibvorgang und liefern strukturierte Diagnosen mit `files_written: []`.
+- **Was Apothem nicht als vertrauenswürdig behandelt.** Profilinhalte erreichen das Dateisystem erst nach der Validierung: Schemafehler, unbekannte Harness-IDs, unsichere Projektpfade, fehlende Manifestquellen, Ziel-Traversierung und Symlink-Überschreitungen stoppen alle vor jedem Schreibvorgang und liefern strukturierte Diagnosen mit `files_written: []`. Ausgenommen sind die Links, die Dotfile-Manager unter `~/.config` oder an oder oberhalb eines gemeinsam genutzten Skill-, Regel- oder Vorlagenordners anlegen; ihnen wird gefolgt, solange sie an einen Ort innerhalb Ihres Home-Verzeichnisses führen. Unter Windows zählt eine Junction als Link.
 - **Was materialisierte Ausgaben nie enthalten.** Keine Geheimnisse. Profil-Diagnosen schwärzen geheimnisartige Schlüssel und tokenförmige Werte, bevor sie in Klartextausgaben, JSON, Logs, Doku-Snippets oder Tests gelangen; öffentliche Beispiele verwenden erfundene Platzhalter-Identitäten und -Domains. Materialisierte Konfiguration ist dafür gedacht, committet und geteilt zu werden; sie enthält keine Anmeldedaten.
 - **Die universelle Verbotsuntergrenze.** Die `settings.json` von Claude Code, die Apothem materialisiert, trägt unabhängig von jeder Allow-Liste pro Harness eine nicht verhandelbare Verbotsuntergrenze; bei anderen Harnesses steht dieselbe Untergrenze als Richtlinientext in den materialisierten Regeln, nicht als Verbotsliste auf Settings-Ebene — Geheimnispfade (`.env*`, `~/.ssh/**`, Anmeldedaten-Speicher), destruktive Shell-Operationen (`rm -rf`, `sudo`, Force-Pushes auf geschützte Branches) und die Ausführung nicht vertrauenswürdiger Eingaben. Keine Allow-Liste weitet diese Untergrenze stillschweigend aus.
 - **Wirkungsradius.** Schreibvorgänge sind auf die Harness-Verzeichnisse und die Apothem-eigenen Unterstützungs-Teilbäume beschränkt. Vorhandene verwaltete Ziele werden vor dem Ersetzen gesichert, und gemeinsam genutzte Discovery-Verzeichnisse werden Kind für Kind zusammengeführt, sodass nicht zugehörige, vom Operator verfasste Dateien an ihrem Platz bleiben.
@@ -27,7 +27,50 @@ Harness-Lebenszyklus- und Profilschreibbefehle validieren vor dem Schreiben.
 Profil-Schemafehler, unbekannte Harness-IDs, unsichere Projektpfade, fehlende
 Manifestquellen, Ziel-Traversierung und Symlink-Überschreitungen stoppen vor
 Schreibvorgängen ins Dateisystem und liefern strukturierte Diagnosen mit
-`files_written: []` zurück.
+`files_written: []` zurück. Eine Windows-Junction zählt als Symlink. Ausgenommen
+sind ein Link unter `~/.config` oder an oder oberhalb eines gemeinsam genutzten
+Skill-, Regel- oder Vorlagenordners, der innerhalb Ihres Home-Verzeichnisses
+bleibt, sowie ein Home-Ordner, der selbst ein Link ist. Ein Link führt einen
+Schreibvorgang in den Ordner eines Werkzeugs in Ihrem Home-Verzeichnis oder in
+das Profil niemals aus Ihrem Home-Verzeichnis hinaus, es sei denn, Sie nennen
+den Ordner außerhalb selbst, über `XDG_CONFIG_HOME` oder `CODEX_HOME`, als Pfad
+außerhalb Ihres Home-Verzeichnisses geschrieben, oder für das Profil über
+`--profile PATH`, auf dieselbe Weise geschrieben. Einem so geschriebenen Pfad
+wird gefolgt, wohin seine Links auch führen. Ein Projektordner folgt seiner
+eigenen Regel, siehe unten. Die Link-Regel gilt für install, update, uninstall,
+`apothem rollback` und die `apothem profile`-Befehle, einschließlich
+`profile set` und `profile init --force` über einem vorhandenen Profil, sowie
+für das Profil, das `install --clean` zurückschreibt. `install --clean` stoppt,
+bevor es irgendetwas sichert oder entfernt, wenn `~/.config` ein Link ist, der
+aus Ihrem Home-Verzeichnis hinausführt, und es entfernt ein Ziel, das selbst ein
+Link ist, als Link, ohne es zu betreten. Unter Windows stoppt eine Junction an
+oder in dem Ordner eines Werkzeugs die Installation daher auch dann, wenn sie an
+einen Ort innerhalb Ihres Home-Verzeichnisses führt; ersetzen Sie sie durch den
+Ordner selbst.
+
+Dem Ordner, den Sie mit `--project` nennen, wird gefolgt, wohin er auch führt,
+und ebenso den Links oberhalb davon. Das gilt, wenn der Ordner selbst ein Link
+ist, `~/.config` eingeschlossen, und wenn der Link aus Ihrem Home-Verzeichnis
+hinausführt, weil Sie diesen Ordner genannt haben. Ein Link innerhalb des
+Projektordners, auf einem Pfad, den die Installation dort schreibt, stoppt die
+Installation. Das gilt auch, wenn der Link zurück in den Projektordner führt,
+und wenn `--project` Ihr Home-Verzeichnis nennt. Ein Werkzeug, das auch in Ihr
+Home-Verzeichnis schreibt, etwa in `~/.config/apothem`, prüft diese Pfade nach
+den obigen Home-Regeln. Ein `~/.config`-Link, der aus Ihrem Home-Verzeichnis
+hinausführt, stoppt die Installation dieses Werkzeugs also auch dann, wenn
+`--project` `~/.config` nennt.
+
+`XDG_CONFIG_HOME` und `CODEX_HOME` können aus der `.envrc` eines Projekts oder
+aus einem Skript stammen, das Sie in Ihre Shell einlesen, nicht nur aus Ihrem
+Shell-Profil. Nennt eine der beiden einen Ordner außerhalb Ihres
+Home-Verzeichnisses, ändert Apothem dort Dateien, weil dies der Ordner ist, den
+sie nennt.
+
+Apothems eigener Ordner, `~/.apothem`, wird nicht auf diese Weise geprüft. Er
+enthält die Backups, das Installations-Ledger und deren Sperrdateien; ist er ein
+Link, folgt jeder Befehl, der dort schreibt, ihm, wohin er auch führt, und
+`apothem backups prune` sowie die automatische Backup-Aufbewahrung löschen alte
+Backup-Sätze am anderen Ende dieses Links.
 
 Installations- und Aktualisierungsvorgänge bewahren bestehende verwaltete Ziele,
 indem sie sie vor dem Ersetzen sichern. Gemeinsame Discovery-Verzeichnisse
@@ -44,6 +87,7 @@ erreichen. Öffentliche Beispiele verwenden fiktive Platzhalter-Identitäten und
 ## Schnelllinks
 
 - [**OpenSSF-Scorecard-Haltung**](/docs/security/openssf-scorecard-target) — Nachweis je Prüfung und bekannte Plattformgrenzen
+- [**OpenSSF-Best-Practices-Badge**](/docs/security/openssf-best-practices) — Antworten auf die Passing-Kriterien, mit Nachweisen und verbleibenden Lücken
 - [**Webhooks-Audit**](/docs/security/webhooks-audit) — Nachweis der Hygiene bei Webhook-Geheimnissen
 - [**Branch-Schutz**](/docs/security/branch-protection-ruleset) — Pull-Request-Pflicht, erforderliche Statusprüfungen sowie Sperren für Force-Pushes und Löschungen
 - [**Binärartefakt-Durchlauf**](/docs/security/binary-artifacts-sweep) — Beleg, dass der Quellbaum keine Binärdateien enthält
@@ -56,10 +100,23 @@ Verwenden Sie [Private Vulnerability Reporting](https://github.com/ahmed-g-gad/a
 
 ## Release-Belege der Lieferkette
 
-Jedes Release-Artefakt wird ausgeliefert mit:
+Jedes GitHub Release trägt diese Nachweise. Welche Dateien sie abdecken,
+unterscheidet sich je Eintrag:
 
-- **SLSA-3-Build-Provenienz** über [`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator)
 - **Sigstore-Signaturen** über [`sigstore/cosign-installer`](https://github.com/sigstore/cosign-installer)
+  für jede verteilte Datei: das sdist, das Wheel, das VS-Code-Paket
+  `apothem.vsix`, das SBOM `sbom.cdx.json`, die drei Plattformarchive und
+  `SHA256SUMS`. Jede hat ihr eigenes `<file>.cosign.bundle`. Die
+  Provenienzdatei `provenance.intoto.jsonl` hat kein cosign-Bundle; der
+  SLSA-Generator signiert sie in seinem eigenen DSSE-Umschlag.
+- **SLSA-3-Build-Provenienz** über [`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator)
+  in `provenance.intoto.jsonl` für vier Dateien: das sdist, das Wheel,
+  `apothem.vsix` und `sbom.cdx.json`. Der Release-Workflow bittet GitHub
+  außerdem, einen eigenen Build-Provenienz-Eintrag für dieselben Dateien zu
+  führen, einen von dieser Datei getrennten Eintrag; dieser Schritt ist kein
+  Gate für das Release, daher kann einem Release dieser Eintrag fehlen. Die
+  Plattformarchive und `SHA256SUMS` haben keine SLSA-Provenienz; ihre
+  cosign-Signaturen und das signierte Release-Tag decken sie ab.
 - **CycloneDX-SBOM** des ausgelieferten Wheels und sdist, geschrieben von `scripts/release/generate_sbom.py`: das apothem-Paket, jedes unter `apothem/_vendor` vendorte Paket mit seiner Lizenz, die deklarierten Laufzeitanforderungen und der SHA-256 jeder Distribution. Das SBOM ist signiert und wie die Distributionen von der Build-Provenienz abgedeckt
 - **npm-Provenienz-Erklärungen** über Trusted-Publishing-OIDC auf `@ahmed-g-gad/apothem`
 - **GPG-signierte Git-Tags** (EDDSA-Schlüssel `70396FED9C634163`)
@@ -90,8 +147,16 @@ Asset mit seinem `<asset>.cosign.bundle` (frühere Releases benennen die Bundles
 für Plattformarchive und `SHA256SUMS` `<asset>.sig`). Die darwin- und
 linux-Archive sind dieselben Bytes unter zwei Namen, daher listet `SHA256SUMS`
 einen Digest zweimal. Aus einem Klon heraus führt
-`bash scripts/release/verify-provenance.sh <download-dir>` alle drei Prüfungen,
-einschließlich des `SHA256SUMS`-Manifests, in einem Durchlauf aus.
+`bash scripts/release/verify-provenance.sh --require-all <download-dir>`
+die drei Prüfungen in einem Durchlauf aus: das `SHA256SUMS`-Manifest, jedes
+cosign-Bundle und die SLSA-Provenienz des Wheels, des sdist, von `apothem.vsix`
+und des signierten SBOM. Es überspringt eine Prüfung, deren Werkzeug (`cosign`,
+`slsa-verifier`) oder Datei (`SHA256SUMS`) fehlt, und seine letzte Zeile nennt
+die Prüfungen, die liefen, und die, die es übersprungen hat. Nur
+`chain OK (3 of 3 layers verified: ...)` bedeutet, dass das Release verifiziert
+ist; eine Zeile, die mit `partial check` beginnt, bedeutet das nicht. Mit
+`--require-all` (`-RequireAll` für `verify-provenance.ps1`) endet eine
+Teilprüfung mit Exit-Code 1; ohne die Option endet sie mit Exit-Code 0.
 
 Zwei Details entscheiden, ob die Verifizierung etwas bedeutet:
 

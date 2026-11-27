@@ -2,7 +2,7 @@
 title: "Descripción general de la CLI"
 description: "Descripción general de la CLI de Apothem — todos los subcomandos e indicadores."
 machineTranslated: true
-sourceHash: "23e6a1450707e054"
+sourceHash: "ce86e94ba98910b5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,13 @@ compartido y los adaptadores de entorno.
 | Indicador | Descripción |
 |------|-------------|
 | `--version` | Imprime la versión de Apothem y sale |
-| `--help` | Imprime la ayuda del comando |
+| `-h`, `--help` | Imprime la ayuda del comando |
+
+Las secciones siguientes cubren `install`, `update`, `uninstall`, `verify`,
+`status`, `profile`, `harnesses` y `doctor`. La tabla generada al final de esta
+página y la [referencia de la CLI](/docs/cli-reference) enumeran todos los
+comandos, incluidos `quickstart`, `diff`, `rollback`, `backups`,
+`migrate-workspace` y `completion`.
 
 ## Subcomandos
 
@@ -113,16 +119,16 @@ apothem verify --harness <name|all> [--profile PATH] [--project PATH]
 
 Sin `--profile`, la comprobación es estructural: cada destino gestionado debe
 estar presente y ser válido. Con `--profile`, también exige fidelidad, de modo
-que una instalación que existe pero se ha desviado de ese perfil no supera
+que una instalación que existe pero ha derivado de ese perfil no supera
 verify — úsala para confirmar que un perfil concreto está instalado fielmente.
 
 El código de salida es `0` cuando el entorno se verifica (y, con `--profile`, es
 fiel a él), y `1` cuando falta un destino o no es válido, o cuando se pasa
-`--profile` y la instalación se ha desviado.
+`--profile` y la instalación ha derivado.
 
 ### `apothem status`
 
-Informa el estado de instalación, de verificación y de desviación de cada
+Informa el estado de instalación, de verificación y de deriva de cada
 entorno registrado.
 
 ```bash
@@ -131,11 +137,15 @@ apothem status [--profile PATH] [--project PATH]
 
 | Opción | Descripción |
 |--------|-------------|
-| `--profile PATH` | Perfil compartido que se usa como referencia de desviación. Un perfil predeterminado ilegible degrada la desviación a `unknown` en lugar de abortar el barrido. |
+| `--profile PATH` | Perfil compartido que se usa como referencia de deriva. Un perfil predeterminado ilegible degrada la deriva a `unknown` en lugar de abortar el barrido. |
 | `--project PATH` | Raíz del proyecto para los entornos con alcance de proyecto. Sin esta opción, esos entornos informan `needs-project`. |
 
-Cada fila combina un indicador `installed` con un indicador `verified`, y ambos
-se combinan en el estado de desviación:
+Cada fila lleva un indicador `installed`, un indicador `verified` y un estado
+de deriva. Una fila cuyo indicador `installed` es falso informa `absent`,
+`needs-project` o `error`; `in-sync`, `drift` y `unknown` solo aparecen en filas
+instaladas. El estado de deriva nunca depende del indicador `verified`. Para
+un entorno instalado, compara la configuración instalada con el perfil de
+referencia, o indica por qué no se hizo la comparación:
 
 | Estado | Significado |
 |-------|---------|
@@ -144,6 +154,7 @@ se combinan en el estado de desviación:
 | `drift` | Instalado, pero ya no coincide — corrígelo con `apothem update`. |
 | `unknown` | Instalado, pero no se pudo leer el perfil de referencia. |
 | `needs-project` | Se informó de un entorno con alcance de proyecto sin `--project`, por lo que no se puede resolver su destino. |
+| `error` | El adaptador falló mientras se comprobaba; `status` informa del error y sale con `2`. |
 
 `installed` responde a «¿Apothem se instaló aquí?», no a «¿este entorno está
 presente en la máquina?». Se basa en los propios artefactos de Apothem — el

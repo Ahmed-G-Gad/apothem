@@ -2,7 +2,7 @@
 title: "Einen Harness hinzufügen"
 description: "Aktiviere einen Harness-Adapter, damit seine native Konfiguration aus dem gemeinsamen Profil materialisiert wird."
 machineTranslated: true
-sourceHash: "6daae4aec1547438"
+sourceHash: "d42e0475934c3217"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,8 +14,9 @@ dieses Harness aus deinem gemeinsamen Profil materialisiert.
 - Ein gemeinsames Profil unter `~/.config/apothem/profile.yaml` (erstelle eines
   mit `apothem profile init`, falls es noch nicht existiert).
 - Die `apothem`-CLI in deinem `PATH`. Wenn du den eigenständigen Quellbaum
-  installiert hast, stelle jedem Befehl `PYTHONPATH="$HOME/.apothem/src"` voran
-  und führe `python -m apothem` anstelle von `apothem` aus — oder verwende
+  installiert hast und sein Ordner noch nicht in `PATH` liegt, führe den Shim
+  über seinen vollständigen Pfad aus (standardmäßig `~/.local/bin/apothem`) oder
+  kopiere den Befehl, den der Installer ausgegeben hat — oder verwende
   `npx @ahmed-g-gad/apothem`.
 
 ## Schritte

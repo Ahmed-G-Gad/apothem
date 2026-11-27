@@ -2,7 +2,7 @@
 title: "Installation"
 description: "Überblick über die Apothem-Installation — acht Installationskanäle, jeder mit seinen Voraussetzungen, einem kopierbereiten Befehl und einem Verifizierungsschritt: das Claude Code-Plugin, der npm-Shim, die Ein-Schritt-Installer, die Erweiterung für die VS Code-Familie, die drei Kommandozeilen-Bootstrap-Erweiterungen und die direkte Engine."
 machineTranslated: true
-sourceHash: "1d9aa6524933a4c5"
+sourceHash: "cc205e0eab36c099"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -142,20 +142,32 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 
 ## 3. Ein-Schritt-Installer
 
-**Voraussetzungen:** System-Python 3.10+ im `PATH` (der Installer bietet an, die Voraussetzungen `click` / `rich` für Sie hinzuzufügen); `git` und `gpg` für eine Netzwerkinstallation, die den Quellcode klont und dessen signiertes Release-Tag prüft (Git for Windows liefert beide mit).
+**Voraussetzungen:** System-Python 3.10+ im `PATH` (der Installer bietet an, die
+Voraussetzungen `click` / `rich` für Sie hinzuzufügen). Für eine
+Netzwerkinstallation: `git`, um das neueste Release zu finden, und `gpg`, um das
+signierte Release-Tag zu prüfen (Git for Windows liefert beide mit).
+[cosign](https://docs.sigstore.dev/cosign/system_config/installation/) ist
+optional: Damit prüft der Installer zusätzlich das signierte Release-Archiv.
 
-Die Installationsskripte ermitteln das neueste signierte Release-Tag,
-verifizieren seine Signatur, legen den Apothem-Quellbaum auf dem Stand dieses
-Tags unter `~/.apothem` ab, erstellen ein Startprofil, wenn keines existiert,
-materialisieren Ihren ersten Harness und verifizieren das Ergebnis, alles in
-einem Durchlauf. Das Startprofil enthält Platzhalter-Identitätsfelder:
-Bearbeiten Sie es und führen Sie dann `apothem update --harness <name>` aus, um
-Ihre eigenen anzuwenden. Ein erneuter Aufruf ist idempotent: Ein bestehender
-Baum wird erneut auf das ermittelte Tag ausgecheckt, und der Harness wird neu
-materialisiert. Die an ein Tag gepinnte, verifizierte Installation ist der
-Standardweg und der empfohlene Weg.
+Die Installationsskripte ermitteln das neueste Release, prüfen es (siehe
+[Vertrauensmodell](#vertrauensmodell)), legen den Apothem-Quellbaum unter
+`~/.apothem` ab, erstellen ein Startprofil, wenn keines existiert, materialisieren
+Ihren ersten Harness und verifizieren das Ergebnis, alles in einem Durchlauf. Das
+Startprofil enthält Platzhalter-Identitätsfelder: Bearbeiten Sie es und führen Sie
+dann `apothem update --harness <name>` aus, um Ihre eigenen anzuwenden. Ein
+erneuter Aufruf ist idempotent: Ein Git-Klon wird per Fetch aktualisiert, sein
+neues Tag wird geprüft, und erst dann wird der Klon auf das ermittelte Tag
+ausgecheckt; eine Installation aus einem Release-Archiv wird an Ort und Stelle
+aktualisiert; und der Harness wird neu materialisiert. Endet die Engine als
+teilweise (Exit-Code `2`), gibt der Installer eine Warnzeile aus, verifiziert
+trotzdem, legt den `apothem`-Befehl ab, gibt sein Banner aus und endet dann mit
+Exit-Code `2`. Die Engine endet als teilweise, wenn sie eine Datei wegen ihrer
+Apothem-Markierungszeilen unverändert lässt oder wenn sie anhält, nachdem sie
+bereits etwas geschrieben hat (siehe
+[Wenn die Engine eine Datei unverändert lässt](/docs/install/updating#when-the-engine-leaves-a-file-as-it-is)).
+Die verifizierte Installation ist der Standardweg und der empfohlene Weg.
 
-Importieren Sie den Maintainer-Signaturschlüssel vorab einmalig. Der Installer bricht ab, wenn der Schlüssel nicht in Ihrem Schlüsselbund liegt. Prüfen Sie, dass der Fingerabdruck `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163` lautet, also der Wert, den [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#maintainer-signing-key) veröffentlicht. Unter Windows liest `git verify-tag` den Schlüsselbund des `gpg`, der mit Git for Windows ausgeliefert wird; daher läuft der Import über Gits eigene `bash`:
+Importieren Sie den Maintainer-Signaturschlüssel vorab einmalig. Jede Netzwerkinstallation prüft das Release-Tag dagegen, mit oder ohne cosign, und bricht ab, wenn der Schlüssel nicht in Ihrem Schlüsselbund liegt. Prüfen Sie, dass der Fingerabdruck `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163` lautet, also der Wert, den [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#maintainer-signing-key) veröffentlicht. Unter Windows liest `git verify-tag` den Schlüsselbund des `gpg`, der mit Git for Windows ausgeliefert wird; daher läuft der Import über Gits eigene `bash`:
 
 ```bash title="macOS · Linux · WSL2 · BSD — import the key once"
 curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
@@ -183,9 +195,238 @@ APOTHEM_HARNESS=claude-code sh scripts/installer/install.sh                     
 $env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/install.ps1   # Windows
 ```
 
+Ein per Pipe ausgeführter Einzeiler verwendet nie einen lokalen Baum: `curl ... | sh` und `irm ... | iex`
+ignorieren den Ordner, aus dem Sie sie ausführen, und dessen übergeordnete Ordner
+und rufen das Release ab und verifizieren es. Der Installer verwendet einen lokalen
+Baum nur, wenn Sie das eigene `scripts/installer/install.sh` (oder `install.ps1`)
+des Checkouts über seinen Pfad ausführen, aus einem beliebigen Ordner (zum Beispiel
+`sh ~/src/apothem/scripts/installer/install.sh`), oder wenn `APOTHEM_SOURCE` diesen
+Baum benennt. Die Installer, Updater und Uninstaller, die `apothem`-Shims, der
+npm-Launcher, die Hooks und die Validator-Prozesse des Konformitäts-Gates halten
+den aktuellen Ordner aus dem Modul-Suchpfad von Python heraus. Ein
+`python -m apothem`-Befehl, den Sie selbst eingeben, tut das nicht: `-m` liest
+Module zuerst aus dem aktuellen Ordner.
+
+Leere und relative Einträge in Ihrem eigenen `PYTHONPATH` gibt kein Launcher an die
+Engine weiter (die Installer, Updater, Uninstaller, die POSIX- und
+Windows-`apothem`-Shims und der npm-Launcher). Ein beibehaltener Eintrag muss ein
+vollständiger Pfad sein: unter Windows ein Laufwerkspfad wie `C:\lib` oder ein
+Netzwerkpfad, anderswo ein Pfad, der mit `/` beginnt. Ein wurzelbezogenes `\lib`
+oder ein laufwerksrelatives `C:lib` wird verworfen. Die sh-Skripte fragen das
+Python, das sie ausführen, welche Form es liest, und der `apothem`-Shim, den sie
+schreiben, behält diese Form bei. Ein Windows-Python (das übliche unter Git Bash)
+erhält die Engine-Pfade in Windows-Form, mit `;` verbunden, und behält nur die
+Laufwerks- und Netzwerkpfade Ihres `PYTHONPATH`. Ein POSIX-Python, einschließlich
+des eigenen `python3` von Cygwin und MSYS2, erhält POSIX-Pfade, mit `:` verbunden,
+und behält nur Einträge, die mit `/` beginnen. Die `git`-Befehle der Installer, die
+nicht auf einem Klon arbeiten, lesen kein Repository im aktuellen Ordner.
+
 ### Vertrauensmodell
 
-Ist `APOTHEM_REF` nicht gesetzt, ermittelt der Installer das höchste `vMAJOR.MINOR.PATCH`-Release-Tag und checkt *dieses* aus — niemals den beweglichen `main`-Branch. Bevor irgendeine Konfiguration materialisiert wird, wird die Signatur des abgerufenen Tags mit `git verify-tag` verifiziert; ein unsigniertes, manipuliertes oder nicht verifizierbares Tag bricht die Installation ab, bevor irgendetwas geschrieben wird. Ein signiertes Tag, dessen öffentlicher Maintainer-Schlüssel noch nicht im lokalen Schlüsselbund liegt, bricht stattdessen mit einer Anleitung zum Schlüsselimport ab: Importieren Sie den Schlüssel wie oben gezeigt, prüfen Sie seinen Fingerabdruck gegen den in [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) veröffentlichten Wert und führen Sie den Vorgang erneut aus. Pinnen Sie ein bestimmtes Release mit `APOTHEM_REF`:
+Ist `APOTHEM_REF` nicht gesetzt, ermittelt der Installer das höchste
+`vMAJOR.MINOR.PATCH`-Release und installiert *dieses* — niemals den beweglichen
+`main`-Branch. Er prüft das Release, bevor irgendeine Konfiguration materialisiert
+wird, und die Prüfung hängt davon ab, ob `cosign` in Ihrem `PATH` liegt:
+
+- **Mit cosign** müssen zwei Prüfungen beide bestehen. Zuerst muss das Release-Tag
+  eine gültige Signatur des Maintainer-Schlüssels tragen, geprüft wie im nächsten
+  Punkt, und das signierte Tag muss dasjenige sein, das für dieses Release benannt
+  ist: Ein signiertes Tag eines anderen Releases, das auf diesen Namen umgehängt
+  wurde, wird abgelehnt. Dann lädt der Installer das Plattform-Archiv des Releases,
+  seine Datei `SHA256SUMS` und `SHA256SUMS.cosign.bundle` herunter. cosign muss
+  bestätigen, dass der Release-Workflow von Apothem `SHA256SUMS` für genau dieses
+  Tag signiert hat und – über seine Prüfung
+  `--certificate-github-workflow-sha` – dass das verifizierte Zertifikat für einen
+  Lauf auf dem Commit ausgestellt wurde, auf den das signierte Tag zeigt. Der
+  Installer liest das Zertifikat nicht selbst. Danach muss der SHA-256 des Archivs
+  mit dem aufgeführten Digest übereinstimmen. Der Workflow läuft für jedes Tag, das
+  gepusht wird, daher genügt seine Signatur allein nicht; die Tag-Signatur zeigt,
+  dass der Maintainer diesen Commit veröffentlicht hat.
+- **Ohne cosign**, oder wenn `APOTHEM_HOME` bereits einen Git-Klon enthält, klont
+  oder aktualisiert der Installer das Repository und prüft allein das Tag mit
+  `git verify-tag`. Die Signatur muss gültig *und* mit dem in [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) veröffentlichten Maintainer-Schlüssel erstellt sein, und das signierte Tag muss dasjenige
+  sein, das für das Release benannt ist. Ein mit einem anderen Schlüssel
+  signiertes Tag wird abgelehnt, selbst wenn Ihr Schlüsselbund diesem Schlüssel
+  vertraut. Ein signiertes Git-Tag benennt seinen Commit über eine SHA-1-ID; mit
+  cosign prüft der Installer zusätzlich den SHA-256 des Archivs. Ein vorhandener
+  Klon wird per Fetch aktualisiert, und sein neues Tag wird geprüft, *bevor* der
+  Klon ausgecheckt wird. Eine fehlgeschlagene Prüfung lässt den Klon unverändert,
+  und ein Klon mit Änderungen an nachverfolgten Dateien stoppt das Update mit der
+  Meldung, sie zu committen oder zu stashen, statt sie zu verlieren. Mit einer Ref,
+  die kein Release ist, etwa `main`, folgt ein vorhandener Klon der Kopie dieses
+  Branches auf origin.
+
+Der Installer ignoriert die Git-Umgebungsvariablen, die Git umleiten
+(`GIT_DIR`, `GIT_WORK_TREE` und ähnliche), sowie diejenigen, die Git auf eine
+andere Konfigurationsdatei richten (`GIT_CONFIG`, `GIT_CONFIG_GLOBAL` und
+`GIT_CONFIG_SYSTEM`) oder Attribute aus einem anderen Baum lesen lassen
+(`GIT_ATTR_SOURCE`; ein `attr.tree` in Ihrer eigenen Konfiguration wird bei jedem
+Git-Befehl auf einem Klon geleert), und hält an, wenn `APOTHEM_REPO` mit `-`
+beginnt. `GIT_CONFIG_NOSYSTEM` bleibt so, wie Sie es gesetzt haben; es verhindert
+nur, dass Git die Systemkonfiguration liest. Git liest weiterhin Ihre eigene
+globale Konfiguration und, sofern Sie nicht `GIT_CONFIG_NOSYSTEM` setzen, die
+Systemkonfiguration an den Orten, an denen es immer sucht, und `git`, `gpg` und
+`cosign` sind die Programme, die Ihr `PATH` findet: Der Installer vertraut ihnen
+so, wie sie gefunden werden. Für den gesamten Lauf setzt der Installer
+`GIT_NO_REPLACE_OBJECTS=1`, damit Git nie ein Objekt über Replace-Refs austauscht,
+`GIT_NO_LAZY_FETCH=1`, damit Git nie von sich aus ein fehlendes Objekt vom Remote
+abruft, `GIT_ALLOW_PROTOCOL` auf die Transportwege file, git, http, https und ssh,
+damit ein Wert in Ihrer Umgebung diese Liste nicht erweitern kann, und
+`GIT_ATTR_NOSYSTEM=1`; da `core.attributesFile` bei jedem Git-Befehl auf einem Klon
+geleert wird, liest Git dann keine Attributdatei außerhalb des Klons, sodass ein in
+Ihrer Datei definiertes Makro dort keinen Filter benennen kann. Das
+PowerShell-Skript stellt alle vier am Ende des Laufs wieder her. Der Installer liest
+das Release-Tag einmal, hält den Commit fest, den es benennt, verifiziert das Tag,
+checkt diesen Commit über seine ID aus und verlangt, dass `HEAD` dieser Commit ist,
+sodass ein nach der Prüfung verschobenes Tag nichts ändert. Unter Windows
+PowerShell 5.1 und 7 wird ein Download abgelehnt, der auf eine Adresse umleitet,
+die nicht https ist, so wie es `curl` in den POSIX-Installern tut.
+
+`APOTHEM_HOME` muss ein Ordner sein, in den nur Sie schreiben können, denn wer
+hineinschreiben kann, kann den Code ändern, den der `apothem`-Befehl ausführt.
+Unter Windows kann ein im Stammverzeichnis eines Laufwerks angelegter Ordner wie
+`C:\apothem` unter den Standardberechtigungen von Windows von jedem Benutzer
+geändert werden, der sich am Computer anmeldet. Der Standard, `~/.apothem`, liegt
+in Ihrem eigenen Benutzerordner. Jede abgerufene Installation, jedes Update und
+jeder Probelauf warnt, ohne anzuhalten, wenn das nicht so ist oder wenn der Ordner
+oder der Ordner, der ihn enthält, jemand anderem gehört, und nennt den Ordner, wer
+hineinschreiben kann oder ihn besitzt, und die Abhilfe; eine Installation aus einem
+lokalen Checkout und ein Update mit gesetztem `APOTHEM_SOURCE` überspringen die
+Prüfung. Unter Windows kommt die Warnung von
+`install.ps1` und `update.ps1`: `install.sh` und `update.sh` prüfen unter Git
+Bash, MSYS2 oder Cygwin nicht (siehe
+[Fehlerbehebung](/docs/install/troubleshooting#the-installer-warns-other-users-can-change-apothem_home)).
+
+Eine fehlgeschlagene Prüfung bricht die Installation ab, bevor irgendeine
+Konfiguration geschrieben wird und bevor der Installer `APOTHEM_HOME` ersetzt. Ein
+signiertes Tag, dessen öffentlicher Maintainer-Schlüssel noch nicht im lokalen
+Schlüsselbund liegt, bricht stattdessen mit einer Anleitung zum Schlüsselimport ab:
+Importieren Sie den Schlüssel wie oben gezeigt, prüfen Sie seinen Fingerabdruck
+gegen den in [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) veröffentlichten Wert und führen Sie den Vorgang erneut aus.
+
+Ein erneuter Lauf mit cosign aktualisiert eine frühere Installation aus einem
+Release-Archiv. Die neue Quelle wird zuerst in einem Ordner neben `~/.apothem`
+geprüft und entpackt und dann eingewechselt. Alles in `~/.apothem`, das nicht zum
+Quellbaum gehört, wird in die neue Installation übernommen: die Rollback-Backups
+der Engine (`backups/`), die Installations-Ledger (`state/`), Pläne, Gedächtnis und
+ihre übrigen Daten. Schlägt ein Schritt fehl oder stoppen Sie den Lauf mit Ctrl+C
+oder einem Beendigungssignal, wird die frühere Installation unverändert
+wiederhergestellt; schlägt selbst das fehl, nennt die Meldung, wo die früheren
+Dateien liegen. Ein erzwungenes Beenden oder ein Stromausfall während des Wechsels
+lässt sich nicht abfangen: Es kann Ordner neben `~/.apothem` zurücklassen, und die
+nächste abgerufene Installation meldet sie (siehe unten). Diese Regeln gelten, wenn
+der Installer `~/.apothem` ersetzt:
+
+- Ein Git-Klon wird ohne `--yes` nicht durch ein Release-Archiv ersetzt. Die
+  Dateien, die der Klon nicht nachverfolgt, werden in die neue Installation
+  verschoben, und der eigene Baum des Klons (seine Historie und sein Quellcode)
+  wird in einen neuen Ordner,
+  `~/.apothem.before-apothem-<time>`, unter seinem eigenen Namen (`.apothem`)
+  verschoben; der Installer sagt, wohin, und Sie löschen ihn, sobald Sie ihn nicht
+  mehr brauchen. Selbst mit `--yes` lehnt der Installer ab, solange der Klon lokale
+  Arbeit enthält, die er verlieren würde: Änderungen, Stashes, nicht gepushte
+  Commits oder nicht nachverfolgte Dateien in seinem Quellbaum. Committen und
+  pushen Sie diese Arbeit oder verschieben Sie sie an einen anderen Ort und führen
+  Sie den Vorgang dann erneut aus. Diese Prüfung läuft auch mit `--dry-run`. Eine
+  `.git`-Datei (ein verknüpfter Worktree) zählt als Klon, ebenso ein
+  `.git`-Ordner.
+- Ein Git-Klon von etwas anderem als Apothem wird wie jeder Ordner behandelt, der
+  keine Apothem-Installation enthält (siehe unten), und nie als Klon aktualisiert
+  oder ersetzt.
+- Ein vorhandener Klon wird nur dann an Ort und Stelle aktualisiert, wenn Git jede
+  Änderung darin sehen kann und nichts in seiner eigenen Einrichtung während des
+  Updates Code ausführt. Vor dem Fetch hält der Installer an, wenn Dateien als
+  assume-unchanged oder skip-worktree markiert sind, wenn Git in `APOTHEM_HOME`
+  keinen Arbeitsbaum findet (etwa wenn die Konfiguration des Klons `core.bare` auf
+  `true` setzt), wenn der Klon ein Submodul enthält (in seinem Index
+  festgehalten oder in `.git/modules` abgelegt), wenn `.git/info/attributes` einen
+  Filter- oder Diff-Treiber benennt (`filter=` oder `diff=`), wenn diese Datei oder
+  eine Konfigurationsdatei keine einfache Datei ist, oder wenn der Klon Objekte aus
+  einem anderen Repository entleiht (`objects/info/alternates`). Er hält außerdem
+  bei jeder Einstellung in der eigenen `.git/config` oder `.git/config.worktree` des
+  Klons an, die nicht zu denen gehört, die `git clone` und `git init` dort für einen
+  vollständigen Klon schreiben, Branch-Einstellungen (`remote` und `pushremote`
+  eines Branches müssen `origin` sein), `user.name`, `user.email`,
+  `maintenance.auto`, `maintenance.strategy`, `pull.rebase` und `pull.ff`, sodass
+  auch ein mit `--filter` erstellter partieller Klon anhält;
+  [Fehlerbehebung](/docs/install/troubleshooting#the-installer-stops-the-existing-clone-is-set-up-in-a-way-the-update-would-trust)
+  führt sie auf. Die Meldung nennt die Einstellung und die Datei, in der sie steht.
+  Die Prüfungen der Einstellungen, Attribute und Objekte laufen vor jedem
+  Git-Befehl, der den Index oder die Objekte des Klons liest, und zusammen mit der
+  Submodul-Prüfung auch dann, wenn `--yes` im Begriff ist, den Klon zu ersetzen.
+  Vor jedem Git-Befehl, der die `.gitattributes`-Dateien des Arbeitsbaums anwendet,
+  hält der Installer bei einer solchen Datei an, die Git nicht nachverfolgt, die von
+  der committeten Kopie abweicht oder deren committete Kopie Git nicht lesen kann
+  oder einen Filter- oder Diff-Treiber benennt (die Kopie im Arbeitsbaum wird
+  ebenfalls gelesen), sowie bei einem Git-Repository im Klon, das Git nicht
+  nachverfolgt und dessen `.gitattributes`-Dateien Git ebenfalls lesen würde. Die
+  eigenen Datenordner der Engine, etwa `backups`, in die kein Release schreibt,
+  werden dafür nicht gelesen. Vor dem Fetch hält er
+  bei Dateien unter `src` (in beliebiger Schreibweise) an, die Git nicht
+  nachverfolgt, da die Engine sie laden könnte. Nach dem Checkout entfernt er
+  die Python-Cache-Ordner (`__pycache__`) unter `src`, bevor die Engine aus dem Klon
+  läuft. Die Git-Hooks des Klons
+  laufen während des Updates nie, und jeder Git-Befehl auf dem Klon läuft ohne
+  Pager, ohne automatische Wartung, mit abgeschaltetem Dateisystem-Monitor, nur mit
+  den erlaubten Transportwegen file, git, http, https und ssh (sodass eine Adresse
+  in der Konfiguration des Klons Git kein Hilfsprogramm wie `ext::` ausführen lassen
+  kann) und ohne Submodul-Rekursion; `git diff` und `git status` überspringen
+  Submodule. Ein Klon, der einem anderen Benutzer gehört, stoppt den Lauf mit einer
+  Erklärung (siehe Fehlerbehebung).
+- Ein Ordner, der nur die eigenen Daten der Engine enthält (`backups`, `state`,
+  `plans`, `memory`, `contexts`, `learning`, `providers`), wird ohne `--yes`
+  aktualisiert, und diese Daten bleiben erhalten.
+- Ein Ordner, der keine Apothem-Installation enthält, wird ohne `--yes` nicht
+  angerührt. Mit `--yes` verschiebt der Installer den gesamten Ordner unverändert in
+  einen neuen Ordner, `~/.apothem.before-apothem-<time>` (darin behält er seinen
+  eigenen Namen), sagt, wohin, und installiert neu.
+- Ein symbolischer Link bei `APOTHEM_HOME` (unter Windows ein symbolischer Link oder
+  eine Junction) wird abgelehnt, weil das Ersetzen den Link ersetzen würde und nicht
+  den Ordner, auf den er führt. Richten Sie `APOTHEM_HOME` auf diesen Ordner und
+  führen Sie den Vorgang erneut aus. Die Ausnahme ist ein vorhandener Git-Klon, der
+  an Ort und Stelle aktualisiert wird.
+- Unter Linux und macOS hält eine zu übernehmende Datei oder ein zu übernehmender
+  Ordner, dessen Name ein Leerzeichen oder ein anderes Sonderzeichen enthält, die
+  Installation an. Verschieben Sie sie zuerst aus `APOTHEM_HOME` heraus.
+
+**Ein Lauf zur Zeit, und gestoppte Läufe.** Jeder Lauf der Installations-, Update-
+und Deinstallationsskripte nimmt für den gesamten Lauf eine Sperre neben
+`APOTHEM_HOME`, standardmäßig `~/.apothem.lock`, und gibt sie frei, wenn der Lauf
+durch Erfolg, Fehlschlag, Ctrl+C oder ein Beendigungssignal endet. Die
+`apothem`-Befehle selbst nehmen sie nicht. Ein zweiter Lauf hält mit „Another
+Apothem install, update or uninstall is running“ an. Unter POSIX ist die Sperre ein
+Ordner, der die Prozess-ID des Laufs enthält. Eine Sperre, die ein abgebrochener
+Lauf hinterlassen hat, wird mit einer Anleitung zum Entfernen gemeldet und nie
+übernommen, und eine in einer anderen Umgebung angelegte Sperre (etwa WSL und Git
+Bash auf einem Rechner) wird als eine gemeldet, deren Prozess von dort aus nicht
+geprüft werden kann. Unter Windows PowerShell ist die Sperre eine Datei, die
+Windows schließt und löscht, wenn der Prozess endet. Ist `APOTHEM_HOME` ein Link,
+nimmt jedes Skript die Sperre neben dem Ordner, auf den er führt. Auch ein
+Probelauf nimmt die Sperre, es sei denn, der Ordner, der `APOTHEM_HOME` enthält,
+existiert noch nicht. Daher braucht jeder Lauf, einschließlich eines Updates an Ort
+und Stelle, einer Deinstallation und eines Probelaufs, Schreibzugriff auf den
+Ordner, der `APOTHEM_HOME` enthält; ohne ihn hält der Lauf an, bevor er etwas
+ändert.
+
+Ein erzwungenes Beenden oder ein Stromausfall während eines Wechsels kann die
+frühere Installation oder andere Einträge von `APOTHEM_HOME` in
+`.apothem-old.<name>.*`, `.apothem-extract.<name>.*` oder
+`.apothem-clone.<name>.*` daneben zurücklassen, wobei `<name>` der letzte Teil von
+`APOTHEM_HOME` ist, oder in einem Ordner `APOTHEM_HOME.before-apothem-<time>`. Die
+nächste abgerufene Installation für dieses `APOTHEM_HOME`, einschließlich eines
+Probelaufs, hält an, bevor sie etwas ändert, nennt jeden Ordner und die Einträge,
+die hineinverschoben wurden, und sagt, wie Sie sie zurückverschieben. Bei einem
+Ordner, den ein früherer Installer angelegt hat und der nicht angibt, zu welchem
+Home er gehört, nennt die Zeile möglicherweise nur die Engine-Daten: Sehen Sie
+hinein. Sie löscht nichts. Siehe
+[Fehlerbehebung](/docs/install/troubleshooting#the-installer-stops-an-earlier-run-left-folders-beside-apothem_home).
+
+`--dry-run` (`-DryRun` unter Windows) ruft das Release in einem temporären Ordner
+ab, prüft es dort und lässt `~/.apothem` unverändert. Er macht dieselben Prüfungen
+wie ein echter Lauf, mit einer Ausnahme für einen vorhandenen Klon: Er prüft die
+eigene Einrichtung des Klons, wie oben aufgeführt, ruft aber nicht in den Klon ab
+und prüft ihn daher nicht auf Änderungen an nachverfolgten Dateien, was ein echtes
+Update nach seinem Fetch tut. Pinnen Sie ein bestimmtes Release mit `APOTHEM_REF`:
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/install.sh)"
@@ -199,23 +440,28 @@ Release-Tag ist annotiert und signiert. Der Abschnitt zur Release-Signierung in
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
 listet jedes Tag auf und beschreibt, wie es verifiziert wird.
 
-Ausdrückliche Überschreibungen lockern den Standard. `APOTHEM_ALLOW_UNVERIFIED=1` stuft einen Verifizierungsfehler zu einer Warnung herab und fährt fort; das ist für Air-Gapped-Umgebungen oder den lokalen Einsatz gedacht oder um ein Release zu installieren, das vor der Signatur von Tags erschienen ist. `APOTHEM_REF=main` checkt den beweglichen Branch ohne Verifizierung nur zusammen mit `APOTHEM_ALLOW_UNVERIFIED=1` aus. Mit `APOTHEM_REF=main` allein holt der Installer `main` nach `APOTHEM_HOME` und bricht dann ab, bevor eine Konfiguration materialisiert wird, weil ein Branch kein signiertes Release-Tag ist. Ein lokaler Checkout über `APOTHEM_SOURCE` ruft nichts ab und überspringt die Verifizierung.
+Ausdrückliche Überschreibungen lockern den Standard. `APOTHEM_ALLOW_UNVERIFIED=1` stuft eine fehlgeschlagene Tag-Prüfung auf dem Klon-Weg zu einer Warnung herab und fährt fort; das ist für Air-Gapped-Umgebungen oder den lokalen Einsatz gedacht oder um ein Release zu installieren, das vor der Signatur von Tags erschienen ist. Den cosign-Weg lockert es nie; setzen Sie daher auf einem Host mit cosign zusätzlich `APOTHEM_VERIFY=signature`. Es lockert auch nie die Prüfung, dass das signierte Tag dasjenige ist, das für das Release benannt ist. Da die Überschreibung ein unsigniertes oder mit einem anderen Schlüssel signiertes Tag durchlässt, schützt diese Prüfung nur Tags, die die Signatur des Maintainer-Schlüssels tragen. `APOTHEM_REF=main` checkt den beweglichen Branch ohne Verifizierung nur zusammen mit `APOTHEM_ALLOW_UNVERIFIED=1` aus. Mit `APOTHEM_REF=main` allein holt der Installer `main` in einen Staging-Ordner (in den vorhandenen Klon, wenn `APOTHEM_HOME` einer ist) und bricht dann ab, bevor er etwas auscheckt, `APOTHEM_HOME` ersetzt oder eine Konfiguration materialisiert, weil ein Branch kein signiertes Release-Tag ist. Ein lokaler Checkout über `APOTHEM_SOURCE` ruft nichts ab und überspringt die Verifizierung.
 
-`APOTHEM_VERIFY=checksum` ist der Mittelweg für einen Host, der den
-öffentlichen Schlüssel des Maintainers noch nicht besitzt: Statt zu klonen,
-lädt der Installer das Plattform-Archiv des Releases und dessen `SHA256SUMS`
-herunter, bricht bei einer Abweichung des Digests ab, bevor er irgendetwas
-entpackt, und warnt, dass ein übereinstimmender Digest belegt, dass das Archiv
-dasjenige ist, das das Release auflistet, nicht aber, wer es veröffentlicht hat.
+Setzen Sie `APOTHEM_VERIFY`, um die Prüfung selbst zu wählen. Der Standard ist `auto`:
+
+| Wert | Was der Installer prüft |
+| --- | --- |
+| `auto` (Standard) | `release`, wenn `cosign` im `PATH` liegt und `APOTHEM_HOME` kein Git-Klon ist, sonst `signature` |
+| `release` | Die Signatur des Release-Tags durch den Maintainer-Schlüssel und dass das signierte Tag dasjenige ist, das für das Release benannt ist, dann die Prüfung von cosign, dass der Release-Workflow `SHA256SUMS` in einem Lauf auf dem Commit des Tags signiert hat, dann den SHA-256 des Archivs. Hält an, wenn cosign oder `gpg` fehlt |
+| `signature` | Die GPG-Signatur des Release-Tags, die vom Maintainer-Schlüssel stammen muss, und dass das signierte Tag dasjenige ist, das für das Release benannt ist |
+| `checksum` | Allein den SHA-256 des Archivs gegen `SHA256SUMS`. Braucht `APOTHEM_ALLOW_UNVERIFIED=1` und warnt vor dem Download. Der Prüfsummenmodus verifiziert das Release nicht. SHA256SUMS stammt aus demselben Release wie das Archiv, daher zeigt eine Übereinstimmung nur, dass der Download nicht beschädigt ist; wer die Dateien des Releases ändern kann, kann beide ändern. Verwenden Sie ihn nur auf einem Host ohne cosign und ohne `gpg`, und nur, wenn Sie das in Kauf nehmen |
+
+Jeder Archivmodus bricht bei einer Abweichung des Digests ab, bevor er irgendetwas
+entpackt. Frühe Releases nennen das Bundle `SHA256SUMS.sig`, und der Installer
+liest diesen Namen, wenn `SHA256SUMS.cosign.bundle` fehlt.
 
 Die Engine läuft dann direkt aus dem abgelegten Baum. Jede
 Drittanbieter-Abhängigkeit außer `click` und `rich` ist innerhalb des
 Quellbaums vendort, und der Einstiegspunkt setzt dieses Vendor-Verzeichnis
-selbst auf `sys.path`:
-
-```bash
-PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
-```
+selbst auf `sys.path`. Der Installer gibt den vollständigen Pfad des
+`apothem`-Shims aus, den er geschrieben hat. Hat er keinen Shim geschrieben, gibt
+er einen Befehl aus, der die Engine startet und dabei den aktuellen Ordner aus
+`sys.path` heraushält; kopieren Sie diesen Befehl aus dem Banner.
 
 Beide Skripte lesen dieselben Konfigurations-Umgebungsvariablen
 (`APOTHEM_HOME`, `APOTHEM_REPO`, `APOTHEM_REF`, `APOTHEM_ALLOW_UNVERIFIED`,
@@ -239,8 +485,8 @@ direkt aus, ohne manuelles `PYTHONPATH`.
 ```bash title="Verify"
 apothem verify --harness claude-code
 
-# or, before the shim is on PATH, from the bundled source:
-PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
+# or, before the shim is on PATH, by the shim's full path:
+~/.local/bin/apothem verify --harness claude-code
 ```
 
 ## 4. Erweiterung für die VS Code-Familie
@@ -390,6 +636,12 @@ cd apothem
 PYTHONPATH=src python -m apothem install --harness claude-code
 ```
 
+`python -m` setzt den aktuellen Ordner an den Anfang des Modul-Suchpfads von
+Python, sodass dort eine Datei wie `click.py` oder ein Ordner namens `apothem`
+anstelle des echten Moduls laufen würde. Führen Sie diese Befehle aus dem
+Stammverzeichnis des Checkouts aus oder aus einem anderen Ordner, dem Sie
+vertrauen. Der installierte `apothem`-Befehl liest den aktuellen Ordner nicht.
+
 Wie beim npm-Shim erstellt ein erstes `install` auf einem Rechner ohne Profil
 das Startprofil unter `~/.config/apothem/profile.yaml` und fährt fort.
 
@@ -405,7 +657,7 @@ Jeder Kanal oben nennt seinen eigenen Verifizierungsbefehl. Die zwei
 allgemeinen Formen sind:
 
 ```bash title="Installer path"
-PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
+apothem verify --harness claude-code
 ```
 
 ```bash title="npx path"
@@ -416,8 +668,9 @@ Ersetzen Sie den Harness-Namen durch den Adapter, den Sie installiert haben;
 alle unterstützten Namen finden Sie in der [Harness-Liste](/docs/harnesses). Um
 jeden installierten Adapter auf einmal zu prüfen (seine Verifizierung und seine
 Hook-Befehle), führen Sie `doctor` anstelle von `verify --harness NAME` aus, in
-derselben Form, die Sie oben verwendet haben: `apothem doctor`,
-`PYTHONPATH="$HOME/.apothem/src" python -m apothem doctor` oder
+derselben Form, die Sie oben verwendet haben: `apothem doctor` (oder über den
+vollständigen Pfad des Shims oder den Befehl, den der Installer ausgegeben hat,
+wenn dessen Ordner nicht im `PATH` liegt) oder
 `npx @ahmed-g-gad/apothem doctor`. Für den Plugin-Weg führen Sie `/plugin`
 innerhalb von Claude Code aus und bestätigen, dass **apothem** als installiert
 aufgeführt ist.
@@ -451,8 +704,10 @@ aufgeführt ist.
   Die
   [Richtlinie zu Laufzeit-Mindestversionen](/docs/governance/release-engineering-policy#runtime-floors)
   erklärt, wie eine Mindestversion angehoben wird.
-- **Git** — nur der Installer-Weg und nur für die Netzwerkform (das Skript
-  klont den Quellcode; ein lokaler Checkout benötigt keinen Klon).
+- **Git und GnuPG** — nur der Installer-Weg und nur für die Netzwerkform (das
+  Skript findet damit das neueste Release und prüft dessen signiertes Tag und
+  klont ohne cosign den Quellcode; ein lokaler Checkout benötigt keines von
+  beiden).
 - **Claude Code** — nur der Plugin-Weg. **VS Code** und das eigene Host-Werkzeug
   jedes Kommandozeilen-Bootstraps werden nur für ihren eigenen Kanal (4–7)
   benötigt.

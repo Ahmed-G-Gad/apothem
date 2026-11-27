@@ -2,7 +2,7 @@
 title: "rollback"
 description: "Référence de la CLI pour la commande apothem rollback."
 machineTranslated: true
-sourceHash: "398c0c678cace0b4"
+sourceHash: "a11c2a565e94b5b4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,8 +19,12 @@ apothem rollback --harness NAME|all [--install-id ULID | --last] [--yes]
 ```
 
 `rollback` ramène chaque environnement sélectionné à l'état où il se trouvait
-avant la passe d'installation enregistrée — la plus récente par défaut, ou
-celle nommée par `--install-id`. En parcourant l'enregistrement de cette
+avant la passe d'installation enregistrée — par défaut la plus récente encore
+en place, ou celle nommée par `--install-id`. Un second `rollback` annule donc
+l'installation qui précède celle que le premier a annulée. Un `--install-id`
+qui nomme une installation qu'un rollback ou une désinstallation a déjà
+annulée est refusé avec `rollback.already_reversed` (code de sortie 1), et rien
+ne change. En parcourant l'enregistrement de cette
 installation dans le journal, du changement le plus récent au plus ancien,
 elle :
 
@@ -28,9 +32,39 @@ elle :
   partir de la sauvegarde que l'installation a capturée, à leur chemin
   enregistré (un répertoire que l'installation a remplacé est restauré à
   l'identique, sans les fichiers que l'installation y a ajoutés) ;
-- supprime chaque fichier et chaque répertoire que l'installation a créés, et
-  remet en place tout chemin de la disposition héritée que l'installation a
-  balayé ;
+- supprime chaque fichier et chaque répertoire que l'installation a créés,
+  tant qu'il porte encore le contenu que cette installation a écrit : un
+  fichier que vous avez créé à ce chemin depuis, ou que vous avez modifié, est
+  conservé avec une ligne `Warning:` (une entrée `warnings` sous `--json`), de
+  même que le dossier qui le contient. Un dossier vide situé dans un dossier
+  que l'installation a créé est supprimé, y compris un dossier que vous avez
+  créé. La ligne liste chaque fichier conservé, y compris les fichiers d'un
+  dossier conservé, qu'une restauration ait échoué ou non, et l'entrée
+  `warnings` les liste sous `files`. Une installation enregistrée par une
+  publication antérieure n'indique pas ce qu'elle a écrit, et rollback ne
+  compare rien avec cette publication ; ce qu'elle a créé reste donc en place :
+  chacun de ces chemins reçoit une ligne `Warning:` indiquant que rollback ne
+  peut pas savoir s'il appartient à Apothem. Elle remet aussi en place tout
+  chemin de la disposition héritée que l'installation a balayé.
+  Un chemin que la publication actuelle ne balaie plus (un dossier qui peut
+  contenir vos propres fichiers) n'est restauré que là où des fichiers
+  manquent : chaque fichier présent est conservé, et la sortie nomme la
+  sauvegarde utilisée. Un fichier qu'elle ne peut pas écrire est listé pour que
+  vous le copiiez à la main, et le rollback se termine alors avec le code 2
+  (partiel) lorsqu'il a écrit un autre fichier.
+  Un chemin qui est désormais un lien (un lien symbolique ou une jonction
+  Windows), ou un fichier là où la sauvegarde contient un dossier, ou
+  l'inverse, n'est jamais écrit à travers. Rien n'y est restauré, et rien n'est
+  restauré non plus lorsque la sauvegarde du chemin a disparu. Le rollback se
+  termine tout de même avec le code 0 et affiche une ligne `Warning:` (une
+  entrée `warnings` sous `--json`) qui nomme la sauvegarde à partir de laquelle
+  copier à la main. Rollback n'atteint cette installation que tant que son
+  enregistrement fait partie des 10 plus récents conservés (voir ci-dessous).
+  `apothem backups prune --keep N` élague à `N` une seule fois ; l'installation,
+  la mise à jour, la désinstallation ou le rollback suivant élague de nouveau
+  à 10. Le jeu de sauvegarde lui-même reste même après la disparition de
+  l'enregistrement ; copier ses fichiers à la main est donc le moyen fiable de
+  revenir en arrière ;
 - supprime les magasins de données partagés (`memory`, `contexts`, `learning`)
   que l'installation a créés, sauf si un autre environnement installé les
   utilise encore ;
@@ -45,10 +79,39 @@ que pour la dernière installation qui l'utilise. Un dossier que cette
 installation a trouvé déjà en place (un second outil installé après le premier)
 disparaît avec la dernière installation qui l'utilise lorsqu'il a été créé par
 une installation qui l'a depuis abandonné ; annuler chaque outil ne laisse donc
-rien derrière. Lorsque l'enregistrement d'une installation susceptible
-d'utiliser le dossier ne peut pas être lu, rollback s'arrête avec une erreur
-avant de modifier quoi que ce soit et n'écrit aucun enregistrement `rollback` ;
-réparez l'enregistrement, puis relancez la commande.
+rien derrière, même lorsque l'outil qui a créé le dossier a été réinstallé ou
+mis à jour entre-temps. Un dossier qu'Apothem a supprimé et que vous avez remis
+en place vous-même, à partir d'une sauvegarde par exemple, vous appartient : un
+rollback le conserve. Un rollback n'annule que l'installation enregistrée avec
+votre répertoire personnel écrit tel qu'il l'est au moment du rollback.
+Lorsque le même outil a aussi été installé avec votre répertoire personnel
+écrit autrement (via un lien vers celui-ci, ou avec une autre casse sous
+Windows ou macOS), cette installation utilise encore les dossiers partagés et
+les conserve. Les fichiers du dossier propre à l'outil sont traités un par
+un : annuler l'installation qui les a écrits en premier supprime ceux que
+l'autre installation a laissés tels quels, comme ses scripts de hook, et
+conserve avec un avertissement ceux que l'autre installation a réécrits, comme
+son fichier d'instructions. Lancez ensuite `apothem update` avec votre
+répertoire personnel écrit de l'autre façon, afin que cette installation passe
+de nouveau `apothem verify`. Un rollback lancé avec votre répertoire personnel
+écrit de cette façon annule aussi cette installation. Lorsque l'enregistrement
+d'une installation susceptible d'utiliser le dossier ne peut pas être lu,
+rollback s'arrête avec une erreur avant de modifier quoi que ce soit et
+n'écrit aucun enregistrement `rollback` ; réparez l'enregistrement, puis
+relancez la commande.
+
+Un rollback s'arrête aussi avant de modifier quoi que ce soit, et n'écrit aucun
+enregistrement `rollback`, lorsqu'un lien mène le dossier de l'outil hors de
+votre répertoire personnel : un `CODEX_HOME` ou un `XDG_CONFIG_HOME` écrit à
+l'intérieur de votre répertoire personnel, comme `~/work/tool`, où `~/work` est
+devenu un lien vers un autre disque après l'installation. Sous Windows, une
+jonction compte comme un lien. L'erreur se lit `rollback
+refused: target path crosses a link` et nomme le lien et le dossier vers lequel
+il mène, et la commande se termine avec le code 1 sans demander de
+confirmation au préalable. Faites pointer le lien vers un dossier situé dans
+votre répertoire personnel, ou remplacez-le par le dossier lui-même, puis
+relancez le rollback. Un dossier que vous écrivez comme un chemin situé hors de
+votre répertoire personnel est suivi.
 
 Tout ce que rollback supprime ou remplace est d'abord copié dans la racine de
 sauvegarde d'Apothem (`~/.apothem/backups/`) ; un rollback peut donc lui-même
@@ -66,9 +129,9 @@ installation plus ancienne ne peut plus être annulée par son id et signale
 abaisse cette limite à la demande, et ne supprime jamais la sauvegarde à partir
 de laquelle la dernière installation est restaurée.
 
-Les enregistrements écrits par une publication d'Apothem antérieure à l'ajout
-de ce comportement ne listent pas les fichiers que l'installation a créés ;
-annuler un tel enregistrement ne restaure que les fichiers écrasés.
+Un enregistrement d'installation d'une publication antérieure qui n'indique pas
+les fichiers que l'installation a créés est annulé en restaurant uniquement
+les fichiers écrasés.
 
 La confirmation est demandée pour chaque environnement, sauf si `--yes` est
 fourni. Lorsqu'aucune invite n'est possible — `--format json` (le texte de
@@ -85,8 +148,8 @@ Un rollback `--harness all` est délibérément exhaustif : il couvre chaque env
 | Option | Description |
 |---|---|
 | `--harness NAME` | Adaptateur d'environnement à restaurer, ou `all` pour l'ensemble couvrant tout le registre (obligatoire). |
-| `--install-id ULID` | Annule la passe d'installation nommée. Par défaut : la dernière installation enregistrée. |
-| `--last` | Annule la dernière installation enregistrée (la valeur par défaut, sous sa forme explicite). Mutuellement exclusif avec `--install-id`. |
+| `--install-id ULID` | Annule la passe d'installation nommée, si elle est encore en place. Par défaut : l'installation la plus récente encore en place. |
+| `--last` | Annule l'installation la plus récente encore en place (la valeur par défaut, sous sa forme explicite). Mutuellement exclusif avec `--install-id`. |
 | `--yes` | Ignore l'invite de confirmation par environnement. |
 | `--project PATH` | Racine de projet pour les environnements à portée de projet. Obligatoire lorsque l'ensemble sélectionné inclut des adaptateurs à portée de projet. |
 | `--quiet`, `-q` | Supprime la sortie informative ; seules les erreurs sont émises. |
@@ -122,10 +185,32 @@ Chaque cible restaurée ou supprimée apparaît dans `results` avec
 que dans `files_written`) ; le `message` indique si le chemin a été restauré ou
 supprimé. Une restauration en échec (par exemple, une sauvegarde qui a été
 supprimée) vaut `"outcome": "error"`. Une installation qui n'a enregistré aucun
-changement est signalée avec `"outcome": "skipped"`. Lorsqu'aucun
-enregistrement d'installation correspondant n'existe pour un seul environnement
-nommé, la commande signale une erreur `rollback.no_record` avec
-`"status": "error"`. Sous `--harness all`, un environnement sans enregistrement
+changement est signalée avec `"outcome": "skipped"`. Un chemin balayé où rien
+n'a été restauré (il est désormais un lien, un fichier se trouve là où la
+sauvegarde contient un dossier ou l'inverse, ou sa sauvegarde a disparu) est
+une ligne `skipped` dans `results` et aussi une entrée dans `warnings`, et le
+rollback se termine tout de même avec le code 0 :
+
+```json
+{
+  "harness": "claude-code",
+  "outcome": "advisory",
+  "operation": "rollback",
+  "path": "C:\\Users\\Example\\.claude\\commands",
+  "message": "left in place: C:\\Users\\Example\\.claude\\commands is now a link, so nothing was restored there; copy what you need from C:\\Users\\Example\\.apothem\\backups\\20261001T000000Z\\claude_code\\.claude\\commands"
+}
+```
+
+Un résultat refusé à un lien nomme le lien dans `detail.symlink` et le dossier
+vers lequel il mène dans `detail.leads_to`, comme dans
+[`apothem install`](/docs/cli-reference/install#json-output).
+
+Lorsqu'aucun enregistrement d'installation correspondant n'existe pour un seul
+environnement nommé, la commande signale une erreur `rollback.no_record` avec
+`"status": "error"`, et un `--install-id` d'une installation déjà annulée ou
+désinstallée signale `rollback.already_reversed`. Une fois que le journal a
+élagué cet enregistrement (voir ci-dessus), un tel id signale
+`rollback.no_record` à la place. Sous `--harness all`, un environnement sans enregistrement
 correspondant est plutôt une ligne `"outcome": "error"` dans `results`.
 
 ## Exemples
@@ -140,7 +225,7 @@ apothem rollback --harness cursor --project . --last --json
 
 | Code | Signification |
 |---|---|
-| 0 | Annulation réussie, ou rien à annuler (l'installation n'a enregistré aucun changement) |
+| 0 | Annulation réussie, ou rien à annuler (l'installation n'a enregistré aucun changement) ; également lorsqu'un chemin balayé a été laissé en place avec une ligne `Warning:` (une entrée `warnings` sous `--json`) |
 | 1 | Erreur attendue — aucun enregistrement d'installation, sélecteurs en conflit, environnement inconnu, racine de projet manquante, ou confirmation refusée ou impossible (mode non interactif ou JSON sans `--yes`) |
 | 2 | Résultat partiel — au moins une cible a été annulée et un échec a aussi été enregistré (une restauration en échec ou, sous `--harness all`, un environnement sans enregistrement d'installation) |
 | 64 | Erreur d'utilisation : une option ou une commande inconnue, ou une valeur d'option manquante ou invalide. Sous `--json`, l'erreur est une enveloppe JSON avec le code `cli.usage`. |

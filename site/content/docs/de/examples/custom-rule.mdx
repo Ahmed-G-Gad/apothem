@@ -2,7 +2,7 @@
 title: "Eigene Regel"
 description: "Eine eigene, dauerhaft aktive Regel für Ihr Projekt erstellen."
 machineTranslated: true
-sourceHash: "0b22ce8bce931d04"
+sourceHash: "69efcab14f844e72"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,14 +35,14 @@ Speichern Sie dies unter `rules/kebab-filenames.md` im Installationsstamm Ihres 
 
 ## Prüfen, ob die Regel korrekt aufgebaut ist
 
-Führen Sie den Frontmatter-Validator gegen die soeben geschriebene Regeldatei aus. Verwenden Sie den ersten Befehl aus einem Apothem-Checkout, in dem `PYTHONPATH=src` das Paket importierbar macht. Verwenden Sie den zweiten nach einer Skript-Installation, bei der der Quellcode unter `$HOME/.apothem/src` liegt:
+Führen Sie den Frontmatter-Validator gegen die soeben geschriebene Regeldatei aus. Verwenden Sie den ersten Befehl aus dem Stammverzeichnis eines Apothem-Checkouts, in dem `PYTHONPATH=src` das Paket importierbar macht (`python -m` liest Module zuerst aus dem aktuellen Ordner, verwenden Sie also einen Ordner, dem Sie vertrauen). Verwenden Sie den zweiten nach einer Skript-Installation, bei der der Quellcode unter `$HOME/.apothem/src` liegt und das Gate über seinen Skriptpfad mit `-E -s` läuft, sodass weder `PYTHONPATH` noch Ihre Benutzer-site-packages es erreichen:
 
 ```bash
 # From an Apothem checkout
 PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
 
 # After a script install
-PYTHONPATH="$HOME/.apothem/src" python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
+python3 -E -s "$HOME/.apothem/src/apothem/conformity/gate.py" --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
 ```
 
 Eine korrekt aufgebaute Regel meldet einen fehlerfreien Durchlauf:

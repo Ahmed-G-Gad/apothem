@@ -2,15 +2,15 @@
 title: "Antigravity"
 description: "محوّل إطار عمل Apothem لـ Antigravity (معاينة)."
 machineTranslated: true
-sourceHash: "a97b457853f5e1e2"
+sourceHash: "c5d8a954306518e0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-- **المورّد:** <bdi>Antigravity</bdi>
+- **المورّد:** <bdi>Google</bdi>
 - **اسم التثبيت:** <bdi>`antigravity`</bdi>
 - **الحالة:** معاينة
 - **الإعداد الأصلي:** <bdi>`~/.gemini/GEMINI.md`</bdi> إضافةً إلى
-  <bdi>`~/.gemini/antigravity-cli/plugins/apothem/`</bdi>
+  <bdi>`~/.gemini/config/plugins/apothem/`</bdi>
 
 ## التثبيت
 
@@ -19,21 +19,38 @@ apothem install --harness antigravity
 ```
 
 يُجسِّد المحوّل الملف التعريفي المشترك إلى <bdi>`~/.gemini/GEMINI.md`</bdi> ويثبّت
-حزم دعم <bdi>Apothem</bdi> بوصفها إضافة لـ <bdi>Antigravity CLI</bdi>.
+حزم دعم <bdi>Apothem</bdi> بوصفها إضافة لـ <bdi>Antigravity</bdi>. ويتشارك مجلّد الإضافة كلٌّ من
+<bdi>Antigravity CLI</bdi> و<bdi>App</bdi> و<bdi>IDE</bdi>، لذا تُحمِّل الثلاثة جميعها الإضافة.
 
 **الملفات المكتوبة:** <bdi>`~/.gemini/GEMINI.md`</bdi>،
-و<bdi>`~/.gemini/antigravity-cli/plugins/apothem/plugin.json`</bdi>،
-و<bdi>`~/.gemini/antigravity-cli/plugins/apothem/skills/`</bdi>،
-و<bdi>`~/.gemini/antigravity-cli/plugins/apothem/rules/`</bdi>،
+و<bdi>`~/.gemini/config/plugins/apothem/plugin.json`</bdi>،
+و<bdi>`~/.gemini/config/plugins/apothem/skills/`</bdi>،
+و<bdi>`~/.gemini/config/plugins/apothem/rules/`</bdi>،
 وتعريفات المساعِدات المحلّية المُحوَّلة داخل الإضافة،
-و<bdi>`~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/templates/`</bdi>،
-و<bdi>`~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/hooks/`</bdi>.
+و<bdi>`~/.gemini/config/plugins/apothem/.apothem/support/templates/`</bdi>،
+و<bdi>`~/.gemini/config/plugins/apothem/.apothem/support/hooks/`</bdi>. وينشئ التثبيت أيضًا
+مجلّد بيانات <bdi>Apothem</bdi>، وهو <bdi>`~/.gemini/.apothem/`</bdi> افتراضيًا، وفيه
+<bdi>`contexts/`</bdi>، و<bdi>`learning/`</bdi>، و<bdi>`memory/`</bdi>، و<bdi>`plans/`</bdi>.
 
 تنتهي كتلة <bdi>Apothem</bdi> في <bdi>`~/.gemini/GEMINI.md`</bdi> بقسم ملفات دعم
 <bdi>Apothem</bdi> الذي يُسمّي الدليل المطلق الذي تُحَلّ نسبةً إليه كل إحالة بأسلوب
 المستودع: <bdi>`rules/<name>.md`</bdi> تحت <bdi>`rules/`</bdi> الخاص بالإضافة،
 و<bdi>`templates/...`</bdi> و<bdi>`hooks/...`</bdi> تحت <bdi>`.apothem/support/`</bdi>
 الخاص بالإضافة.
+
+**مجلّد الإضافة.** يُحمِّل <bdi>Antigravity</bdi> الإضافة من
+<bdi>`~/.gemini/config/plugins/<name>/`</bdi> دون خطوة تسجيل
+([وثائق إضافات <bdi>Antigravity</bdi>](https://antigravity.google/docs/plugins))،
+ويكتب المحوّل إضافة <bdi>Apothem</bdi> هناك. وتُحمِّل إصدارات <bdi>CLI</bdi> الحالية
+الإضافات من هذا المجلّد؛ ويُحدِّث <bdi>CLI</bdi> نفسه بنفسه، لذا إن كنت قد أوقفت التحديثات
+عبر <bdi>`AGY_CLI_DISABLE_AUTO_UPDATE=true`</bdi>، فحدِّثه قبل الاعتماد على
+الإضافة. ويُحمِّل <bdi>Antigravity App</bdi> و<bdi>IDE</bdi> المجلّد نفسه، لذا تسري إضافة <bdi>Apothem</bdi>،
+بقواعدها الدائمة التفعيل ومهاراتها وتعريفات مساعِداتها، في
+الثلاثة جميعها. ولا يوثّق <bdi>Antigravity</bdi> أي مفتاح لكل أداة على حدة للإضافة: فلا يحوي <bdi>`plugin.json`</bdi>
+أي حقل يقصر الإضافة على واحدة منها. وقد كتب إصدار سابق من <bdi>Apothem</bdi>
+الإضافة في <bdi>`~/.gemini/antigravity-cli/plugins/apothem/`</bdi>، داخل مجلّد بيانات <bdi>CLI</bdi>
+نفسه؛ ويَنسخ التثبيت أو التحديث فوق مثل ذلك التثبيت ذلك المجلّدَ احتياطيًا
+ثم يُزيله (راجع [إلغاء التثبيت](#إلغاء-التثبيت)).
 
 **قواعد الإضافة.** يُسقِط <bdi>Antigravity</bdi> أي ملف في دليل <bdi>`rules/`</bdi>
 الخاص بإضافةٍ ما لا يبدأ بـ <bdi>`trigger`</bdi> صالح
@@ -51,8 +68,10 @@ apothem install --harness antigravity
 تتحوّل أيٌّ منها إلى مؤشّر.
 
 **بيان الإضافة.** لا يحمل <bdi>`plugin.json`</bdi> إلا <bdi>`name`</bdi>
-و<bdi>`description`</bdi>، وهما المفتاحان اللذان يقبلهما مخطط الإضافات في
-<bdi>Antigravity</bdi>.
+و<bdi>`description`</bdi>. ومخطط الإضافات المنشور في صفحة
+[بناء الإضافات](https://antigravity.google/docs/build-plugins) لدى <bdi>Antigravity</bdi> يشترط
+<bdi>`name`</bdi>، ويسرد أيضًا مفاتيح مثل <bdi>`displayName`</bdi> و<bdi>`version`</bdi> و<bdi>`author`</bdi>، ولا
+يقبل أي مفتاح آخر، لذا يُبلِغ <bdi>`agy plugin validate`</bdi> عن أي مفتاح لا يسرده.
 
 **مساعِدات الإضافة.** تحمل تعريفات المساعِدات في دليل <bdi>`agents/`</bdi> الخاص
 بالإضافة الحقلين <bdi>`name`</bdi> و<bdi>`description`</bdi>. تستخدم قائمة
@@ -63,9 +82,10 @@ apothem install --harness antigravity
 
 **مرساة المستخدم المشتركة.** <bdi>`~/.gemini/GEMINI.md`</bdi> هو أيضًا المرساة على
 نطاق المستخدم لأدوات عائلة <bdi>Gemini</bdi>. يُبقي محوّل <bdi>Antigravity</bdi>
-مادّة <bdi>Apothem</bdi> الإضافية الخاصة به داخل إضافة <bdi>`apothem`</bdi> تحت
-<bdi>`~/.gemini/antigravity-cli/plugins/`</bdi> حتى لا يستولي على أدلّة مشاريع
-<bdi>Gemini CLI</bdi> العامّة. ولأن أكثر من أداة واحدة تُحمِّل
+قواعده ومهاراته وتعريفات مساعِداته وقوالبه وملفات خطّافاته داخل إضافة <bdi>`apothem`</bdi> تحت
+<bdi>`~/.gemini/config/plugins/`</bdi>، حتى لا يستولي على أدلّة مشاريع
+<bdi>Gemini CLI</bdi> العامّة. ويقع مجلّد بيانات <bdi>Apothem</bdi> خارج الإضافة، في
+<bdi>`~/.gemini/.apothem/`</bdi> افتراضيًا. ولأن أكثر من أداة واحدة تُحمِّل
 <bdi>`~/.gemini/GEMINI.md`</bdi>، تُكتَب كتلة <bdi>Apothem</bdi> هناك بوصفها إرشادات
 عامّة لا تُسمّي أداة واحدة بعينها قارئًا لها.
 
@@ -93,10 +113,16 @@ apothem verify --harness antigravity
 
 يؤكّد أمر التحقّق ما يلي:
 
-1. ملف السياق الأصلي موجود في المسار المتوقَّع.
-2. ملف بيان الإضافة <bdi>`plugin.json`</bdi> موجود وغير فارغ، ويُحلَّل بوصفه
-   <bdi>JSON</bdi>. ولا يتحقّق أمر التحقّق من اسم الإضافة؛ افحص هذا الحقل بنفسك
+1. ملف السياق الأصلي، <bdi>`~/.gemini/GEMINI.md`</bdi>، موجود وغير فارغ.
+2. كل هدف مُدار في مجلّد الإضافة في موضعه: ملف بيان الإضافة
+   <bdi>`plugin.json`</bdi> موجود وغير فارغ، ويُحلَّل بوصفه <bdi>JSON</bdi>، ومجلّدات الإضافة
+   <bdi>`skills/`</bdi> و<bdi>`rules/`</bdi> و<bdi>`agents/`</bdi> و<bdi>`.apothem/support/templates/`</bdi>
+   و<bdi>`.apothem/support/hooks/`</bdi> موجودة. ويُفشِل المجلّدُ المفقود الفحصَ.
+   ولا يتحقّق أمر التحقّق من اسم الإضافة؛ افحص هذا الحقل بنفسك
    بعد تغييره.
+
+أضِف <bdi>`--profile PATH`</bdi> لتتحقّق كذلك من أن الملفات المثبّتة تطابق ذلك
+الملف التعريفي.
 
 ## التحديث
 
@@ -117,18 +143,65 @@ apothem uninstall --harness antigravity
 يُزيل كتلة <bdi>Apothem</bdi> من <bdi>`~/.gemini/GEMINI.md`</bdi> ويُبقي أي نص آخر
 فيه. ولا يُحذَف الملف إلا عندما لا يبقى فيه شيء آخر. ويُزيل أيضًا مفاتيح
 <bdi>Apothem</bdi> من <bdi>`plugin.json`</bdi> في مجلد الإضافة
-<bdi>`~/.gemini/antigravity-cli/plugins/apothem/`</bdi> ويُبقي مفاتيحك، ويُزيل ملفات
+<bdi>`~/.gemini/config/plugins/apothem/`</bdi> ويُبقي مفاتيحك، ويُزيل ملفات
 <bdi>Apothem</bdi> في المجلدات الفرعية <bdi>`skills/`</bdi> و<bdi>`rules/`</bdi>
 و<bdi>`agents/`</bdi> و<bdi>`.apothem/support/`</bdi> لذلك المجلد؛ وتبقى الملفات
-الأخرى فيها. يُنسَخ كل ملف احتياطيًا تحت <bdi>`~/.apothem/backups/`</bdi> قبل تغييره
-أو إزالته. لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك
+الأخرى فيها. وتُزال أيضًا المخازن <bdi>`memory/`</bdi> و<bdi>`contexts/`</bdi> و<bdi>`learning/`</bdi>
+في مجلّد البيانات، ما لم يكن تثبيت آخر لـ <bdi>Apothem</bdi> لا يزال يستخدمها. يُنسَخ كل ملف احتياطيًا تحت
+<bdi>`~/.apothem/backups/`</bdi> قبل تغييره أو إزالته. لا يتأثّر ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك
 <bdi>Apothem</bdi>.
+
+التثبيت الذي أجراه إصدار سابق يحفظ الإضافة في
+<bdi>`~/.gemini/antigravity-cli/plugins/apothem/`</bdi>، داخل مجلّد بيانات <bdi>CLI</bdi> نفسه. وأي
+تثبيت أو تحديث أو إلغاء تثبيت فوق مثل ذلك التثبيت ينسخ ذلك المجلّد احتياطيًا
+تحت <bdi>`~/.apothem/backups/`</bdi> ثم يُزيله، بما فيه من ملفات تخصّك. ويُترَك الرابط
+الرمزي أو وصلة <bdi>Windows</bdi> (<bdi>junction</bdi>) عند ذلك المسار أو فوقه أو داخل المجلّد
+في موضعه، مع تحذير يسمّيه، ولا يُغيَّر شيء ممّا يشير إليه ولا يُنسَخ
+احتياطيًا. ويُترَك الرابط عند ذلك المسار الذي يشير إلى مجلّد الإضافة الحالي في موضعه
+في كل تشغيل، مع تحذير: فهو يبقى بعد إلغاء التثبيت، لذا احذفه
+بنفسك حين لا يعود شيء يستخدم المسار القديم. ومن ثَمّ يُزيل إلغاء التثبيت
+المجلّد السابق، ولا يُزيل من المجلّد الحالي إلا ملفات <bdi>Apothem</bdi> الموصوفة
+أعلاه. ويطبع كل تحذير، ويُبلِغ عن فشل بدلًا من النجاح
+حين تفشل إزالة المجلّد السابق.
+
+ينسخ كل تثبيت وتحديث وإلغاء تثبيت أيضًا
+<bdi>`~/.antigravity/profile.yaml`</bdi> احتياطيًا تحت <bdi>`~/.apothem/backups/`</bdi> ثم يُزيله.
+ولا يكتب أي إصدار من <bdi>Apothem</bdi> ذلك الملف، لذا انقل أي ملف خاص بك هناك قبل
+أن تشغّل أحد هذه الأوامر.
+
+لا يمسّ التثبيت والتحديث وإلغاء التثبيت أبدًا <bdi>`~/.gemini/antigravity/`</bdi>، وهو مجلّد
+بيانات <bdi>Antigravity App</bdi>. (ومجلّد <bdi>CLI</bdi> هو <bdi>`~/.gemini/antigravity-cli/`</bdi>، ومجلّد
+<bdi>IDE</bdi> هو <bdi>`~/.gemini/antigravity-ide/`</bdi>.) ويحفظ مجلّد <bdi>App</bdi> رموز تسجيل الدخول
+الخاصة به لخوادم <bdi>MCP</bdi> (<bdi>`mcp_oauth_tokens.json`</bdi>)، ونصوص جلساته
+(<bdi>`brain/`</bdi>)، ومجلّد المهارات العامّة القديم (<bdi>`skills/`</bdi>)، و<bdi>`sidecar_data/`</bdi>.
+وقد عاملت الإصدارات السابقة ذلك المجلّد بوصفه تخطيطًا استخدمه <bdi>Apothem</bdi> قبل أول
+إصدار له: فكانت تنسخه احتياطيًا تحت <bdi>`~/.apothem/backups/`</bdi> وتُزيله في كل
+تثبيت وتحديث. ولم تتأثّر إعدادات <bdi>CLI</bdi> نفسه وسجلّ جلساته، في
+<bdi>`~/.gemini/antigravity-cli/`</bdi>.
+
+إن فُقد تسجيل دخول في <bdi>App</bdi>، أو نصّ جلسة، أو مهارة تخصّك، فالنُسَخ
+موجودة في
+<bdi>`~/.apothem/backups/<timestamp>/antigravity/.gemini/antigravity/`</bdi>: مجموعة واحدة
+لكل تثبيت أو تحديث سابق وجد المجلّد، تحفظ كلٌّ منها المجلّد كما
+كان حينها. ولا يحتفظ <bdi>Apothem</bdi> إلا بأحدث 10 مجموعات نسخ احتياطية لـ <bdi>Antigravity</bdi>، لذا
+ربما زالت بالفعل النُسَخ من التثبيتات الأقدم، وسيُقلِّم التثبيت أو التحديث أو
+إلغاء التثبيت أو الاسترجاع التالي مجدّدًا. انسخ المجموعات التي تحتاجها خارج
+<bdi>`~/.apothem/backups/`</bdi> أولًا.
 
 ## بوابة المطابقة
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+شغّله من مجلّد مشروعك. وعلى <bdi>Windows</bdi>، استخدم <bdi>`python`</bdi> بدلًا من
+<bdi>`python3`</bdi> والمسار الكامل، لأن <bdi>Windows PowerShell</bdi> و<bdi>cmd</bdi> لا يوسّعان
+<bdi>`~`</bdi>:
+<bdi>`$HOME\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>PowerShell</bdi>، أو
+<bdi>`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>cmd</bdi>. هذا المسار هو
+الموضع الذي يضع فيه المُثبِّت المحرّك، ويُبقي <bdi>`-E -s`</bdi> متغيّر <bdi>`PYTHONPATH`</bdi> لديك وحِزَم
+<bdi>site-packages</bdi> الخاصّة بالمستخدم خارج البوابة؛ وتشرح صفحة [بوابة المطابقة](/docs/conformity-gate)
+كليهما وطرق التثبيت الأخرى.
 
 ## استكشاف الأخطاء وإصلاحها
 

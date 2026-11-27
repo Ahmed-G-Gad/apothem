@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Adaptateur d'environnement Apothem pour Codex (bêta)."
 machineTranslated: true
-sourceHash: "ca4ad5f675a665ea"
+sourceHash: "3aff73a78f7a248b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,7 +26,9 @@ réutilisables sous forme de skills Codex.
 `~/.codex/hooks/`, `~/.codex/agents/*.toml`,
 `~/.agents/skills/*/SKILL.md`, `~/.agents/skills/*/agents/openai.yaml` pour
 les skills invoqués par l'utilisateur, et les fichiers de support sous
-`~/.config/apothem/{rules,templates}/`.
+`~/.config/apothem/{rules,templates}/`. L'installation crée aussi le dossier de
+données Apothem, `~/.codex/.apothem/` par défaut, qui contient `contexts/`,
+`learning/`, `memory/` et `plans/`.
 
 **Interpréteur des hooks.** Avant d'écrire quoi que ce soit, l'installation résout un interpréteur
 CPython 3.10+. Sous Windows, l'entrée `commandWindows` de chaque hook dans
@@ -110,12 +112,74 @@ skill Apothem est laissé tel quel, avec un avertissement qui le nomme.
 L'installation affiche une note qui nomme ces outils.
 `~/.codex/agents/` est une seconde racine partagée : un autre outil pris en charge liste ce dossier comme emplacement de compatibilité (le
 registre le nomme), et sa documentation ne dit pas s'il lit les fichiers TOML
-qu'une installation `Codex` y écrit.
+qu'une installation `Codex` y écrit. Lorsque `CODEX_HOME` désigne un autre
+dossier, l'installation écrit ses agents sous ce dossier, que la documentation
+de cet outil ne liste pas (elle ne nomme que `~/.codex/agents/`) ; la note
+d'installation omet donc ce dossier. Si une installation antérieure a laissé des
+agents Apothem dans `~/.codex/agents/`, la note le signale, car cette
+installation ne les met pas à jour et ne les supprime pas.
+
+Apothem lit `CODEX_HOME` comme le fait Codex. Il utilise la valeur telle
+qu'elle est écrite : un `~` initial n'est pas développé, et une valeur relative
+désigne un dossier situé sous le dossier depuis lequel vous lancez la commande.
+Un `CODEX_HOME` vide compte comme non défini. Codex s'arrête avec une erreur
+lorsque `CODEX_HOME` désigne un dossier qui n'existe pas ; une installation crée
+le dossier, donc Codex démarre une fois l'installation exécutée.
+
+Un `CODEX_HOME` situé sous `~/.config` fonctionne lorsque `~/.config` est un
+lien vers votre répertoire personnel, comme le créent les gestionnaires de
+dotfiles ; sous Windows, une jonction compte comme un lien. Un lien `~/.config`
+qui mène hors de votre répertoire personnel arrête toute installation Codex
+avant qu'elle n'écrive le moindre fichier, quel que soit l'emplacement de
+`CODEX_HOME`, car l'installation écrit aussi les règles et templates partagés
+dans `~/.config/apothem/`. Définir `CODEX_HOME` sur le dossier vers lequel mène
+le lien n'y change rien ; faites plutôt mener le lien vers un dossier situé dans
+votre répertoire personnel. Un `CODEX_HOME` écrit à l'intérieur de votre
+répertoire personnel, mais dont un lien sort, comme `~/work/codex` avec `~/work`
+lié à un autre lecteur, arrête l'installation, la désinstallation et
+`apothem rollback`, quel que soit l'endroit au-dessus de `CODEX_HOME` où se
+trouve le lien. Un `CODEX_HOME` écrit comme un chemin hors de votre répertoire
+personnel est suivi. Un lien sur un chemin que l'installation écrit dans
+`CODEX_HOME` l'arrête aussi, avec `target
+path crosses a link`, ou avec `target escapes the allowed materialization
+root` lorsque ce lien mène hors du dossier qui contient `CODEX_HOME`.
+
+`CODEX_HOME` ne provient pas forcément de votre profil de shell. Le fichier
+`.envrc` d'un projet ou un script que vous sourcez peut aussi le définir.
+Lorsqu'il désigne un dossier hors de votre répertoire personnel, l'installation,
+la mise à jour, la désinstallation et `apothem rollback` modifient des fichiers
+dans ce dossier, puisque c'est le dossier qu'il désigne. Un lien `~/.config` qui
+mène hors de votre répertoire personnel arrête toujours l'installation.
+Vérifiez `CODEX_HOME` avant de lancer Apothem dans un dossier de projet qui le
+définit.
 
 Codex réserve `~/.codex/rules/` aux politiques d'exécution `.rules`. Apothem n'y
 place pas de règles comportementales Markdown ; il les conserve dans
 `~/.config/apothem/` et les référence depuis `AGENTS.md` et les skills
-installés.
+installés. Des versions antérieures (le [journal des modifications](/docs/changelog)
+les nomme) supprimaient tout le dossier `~/.codex/rules/`, avec vos fichiers
+`.rules`, à chaque installation et mise à jour, après l'avoir copié dans
+`~/.apothem/backups/<timestamp>/codex/.codex/rules/`. La version actuelle ne
+supprime jamais un ensemble de sauvegarde qui contient cette copie, mais la
+politique de rétention d'une version antérieure a pu déjà supprimer des
+ensembles plus anciens. Copiez `~/.apothem/backups/` ailleurs avant de relancer
+Apothem, recopiez à la main les fichiers `.rules` dans `~/.codex/rules/`, puis
+exécutez `apothem update`. `apothem rollback --install-id` annule toute
+l'installation antérieure ; ce n'est donc pas le moyen de récupérer ces
+fichiers.
+
+Codex charge un seul fichier d'instructions depuis son dossier personnel
+(`~/.codex`, ou le dossier que désigne `CODEX_HOME`) : `AGENTS.override.md`
+lorsque ce fichier contient du texte, et `AGENTS.md` seulement dans le cas
+contraire. Le bloc Apothem va dans `AGENTS.md` ; un `AGENTS.override.md`
+contenant du texte dans ce dossier empêche donc Codex de le charger, sauf si le
+fichier de remplacement est un lien symbolique vers `AGENTS.md`. Un lien
+physique ou une copie devient un fichier distinct dès qu'une installation
+réécrit `AGENTS.md` ; il reçoit donc la note. `apothem install`,
+`apothem update` et `apothem verify` affichent une note qui nomme le fichier
+lorsque cela se produit. Un `AGENTS.override.md` vide est ignoré ; il ne reçoit
+donc aucune note. Pour charger le bloc, videz ou supprimez le fichier de
+remplacement, ou déplacez son texte dans `AGENTS.md` en dehors du bloc Apothem.
 
 ## Plugin Codex
 
@@ -162,6 +226,13 @@ La commande verify confirme que :
    correspondent à ce profil.
 3. La routine de vérification propre à l'adaptateur signale un succès.
 
+Lorsque le bloc Apothem se trouve dans `AGENTS.md` et qu'un
+`AGENTS.override.md` contenant du texte se trouve à côté dans le dossier
+personnel de Codex, verify affiche aussi une note qui nomme ce fichier de
+remplacement, car Codex charge ce fichier à la place du bloc. La note ne fait
+pas échouer la vérification, et verify n'en affiche aucune lorsque le bloc n'est
+pas installé.
+
 ## Mise à jour
 
 ```bash
@@ -205,8 +276,18 @@ du profil partagé et le moteur Apothem ne sont pas affectés.
 ## Portail de conformité
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Exécutez-le depuis le dossier de votre projet. Sous Windows, utilisez `python`
+à la place de `python3` et le chemin complet, car Windows PowerShell et cmd ne
+développent pas `~` :
+`$HOME\.apothem\src\apothem\conformity\gate.py` dans PowerShell, ou
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` dans cmd. Ce chemin est
+celui où le programme d'installation place le moteur, et `-E -s` tient votre
+`PYTHONPATH` et vos site-packages utilisateur à l'écart du portail ;
+[Portail de conformité](/docs/conformity-gate) explique les deux, ainsi que les
+autres installations.
 
 ## Dépannage
 

@@ -2,7 +2,7 @@
 title: "verify"
 description: "Référence de la CLI pour la commande apothem verify."
 machineTranslated: true
-sourceHash: "9147e25d2829a90c"
+sourceHash: "7e26b019bbe8ca71"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -23,7 +23,49 @@ signalent que leurs cibles gérées sont présentes et valides. Sans
 être présente et valide. Avec `--profile`, la vérification exige en plus la
 **fidélité au profil** : une installation présente mais qui a dérivé échoue
 donc à la vérification, ce qui répond à la question « CE profil est-il
-fidèlement installé ? » plutôt qu'à la simple question « existe-t-il ? ».
+fidèlement installé ? » plutôt qu'à la simple question « existe-t-il ? ». Les
+fins de ligne ne comptent pas, si bien qu'un fichier enregistré avec des fins de
+ligne CRLF ou CR passe aussi.
+Dans les deux cas, un fichier dans lequel Apothem conserve un bloc géré échoue à
+la vérification tant qu'il contient un marqueur BEGIN qui n'ouvre aucun bloc
+complet, par exemple un marqueur dont le marqueur END a disparu (voir
+[Dépannage](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)),
+deux blocs complets ou plus entre les marqueurs d'Apothem (voir
+[Un fichier contient deux blocs entre les marqueurs d'Apothem](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)),
+ou aucun bloc complet mais des paires de marqueurs qu'Apothem ne peut pas
+distinguer de votre texte, par exemple son bloc placé dans un de vos blocs de code
+(voir
+[Apothem ne distingue pas son bloc de votre texte](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+Une mise à jour conserve un tel marqueur, ou laisse un tel fichier tel quel, donc
+exécuter `apothem update` ne fait pas disparaître l'échec.
+Les fichiers vérifiés sont ceux dans lesquels l'installation de l'environnement
+écrit un bloc et ceux que listent ses enregistrements d'installation depuis la
+dernière désinstallation terminée, y compris un fichier de règles d'un espace de
+travail OpenClaw que l'installation n'utilise plus. Un marqueur dans un de vos
+propres fichiers, comme le fichier de notes d'un projet, ne fait pas échouer la
+vérification. Sans enregistrement d'installation, `CLAUDE.md` et le document de
+profil ne sont pas vérifiés : seul l'enregistrement montre que l'installation les
+a écrits. La vérification OpenClaw échoue tout de même, sans nommer le fichier,
+lorsque le fichier de règles d'un espace de travail qu'elle trouve ne contient
+aucun bloc complet ou contient un marqueur BEGIN qui n'en ouvre aucun.
+La ligne en échec nomme chacun de ces fichiers et indique quoi corriger : la ligne
+du marqueur isolé, avec des étapes numérotées qui modifient cette ligne et toutes
+les autres lignes de marqueur BEGIN sauf celle qui ouvre le bloc d'Apothem, y
+compris un marqueur BEGIN que vous citez dans du code, pour chaque fichier
+séparément (la note indique aussi de ne pas plutôt rajouter le marqueur END, ce
+qui laisserait deux blocs Apothem une fois qu'une installation ou une mise à jour
+a écrit le bloc d'Apothem à part) ; chaque bloc complet, par ses lignes ; ou, pour
+des paires de marqueurs qu'Apothem ne peut pas distinguer de votre texte, les
+lignes de chaque paire, la façon dont elles se lisent et comment les corriger,
+ainsi que chaque marqueur BEGIN qui n'ouvre aucune paire de marqueurs.
+Pour un fichier de règles OpenClaw, qu'une mise à jour n'écrit que tant qu'il
+respecte la limite par fichier d'OpenClaw, la note indique que la prochaine mise à
+jour écrit le bloc d'Apothem si le fichier respecte alors cette limite, à laquelle
+s'impute l'ancien texte Apothem que vous conservez (voir
+[Open-Claw](/docs/harnesses/open-claw#rules-in-each-workspace)).
+En mode plain, une ligne `Note:` suit la ligne de résultat, qui omet alors le
+chemin attendu, et la ligne JSON reçoit un objet `stray_begin` avec les `files`
+et un `message`.
 
 Pour un adaptateur qui écrit des skills dans votre répertoire personnel, verify
 vérifie aussi que chaque dossier de skill attendu existe avec un `SKILL.md`,
@@ -32,11 +74,44 @@ des outils qui partagent un dossier est installé passe donc la vérification. L
 vérification échoue lorsqu'un dossier manque, et lorsqu'un dossier portant le
 nom d'un skill Apothem appartient à quelque chose qu'Apothem n'a pas écrit. Une
 ligne en échec indique le cas : en mode plain, une ligne `Note:` la suit, et
-dans la ligne JSON un objet `user_level` liste les chemins `missing` et
-`unlisted` ainsi qu'un `message`. Exécutez
+dans la ligne JSON un objet `user_level` liste les chemins `missing`,
+`unlisted` et `unproven` ainsi qu'un `message`. Exécutez
 [`install`](/docs/cli-reference/install) pour restaurer un dossier manquant ;
 renommez ou déplacez un dossier étranger, puis exécutez
-[`update`](/docs/cli-reference/update).
+[`update`](/docs/cli-reference/update). Un dossier `unproven` est un dossier
+dont Apothem ne peut pas prouver qu'il l'a écrit. Les installations qui le
+listaient se trouvent dans des dossiers qui ont disparu, qui ne contiennent aucun
+fichier Apothem ou qui sont illisibles, ou bien elles ne le listent plus. Et il ne
+contient pas exactement les fichiers qu'elles ont enregistrés (voir
+[`install`](/docs/cli-reference/install)). Vous l'avez créé ou modifié, ou une
+version antérieure l'a écrit sans enregistrer ses fichiers. La note nomme chacun
+d'eux et donne les deux façons de poursuivre de l'avertissement d'installation.
+Pour le conserver, laissez-le où il est. Pour utiliser la version d'Apothem,
+sortez-le du dossier de skills, puis exécutez `update` pour cet environnement ;
+pour un environnement à portée de projet, la note nomme `--project`, cité pour le
+shell comme doctor le cite, ou en toutes lettres. Un dossier qui contient déjà ce
+que cette version écrit n'est jamais nommé, car une installation le conserve.
+Verify ne cherche les dossiers non prouvés et non listés que pour un
+environnement installé, donc `verify --harness all` ne les nomme que sous les
+environnements installés.
+
+Une ligne de résultat, vérifiée ou non, peut être suivie d'une note. Lorsque ce
+qu'Apothem a écrit est en place mais qu'un de vos fichiers empêche l'outil de le
+charger, une ligne `Note:` nomme ce fichier et les `warnings` de l'enveloppe JSON
+reçoivent une entrée avec `"operation": "instruction_override"` (décrite sous
+[`install`](/docs/cli-reference/install)). L'un de ces fichiers est un
+`AGENTS.override.md` contenant du texte à côté du `AGENTS.md`
+qu'[un outil pris en charge](/docs/harnesses/codex#compatibility-notes) charge depuis
+son dossier personnel. D'autres sont des fichiers que
+[OpenCode 1](/docs/harnesses/opencode#compatibility-notes) charge depuis son
+dossier de configuration : un `opencode.jsonc` avec sa propre liste
+`instructions`, et un `config.json`, `opencode.json` ou `opencode.jsonc`
+qu'OpenCode 1 ne peut pas charger du tout. La note ne fait pas échouer la
+vérification. Il n'y a pas de note lorsque le bloc Apothem n'est pas dans ce
+`AGENTS.md`, ou lorsque `opencode.json` ne liste aucune entrée que l'installation
+a écrite ; la note pour un `opencode.json` qu'OpenCode 1 ne peut pas charger
+exige seulement que le document de profil écrit par l'installation contienne le
+bloc Apothem.
 
 Un balayage `--harness all` respecte le champ `exclude_harnesses` du profil —
 les mêmes exclusions que celles appliquées par le lot `install`/`update` —, de

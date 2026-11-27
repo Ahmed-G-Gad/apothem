@@ -2,7 +2,7 @@
 title: "Runbook de récupération de publication"
 description: "Procédures de récupération, étape par étape, pour une publication qui échoue en cours de route sous le modèle de publication additif, sans réécrire l'historique publié."
 machineTranslated: true
-sourceHash: "91a31722fb721a3e"
+sourceHash: "d3bcc2874d9e87b5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -50,8 +50,12 @@ La marche à suivre dépend de la question de savoir si quelque chose a été pu
 à partir de l'étiquette :
 
 - **Rien n'a encore été publié** (le flux de travail de publication a échoué
-  avant son job de publication, et `publish-npm.yml` n'a rien publié) :
-  supprimez l'étiquette et ré-étiquetez le même commit avec `-a -s`.
+  avant son job de publication, `publish-npm.yml` n'a rien publié, et
+  `publish-vscode.yml` n'a rien publié sur le Visual Studio Marketplace) :
+  supprimez l'étiquette et ré-étiquetez le même commit avec `-a -s`. Lorsque l'échec
+  exige d'abord un correctif sur `main`, comme un relèvement de version du plugin oublié,
+  étiquetez plutôt le nouveau commit de publication (voir le tableau des échecs du
+  runbook du cycle de publication).
 
   ```bash
   git push --delete origin vX.Y.Z
@@ -60,11 +64,12 @@ La marche à suivre dépend de la question de savoir si quelque chose a été pu
   git push origin vX.Y.Z
   ```
 
-- **Quelque chose a été publié** (un GitHub Release avec des ressources, ou la
-  version npm) : ne déplacez, ne supprimez et ne réutilisez jamais l'étiquette.
+- **Quelque chose a été publié** (un GitHub Release avec des ressources, la
+  version npm ou la version du Marketplace) : ne déplacez, ne supprimez et ne réutilisez jamais l'étiquette.
   Corrigez vers l'avant avec `vX.Y.(Z+1)`.
 
-Un nom d'étiquette n'est jamais réutilisé pour un commit différent.
+Dès que quelque chose a été publié à partir d'une étiquette, son nom n'est jamais
+réutilisé pour un commit différent.
 
 ## 3. Récupération des éditeurs
 

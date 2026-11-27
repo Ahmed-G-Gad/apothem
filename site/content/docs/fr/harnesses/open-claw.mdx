@@ -2,7 +2,7 @@
 title: "Open-Claw"
 description: "Adaptateur d'environnement Apothem pour Open-Claw (préversion)."
 machineTranslated: true
-sourceHash: "4c7b4673820f1fa6"
+sourceHash: "057bb9c3bebcd657"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,14 +18,25 @@ apothem install --harness open-claw
 ```
 
 L'adaptateur écrit le fichier de configuration globale utilisateur d'OpenClaw,
-projette le profil partagé dans un document de profil et installe les cohortes
+projette le profil partagé dans un document de profil, écrit un fichier de
+règles Apothem dans chaque espace de travail OpenClaw et installe les cohortes
 de support Apothem sous la racine de l'environnement. La configuration native
-d'OpenClaw est en JSON ; le materializer rend une seule clé,
-`skills.load.extraDirs`, et un fichier existant conserve ses autres clés.
+d'OpenClaw est en JSON ; le materializer rend deux entrées,
+`skills.load.extraDirs` et l'entrée du hook `bootstrap-extra-files`, et un
+fichier existant conserve ses autres clés.
 
 **Fichiers écrits :** `~/.openclaw/openclaw.json`, le document de profil
-`~/.openclaw/apothem/rules/00-apothem-profile.md` et des fichiers de support
-sous `~/.openclaw/.apothem/support/`
+`~/.openclaw/apothem/rules/00-apothem-profile.md`, le fichier de règles
+`<workspace>/apothem/AGENTS.md` dans chaque espace de travail, et le dossier de
+données d'Apothem `~/.openclaw/.apothem/` (ses magasins de contexte,
+d'apprentissage et de mémoire, et les fichiers de support sous
+`~/.openclaw/.apothem/support/`)
+
+Chaque installation et chaque mise à jour supprime tout fichier de
+`~/.openclaw/apothem/rules/` qu'Apothem n'y a pas placé, après l'avoir
+enregistré dans un jeu de sauvegarde sous `~/.apothem/backups/`. Cette
+sauvegarde est supprimée dès qu'il existe 10 jeux de sauvegarde plus récents de
+l'environnement : conservez donc vos propres fichiers ailleurs.
 
 Le document de profil se termine par une section consacrée aux fichiers de
 support Apothem, qui nomme le répertoire absolu sous
@@ -34,23 +45,170 @@ style dépôt (`rules/<name>.md`, `templates/...`, `hooks/...`).
 
 ## Correspondance entre le profil et la configuration native
 
-L'adaptateur rédige une seule clé de configuration. Il ajoute
-`~/.openclaw/.apothem/support/skills` à `skills.load.extraDirs`, la liste des
-répertoires de skills supplémentaires qu'OpenClaw lit, ce qui permet à OpenClaw
-de trouver les skills installés. L'entrée est placée après les entrées que vous
-listez déjà, et vos autres clés restent telles quelles. L'identité, les
-préférences et les règles du profil vont dans le document de profil. Les
-commandes, skills, règles, templates et prompts de hook partagés sont installés
-comme matériel de support sous `~/.openclaw/.apothem/support/`.
+L'adaptateur rédige deux entrées de configuration :
+
+- Il ajoute `~/.openclaw/.apothem/support/skills` à `skills.load.extraDirs`, la
+  liste des répertoires de skills supplémentaires qu'OpenClaw lit, ce qui
+  permet à OpenClaw de trouver les skills installés. L'entrée est placée après
+  les entrées que vous listez déjà.
+- Il ajoute `apothem/AGENTS.md` à la liste de chemins de l'entrée
+  `hooks.internal.entries.bootstrap-extra-files`, ce qui permet à OpenClaw de
+  charger le fichier de règles Apothem (voir [Règles dans chaque espace de travail](#règles-dans-chaque-espace-de-travail)).
+
+Vos autres clés restent telles quelles, et Apothem n'écrit jamais
+`hooks.internal.enabled`. L'identité, les préférences et les règles du profil
+vont dans le document de profil et dans le fichier de règles de chaque espace
+de travail. Les commandes, skills, définitions d'assistants, règles, templates
+et prompts de hook partagés sont installés comme matériel de support sous
+`~/.openclaw/.apothem/support/`.
 
 ## Notes de compatibilité
 
 Adaptateur en préversion. OpenClaw charge les skills d'Apothem via
-`skills.load.extraDirs`, mais ne charge pas de lui-même le reste de
-l'arborescence de support ni le document de profil : aucun de ses fichiers
-d'instructions d'espace de travail ni sa configuration n'y pointent ; après
-l'installation, OpenClaw s'exécute donc sans les règles ni les serveurs MCP
-d'Apothem.
+`skills.load.extraDirs` et les règles d'Apothem via le fichier de règles de
+chaque espace de travail. Il ne charge pas de serveurs MCP depuis Apothem.
+
+### Règles dans chaque espace de travail
+
+OpenClaw place six fichiers d'un espace de travail dans son prompt système :
+`AGENTS.md`, `SOUL.md`, `IDENTITY.md`, `USER.md`, `BOOTSTRAP.md` et
+`MEMORY.md`. Son hook intégré `bootstrap-extra-files` ajoute d'autres fichiers
+qui portent l'un de ces noms, avec des chemins lus relativement à l'espace de
+travail de chaque session. Apothem écrit `apothem/AGENTS.md` dans chaque espace
+de travail et liste ce chemin dans l'entrée du hook :
+
+```json
+{
+  "hooks": {
+    "internal": {
+      "entries": {
+        "bootstrap-extra-files": {
+          "enabled": true,
+          "paths": ["apothem/AGENTS.md"]
+        }
+      }
+    }
+  }
+}
+```
+
+Le fichier contient le bloc géré du profil et un pointeur vers l'index des
+règles sous `~/.openclaw/.apothem/support/`, par lequel l'ensemble des règles
+est atteint. Comme le fichier s'appelle `AGENTS.md`, OpenClaw le charge aussi
+dans les sessions cron et dans les sessions auxiliaires qu'une autre session
+démarre, qui ne reçoivent qu'une partie des six fichiers. Apothem ne modifie
+jamais le propre `AGENTS.md` de l'espace de travail : OpenClaw le crée à partir
+d'un modèle et l'assistant qui travaille dans cet espace de travail le modifie.
+Un dossier nommé `apothem` ne compte pas comme un travail de mise en place : un
+espace de travail qu'OpenClaw n'a pas encore mis en place reçoit donc quand
+même ses fichiers de premier lancement.
+
+Apothem écrit le fichier dans chaque espace de travail qui existe dans votre
+répertoire personnel : `agents.defaults.workspace` (sinon
+`OPENCLAW_WORKSPACE_DIR`, sinon `~/.openclaw/workspace`), et le `workspace` de
+chaque entrée de `agents.entries` (ou de chaque élément de l'ancien
+`agents.list`, qu'OpenClaw lit encore lorsque `agents.entries` est absent).
+L'entrée qui possède l'espace de travail par défaut l'utilise directement
+lorsqu'elle n'a pas de `workspace` propre : celle marquée `default: true` (sauf
+si `agents.ownership` vaut `"explicit"`), sinon une entrée unique. Toute autre
+entrée sans `workspace` propre utilise `<agents.defaults.workspace>/<id>`,
+sinon `~/.openclaw/workspace-<id>`, avec l'id écrit comme OpenClaw l'écrit dans
+les noms de dossiers : en minuscules, et les caractères autres que lettres,
+chiffres, `_` et `-` remplacés par `-` (ainsi `Bob Smith` utilise
+`workspace-bob-smith`).
+
+- Un espace de travail qui n'existe pas encore est ignoré sans message : une
+  fois qu'OpenClaw l'a créé, `apothem verify --harness open-claw` échoue
+  jusqu'à ce que vous exécutiez `apothem update --harness open-claw`.
+- Sont ignorés, chacun avec un avertissement : un espace de travail hors de
+  votre répertoire personnel, un espace atteint par un lien (un lien symbolique
+  ou une jonction Windows), un chemin qui est un fichier, un espace de travail
+  où `apothem/AGENTS.md` est un dossier, et un espace de travail dont le dossier
+  `apothem` est lui-même un autre espace de travail (son `AGENTS.md` serait
+  celui de cet espace de travail). Apothem n'écrit ni ne supprime jamais à
+  travers un lien : un fichier de règles dans un espace de travail devenu
+  depuis un lien est laissé en place, avec un avertissement invitant à
+  supprimer son bloc Apothem à la main.
+- Lorsqu'un espace de travail quitte la configuration, ou qu'un fichier ne
+  tient plus (voir les limites de taille ci-dessous), l'installation ou la mise
+  à jour suivante retire le bloc Apothem du fichier qu'elle y a écrit. Le
+  fichier et son dossier `apothem` disparaissent lorsqu'il n'y reste rien
+  d'autre ; le texte que vous avez ajouté hors du bloc reste.
+
+Si votre configuration contient déjà une entrée `bootstrap-extra-files`,
+Apothem ajoute son chemin à la liste que lit le hook : la première non vide
+parmi `paths`, `patterns` et `files`. Il ne crée jamais une seconde liste qui
+masquerait la vôtre.
+
+**Quand Apothem laisse le hook tel quel.** Dans ces cas, l'installation écrit le
+fichier de règles mais ne modifie pas les réglages du hook, et affiche un
+avertissement :
+
+- `hooks.internal.enabled` vaut `false` : vous avez désactivé les hooks
+  internes.
+- L'entrée `bootstrap-extra-files` porte `enabled: false`.
+- `hooks.internal.enabled` vaut `true` et aucun hook n'est nommé sous
+  `hooks.internal.entries` (et `hooks.internal.load.extraDirs` est vide).
+  OpenClaw charge alors tous les hooks admissibles, et nommer un premier hook
+  désactiverait les autres. Nommez les hooks que vous utilisez, puis exécutez
+  la mise à jour. Les packs de hooks que vous avez installés avec OpenClaw sont
+  listés dans la propre base d'état d'OpenClaw, qu'Apothem ne lit pas : Apothem
+  traite donc ce cas de la même manière même lorsqu'un tel pack est installé.
+- `openclaw.json` contient des commentaires ou une autre syntaxe JSON5 (voir
+  [Commentaires dans `openclaw.json`](#notes-de-compatibilité)).
+
+Lorsque le fichier de règles ne tient dans aucun espace de travail dans les
+deux limites de taille, l'installation n'écrit aucun fichier et n'ajoute aucun
+chemin à l'entrée du hook.
+
+**Limites de taille.** OpenClaw injecte au plus 20 000 caractères par fichier
+et 60 000 au total (`agents.defaults.bootstrapMaxChars` et
+`bootstrapTotalMaxChars` ; une entrée de `agents.entries` peut définir ses
+propres valeurs, qui priment pour son espace de travail). OpenClaw compte les
+caractères en unités UTF-16, si bien qu'un emoji compte pour deux, et Apothem
+compte de la même façon, fins de ligne comprises (un saut de ligne Windows
+compte pour deux). Avec le profil par défaut, le fichier de règles fait
+quelques milliers de caractères.
+
+Le fichier de règles se charge après les six fichiers de l'espace de travail et
+après les autres fichiers de l'entrée `bootstrap-extra-files`. Dans un espace
+de travail où il dépasserait la limite par fichier, ou la place que laisse le
+total, OpenClaw le tronquerait ou l'ignorerait, et les règles arriveraient
+incomplètes : Apothem ne l'y écrit pas, en donne la raison dans un
+avertissement et retire une copie laissée par une installation précédente.
+Lorsque plusieurs entrées partagent un espace de travail, c'est la plus petite
+limite qui compte. (Comportement d'OpenClaw selon sa documentation sur la
+[configuration des hooks](https://docs.openclaw.ai/automation/hooks/configuration),
+les [hooks intégrés](https://docs.openclaw.ai/automation/hooks/bundled-hooks) et
+l'[espace de travail et l'amorçage](https://docs.openclaw.ai/gateway/config-agents/workspace-and-bootstrap),
+consultée le 2026-11-09.)
+
+Un fichier de règles dont le bloc Apothem a perdu son marqueur END conserve
+l'ancien texte Apothem sous son marqueur BEGIN, et une mise à jour écrit le
+bloc d'Apothem à côté : cet ancien texte compte donc dans la limite par
+fichier. Lorsqu'un fichier de règles au-delà de la limite contient un marqueur
+BEGIN qui ne commence aucun bloc complet (son marqueur END a disparu, ou le
+marqueur est le vôtre), l'avertissement nomme le fichier et chacun de ces
+marqueurs par sa ligne. Il nomme ensuite chaque ligne de marqueur que modifie
+la correction de ce fichier, les mêmes lignes que donnent les autres
+avertissements pour ce fichier, par exemple « change line 3 by adding a word
+inside its comment » (« change lines 3 and 9 by adding a word inside each
+comment » pour deux, ce qui peut inclure un marqueur BEGIN que vous citez dans
+un bloc de code). Lorsque le fichier se termine à l'intérieur d'un bloc de code
+qu'aucune ligne ne ferme, il dit d'abord d'ajouter la ligne de fermeture de ce
+bloc de code, par exemple « add a line of 3 backticks below line 12 ». Lorsqu'un
+lecteur Markdown peut lire ce bloc de code autrement qu'Apothem (une ligne
+au-dessus peut ouvrir un bloc HTML, ou le texte d'un élément de liste se
+poursuit dans la marge de gauche au-dessus et une ligne en retrait suit),
+l'avertissement ne nomme aucune ligne à modifier : il indique qu'Apothem ne
+peut pas donner les étapes et nomme la ligne qui ouvre le bloc de code, comme
+le font les autres avertissements pour ce fichier (voir
+[Suivre une correction numérotée](/docs/install/troubleshooting#follow-a-numbered-fix)).
+Il dit de supprimer à la main l'ancien texte sous le marqueur en gardant votre
+propre texte, ou de raccourcir les règles personnalisées du profil, ou de
+relever la limite.
+
+### Skills
 
 **Conflits de noms.** OpenClaw lit les skills depuis ces sources, de la plus
 prioritaire à la moins prioritaire, et lorsque le même nom de skill apparaît à
@@ -58,34 +216,52 @@ plusieurs endroits, la source la plus prioritaire l'emporte : le dossier
 `skills/` de l'espace de travail, le dossier `.agents/skills/` de l'espace de
 travail, `~/.agents/skills` (répertoire d'état par défaut uniquement), le
 dossier `skills/` du répertoire d'état (`~/.openclaw/skills` par défaut), les
-skills workshop, les skills intégrés et custodian, et en dernier les dossiers
-listés sous `skills.load.extraDirs` ainsi que les skills de plugins. Le
-répertoire d'Apothem est une entrée de `extraDirs` ; un skill du même nom que
-vous conservez dans l'une des sources précédentes est donc celui qu'OpenClaw
-utilise, et la copie Apothem de ce skill reste inutilisée sur le disque.
-Apothem n'écrit que dans `openclaw.json` et sous
-`~/.openclaw/.apothem/support/`, jamais dans ces dossiers précédents ;
-l'installation, la mise à jour et la désinstallation ne remplacent donc pas un
-skill que vous y conservez.
+skills workshop, les skills intégrés et custodian, puis les dossiers listés
+sous `skills.load.extraDirs` ainsi que les skills de plugins. Une session qui
+s'exécute dans un espace d'exécution distinct, un dossier autre que son propre
+espace de travail, lit aussi les dossiers `skills/` et `.agents/skills/` de ce
+dossier après toutes ces sources : un skill Apothem l'emporte donc sur un skill
+du même nom qui s'y trouve. Le répertoire d'Apothem est une entrée de
+`extraDirs` ; un skill du même nom que vous conservez dans l'une des sources
+précédentes est donc celui qu'OpenClaw utilise, et la copie Apothem de ce skill
+reste inutilisée sur le disque. Apothem n'écrit que dans `openclaw.json`,
+`~/.openclaw/apothem/rules/`, `~/.openclaw/.apothem/` et le fichier
+`apothem/AGENTS.md` de chaque espace de travail, jamais dans ces dossiers
+précédents ; l'installation, la mise à jour et la désinstallation ne
+remplacent donc pas un skill que vous y conservez.
 
-`agents.defaults.skills` est la liste d'autorisation des noms de skills ;
-Apothem ne la modifie pas : si vous en tenez une, vérifiez donc qu'elle nomme
-les skills d'Apothem que vous voulez. `apothem update` conserve les clés que
-vous ajoutez à `openclaw.json`. Les serveurs MCP se trouvent dans le bloc
-`mcp.servers` de la configuration d'OpenClaw, que vous gérez avec
-`openclaw mcp add` et les sous-commandes associées ; l'adaptateur n'y écrit
-aucune entrée. (Comportement d'OpenClaw selon sa documentation sur les
-[skills](https://docs.openclaw.ai/tools/skills), sur la
-[configuration des skills](https://docs.openclaw.ai/tools/skills-config) et sur
-les [extensions de configuration](https://docs.openclaw.ai/gateway/config-extensions),
-consultée le 2026-10-24, et sa documentation sur la
-[CLI MCP](https://docs.openclaw.ai/cli/mcp), consultée le 2026-10-02.)
+`agents.defaults.skills` est la liste d'autorisation des noms de skills, et une
+liste `agents.entries.<id>.skills` la remplace pour l'entrée à laquelle elle
+appartient. Apothem ne modifie aucune de ces listes : si vous en tenez une,
+vérifiez donc qu'elle nomme les skills d'Apothem que vous voulez.
+`apothem update` conserve les clés que vous ajoutez à `openclaw.json`. Les
+serveurs MCP se trouvent dans le bloc `mcp.servers` de la configuration
+d'OpenClaw, que vous gérez avec `openclaw mcp add` et les sous-commandes
+associées ; l'adaptateur n'y écrit aucune entrée. (Comportement d'OpenClaw
+selon sa documentation sur les [skills](https://docs.openclaw.ai/tools/skills),
+la [configuration des skills](https://docs.openclaw.ai/tools/skills-config),
+les [extensions de configuration](https://docs.openclaw.ai/gateway/config-extensions)
+et la [CLI MCP](https://docs.openclaw.ai/cli/mcp), consultée le 2026-11-03.)
 
 **Commentaires dans `openclaw.json`.** OpenClaw lit sa configuration en JSON5,
 et Apothem réécrit le fichier en JSON simple. Lorsque le fichier contient des
-commentaires ou une autre syntaxe JSON5 et que l'entrée manque, Apothem laisse
-le fichier intact et l'installation s'arrête avec un message qui nomme la clé.
-Fusionnez vous-même cette entrée dans votre fichier, ou convertissez le fichier
+commentaires ou une autre syntaxe JSON5, Apothem ne le réécrit jamais :
+
+- Si l'entrée `skills.load.extraDirs` manque, l'installation s'arrête avec un
+  message indiquant que le fichier contient des commentaires ou une syntaxe
+  JSON5.
+- Si seule l'entrée du hook manque, l'installation et la mise à jour
+  continuent, écrivent les fichiers de règles des espaces de travail et
+  affichent un avertissement qui indique quoi ajouter (le chemin va dans la
+  liste que votre entrée `bootstrap-extra-files` utilise déjà, si elle en a
+  une). Tant que vous ne l'avez pas ajouté, `apothem verify` échoue.
+- Les entrées qu'Apothem a écrites avant que vous n'ajoutiez des commentaires
+  restent exactement telles quelles, et la mise à jour continue. Lorsque les
+  limites de taille ou vos réglages de hook demandent que le chemin d'Apothem
+  sorte de l'entrée du hook, l'avertissement vous demande de le retirer à la
+  main ; un fichier de règles qui ne tient plus est quand même retiré.
+
+Fusionnez vous-même ces entrées dans votre fichier, ou convertissez le fichier
 en JSON simple, puis relancez l'installation :
 
 ```json
@@ -93,6 +269,16 @@ en JSON simple, puis relancez l'installation :
   "skills": {
     "load": {
       "extraDirs": ["~/.openclaw/.apothem/support/skills"]
+    }
+  },
+  "hooks": {
+    "internal": {
+      "entries": {
+        "bootstrap-extra-files": {
+          "enabled": true,
+          "paths": ["apothem/AGENTS.md"]
+        }
+      }
     }
   }
 }
@@ -117,7 +303,36 @@ La commande verify confirme que :
 3. `skills.load.extraDirs` dans la configuration native liste
    `~/.openclaw/.apothem/support/skills`. Sans cette entrée, OpenClaw ne charge
    pas les skills installés ; `apothem update` la rajoute.
-4. La routine de vérification propre à l'adaptateur signale un succès.
+4. L'entrée `bootstrap-extra-files` liste `apothem/AGENTS.md` dans la liste que
+   lit le hook, sauf si vos propres réglages empêchent Apothem de l'y inscrire
+   (voir [Règles dans chaque espace de travail](#règles-dans-chaque-espace-de-travail)).
+5. Chaque espace de travail qu'Apothem trouve contient `apothem/AGENTS.md` avec
+   son bloc géré. Un espace de travail créé après l'installation échoue à cette
+   vérification jusqu'à ce que `apothem update` écrive le fichier. Un espace de
+   travail pour lequel l'installation a signalé le fichier au-delà d'une limite
+   de taille y échoue jusqu'à ce que vous raccourcissiez les règles
+   personnalisées du profil ou releviez la limite, puis exécutiez la mise à
+   jour ; un lien, un chemin hors de votre répertoire personnel et un espace de
+   travail absent ne sont pas vérifiés. `apothem status` signale un fichier de
+   règles dont le bloc a été modifié.
+6. Aucun fichier dans lequel Apothem conserve son bloc (le document de profil
+   et chaque fichier de règles, y compris celui d'un espace de travail que
+   l'installation n'utilise plus) ne contient un marqueur BEGIN qui ne commence
+   aucun bloc complet, deux blocs complets ou plus entre les marqueurs
+   d'Apothem, ou des paires de marqueurs qu'Apothem ne sait pas distinguer de
+   votre texte. Une mise à jour conserve un tel marqueur, ou laisse un tel
+   fichier tel quel : la vérification échoue donc jusqu'à ce que vous corrigiez
+   le fichier à la main comme l'indique la ligne `Note:`. Un fichier de règles
+   n'est écrit que s'il tient dans la limite par fichier, et l'ancien texte
+   Apothem que vous gardez sous une ligne de marqueur que vous modifiez compte
+   dans cette limite : la note indique donc que la mise à jour suivante écrit
+   le bloc d'Apothem « if the file then fits OpenClaw's per-file limit
+   (bootstrapMaxChars) » ; sinon, la mise à jour nomme le fichier dans son
+   avertissement de taille (voir
+   [Un fichier a un marqueur BEGIN d'Apothem sans marqueur END](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker),
+   [Un fichier contient deux blocs entre les marqueurs d'Apothem](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)
+   et
+   [Apothem ne distingue pas son bloc de votre texte](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
 
 ## Mise à jour
 
@@ -125,10 +340,36 @@ La commande verify confirme que :
 apothem update --harness open-claw
 ```
 
-Redérive le document de profil à partir de l'état actuel du profil partagé et
-actualise les fichiers de support ; `openclaw.json` conserve les clés qu'il
-possède déjà, et l'entrée Apothem de `skills.load.extraDirs` reste listée une
-seule fois, quel que soit le nombre de mises à jour.
+Redérive le document de profil et le fichier de règles de chaque espace de
+travail à partir de l'état actuel du profil partagé et actualise les fichiers
+de support ; `openclaw.json` conserve les clés qu'il possède déjà, et les
+entrées Apothem de `skills.load.extraDirs` et de l'entrée du hook restent
+listées une seule fois, quel que soit le nombre de mises à jour. Chaque mise à
+jour écrit le chemin d'Apothem en dernier dans la liste de l'entrée du hook : il
+passe donc à la fin si vous placez des entrées après lui. Le texte que vous
+ajoutez à un fichier de règles hors de son bloc géré reste. Un fichier de
+règles dans un espace de travail que l'installation n'utilise plus perd son
+bloc. Lorsque cela laisse dans le fichier un marqueur BEGIN sans marqueur END
+(une ligne à vous, ou ce qui reste d'un ancien bloc qui a perdu son marqueur
+END), la mise à jour nomme le fichier et la ligne du marqueur, avec une étape
+numérotée qui modifie cette ligne pour qu'elle ne se lise plus comme un
+marqueur ; `apothem verify` échoue jusqu'à ce que vous la modifiiez. L'ancien
+texte Apothem situé en dessous est alors à vous de supprimer à la main. Si un
+tel fichier contient deux blocs différents entre les marqueurs d'Apothem, la
+mise à jour le laisse tel quel et nomme chaque bloc par ses lignes, ou le bloc
+d'Apothem et les lignes de marqueur qui l'entourent. Suivez l'une des
+corrections numérotées de l'avertissement, qui modifient des lignes de marqueur
+BEGIN sur place : si le bloc d'Apothem est conservé, l'installation, la mise à
+jour ou la désinstallation suivante le retire alors, et si chaque ligne de
+marqueur BEGIN est modifiée, Apothem n'y trouve plus de bloc à lui. Si Apothem
+ne sait pas distinguer son bloc dans ce fichier de votre texte (le bloc se
+trouve dans un bloc de code à vous, par exemple), la mise à jour laisse aussi
+le fichier tel quel, et son avertissement nomme chaque paire de marqueurs avec
+la façon de la corriger ; une fois la correction faite, l'installation, la mise
+à jour ou la désinstallation suivante retire le bloc d'Apothem (voir
+[Apothem ne distingue pas son bloc de votre texte](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+D'ici là, `apothem verify` échoue et nomme le fichier (voir
+[Vérification](#vérification)).
 Exécutez cette commande après avoir modifié `~/.config/apothem/profile.yaml` ou
 mis à niveau le paquet Apothem installé.
 
@@ -139,27 +380,84 @@ apothem uninstall --harness open-claw
 ```
 
 Supprime ce que l'adaptateur a ajouté : son entrée dans
-`skills.load.extraDirs`, le document de profil et l'arborescence de support.
-Vos propres clés dans `openclaw.json` restent en place, y compris vos propres
-entrées `extraDirs`, et le fichier n'est supprimé que si Apothem l'a créé et qu'il n'y reste
-plus rien qui vous appartienne. Le YAML du profil partagé et le moteur Apothem
-ne sont pas affectés.
+`skills.load.extraDirs`, son chemin dans l'entrée du hook (et l'entrée
+elle-même lorsqu'Apothem l'a créée), le bloc géré dans le fichier
+`apothem/AGENTS.md` de chaque espace de travail (le fichier et le dossier
+disparaissent lorsqu'il n'y reste rien d'autre), le document de profil et
+l'arborescence de support. Vos propres clés dans `openclaw.json` restent en
+place, y compris vos propres entrées `extraDirs` et vos réglages de hook, les
+fichiers propres à l'espace de travail restent tels quels, et `openclaw.json`
+n'est supprimé que si Apothem l'a créé et qu'il n'y reste plus rien qui vous
+appartienne.
+
+Certains restes demandent votre intervention :
+
+- **Les entrées d'Apothem dans un `openclaw.json` qui contient des commentaires
+  ou une autre syntaxe JSON5.** La désinstallation s'arrête avant de modifier
+  quoi que ce soit et se termine avec une erreur qui nomme les entrées à
+  retirer.
+- **Un fichier de règles atteint par un lien qui contient encore le bloc
+  Apothem.** La désinstallation retire tout le reste, laisse ce fichier en
+  place et signale la désinstallation comme inachevée (code de sortie 2), en
+  nommant le lien. Le rapport indique aussi si OpenClaw charge encore le
+  fichier : c'est le cas tant que `openclaw.json` le nomme dans un espace de
+  travail qu'OpenClaw utilise, parce qu'Apothem n'a pas pu modifier
+  `openclaw.json` ou parce qu'un motif à vous le désigne.
+- **Un fichier de règles qu'Apothem ne peut pas réécrire** (dans un dossier où
+  vous ne pouvez pas écrire, ou un fichier en lecture seule sous Windows). La
+  désinstallation signale une erreur qui nomme le fichier, nettoie les
+  fichiers de règles des autres espaces de travail et s'arrête avant de
+  modifier `openclaw.json` ou les fichiers de support.
+- **Un fichier de règles où Apothem ne sait pas distinguer son bloc de votre
+  texte** (le bloc se trouve dans un bloc de code à vous, par exemple). La
+  désinstallation retire tout le reste, laisse ce fichier tel quel et signale
+  la désinstallation comme inachevée (code de sortie 2). Son avertissement
+  nomme chaque paire de marqueurs et donne des corrections numérotées : suivez
+  celle dont le cas est vrai avant de relancer la désinstallation.
+
+Dans chaque cas, Apothem enregistre la désinstallation comme inachevée et
+conserve son enregistrement d'installation, même si vous ajoutez plus tard
+votre propre texte à côté du bloc. Retirez les entrées nommées, ou le bloc
+Apothem (ou le fichier), ou corrigez le fichier, puis relancez la
+désinstallation pour la terminer. Un fichier de règles dont le bloc Apothem a
+perdu sa ligne END est lui aussi laissé tel quel, avec un avertissement qui le
+nomme, mais la désinstallation se termine quand même ; supprimez le reste du
+bloc à la main. Tant que l'installation reste en place, chaque installation et
+chaque mise à jour nomme un tel fichier situé dans un espace de travail que
+l'installation n'utilise plus, jusqu'à ce que vous supprimiez le reste du bloc.
+Une fois une désinstallation terminée, Apothem ne nomme à nouveau le fichier que
+lorsqu'une installation ultérieure écrit dans son espace de travail. Dans un
+espace de travail que l'installation utilise, une installation ou une mise à
+jour conserve le texte d'un tel fichier de règles, écrit le bloc d'Apothem à
+part et nomme le fichier. Le YAML du profil partagé et le moteur Apothem ne
+sont pas affectés.
 
 ## Portail de conformité
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Exécutez-le depuis le dossier de votre projet. Sous Windows, utilisez `python`
+au lieu de `python3` et le chemin complet, car Windows PowerShell et cmd ne
+développent pas `~` :
+`$HOME\.apothem\src\apothem\conformity\gate.py` dans PowerShell, ou
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` dans cmd. Ce chemin est
+celui où l'installateur place le moteur, et `-E -s` tient votre `PYTHONPATH` et
+vos site-packages utilisateur à l'écart du portail ;
+[Portail de conformité](/docs/conformity-gate) explique les deux, ainsi que les
+autres installations.
 
 ## Dépannage
 
 | Symptôme | Correctif |
 |---------|-----|
 | Fichier de configuration introuvable | Relancez `apothem install --harness open-claw` |
-| Échec de la vérification | Exécutez `apothem update --harness open-claw`, puis vérifiez à nouveau |
-| Contenu de configuration inattendu | Apothem n'écrit que l'entrée `skills.load.extraDirs` dans `openclaw.json` et conserve les clés qui s'y trouvent déjà, si bien que le contenu du profil n'y est pas écrit. Le contenu du profil est écrit dans `~/.openclaw/apothem/rules/00-apothem-profile.md` : vérifiez `~/.config/apothem/profile.yaml` ou `--profile PATH`, puis relancez la commande sous [Mise à jour](#mise-à-jour) |
-| L'installation s'arrête avec un message sur des commentaires ou une syntaxe JSON5 dans `openclaw.json` | Apothem ne réécrit pas un fichier dont il devrait retirer des commentaires. Ajoutez vous-même l'entrée `skills.load.extraDirs` indiquée sous [Notes de compatibilité](#notes-de-compatibilité), ou convertissez le fichier en JSON simple, puis relancez l'installation |
-| Un skill Apothem n'apparaît pas dans OpenClaw | Un skill du même nom dans l'espace de travail, dans `~/.agents/skills` ou dans `~/.openclaw/skills` a priorité sur la copie Apothem (voir [Notes de compatibilité](#notes-de-compatibilité)). Exécutez aussi `apothem verify --harness open-claw`, et vérifiez que toute liste d'autorisation `agents.defaults.skills` que vous tenez nomme le skill |
+| Échec de la vérification | Exécutez `apothem update --harness open-claw`, puis vérifiez à nouveau. Si la ligne `Note:` nomme un fichier avec un marqueur Apothem à corriger, comme un fichier de règles, une mise à jour ne le corrige pas : corrigez ce fichier à la main comme l'indique la note, puis vérifiez à nouveau (voir [Vérification](#vérification), point 6) |
+| Contenu de configuration inattendu | Apothem n'écrit que son entrée dans `skills.load.extraDirs` et son chemin dans l'entrée du hook `bootstrap-extra-files` de `openclaw.json` (plus `enabled: true` lorsqu'il crée cette entrée), et conserve les clés qui s'y trouvent déjà, si bien que le contenu du profil n'y est pas écrit. Le contenu du profil est écrit dans `~/.openclaw/apothem/rules/00-apothem-profile.md` et dans le fichier `apothem/AGENTS.md` de chaque espace de travail : vérifiez `~/.config/apothem/profile.yaml` ou `--profile PATH`, puis relancez la commande sous [Mise à jour](#mise-à-jour) |
+| L'installation s'arrête avec un message sur des commentaires ou une syntaxe JSON5 dans `openclaw.json`, ou avertit qu'il contient une syntaxe JSON5 | Apothem ne réécrit pas un fichier dont il devrait retirer des commentaires. Ajoutez vous-même les deux entrées indiquées sous [Notes de compatibilité](#notes-de-compatibilité) (l'entrée `skills.load.extraDirs` et l'entrée du hook `bootstrap-extra-files`), ou convertissez le fichier en JSON simple, puis relancez l'installation |
+| OpenClaw ne suit pas les règles d'Apothem | Exécutez `apothem verify --harness open-claw` et consultez les avertissements de l'installation : un espace de travail qui n'existait pas au moment de l'installation, des hooks internes désactivés ou une découverte ouverte des hooks laissent les règles non chargées (voir [Règles dans chaque espace de travail](#règles-dans-chaque-espace-de-travail)). Exécutez ensuite `apothem update --harness open-claw` |
+| Un skill Apothem n'apparaît pas dans OpenClaw | Un skill du même nom dans l'espace de travail, dans `~/.agents/skills`, dans `~/.openclaw/skills` ou parmi les skills workshop ou intégrés d'OpenClaw a priorité sur la copie Apothem (voir [Notes de compatibilité](#notes-de-compatibilité)). Exécutez aussi `apothem verify --harness open-claw`, et vérifiez que toute liste d'autorisation `agents.defaults.skills` ou `agents.entries.<id>.skills` que vous tenez nomme le skill |
 
 ## Paramètres de configuration
 

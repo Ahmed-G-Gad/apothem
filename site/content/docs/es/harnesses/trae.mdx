@@ -2,7 +2,7 @@
 title: "Trae"
 description: "Adaptador de entorno de Apothem para Trae (GA)."
 machineTranslated: true
-sourceHash: "97ae18e3fc9b0b70"
+sourceHash: "1c892ed70350c956"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -50,8 +50,8 @@ Estas carpetas son compartidas. No son privadas del proyecto:
   pertenece la instalación. No cambia adónde van las skills.
 - La instalación no añade ningún archivo de skill ni de regla a tu repositorio. El
   proyecto recibe el archivo de reglas y los archivos de subagentes en
-  `.trae/agents/`, además de la carpeta de datos `.apothem/` que crea toda
-  instalación de proyecto.
+  `.trae/agents/`, además de la carpeta de datos que crea toda instalación de
+  proyecto, `.apothem/` de forma predeterminada.
 - Las carpetas del directorio personal se escriben primero. Si eso falla, por
   ejemplo porque una carpeta de la ruta es un enlace que sale de tu directorio
   personal (un enlace que permanece dentro de él se sigue) o no se puede
@@ -215,8 +215,17 @@ quedan, y una carpeta que queda vacía se elimina. Cada carpeta se respalda bajo
 ## Puerta de conformidad
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Ejecútalo desde la carpeta de tu proyecto. En Windows, usa `python` en lugar de
+`python3` y la ruta completa, ya que Windows PowerShell y cmd no expanden `~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` en PowerShell, o
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` en cmd. La ruta es
+donde el instalador coloca el motor, y `-E -s` mantiene tu `PYTHONPATH` y tus
+site-packages de usuario fuera de la puerta;
+[Puerta de conformidad](/docs/conformity-gate) explica ambas cosas y las demás
+instalaciones.
 
 ## Solución de problemas
 

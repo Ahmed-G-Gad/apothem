@@ -1,14 +1,13 @@
 ---
 title: "Einstellungen"
-description: "Konfiguration des Claude Code-Harness in settings.json mit Tool-Berechtigungen, Hook-Verdrahtung, Umgebungsvariablen und Statuszeilen-Vorlagen."
+description: "Konfiguration des Claude Code-Harness in settings.json mit Tool-Berechtigungen und Hook-Verdrahtung."
 machineTranslated: true
-sourceHash: "986e09594ded6bad"
+sourceHash: "ece5596a2a8b8bc1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-`settings.json` enthält die Konfiguration des Claude Code-Harness:
-Hook-Verdrahtung, Tool-Berechtigungen, Umgebungsvariablen und
-Statuszeilen-Einstellungen.
+`settings.json` enthält die Konfiguration des Claude Code-Harness, die Apothem
+in Ihre Datei zusammenführt: Tool-Berechtigungen und Hook-Verdrahtung.
 
 Die vollständige kanonische Referenz liegt unter
 [settings-reference.md](/docs/reference/settings-reference). Diese Seite fasst den Vertrag
@@ -18,10 +17,15 @@ zusammen und verweist auf die ausführlichere Referenz.
 
 | Abschnitt | Zweck |
 |---------|---------|
+| `$schema` | Schema-URL, mit der Editoren die Datei prüfen |
 | `permissions` | Tool-Whitelists und -Blacklists pro Matcher |
 | `hooks` | Nach Ereignis geschlüsselte Tabelle der Hook-Befehle (die kanonische Verdrahtung) |
-| `env` | Umgebungsvariablen pro Sitzung |
-| `statusLine` | Statuszeilen-Vorlage, die der Host rendert |
+
+Die Vorlage von Apothem setzt keinen anderen Schlüssel, daher bleiben Schlüssel
+wie `env` und `statusLine` Ihre. Der Statuszeilen-Renderer wird nach
+`~/.claude/statuslines/` kopiert, aber nicht verdrahtet; die
+[Seite zu Claude Code](/docs/harnesses/claude-code) zeigt den
+`statusLine`-Eintrag, den Sie selbst hinzufügen.
 
 ## Invariante der einzelnen Vorlage
 

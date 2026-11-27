@@ -2,11 +2,11 @@
 title: "Hermes"
 description: "Adaptateur d'environnement Apothem pour Hermes (préversion)."
 machineTranslated: true
-sourceHash: "2031f90de3f936a5"
+sourceHash: "6b5e4589566e8d9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-- **Éditeur :** Hermes
+- **Éditeur :** Nous Research
 - **Nom d'installation :** `hermes`
 - **Statut :** Préversion
 - **Configuration native :** `~/.hermes/config.yaml`
@@ -23,7 +23,26 @@ racine de l'environnement.
 
 **Fichiers écrits :** `~/.hermes/config.yaml`, le document de profil
 `~/.hermes/apothem/rules/00-apothem-profile.md` et les fichiers de support sous
-`~/.hermes/.apothem/support/`
+`~/.hermes/.apothem/support/`. L'installation crée aussi le dossier de données
+Apothem, `~/.hermes/.apothem/` par défaut, qui contient `contexts/`,
+`learning/`, `memory/` et `plans/`.
+
+Chaque installation et mise à jour supprime de `~/.hermes/apothem/rules/` tout
+fichier qu'Apothem n'y a pas placé, après l'avoir enregistré dans un ensemble de
+sauvegarde sous `~/.apothem/backups/`. Cette sauvegarde est supprimée dès qu'il
+existe 10 ensembles de sauvegarde plus récents de l'environnement ; conservez
+donc vos propres fichiers ailleurs.
+
+Des versions antérieures (le [journal des modifications](/docs/changelog) les
+nomme) supprimaient aussi `~/.hermes/cli-config.yaml` et
+`~/.hermes/profile.yaml` à chaque installation et mise à jour, après les avoir
+copiés dans un ensemble de sauvegarde sous
+`~/.apothem/backups/<timestamp>/hermes/`. La version actuelle laisse ces deux
+fichiers intacts. Pour les récupérer, copiez `~/.apothem/backups/` ailleurs
+avant de relancer Apothem, puis recopiez à la main les fichiers depuis cette
+copie dans `~/.hermes/`. Le
+[journal des modifications](/docs/changelog#data-loss-in-earlier-releases-recover-your-files)
+détaille toutes les étapes de récupération.
 
 Le document de profil se termine par une section consacrée aux fichiers de
 support Apothem, qui nomme le répertoire absolu sous
@@ -85,10 +104,10 @@ consultée n'indique pas quelle copie Hermes charge lorsque deux emplacements
 contiennent un skill du même nom ; Apothem interprète l'ordre comme donnant
 l'avantage aux emplacements précédents : attendez-vous donc à ce qu'un skill
 du même nom que vous conservez dans un emplacement précédent ait priorité sur
-la copie Apothem. Apothem n'écrit que dans `config.yaml` et sous
-`~/.hermes/.apothem/support/`, jamais dans ces emplacements précédents ;
-l'installation, la mise à jour et la désinstallation ne remplacent donc pas un
-skill que vous y conservez.
+la copie Apothem. L'installation Hermes n'écrit jamais dans ces emplacements
+précédents : dans `~/.hermes/`, elle n'écrit que `config.yaml`,
+`apothem/rules/` et `.apothem/` ; l'installation, la mise à jour et la
+désinstallation ne remplacent donc pas un skill que vous y conservez.
 
 `apothem update` conserve les clés que vous ajoutez à `config.yaml`, y compris
 `skills.config` et vos propres entrées `skills.external_dirs`. L'adaptateur
@@ -179,8 +198,18 @@ reste de vos paramètres `auxiliary` est toujours conservé.
 ## Portail de conformité
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Exécutez-le depuis le dossier de votre projet. Sous Windows, utilisez `python`
+à la place de `python3` et le chemin complet, car Windows PowerShell et cmd ne
+développent pas `~` :
+`$HOME\.apothem\src\apothem\conformity\gate.py` dans PowerShell, ou
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` dans cmd. Ce chemin est
+celui où le programme d'installation place le moteur, et `-E -s` tient votre
+`PYTHONPATH` et vos site-packages utilisateur à l'écart du portail ;
+[Portail de conformité](/docs/conformity-gate) explique les deux, ainsi que les
+autres installations.
 
 ## Dépannage
 

@@ -2,7 +2,7 @@
 title: "Harness-Adapter"
 description: "Apothem-Harness-Adapter — ein gemeinsames Profil, siebzehn unterstützte Ziele."
 machineTranslated: true
-sourceHash: "f4177d0bff3cb602"
+sourceHash: "48a032b0eced79dc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -65,8 +65,12 @@ apothem doctor
 
 ## Wie Adapter funktionieren
 
-Jeder Adapter implementiert das `HarnessAdapter`-Protokoll, das über
-setuptools-Entry-Points registriert ist. Bei der Installation lädt und validiert die CLI das gemeinsame
+Jeder Adapter implementiert das `HarnessAdapter`-Protokoll und ist in der
+statischen Harness-Registry (`src/apothem/lib/harness_registry.py`) aufgeführt,
+aus der die CLI die Adapter auflöst. Die Entry-Points `apothem.harnesses` in
+`pyproject.toml` führen dieselben Adapter auf, und ein Test hält beide Listen
+gleich, doch die CLI liest keine Entry-Points, daher kann ein anderes Paket keinen
+Adapter hinzufügen, indem es einen deklariert. Bei der Installation lädt und validiert die CLI das gemeinsame
 YAML-Profil, löst den Adapter über die Registry auf, validiert den
 Materialisierungsplan und schreibt die plattformnative Konfiguration an den nativen
 Benutzer- oder Projektort des Harness. Bei einem Update leitet sie aus dem aktuellen
@@ -77,7 +81,7 @@ profile.yaml + packaged cohorts
     identity / preferences / rules
     commands / skills / delegated definitions / hooks / templates
          |
-         +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/antigravity-cli/plugins/apothem/
+         +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/config/plugins/apothem/
          +-- claude-code    --> ~/.claude/ native folders + ~/.claude/.apothem/support/
          +-- codex          --> ~/.codex/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- cursor         --> <project>/.cursor/rules/*.mdc + <project>/.cursor/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/

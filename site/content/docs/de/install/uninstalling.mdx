@@ -2,7 +2,7 @@
 title: "Deinstallieren"
 description: "Apothem entfernen und Harness-Konfigurationen bereinigen."
 machineTranslated: true
-sourceHash: "60208ca7c4c5f168"
+sourceHash: "e1f5ac4a5447a167"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -128,3 +128,71 @@ harness-nativen Pfad, der auf den [Harness-Referenzseiten](/docs/harnesses)
 dokumentiert ist, nachdem Sie sich vergewissert haben, dass Sie alle
 benutzerdefinierten Regeln, Helfer oder Profildateien gesichert haben, die Sie
 behalten möchten.
+
+## Wenn die Deinstallation meldet, dass sie nicht abgeschlossen wurde
+
+Eine Deinstallation kann mittendrin anhalten, und sie behält die Installation
+dann als verzeichnet bei. Die Meldung hängt vom Grund ab:
+
+- `✗ <harness> uninstall did not finish:` nennt Apothem-Dateien, die sie hinter
+  einem Link (einem Symlink oder einer Junction) zurückgelassen hat, Dateien,
+  die die Installation eines früheren Release verzeichnet hat und die sich von
+  dem unterscheiden, was dieses Release schreibt, die Dateien einer Installation
+  ganz ohne Aufzeichnung, Dateien, die zwischen Apothems Markern zwei
+  verschiedene Blöcke enthalten, Dateien, deren Markerzeilen Apothem nicht von
+  Ihrem Text unterscheiden kann, oder Entfernungsschritte, die Fehler gemeldet
+  haben. Für einen Link, die Dateien eines früheren Release, eine Installation
+  ohne Aufzeichnung oder Dateien mit zwei Blöcken oder mit solchen
+  Markerzeilen nennt sie außerdem die Anzahl der Pfade, die sie
+  zurückgelassen hat. Nach einer Deinstallation, die angehalten hat, folgen
+  die Zeilen für Links, behaltene Dateien und fehlgeschlagene Schritte auf
+  eine der beiden Zeilen unten.
+- `✗ <harness> uninstall stopped after removing files:` bedeutet, dass ein
+  Entfernungsschritt die Deinstallation angehalten hat, nachdem er einige
+  Dateien entfernt oder Apothems Einträge oder Block aus einer Datei wie
+  `openclaw.json` herausgenommen hatte.
+- `✗ <harness> uninstall failed:` bedeutet, dass ein Entfernungsschritt die
+  Deinstallation angehalten hat, bevor er etwas geändert hat, oder dass ein
+  unerwarteter Fehler (eine Ausnahme, etwa ein Backup, das sich nicht
+  schreiben lässt) den ersten Schritt einer Deinstallation von Open-Claw,
+  Antigravity oder Kimi Code angehalten hat, der nichts von dem meldet, was
+  er getan hat.
+
+Sie endet mit `2`, wenn sie Dateien entfernt oder geändert hat, Apothems eigene
+Dateien hinter einem Link zurückgelassen hat, die Dateien der Installation
+eines früheren Release oder einer Installation ohne Aufzeichnung behalten hat
+oder eine Datei mit zwei verschiedenen Blöcken zwischen Apothems Markern oder
+mit Markerzeilen zurückgelassen hat, die Apothem nicht von Ihrem Text
+unterscheiden kann, oder wenn ein anderer Harness entfernt wurde, und mit `1`,
+wenn sie aus einem anderen Grund angehalten hat, bevor sie etwas geändert hat.
+Ein unerwarteter Fehler in diesem ersten Schritt endet mit `1` (mit `2`, wenn
+ein anderer Harness entfernt wurde), unabhängig davon, was der Schritt geändert
+hatte. Beheben Sie, was die Meldung nennt, und führen Sie dann denselben Befehl
+`apothem uninstall` erneut aus: Er entfernt, was der erste Lauf
+zurückgelassen hat. Für eine Datei mit zwei Blöcken oder eine, deren
+Markerzeilen Apothem nicht von Ihrem Text unterscheiden kann, gibt die Warnung
+nummerierte Lösungen an, eine für jeden Fall: Wählen Sie die, deren Fall
+zutrifft, und führen Sie ihre Schritte in der angegebenen Reihenfolge aus,
+bevor Sie die Deinstallation erneut ausführen (siehe
+[Einer nummerierten Lösung folgen](/docs/install/troubleshooting#follow-a-numbered-fix)).
+Löschen Sie Apothems Block nicht, um ein eigenes Markerpaar zu behalten, denn
+die nächste Deinstallation würde Ihr Paar dann herausnehmen. Für die
+Installation eines früheren Release oder eine Installation ohne Aufzeichnung
+kopieren Sie zuerst jede aufgeführte Datei, die Sie bearbeitet oder hinzugefügt
+haben, und beheben jede Datei, die eine Warnung wegen eines Apothem-Markers
+nennt, so wie diese Warnung es beschreibt; führen Sie dann `apothem update`
+aus und danach die Deinstallation. Ohne Aufzeichnung bleibt Apothems Block in
+`CLAUDE.md` oder einem Profildokument erhalten, und seine Warnung gibt eine
+nummerierte Lösung an, die die Zeilen des Blocks von Hand löscht, wenn Sie den
+Block nicht mehr möchten (oder, wenn keine solche Lösung Ihre Zeilen so lesbar
+lässt wie zuvor, dazu auffordert, stattdessen jede Apothem-Markerzeile in der
+Datei zu ändern). Wenn diese Datei zwei oder mehr ganze Blöcke enthält, nennt
+die Warnung jeden davon und endet stattdessen mit diesem Update und dieser
+Deinstallation, und die Deinstallation nennt dann alle Markerzeilen von Ihnen
+rund um Apothems Block, bevor sie den Block herausnimmt. Ein Update behält
+einen BEGIN-Marker ohne END und den Text darunter bei und behebt keine Datei,
+die zwei verschiedene Blöcke enthält. Die
+[Deinstallationsreferenz](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish)
+beschreibt jeden Fall, und ihre Tabelle
+[Exit-Codes](/docs/cli-reference/uninstall#exit-codes) führt auf, was `1`
+und `2` bedeuten.

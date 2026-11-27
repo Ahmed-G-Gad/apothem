@@ -2,7 +2,7 @@
 title: "Desinstalación"
 description: "Elimina Apothem y limpia las configuraciones de entorno."
 machineTranslated: true
-sourceHash: "60208ca7c4c5f168"
+sourceHash: "e1f5ac4a5447a167"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -54,7 +54,7 @@ son los de la [tabla de canales de instalación](/docs/install#choose-a-channel)
 - **Motor directo (canal 8)** — no hay nada que desinstalar; elimina el clon una vez que
   las configuraciones de entorno ya no estén.
 - **Copias de seguridad y estado** — las copias de seguridad de instalación
-  residen bajo `~/.apothem/backups/` y el historial de instalaciones bajo
+  residen bajo `~/.apothem/backups/` y el registro de instalaciones bajo
   `~/.apothem/state/`. Ambos tienen un tamaño acotado: después de cada
   instalación, desinstalación y reversión, Apothem conserva los 10 registros de
   instalación más recientes por raíz de instalación y los 10 conjuntos de copias
@@ -76,7 +76,7 @@ son los de la [tabla de canales de instalación](/docs/install#choose-a-channel)
 - Las entradas que añadiste a un archivo de ajustes compartido se conservan: tus
   propias reglas de permisos, servidores MCP y manejadores de hooks permanecen.
   La desinstalación elimina solo las claves y las entradas de lista que el
-  historial de instalaciones registra como de Apothem (consulta
+  registro de instalaciones registra como de Apothem (consulta
   [Configuración](/docs/reference/settings#merging-into-your-own-settings-file)).
 - Los almacenes de datos compartidos bajo `.apothem/` en la raíz de instalación
   (`memory/`, `contexts/`, `learning/`) permanecen mientras otro entorno
@@ -97,3 +97,65 @@ Para limpiar por completo la raíz de un entorno, elimina la ruta nativa del
 entorno documentada en las [páginas de referencia de entornos](/docs/harnesses)
 después de confirmar que has hecho una copia de seguridad de cualquier regla,
 ayudante o archivo de perfil personalizado que quieras conservar.
+
+## Si la desinstalación informa de que no terminó
+
+Una desinstalación puede detenerse a medias, y cuando lo hace mantiene la
+instalación registrada. El mensaje depende del motivo:
+
+- `✗ <harness> uninstall did not finish:` nombra archivos de Apothem que dejó
+  detrás de un enlace (un enlace simbólico o una junction), archivos que
+  registró la instalación de una versión anterior y que difieren de lo que
+  escribe esta versión, los archivos de una instalación sin ningún registro,
+  archivos que contienen dos bloques distintos entre los marcadores de Apothem,
+  archivos cuyas líneas de marcador Apothem no puede distinguir de tu texto, o
+  pasos de eliminación que informaron errores. Para un enlace, los archivos de
+  una versión anterior, una instalación sin registro, o archivos con dos bloques
+  o con esas líneas de marcador, también da el número de rutas que dejó. Tras
+  una desinstalación que se detuvo, las líneas de enlaces, archivos conservados
+  y pasos fallidos siguen a una de las dos líneas siguientes.
+- `✗ <harness> uninstall stopped after removing files:` significa que un paso de
+  eliminación detuvo la desinstalación después de haber eliminado algunos
+  archivos, o de haber sacado las entradas o el bloque de Apothem de un archivo
+  como `openclaw.json`.
+- `✗ <harness> uninstall failed:` significa que un paso de eliminación detuvo la
+  desinstalación antes de cambiar nada, o que un error inesperado (una
+  excepción, como una copia de seguridad que no se puede escribir) detuvo el
+  primer paso de una desinstalación de Open-Claw, Antigravity o Kimi Code, que
+  no informa de nada de lo que hizo.
+
+Sale con `2` cuando eliminó o cambió archivos, dejó los propios archivos de
+Apothem detrás de un enlace, conservó los archivos de la instalación de una
+versión anterior o de una instalación sin registro, o dejó un archivo con dos
+bloques distintos entre los marcadores de Apothem o con líneas de marcador que
+Apothem no puede distinguir de tu texto, o cuando se eliminó otro entorno, y con
+`1` cuando se detuvo antes de cambiar nada por cualquier otro motivo. Un error
+inesperado en ese primer paso sale con `1` (`2` cuando se eliminó otro
+entorno), sea lo que sea lo que el paso hubiera cambiado. Corrige lo que nombra
+el mensaje y luego ejecuta de nuevo el mismo comando `apothem uninstall`:
+elimina lo que dejó la primera ejecución. Para un archivo con dos bloques, o uno
+cuyas líneas de marcador Apothem no puede distinguir de tu texto, la advertencia
+da correcciones numeradas, una para cada caso: elige aquella cuyo caso sea
+cierto y sigue sus pasos en el orden indicado antes de volver a ejecutar la
+desinstalación (consulta
+[Seguir una corrección numerada](/docs/install/troubleshooting#follow-a-numbered-fix)).
+No borres el bloque de Apothem para conservar un par de marcadores tuyo, ya que
+la siguiente desinstalación sacaría entonces tu par. Para la instalación de una
+versión anterior o una instalación sin registro, copia primero cualquier archivo
+de la lista que hayas editado o añadido y corrige cada archivo que una
+advertencia nombre por un marcador de Apothem, como indica esa advertencia;
+después ejecuta `apothem update` y luego la desinstalación. Sin registro, el
+bloque de Apothem en `CLAUDE.md` o en un documento de perfil permanece, y su
+advertencia da una corrección numerada que borra a mano las líneas del bloque si
+ya no lo quieres (o, cuando ninguna corrección así deja tus líneas tal como se
+leían antes, indica que cambies en su lugar cada línea de marcador de Apothem del
+archivo). Cuando ese archivo contiene dos o más bloques completos, la
+advertencia nombra cada uno y termina en su lugar con esa actualización y esa
+desinstalación, y la desinstalación nombra entonces las líneas de marcador tuyas
+que haya alrededor del bloque de Apothem antes de sacar el bloque. Una
+actualización conserva un marcador BEGIN sin END y el texto que hay debajo, y no
+corrige un archivo que contiene dos bloques distintos. La
+[referencia de uninstall](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish)
+describe cada caso, y su tabla de
+[códigos de salida](/docs/cli-reference/uninstall#exit-codes) enumera qué
+significan `1` y `2`.

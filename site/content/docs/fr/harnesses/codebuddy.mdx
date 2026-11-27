@@ -2,7 +2,7 @@
 title: "CodeBuddy"
 description: "Adaptateur d'environnement Apothem pour Tencent CodeBuddy (GA)."
 machineTranslated: true
-sourceHash: "fbf19289d20e8ab7"
+sourceHash: "325f29aff29de35e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -176,6 +176,10 @@ projet à la place des deux chemins :
 "/path/to/python" -E -s "/path/to/project/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart
 ```
 
+`-E -s` fait ignorer à Python `PYTHONPATH` et les autres variables `PYTHON*`
+et lui fait sauter vos site-packages utilisateur ; aucun fichier du projet ne
+peut ainsi se charger dans le hook.
+
 `--contract codebuddy` ne change rien à la sortie : CodeBuddy lit la même
 enveloppe que Claude Code. CodeBuddy exécute les commandes de hooks via votre
 shell, et via Git Bash sous Windows (il ne prend en charge ni cmd.exe ni
@@ -216,11 +220,15 @@ hooks.
 
 L'adaptateur lit le profil partagé d'Apothem et rend le fichier de règles du
 projet à chaque exécution de `apothem install` ou de `apothem update`. CodeBuddy
-lit chaque fichier `*.md` sous `.codebuddy/rules/` comme du Markdown avec un
-frontmatter YAML optionnel (`alwaysApply`, `paths`, `enabled`), conformément à
-la [documentation des règles de CodeBuddy](https://www.codebuddy.ai/docs/ide/Rules) ;
-le fichier d'Apothem porte `alwaysApply: true`, de sorte que la surface de
-gouvernance s'applique à chaque interaction. Le frontmatter est le premier
+Code lit chaque fichier `*.md` sous `.codebuddy/rules/`, sous-dossiers compris,
+comme du Markdown avec un frontmatter YAML optionnel (`alwaysApply`, `paths`,
+`enabled`), conformément à la
+[documentation de la mémoire de CodeBuddy](https://www.codebuddy.ai/docs/cli/memory#modular-rules-with-codebuddy-rules) ;
+le fichier d'Apothem porte `alwaysApply: true`, de sorte que CodeBuddy Code le
+charge dans chaque session qu'il démarre dans le dossier racine du projet. Il ne
+lit les règles de projet que depuis le dossier dans lequel il démarre, et il ne
+lit un fichier de règles qu'une installation ajoute ou modifie qu'après un
+redémarrage. Le frontmatter est le premier
 contenu du fichier et le bloc géré par Apothem le suit ; le texte que vous
 ajoutez après le bloc est conservé à chaque synchronisation. Le profil partagé
 est la source de vérité ; les modifications locales au projet apportées au
@@ -232,7 +240,12 @@ remplace le contenu géré par Apothem.
 La surface de règles de CodeBuddy est de portée projet, sous
 `.codebuddy/rules/`. L'adaptateur écrit un fichier `apothem-rules.md` dédié qui
 coexiste avec tout fichier de règles que l'opérateur rédige dans le même
-répertoire. Le fichier de mémoire de projet `CODEBUDDY.md`, le fichier commité
+répertoire. La
+[page des règles](https://www.codebuddy.ai/docs/ide/User-guide/Rules#project-rules)
+de l'IDE CodeBuddy décrit un dossier par règle, chacun contenant un fichier
+`RULE.mdc`, au lieu d'un simple fichier `.md` comme celui d'Apothem. La page ne
+dit pas si l'IDE charge aussi un simple fichier `.md`, et Apothem n'a pas
+confirmé qu'il le fait. Le fichier de mémoire de projet `CODEBUDDY.md`, le fichier commité
 `.codebuddy/settings.json` et le `.mcp.json` du projet (serveurs MCP) sont
 détenus par l'opérateur ; Apothem ne les écrit pas. CodeBuddy documente aussi
 des commandes slash ; l'adaptateur n'en écrit aucune et référence plutôt les
@@ -327,8 +340,18 @@ sous `~/.apothem/backups/` avant d'être supprimé.
 ## Portail de conformité
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Exécutez-le depuis le dossier de votre projet. Sous Windows, utilisez `python` à
+la place de `python3` et le chemin complet, car Windows PowerShell et cmd ne
+développent pas `~` :
+`$HOME\.apothem\src\apothem\conformity\gate.py` dans PowerShell, ou
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` dans cmd. Ce chemin est
+l'emplacement où l'installateur place le moteur, et `-E -s` tient votre
+`PYTHONPATH` et vos site-packages utilisateur à l'écart du portail ;
+[Portail de conformité](/docs/conformity-gate) explique les deux, ainsi que les
+autres installations.
 
 ## Dépannage
 

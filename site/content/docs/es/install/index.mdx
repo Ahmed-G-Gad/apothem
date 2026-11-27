@@ -2,7 +2,7 @@
 title: "Instalación"
 description: "Resumen de la instalación de Apothem — ocho canales de instalación, cada uno con sus requisitos previos, un comando listo para copiar y un paso de verificación: el plugin de Claude Code, el shim de npm, los instaladores de un solo paso, la extensión de la familia VS Code, las tres extensiones de arranque de línea de comandos y el motor directo."
 machineTranslated: true
-sourceHash: "1d9aa6524933a4c5"
+sourceHash: "cc205e0eab36c099"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -137,20 +137,28 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 
 ## 3. Instaladores de un solo paso
 
-**Requisitos previos:** el Python 3.10+ del sistema en el `PATH` (el instalador se ofrece a añadir por ti los requisitos previos `click` / `rich`); `git` y `gpg` para una instalación por red, que clona el código fuente y verifica su etiqueta de lanzamiento firmada (Git for Windows incluye ambos).
+**Requisitos previos:** el Python 3.10+ del sistema en el `PATH` (el instalador se ofrece a añadir por ti los requisitos previos `click` / `rich`). Para una instalación por red: `git`, para encontrar el lanzamiento más reciente, y `gpg`, para comprobar la etiqueta de lanzamiento firmada (Git for Windows incluye ambos). [cosign](https://docs.sigstore.dev/cosign/system_config/installation/) es opcional: con él, el instalador también comprueba el archivo comprimido de lanzamiento firmado.
 
-Los scripts del instalador resuelven la etiqueta de lanzamiento firmada más
-reciente, verifican su firma, colocan el árbol de código fuente de Apothem en
-`~/.apothem` en esa etiqueta, crean un perfil inicial cuando no existe ninguno,
-materializan tu primer entorno y verifican el resultado, todo en una sola
-ejecución. El perfil inicial lleva campos de identidad que son marcadores de
-posición: edítalo y luego ejecuta `apothem update --harness <name>` para aplicar
-los tuyos. Volver a ejecutarlos es idempotente: en un árbol existente se vuelve
-a hacer checkout de la etiqueta resuelta y el entorno se vuelve a materializar.
-La instalación verificada y fijada a una etiqueta es la vía predeterminada y
-recomendada.
+Los scripts del instalador resuelven el lanzamiento más reciente, lo comprueban
+(consulta [Modelo de confianza](#modelo-de-confianza)), colocan el árbol de
+código fuente de Apothem en `~/.apothem`, crean un perfil inicial cuando no
+existe ninguno, materializan tu primer entorno y verifican el resultado, todo en
+una sola ejecución. El perfil inicial lleva campos de identidad que son
+marcadores de posición: edítalo y luego ejecuta `apothem update --harness <name>`
+para aplicar los tuyos. Volver a ejecutarlos es idempotente: en un clon de git
+se hace fetch, se comprueba su nueva etiqueta y solo entonces se hace checkout
+del clon en la etiqueta resuelta; una instalación desde un archivo comprimido de
+lanzamiento se actualiza en el sitio; y el entorno se vuelve a materializar.
+Cuando el motor termina como parcial (código de salida `2`), el instalador
+imprime una línea de advertencia, verifica igualmente, coloca el comando
+`apothem` e imprime su banner, y después termina con el código de salida `2`. El
+motor termina como parcial cuando deja un archivo como está a causa de sus
+líneas de marcador de Apothem, o cuando se detiene después de haber escrito algo
+(consulta
+[Cuando el motor deja un archivo como está](/docs/install/updating#when-the-engine-leaves-a-file-as-it-is)).
+La instalación verificada es la vía predeterminada y recomendada.
 
-Importa primero la clave de firma del mantenedor, una sola vez. El instalador se detiene si la clave no está en tu llavero. Comprueba que la huella digital es `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`, el valor publicado en [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#maintainer-signing-key). En Windows, `git verify-tag` lee el llavero del `gpg` que incluye Git for Windows, así que la importación se ejecuta mediante el propio `bash` de Git:
+Importa primero la clave de firma del mantenedor, una sola vez. Cada instalación por red comprueba la etiqueta de lanzamiento con ella, con o sin cosign, y se detiene si la clave no está en tu llavero. Comprueba que la huella digital es `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`, el valor publicado en [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#maintainer-signing-key). En Windows, `git verify-tag` lee el llavero del `gpg` que incluye Git for Windows, así que la importación se ejecuta mediante el propio `bash` de Git:
 
 ```bash title="macOS · Linux · WSL2 · BSD — import the key once"
 curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
@@ -178,9 +186,240 @@ APOTHEM_HARNESS=claude-code sh scripts/installer/install.sh                     
 $env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/install.ps1   # Windows
 ```
 
+Un comando de una línea canalizado nunca usa un árbol local: `curl ... | sh` e
+`irm ... | iex` ignoran la carpeta desde la que los ejecutas y sus carpetas
+superiores, y descargan y verifican el lanzamiento. El instalador usa un árbol
+local solo cuando ejecutas por su ruta el propio
+`scripts/installer/install.sh` (o `install.ps1`) del checkout, desde cualquier
+carpeta (por ejemplo `sh ~/src/apothem/scripts/installer/install.sh`), o cuando
+`APOTHEM_SOURCE` nombra ese árbol. Los instaladores, los actualizadores y los
+desinstaladores, los shims de `apothem`, el lanzador de npm, los hooks y los
+procesos validadores de la puerta de conformidad mantienen la carpeta actual
+fuera de la ruta de búsqueda de módulos de Python. Un comando
+`python -m apothem` que escribas tú mismo no lo hace: `-m` lee primero los
+módulos de la carpeta actual.
+
+Ningún lanzador (los instaladores, los actualizadores, los desinstaladores, los
+shims de `apothem` de POSIX y de Windows, y el lanzador de npm) pasa al motor las
+entradas vacías y relativas de tu propio `PYTHONPATH`. Una entrada que se
+conserva debe ser una ruta completa: en Windows, una ruta de unidad como
+`C:\lib` o una ruta de red; en los demás sistemas, una ruta que empiece por `/`.
+Se descartan una ruta con raíz `\lib` y una ruta relativa a la unidad `C:lib`.
+Los scripts sh preguntan al Python que ejecutan qué forma lee, y el shim de
+`apothem` que escriben conserva esa forma. Un Python de Windows (el habitual en
+Git Bash) recibe las rutas del motor en forma de Windows, unidas con `;`, y
+conserva solo las rutas de unidad y de red de tu `PYTHONPATH`. Un Python POSIX,
+incluido el `python3` propio de Cygwin y de MSYS2, recibe rutas POSIX unidas con
+`:` y conserva solo las entradas que empiezan por `/`. Los comandos `git` de los
+instaladores que no trabajan sobre un clon no leen un repositorio de la carpeta
+actual.
+
 ### Modelo de confianza
 
-Sin `APOTHEM_REF` definido, el instalador resuelve la etiqueta de lanzamiento `vMAJOR.MINOR.PATCH` más alta y hace checkout de *esa* — nunca de la rama `main` en movimiento. Antes de materializar cualquier configuración, la firma de la etiqueta obtenida se verifica con `git verify-tag`; una etiqueta sin firmar, manipulada o no verificable aborta la instalación antes de escribir nada. Una etiqueta firmada cuya clave pública del mantenedor todavía no está en el llavero local aborta, en cambio, con indicaciones para importar la clave: importa la clave tal como se muestra arriba, comprueba su huella digital con el valor publicado en [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md), y vuelve a ejecutar. Fija un lanzamiento concreto con `APOTHEM_REF`:
+Sin `APOTHEM_REF` definido, el instalador resuelve el lanzamiento
+`vMAJOR.MINOR.PATCH` más alto e instala *ese* — nunca la rama `main` en
+movimiento. Comprueba el lanzamiento antes de materializar cualquier
+configuración, y la comprobación depende de si `cosign` está en tu `PATH`:
+
+- **Con cosign**, deben pasar dos comprobaciones. Primero, la etiqueta de
+  lanzamiento debe llevar una firma válida de la clave del mantenedor,
+  comprobada como en el punto siguiente, y la etiqueta firmada debe ser la que
+  lleva el nombre de ese lanzamiento: se rechaza una etiqueta firmada de otro
+  lanzamiento redirigida a este nombre. Después, el instalador descarga el
+  archivo comprimido de la plataforma del lanzamiento, su archivo `SHA256SUMS`
+  y `SHA256SUMS.cosign.bundle`. cosign debe confirmar que el flujo de trabajo de
+  lanzamiento de Apothem firmó `SHA256SUMS` para esa etiqueta exacta y, mediante
+  su comprobación `--certificate-github-workflow-sha`, que el certificado que
+  verificó se emitió para una ejecución sobre el commit al que apunta la
+  etiqueta firmada. El instalador no lee el certificado por sí mismo. Después,
+  el SHA-256 del archivo comprimido debe coincidir con el digest de la lista. El
+  flujo de trabajo se ejecuta para cualquier etiqueta que se envíe, así que su
+  firma por sí sola no basta; la firma de la etiqueta muestra que el mantenedor
+  publicó ese commit.
+- **Sin cosign**, o cuando `APOTHEM_HOME` ya contiene un clon de git, el
+  instalador clona o actualiza el repositorio y comprueba solo la etiqueta con
+  `git verify-tag`. La firma debe ser válida *y* estar hecha con la
+  clave del mantenedor publicada en [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md), y la etiqueta firmada debe ser la que lleva el nombre del
+  lanzamiento. Se rechaza una etiqueta firmada por cualquier otra clave, aunque
+  tu llavero confíe en esa clave. Una etiqueta de git firmada nombra su commit
+  mediante un ID SHA-1; con cosign, el instalador también comprueba el SHA-256
+  del archivo comprimido. En un clon existente se hace fetch y su nueva etiqueta
+  se comprueba *antes* de hacer checkout del clon. Una comprobación fallida deja
+  el clon como estaba, y un clon con cambios en archivos rastreados detiene la
+  actualización con un mensaje para hacer commit de ellos o guardarlos con
+  stash, en lugar de perderlos. Con una ref que no es de lanzamiento, como
+  `main`, un clon existente sigue la copia de esa rama en origin.
+
+El instalador ignora las variables de entorno de git que redirigen git
+(`GIT_DIR`, `GIT_WORK_TREE` y similares) y las que dirigen git a otro archivo
+de configuración (`GIT_CONFIG`, `GIT_CONFIG_GLOBAL` y `GIT_CONFIG_SYSTEM`) o le
+hacen leer atributos de otro árbol (`GIT_ATTR_SOURCE`; un `attr.tree` de tu
+propia configuración se vacía en cada comando git que se ejecuta sobre un
+clon), y se detiene cuando `APOTHEM_REPO` empieza por `-`.
+`GIT_CONFIG_NOSYSTEM` se queda como lo definiste; solo impide que git lea la
+configuración del sistema. git sigue leyendo tu propia configuración global y,
+a menos que definas `GIT_CONFIG_NOSYSTEM`, la configuración del sistema desde
+los lugares donde siempre busca, y `git`, `gpg` y `cosign` son los programas que
+encuentra tu `PATH`: el instalador confía en ellos tal como se encuentran.
+Durante toda la ejecución, el instalador establece `GIT_NO_REPLACE_OBJECTS=1`,
+para que git nunca sustituya un objeto mediante refs de reemplazo,
+`GIT_NO_LAZY_FETCH=1`, para que git nunca descargue por su cuenta un objeto que
+falta desde el remoto, `GIT_ALLOW_PROTOCOL` con los transportes file, git, http,
+https y ssh, para que un valor de tu entorno no pueda ampliar esa lista, y
+`GIT_ATTR_NOSYSTEM=1`; con `core.attributesFile` vaciado en cada comando git que
+se ejecuta sobre un clon, git no lee entonces ningún archivo de atributos fuera
+del clon, así que una macro definida en el tuyo no puede nombrar un filtro ahí.
+El script de PowerShell restaura las cuatro cuando termina la ejecución. El
+instalador lee la etiqueta de lanzamiento una vez, registra el commit que
+nombra, verifica la etiqueta, hace checkout de ese commit por su ID y exige que
+`HEAD` sea ese commit, así que una etiqueta movida después de la comprobación no
+cambia nada. En Windows PowerShell 5.1 y 7, se rechaza una descarga que redirige
+a una dirección que no es https, igual que hace el `curl` de los instaladores
+POSIX.
+
+`APOTHEM_HOME` debe ser una carpeta en la que solo tú puedas escribir, ya que
+quien pueda escribir en ella puede cambiar el código que ejecuta el comando
+`apothem`. En Windows, una carpeta creada en la raíz de una unidad, como
+`C:\apothem`, la puede cambiar cualquier usuario que inicie sesión en el equipo,
+con los permisos predeterminados de Windows. El valor predeterminado,
+`~/.apothem`, está en tu propia carpeta de usuario. Cada instalación descargada,
+actualización y ejecución de prueba advierte, sin detenerse, cuando no es así, o
+cuando la carpeta o la que la contiene pertenece a otra persona, nombrando la
+carpeta, quién puede escribir en ella o es su propietario, y la corrección; una
+instalación desde un checkout local y una actualización con `APOTHEM_SOURCE`
+definido omiten la comprobación. En Windows, la advertencia procede de
+`install.ps1` y `update.ps1`: `install.sh` y `update.sh` no comprueban en Git
+Bash, MSYS2 ni Cygwin (consulta
+[Solución de problemas](/docs/install/troubleshooting#the-installer-warns-other-users-can-change-apothem_home)).
+
+Una comprobación fallida aborta la instalación antes de escribir ninguna
+configuración y antes de que el instalador reemplace `APOTHEM_HOME`. Una
+etiqueta firmada cuya clave pública del mantenedor todavía no está en el llavero
+local aborta, en cambio, con indicaciones para importar la clave: importa la clave tal como se muestra arriba, comprueba su huella digital con el valor publicado en [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md), y vuelve a ejecutar.
+
+Volver a ejecutar con cosign actualiza una instalación anterior desde un archivo
+comprimido de lanzamiento. El nuevo código fuente se comprueba y se descomprime
+primero en una carpeta junto a `~/.apothem` y después se intercambia. Todo lo de
+`~/.apothem` que no forma parte del árbol de código fuente se traslada a la nueva
+instalación: las copias de seguridad de reversión del motor (`backups/`), los
+registros de instalación (`state/`), los planes, la memoria y sus demás datos.
+Si un paso falla o detienes la ejecución con Ctrl+C o una señal de terminación,
+la instalación anterior se restaura sin cambios; si incluso eso falla, el
+mensaje indica dónde están los archivos anteriores. Una terminación forzada o un
+corte de energía durante el intercambio no se pueden interceptar: pueden dejar
+carpetas junto a `~/.apothem`, y la siguiente instalación descargada las notifica
+(consulta más abajo). Estas reglas se aplican cuando el instalador reemplaza
+`~/.apothem`:
+
+- Un clon de git no se reemplaza por un archivo comprimido de lanzamiento sin
+  `--yes`. Los archivos que el clon no rastrea pasan a la nueva instalación, y el
+  árbol propio del clon (su historial y su código fuente) se mueve a una carpeta
+  nueva, `~/.apothem.before-apothem-<time>`, con su propio nombre (`.apothem`);
+  el instalador indica dónde, y tú la eliminas cuando ya no la necesites. Incluso
+  con `--yes`, el instalador se niega mientras el clon contenga trabajo local que
+  perdería: cambios, stashes, commits sin enviar o archivos no rastreados en su
+  árbol de código fuente. Haz commit y push de ese trabajo, o muévelo a otro
+  lugar, y vuelve a ejecutar. Esta comprobación también se ejecuta con
+  `--dry-run`. Un archivo `.git` (un worktree vinculado) cuenta como clon, y
+  también una carpeta `.git`.
+- Un clon de git de cualquier cosa que no sea Apothem se trata como cualquier
+  carpeta que no contiene ninguna instalación de Apothem (consulta más abajo);
+  nunca se actualiza ni se reemplaza como clon.
+- Un clon existente se actualiza en el sitio solo cuando git puede ver cada
+  cambio que contiene y nada de su propia configuración ejecuta código durante
+  la actualización. Antes del fetch, el instalador se detiene cuando hay
+  archivos marcados como assume-unchanged o skip-worktree, cuando git no
+  encuentra un árbol de trabajo en `APOTHEM_HOME` (como cuando la configuración
+  del clon establece `core.bare` en `true`), cuando el clon contiene un
+  submódulo (registrado en su índice o guardado en `.git/modules`), cuando
+  `.git/info/attributes` nombra un filtro o un controlador de diff (`filter=` o
+  `diff=`), cuando ese archivo o un archivo de configuración no es un archivo
+  normal, o cuando el clon toma prestados objetos de otro repositorio
+  (`objects/info/alternates`). También se detiene ante cualquier ajuste del
+  `.git/config` o del `.git/config.worktree` propios del clon distinto de los
+  que `git clone` y `git init` escriben ahí para un clon completo, los ajustes
+  de rama (el `remote` y el `pushremote` de una rama deben ser `origin`),
+  `user.name`, `user.email`, `maintenance.auto`, `maintenance.strategy`,
+  `pull.rebase` y `pull.ff`, así que un clon parcial hecho con `--filter`
+  también se detiene;
+  [Solución de problemas](/docs/install/troubleshooting#the-installer-stops-the-existing-clone-is-set-up-in-a-way-the-update-would-trust)
+  los enumera. El mensaje nombra el ajuste y el archivo en el que está. Las
+  comprobaciones de ajustes, atributos y objetos se ejecutan antes de cualquier
+  comando git que lea el índice o los objetos del clon, y también, junto con la
+  comprobación de submódulos, cuando `--yes` está a punto de reemplazar el clon.
+  Antes de cualquier comando git que aplique los archivos `.gitattributes` del
+  árbol de trabajo, el instalador se detiene ante uno que git no rastrea, que
+  difiere de la copia confirmada, o cuya copia confirmada git no puede leer o
+  nombra un filtro o un controlador de diff (también se lee la copia del árbol
+  de trabajo), y ante un repositorio git dentro del clon que git no rastrea,
+  cuyos archivos `.gitattributes` git también leería. Las carpetas de datos
+  propias del motor, como `backups`, donde ningún lanzamiento escribe, no se
+  leen para esto. Antes del fetch se detiene ante archivos bajo `src` (escrito
+  con cualquier combinación de mayúsculas y minúsculas) que git no rastrea, ya
+  que el motor podría cargarlos. Después del checkout, elimina las carpetas de
+  caché de Python (`__pycache__`) bajo `src` antes de que el motor se ejecute
+  desde el clon. Los hooks de git del clon nunca se ejecutan durante la
+  actualización, y cada comando git sobre el clon se ejecuta sin paginador, sin
+  mantenimiento automático, con su monitor del sistema de archivos desactivado,
+  permitiendo solo los transportes file, git, http, https y ssh (así que una
+  dirección en la configuración del clon no puede hacer que git ejecute un
+  programa auxiliar como `ext::`) y sin recursión en submódulos; `git diff` y
+  `git status` omiten los submódulos. Un clon que pertenece a otro usuario
+  detiene la ejecución con una explicación (consulta Solución de problemas).
+- Una carpeta que contiene solo los datos propios del motor (`backups`, `state`,
+  `plans`, `memory`, `contexts`, `learning`, `providers`) se actualiza sin
+  `--yes`, y esos datos se conservan.
+- Una carpeta que no contiene ninguna instalación de Apothem no se toca sin
+  `--yes`. Con `--yes`, el instalador mueve la carpeta entera, sin cambios, a una
+  carpeta nueva, `~/.apothem.before-apothem-<time>` (dentro conserva su propio
+  nombre), indica dónde e instala desde cero.
+- Un enlace simbólico en `APOTHEM_HOME` (en Windows, un enlace simbólico o una
+  unión) se rechaza, porque reemplazarlo reemplazaría el enlace y no la carpeta a
+  la que lleva. Apunta `APOTHEM_HOME` a esa carpeta y vuelve a ejecutar. La
+  excepción es un clon de git existente, que se actualiza en el sitio.
+- En Linux y macOS, un archivo o una carpeta que haya que trasladar cuyo nombre
+  tenga un espacio u otro carácter especial detiene la instalación. Sácalo primero
+  de `APOTHEM_HOME`.
+
+**Una ejecución a la vez, y ejecuciones que se detuvieron.** Cada ejecución de
+los scripts de instalación, actualización y desinstalación toma un bloqueo junto
+a `APOTHEM_HOME`, `~/.apothem.lock` de forma predeterminada, durante toda la
+ejecución, y lo libera cuando la ejecución termina con éxito, con fallo, con
+Ctrl+C o con una señal de terminación. Los comandos `apothem` en sí no lo toman.
+Una segunda ejecución se detiene con "Another Apothem install, update or
+uninstall is running". En POSIX, el bloqueo es una carpeta que contiene el ID de
+proceso de la ejecución. Un bloqueo que deja una ejecución terminada a la fuerza
+se notifica con instrucciones para eliminarlo y nunca se toma, y un bloqueo
+creado en otro entorno (WSL y Git Bash en una misma máquina, por ejemplo) se
+notifica como uno cuyo proceso no se puede comprobar desde ahí. En Windows
+PowerShell, el bloqueo es un archivo que Windows cierra y elimina cuando termina
+el proceso. Cuando `APOTHEM_HOME` es un enlace, cada script toma el bloqueo junto
+a la carpeta a la que lleva. Una ejecución de prueba también toma el bloqueo, a
+menos que la carpeta que contiene `APOTHEM_HOME` todavía no exista. Así que cada
+ejecución, incluidas una actualización en el sitio, una desinstalación y una
+ejecución de prueba, necesita acceso de escritura a la carpeta que contiene
+`APOTHEM_HOME`; sin él, la ejecución se detiene antes de cambiar nada.
+
+Una terminación forzada o un corte de energía durante un intercambio pueden
+dejar la instalación anterior u otras entradas de `APOTHEM_HOME` en
+`.apothem-old.<name>.*`, `.apothem-extract.<name>.*` o
+`.apothem-clone.<name>.*` junto a ella, donde `<name>` es la última parte de
+`APOTHEM_HOME`, o en una carpeta `APOTHEM_HOME.before-apothem-<time>`. La
+siguiente instalación descargada para ese `APOTHEM_HOME`, incluida una ejecución
+de prueba, se detiene antes de cambiar nada, nombra cada carpeta y las entradas
+que se movieron a ella, e indica cómo devolverlas. En una carpeta que creó un
+instalador anterior, que no indica a qué directorio de instalación pertenece, la
+línea puede nombrar solo los datos del motor: mira dentro. No elimina nada.
+Consulta
+[Solución de problemas](/docs/install/troubleshooting#the-installer-stops-an-earlier-run-left-folders-beside-apothem_home).
+
+`--dry-run` (`-DryRun` en Windows) descarga y comprueba el lanzamiento en una
+carpeta temporal y deja `~/.apothem` sin cambios. Hace las mismas comprobaciones
+que una ejecución real, con una excepción para un clon existente: comprueba la
+configuración propia del clon, tal como se enumera arriba, pero no hace fetch en
+el clon, y por tanto no lo comprueba en busca de cambios en archivos rastreados,
+algo que una actualización real hace después de su fetch. Fija un lanzamiento
+concreto con `APOTHEM_REF`:
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/install.sh)"
@@ -195,23 +434,28 @@ La sección de firma de lanzamientos de
 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md)
 lista cada etiqueta y cómo verificarla.
 
-Las anulaciones explícitas relajan el comportamiento predeterminado. `APOTHEM_ALLOW_UNVERIFIED=1` degrada un fallo de verificación a una advertencia y continúa, para uso en sistemas aislados de la red o uso local, o para instalar un lanzamiento anterior a la firma de etiquetas. `APOTHEM_REF=main` hace checkout de la rama móvil sin verificación solo junto con `APOTHEM_ALLOW_UNVERIFIED=1`. Con `APOTHEM_REF=main` por sí solo, el instalador descarga `main` en `APOTHEM_HOME` y después aborta antes de materializar ninguna configuración, porque una rama no es una etiqueta de lanzamiento firmada. Un checkout local mediante `APOTHEM_SOURCE` no descarga nada y omite la verificación.
+Las anulaciones explícitas relajan el comportamiento predeterminado. `APOTHEM_ALLOW_UNVERIFIED=1` degrada una comprobación fallida de la etiqueta en la ruta de clonado a una advertencia y continúa, para uso en sistemas aislados de la red o uso local, o para instalar un lanzamiento anterior a la firma de etiquetas. Nunca relaja la ruta de cosign, así que establece `APOTHEM_VERIFY=signature` junto con ella en un equipo que tenga cosign. Tampoco relaja nunca la comprobación de que la etiqueta firmada es la que lleva el nombre del lanzamiento. Como la anulación deja pasar una etiqueta sin firmar, o firmada por otra clave, esa comprobación solo protege las etiquetas que llevan la firma de la clave del mantenedor. `APOTHEM_REF=main` hace checkout de la rama móvil sin verificación solo junto con `APOTHEM_ALLOW_UNVERIFIED=1`. Con `APOTHEM_REF=main` por sí solo, el instalador descarga `main` en una carpeta de preparación (en el clon existente, cuando `APOTHEM_HOME` lo es) y después aborta antes de hacer checkout de nada, reemplazar `APOTHEM_HOME` o materializar ninguna configuración, porque una rama no es una etiqueta de lanzamiento firmada. Un checkout local mediante `APOTHEM_SOURCE` no descarga nada y omite la verificación.
 
-`APOTHEM_VERIFY=checksum` es la vía intermedia para un host que aún no tiene la
-clave pública del mantenedor: en lugar de clonar, el instalador descarga el
-archivo comprimido por plataforma del lanzamiento y su `SHA256SUMS`, aborta ante
-una discrepancia del digest antes de extraer nada y advierte de que un digest
-coincidente prueba que el archivo comprimido es el que lista el lanzamiento, no
-quién lo publicó.
+Establece `APOTHEM_VERIFY` para elegir tú mismo la comprobación. El valor predeterminado es `auto`:
+
+| Valor | Qué comprueba el instalador |
+| --- | --- |
+| `auto` (predeterminado) | `release` cuando `cosign` está en el `PATH` y `APOTHEM_HOME` no es un clon de git; en caso contrario, `signature` |
+| `release` | La firma de la etiqueta de lanzamiento con la clave del mantenedor y que la etiqueta firmada es la que lleva el nombre del lanzamiento; después, la comprobación de cosign de que el flujo de trabajo de lanzamiento firmó `SHA256SUMS` en una ejecución sobre el commit de la etiqueta; después, el SHA-256 del archivo comprimido. Se detiene si falta cosign o `gpg` |
+| `signature` | La firma GPG de la etiqueta de lanzamiento, que debe proceder de la clave del mantenedor, y que la etiqueta firmada es la que lleva el nombre del lanzamiento |
+| `checksum` | Solo el SHA-256 del archivo comprimido frente a `SHA256SUMS`. Necesita `APOTHEM_ALLOW_UNVERIFIED=1` y advierte antes de descargar. El modo de suma de comprobación no verifica el lanzamiento. SHA256SUMS procede del mismo lanzamiento que el archivo comprimido, así que una coincidencia solo muestra que la descarga no está dañada; quien pueda cambiar los archivos del lanzamiento puede cambiar ambos. Úsalo solo en un equipo sin cosign ni `gpg`, y solo cuando lo aceptes |
+
+Cada modo de archivo comprimido aborta ante una discrepancia del digest antes de
+extraer nada. Los primeros lanzamientos llaman al bundle `SHA256SUMS.sig`, y el
+instalador lee ese nombre cuando falta `SHA256SUMS.cosign.bundle`.
 
 Después, el motor se ejecuta directamente desde el árbol colocado. Toda
 dependencia de terceros, excepto `click` y `rich`, está incorporada dentro del
 árbol de código fuente, y el propio punto de entrada coloca ese directorio de
-dependencias incorporadas en `sys.path`:
-
-```bash
-PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
-```
+dependencias incorporadas en `sys.path`. El instalador imprime la ruta completa
+del shim `apothem` que escribió. Cuando no escribió ningún shim, imprime un
+comando que inicia el motor manteniendo la carpeta actual fuera de `sys.path`;
+copia ese comando del banner.
 
 Ambos scripts leen las mismas variables de entorno de configuración
 (`APOTHEM_HOME`, `APOTHEM_REPO`, `APOTHEM_REF`, `APOTHEM_ALLOW_UNVERIFIED`,
@@ -234,8 +478,8 @@ ejecutas `apothem <command>` directamente, sin `PYTHONPATH` manual.
 ```bash title="Verify"
 apothem verify --harness claude-code
 
-# or, before the shim is on PATH, from the bundled source:
-PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
+# or, before the shim is on PATH, by the shim's full path:
+~/.local/bin/apothem verify --harness claude-code
 ```
 
 ## 4. Extensión de la familia VS Code
@@ -380,6 +624,12 @@ cd apothem
 PYTHONPATH=src python -m apothem install --harness claude-code
 ```
 
+`python -m` coloca la carpeta actual en primer lugar en la ruta de búsqueda de
+módulos de Python, así que un archivo de esa carpeta como `click.py`, o una
+carpeta llamada `apothem`, se ejecutaría en lugar del módulo real. Ejecuta estos
+comandos desde la raíz del checkout o desde otra carpeta de confianza. El
+comando `apothem` instalado no lee la carpeta actual.
+
 Igual que con el shim de npm, un primer `install` en una máquina sin perfil crea
 el perfil inicial en `~/.config/apothem/profile.yaml` y continúa.
 
@@ -395,7 +645,7 @@ Cada canal anterior nombra su propio comando de verificación. Las dos formas
 generales son:
 
 ```bash title="Installer path"
-PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
+apothem verify --harness claude-code
 ```
 
 ```bash title="npx path"
@@ -406,8 +656,8 @@ Reemplaza el nombre del entorno por el adaptador que hayas instalado; consulta
 la [lista de entornos](/docs/harnesses) para ver todos los nombres admitidos.
 Para comprobar a la vez cada adaptador instalado (su verificación y sus comandos
 de hook), ejecuta `doctor` en lugar de `verify --harness NAME`, en la forma que
-hayas usado arriba: `apothem doctor`,
-`PYTHONPATH="$HOME/.apothem/src" python -m apothem doctor` o
+hayas usado arriba: `apothem doctor` (o la ruta completa del shim, o el
+comando que imprimió el instalador, cuando su carpeta no está en el `PATH`) o
 `npx @ahmed-g-gad/apothem doctor`. Para la vía del plugin, ejecuta
 `/plugin` dentro de Claude Code y confirma que **apothem** aparece como
 instalado.
@@ -439,8 +689,10 @@ instalado.
   posterior. La
   [política de versiones mínimas de tiempo de ejecución](/docs/governance/release-engineering-policy#runtime-floors)
   explica cómo se eleva una versión mínima.
-- **Git** — solo la vía del instalador, y solo para la forma por red (el script
-  clona el código fuente; un checkout local no necesita clonar).
+- **Git y GnuPG** — solo la vía del instalador, y solo para la forma por red (el
+  script encuentra con ellos el lanzamiento más reciente y comprueba su etiqueta
+  firmada y, sin cosign, clona el código fuente; un checkout local no necesita
+  ninguno de los dos).
 - **Claude Code** — solo la vía del plugin. **VS Code** y la herramienta
   anfitriona propia de cada arranque de línea de comandos solo se necesitan para
   su propio canal (4–7).

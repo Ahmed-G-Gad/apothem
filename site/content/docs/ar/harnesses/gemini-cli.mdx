@@ -2,7 +2,7 @@
 title: "Gemini CLI"
 description: "محوّل إطار عمل Apothem لـ Gemini CLI (إتاحة عامة)."
 machineTranslated: true
-sourceHash: "231513ffdb2dcb22"
+sourceHash: "4b2afa3f4a237f9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,6 +34,10 @@ GEMINI.md
 .gemini/skills/
 .gemini/.apothem/support/
 ```
+
+ويحصل المشروع أيضًا على مجلّد البيانات الذي ينشئه كل تثبيت على مستوى المشروع،
+وهو <bdi>`.apothem/`</bdi> افتراضيًا، وفيه <bdi>`contexts/`</bdi>، و<bdi>`learning/`</bdi>، و<bdi>`memory/`</bdi>،
+و<bdi>`plans/`</bdi>.
 
 ## تعيين الملف التعريفي إلى الإعداد الأصلي
 
@@ -76,6 +80,14 @@ GEMINI.md
 تعريفيًا عامًّا لـ <bdi>Gemini</bdi>. لا يكتب محوّل <bdi>Gemini CLI</bdi> إلا في
 المشروع المُمرَّر عبر <bdi>`--project`</bdi>.
 
+ويُحمِّل <bdi>Gemini CLI</bdi> أيضًا موضعين في دليلك المنزلي تكتبهما تثبيتات أخرى لـ
+<bdi>Apothem</bdi>: <bdi>`~/.agents/skills/`</bdi>، وهو جزء من طبقة مهارات المستخدم لديه، حيث تكتب
+عدّة تثبيتات مهارات <bdi>Apothem</bdi> (يسردها
+[سجلّ أُطُر العمل](/docs/reference/harness-registry#shared-roots))، و<bdi>`~/.gemini/GEMINI.md`</bdi>،
+حيث يكتب تثبيت [<bdi>Antigravity</bdi>](/docs/harnesses/antigravity) كتلة لـ <bdi>Apothem</bdi>.
+وحين يحوي أيٌّ من الموضعين محتوى <bdi>Apothem</bdi> بالفعل، يطبع تثبيت <bdi>`gemini-cli`</bdi>
+ملاحظة تسمّيه وتسمّي التثبيت الذي كتبه.
+
 ## التحقّق
 
 ```bash
@@ -114,11 +126,30 @@ apothem uninstall --harness gemini-cli --project /path/to/project
 <bdi>`~/.apothem/backups/`</bdi>؛ ولا يُترَك أي ملف نسخة احتياطية في المشروع. لا يتأثّر
 ملف <bdi>YAML</bdi> الخاص بالملف التعريفي المشترك ولا محرّك <bdi>Apothem</bdi>.
 
+وقد كانت إصدارات سابقة (يسمّيها [سجلّ التغييرات](/docs/changelog)) تُزيل أيضًا ملف
+<bdi>`skills/AGENTS.md`</bdi> الخاص بالمشروع (في جذر المشروع، لا تحت <bdi>`.gemini/`</bdi>)
+في كل تثبيت وتحديث، بعد
+نسخه إلى مجموعة نسخ احتياطية تحت <bdi>`~/.apothem/backups/<timestamp>/gemini_cli/`</bdi>.
+ويترك الإصدار الحالي ذلك الملف كما هو. ولاستعادته، انسخ
+<bdi>`~/.apothem/backups/`</bdi> إلى مكان آخر قبل أن تشغّل <bdi>Apothem</bdi> مرة أخرى، ثم انسخ
+الملف من تلك النسخة يدويًا إلى المشروع. ويضمّ
+[سجلّ التغييرات](/docs/changelog#data-loss-in-earlier-releases-recover-your-files)
+خطوات الاستعادة الكاملة.
+
 ## بوابة المطابقة
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+شغّله من مجلّد مشروعك. وعلى <bdi>Windows</bdi>، استخدم <bdi>`python`</bdi> بدلًا من
+<bdi>`python3`</bdi> واستخدم المسار الكامل، لأن <bdi>Windows PowerShell</bdi> و<bdi>cmd</bdi> لا يوسّعان
+<bdi>`~`</bdi>:
+<bdi>`$HOME\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>PowerShell</bdi>، أو
+<bdi>`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>cmd</bdi>. والمسار هو
+الموضع الذي يضع فيه المُثبِّت المحرّك، ويُبقي <bdi>`-E -s`</bdi> متغيّر <bdi>`PYTHONPATH`</bdi> وحزم
+<bdi>site-packages</bdi> الخاصة بالمستخدم خارج البوابة؛ ويشرح [بوابة المطابقة](/docs/conformity-gate)
+كليهما والتثبيتات الأخرى.
 
 ## استكشاف الأخطاء وإصلاحها
 

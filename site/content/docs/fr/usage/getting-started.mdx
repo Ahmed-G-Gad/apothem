@@ -2,7 +2,7 @@
 title: "Flux de travail principaux"
 description: "Les quatre flux de travail principaux d'Apothem — profil, règles, plans et portail de conformité."
 machineTranslated: true
-sourceHash: "a53e8d62d7df7ef4"
+sourceHash: "2c2b69afe24907e5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -72,16 +72,23 @@ matérialise une suite de planification sous
 
 ## Portail de conformité
 
-Depuis un checkout d'Apothem, exécutez :
+Depuis un checkout d'Apothem, exécutez-le depuis la racine du checkout
+(`python -m` lit d'abord les modules du dossier courant ; utilisez donc un
+dossier de confiance) :
 
 ```bash
 PYTHONPATH=src python -m apothem.conformity.gate --all .
 ```
 
-Après une installation par script, exécutez :
+Après une installation par script, exécutez le portail par le chemin de son
+script avec `-E -s`, depuis le projet que vous voulez vérifier. Sous Windows,
+utilisez `python` à la place de `python3`, et `$HOME\.apothem\...` dans
+PowerShell ou `%USERPROFILE%\.apothem\...` dans cmd à la place de
+`~/.apothem/...`, car Windows PowerShell et cmd ne développent pas `~` ;
+[Portail de conformité](/docs/conformity-gate) explique les options :
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python3 -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
 
 Exécute toutes les vérifications mécaniques de conformité et rapporte

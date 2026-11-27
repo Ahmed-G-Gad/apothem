@@ -2,7 +2,7 @@
 title: "Referencia de la CLI"
 description: "Referencia de la CLI de Apothem — sinopsis, opciones y códigos de salida de cada comando de la interfaz de línea de comandos apothem."
 machineTranslated: true
-sourceHash: "d05ea2b5171674a9"
+sourceHash: "aa091d12392e27c9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,7 @@ no en los alias en sí.
 | [rollback](/docs/cli-reference/rollback) | Restaura un entorno al estado anterior a su instalación registrada. |
 | [backups](/docs/cli-reference/backups) | Depura las copias de seguridad de instalación y el historial del libro mayor que Apothem conserva (`backups prune`). |
 | [verify](/docs/cli-reference/verify) | Verifica la instalación de un adaptador de entorno. |
-| [status](/docs/cli-reference/status) | Informa el estado de instalación, de verificación y de desviación de cada entorno registrado. |
+| [status](/docs/cli-reference/status) | Informa el estado de instalación, de verificación y de deriva de cada entorno registrado. |
 | [diff](/docs/cli-reference/diff) | Previsualiza los cambios de configuración pendientes para un único entorno. |
 | [harnesses](/docs/cli-reference/harnesses) | Lista e inspecciona los adaptadores de entorno registrados. |
 | [profile](/docs/cli-reference/profile) | Gestiona el perfil compartido de Apothem. |
@@ -74,7 +74,7 @@ página lista los que puede devolver.
 |---|---|
 | 0 | Éxito |
 | 1 | Fallo previsto: un error de validación, de perfil, de entorno, de proyecto o de adaptador |
-| 2 | Resultado parcial: un lote escribió o eliminó algo antes de un fallo (solo los comandos cuya página lo lista) |
+| 2 | Resultado parcial: el comando hizo solo una parte de su trabajo, como una ejecución que escribió, eliminó o restauró archivos antes de un fallo, una ejecución de `status` o `harnesses list` en la que un adaptador no pudo informar, o una desinstalación que dejó algunos de los archivos de Apothem en su lugar (solo los comandos cuya página lo lista) |
 | 64 | Error de uso: una opción o un comando desconocidos, una opción obligatoria ausente o un valor de opción no válido |
 
 Un error de uso nunca toca el sistema de archivos. Con `--json` (o

@@ -2,7 +2,7 @@
 title: "GLM (Z.ai)"
 description: "Adaptador de entorno de Apothem para GLM (Z.ai) como backend de modelos configurable."
 machineTranslated: true
-sourceHash: "026e29a055db8a67"
+sourceHash: "fcd06518f021542b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,7 +35,9 @@ El adaptador escribe un archivo de proveedor con alcance de proyecto que
 registra los endpoints del backend de GLM y marcadores de posición que el
 operador puede configurar.
 
-**Archivos escritos:** `<project>/.apothem/providers/glm.toml`
+**Archivos escritos:** `<project>/.apothem/providers/glm.toml`, además de la
+carpeta de datos que crea toda instalación de proyecto, `.apothem/` de forma
+predeterminada (`contexts/`, `learning/`, `memory/`, `plans/`).
 
 ## Asignación del perfil a la configuración nativa
 
@@ -77,8 +79,10 @@ Apothem no fija ninguno de estos valores y no elige entre ellos.
 ## Notas de compatibilidad
 
 El backend de GLM no expone ninguna superficie para reglas, comandos, skills ni
-hooks, así que el adaptador escribe solo el archivo de proveedor del backend y
-nada más. Apothem no ha comprobado si ZCode expone tales superficies. Tu clave de
+hooks, así que el adaptador escribe el archivo de proveedor del backend y
+ninguna de ellas. Apothem no ha comprobado si ZCode expone tales superficies.
+Como toda instalación de proyecto, la instalación de GLM también crea la carpeta
+de datos de Apothem, `<project>/.apothem/` de forma predeterminada. Tu clave de
 Z.ai y tus elecciones de ID de modelo siguen siendo propiedad del operador. Las convenciones de la
 superficie del proveedor en las que se apoya el adaptador están fijadas en
 `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md`, capturadas en una
@@ -132,8 +136,17 @@ compartido y el motor de Apothem no se ven afectados.
 ## Puerta de conformidad
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Ejecútalo desde la carpeta de tu proyecto. En Windows, usa `python` en lugar de
+`python3` y la ruta completa, ya que Windows PowerShell y cmd no expanden `~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` en PowerShell, o
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` en cmd. La ruta es
+donde el instalador coloca el motor, y `-E -s` mantiene tu `PYTHONPATH` y tus
+site-packages de usuario fuera de la puerta;
+[Puerta de conformidad](/docs/conformity-gate) explica ambas cosas y las demás
+instalaciones.
 
 ## Solución de problemas
 

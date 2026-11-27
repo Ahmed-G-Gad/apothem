@@ -2,7 +2,7 @@
 title: "Plateformes"
 description: "Systèmes d'exploitation, shells et scripts d'installation pris en charge pour Apothem, plus le prérequis Python système pour le runtime autonome."
 machineTranslated: true
-sourceHash: "40276e881e9e631c"
+sourceHash: "1c6e2bce2e1da696"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -46,9 +46,10 @@ chose :
   lanceur du Microsoft Store et le localisateur `find-python` embarqué applique
   le même plancher.
 - **Bibliothèques de runtime importables.** Le moteur importe `click` et `rich` depuis l'interpréteur système ; ses autres dépendances tierces sont intégrées (vendored) dans l'arborescence source. L'installateur vérifie que les deux sont importables, nomme celles qui manquent et propose d'installer les prérequis manquants pour vous — avec votre confirmation, ou automatiquement avec `--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1`.
-- **`git`** n'est nécessaire que pour l'installation réseau (le script clone
-  l'arborescence source). Une installation locale depuis une copie ne requiert
-  pas `git`.
+- **`git`** et **`gpg`** ne sont nécessaires que pour l'installation réseau :
+  le script trouve avec eux la dernière publication et vérifie son étiquette
+  signée, et sans cosign il clone l'arborescence source. Une installation
+  locale depuis une copie ne requiert ni l'un ni l'autre.
 
 Si l'interpréteur, les bibliothèques ou `git` sont absents, l'installateur se
 termine avec un diagnostic nommant précisément ce qu'il faut fournir, plutôt que

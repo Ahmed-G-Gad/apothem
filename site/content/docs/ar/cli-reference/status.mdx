@@ -2,7 +2,7 @@
 title: "status"
 description: "مرجع واجهة سطر الأوامر لأمر apothem status."
 machineTranslated: true
-sourceHash: "8b2767bb799e4c2e"
+sourceHash: "fe8df509dd01788b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,7 +33,7 @@ apothem status [--profile PATH] [--project PATH]
 | القيمة | المعنى |
 |---|---|
 | <bdi>`in-sync`</bdi> | يحمل الإعداد المُثبَّت الملف التعريفي المشترك المُسقَط حديثًا حرفيًا. |
-| <bdi>`drift`</bdi> | إطار العمل مُثبَّت لكن محتوى ملفه التعريفي المُسقَط لم يعد يطابق الملف التعريفي المشترك الحالي. أعِد تشغيل <bdi>`apothem install`</bdi> لإعادة الإسقاط. |
+| <bdi>`drift`</bdi> | إطار العمل مُثبَّت لكن محتوى ملفه التعريفي المُسقَط لم يعد يطابق الملف التعريفي المشترك الحالي، أو أن ملفًا يحتفظ فيه التثبيت الحالي بكتلة مُدارة يحمل علامة <bdi>BEGIN</bdi> لا تبدأ أي كتلة كاملة، أو كتلتين كاملتين أو أكثر بين علامات <bdi>Apothem</bdi>، أو أزواج علامات لا يستطيع <bdi>Apothem</bdi> تمييزها من نصّك. ولا يُحتسَب هنا الملف الذي لا يسرده إلا سجلّ تثبيت سابق، مثل ملف القواعد في مساحة عمل <bdi>OpenClaw</bdi> لم يعد التثبيت يستخدمها؛ إذ يسمّيه <bdi>`apothem verify`</bdi> و<bdi>`apothem doctor`</bdi>. شغّل <bdi>`apothem update`</bdi> لتطبيق الملف التعريفي الحالي؛ وأصلِح مثل هذه العلامات يدويًا (انظر [استكشاف الأخطاء وإصلاحها](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)، و[ملف يحمل كتلتين بين علامات <bdi>Apothem</bdi>](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)، و[يتعذّر على <bdi>Apothem</bdi> تمييز كتلته من نصّك](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)). |
 | <bdi>`absent`</bdi> | إطار العمل غير مُثبَّت، فلا يوجد ما يُقارَن. |
 | <bdi>`needs-project`</bdi> | جرى الإبلاغ عن إطار عمل ذي نطاق مشروع دون <bdi>`--project`</bdi>، لذا يتعذّر تحليل هدفه. مرِّر <bdi>`--project PATH`</bdi> لفحصه. |
 | <bdi>`unknown`</bdi> | تعذّر تحميل الملف التعريفي الافتراضي، لذا لا يملك إطار العمل المُثبَّت خطَّ أساس يُقارَن به. أصلِح الملف التعريفي لاستعادة حكم الانحراف. |

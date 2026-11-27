@@ -2,7 +2,7 @@
 title: "Hooks"
 description: "Gestionnaires d'événements d'outils qui se déclenchent sur SessionStart, PreToolUse, PostToolUse et Stop, et chargent des contextes de message imposant l'isolation de git et la discipline des plans, avec un contrat d'exécution testé et un état par utilisateur."
 machineTranslated: true
-sourceHash: "2fe3999ec76b34d3"
+sourceHash: "e510ec34e7c5cded"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -52,6 +52,16 @@ une seule fois plutôt qu'avant chaque appel d'outil ; supprimez le fichier de
 cache pour forcer une nouvelle recherche. Seuls un répertoire d'état absolu et
 un chemin en cache absolu sont pris en compte.
 
+Chaque commande de hook démarre Python avec `-E -s`, y compris l'amorce du
+plugin et sa sonde d'interpréteur. `-E` fait ignorer à Python `PYTHONPATH` et
+les autres variables `PYTHON*`, et `-s` écarte votre site-packages utilisateur.
+Un hook s'exécute dans le dossier qu'a ouvert l'assistant, et une entrée vide de
+`PYTHONPATH` désigne ce dossier, de sorte que sans ces options un
+`sitecustomize.py` ou un `json.py` placé là s'exécuterait à l'intérieur du hook.
+Les hooks n'utilisent que la bibliothèque standard et leurs propres fichiers. Le
+répartiteur et le portail de conformité lisent eux-mêmes leur entrée en UTF-8,
+car `-E` désactive aussi `PYTHONUTF8` et `PYTHONIOENCODING`.
+
 Chaque surface enregistre une entrée de répartiteur par événement et par
 matcher, qui liste chaque message que ce matcher évalue : un seul processus lit
 la charge utile une fois, exécute chaque garde et répond avec une seule
@@ -63,8 +73,10 @@ exec n'ont besoin d'aucun shell. Le répartiteur est un script autonome de la
 bibliothèque standard : il amorce son propre `sys.path`, de sorte qu'aucun
 paquet `apothem` importable n'est nécessaire sur l'hôte. Depuis un checkout des
 sources, la forme de module `python -m apothem.hooks.dispatch <event>` (avec
-`PYTHONPATH=src`) exécute le même code pour le développement. Le répartiteur
-charge `hooks/lib/resolve_root.py` pour la résolution de la racine de
+`PYTHONPATH=src`, exécutée depuis la racine du checkout : `-m` lit d'abord les
+modules du dossier courant) exécute le même code pour le développement. Les
+commandes qu'écrivent les adaptateurs exécutent le script par son chemin avec
+`-E -s`. Le répartiteur charge `hooks/lib/resolve_root.py` pour la résolution de la racine de
 l'écosystème et délègue à `hooks/emit_hook_context.py` et
 `hooks/session_start_bootstrap.py`.
 
