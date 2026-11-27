@@ -121,11 +121,14 @@ function FolderHeader({ item, listId }: { item: Folder; listId: string }) {
 // collapse animation ends and only then gets `hidden`, so the close animates
 // the same way the open does. When no animation runs (none is set, or the
 // stylesheet drops it for reduced motion), `hidden` is set at once. A
-// cancelled animation also settles the list, and a fallback timer a little
-// longer than Fumadocs' 150 ms collapse sets `hidden` even when no animation
-// event ever fires (a page whose animation timeline never advances, such as a
-// background tab). A list that starts closed is `hidden` in the server HTML.
-const SETTLE_FALLBACK_MS = 300;
+// cancelled animation also settles the list, and a fallback timer sets
+// `hidden` even when no animation event ever fires (a page whose animation
+// timeline never advances, such as a background tab). The timer starts with
+// the close, not with the animation (an animation that never starts sends no
+// event), so it allows more than three times Fumadocs' 150 ms collapse for a
+// busy main thread to finish the animation first. A list that starts closed
+// is `hidden` in the server HTML.
+const SETTLE_FALLBACK_MS = 500;
 
 function useHiddenAfterClose(open: boolean) {
   const ref = useRef<HTMLDivElement>(null);
