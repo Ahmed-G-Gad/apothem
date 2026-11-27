@@ -2,7 +2,7 @@
 title: "Спецификация схемы артефактов"
 description: "Каноническая схема YAML-фронтматтера и обязательные поля для всех типов артефактов в дереве исходного кода Apothem, с шаблонами по классам и правилами валидации."
 machineTranslated: true
-sourceHash: "2d46a5bcd2d249ba"
+sourceHash: "3fbf2c23ed47249f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -303,7 +303,7 @@ argument-hint: "[--focus area] [--fix]"
 | `matcher` | строка | Шаблон имени инструмента (или `"*"` для событий, не зависящих от инструмента) | `"Write"` |
 | `hooks[].type` | литерал `"command"` | Единственный на сегодня поддерживаемый тип обработчика хука | `"command"` |
 | `hooks[].command` | строка | Исполняемая команда; Apothem использует плейсхолдер `${PYTHON_BIN}`, который разрешается при установке | `"${PYTHON_BIN}"` |
-| `hooks[].args` | массив строк | Аргументы в exec-форме: путь к скрипту в `${HARNESS_ROOT}/.apothem/support/`, затем его аргументы | `["-E", "-s", "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
+| `hooks[].args` | массив строк | Аргументы в exec-форме: `-E` и `-s` (Python не читает ни переменные `PYTHON*`, ни пользовательские site-packages), путь к скрипту в `${HARNESS_ROOT}/.apothem/support/`, затем его аргументы | `["-E", "-s", "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
 | `hooks[].timeout` | целое число секунд | Максимальное время выполнения, по истечении которого хост завершает хук | `30` |
 | `hooks[].statusMessage` | строка | Короткая метка, показываемая в интерфейсе хоста | `"Session start"` |
 

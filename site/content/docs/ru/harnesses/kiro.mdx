@@ -2,7 +2,7 @@
 title: "Kiro"
 description: "Адаптер окружения Apothem для Kiro (GA)."
 machineTranslated: true
-sourceHash: "91ec41080bf29036"
+sourceHash: "8edb56102e3e27a7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -177,6 +177,10 @@ Apothem не регистрирует в Kiro хуки `PreToolUse` или `Post
 "/path/to/python" -E -s "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
 ```
 
+`-E -s` заставляет Python игнорировать `PYTHONPATH` и другие переменные
+`PYTHON*` и пропускать пользовательские site-packages, поэтому никакой файл из
+проекта не может загрузиться в хук.
+
 `--contract kiro` заставляет диспетчер выводить контекст обычным текстом —
 именно его Kiro добавляет в контекст для `SessionStart`. Kiro не документирует
 оболочку для действий-команд в Windows. Команда записана для sh и cmd.exe, с
@@ -243,6 +247,14 @@ Kiro, созданные оператором (`product.md`, `tech.md`, `structu
 Спецификации Kiro (`.kiro/specs/`) принадлежат оператору; Apothem их не
 записывает. Он записывает один файл хуков, `.kiro/hooks/apothem.json`, и никаких
 других файлов в `.kiro/hooks/`.
+
+Kiro также читает файл `AGENTS.md` в корне рабочей области, а установка
+[Kimi Code](/docs/harnesses/kimi-code) записывает блок Apothem в `AGENTS.md`
+проекта, поэтому в проекте с обеими установками этот блок доходит и до Kiro.
+Если файл уже содержит блок, установка `kiro` выводит примечание, называющее его
+и установку, которая его записала.
+[Реестр окружений](/docs/reference/harness-registry#shared-roots) перечисляет
+другие инструменты, загружающие этот файл.
 
 Kiro документирует `~/.kiro/skills/` для глобальных навыков и не упоминает
 `~/.agents/skills/`, поэтому установка записывает папку Kiro, а не общую для
@@ -324,8 +336,17 @@ apothem uninstall --harness kiro --project /path/to/project
 ## Шлюз соответствия
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Запускайте его из папки проекта. В Windows используйте `python` вместо
+`python3` и полный путь, поскольку Windows PowerShell и cmd не раскрывают
+`~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` в PowerShell или
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` в cmd. Это путь, куда
+установщик помещает движок, а `-E -s` не пускает в шлюз ваш `PYTHONPATH` и
+пользовательские site-packages; [Шлюз соответствия](/docs/conformity-gate)
+объясняет и то и другое, а также другие способы установки.
 
 ## Устранение неполадок
 

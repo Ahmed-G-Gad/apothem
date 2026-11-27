@@ -2,7 +2,7 @@
 title: "Пользовательское правило"
 description: "Создание пользовательского постоянного правила для вашего проекта."
 machineTranslated: true
-sourceHash: "0b22ce8bce931d04"
+sourceHash: "69efcab14f844e72"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,14 +34,14 @@ When in doubt, err on the side of more hyphens.
 
 ## Проверьте, что правило составлено корректно
 
-Запустите валидатор frontmatter для файла правила, который вы только что написали. Первую команду используйте из чекаута Apothem, где `PYTHONPATH=src` делает пакет импортируемым. Вторую используйте после установки скриптом, когда исходный код находится в `$HOME/.apothem/src`:
+Запустите валидатор frontmatter для файла правила, который вы только что написали. Первую команду используйте из корня чекаута Apothem, где `PYTHONPATH=src` делает пакет импортируемым (`python -m` сначала читает модули из текущей папки, поэтому используйте папку, которой доверяете). Вторую используйте после установки скриптом, когда исходный код находится в `$HOME/.apothem/src`, а шлюз запускается по пути к своему скрипту с `-E -s`, так что до него не доходят ни `PYTHONPATH`, ни ваши пользовательские site-packages:
 
 ```bash
 # From an Apothem checkout
 PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
 
 # After a script install
-PYTHONPATH="$HOME/.apothem/src" python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
+python3 -E -s "$HOME/.apothem/src/apothem/conformity/gate.py" --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
 ```
 
 Корректно составленное правило выводит чистое прохождение:

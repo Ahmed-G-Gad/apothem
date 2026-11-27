@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "Адаптер окружения Apothem для Kimi Code (GA)."
 machineTranslated: true
-sourceHash: "88671d55a3315922"
+sourceHash: "0ae31afd4f1fbbbd"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,8 +28,8 @@ apothem install --harness kimi-code --project /path/to/project
 Проектный `AGENTS.md` читают многие инструменты для написания кода помимо
 Kimi Code, поэтому блок записывается как руководство для всего проекта, которое
 не называет своим читателем ни один конкретный инструмент. Некоторые из этих
-инструментов загружают его только в некоторых проектах, например только когда в
-проекте нет их собственного файла инструкций, и примечание установки называет
+инструментов загружают его только в некоторых проектах, версиях или настройках,
+например только когда в проекте нет их собственного файла инструкций, и примечание установки называет
 каждый такой инструмент вместе с его условием
 ([реестр окружений](/docs/reference/harness-registry#shared-roots)
 перечисляет их).
@@ -43,8 +43,10 @@ Kimi Code читает файл инструкций `AGENTS.md` в корне �
 
 **Записываемые файлы:** `<project>/AGENTS.md` (управляемый блок), навыки и
 команды (в виде навыков) в `<project>/.kimi-code/skills/`, по одному
-`<project>/.kimi-code/agents/<name>.md` для каждого помощника Apothem, а также
-группы хуков, правил и шаблонов в `<project>/.kimi-code/.apothem/support/`.
+`<project>/.kimi-code/agents/<name>.md` для каждого помощника Apothem, группы
+хуков, правил и шаблонов в `<project>/.kimi-code/.apothem/support/`, а также
+папка данных, которую создаёт каждая установка в проект, по умолчанию
+`<project>/.apothem/` (`contexts/`, `learning/`, `memory/`, `plans/`).
 
 ## Субагенты
 
@@ -221,6 +223,9 @@ apothem update --harness kimi-code --project /path/to/project
 помощников в `.kimi-code/agents/`, таким же образом удаляет старый каталог
 `<project>/.kimi-code/.apothem/support/agents/`. Перед этим копия каждого
 удаляемого каталога с отметкой времени сохраняется в `~/.apothem/backups/`.
+Любой ваш файл в этих двух старых каталогах удаляется вместе с ними; его
+резервная копия удаляется, как только появляется 10 более новых наборов
+резервных копий окружения, поэтому храните свои файлы в другом месте.
 
 ## Удаление
 
@@ -244,8 +249,17 @@ apothem uninstall --harness kimi-code --project /path/to/project
 ## Шлюз соответствия
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Запускайте его из папки проекта. В Windows используйте `python` вместо
+`python3` и полный путь, поскольку Windows PowerShell и cmd не раскрывают
+`~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` в PowerShell или
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` в cmd. Это путь, куда
+установщик помещает движок, а `-E -s` не пускает в шлюз ваш `PYTHONPATH` и
+пользовательские site-packages; [Шлюз соответствия](/docs/conformity-gate)
+объясняет и то и другое, а также другие способы установки.
 
 ## Устранение неполадок
 

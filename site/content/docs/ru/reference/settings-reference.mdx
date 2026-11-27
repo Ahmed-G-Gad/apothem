@@ -2,7 +2,7 @@
 title: "Документация settings.json"
 description: "Настройте выполнение хуков Claude Code, разрешения, события, тайм-ауты, среду выполнения Python, валидацию и слоистую приоритетность настроек для экосистемы Apothem."
 machineTranslated: true
-sourceHash: "f83dad93ea1dbe9c"
+sourceHash: "a7175abd0e0c77ac"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -38,7 +38,9 @@ sourceHash: "f83dad93ea1dbe9c"
 шлюз соответствия (`~/.claude/.apothem/support/conformity/gate.py`, с его schema-фикстурами
 рядом в `~/.claude/.apothem/support/schemas/`) — это самостоятельные скрипты стандартной
 библиотеки — на хосте не требуется импортируемый пакет `apothem`, и один
-шаблон обслуживает каждую платформу.
+шаблон обслуживает каждую платформу. `-E -s` заставляет Python игнорировать
+`PYTHONPATH` и другие переменные `PYTHON*` и пропускать пользовательские
+site-packages, поэтому ничто в проекте, открытом ассистентом, не загружается в хук.
 
 ## Схема конфигурации хуков
 

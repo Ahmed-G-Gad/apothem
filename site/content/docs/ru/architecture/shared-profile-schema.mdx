@@ -2,7 +2,7 @@
 title: "Схема общего профиля"
 description: "Схема YAML общего профиля Apothem."
 machineTranslated: true
-sourceHash: "574a594762c4f468"
+sourceHash: "cdd83bde9f17392d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,13 +32,17 @@ identity:
 проверяет его, прежде чем сообщить об успехе:
 
 ```yaml
+# yaml-language-server: $schema=https://apothem.ahmedgad.com/schemas/profile.schema.json
+schema_version: 1
 identity:
-  name: "Example User"
-  email: "dev@example.invalid"
-  github: "example-user"
+  name: Example User
+  email: dev@example.invalid
+  github: example-user
 ```
 
-Команда выводит напоминание о персонализации, называя эти поля. Если
+Первая строка указывает редакторам с поддержкой YAML на схему;
+`schema_version: 1` — версия схемы профиля. Команда выводит напоминание о
+персонализации, называя поля идентичности. Если
 идентичность, всё ещё являющаяся заполнителем, позже достигает `install` или
 `update`, эти команды выводят одно информационное примечание и продолжают
 работу — Apothem никогда не фабрикует идентичность-заполнитель и не блокируется
@@ -48,6 +52,7 @@ identity:
 
 | Поле | Обязательно | По умолчанию | Примечания |
 | --- | --- | --- | --- |
+| `schema_version` | Нет | читается как `1` | Версия схемы профиля; `profile init` записывает `1`. Версия новее той, что поддерживает движок, отклоняется. |
 | `identity.name` | Да | нет | Непустое отображаемое имя оператора. |
 | `identity.role` | Нет | `senior software engineer` | Общий текст роли. |
 | `identity.email` | Нет | опущено | При наличии должно быть в формате электронной почты. |
@@ -59,8 +64,13 @@ identity:
 | `preferences.test_framework` | Нет | опущено | Непустая строка при наличии. |
 | `rules` | Нет | `[]` | Уникальные непустые строки; переводы строк нормализуются в LF. |
 | `seriousness` | Нет | `PERSONAL_USE` | Одно из `EXPLORING`, `PERSONAL_USE`, `SHARED`, `PUBLIC_LAUNCH`. |
+| `enforcement.*` | Нет | `false` для каждого | Необязательные переключатели: `sprints`, `agent_teams`, `multitasking`, `continuous_execution`, `learning_loop`. |
+| `mcp_servers` | Нет | `{}` | Серверы MCP по имени сервера. Каждый задаёт `transport` (`stdio`, `http`, `sse` или `streamable-http`): серверу `stdio` нужен `command`, остальным — `url`. |
+| `agent_mcp_servers` | Нет | `{}` | Для каждого помощника, по его имени, серверы MCP, которые он может вызывать. Читается установками Claude Code и Gemini CLI. |
 | `harnesses` | Нет | `{}` | Переопределения для конкретного окружения по ключу поддерживаемого ID окружения. |
 | `exclude_harnesses` | Нет | `[]` | Поддерживаемые ID окружений, исключённые из `--harness all`. |
+| `workspace.directory_name` | Нет | `.apothem` | Имя общей рабочей папки; один компонент пути. |
+| `workspace.scope` | Нет | `project-local` | `project-local` (в корне проекта) или `user-home` (в вашем домашнем каталоге). |
 
 ## Ключи окружений
 

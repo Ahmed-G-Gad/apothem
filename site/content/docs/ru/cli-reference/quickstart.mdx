@@ -2,7 +2,7 @@
 title: "quickstart"
 description: "Справочник CLI для управляемой команды первого запуска apothem quickstart."
 machineTranslated: true
-sourceHash: "951e6d6877611c54"
+sourceHash: "a461df3fe9749c28"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -39,7 +39,7 @@ apothem quickstart [--harness NAME|all] [--project PATH] [--profile PATH]
 - **Профиль** — если по разрешённому пути профиля нет файла, `quickstart` предлагает создать стартовый профиль (создаёт его автоматически при `--yes`, в неинтерактивной оболочке или при `--format json`) и называет поля идентичности-заполнители, которые нужно персонализировать.
 - **Предпросмотр и подтверждение** — для `--harness all` цели перечисляются под двумя заголовками (корень проекта и ваш домашний каталог), а интерактивный запуск запрашивает подтверждение перед записью за пределами проекта. Одно названное окружение устанавливается без предпросмотра и запроса. `--yes`, неинтерактивная оболочка и `--format json` продолжают работу без запроса. Отказ от предпросмотра `--harness all` прерывает выполнение до записи установки; стартовый профиль, созданный на шаге 1, сохраняется.
 - **Установка** — возможности, которые окружение не поддерживает нативно, сводятся в одно сгруппированное примечание на каждое окружение (передайте `--verbose`, чтобы получить подробности по каждой возможности); полный набор всегда присутствует в массиве warnings вывода `--format json`.
-- **Следующий шаг** — вывод в терминале называет последующие команды (`apothem verify …`, `apothem doctor`).
+- **Следующий шаг** — вывод в терминале называет последующие команды (`apothem verify …`, `apothem doctor`). Папка `--project` заключается в кавычки для оболочки так же, как это делает [`doctor`](/docs/cli-reference/doctor). Когда кавычки не могут её передать, вывод печатает команду до `--project` и называет папку словами после неё, а запись `recommended_next` в JSON гласит `Run apothem verify --harness … with --project set to <folder>`, и это не команда, которую можно запустить как есть.
 
 ## Параметры
 
@@ -70,11 +70,22 @@ apothem quickstart [--harness NAME|all] [--project PATH] [--profile PATH]
   "steps": [
     {"step": "profile", "outcome": "created", "path": "…", "placeholder_identity": ["name", "email", "github"]},
     {"step": "install", "status": "success", "harness": "all", "files_written": ["…"], "warnings": [], "results": []},
-    {"step": "recommend", "next": ["apothem verify --harness all --project .", "apothem doctor"]}
+    {"step": "recommend", "next": ["apothem verify --harness all --project \".\"", "apothem doctor"]}
   ],
-  "recommended_next": ["apothem verify --harness all --project .", "apothem doctor"]
+  "recommended_next": ["apothem verify --harness all --project \".\"", "apothem doctor"]
 }
 ```
+
+Когда шаг установки оставляет файл как есть из-за его строк-маркеров Apothem
+(см. [`install`](/docs/cli-reference/install#capability-notes)), оба значения
+`status` равны `"partial"`, а код выхода — `2`. В обычном режиме запуск выводит
+строку `✗` установки, затем рекомендуемые следующие шаги. Поскольку
+`apothem verify` не проходит для этого файла, пока вы его не исправите, первым
+шагом тогда становится исправить каждый файл, оставленный установкой как есть,
+как говорит его предупреждение, и запустить `apothem update` для тех же
+инструментов (`Fix the files it left:` в обычном режиме и первая запись
+`recommended_next` в JSON, `Fix each file the install left as it is, as its
+warning says, then run apothem update --harness …`) вместо `apothem verify`.
 
 ## Примеры
 
@@ -91,7 +102,7 @@ apothem quickstart --harness claude-code --json
 |---|---|
 | 0 | Управляемый запуск завершён |
 | 1 | Ожидаемая ошибка проверки, профиля, окружения, проекта или адаптера |
-| 2 | Частичная пакетная материализация после как минимум одной записи |
+| 2 | Частично: пакет остановился после как минимум одной записи, или установка оставила как есть, из-за его строк-маркеров Apothem, файл, в котором Apothem хранит свой блок |
 | 64 | Ошибка использования: неизвестный параметр или команда либо отсутствующее или недопустимое значение параметра. При `--json` ошибка представляет собой конверт JSON с кодом `cli.usage`. |
 
 ## См. также
