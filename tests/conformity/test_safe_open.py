@@ -409,6 +409,8 @@ def test_the_cache_never_holds_more_than_its_limit(
     for index in range(6):
         read_project_bytes(tmp_path, tmp_path / f"d{index}" / "inner" / "f.txt")
         assert len(_safe_open._cache) <= 3
+    # The limit was reached: the cache was in use.
+    assert len(_safe_open._cache) == 3
 
 
 def test_a_cached_folder_swapped_for_a_link_is_not_followed(project: Path) -> None:
