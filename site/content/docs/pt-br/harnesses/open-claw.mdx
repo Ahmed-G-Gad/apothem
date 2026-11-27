@@ -137,8 +137,17 @@ compartilhado e o motor do Apothem não são afetados.
 ## Conformity gate
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Execute-o na pasta do seu projeto. No Windows, use `python` no lugar de
+`python3` e o caminho completo, pois o Windows PowerShell e o cmd não expandem
+`~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` no PowerShell, ou
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` no cmd. O caminho é
+onde o instalador coloca o engine, e `-E -s` mantém seu `PYTHONPATH` e os
+site-packages do usuário fora do gate; [Conformity gate](/docs/conformity-gate)
+explica os dois e as outras instalações.
 
 ## Solução de problemas
 

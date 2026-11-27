@@ -2,7 +2,7 @@
 title: "GLM (Z.ai)"
 description: "Adaptador de harness do Apothem para o GLM (Z.ai) como backend de modelo configurável."
 machineTranslated: true
-sourceHash: "026e29a055db8a67"
+sourceHash: "fcd06518f021542b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,7 +35,9 @@ O adaptador grava um único arquivo de provedor com escopo de projeto que
 registra os endpoints do backend do GLM e marcadores de posição configuráveis
 pelo operador.
 
-**Arquivos gravados:** `<project>/.apothem/providers/glm.toml`
+**Arquivos gravados:** `<project>/.apothem/providers/glm.toml`, mais a
+pasta de dados que toda instalação de projeto cria, `.apothem/` por padrão
+(`contexts/`, `learning/`, `memory/`, `plans/`).
 
 ## Mapeamento do perfil para a configuração nativa
 
@@ -75,8 +77,10 @@ O Apothem não fixa nenhum desses valores e não escolhe entre eles.
 ## Notas de compatibilidade
 
 O backend GLM não expõe nenhuma superfície para regras, comandos, skills ou
-hooks, então o adaptador grava apenas o arquivo de provedor do backend e nada
-mais. O Apothem não verificou se o ZCode expõe essas superfícies. Sua chave da
+hooks, então o adaptador grava o arquivo de provedor do backend e nenhum
+desses. O Apothem não verificou se o ZCode expõe essas superfícies. Como toda
+instalação de projeto, a instalação do GLM também cria a pasta de dados do
+Apothem, `<project>/.apothem/` por padrão. Sua chave da
 Z.ai e suas escolhas de ID de modelo permanecem de propriedade do operador. As
 convenções da superfície do fornecedor das quais o adaptador depende estão
 fixadas em `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md`, com snapshot
@@ -131,8 +135,17 @@ compartilhado e o motor do Apothem não são afetados.
 ## Conformity gate
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Execute-o na pasta do seu projeto. No Windows, use `python` no lugar de
+`python3` e o caminho completo, pois o Windows PowerShell e o cmd não expandem
+`~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` no PowerShell, ou
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` no cmd. O caminho é
+onde o instalador coloca o engine, e `-E -s` mantém seu `PYTHONPATH` e os
+site-packages do usuário fora do gate; [Conformity gate](/docs/conformity-gate)
+explica os dois e as outras instalações.
 
 ## Solução de problemas
 

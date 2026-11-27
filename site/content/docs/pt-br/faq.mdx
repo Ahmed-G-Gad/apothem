@@ -2,7 +2,7 @@
 title: "Perguntas frequentes"
 description: "Perguntas comuns sobre o propósito do Apothem, harnesses suportados, opcionalidade da suíte de planejamento, customização de regras, tipos de artefato e localizações do estado do ecossistema."
 machineTranslated: true
-sourceHash: "39f28c46787a7498"
+sourceHash: "bc73f569d994fb5b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -46,15 +46,25 @@ validadores são úteis de forma independente.
 ## Como customizo as regras sem fazer fork do repositório?
 
 Adicione uma string à lista `rules:` em `~/.config/apothem/profile.yaml` e execute
-novamente a instalação ou a atualização. Arquivos de regra em `src/apothem/rules/`
-editam a árvore de fontes empacotada, que o instalador a partir do arquivo substitui
-quando executado com `--yes`.
+novamente a instalação ou a atualização. Os arquivos de regra em `src/apothem/rules/`
+fazem parte da árvore de fontes instalada, então uma edição ali não sobrevive à
+atualização do próprio Apothem. Uma nova execução do instalador que instala o
+arquivo da versão, como acontece quando o cosign está instalado, substitui os
+arquivos de fonte de uma instalação por arquivo da versão, edições incluídas. Uma
+nova execução que segue o caminho do clone git, como acontece sem o cosign, só os
+substitui com `--yes` (`-Yes` no PowerShell), o que muda a instalação para um
+clone. Atualizar um clone git para em um arquivo rastreado editado até que você
+faça commit ou stash da mudança, e então faz checkout da cópia do arquivo da
+versão.
 
 ## Como desabilito uma regra temporariamente?
 
-Renomeie o arquivo para fora do padrão `src/apothem/rules/*.md`
-ou mova-o para um diretório irmão que o carregador não
-percorre.
+O Apothem não tem nenhuma chave de perfil que desative uma regra empacotada.
+Renomear ou mover um arquivo em `src/apothem/rules/` altera a árvore de fontes
+instalada, então, como uma edição (veja a resposta acima), isso não sobrevive à
+atualização do próprio Apothem. Para ajustar o comportamento sem tocar na árvore
+de fontes, adicione sua própria regra à lista `rules:` do seu perfil e execute
+`apothem update`.
 
 ## Qual a diferença entre regras, skills e trabalhadores delegados?
 
@@ -107,7 +117,7 @@ versão, um checkout compartilhado, um diretório sincronizado). Consulte
 ## O Apothem precisa de pip?
 
 Não — não para o engine em si. O engine é uma árvore de fonte autossuficiente com
-dependências fornecidas — ele executa como `python -m apothem` a partir de
+dependências fornecidas — ele executa a partir de
 qualquer checkout, do cache do npx ou da árvore do plugin sobre o Python 3.10+ do
 sistema, e não instala nada do seu próprio código em `site-packages` (`click` e
 `rich` são os únicos pré-requisitos do interpretador). A única exceção opcional:

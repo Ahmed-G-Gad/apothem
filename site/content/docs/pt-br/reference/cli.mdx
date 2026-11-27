@@ -2,7 +2,7 @@
 title: "Visão geral da CLI"
 description: "Visão geral da CLI do Apothem — todos os subcomandos e flags."
 machineTranslated: true
-sourceHash: "23e6a1450707e054"
+sourceHash: "ce86e94ba98910b5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,13 @@ compartilhado e os adaptadores de harness.
 | Flag | Descrição |
 |------|-------------|
 | `--version` | Imprime a versão do Apothem e sai |
-| `--help` | Imprime a ajuda do comando |
+| `-h`, `--help` | Imprime a ajuda do comando |
+
+As seções abaixo cobrem `install`, `update`, `uninstall`, `verify`, `status`,
+`profile`, `harnesses` e `doctor`. A tabela gerada no fim desta página
+e a [referência da CLI](/docs/cli-reference) listam todos os comandos, incluindo
+`quickstart`, `diff`, `rollback`, `backups`, `migrate-workspace` e
+`completion`.
 
 ## Subcomandos
 
@@ -134,8 +140,12 @@ apothem status [--profile PATH] [--project PATH]
 | `--profile PATH` | Perfil compartilhado a usar como linha de base de desvio. Um perfil padrão ilegível rebaixa o desvio para `unknown` em vez de abortar a varredura. |
 | `--project PATH` | Raiz do projeto para harnesses com escopo de projeto. Sem ela, esses harnesses relatam `needs-project`. |
 
-Cada linha associa uma flag `installed` a uma flag `verified`, e as duas se
-combinam no estado de desvio:
+Cada linha traz uma flag `installed`, uma flag `verified` e um estado de desvio.
+Uma linha cuja flag `installed` é falsa relata `absent`, `needs-project` ou
+`error`; `in-sync`, `drift` e `unknown` aparecem apenas em linhas instaladas. O
+estado de desvio nunca depende da flag `verified`. Para um harness instalado, ele
+compara a configuração instalada com a linha de base do perfil, ou diz por que
+nenhuma comparação foi feita:
 
 | Estado | Significado |
 |-------|---------|
@@ -144,6 +154,7 @@ combinam no estado de desvio:
 | `drift` | Instalado, mas não corresponde mais — corrija com `apothem update`. |
 | `unknown` | Instalado, mas o perfil de linha de base não pôde ser lido. |
 | `needs-project` | Um harness com escopo de projeto foi relatado sem `--project`, de modo que seu destino não pode ser resolvido. |
+| `error` | O adaptador falhou durante a verificação; `status` relata o erro e sai com `2`. |
 
 `installed` responde "o Apothem instalou aqui?", não "este harness está presente
 na máquina?". Ele se baseia nos próprios artefatos do Apothem — o bloco

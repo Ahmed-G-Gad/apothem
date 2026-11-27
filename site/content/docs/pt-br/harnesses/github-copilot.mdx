@@ -320,8 +320,17 @@ pasta recebe backup em `~/.apothem/backups/` antes de ser removida.
 ## Conformity gate
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Execute-o na pasta do seu projeto. No Windows, use `python` no lugar de
+`python3` e o caminho completo, pois o Windows PowerShell e o cmd não expandem
+`~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` no PowerShell, ou
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` no cmd. O caminho é
+onde o instalador coloca o engine, e `-E -s` mantém seu `PYTHONPATH` e os
+site-packages do usuário fora do gate; [Conformity gate](/docs/conformity-gate)
+explica os dois e as outras instalações.
 
 A execução com `--all` cobre os validadores independentes. Ela não executa a verificação de coerência multissuperfície descrita em Notas de compatibilidade. Para executar essa verificação pelo nome em um checkout:
 

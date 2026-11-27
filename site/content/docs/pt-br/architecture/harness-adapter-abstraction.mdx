@@ -2,7 +2,7 @@
 title: "Abstração de adaptador de harness"
 description: "O protocolo HarnessAdapter — como os adaptadores do Apothem traduzem o perfil compartilhado."
 machineTranslated: true
-sourceHash: "da20d21cbe60d343"
+sourceHash: "20a51a9c0e55e94a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -101,6 +101,8 @@ adaptador.
 from pathlib import Path
 from typing import Protocol
 
+from apothem.harnesses._shared.install_driver_types import MaterializationRun
+
 class HarnessAdapter(Protocol):
     name: str
     output_path: Path
@@ -111,7 +113,7 @@ class HarnessAdapter(Protocol):
     def update(self, profile: dict[str, object]) -> object:
         ...
 
-    def uninstall(self) -> None:
+    def uninstall(self) -> MaterializationRun | None:
         ...
 
     def is_installed(self) -> bool:
@@ -120,6 +122,10 @@ class HarnessAdapter(Protocol):
     def verify(self) -> bool:
         ...
 ```
+
+Os adaptadores distribuídos retornam um `MaterializationRun` de `uninstall`, e a
+CLI relata seus avisos e erros; um adaptador que não tem nada a relatar pode
+retornar `None`.
 
 Os adaptadores de escopo de projeto podem adicionalmente aceitar `project: Path |
 None` nos métodos de ciclo de vida e expor `resolve_output_path(project)`. A CLI

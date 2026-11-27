@@ -2,7 +2,7 @@
 title: "profile"
 description: "Referência da CLI para o grupo de comandos apothem profile."
 machineTranslated: true
-sourceHash: "012b17d6a7a7bc49"
+sourceHash: "93fe295d7fa540f1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -88,7 +88,29 @@ permanece inalterado.
 
 ### `profile edit`
 
-Abre o perfil compartilhado no editor do sistema.
+Abre o perfil compartilhado no editor do sistema. Quando ainda não existe um
+perfil no caminho, `edit` primeiro grava ali o perfil inicial, a mesma estrutura
+que `profile init` grava, e então o abre.
+
+### Perfis atrás de um link
+
+Um caminho de perfil escrito dentro do seu diretório pessoal, como o padrão
+`~/.config/apothem/profile.yaml`, não é gravado através de um link que leve para
+fora do seu diretório pessoal. Esse link pode ser uma pasta acima do perfil, como
+`~/.config` (no Windows, uma junction conta como link), ou o próprio arquivo de
+perfil, como um arquivo de dotfiles em outra unidade. `profile init`, `profile set`
+e `profile edit` então param antes de gravar ou abrir qualquer coisa. Sem
+perfil ainda, a mensagem é `Apothem could not create the starter profile`.
+Sobre um perfil existente, `profile set`, `profile edit` e `profile init
+--force` param com `Apothem could not write the profile`; `profile init`
+sem `--force` para antes com `profile file already exists`, como faz em
+qualquer lugar. `profile show` e os comandos que apenas leem o perfil continuam a
+lê-lo. Um link que permanece dentro do seu diretório pessoal, como os gerenciadores
+de dotfiles o criam, é seguido. Para manter o perfil fora do seu diretório pessoal,
+passe `--profile PATH` com o caminho do próprio perfil lá, incluindo o caminho
+para o qual um link de arquivo de perfil leva: um caminho que você escreve fora do
+seu diretório pessoal é gravado onde quer que seus links levem. Sem perfil lá
+ainda, crie-o primeiro com `apothem profile init --profile PATH`.
 
 ## Erros de validação
 

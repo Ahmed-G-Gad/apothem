@@ -1,14 +1,13 @@
 ---
 title: "Configurações"
-description: "Configuração do harness Claude Code em settings.json, cobrindo permissões de ferramentas, conexão de hooks, variáveis de ambiente e templates da linha de status."
+description: "Configuração do harness Claude Code em settings.json, cobrindo permissões de ferramentas e conexão de hooks."
 machineTranslated: true
-sourceHash: "986e09594ded6bad"
+sourceHash: "ece5596a2a8b8bc1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-O `settings.json` carrega a configuração do harness Claude Code: conexão de
-hooks, permissões de ferramentas, variáveis de ambiente e definições da linha de
-status.
+O `settings.json` carrega a configuração do harness Claude Code que o Apothem
+mescla no seu arquivo: permissões de ferramentas e conexão de hooks.
 
 A referência canônica completa fica em
 [settings-reference.md](/docs/reference/settings-reference). Esta página resume o
@@ -18,10 +17,15 @@ contrato e aponta para a referência mais detalhada.
 
 | Seção | Propósito |
 |---------|---------|
+| `$schema` | URL do schema que os editores usam para verificar o arquivo |
 | `permissions` | Listas de permissão e de bloqueio de ferramentas por matcher |
 | `hooks` | Tabela de comandos de hook indexada por evento (a conexão canônica) |
-| `env` | Variáveis de ambiente por sessão |
-| `statusLine` | Template da linha de status que o host renderiza |
+
+O template do Apothem não define nenhuma outra chave, então chaves como `env` e
+`statusLine` continuam sendo suas. O renderizador da linha de status é copiado
+para `~/.claude/statuslines/`, mas não é conectado; a
+[página do Claude Code](/docs/harnesses/claude-code) mostra a entrada
+`statusLine` para você adicionar.
 
 ## Invariante de template único
 

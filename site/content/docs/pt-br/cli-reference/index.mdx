@@ -2,7 +2,7 @@
 title: "Referência da CLI"
 description: "Referência da CLI do Apothem — sinopse, opções e códigos de saída de cada comando da interface de linha de comando apothem."
 machineTranslated: true
-sourceHash: "d05ea2b5171674a9"
+sourceHash: "aa091d12392e27c9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -73,7 +73,7 @@ lista os que o comando pode retornar.
 |---|---|
 | 0 | Sucesso |
 | 1 | Falha esperada: um erro de validação, de perfil, de harness, de projeto ou de adaptador |
-| 2 | Resultado parcial: um lote gravou ou removeu algo antes de uma falha (somente os comandos cuja página o lista) |
+| 2 | Resultado parcial: o comando fez apenas parte do seu trabalho, como uma execução que gravou, removeu ou restaurou arquivos antes de uma falha, uma execução de `status` ou `harnesses list` em que um adaptador não conseguiu relatar, ou uma desinstalação que deixou alguns dos arquivos do Apothem no lugar (somente os comandos cuja página o lista) |
 | 64 | Erro de uso: uma opção ou um comando desconhecido, uma opção obrigatória ausente ou um valor de opção inválido |
 
 Um erro de uso nunca toca o sistema de arquivos. Com `--json` (ou
