@@ -58,6 +58,7 @@ from apothem.conformity._grep_base import (
     is_project_file,
     parse_root_args,
 )
+from apothem.conformity._safe_open import read_project_text
 
 GREP_NAME: Final[str] = "permissions-minimum-scope-grep"
 RULE_ANCHOR: Final[str] = "minimum-scope workflow permissions"
@@ -282,7 +283,7 @@ def check(root: Path) -> GrepResult:
     findings: list[Finding] = []
     for workflow in workflows:
         try:
-            raw = workflow.read_text(encoding="utf-8")
+            raw = read_project_text(root, workflow)
             parsed = yaml.safe_load(raw)
         except (OSError, UnicodeDecodeError, yaml.YAMLError):
             parsed = None

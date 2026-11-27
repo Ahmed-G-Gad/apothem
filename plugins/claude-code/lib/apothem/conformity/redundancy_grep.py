@@ -55,6 +55,7 @@ from apothem.conformity._grep_base import (
     iter_tree_files,
     parse_root_args,
 )
+from apothem.conformity._safe_open import read_project_text
 
 GREP_NAME: Final[str] = "redundancy-grep"
 RULE_ANCHOR: Final[str] = (
@@ -321,10 +322,10 @@ def _walk_corpus(root: Path) -> list[Path]:
     return files
 
 
-def _extract_paragraphs(path: Path) -> list[tuple[str, frozenset[str]]]:
+def _extract_paragraphs(path: Path, *, root: Path) -> list[tuple[str, frozenset[str]]]:
     """Return (text, token-set) pairs for every comparable paragraph."""
     try:
-        raw = path.read_text(encoding="utf-8")
+        raw = read_project_text(root, path)
     except (OSError, UnicodeDecodeError):
         return []
     text = _strip_frontmatter(raw)
@@ -373,7 +374,7 @@ def check_corpus(root: Path, threshold: float = DEFAULT_THRESHOLD) -> GrepResult
     # Flatten to (path, paragraph_text, tokens) tuples.
     entries: list[tuple[Path, str, frozenset[str]]] = []
     for f in files:
-        for text, tokens in _extract_paragraphs(f):
+        for text, tokens in _extract_paragraphs(f, root=root):
             entries.append((f, text, tokens))
     # The pass compares every pair of paragraphs, so each per-pair test is
     # reduced to integer work: a file id stands in for path equality, a folder

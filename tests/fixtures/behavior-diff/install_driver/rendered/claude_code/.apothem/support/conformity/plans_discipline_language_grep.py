@@ -42,6 +42,10 @@ from apothem.conformity._grep_base import (
     parse_root_args,
     project_file_target,
 )
+from apothem.conformity._safe_open import (
+    REFUSED_OR_GONE,
+    read_project_text,
+)
 
 GREP_NAME: Final[str] = "plans-discipline-language-grep"
 RULE_ANCHOR: Final[str] = "CLAUDE.md Plans Discipline (multi-surface language)"
@@ -130,13 +134,28 @@ class GrepResult:
         return json.dumps(payload, indent=2)
 
 
-def _read_fixture(root: Path) -> str | None:
-    """Return the fixture body, or None when the fixture file is absent."""
-    fixture_file = root / FIXTURE_PATH
-    source = project_file_target(root, fixture_file)
+def _read_project_file(root: Path, path: Path) -> str | None:
+    """Return the text of the fixed file *path*, or None when it is absent.
+
+    A link to a regular file in the project is read at that file (see
+    ``project_file_target``). A file that a link or a special file replaced
+    since it was looked at, or that is gone, counts as absent too. Any other
+    ``OSError`` (a file that is there but cannot be read) is raised for the
+    caller to report as unreadable.
+    """
+    source = project_file_target(root, path)
     if source is None:
         return None
-    return source.read_text(encoding="utf-8").strip()
+    try:
+        return read_project_text(root, source)
+    except REFUSED_OR_GONE:
+        return None
+
+
+def _read_fixture(root: Path) -> str | None:
+    """Return the fixture body, or None when the fixture file is absent."""
+    body = _read_project_file(root, root / FIXTURE_PATH)
+    return None if body is None else body.strip()
 
 
 def _coverage(body: str, tokens: tuple[tuple[str, ...], ...]) -> float:
@@ -192,25 +211,48 @@ def _verdict_for_surface(
 
 def check(root: Path) -> GrepResult:
     """Sweep the four required surfaces under root for the directive."""
-    fixture_text = _read_fixture(root)
+    fixture_error: OSError | None = None
+    try:
+        fixture_text = _read_fixture(root)
+    except OSError as exc:
+        fixture_text, fixture_error = None, exc
     fixture_present = fixture_text is not None
     verdicts: list[SurfaceVerdict] = []
     findings: list[Finding] = []
     if not fixture_present:
+        why = (
+            "byte-exact fixture absent at canonical path, or a link to something other than a regular file in the project; "
+            if fixture_error is None
+            else f"byte-exact fixture unreadable: {fixture_error}; "
+        )
         findings.append(
             Finding(
                 surface=FIXTURE_PATH,
-                detail=(
-                    "byte-exact fixture absent at canonical path, or a link to something other than a regular file in the project; "
-                    "byte-exact admission disabled for every surface"
-                ),
+                detail=why + "byte-exact admission disabled for every surface",
                 coverage=0.0,
             )
         )
     for surface_path in REQUIRED_SURFACES:
-        full_path = root / surface_path
-        source = project_file_target(root, full_path)
-        if source is None:
+        try:
+            body = _read_project_file(root, root / surface_path)
+        except OSError as exc:
+            verdicts.append(
+                SurfaceVerdict(
+                    surface=surface_path,
+                    mode="unreadable",
+                    coverage=0.0,
+                    admitted=False,
+                )
+            )
+            findings.append(
+                Finding(
+                    surface=surface_path,
+                    detail=f"surface file unreadable: {exc}",
+                    coverage=0.0,
+                )
+            )
+            continue
+        if body is None:
             verdicts.append(
                 SurfaceVerdict(
                     surface=surface_path,
@@ -227,7 +269,6 @@ def check(root: Path) -> GrepResult:
                 )
             )
             continue
-        body = source.read_text(encoding="utf-8")
         verdict, finding = _verdict_for_surface(surface_path, body, fixture_text)
         verdicts.append(verdict)
         if finding is not None:

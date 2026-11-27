@@ -62,6 +62,7 @@ from apothem.conformity._grep_base import (
     parse_root_args,
     project_file_target,
 )
+from apothem.conformity._safe_open import read_project_text
 
 GREP_NAME: Final[str] = "agent-capability-grep"
 RULE_ANCHOR: Final[str] = "agent-capability-discipline (per-harness capability matrix)"
@@ -200,11 +201,11 @@ def _find_declaration(harness_dir: Path) -> Path | None:
     return None
 
 
-def _parse_yaml_declaration(path: Path) -> dict[str, object]:
-    """Load a YAML declaration into a dict. Empty or non-mapping → {}."""
+def _parse_yaml_declaration(path: Path, *, root: Path) -> dict[str, object]:
+    """Load a YAML declaration into a dict. Empty, unreadable or non-mapping → {}."""
     try:
-        raw = path.read_text(encoding="utf-8")
-    except OSError:
+        raw = read_project_text(root, path)
+    except (OSError, UnicodeDecodeError):
         return {}
     try:
         loaded = yaml.safe_load(raw)
@@ -215,18 +216,19 @@ def _parse_yaml_declaration(path: Path) -> dict[str, object]:
     return {}
 
 
-def _parse_markdown_declaration(path: Path) -> dict[str, object]:
+def _parse_markdown_declaration(path: Path, *, root: Path) -> dict[str, object]:
     """Scan a Markdown declaration for ``- field_name:`` field markers.
 
     The Markdown form admits any prose around the field markers; this
     parser is presence-only — it records each required field's
     presence (mapping to a placeholder True value) without inspecting
     the field's substantive value. The YAML form is the rigorous
-    surface; the Markdown form is the lightweight alternative.
+    surface; the Markdown form is the lightweight alternative. An
+    unreadable file, or one that is not UTF-8 text, declares nothing.
     """
     try:
-        text = path.read_text(encoding="utf-8")
-    except OSError:
+        text = read_project_text(root, path)
+    except (OSError, UnicodeDecodeError):
         return {}
     found: dict[str, object] = {}
     for line in text.splitlines():
@@ -269,9 +271,9 @@ def check(root: Path) -> GrepResult:
             )
             continue
         if declaration_path.suffix in {".yml", ".yaml"}:
-            declaration = _parse_yaml_declaration(declaration_path)
+            declaration = _parse_yaml_declaration(declaration_path, root=root)
         else:
-            declaration = _parse_markdown_declaration(declaration_path)
+            declaration = _parse_markdown_declaration(declaration_path, root=root)
         missing = _missing_fields(declaration)
         if missing:
             findings.append(

@@ -57,6 +57,7 @@ from apothem.conformity._grep_base import (
     is_project_file,
     parse_root_args,
 )
+from apothem.conformity._safe_open import read_project_text
 
 GREP_NAME: Final[str] = "determinism-grep"
 RULE_ANCHOR: Final[str] = "rules/determinism.md"
@@ -196,7 +197,7 @@ def _signature(body: str) -> str:
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
-def _classify_surface(path: Path) -> list[Finding]:
+def _classify_surface(path: Path, *, root: Path) -> list[Finding]:
     """Return findings for one surface — non-determinism + shape floor."""
     surface = str(path)
     findings: list[Finding] = []
@@ -205,7 +206,7 @@ def _classify_surface(path: Path) -> list[Finding]:
     bodies: list[str] = []
     for _ in range(RECOMPUTE_RUNS):
         try:
-            body = path.read_text(encoding="utf-8")
+            body = read_project_text(root, path)
         except (OSError, UnicodeDecodeError) as exc:
             return [
                 Finding(
@@ -297,7 +298,7 @@ def check(root: Path) -> GrepResult:
             )
         )
     for path in surfaces:
-        findings.extend(_classify_surface(path))
+        findings.extend(_classify_surface(path, root=root))
     return GrepResult(
         grep=GREP_NAME,
         root=str(root),

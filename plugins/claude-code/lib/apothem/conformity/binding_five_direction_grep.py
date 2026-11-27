@@ -56,6 +56,7 @@ from apothem.conformity._grep_base import (
     iter_tree_files,
     parse_root_args,
 )
+from apothem.conformity._safe_open import read_project_text
 
 __all__ = ["DIRECTIONS_FULL", "DIRECTIONS_HOOK_MESSAGE", "Finding", "check"]
 
@@ -218,7 +219,7 @@ def check(root: Path) -> RootGrepResult:
     for path, required in targets:
         rel = path.relative_to(content).as_posix()
         try:
-            text = path.read_text(encoding="utf-8")
+            text = read_project_text(root, path)
         except (OSError, UnicodeDecodeError) as exc:
             findings.append(
                 Finding(path=rel, detail=f"unreadable: {exc}", missing=list(required))

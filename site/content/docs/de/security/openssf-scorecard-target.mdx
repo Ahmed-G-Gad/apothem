@@ -8,7 +8,7 @@ sourceHash: "2a073782c97e3b02"
 
 Apothem strebt die maximale OpenSSF-Scorecard-Bewertung an und hält dabei die öffentliche Fassade ehrlich darüber, was Scorecard aus einem neuen Repository mit einem einzigen Maintainer ableiten kann und was nicht. Dieses Dokument zählt jede Prüfung auf, die Nachweisoberfläche, die sie stützt, und die Kontrolle, die die Haltung aktuell hält.
 
-Die Live-Bewertung steht im [Scorecard-Viewer](https://securityscorecards.dev/viewer/?uri=github.com/ahmed-g-gad/apothem); das Badge befindet sich im [README-Kopfbereich](https://github.com/ahmed-g-gad/apothem/blob/main/README.md).
+Die Live-Bewertung steht im [Scorecard-Viewer](https://securityscorecards.dev/viewer/?uri=github.com/Ahmed-G-Gad/apothem); das Badge befindet sich im [README-Kopfbereich](https://github.com/ahmed-g-gad/apothem/blob/main/README.md).
 
 ## Nachweismatrix je Prüfung
 
@@ -17,7 +17,7 @@ Die Live-Bewertung steht im [Scorecard-Viewer](https://securityscorecards.dev/vi
 | **Binary-Artifacts** | [binary-artifacts-sweep.md](/docs/security/binary-artifacts-sweep) | Keine ausführbaren Binärdateien im Quellcode versioniert; generierte Distributionsarchive bleiben in `dist/`. |
 | **Branch-Protection** | [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) | `main` ist vor der Hochstufung zu einem öffentlichen Release geschützt; Force-Pushes und Löschungen werden blockiert, nachdem der frische Release-Commit gelandet ist. |
 | **CI-Tests** | [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | Pytest-Matrix, ruff, mypy, Trivy, Dokumentations-Build und Paketierungs-Smoke-Checks. |
-| **CII-Best-Practices** | OpenSSF-Best-Practices-Registrierung | Erfordert eine Registrierung durch den Maintainer auf der OpenSSF-Best-Practices-Website; dies lässt sich nicht allein durch Repository-Dateien erledigen. |
+| **CII-Best-Practices** | OpenSSF-Best-Practices-Registrierung | Das Projekt ist auf bestpractices.dev als [Projekt 16427](https://www.bestpractices.dev/en/projects/16427) registriert und hält seit dem 2026-11-08 das Passing-Badge, das diese Prüfung anrechnet. |
 | **Code-Review** | Branch-Schutz + CODEOWNERS | Pull Requests sind für `main` für alle außer Repository-Administratoren erforderlich; der Branch-Schutz verlangt 0 genehmigende Reviews, solange das Projekt einen Maintainer hat (siehe [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset)); der Scorecard-Verlauf bleibt begrenzt, bis geprüfte PRs existieren. |
 | **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | Ein neues Projekt mit einem einzigen Maintainer kann keinen Beitragsverlauf über mehrere Organisationen hinweg fabrizieren; dies verbessert sich natürlich, sobald Mitwirkende hinzukommen. |
 | **Dangerous-Workflow** | Workflow-Audit | Kein `pull_request_target`; Actions sind per SHA gepinnt und mit expliziten Berechtigungen eingegrenzt. |

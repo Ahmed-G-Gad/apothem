@@ -64,6 +64,7 @@ from apothem.conformity._grep_base import (
     iter_tree_files,
     parse_root_args,
 )
+from apothem.conformity._safe_open import read_project_text
 
 GREP_NAME: Final[str] = "dynamism-grep"
 RULE_ANCHOR: Final[str] = "rules/dynamism.md (static-version embeds)"
@@ -223,11 +224,11 @@ def _is_in_scope(path: Path, root: Path) -> bool:
     )
 
 
-def _scan_file(path: Path) -> list[Finding]:
+def _scan_file(path: Path, *, root: Path) -> list[Finding]:
     """Return every literal semver embed in *path*."""
     findings: list[Finding] = []
     try:
-        text = path.read_text(encoding="utf-8")
+        text = read_project_text(root, path)
     except (OSError, UnicodeDecodeError):
         return findings
     inside_generated_reference = False
@@ -272,7 +273,7 @@ def check(root: Path) -> GrepResult:
         if not _is_in_scope(candidate, root):
             continue
         scanned += 1
-        findings.extend(_scan_file(candidate))
+        findings.extend(_scan_file(candidate, root=root))
     return GrepResult(
         grep=GREP_NAME,
         root=str(root),
