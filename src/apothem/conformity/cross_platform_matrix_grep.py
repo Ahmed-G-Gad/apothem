@@ -383,6 +383,22 @@ def check(root: Path) -> GrepResult:
             # Replaced by a link or a special file since it was found, or
             # gone: it counts as absent, as the lookup would have said.
             content = None
+        except OSError as exc:
+            # There but not readable (no permission, a sharing violation, a
+            # system without the guarded open's calls): fail, naming it.
+            return GrepResult(
+                grep=GREP_NAME,
+                root=str(root),
+                passed=False,
+                workflow_path=str(workflow),
+                not_yet_materialised=False,
+                findings=[
+                    Finding(
+                        drift_class="workflow-unreadable",
+                        detail=f"{workflow.name} unreadable: {exc}",
+                    )
+                ],
+            )
     if workflow is None or content is None:
         # Workflow-absent is informational tolerance: the canonical
         # ci-matrix.yml may not yet be materialised. Pass cleanly with

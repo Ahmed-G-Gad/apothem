@@ -137,6 +137,8 @@ def _read_script(root: Path, path: Path) -> str | None:
     A link to a regular file in the project is read at that file (see
     ``project_file_target``). A script that a link or a special file
     replaced since it was looked at, or that is gone, counts as absent too.
+    Any other ``OSError`` (a script that is there but cannot be read) is
+    raised for the caller to report as unreadable.
     """
     source = project_file_target(root, path)
     if source is None:
@@ -148,7 +150,16 @@ def _read_script(root: Path, path: Path) -> str | None:
 
 
 def _check_bash(root: Path, path: Path, findings: list[Finding]) -> None:
-    content = _read_script(root, path)
+    try:
+        content = _read_script(root, path)
+    except OSError as exc:
+        findings.append(
+            Finding(
+                script=path.name,
+                detail=f"scripts/installer/install.sh unreadable: {exc}",
+            )
+        )
+        return
     if content is None:
         findings.append(
             Finding(
@@ -181,7 +192,16 @@ def _check_bash(root: Path, path: Path, findings: list[Finding]) -> None:
 
 
 def _check_powershell(root: Path, path: Path, findings: list[Finding]) -> None:
-    content = _read_script(root, path)
+    try:
+        content = _read_script(root, path)
+    except OSError as exc:
+        findings.append(
+            Finding(
+                script=path.name,
+                detail=f"scripts/installer/install.ps1 unreadable: {exc}",
+            )
+        )
+        return
     if content is None:
         findings.append(
             Finding(

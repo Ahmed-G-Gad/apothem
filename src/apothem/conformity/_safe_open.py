@@ -198,8 +198,9 @@ if sys.platform != "win32":
     )
     # Each level is looked at and opened inside the folder opened before it
     # (fstatat without following, openat). Every supported system has both;
-    # where one is missing, a read fails as unreadable rather than with
-    # NotImplementedError, which no validator catches.
+    # where one is missing, a read raises OSError, which every validator
+    # handles as it handles any unreadable file, rather than
+    # NotImplementedError, which none catches.
     _OPENS_INSIDE_A_FOLDER: Final[bool] = (
         os.open in os.supports_dir_fd
         and os.stat in os.supports_dir_fd

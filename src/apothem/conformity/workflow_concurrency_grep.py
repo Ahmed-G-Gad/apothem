@@ -313,12 +313,23 @@ def _check_workflow(path: Path, *, root: Path) -> list[Finding]:
 
     A file that a link or a special file replaced since it was listed, or
     that is gone, counts as missing, as the listing would have counted it.
+    A file that is there but cannot be read is a finding.
     """
     findings: list[Finding] = []
     workflow_name = path.name
     try:
         doc = yaml.safe_load(read_project_text(root, path))
     except REFUSED_OR_GONE:
+        return findings
+    except OSError as exc:
+        findings.append(
+            Finding(
+                workflow=workflow_name,
+                job=None,
+                drift_class="workflow-unreadable",
+                detail=f"unreadable workflow: {exc}",
+            )
+        )
         return findings
     except (ValueError, yaml.YAMLError) as exc:
         # ValueError: PyYAML's int() refuses an integer past 4,300 digits.

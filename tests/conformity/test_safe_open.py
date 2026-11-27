@@ -12,13 +12,16 @@ reparse point that is not a link (a cloud placeholder, a deduplicated file) is
 read through its filter on Windows, reopened from its first handle and not by
 name, that the text read matches ``Path.read_text``, and that no folder stays
 open between reads, so a folder swapped for a link after one read is refused
-at the next.
+at the next. They also check that the validators which count a swapped
+file as missing report a file they cannot read for any other reason as
+unreadable, rather than stopping with a traceback.
 """
 
 from __future__ import annotations
 
 import ctypes
 import errno
+import json
 import os
 import socket
 import stat
@@ -29,7 +32,15 @@ from typing import Any
 
 import pytest
 
-from apothem.conformity import _project_paths, _safe_open
+from apothem.conformity import (
+    _project_paths,
+    _safe_open,
+    cross_platform_matrix_grep,
+    oidc_trusted_publishing_grep,
+    plans_discipline_language_grep,
+    smoke_install_grep,
+    workflow_concurrency_grep,
+)
 from apothem.conformity._safe_open import (
     ProjectFileRefusedError,
     open_project_file,
@@ -655,3 +666,75 @@ def test_a_folder_recreated_after_a_read_is_read_afresh(project: Path) -> None:
 def test_an_open_file_is_a_readable_binary_file(project: Path) -> None:
     with open_project_file(project, _target(project)) as handle:
         assert handle.read() == _INSIDE
+
+
+# A project file each of five validators reads, which they once caught only
+# as missing (REFUSED_OR_GONE): any other OSError would end the run with a
+# traceback instead of a report.
+_UNREADABLE_CASES = [
+    pytest.param(
+        cross_platform_matrix_grep.check,
+        (".github/workflows/ci-matrix.yml",),
+        id="cross-platform-matrix",
+    ),
+    pytest.param(
+        oidc_trusted_publishing_grep.check,
+        (".github/workflows/publish-pypi.yml", ".github/workflows/publish-npm.yml"),
+        id="oidc-trusted-publishing",
+    ),
+    pytest.param(
+        plans_discipline_language_grep.check,
+        (
+            plans_discipline_language_grep.FIXTURE_PATH,
+            *plans_discipline_language_grep.REQUIRED_SURFACES,
+        ),
+        id="plans-discipline-language",
+    ),
+    pytest.param(
+        smoke_install_grep.check,
+        ("scripts/installer/install.sh", "scripts/installer/install.ps1"),
+        id="smoke-install",
+    ),
+    pytest.param(
+        workflow_concurrency_grep.check,
+        (".github/workflows/ci.yml",),
+        id="workflow-concurrency",
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        pytest.param(PermissionError(errno.EACCES, "access denied"), id="denied"),
+        pytest.param(OSError(errno.ENOTSUP, "no openat here"), id="unsupported"),
+    ],
+)
+@pytest.mark.parametrize(("check", "names"), _UNREADABLE_CASES)
+def test_a_validator_reports_a_file_it_cannot_read_as_unreadable(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    check: Callable[[Path], Any],
+    names: tuple[str, ...],
+    error: OSError,
+) -> None:
+    """A file that is there but cannot be read, for a reason other than a
+    swap, fails the run with a finding that names it unreadable."""
+    root = tmp_path / "project"
+    for name in names:
+        (root / name).parent.mkdir(parents=True, exist_ok=True)
+        (root / name).write_text("name: x\n", encoding="utf-8")
+
+    def refuse(_root: Path, path: Path) -> bytes:
+        raise type(error)(error.errno, error.strerror, str(path))
+
+    monkeypatch.setattr(_safe_open, "read_project_bytes", refuse)
+
+    result = check(root)
+
+    assert result.passed is False
+    details = [finding.detail for finding in result.findings]
+    unreadable = [detail for detail in details if "unreadable" in detail]
+    assert len(unreadable) == len(names), details
+    assert all(str(error.strerror) in detail for detail in unreadable)
+    json.loads(result.to_json())
