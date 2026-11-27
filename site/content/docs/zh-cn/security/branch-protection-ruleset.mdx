@@ -2,7 +2,7 @@
 title: "分支保护"
 description: "main 上的 Apothem 分支保护：当前生效的保护规则、其必需状态检查，以及待添加的检查。"
 machineTranslated: true
-sourceHash: "7d54aae6581f03ec"
+sourceHash: "a8e8cbd39d06d78f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,7 +22,7 @@ Apothem 的 `main` 分支受一条经典的 GitHub 分支保护规则保护。�
 | **要求状态检查通过** | `required_status_checks` | ✅ | [必需状态检查](#必需状态检查)下列出的 12 个上下文必须通过。 |
 | **要求分支在合并前保持最新** | `required_status_checks.strict` | ❌ | 当拉取请求的必需检查是针对较旧的 `main` 通过的时，它仍可以合并。随后，在推送到 `main` 时运行的工作流会测试合并后的结果。 |
 | **要求在合并前解决对话** | `required_conversation_resolution` | ✅ | 未解决的评审讨论串会阻止合并。 |
-| **要求签名提交** | `required_signatures` | ❌ | 发布提交在本地签名。强制执行要等到贡献者入门文档说明 SSH 或 GPG 签名设置之后。 |
+| **要求签名提交** | `required_signatures` | ❌ | 发布提交以 squash 合并的形式进入 `main`，由 GitHub 用自己的密钥签名；维护者的签名位于发布标签上。强制执行要等到贡献者入门文档说明 SSH 或 GPG 签名设置之后。 |
 | **要求线性历史** | `required_linear_history` | ✅ | 使 `main` 的公开历史保持为一条直线。 |
 | **锁定分支** | `lock_branch` | ❌ | `main` 接受合并。 |
 | **不允许绕过上述设置** | `enforce_admins` | ❌ | 上述设置不约束仓库管理员。管理员可以在没有必需检查的情况下合并，或直接推送到 `main`。 |

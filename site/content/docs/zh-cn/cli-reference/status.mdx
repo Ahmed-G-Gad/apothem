@@ -2,7 +2,7 @@
 title: "status"
 description: "apothem status 命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "8b2767bb799e4c2e"
+sourceHash: "fe8df509dd01788b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,7 +31,7 @@ apothem status [--profile PATH] [--project PATH]
 | 值 | 含义 |
 |---|---|
 | `in-sync` | 已安装的配置逐字携带了新近投射的共享配置档案。 |
-| `drift` | 该工具已安装，但其投射的配置档案内容已不再与当前的共享配置档案一致。重新运行 `apothem install` 以重新投射。 |
+| `drift` | 该工具已安装，但其投射的配置档案内容已不再与当前的共享配置档案一致，或者当前安装在其中维护受管区块的某个文件含有一个不开启任何完整区块的 BEGIN 标记、在 Apothem 标记之间含有两个或更多完整区块，或含有 Apothem 无法与你的文本区分开的标记对。仅由较早安装记录列出的文件（例如安装已不再使用的 OpenClaw 工作区中的规则文件）不计入此处；`apothem verify` 和 `apothem doctor` 会指出它。运行 `apothem update` 以应用当前配置档案；这类标记需手动修复（参见[故障排查](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)、[文件在 Apothem 标记之间有两个区块](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)和[Apothem 无法区分其区块与你的文本](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)）。 |
 | `absent` | 该工具未安装，因此没有可比较的内容。 |
 | `needs-project` | 一个项目范围的工具在未提供 `--project` 的情况下被报告，因此无法解析其目标。传入 `--project PATH` 以检查它。 |
 | `unknown` | 无法加载默认配置档案，因此已安装的工具没有可供比较的基线。修复配置档案即可恢复漂移判定。 |

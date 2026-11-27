@@ -71,8 +71,10 @@ apothem uninstall --harness antigravity
 ## 合规闸门
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+请在你的项目文件夹中运行它。在 Windows 上，请用 `python` 代替 `python3`，并使用完整路径，因为 Windows PowerShell 和 cmd 不会展开 `~`：PowerShell 中为 `$HOME\.apothem\src\apothem\conformity\gate.py`，cmd 中为 `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`。该路径是安装程序放置引擎的位置，`-E -s` 让你的 `PYTHONPATH` 和用户 site-packages 不会进入闸门；[合规闸门](/docs/conformity-gate)解释了这两点以及其他安装方式。
 
 ## 故障排查
 

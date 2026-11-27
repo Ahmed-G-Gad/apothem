@@ -2,7 +2,7 @@
 title: "编写规则"
 description: "编写、限定作用域并维护 Apothem 行为规则。"
 machineTranslated: true
-sourceHash: "bc1f3351f9a5fd2c"
+sourceHash: "a7a12b4db14fbfe9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -60,10 +60,16 @@ apothem update --harness cursor --project /path/to/project
 
 ## 规则验证
 
-针对你编写的规则文件运行前置元数据校验器。在 Apothem 检出中，`PYTHONPATH=src` 使该软件包可以被导入；脚本安装之后，请改用 `PYTHONPATH="$HOME/.apothem/src"`。
+针对你编写的规则文件运行前置元数据校验器。在 Apothem 检出的根目录中，`PYTHONPATH=src` 使该软件包可以被导入（`python -m` 会先从当前文件夹读取模块，因此请使用你信任的文件夹）：
 
 ```bash
 PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep src/apothem/rules/<rule>.md
+```
+
+脚本安装之后，请以 `-E -s` 按脚本路径运行闸门（[合规闸门](/docs/conformity-gate)解释了原因）：
+
+```bash
+python3 -E -s "$HOME/.apothem/src/apothem/conformity/gate.py" --check frontmatter-grep <rule>.md
 ```
 
 诸如 `frontmatter-grep` 的逐写入检查接受要检查的文件，或者接受 `--stdin` 以从标准输入读取内容；两者都不提供时，它会等待标准输入上的输入。独立检查则接受一个根目录，如 `--check naming-grep .`。

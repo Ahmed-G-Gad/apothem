@@ -2,7 +2,7 @@
 title: "跨主机同步验证清单"
 description: "用于在全新主机上确认 Claude Code 适配器能够正确安装、校验并卸载的验证流程，包含完整的可移植性检查。"
 machineTranslated: true
-sourceHash: "649ffe348614b809"
+sourceHash: "b241d44d7e0005f9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -110,6 +110,8 @@ make test                                                     # exit 0, no failu
 **预期：** 每道闸门均通过。记录退出码与摘要行。
 
 ## 5. 卸载验证
+
+请在 `$HOME/.apothem`（第 4 节切换进入的文件夹）中运行这些命令。卸载会移除 `apothem` shim，因此 `verify` 这几行通过 `python3 -m` 从保留的源码启动引擎，而它会先从当前文件夹读取模块：只能在该文件夹或你信任的其他文件夹中运行它们。
 
 ```bash
 # POSIX path — interactive uninstall

@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "适用于 Windsurf（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "26f3db9f3fdef394"
+sourceHash: "6ddfbde9bafb1d18"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -114,6 +114,8 @@ Apothem 不在 Devin 上注册 `PreToolUse` 守卫。Devin 的文档为 `UserPro
 "/path/to/python" -E -s "/path/to/project/.apothem/support/windsurf/hooks/dispatch.py" --contract devin SessionStart
 ```
 
+`-E -s` 让 Python 忽略 `PYTHONPATH` 和其他 `PYTHON*` 变量，并跳过你的用户 site-packages，因此项目中的任何文件都无法加载到钩子中。
+
 `--contract devin` 将 Devin 的小写工具名称（`exec`、`write`、`edit`、`read`、`grep`、`glob`）映射到 Apothem 的处理程序所检测的名称上，并让输出保持为 Claude Code 读取的同一种信封格式。不会写入匹配器：Devin 的匹配器是一个正则表达式，省略时匹配每个工具，而 `SessionStart` 没有可匹配的工具。
 
 **安装后需要检查的事项**
@@ -201,8 +203,10 @@ apothem uninstall --harness windsurf --project /path/to/project
 ## 合规闸门
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+请在你的项目文件夹中运行它。在 Windows 上，请用 `python` 代替 `python3`，并使用完整路径，因为 Windows PowerShell 和 cmd 不会展开 `~`：PowerShell 中为 `$HOME\.apothem\src\apothem\conformity\gate.py`，cmd 中为 `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`。该路径是安装程序放置引擎的位置，`-E -s` 让你的 `PYTHONPATH` 和用户 site-packages 不会进入闸门；[合规闸门](/docs/conformity-gate)解释了这两点以及其他安装方式。
 
 ## 故障排查
 

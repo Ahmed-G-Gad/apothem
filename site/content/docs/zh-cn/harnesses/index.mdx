@@ -2,7 +2,7 @@
 title: "工具适配器"
 description: "Apothem 工具适配器——一个共享配置档案，十七个受支持的目标。"
 machineTranslated: true
-sourceHash: "f4177d0bff3cb602"
+sourceHash: "48a032b0eced79dc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -57,14 +57,14 @@ apothem doctor
 
 ## 适配器的工作原理
 
-每个适配器都实现了通过 setuptools 入口点注册的 `HarnessAdapter` 协议。在安装时，CLI 加载并校验共享 YAML 配置档案，通过注册表解析适配器，校验具现化方案，然后将平台原生配置写入工具的原生用户或项目位置。在更新时，它从当前的配置档案状态重新派生。
+每个适配器都实现了 `HarnessAdapter` 协议，并列在静态工具注册表（`src/apothem/lib/harness_registry.py`）中，CLI 从该注册表解析适配器。`pyproject.toml` 中的 `apothem.harnesses` 入口点列出了相同的适配器，并有一项测试保持两个列表一致，但 CLI 不读取入口点，因此其他软件包无法通过声明入口点来添加适配器。在安装时，CLI 加载并校验共享 YAML 配置档案，通过注册表解析适配器，校验具现化方案，然后将平台原生配置写入工具的原生用户或项目位置。在更新时，它从当前的配置档案状态重新派生。
 
 ```
 profile.yaml + packaged cohorts
     identity / preferences / rules
     commands / skills / delegated definitions / hooks / templates
          |
-         +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/antigravity-cli/plugins/apothem/
+         +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/config/plugins/apothem/
          +-- claude-code    --> ~/.claude/ native folders + ~/.claude/.apothem/support/
          +-- codex          --> ~/.codex/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- cursor         --> <project>/.cursor/rules/*.mdc + <project>/.cursor/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/

@@ -2,7 +2,7 @@
 title: "共享配置档案模式"
 description: "Apothem 共享配置档案 YAML 的模式。"
 machineTranslated: true
-sourceHash: "574a594762c4f468"
+sourceHash: "cdd83bde9f17392d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,18 +28,21 @@ identity:
 `apothem profile init` 写入一个略为完整的脚手架——操作者应当个性化的占位身份字段——并在报告成功之前对其进行校验：
 
 ```yaml
+# yaml-language-server: $schema=https://apothem.ahmedgad.com/schemas/profile.schema.json
+schema_version: 1
 identity:
-  name: "Example User"
-  email: "dev@example.invalid"
-  github: "example-user"
+  name: Example User
+  email: dev@example.invalid
+  github: example-user
 ```
 
-该命令会打印一条个性化提示，点名这些字段。若一个仍为占位的身份稍后到达 `install` 或 `update`，那些命令会打印一条提示性说明并继续——Apothem 绝不臆造，也绝不因占位身份而阻塞。
+第一行让支持 YAML 的编辑器指向该模式；`schema_version: 1` 是配置档案模式的版本。该命令会打印一条个性化提示，点名这些身份字段。若一个仍为占位的身份稍后到达 `install` 或 `update`，那些命令会打印一条提示性说明并继续——Apothem 绝不臆造，也绝不因占位身份而阻塞。
 
 ## 规范字段
 
 | 字段 | 必填 | 默认值 | 说明 |
 | --- | --- | --- | --- |
+| `schema_version` | 否 | 按 `1` 读取 | 配置档案模式版本；`profile init` 写入 `1`。比引擎所支持版本更新的版本会被拒绝。 |
 | `identity.name` | 是 | 无 | 非空的操作者显示名称。 |
 | `identity.role` | 否 | `senior software engineer` | 共享角色文本。 |
 | `identity.email` | 否 | 省略 | 存在时必须为电子邮件格式。 |
@@ -51,8 +54,13 @@ identity:
 | `preferences.test_framework` | 否 | 省略 | 存在时为非空字符串。 |
 | `rules` | 否 | `[]` | 唯一的非空字符串；换行符归一化为 LF。 |
 | `seriousness` | 否 | `PERSONAL_USE` | `EXPLORING`、`PERSONAL_USE`、`SHARED`、`PUBLIC_LAUNCH` 之一。 |
+| `enforcement.*` | 否 | 均为 `false` | 可选开关：`sprints`、`agent_teams`、`multitasking`、`continuous_execution`、`learning_loop`。 |
+| `mcp_servers` | 否 | `{}` | 以服务器名称为键的 MCP 服务器。每个服务器设置 `transport`（`stdio`、`http`、`sse` 或 `streamable-http`）：`stdio` 服务器需要 `command`，其他服务器需要 `url`。 |
+| `agent_mcp_servers` | 否 | `{}` | 以辅助器名称为键，列出每个辅助器可以调用的 MCP 服务器。由 Claude Code 和 Gemini CLI 的安装读取。 |
 | `harnesses` | 否 | `{}` | 以受支持的工具 ID 为键的每个工具覆盖项。 |
 | `exclude_harnesses` | 否 | `[]` | 从 `--harness all` 中排除的受支持的工具 ID。 |
+| `workspace.directory_name` | 否 | `.apothem` | 共享工作文件夹的名称；单个路径组成部分。 |
+| `workspace.scope` | 否 | `project-local` | `project-local`（位于项目根目录下）或 `user-home`（位于你的主目录下）。 |
 
 ## 工具键
 

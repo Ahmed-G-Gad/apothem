@@ -2,7 +2,7 @@
 title: "平台"
 description: "Apothem 支持的操作系统、shell 与安装器脚本，以及自包含运行时所需的系统 Python 前置条件。"
 machineTranslated: true
-sourceHash: "40276e881e9e631c"
+sourceHash: "1c6e2bce2e1da696"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,8 +40,8 @@ Apothem 不安装任何 Python 软件包。引擎的导入是针对你已有的�
   ≥ 3.10 的解释器。在 Windows 上它会拒绝 Microsoft Store 启动器垫片，
   且捆绑的 `find-python` 定位器施加相同的下限。
 - **运行时库可导入。** 引擎从系统解释器导入 `click` 与 `rich`；其余第三方依赖已随源码树一并打包（vendored）。安装脚本会验证二者均可导入，列出缺失项，并提出代你安装缺失的前置依赖 — 经你确认，或使用 `--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1` 自动安装。
-- **`git`** 仅在网络安装时才需要（脚本会克隆源码树）。从检出进行的
-  本地安装不需要 `git`。
+- **`git`** 和 **`gpg`** 仅在网络安装时才需要：脚本用它们查找最新版本并校验
+  其签名标签，并且在没有 cosign 时会克隆源码树。从检出进行的本地安装两者都不需要。
 
 如果解释器、库或 `git` 缺失，安装器会带着一条诊断信息退出，准确指明
 需要提供什么，而不是猜测或改动你的环境。

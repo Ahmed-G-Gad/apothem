@@ -2,7 +2,7 @@
 title: "常见问题"
 description: "关于 Apothem 的用途、受支持的工具、计划套件的可选性、规则定制、制品类型以及生态系统状态位置的常见问题。"
 machineTranslated: true
-sourceHash: "39f28c46787a7498"
+sourceHash: "bc73f569d994fb5b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,11 +30,11 @@ Claude Code 适配器物化到 `~/.claude/`；其钩子分派器与宿主无关�
 
 ## 如何在不分叉仓库的情况下定制规则？
 
-在 `~/.config/apothem/profile.yaml` 的 `rules:` 列表中添加一个字符串，然后重新运行安装或更新。`src/apothem/rules/` 下的规则文件会编辑已打包的源码树，而归档安装器在以 `--yes` 运行时会替换该源码树。
+在 `~/.config/apothem/profile.yaml` 的 `rules:` 列表中添加一个字符串，然后重新运行安装或更新。`src/apothem/rules/` 下的规则文件属于已安装的源码树，因此在那里的编辑在更新 Apothem 本身后不会保留。安装发布归档的安装器重新运行（安装了 cosign 时就是这样）会替换发布归档安装的源文件，包括其中的编辑。走 git 克隆路径的重新运行（未安装 cosign 时就是这样）只有在使用 `--yes`（PowerShell 中为 `-Yes`）时才会替换它们，这会把安装切换为克隆。更新 git 克隆时，遇到已编辑的受跟踪文件会停止，直到你提交（commit）或暂存（stash）该更改，然后检出该文件在发布版本中的副本。
 
 ## 如何临时禁用某条规则？
 
-要么将该文件重命名到 `src/apothem/rules/*.md` 模式之外，要么将其移动到加载器不扫描的同级目录中。
+Apothem 没有可以关闭某一条打包规则的配置档案键。重命名或移动 `src/apothem/rules/` 下的文件会改变已安装的源码树，因此与编辑一样（见上一个回答），在更新 Apothem 本身后不会保留。若要在不改动源码树的情况下调整行为，请把你自己的规则添加到配置档案的 `rules:` 列表中，然后运行 `apothem update`。
 
 ## 规则、技能和委派工作者有什么区别？
 
@@ -63,7 +63,7 @@ Claude Code 适配器物化到 `~/.claude/`；其钩子分派器与宿主无关�
 
 ## Apothem 需要 pip 吗？
 
-不需要——引擎本身不需要。引擎是一个自包含的源代码树，内含随附的依赖——它可以从任何检出目录、npx 缓存或插件树，以 `python -m apothem` 在系统 Python 3.10+ 上运行，并且不会把自己的任何代码安装到 `site-packages` 中（`click` 和 `rich` 是仅有的解释器先决条件）。唯一的可选例外是：如果缺少 `click` 或 `rich`，安装器会主动提出仅为这两者运行 `pip install`——需经你确认，或通过 `--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1` 自动进行。Apothem 自己的软件包永远不会被安装到 `site-packages` 中。
+不需要——引擎本身不需要。引擎是一个自包含的源代码树，内含随附的依赖——它可以从任何检出目录、npx 缓存或插件树，在系统 Python 3.10+ 上运行，并且不会把自己的任何代码安装到 `site-packages` 中（`click` 和 `rich` 是仅有的解释器先决条件）。唯一的可选例外是：如果缺少 `click` 或 `rich`，安装器会主动提出仅为这两者运行 `pip install`——需经你确认，或通过 `--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1` 自动进行。Apothem 自己的软件包永远不会被安装到 `site-packages` 中。
 
 ## 钩子如何在没有已安装软件包的情况下运行？
 

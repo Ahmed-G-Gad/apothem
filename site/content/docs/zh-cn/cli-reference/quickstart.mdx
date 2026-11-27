@@ -2,7 +2,7 @@
 title: "quickstart"
 description: "apothem quickstart 引导式首次运行命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "951e6d6877611c54"
+sourceHash: "a461df3fe9749c28"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,7 +26,7 @@ apothem quickstart [--harness NAME|all] [--project PATH] [--profile PATH]
 - **配置档案**——如果解析出的配置档案路径下没有文件，`quickstart` 会提议创建一个起始配置档案（在 `--yes`、非交互式 shell 或 `--format json` 下自动创建），并指出需要个性化的占位身份字段。
 - **预览 + 确认**——对于 `--harness all`，目标会按两个标题列出（项目根目录与你的主目录），交互式运行会在写入项目之外的内容之前进行确认。单个指定的工具会直接安装，不做预览或提示。`--yes`、非交互式 shell 和 `--format json` 会在不提示的情况下继续。拒绝 `--harness all` 的预览会在安装写入之前中止；第 1 步中创建的起始配置档案会被保留。
 - **安装**——工具原生不支持的能力会按工具汇总为一条分组说明（传入 `--verbose` 可查看逐项能力的详情）；完整列表始终位于 `--format json` 的 warnings 数组中。
-- **下一步**——终端输出会指出后续命令（`apothem verify …`、`apothem doctor`）。
+- **下一步**——终端输出会指出后续命令（`apothem verify …`、`apothem doctor`）。`--project` 文件夹会为 shell 加上引号，与 [`doctor`](/docs/cli-reference/doctor) 的做法相同。当引号无法容纳它时，输出会打印到 `--project` 为止的命令，并在其后用文字说明该文件夹；JSON 中的 `recommended_next` 条目则为 `Run apothem verify --harness … with --project set to <folder>`，它不是可以原样运行的命令。
 
 ## 选项
 
@@ -56,11 +56,13 @@ apothem quickstart [--harness NAME|all] [--project PATH] [--profile PATH]
   "steps": [
     {"step": "profile", "outcome": "created", "path": "…", "placeholder_identity": ["name", "email", "github"]},
     {"step": "install", "status": "success", "harness": "all", "files_written": ["…"], "warnings": [], "results": []},
-    {"step": "recommend", "next": ["apothem verify --harness all --project .", "apothem doctor"]}
+    {"step": "recommend", "next": ["apothem verify --harness all --project \".\"", "apothem doctor"]}
   ],
-  "recommended_next": ["apothem verify --harness all --project .", "apothem doctor"]
+  "recommended_next": ["apothem verify --harness all --project \".\"", "apothem doctor"]
 }
 ```
+
+当安装步骤因为某个文件中的 Apothem 标记行而保持该文件原样时（参见 [`install`](/docs/cli-reference/install#capability-notes)），两个 `status` 值都是 `"partial"`，退出码为 `2`。在纯文本模式下，运行会打印安装的 `✗` 行，然后是推荐的后续步骤。由于在你修复该文件之前 `apothem verify` 对它会失败，此时第一步改为：按照警告所说修复安装保持原样的每个文件，然后对相同的工具运行 `apothem update`（纯文本模式下为 `Fix the files it left:`，JSON 中为第一个 `recommended_next` 条目 `Fix each file the install left as it is, as its warning says, then run apothem update --harness …`），以此代替 `apothem verify`。
 
 ## 示例
 
@@ -77,7 +79,7 @@ apothem quickstart --harness claude-code --json
 |---|---|
 | 0 | 引导式运行已完成 |
 | 1 | 预期内的校验、配置档案、工具、项目或适配器错误 |
-| 2 | 在至少一次写入之后发生的部分批量物化 |
+| 2 | 部分：批处理在至少一次写入之后停止，或者安装因为 Apothem 标记行而保持了一个 Apothem 在其中维护区块的文件原样 |
 | 64 | 用法错误：未知的选项或命令，或缺失或无效的选项值。在 `--json` 下，该错误是一个代码为 `cli.usage` 的 JSON 信封。 |
 
 ## 另请参阅

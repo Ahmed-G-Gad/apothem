@@ -2,7 +2,7 @@
 title: "Kiro"
 description: "适用于 Kiro（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "91ec41080bf29036"
+sourceHash: "8edb56102e3e27a7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -108,6 +108,8 @@ Apothem 不在 Kiro 上注册 `PreToolUse` 或 `PostToolUse` 钩子。Kiro 只�
 "/path/to/python" -E -s "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
 ```
 
+`-E -s` 让 Python 忽略 `PYTHONPATH` 和其他 `PYTHON*` 变量，并跳过你的用户 site-packages，因此项目中的任何文件都无法加载到钩子中。
+
 `--contract kiro` 让分发器以纯文本形式打印上下文，这正是 Kiro 为 `SessionStart` 添加到上下文中的内容。Kiro 没有记载 Windows 上命令操作所用的 shell。该命令是为 sh 和 cmd.exe 编写的，解释器路径使用正斜杠并加上引号；如果在你的机器上 Kiro 在 PowerShell 下运行它，带引号的路径前面需要一个调用运算符（`&`），你可以手动添加。
 
 **信任工作区。** Kiro CLI 2.33 及更高版本只有在你信任工作区之后才会加载该工作区的钩子：它会在你第一次在某个文件夹中启动交互式 V3 会话（`kiro-cli --v3`）时询问"Trust this workspace?"。Kiro Web 会话不运行任何钩子。安装会将此作为一条说明打印出来。
@@ -129,6 +131,8 @@ Apothem 不在 Kiro 上注册 `PreToolUse` 或 `PostToolUse` 钩子。Kiro 只�
 ## 兼容性说明
 
 Kiro 的引导表面位于 `.kiro/steering/` 下，作用范围为项目级。适配器写入一个带有 `inclusion: always` 前置元数据的专用 `apothem-rules.md` 引导文件，并且绝不覆盖 Kiro 中由操作者编写的基础文件（`product.md`、`tech.md`、`structure.md`）。Kiro 规格（`.kiro/specs/`）归操作者所有；Apothem 不写入它们。它写入一个钩子文件 `.kiro/hooks/apothem.json`，不写入 `.kiro/hooks/` 中的其他任何文件。
+
+Kiro 还会读取工作区根目录下的 `AGENTS.md` 文件，而 [Kimi Code](/docs/harnesses/kimi-code) 安装会向项目的 `AGENTS.md` 写入一个 Apothem 区块，因此在同时有这两个安装的项目中，该区块也会触达 Kiro。当该文件已包含该区块时，安装 `kiro` 会打印一条说明，指出它以及写入它的安装。[工具注册表](/docs/reference/harness-registry#shared-roots)列出了加载该文件的其他工具。
 
 Kiro 为全局技能记载了 `~/.kiro/skills/`，而没有提到 `~/.agents/skills/`，因此安装写入 Kiro 的文件夹，而不写入跨工具的那个文件夹。同名的工作区技能优先于全局技能。Apothem 尚未确认 Kiro 如何处理一个它未列出的 `SKILL.md` 头部键。
 
@@ -168,8 +172,10 @@ apothem uninstall --harness kiro --project /path/to/project
 ## 合规闸门
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+请在你的项目文件夹中运行它。在 Windows 上，请用 `python` 代替 `python3`，并使用完整路径，因为 Windows PowerShell 和 cmd 不会展开 `~`：PowerShell 中为 `$HOME\.apothem\src\apothem\conformity\gate.py`，cmd 中为 `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`。该路径是安装程序放置引擎的位置，`-E -s` 让你的 `PYTHONPATH` 和用户 site-packages 不会进入闸门；[合规闸门](/docs/conformity-gate)解释了这两点以及其他安装方式。
 
 ## 故障排查
 

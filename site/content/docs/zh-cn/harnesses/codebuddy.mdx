@@ -2,7 +2,7 @@
 title: "CodeBuddy"
 description: "适用于 Tencent CodeBuddy（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "fbf19289d20e8ab7"
+sourceHash: "325f29aff29de35e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -110,6 +110,8 @@ Apothem 不在 CodeBuddy 上注册 `PreToolUse` 守卫。CodeBuddy 的文档为 
 "/path/to/python" -E -s "/path/to/project/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart
 ```
 
+`-E -s` 让 Python 忽略 `PYTHONPATH` 和其他 `PYTHON*` 变量，并跳过你的用户 site-packages，因此项目中的任何文件都无法加载到钩子中。
+
 `--contract codebuddy` 对输出不起作用：CodeBuddy 读取的信封与 Claude Code 相同。CodeBuddy 通过你的 shell 运行钩子命令，在 Windows 上则通过 Git Bash 运行（它既不支持 cmd.exe，也不支持 PowerShell），因此这些命令使用 bash 引号规则和正斜杠形式的解释器路径。如果 CodeBuddy 要求，请安装 Git for Windows。
 
 **安装运行后请审查钩子。** CodeBuddy 在启动时为其设置拍摄快照，不会热加载另一个工具写入的设置文件，并且只有在你于其 `/hooks` 面板中审查之后，才会应用从外部添加的钩子。在 `apothem install` 之后（以及在更改钩子的更新之后），请重启 CodeBuddy 并在 `/hooks` 中确认 Apothem 条目。安装会将此作为一条说明打印出来。文档没有说明每次更改后是否需要重新审查，因此请在更新后再次打开 `/hooks`。
@@ -120,11 +122,11 @@ Apothem 不在 CodeBuddy 上注册 `PreToolUse` 守卫。CodeBuddy 的文档为 
 
 ## 配置档案到原生配置的映射
 
-适配器在每次运行 `apothem install` 或 `apothem update` 时读取 Apothem 的共享配置档案，并渲染项目规则文件。按照 [CodeBuddy Rules 文档](https://www.codebuddy.ai/docs/ide/Rules)，CodeBuddy 将 `.codebuddy/rules/` 下的每个 `*.md` 文件读取为带有可选 YAML 前置元数据（`alwaysApply`、`paths`、`enabled`）的 Markdown；Apothem 的文件携带 `alwaysApply: true`，因此治理表面在每次交互时都会生效。前置元数据是文件中的第一部分内容，由 Apothem 管理的区块紧随其后；你在该区块之后添加的文本会在每次同步时保留。共享配置档案是事实来源；在下一次同步替换由 Apothem 管理的内容之前，对生成文件的项目本地编辑会先被备份。
+适配器在每次运行 `apothem install` 或 `apothem update` 时读取 Apothem 的共享配置档案，并渲染项目规则文件。按照 [CodeBuddy 记忆文档](https://www.codebuddy.ai/docs/cli/memory#modular-rules-with-codebuddy-rules)，CodeBuddy Code 将 `.codebuddy/rules/` 下（包括子文件夹）的每个 `*.md` 文件读取为带有可选 YAML 前置元数据（`alwaysApply`、`paths`、`enabled`）的 Markdown；Apothem 的文件携带 `alwaysApply: true`，因此 CodeBuddy Code 会在它于项目根文件夹中启动的每个会话里加载该文件。它只从自己启动时所在的文件夹读取项目规则，并且只有在重启之后才会读取安装所添加或更改的规则文件。前置元数据是文件中的第一部分内容，由 Apothem 管理的区块紧随其后；你在该区块之后添加的文本会在每次同步时保留。共享配置档案是事实来源；在下一次同步替换由 Apothem 管理的内容之前，对生成文件的项目本地编辑会先被备份。
 
 ## 兼容性说明
 
-CodeBuddy 的规则表面是项目级的，位于 `.codebuddy/rules/` 下。适配器写入一个专用的 `apothem-rules.md` 文件，它与操作者在同一目录中编写的任何规则文件共存。`CODEBUDDY.md` 项目记忆文件、提交的 `.codebuddy/settings.json` 以及项目的 `.mcp.json`（MCP 服务器）归操作者所有；Apothem 不写入它们。CodeBuddy 的文档还介绍了斜杠命令；适配器不写入任何斜杠命令，而是在规则文件内引用相应的规范。它确实会向项目写入子代理和两个钩子（参见[子代理](#子代理)和[钩子](#钩子)），并向你的用户文件夹写入技能，以及作为技能的 Apothem 命令（参见[项目之外的文件](#项目之外的文件)）。当项目没有 `CODEBUDDY.md` 时，CodeBuddy Code 会将 `AGENTS.md` 读取为项目记忆，因此由其他适配器写入的 `AGENTS.md` 也会触达 CodeBuddy，且该适配器的安装说明会指出 CodeBuddy 并附上该条件。适配器所依赖的厂商表面约定锁定在 `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` 中，并对照实时的 CodeBuddy 文档进行快照。
+CodeBuddy 的规则表面是项目级的，位于 `.codebuddy/rules/` 下。适配器写入一个专用的 `apothem-rules.md` 文件，它与操作者在同一目录中编写的任何规则文件共存。CodeBuddy IDE 的 [Rules 页面](https://www.codebuddy.ai/docs/ide/User-guide/Rules#project-rules)描述的是每条规则一个文件夹、每个文件夹中放一个 `RULE.mdc` 文件，而不是像 Apothem 那样的普通 `.md` 文件。该页面没有说明 IDE 是否也会加载普通的 `.md` 文件，Apothem 也尚未确认它会加载。`CODEBUDDY.md` 项目记忆文件、提交的 `.codebuddy/settings.json` 以及项目的 `.mcp.json`（MCP 服务器）归操作者所有；Apothem 不写入它们。CodeBuddy 的文档还介绍了斜杠命令；适配器不写入任何斜杠命令，而是在规则文件内引用相应的规范。它确实会向项目写入子代理和两个钩子（参见[子代理](#子代理)和[钩子](#钩子)），并向你的用户文件夹写入技能，以及作为技能的 Apothem 命令（参见[项目之外的文件](#项目之外的文件)）。当项目没有 `CODEBUDDY.md` 时，CodeBuddy Code 会将 `AGENTS.md` 读取为项目记忆，因此由其他适配器写入的 `AGENTS.md` 也会触达 CodeBuddy，且该适配器的安装说明会指出 CodeBuddy 并附上该条件。适配器所依赖的厂商表面约定锁定在 `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` 中，并对照实时的 CodeBuddy 文档进行快照。
 
 CodeBuddy 将 `~/.codebuddy/skills/` 记载为用户技能的位置，且没有提到 `~/.agents/skills/`，因此安装写入 CodeBuddy 的文件夹，而不是跨工具共享的那个文件夹。该文件夹只由 CodeBuddy 读取。它的技能页面列出了 `disable-model-invocation`、`user-invocable` 和 `allowed-tools`，没有列出 `metadata` 或 `argument-hint` 键；Apothem 尚未确认 CodeBuddy 是否接受它们。
 
@@ -166,8 +168,10 @@ apothem uninstall --harness codebuddy --project /path/to/project
 ## 合规闸门
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+请在你的项目文件夹中运行它。在 Windows 上，请用 `python` 代替 `python3`，并使用完整路径，因为 Windows PowerShell 和 cmd 不会展开 `~`：PowerShell 中为 `$HOME\.apothem\src\apothem\conformity\gate.py`，cmd 中为 `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`。该路径是安装程序放置引擎的位置，`-E -s` 让你的 `PYTHONPATH` 和用户 site-packages 不会进入闸门；[合规闸门](/docs/conformity-gate)解释了这两点以及其他安装方式。
 
 ## 故障排查
 

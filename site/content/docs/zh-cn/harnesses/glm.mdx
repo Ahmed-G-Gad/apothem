@@ -2,7 +2,7 @@
 title: "GLM (Z.ai)"
 description: "适用于 GLM（Z.ai）的 Apothem 工具适配器，将其作为可配置的模型后端。"
 machineTranslated: true
-sourceHash: "026e29a055db8a67"
+sourceHash: "fcd06518f021542b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -23,7 +23,7 @@ apothem install --harness glm --project /path/to/project
 
 适配器写入一个项目级提供方文件，记录 GLM 后端端点以及可由操作者配置的占位符。
 
-**写入的文件：** `<project>/.apothem/providers/glm.toml`
+**写入的文件：** `<project>/.apothem/providers/glm.toml`，以及每次项目安装都会创建的数据文件夹，默认为 `.apothem/`（`contexts/`、`learning/`、`memory/`、`plans/`）。
 
 ## 配置档案到原生配置的映射
 
@@ -41,7 +41,7 @@ Apothem 不锁定其中任何值，也不在它们之间做选择。
 
 ## 兼容性说明
 
-GLM 后端不暴露任何用于规则、命令、技能或钩子的表面，因此适配器只写入后端提供方文件，别无其他。Apothem 尚未检查 ZCode 是否暴露此类表面。你的 Z.ai 密钥和模型 ID 选择仍归操作者所有。适配器所依赖的厂商表面约定锁定在 `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md` 中，并对照实时的 Z.ai 文档进行快照。
+GLM 后端不暴露任何用于规则、命令、技能或钩子的表面，因此适配器写入后端提供方文件，而不写入上述任何表面。Apothem 尚未检查 ZCode 是否暴露此类表面。与每次项目安装一样，GLM 安装也会创建 Apothem 数据文件夹，默认为 `<project>/.apothem/`。你的 Z.ai 密钥和模型 ID 选择仍归操作者所有。适配器所依赖的厂商表面约定锁定在 `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md` 中，并对照实时的 Z.ai 文档进行快照。
 
 GLM 运行来自 Z.ai 的 GLM 模型系列；有关当前的后端、模型以及 Anthropic 兼容配置表面，请参见[厂商配置参考](https://docs.z.ai/devpack/tool/claude)。
 
@@ -76,8 +76,10 @@ apothem uninstall --harness glm --project /path/to/project
 ## 合规闸门
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+请在你的项目文件夹中运行它。在 Windows 上，请用 `python` 代替 `python3`，并使用完整路径，因为 Windows PowerShell 和 cmd 不会展开 `~`：PowerShell 中为 `$HOME\.apothem\src\apothem\conformity\gate.py`，cmd 中为 `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`。该路径是安装程序放置引擎的位置，`-E -s` 让你的 `PYTHONPATH` 和用户 site-packages 不会进入闸门；[合规闸门](/docs/conformity-gate)解释了这两点以及其他安装方式。
 
 ## 故障排查
 

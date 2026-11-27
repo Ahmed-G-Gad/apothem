@@ -2,7 +2,7 @@
 title: "对比"
 description: "如何将 Apothem 与手工维护的工具配置及其他配置方式进行比较评估，附功能矩阵和按工具划分的页面。"
 machineTranslated: true
-sourceHash: "3f105749820c670d"
+sourceHash: "e3a64866567c64ec"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,12 +18,12 @@ Apothem 是一个与宿主无关的 AI 工具配置管理器。位于 `~/.config
 | ---------- | :-----: | :----------------------------------: | :------: | :---: |
 | 从一个来源到多个工具的原生模式 | 是——十七个工具适配器 | 否——复制、符号链接或模板，不做翻译 | 是——60 个工具，外加 AGENTS.md 与 Agent Skills 标准 | 部分——规则拼接进每个工具的指令文件；MCP、技能和子代理以原生形式写入 |
 | 同步单元 | 规则、技能、子代理、斜杠命令、钩子、输出样式、状态栏、模板、合规校验器、模式、每个工具的指令模板，以及 Claude Code 的设置模板 | 任意文件 | 规则、忽略文件、MCP、命令、子代理、技能、钩子、权限、检查（代码评审检查指令） | 规则、MCP、技能、子代理 |
-| 治理语料（行为规则加上一道机械化的合规闸门） | 是——`python -m apothem.conformity.gate` | 否 | 否——其 `checks` 功能将代码评审检查同步到各工具；没有针对规则的合规闸门 | 否 |
+| 治理语料（行为规则加上一道机械化的合规闸门） | 是——`conformity/gate.py` 脚本 | 否 | 否——其 `checks` 功能将代码评审检查同步到各工具；没有针对规则的合规闸门 | 否 |
 | 确定性的计划与研究流水线 | 是——从 `/plan-spec` 到 `/plan-execute`，以及十三阶段的 `/research` | 否 | 否 | 否 |
 | 能检测并修复问题的审计堡垒 | 是——十一条命令的扫查，`/fortress` 重新审计循环 | 否 | 否 | 否 |
 | 跨会话的持久记忆 | 是——安装时创建于 Apothem 数据主目录下的 `memory/records.json` 存储 | 未作比较 | 其 README 中未说明 | 其 README 中未说明 |
 | 经供应链加固的发布 | 是——SBOM、Sigstore、SLSA、Scorecard 目标 | 未作比较 | 其 README 中未说明 | 其 README 中未说明 |
-| 可逆、经过验证的生命周期 | 是——备份、`apothem verify --json`、零孤儿卸载 | chezmoi：`chezmoi verify` 检查每个目标；Stow：仅符号链接 | 其 README 中未说明 | `.bak` 备份和 `ruler revert`；其 README 中没有 verify 命令 |
+| 可逆、经过验证的生命周期 | 是——备份、`apothem verify --json`、只移除 Apothem 自己的文件并报告它不得不保留哪些内容的卸载 | chezmoi：`chezmoi verify` 检查每个目标；Stow：仅符号链接 | 其 README 中未说明 | `.bak` 备份和 `ruler revert`；其 README 中没有 verify 命令 |
 
 凡是同类项目更强之处，都会点明：**rulesync** 覆盖的工具数量是 Apothem 的三倍多，并且同步 MCP、忽略文件、权限与评审检查，而 Apothem 清单并不同步这些内容；**ruler** 覆盖的工具数量接近 Apothem 的两倍，并且有自己的还原命令。Apothem 以原始工具数量为代价，换取围绕同步一并提供的治理、审计与生命周期纪律——一道合规闸门、确定性的计划与研究流水线、一座十一条命令的审计堡垒、持久记忆，以及可逆且经过验证的生命周期——而这两个同步工具都不具备这些。
 

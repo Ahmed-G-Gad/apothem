@@ -2,7 +2,7 @@
 title: "Gemini CLI"
 description: "适用于 Gemini CLI（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "231513ffdb2dcb22"
+sourceHash: "4b2afa3f4a237f9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,6 +29,8 @@ GEMINI.md
 .gemini/.apothem/support/
 ```
 
+项目还会获得每次项目安装都会创建的数据文件夹，默认为 `.apothem/`，其中包含 `contexts/`、`learning/`、`memory/` 和 `plans/`。
+
 ## 配置档案到原生配置的映射
 
 适配器读取 Apothem 的共享集合，并将每个集合经由一个与 Gemini 兼容的表面进行路由。Markdown 规则、模板和钩子材料保留在 `.gemini/.apothem/support/` 下，因为它们是支持材料，而不是 Gemini 原生的规则目录。
@@ -43,6 +45,8 @@ GEMINI.md
 ## 兼容性说明
 
 对于使用全局 Gemini 配置档案的工具，`~/.gemini/` 仍属于用户级范围。Gemini CLI 适配器只写入通过 `--project` 传入的项目。
+
+Gemini CLI 还会加载你主目录中其他 Apothem 安装会写入的两个位置：`~/.agents/skills/`（其用户技能层级的一部分，多个安装会在此写入 Apothem 的技能；[工具注册表](/docs/reference/harness-registry#shared-roots)列出了它们），以及 `~/.gemini/GEMINI.md`（[Antigravity](/docs/harnesses/antigravity) 安装会在此写入一个 Apothem 区块）。当其中任一位置已包含 Apothem 内容时，安装 `gemini-cli` 会打印一条说明，指出该位置以及写入它的安装。
 
 ## 验证
 
@@ -72,11 +76,15 @@ apothem uninstall --harness gemini-cli --project /path/to/project
 
 从 `<project>/GEMINI.md` 中移除 Apothem 区块，并保留其中的其他任何文本。仅当其中不再剩有任何其他内容时，才会删除该文件。同时移除 `<project>/.gemini/commands/`、`<project>/.gemini/skills/`、`<project>/.gemini/agents/` 和 `<project>/.gemini/.apothem/support/` 中的 Apothem 文件；这些文件夹中的其他文件保持不变。在更改之前，会将每个文件带时间戳的副本保存到 `~/.apothem/backups/` 下；项目中不会留下备份文件。共享配置档案 YAML 和 Apothem 引擎不受影响。
 
+早期版本（[更新日志](/docs/changelog)列出了它们）还会在每次安装和更新时，先把项目自己的 `skills/AGENTS.md`（位于项目根目录，而不是 `.gemini/` 下）复制到 `~/.apothem/backups/<timestamp>/gemini_cli/` 下的备份集中，然后将其删除。当前版本不会动这个文件。要找回它，请在再次运行 Apothem 之前把 `~/.apothem/backups/` 复制到别处，然后手动从该副本中把文件复制回项目。[更新日志](/docs/changelog#data-loss-in-earlier-releases-recover-your-files)给出了完整的恢复步骤。
+
 ## 合规闸门
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+请在你的项目文件夹中运行它。在 Windows 上，请用 `python` 代替 `python3`，并使用完整路径，因为 Windows PowerShell 和 cmd 不会展开 `~`：PowerShell 中为 `$HOME\.apothem\src\apothem\conformity\gate.py`，cmd 中为 `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`。该路径是安装程序放置引擎的位置，`-E -s` 让你的 `PYTHONPATH` 和用户 site-packages 不会进入闸门；[合规闸门](/docs/conformity-gate)解释了这两点以及其他安装方式。
 
 ## 故障排查
 
