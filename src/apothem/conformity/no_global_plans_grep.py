@@ -64,6 +64,7 @@ from typing import Final
 
 from apothem.conformity._git import run_git, split_names
 from apothem.conformity._grep_base import (
+    GIT_ENTRY,
     GIT_LS_FILES_TIMEOUT_SECONDS,
     GitCheckError,
     GitTimeoutError,
@@ -77,6 +78,7 @@ from apothem.conformity._grep_base import (
 )
 from apothem.conformity._project_paths import (
     DIR_ENTRY,
+    FILE_ENTRY,
     LINK_ENTRY,
     SKIPPED_FOLDER_ENTRY,
     note_skipped,
@@ -362,7 +364,12 @@ def _sweep_stray_plans_dirs(
             if has_git_entry(entry):
                 # A nested git checkout (a worktree, a submodule, a nested
                 # clone) is another repository with its own plans tree, not a
-                # stray suite of this project.
+                # stray suite of this project. A ``.git`` that is a link or a
+                # special file marks one too, but the folder is then left out
+                # because of it, so the report names that entry.
+                git_entry = entry / GIT_ENTRY
+                if path_kind(git_entry) not in (DIR_ENTRY, FILE_ENTRY):
+                    note_skipped(git_entry)
                 continue
             stack.append(entry)
     return findings

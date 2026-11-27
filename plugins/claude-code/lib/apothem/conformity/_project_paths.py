@@ -20,8 +20,9 @@ And a validator that checks a name, not content, still sees a link by that
 name (:func:`scan_entries`).
 
 Skip log. While a validator runs from the command line, every link and special
-file these helpers leave out is noted, so the report can list it
-(:func:`start_skip_log`, :func:`take_skipped_paths`): a link never hides a
+file these helpers leave out is noted, and so is every folder they could not
+list, so the report can list it (:func:`start_skip_log`,
+:func:`take_skipped_paths`): a link or an unreadable folder never hides a
 file or a tree without a trace.
 """
 
@@ -218,18 +219,44 @@ def path_kind(path: Path) -> EntryKind | None:
     return OTHER_ENTRY
 
 
+# The Windows errors that say a listed folder is not there: the file (2) or
+# the path (3) is not found, or the name is not a folder (267).
+_NOT_THERE_WINERRORS: Final[frozenset[int]] = frozenset({2, 3, 267})
+
+
+def _listing_absent(exc: OSError) -> bool:
+    """Return True when *exc*, from listing a folder, means there is no folder.
+
+    A folder that is gone, or a name that is not a folder, hides nothing. On
+    Windows a path too long (206) and other failures also raise
+    :class:`FileNotFoundError`; only the codes in
+    :data:`_NOT_THERE_WINERRORS` mean nothing is there to list.
+    """
+    if isinstance(exc, NotADirectoryError):
+        return True
+    if not isinstance(exc, FileNotFoundError):
+        return False
+    code = getattr(exc, "winerror", None)
+    return code is None or code in _NOT_THERE_WINERRORS
+
+
 def scan_entries(folder: Path) -> list[tuple[Path, EntryKind]]:
     """Return every entry of *folder* with what it is, links included.
 
     Pre-conditions: the caller already trusts *folder* (see
-    :func:`list_real_entries`). Post-conditions: no link is followed and
-    nothing is noted; a folder that cannot be listed gives an empty list. For
-    a validator that checks names, such as a stray plans folder that is a link.
+    :func:`list_real_entries`). Post-conditions: no link is followed and no
+    entry is noted; a folder that cannot be listed gives an empty list. When
+    it is there but cannot be listed (no access, a path too long, an I/O
+    error), *folder* itself is noted in the skip log, so the files it may
+    hold are not left out without a trace (:func:`_listing_absent`). For a
+    validator that checks names, such as a stray plans folder that is a link.
     """
     try:
         with os.scandir(folder) as listing:
             entries = list(listing)
-    except OSError:
+    except OSError as exc:
+        if not _listing_absent(exc):
+            note_skipped(folder)
         return []
     found: list[tuple[Path, EntryKind]] = []
     for entry in entries:
@@ -267,7 +294,7 @@ def list_real_entries(
     None, is a caller that looks at every file name, so each one is noted;
     a caller that wants folders only passes :func:`no_files`. The order is
     the host's listing order; callers sort. A folder that cannot be listed
-    gives an empty list.
+    gives an empty list, and is noted when it is there (:func:`scan_entries`).
     """
     kept: list[Path] = []
     for path, kind in scan_entries(folder):

@@ -334,7 +334,9 @@ def _read_head_subject(root: Path) -> tuple[str | None, str, str | None]:
     ``git-failed`` (git refused the repository: another owner, a bad
     configuration line, an include it cannot read). The subject is None for
     every non-``ok`` status so the caller can short-circuit; ``check_error``
-    says why for the last two, and is None otherwise. git runs through
+    says why for the last two, and for ``not-a-git-repo`` when a ``.git``
+    entry on git's search path is a link (git was not run), and is None
+    otherwise. git runs through
     :func:`~apothem.conformity._git.run_git`, so the repository's own settings
     cannot make it start a program (a signature check, say).
     """
@@ -358,7 +360,12 @@ def _read_head_subject(root: Path) -> tuple[str | None, str, str | None]:
         # Not a link: the gate could not look, so the check has not earned
         # the exemption of a folder outside a checkout.
         return None, "git-failed", linked_git_message(root, linked)
-    if linked is not None or not in_checkout(root):
+    if linked is not None:
+        # A link: git would read another repository, so the root's own
+        # history, if any, is unread. The status stays the one outside a
+        # checkout, and the sentence says why the check does not pass.
+        return None, "not-a-git-repo", linked_git_message(root, linked)
+    if not in_checkout(root):
         return None, "not-a-git-repo", None
     try:
         prefix = _work_tree_prefix(root)
@@ -504,7 +511,9 @@ def check_repo(root: Path) -> GrepResult:
     ``root`` that tracks no file in it, or no commits yet. A ``.git`` entry
     git cannot open (an empty ``.git`` folder, say) is not exempt: when git
     finds no repository it can use, it fails and the status is
-    ``git-failed``. A git command
+    ``git-failed``. A ``.git`` entry on git's search path that is a link
+    gives ``not-a-git-repo`` with ``passed`` False and a ``check_error``
+    that names the link. A git command
     past ``GIT_TIMEOUT_SECONDS`` gives status ``git-timeout``, and a git that
     refused the repository gives ``git-failed``: both have ``passed`` False
     and a ``check_error`` that names the command.

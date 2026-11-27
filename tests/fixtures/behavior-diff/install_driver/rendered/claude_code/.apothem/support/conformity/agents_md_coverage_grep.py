@@ -374,9 +374,11 @@ def _read_history(root: Path) -> _History | None:
     ``--name-status`` says whether that commit deleted it.
     ``--relative -- .`` limits the pass to history under *root* and names
     paths relative to it, so they match :func:`meaningful_folders` when *root*
-    is a subtree of the repository. git runs through :func:`run_git`, which
-    turns off the repository's program-running settings (a signature check,
-    say) and prints non-ASCII path names as they are, decoded as UTF-8.
+    is a subtree of the repository. ``-z`` ends each header, status and name
+    with NUL and prints every name unquoted, read as file names, so a name
+    that holds a quote, a backslash or a control character keeps its time.
+    git runs through :func:`run_git`, which turns off the repository's
+    program-running settings (a signature check, say).
     Returns None when git history is unavailable (no repository, a ``.git``
     entry that is a link in *root* or a folder above it, so git is not run,
     no commit yet, git absent, or a partial clone whose read failed, whatever
@@ -418,6 +420,7 @@ def _read_history(root: Path) -> _History | None:
         completed = run_git(
             [
                 "log",
+                "-z",
                 "--format=%x1e%ct",
                 "--name-status",
                 "--no-renames",
@@ -427,6 +430,7 @@ def _read_history(root: Path) -> _History | None:
             ],
             cwd=root,
             timeout=GIT_HISTORY_TIMEOUT_SECONDS,
+            file_names=True,
             discover=True,
         )
     except subprocess.TimeoutExpired as exc:
@@ -449,18 +453,24 @@ def _read_history(root: Path) -> _History | None:
     times: dict[str, int] = {}
     deleted: set[str] = set()
     current_ct: int | None = None
-    # Split on "\n" only: str.splitlines() also breaks at the \x1e record
-    # marker, which would strip it from every header line.
-    for raw_line in completed.stdout.split("\n"):
-        if raw_line.startswith("\x1e"):
-            stamp = raw_line[1:].strip()
+    # With -z each commit is "\x1e<time>\0", then "\n" before its first
+    # change, and each change is "<status>\0<name>\0". A name is taken by
+    # its position after a status, never by its text, and is kept whole:
+    # stripping would change a name that starts or ends with a space.
+    tokens = completed.stdout.split("\0")
+    index = 0
+    while index < len(tokens):
+        token = tokens[index].lstrip("\n")
+        index += 1
+        if token.startswith("\x1e"):
+            stamp = token[1:].strip()
             current_ct = int(stamp) if stamp.isdigit() else None
             continue
-        # A change line is "<status>\t<name>". The name is as git printed it:
-        # core.quotePath=false keeps a non-ASCII name unquoted, and stripping
-        # would change a name that starts or ends with a space.
-        status, tab, path = raw_line.partition("\t")
-        if not tab or not path or current_ct is None:
+        if not token or index >= len(tokens):
+            continue
+        status, path = token, tokens[index]
+        index += 1
+        if not path or current_ct is None:
             continue
         # Newest-first: keep only the first (most recent) commit per path.
         if path not in times:

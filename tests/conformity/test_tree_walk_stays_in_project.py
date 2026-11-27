@@ -995,7 +995,7 @@ def test_the_commit_subject_refuses_a_linked_git(tmp_path: Path) -> None:
     assert conventional_commit_grep._read_head_subject(root) == (
         None,
         "not-a-git-repo",
-        None,
+        _LINKED_GIT_MESSAGE,
     )
     assert take_skipped_paths() == [".git"]
 
@@ -1111,7 +1111,7 @@ def test_the_commit_subject_refuses_a_linked_git_above_the_root(
     assert conventional_commit_grep._read_head_subject(inner) == (
         None,
         "not-a-git-repo",
-        None,
+        _above_message(inner),
     )
     assert take_skipped_paths() == [_project_git(inner).as_posix()]
 
@@ -1148,6 +1148,7 @@ def test_the_commit_command_does_not_pass_with_a_linked_git_above_the_root(
     assert code != 0
     assert payload["status"] == "not-a-git-repo"
     assert payload["passed"] is False
+    assert payload["check_error"] == _above_message(inner)
     assert payload["skipped_links"] == [_project_git(inner).as_posix()]
 
 
@@ -1168,9 +1169,12 @@ def _plain_repository_with_a_hook_git_dir(
     """Return a plain repository while ``GIT_DIR`` names the other one.
 
     git exports ``GIT_DIR`` to the hooks it runs; a check run from a hook must
-    still read the repository it finds from its root.
+    still read the repository it finds from its root. The other repository
+    is a partial clone to git (a true ``remote.origin.promisor``), so a
+    promisor read that took ``GIT_DIR`` would call the plain one partial.
     """
     other = _project_with_linked_git(tmp_path).parent / "other"
+    _git(other, "config", "remote.origin.promisor", "true")
     plain = _real_repository(tmp_path / "plain")
     _write(plain / "a.txt")
     _git(plain, "config", "user.email", "test@apothem.invalid")
@@ -1214,6 +1218,28 @@ def test_a_git_dir_from_a_hook_does_not_redirect_the_coverage_history(
     assert history is not None
     assert set(history.times) == {"a.txt"}
     assert not agents_md_coverage_grep._is_partial_clone(plain)
+
+
+def test_a_git_dir_from_a_hook_does_not_redirect_the_coverage_prefix(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The history read finds a subfolder root below the top, not at it.
+
+    With ``GIT_DIR`` taken, git would treat the subfolder as the top of the
+    work tree, and a root below the top would read as the top.
+    """
+    plain = _plain_repository_with_a_hook_git_dir(tmp_path, monkeypatch)
+    hook_git_dir = os.environ["GIT_DIR"]
+    # The fixture commit itself must land in the plain repository.
+    monkeypatch.delenv("GIT_DIR")
+    _write(plain / "sub" / "b.txt")
+    _git(plain, "add", "-A")
+    _git(plain, "commit", "-qm", "fix: a subfolder")
+    monkeypatch.setenv("GIT_DIR", hook_git_dir)
+    history = agents_md_coverage_grep._read_history(plain / "sub")
+    assert history is not None
+    assert set(history.times) == {"b.txt"}
+    assert history.root_is_top is False
 
 
 def _lstat_error(kind: str, path: Path) -> OSError:

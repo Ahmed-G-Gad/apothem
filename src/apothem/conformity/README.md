@@ -208,9 +208,15 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   opened by name, so the reopened path could be a junction beside it. A
   check that reads no content, such as `naming-grep`, walks with
   `include_links=True` to see each link by its own name. The helpers note
-  every link and special file they leave out, and `finish_root_report` lists
-  them under `skipped_links`; a run that inspected nothing while it left a
-  link out does not pass, even when an empty scope is expected.
+  every link and special file they leave out, every folder `scan_entries`
+  could not list (no access, a path too long), and the `.git` entry of a
+  nested checkout the walk skipped when that entry is a link or a special
+  file; `finish_root_report` lists them under `skipped_links`. A run that
+  inspected nothing while it left a link out does not pass, even when an
+  empty scope is expected. The helpers look at each level and the caller
+  then opens the file by name, so a writer racing the gate can swap a checked
+  entry for a link before the open; only the `--all-perwrite` corpus opens
+  without following the last level (`_corpus._open_binary`).
   `tests/conformity/test_validators_stay_in_project.py` runs every `--all`
   validator against a project made of links. Add each file a new validator
   reads to its `_project_files` (or, for a file read only after another one
@@ -248,8 +254,12 @@ scope/short-circuit logic. The invariants a matcher must hold to:
   `conventional_commit_grep._read_head_subject`; `conventional-commit-grep`
   asks git itself (`rev-parse --show-prefix`) whether the work tree's top is
   above the root. The `--staged` checks (`production-ready-pr-grep` and
-  `semver-stability-grep` with `--staged`) run git in the current folder
-  without this guard and are not part of `--all` or `--all-perwrite`.
+  `semver-stability-grep` with `--staged`), which are not part of `--all` or
+  `--all-perwrite`, call `refuse_linked_git` on the folder git runs in before
+  git runs; it raises a `GitCheckError` with the same sentence, which they
+  report as `check_error`. They run git without `discover=True`, so a hook's
+  `GIT_DIR` still names the repository. `conventional-commit-grep` reports a
+  link with the status `not-a-git-repo` and a `check_error` that names it.
 
 - **No unfinished pass.** A check that could not finish does not pass either.
   Give every `run_git` call a timeout, far above what the command takes, since

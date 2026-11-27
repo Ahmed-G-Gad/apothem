@@ -153,6 +153,16 @@ class GitEntryUnreadableError(GitCheckError):
     """
 
 
+class GitEntryLinkedError(GitCheckError):
+    """A ``.git`` entry on git's search path is a link, so git was not run.
+
+    Raised by :func:`refuse_linked_git` for a check that reports a refusal as
+    its ``check_error``, such as a ``--staged`` check: git would follow the
+    link to another repository. The message is the sentence
+    ``linked_git_message`` gives, naming the entry.
+    """
+
+
 class GitFailedError(GitCheckError):
     """A git command failed in a repository that is there.
 
@@ -790,7 +800,9 @@ def nearest_linked_git_entry(root: Path) -> Path | None:
     "Project files only, never through a link"); the English usage page and
     the changelog state the same boundary. Every check in the ``--all`` and
     ``--all-perwrite`` set that runs git calls this first and runs git with
-    ``discover=True``; the ``--staged`` checks do not.
+    ``discover=True``. The ``--staged`` checks call it too, through
+    :func:`refuse_linked_git` on the folder git runs in; they keep the
+    repository a hook's ``GIT_DIR`` names.
     """
     # What this look finds replaces what an earlier one found.
     _unreadable_entries.discard(os.fspath(root / GIT_ENTRY))
@@ -814,6 +826,25 @@ def nearest_linked_git_entry(root: Path) -> Path | None:
             note_skipped(entry)
             return entry
     return None
+
+
+def refuse_linked_git(folder: Path) -> None:
+    """Raise when git must not run in *folder* (see :func:`nearest_linked_git_entry`).
+
+    For a check that runs git in *folder* and reports a refusal as its
+    ``check_error``. Raises :class:`GitEntryUnreadableError` when a ``.git``
+    entry on git's search path could not be looked at, and
+    :class:`GitEntryLinkedError` when one is a link (noted in the skip log);
+    the message is :func:`linked_git_message`'s sentence. Returns when git
+    may run.
+    """
+    entry = nearest_linked_git_entry(folder)
+    if entry is None:
+        return
+    message = linked_git_message(folder, entry)
+    if git_entry_unreadable(entry):
+        raise GitEntryUnreadableError(message)
+    raise GitEntryLinkedError(message)
 
 
 def _absent(exc: OSError, entry: Path) -> bool:
@@ -955,7 +986,9 @@ def iter_tree_files(
     named pipe, a device or a socket; each one it leaves out is noted in the
     skip log (see ``_project_paths``). A link that points inside ``root`` is
     skipped too; what it points to is yielded under its own path when the
-    walk reaches it. A directory it cannot read is skipped.
+    walk reaches it. A nested checkout whose ``.git`` is a link or a special
+    file is noted by that entry, and a directory it cannot list (no access,
+    a path too long) by its own path (see ``scan_entries``).
     """
     # Names match as the host's path rules spell them (os.path.normcase);
     # ``.git`` is judged on its own (:func:`_is_git_entry`).
@@ -982,14 +1015,20 @@ def iter_tree_files(
         folder, is_root = stack.pop()
         entries = scan_entries(folder)
         # The root's own ``.git`` marks the checkout being inspected; one
-        # below it marks a nested checkout, which is skipped whole.
+        # below it marks a nested checkout, which is skipped whole. A
+        # ``.git`` that is a link (dangling or not) or a special file marks
+        # one too, for git, but it is noted: the folder is left out because
+        # of a link, which must not hide it without a trace.
         listed = frozenset(path.name for path, _ in entries)
-        if (
-            prune
-            and not is_root
-            and any(_is_git_entry(path, listed) for path, _ in entries)
-        ):
-            continue
+        if prune and not is_root:
+            git_entries = [
+                (path, kind) for path, kind in entries if _is_git_entry(path, listed)
+            ]
+            if git_entries:
+                for path, kind in git_entries:
+                    if kind not in (DIR_ENTRY, FILE_ENTRY):
+                        note_skipped(path)
+                continue
         files: list[Path] = []
         folders: list[Path] = []
         for path, kind in sorted(entries, key=lambda entry: entry[0].name):
