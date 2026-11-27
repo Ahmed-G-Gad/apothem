@@ -22,7 +22,7 @@ Halaman ini mencatat pengaturan yang aktif secara persis, sebagaimana terakhir d
 | **Wajibkan pemeriksaan status lulus** | `required_status_checks` | ✅ | 12 konteks yang tercantum di bawah [Pemeriksaan status wajib](#pemeriksaan-status-wajib) harus lulus. |
 | **Wajibkan branch dalam keadaan terkini sebelum merge** | `required_status_checks.strict` | ❌ | Pull request dapat di-merge ketika pemeriksaan wajibnya lulus terhadap `main` yang lebih lama. Alur kerja yang berjalan pada push ke `main` kemudian menguji hasil merge tersebut. |
 | **Wajibkan resolusi percakapan sebelum merge** | `required_conversation_resolution` | ✅ | Thread tinjauan yang terbuka memblokir merge. |
-| **Wajibkan commit yang ditandatangani** | `required_signatures` | ❌ | Commit rilis masuk ke `main` sebagai squash merge yang ditandatangani GitHub dengan kuncinya sendiri; tanda tangan pengelola ada pada tag rilis. Penegakan menunggu hingga dokumentasi onboarding kontributor menjelaskan penyiapan penandatanganan SSH atau GPG. |
+| **Wajibkan commit yang ditandatangani** | `required_signatures` | ❌ | Commit rilis masuk ke `main` sebagai squash merge yang ditandatangani GitHub dengan kuncinya sendiri; tanda tangan pemelihara ada pada tag rilis. Penegakan menunggu hingga dokumentasi onboarding kontributor menjelaskan penyiapan penandatanganan SSH atau GPG. |
 | **Wajibkan riwayat linear** | `required_linear_history` | ✅ | Menjaga riwayat publik `main` tetap satu garis. |
 | **Kunci branch** | `lock_branch` | ❌ | `main` menerima merge. |
 | **Jangan izinkan melewati pengaturan di atas** | `enforce_admins` | ❌ | Pengaturan di atas tidak mengikat admin repositori. Admin dapat melakukan merge tanpa pemeriksaan wajib atau push langsung ke `main`. |

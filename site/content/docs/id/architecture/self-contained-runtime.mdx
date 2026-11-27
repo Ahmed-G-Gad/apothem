@@ -2,7 +2,7 @@
 title: "Runtime mandiri"
 description: "Cara mesin Apothem berjalan dari checkout mana pun — dependensi yang di-vendor, model invokasi PYTHONPATH=src, dan bootstrap pohon plugin."
 machineTranslated: true
-sourceHash: "df04c51efc417e4a"
+sourceHash: "dc1f19f84eb15409"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -55,16 +55,20 @@ gantinya, mesin memiliki dua permukaan invokasi:
 
 | Permukaan | Invokasi | Konteks |
 | ------- | ---------- | ------- |
-| CLI mesin | `python -m apothem <command>` | Pohon sumber dengan `src/` di `PYTHONPATH` (checkout, cache npx, pohon plugin) |
+| CLI mesin | `apothem <command>`; dari checkout, `PYTHONPATH=src python -m apothem <command>` | Shim `apothem` milik pemasang dan peluncur npm menjalankan paket dari pohon sumbernya dengan folder saat ini dijauhkan dari `sys.path`; bentuk `-m` ditujukan untuk checkout yang Anda percayai |
 | Runtime hook | `<resolved CPython> -E -s "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Materialisasi Claude Code: salinan di bawah pohon `.apothem/support/` bersama milik akar harness, melalui jalur absolut |
 
-- `python -m apothem` menjalankan `src/apothem/__main__.py`, yang menempatkan
+- Entry point mesin, `src/apothem/__main__.py`, menempatkan
   `src/apothem/_vendor` di `sys.path`, memeriksa bahwa `click` dan `rich` dapat
   diimpor, lalu memanggil `apothem.cli:main` — grup command Click.
+  `python -m apothem` menjalankannya secara langsung. Shim `apothem` dan peluncur
+  npm menjalankannya melalui `runpy` dari program `-c` yang terlebih dahulu
+  menghapus folder saat ini dari `sys.path`.
 - Entri hook dalam `settings.json` / `hooks.json` yang termaterialisasi
   memanggil dispatcher (dan, untuk Claude Code, gerbang konformitas di
   `<harness-root>/.apothem/support/conformity/gate.py`) melalui jalur skrip
-  absolut. Keduanya adalah skrip stdlib mandiri yang mem-bootstrap `sys.path`
+  absolut, dengan memulai Python menggunakan `-E -s` sehingga tidak ada variabel
+  `PYTHON*` dan tidak ada site-packages pengguna yang mencapai hook. Keduanya adalah skrip stdlib mandiri yang mem-bootstrap `sys.path`
   miliknya sendiri, dan fixture skema milik gerbang ikut berada di sampingnya di
   `<harness-root>/.apothem/support/schemas/`, sehingga hook berjalan **tanpa
   paket `apothem` yang dapat diimpor di host**. Templat membawa token
@@ -75,14 +79,28 @@ gantinya, mesin memiliki dua permukaan invokasi:
   `python -m apothem.conformity.gate` menjalankan kode yang sama untuk
   pengembangan.
 
-Direktori paket menjadi dapat diimpor dengan menambahkan direktori `src/` milik
-checkout di awal `PYTHONPATH`:
+Di dalam checkout, direktori paket menjadi dapat diimpor dengan menambahkan
+direktori `src/` milik checkout di awal `PYTHONPATH`:
 
 ```bash
 PYTHONPATH=src python -m apothem <command>    # from the checkout root
 ```
 
-Ketika peluncur `apothem` tidak ada di PATH, `install.sh` mencetak bentuk ini saat selesai, dengan direktori vendor diletakkan di depan `src/` dan CPython yang di-resolve-nya menggantikan `python`. `install.ps1` mencetak dua pengaturan yang sama dalam bentuk PowerShell: penugasan `$env:PYTHONPATH` yang menggabungkan direktori vendor dan `src/` dengan `;`, lalu `& '<CPython>' -m apothem <command>`.
+`-m` membaca modul dari folder saat ini terlebih dahulu, jadi jalankan bentuk
+ini hanya dari akar checkout atau folder lain yang Anda percayai.
+
+Pemasang tidak pernah mencetak perintah `-m`. Ketika perintah `apothem` tidak ada
+di `PATH` saat selesai, `install.sh` dan `install.ps1` mencetak jalur lengkap
+shim `apothem` yang mereka tempatkan. Ketika tidak ada shim yang dapat
+ditempatkan, keduanya mencetak perintah mandiri sebagai gantinya. `install.sh`
+mencetak
+`PYTHONSAFEPATH=1 PYTHONPATH='<vendor>:<src>' '<CPython>' -c '<program>'`,
+diikuti perintahnya. `install.ps1` mencetak blok PowerShell yang menetapkan
+`PYTHONSAFEPATH` dan `PYTHONPATH` (folder vendor dan `src/` digabungkan dengan
+`;`) untuk satu kali jalankan `& '<CPython>' -c "<program>"`, lalu mengembalikan
+keduanya. Program tersebut menghapus folder saat ini dari `sys.path` dan
+menjalankan paket `apothem`; `PYTHONSAFEPATH=1` mencegah Python 3.11 dan yang
+lebih baru menambahkan folder itu sejak awal.
 
 ## Bootstrap pohon plugin
 
@@ -130,5 +148,5 @@ Ketika dijalankan dari pohon sumber, pemasang menggunakan ulang pelokasi
 
 ## Langkah Berikutnya yang Direkomendasikan
 
-**Jalankan `python -m apothem --help`** dengan direktori `src/` milik checkout
-di `PYTHONPATH` untuk memastikan jalur CLI mandiri ter-resolve di host Anda.
+**Jalankan `PYTHONPATH=src python -m apothem --help`** dari akar checkout
+Apothem untuk memastikan jalur CLI mandiri ter-resolve di host Anda.

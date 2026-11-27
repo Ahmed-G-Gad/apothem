@@ -2,7 +2,7 @@
 title: "update"
 description: "Referensi CLI untuk perintah apothem update."
 machineTranslated: true
-sourceHash: "0f47915f4f7819de"
+sourceHash: "7e96f7b81b7e328d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,14 +19,93 @@ apothem update --harness NAME|all [--profile PATH] [--dry-run]
 
 `update` mematerialisasi ulang keluaran harness dari profil bersama saat ini.
 Perintah ini menggunakan validasi profil, pemilihan `--harness all`, pemeriksaan
-cakupan proyek, perilaku dry-run, dan amplop JSON yang sama dengan `install`.
+cakupan proyek, perilaku dry-run, dan amplop JSON yang sama dengan `install`,
+serta mencetak pemberitahuan yang sama, termasuk catatan `instruction_override`
+ketika sebuah berkas milik Anda membuat alat tidak memuat apa yang ditulis
+Apothem (lihat
+[`install`](/docs/cli-reference/install)). Seperti `install`, perintah ini
+mencatat folder `--project` yang di-resolve, dan memindahkan pemasangan yang
+tercatat dengan ejaan lain dari folder itu ke folder tersebut. Perintah ini juga
+memperingatkan tentang berkas yang memuat penanda BEGIN tanpa penanda END
+setelahnya: teks setelah penanda itu dipertahankan apa adanya, dan blok Apothem
+ditulis terpisah darinya, sehingga peringatan itu menyebutkan baris penandanya,
+memberikan langkah bernomor yang mengubah baris itu, dan meminta Anda untuk
+tidak menambahkan kembali penanda END sebagai gantinya, karena itu akan
+menyisakan dua blok Apothem (lihat
+[Pemecahan masalah](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
+Berkas yang memuat dua blok utuh atau lebih di antara penanda Apothem dibiarkan
+apa adanya, dengan peringatan yang menyebutkan setiap blok berdasarkan
+baris-barisnya (lihat
+[Sebuah berkas memuat dua blok di antara penanda Apothem](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)).
+Berkas tempat Apothem tidak dapat membedakan bloknya dari teks Anda, misalnya
+bloknya berada di dalam blok kode milik Anda, dibiarkan apa adanya selama
+catatan pemasangan mencantumkannya (ledger pemasangan yang tidak dapat dibaca
+dihitung sebagai catatan; catatan yang dibuat dengan ejaan lain dari folder itu,
+misalnya folder home Anda yang dicapai melalui tautan, juga dihitung, seperti
+halnya pada pencopotan, ketika ejaan yang Anda gunakan untuk menjalankan
+perintah memiliki pemasangannya sendiri yang masih ada dan alat itu menulis
+[folder bersama di direktori home Anda](/docs/cli-reference/install#folders-in-your-home-directory)),
+dengan peringatan yang menyebutkan setiap pasangan
+penanda di dalamnya dan cara memperbaikinya (lihat
+[Apothem tidak dapat membedakan bloknya dari teks Anda](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+Hal itu juga berlaku di samping penanda BEGIN yang tidak memulai pasangan
+penanda apa pun, misalnya sisa blok Apothem setelah penanda END-nya hilang:
+peringatan menyebutkan penanda BEGIN itu terlebih dahulu, dan setiap perbaikan
+bernomor dalam peringatan mengubahnya. Tanpa catatan pemasangan, pasangan penanda yang Anda kutip dalam kode adalah teks Anda,
+dan update menambahkan bloknya setelah pasangan itu, dengan atau tanpa penanda
+BEGIN seperti itu, kecuali pasangan itu memuat persis blok yang ditulis update:
+dalam hal itu update membiarkan berkas apa adanya, dengan peringatan tersebut.
+Berkas tempat penanda BEGIN di luar kode memiliki penanda END-nya di dalam kode,
+dengan pasangan penanda lain setelahnya, dibiarkan apa adanya dengan peringatan
+tersebut, ada catatan atau tidak. Aturan dalam profil Anda yang membuka blok kode
+dan tidak pernah menutupnya tidak menyebabkan hal itu untuk blok yang ditulis
+update: update menutup blok kode itu di akhir blok. Blok yang ditulis rilis
+sebelumnya dari aturan seperti itu tidak memiliki baris penutup seperti itu,
+sehingga dapat menyebabkannya. Blok kode milik Anda yang dibuka di atas blok
+Apothem dan tidak pernah ditutup adalah kasus yang berbeda: baris penutup di
+dalam blok menutupnya, sehingga blok terbaca sebagai kode, dan update yang
+menulis blok seperti itu langsung memperingatkan dan menyebutkan blok kode yang
+perlu ditutup di atas penanda BEGIN. Dry run membaca berkas sebelum apa pun
+ditulis, sehingga tidak menunjukkan bahwa blok akan terbaca sebagai kode setelah
+ditulis. Dalam dry run, peringatan untuk berkas yang dibiarkan apa adanya
+menyatakan bahwa Apothem "would leave the file as it is".
+
+Update yang membiarkan berkas apa adanya karena baris penandanya (dua blok utuh
+atau lebih, atau pasangan penanda yang tidak dapat ditempatkan Apothem) berakhir
+sebagai parsial, seperti halnya pemasangan: alat tidak mendapat blok Apothem
+terkini dari berkas itu, sehingga sebagai pengganti baris `✓`, update mencetak
+baris `✗` di standard error yang menyebutkan berkasnya, `status` amplop
+`--format json` bernilai `"partial"` dan peringatan berkas itu membawa
+`"detail": {"left_as_is": "1"}`, dan kode keluarnya `2`. Setiap update berakhir
+seperti itu sampai Anda memperbaiki baris penanda yang disebutkan peringatan;
+contoh penanda milik Anda di dalam blok kode juga menahan berkas seperti itu,
+sampai Anda mengubah baris penanda BEGIN-nya. Tanpa `--quiet`, update seperti itu
+dengan `--harness all` diakhiri dengan baris ringkasan yang diawali `!` sebagai
+pengganti `✓` dan menghitung berkas yang dibiarkan apa adanya:
+`! Updated <n> harnesses (<m> files written); <k> file(s) left as they are, named above.`
+Dry run tetap berakhir dengan `status` `"dry_run"` dan kode keluar `0`.
+
+Di setiap folder yang ditulisi Apothem (folder skill, berkas pendukung di bawah
+`.apothem/support/`), `update` membandingkan setiap entri yang ditulisnya. Entri
+berkas ditulis ulang ketika berbeda. Entri folder (sebuah skill, folder skill
+milik sebuah command, atau folder di dalam berkas pendukung seperti `hooks/lib/`)
+diganti utuh ketika ada isinya yang berbeda dari apa yang ditulis rilis ini di
+sana: update mencadangkannya terlebih dahulu di bawah `~/.apothem/backups/`,
+sehingga berkas yang Anda tambahkan di dalamnya, atau berkas Apothem yang Anda
+sunting, hilang darinya setelah itu. Salin berkas seperti itu dari set cadangan,
+atau pindahkan keluar sebelum Anda menjalankan update. Berkas milik Anda yang
+langsung berada di folder yang ditulisi Apothem (misalnya
+`.apothem/support/hooks/mine.py`) dan folder milik Anda sendiri di samping folder
+Apothem tidak disentuh.
 
 Untuk adapter berlingkup-proyek yang menulis skill ke direktori home Anda
 (lihat [`install`](/docs/cli-reference/install#folders-in-your-home-directory)),
 `update` juga memperbarui folder tersebut dan mencetak `Note:` yang sama yang
 menyebutkannya. Adapter yang dipasang sebelum ia menulis skill mendapatkannya
-pada update berikutnya. Folder skill yang tidak ditulis oleh Apothem dilewati
-dengan peringatan, seperti pada [`install`](/docs/cli-reference/install#folders-in-your-home-directory).
+pada update berikutnya. Folder skill yang tidak ditulis oleh Apothem, atau yang
+tidak dapat dibuktikan ditulis olehnya, dilewati dengan peringatan yang
+memberikan perbaikannya, seperti pada
+[`install`](/docs/cli-reference/install#folders-in-your-home-directory).
 Pemasangan yang sebelumnya menulis folder skill bersama ditulis ulang ke dalam
 bentuk yang dibagikan oleh setiap pemasangan pada update berikutnya; setiap
 folder yang berubah dicadangkan terlebih dahulu.
@@ -68,7 +147,9 @@ Alias bentuk-kontinu `apothem updating` (juga diterima sebagai
 }
 ```
 
-`--dry-run` mengembalikan `status: "dry_run"` dan `files_written: []`.
+`--dry-run` mengembalikan `status: "dry_run"` dan `files_written: []`. Update
+yang membiarkan berkas apa adanya karena baris penanda Apothem-nya mengembalikan
+`status: "partial"` dan keluar dengan kode `2`.
 
 ## Contoh
 
@@ -86,7 +167,7 @@ apothem updating --harness claude-code   # lowercase variant
 |---|---|
 | 0 | Adapter berhasil diperbarui atau dry-run direncanakan dengan bersih |
 | 1 | Galat validasi, profil, harness, proyek, atau adapter yang diharapkan |
-| 2 | Materialisasi batch parsial setelah setidaknya satu penulisan |
+| 2 | Parsial: batch berhenti setelah setidaknya satu penulisan, atau update membiarkan berkas tempat Apothem menyimpan bloknya apa adanya karena baris penanda Apothem-nya; `status` bernilai `"partial"` |
 | 64 | Galat penggunaan: opsi atau perintah yang tidak dikenal, atau nilai opsi yang hilang atau tidak valid. Di bawah `--json`, galat berupa amplop JSON dengan kode `cli.usage`. |
 
 ## Lihat juga

@@ -2,7 +2,7 @@
 title: "rollback"
 description: "Referensi CLI untuk perintah apothem rollback."
 machineTranslated: true
-sourceHash: "398c0c678cace0b4"
+sourceHash: "a11c2a565e94b5b4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,17 +18,50 @@ apothem rollback --harness NAME|all [--install-id ULID | --last] [--yes]
 ```
 
 `rollback` mengembalikan setiap harness yang dipilih ke keadaan sebelum putaran
-pemasangan yang tercatat — yang terbaru secara default, atau yang disebutkan
-oleh `--install-id`. Dengan menelusuri catatan ledger pemasangan tersebut,
+pemasangan yang tercatat — secara default pemasangan terbaru yang masih
+berlaku, atau yang disebutkan oleh `--install-id`. Karena itu, `rollback` kedua
+membatalkan pemasangan sebelum pemasangan yang dibatalkan oleh yang
+pertama. `--install-id` yang menyebutkan pemasangan yang sudah dibalikkan oleh
+rollback atau pencopotan pemasangan ditolak dengan `rollback.already_reversed`
+(keluar 1), dan tidak ada yang berubah. Dengan menelusuri catatan ledger pemasangan tersebut,
 dimulai dari perubahan terbaru, perintah ini:
 
 - memulihkan setiap berkas dan direktori yang ditimpa oleh pemasangan dari
   cadangan yang ditangkap pemasangan tersebut, di jalurnya yang tercatat
   (direktori yang diganti oleh pemasangan dipulihkan persis, tanpa berkas yang
   ditambahkan pemasangan ke dalamnya);
-- menghapus setiap berkas dan direktori yang dibuat oleh pemasangan, dan
-  mengembalikan jalur tata letak warisan apa pun yang disingkirkan oleh
-  pemasangan;
+- menghapus setiap berkas dan direktori yang dibuat oleh pemasangan, selama
+  isinya masih sama dengan yang ditulis pemasangan itu: berkas yang Anda buat
+  di jalur itu sejak saat itu, atau yang Anda sunting, tetap ada dengan baris
+  `Warning:` (entri `warnings` di bawah `--json`), begitu pula folder yang
+  memuatnya. Folder kosong di dalam folder yang dibuat pemasangan dihapus,
+  termasuk yang Anda buat. Baris itu mencantumkan setiap berkas yang
+  dipertahankan, termasuk berkas di dalam folder yang dipertahankan, baik ada
+  pemulihan yang gagal maupun tidak, dan entri `warnings` mencantumkannya
+  sebagai `files`. Pemasangan yang dicatat oleh rilis sebelumnya tidak
+  menyebutkan apa yang ditulisnya, dan rollback tidak membandingkan apa pun
+  dengan rilis ini, sehingga apa yang dibuatnya tetap ada: setiap jalur seperti
+  itu mendapat baris `Warning:` yang menyatakan bahwa rollback tidak dapat
+  memastikan jalur itu milik Apothem. Perintah ini juga mengembalikan jalur
+  tata letak warisan apa pun yang disingkirkan oleh pemasangan. Jalur yang
+  tidak lagi disingkirkan oleh rilis saat ini (folder yang mungkin memuat
+  berkas milik Anda sendiri) dipulihkan hanya di tempat berkasnya hilang:
+  setiap berkas yang ada di sana sekarang dipertahankan, dan keluaran
+  menyebutkan cadangan yang digunakan. Berkas yang tidak dapat ditulisnya
+  dicantumkan agar Anda salin secara manual, dan rollback kemudian keluar
+  dengan 2 (parsial) jika ia menulis berkas lain mana pun.
+  Jalur yang sekarang berupa tautan (symlink atau junction Windows), atau
+  berkas di tempat cadangan memiliki folder atau sebaliknya, tidak pernah
+  ditulis melaluinya. Tidak ada yang dipulihkan di sana, dan tidak ada yang
+  dipulihkan juga ketika cadangan jalur itu sudah hilang. Rollback tetap keluar
+  dengan 0 dan mencetak baris `Warning:` (entri `warnings` di bawah `--json`)
+  yang menyebutkan cadangan untuk disalin secara manual. Rollback hanya
+  menjangkau pemasangan itu selama catatannya termasuk dalam 10 catatan
+  terbaru yang disimpan (lihat di bawah). `apothem backups prune --keep N`
+  memangkas ke `N` satu kali; pemasangan, pembaruan, pencopotan pemasangan,
+  atau rollback berikutnya memangkas kembali ke 10. Set cadangan itu sendiri
+  tetap ada bahkan setelah catatannya hilang, sehingga menyalin berkas dari
+  sana secara manual adalah jalan kembali yang dapat diandalkan;
 - menghapus penyimpanan data bersama (`memory`, `contexts`, `learning`) yang
   dibuat oleh pemasangan, kecuali jika harness lain yang terpasang masih
   menggunakannya;
@@ -43,10 +76,37 @@ terakhir yang menggunakannya. Folder yang ditemukan pemasangan ini sudah ada
 (alat kedua yang dipasang setelah alat pertama) ikut hilang bersama pemasangan
 terakhir yang menggunakannya ketika folder itu dibuat oleh pemasangan yang
 sejak itu telah melepaskannya, sehingga me-rollback setiap alat tidak
-meninggalkan apa pun. Ketika catatan pemasangan yang dapat menggunakan folder
+meninggalkan apa pun, bahkan ketika alat yang membuat folder itu dipasang lagi
+atau diperbarui di antaranya. Folder yang dihapus Apothem lalu Anda kembalikan
+sendiri, misalnya dari cadangan, adalah milik Anda: rollback mempertahankannya.
+Rollback hanya membalikkan pemasangan yang dicatat dengan folder home Anda
+dieja seperti saat rollback dijalankan. Ketika alat yang sama juga dipasang
+dengan folder home Anda dieja dengan cara lain (melalui tautan ke folder itu,
+atau dengan huruf besar-kecil yang berbeda di Windows atau macOS), pemasangan
+tersebut masih menggunakan folder bersama dan mempertahankannya. Berkas di
+folder milik alat itu sendiri ditangani satu per satu: me-rollback pemasangan
+yang pertama kali menulisnya menghapus berkas yang dibiarkan apa adanya oleh
+pemasangan lain, seperti skrip hook-nya, dan mempertahankan dengan peringatan
+berkas yang ditulis ulang oleh pemasangan lain, seperti berkas instruksinya.
+Setelah itu, jalankan `apothem update` dengan folder home Anda dieja dengan
+cara lain itu, agar pemasangan tersebut lolos `apothem verify` lagi. Rollback
+yang dijalankan dengan folder home Anda dieja dengan cara itu juga membalikkan
+pemasangan tersebut. Ketika catatan pemasangan yang dapat menggunakan folder
 tersebut tidak dapat dibaca, rollback berhenti dengan galat sebelum mengubah
 apa pun dan tidak menulis catatan `rollback`; perbaiki catatan tersebut lalu
 jalankan lagi.
+
+Rollback juga berhenti sebelum mengubah apa pun, dan tidak menulis catatan
+`rollback`, ketika sebuah tautan membawa folder milik alat itu keluar dari
+direktori home Anda: `CODEX_HOME` atau `XDG_CONFIG_HOME` yang dieja di dalam
+direktori home Anda, seperti `~/work/tool`, dengan `~/work` menjadi tautan ke
+drive lain setelah pemasangan. Di Windows, junction dihitung sebagai tautan.
+Galatnya berbunyi `rollback
+refused: target path crosses a link` dan menyebutkan tautan serta folder yang
+ditujunya, dan perintah keluar dengan 1 tanpa meminta konfirmasi terlebih
+dahulu. Arahkan tautan itu ke folder di dalam direktori home Anda, atau ganti
+dengan folder itu sendiri, lalu jalankan rollback lagi. Folder yang Anda eja
+sebagai jalur di luar direktori home Anda tetap diikuti.
 
 Segala sesuatu yang dihapus atau diganti oleh rollback terlebih dahulu disalin
 ke root cadangan Apothem (`~/.apothem/backups/`), sehingga rollback itu sendiri
@@ -64,9 +124,8 @@ di-rollback berdasarkan id dan melaporkan `rollback.no_record`.
 sesuai permintaan, dan tidak pernah menghapus cadangan yang menjadi sumber
 pemulihan pemasangan terbaru.
 
-Catatan yang ditulis oleh rilis Apothem sebelum perilaku ini ditambahkan tidak
-mencantumkan berkas mana yang dibuat oleh pemasangan; me-rollback catatan
-semacam itu hanya memulihkan berkas yang ditimpa.
+Catatan pemasangan dari rilis sebelumnya yang tidak menandai berkas mana yang
+dibuat oleh pemasangan di-rollback dengan hanya memulihkan berkas yang ditimpa.
 
 Konfirmasi diminta per harness kecuali `--yes` diberikan. Ketika prompt tidak
 mungkin ditampilkan — `--format json` (teks prompt akan merusak dokumen JSON
@@ -82,8 +141,8 @@ Rollback `--harness all` sengaja dibuat menyeluruh: rollback ini mencakup setiap
 | Opsi | Deskripsi |
 |---|---|
 | `--harness NAME` | Adapter harness yang akan di-rollback, atau `all` untuk himpunan selingkup-registri (wajib). |
-| `--install-id ULID` | Me-rollback putaran pemasangan yang disebutkan. Default-nya pemasangan terbaru yang tercatat. |
-| `--last` | Me-rollback pemasangan terbaru yang tercatat (default; bentuk eksplisitnya). Saling eksklusif dengan `--install-id`. |
+| `--install-id ULID` | Me-rollback putaran pemasangan yang disebutkan, jika masih berlaku. Default-nya pemasangan terbaru yang masih berlaku. |
+| `--last` | Me-rollback pemasangan terbaru yang masih berlaku (default; bentuk eksplisitnya). Saling eksklusif dengan `--install-id`. |
 | `--yes` | Melewati prompt konfirmasi per harness. |
 | `--project PATH` | Root proyek untuk harness berlingkup-proyek. Wajib ketika himpunan yang dipilih mencakup adapter berlingkup-proyek. |
 | `--quiet`, `-q` | Menekan keluaran informatif; hanya galat yang dipancarkan. |
@@ -119,9 +178,32 @@ Setiap target yang dipulihkan atau dihapus muncul di `results` dengan
 `files_written`); `message` menyatakan apakah jalur tersebut dipulihkan atau
 dihapus. Pemulihan yang gagal (misalnya, cadangan yang telah dihapus) bernilai
 `"outcome": "error"`. Pemasangan yang tidak mencatat perubahan apa pun
-dilaporkan dengan `"outcome": "skipped"`. Ketika tidak ada catatan pemasangan
-yang cocok untuk satu harness yang disebutkan namanya, perintah ini melaporkan
-galat `rollback.no_record` dengan `"status": "error"`. Di bawah
+dilaporkan dengan `"outcome": "skipped"`. Jalur yang disingkirkan tempat tidak
+ada yang dipulihkan (sekarang berupa tautan, ada berkas di tempat cadangan
+memiliki folder atau sebaliknya, atau cadangannya sudah hilang) adalah baris
+`skipped` di `results` sekaligus entri di `warnings`, dan rollback tetap keluar
+dengan 0:
+
+```json
+{
+  "harness": "claude-code",
+  "outcome": "advisory",
+  "operation": "rollback",
+  "path": "C:\\Users\\Example\\.claude\\commands",
+  "message": "left in place: C:\\Users\\Example\\.claude\\commands is now a link, so nothing was restored there; copy what you need from C:\\Users\\Example\\.apothem\\backups\\20261001T000000Z\\claude_code\\.claude\\commands"
+}
+```
+
+Hasil yang ditolak di sebuah tautan menyebutkan tautan itu di `detail.symlink`
+dan folder yang ditujunya di `detail.leads_to`, seperti pada
+[`apothem install`](/docs/cli-reference/install#json-output).
+
+Ketika tidak ada catatan pemasangan yang cocok untuk satu harness yang
+disebutkan namanya, perintah ini melaporkan galat `rollback.no_record` dengan
+`"status": "error"`, dan `--install-id` dari pemasangan yang sudah di-rollback
+atau dicopot melaporkan `rollback.already_reversed`. Setelah ledger memangkas
+catatan itu (lihat di atas), id seperti itu melaporkan `rollback.no_record`
+sebagai gantinya. Di bawah
 `--harness all`, harness tanpa catatan yang cocok justru menjadi baris
 `"outcome": "error"` di `results`.
 
@@ -137,7 +219,7 @@ apothem rollback --harness cursor --project . --last --json
 
 | Kode | Arti |
 |---|---|
-| 0 | Berhasil di-rollback, atau tidak ada yang perlu di-rollback (pemasangan tidak mencatat perubahan) |
+| 0 | Berhasil di-rollback, atau tidak ada yang perlu di-rollback (pemasangan tidak mencatat perubahan); juga ketika jalur yang disingkirkan dibiarkan di tempatnya dengan baris `Warning:` (entri `warnings` di bawah `--json`) |
 | 1 | Galat yang diharapkan — tidak ada catatan pemasangan, selektor yang bertentangan, harness tidak dikenal, root proyek hilang, atau konfirmasi ditolak atau tidak tersedia (mode non-interaktif atau JSON tanpa `--yes`) |
 | 2 | Hasil parsial — setidaknya satu target di-rollback dan sebuah kegagalan juga tercatat (pemulihan yang gagal atau, di bawah `--harness all`, harness tanpa catatan pemasangan) |
 | 64 | Galat penggunaan: opsi atau perintah yang tidak dikenal, atau nilai opsi yang hilang atau tidak valid. Di bawah `--json`, galat berupa amplop JSON dengan kode `cli.usage`. |

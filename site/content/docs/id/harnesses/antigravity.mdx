@@ -2,15 +2,15 @@
 title: "Antigravity"
 description: "Adapter harness Apothem untuk Antigravity (Pratinjau)."
 machineTranslated: true
-sourceHash: "a97b457853f5e1e2"
+sourceHash: "c5d8a954306518e0"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-- **Vendor:** Antigravity
+- **Vendor:** Google
 - **Nama instalasi:** `antigravity`
 - **Status:** Pratinjau
 - **Konfigurasi native:** `~/.gemini/GEMINI.md` ditambah
-  `~/.gemini/antigravity-cli/plugins/apothem/`
+  `~/.gemini/config/plugins/apothem/`
 
 ## Instalasi
 
@@ -19,20 +19,38 @@ apothem install --harness antigravity
 ```
 
 Adapter merender profil bersama ke `~/.gemini/GEMINI.md` dan memasang kohor
-pendukung Apothem sebagai plugin Antigravity CLI.
+pendukung Apothem sebagai plugin Antigravity. Folder plugin itu dipakai bersama
+oleh Antigravity CLI, App, dan IDE, sehingga ketiganya memuat plugin tersebut.
 
 **Berkas yang ditulis:** `~/.gemini/GEMINI.md`,
-`~/.gemini/antigravity-cli/plugins/apothem/plugin.json`,
-`~/.gemini/antigravity-cli/plugins/apothem/skills/`,
-`~/.gemini/antigravity-cli/plugins/apothem/rules/`,
+`~/.gemini/config/plugins/apothem/plugin.json`,
+`~/.gemini/config/plugins/apothem/skills/`,
+`~/.gemini/config/plugins/apothem/rules/`,
 definisi helper lokal yang telah dikonversi di dalam plugin,
-`~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/templates/`, dan
-`~/.gemini/antigravity-cli/plugins/apothem/.apothem/support/hooks/`.
+`~/.gemini/config/plugins/apothem/.apothem/support/templates/`, dan
+`~/.gemini/config/plugins/apothem/.apothem/support/hooks/`. Instalasi juga
+membuat folder data Apothem, secara default `~/.gemini/.apothem/`, berisi
+`contexts/`, `learning/`, `memory/`, dan `plans/`.
 
 Blok Apothem di `~/.gemini/GEMINI.md` diakhiri dengan bagian berkas pendukung
 Apothem yang menyebutkan direktori absolut tempat setiap kutipan bergaya
 repositori di-resolve: `rules/<name>.md` di bawah `rules/` milik plugin, serta
 `templates/...` dan `hooks/...` di bawah `.apothem/support/` milik plugin.
+
+**Folder plugin.** Antigravity memuat plugin dari
+`~/.gemini/config/plugins/<name>/` tanpa langkah pendaftaran
+([dokumentasi plugin Antigravity](https://antigravity.google/docs/plugins)),
+dan adapter menulis plugin Apothem di sana. Rilis CLI saat ini memuat plugin
+dari folder ini; CLI memperbarui dirinya sendiri, jadi jika Anda mematikan
+pembaruan dengan `AGY_CLI_DISABLE_AUTO_UPDATE=true`, perbarui CLI sebelum
+mengandalkan plugin tersebut. Antigravity App dan IDE memuat folder yang sama,
+sehingga plugin Apothem, dengan aturan always-on, skill, dan definisi
+helper-nya, berlaku di ketiganya. Antigravity tidak mendokumentasikan sakelar
+per alat untuk plugin: `plugin.json` tidak memiliki bidang yang membatasi plugin
+pada salah satunya. Rilis Apothem sebelumnya menulis plugin ke
+`~/.gemini/antigravity-cli/plugins/apothem/`, di folder data milik CLI sendiri;
+instalasi atau pembaruan di atas instalasi seperti itu mencadangkan folder itu
+lalu menghapusnya (lihat [Pencopotan](#pencopotan)).
 
 **Aturan plugin.** Antigravity membuang setiap berkas di direktori `rules/`
 sebuah plugin yang tidak diawali dengan `trigger` yang valid
@@ -50,8 +68,12 @@ terlampaui, mengubah aturan yang terbesar menjadi penunjuk sesuai permintaan;
 kelima aturan tersebut berjumlah sekitar 11.000 token, sehingga tidak ada yang
 diubah menjadi penunjuk.
 
-**Manifest plugin.** `plugin.json` hanya membawa `name` dan `description`, dua
-kunci yang diterima oleh skema plugin Antigravity.
+**Manifest plugin.** `plugin.json` hanya membawa `name` dan `description`.
+Skema plugin yang diterbitkan di
+[halaman Build plugins](https://antigravity.google/docs/build-plugins) milik
+Antigravity mewajibkan `name`, juga mencantumkan kunci seperti `displayName`,
+`version`, dan `author`, dan tidak menerima kunci lain, sehingga
+`agy plugin validate` melaporkan kunci yang tidak tercantum di sana.
 
 **Helper plugin.** Definisi helper di direktori `agents/` milik plugin membawa
 `name` dan `description`. Daftar `tools` Antigravity menggunakan nama alatnya
@@ -63,9 +85,10 @@ label "read-only".
 
 **Jangkar pengguna bersama.** `~/.gemini/GEMINI.md` juga merupakan jangkar
 lingkup pengguna untuk perkakas keluarga Gemini. Adapter Antigravity menyimpan
-materi Apothem tambahannya di dalam plugin `apothem` di bawah
-`~/.gemini/antigravity-cli/plugins/` sehingga tidak mengklaim direktori proyek
-Gemini CLI yang generik. Karena lebih dari satu alat memuat
+aturan, skill, definisi helper, templat, dan berkas hook-nya di dalam plugin
+`apothem` di bawah `~/.gemini/config/plugins/`, sehingga tidak mengklaim
+direktori proyek Gemini CLI yang generik. Folder data Apothem berada di luar
+plugin, secara default di `~/.gemini/.apothem/`. Karena lebih dari satu alat memuat
 `~/.gemini/GEMINI.md`, blok Apothem di sana ditulis sebagai panduan global yang
 tidak menyebut satu alat pun sebagai pembacanya.
 
@@ -91,10 +114,16 @@ apothem verify --harness antigravity
 
 Perintah verify memastikan bahwa:
 
-1. Berkas konteks native ada di jalur yang diharapkan.
-2. Manifest plugin `plugin.json` ada, tidak kosong, dan dapat diurai sebagai
-   JSON. Verifikasi tidak memeriksa nama plugin; periksa sendiri bidang
-   tersebut setelah mengubahnya.
+1. Berkas konteks native, `~/.gemini/GEMINI.md`, ada dan tidak kosong.
+2. Setiap target terkelola di folder plugin ada di tempatnya: manifest plugin
+   `plugin.json` ada, tidak kosong, dan dapat diurai sebagai JSON, dan folder
+   `skills/`, `rules/`, `agents/`, `.apothem/support/templates/`, dan
+   `.apothem/support/hooks/` milik plugin ada. Folder yang hilang membuat
+   pemeriksaan gagal. Verifikasi tidak memeriksa nama plugin; periksa sendiri
+   bidang tersebut setelah mengubahnya.
+
+Tambahkan `--profile PATH` untuk sekaligus memastikan bahwa berkas yang
+terpasang cocok dengan profil tersebut.
 
 ## Pembaruan
 
@@ -115,17 +144,67 @@ apothem uninstall --harness antigravity
 Menghapus blok Apothem dari `~/.gemini/GEMINI.md` dan mempertahankan teks lain
 di dalamnya. Berkas itu dihapus hanya jika tidak ada lagi isi lain di dalamnya.
 Juga menghapus kunci milik Apothem dari `plugin.json` di folder plugin
-`~/.gemini/antigravity-cli/plugins/apothem/` dan mempertahankan kunci milik
-Anda, serta menghapus berkas Apothem di subfolder `skills/`, `rules/`,
-`agents/`, dan `.apothem/support/` milik folder itu; berkas lain di sana tetap
-ada. Setiap berkas dicadangkan di bawah `~/.apothem/backups/` sebelum diubah
-atau dihapus. YAML profil bersama dan mesin Apothem tidak terpengaruh.
+`~/.gemini/config/plugins/apothem/` dan mempertahankan kunci milik Anda, serta
+menghapus berkas Apothem di subfolder `skills/`, `rules/`, `agents/`, dan
+`.apothem/support/` milik folder itu; berkas lain di sana tetap ada. Penyimpanan
+`memory/`, `contexts/`, dan `learning/` di folder data juga dihapus, kecuali
+instalasi Apothem lain masih memakainya. Setiap berkas dicadangkan di bawah
+`~/.apothem/backups/` sebelum diubah atau dihapus. YAML profil bersama dan
+mesin Apothem tidak terpengaruh.
+
+Instalasi yang dibuat oleh rilis sebelumnya menyimpan plugin di
+`~/.gemini/antigravity-cli/plugins/apothem/`, di folder data milik CLI sendiri.
+Instalasi, pembaruan, atau pencopotan di atas instalasi seperti itu
+mencadangkan folder itu di bawah `~/.apothem/backups/` lalu menghapusnya,
+termasuk berkas milik Anda di dalamnya. Tautan simbolik atau junction Windows di
+jalur itu, di atasnya, atau di dalam folder itu dibiarkan di tempatnya, dengan
+peringatan yang menyebut namanya, dan apa pun yang ditunjuknya tidak diubah atau
+dicadangkan. Tautan di jalur itu yang menunjuk ke folder plugin saat ini
+dibiarkan di tempatnya pada setiap eksekusi, dengan peringatan: tautan itu tetap
+ada setelah pencopotan, jadi hapus sendiri setelah tidak ada lagi yang memakai
+jalur lama. Karena itu, pencopotan menghapus folder lama dan, dari folder saat
+ini, hanya berkas Apothem yang dijelaskan di atas. Pencopotan mencetak setiap
+peringatan, dan melaporkan kegagalan alih-alih keberhasilan bila penghapusan
+folder lama gagal.
+
+Setiap instalasi, pembaruan, dan pencopotan juga mencadangkan
+`~/.antigravity/profile.yaml` di bawah `~/.apothem/backups/` lalu menghapusnya.
+Tidak ada rilis Apothem yang menulis berkas itu, jadi pindahkan berkas milik
+Anda sendiri yang ada di sana sebelum menjalankan salah satu perintah ini.
+
+Instalasi, pembaruan, dan pencopotan tidak pernah menyentuh
+`~/.gemini/antigravity/`, folder data Antigravity App. (Folder data CLI adalah
+`~/.gemini/antigravity-cli/` dan folder data IDE adalah
+`~/.gemini/antigravity-ide/`.) Folder App menyimpan token masuknya untuk server
+MCP (`mcp_oauth_tokens.json`), transkrip sesinya (`brain/`), folder skill global
+lama (`skills/`), dan `sidecar_data/`. Rilis sebelumnya memperlakukan folder itu
+sebagai tata letak yang dipakai Apothem sebelum rilis pertamanya: rilis itu
+mencadangkannya di bawah `~/.apothem/backups/` dan menghapusnya pada setiap
+instalasi dan pembaruan. Pengaturan dan riwayat sesi milik CLI sendiri, di
+`~/.gemini/antigravity-cli/`, tidak terdampak.
+
+Jika sesi masuk App, transkrip sesi, atau skill milik Anda hilang, salinannya
+ada di `~/.apothem/backups/<timestamp>/antigravity/.gemini/antigravity/`: satu
+set untuk setiap instalasi atau pembaruan sebelumnya yang menemukan folder itu,
+masing-masing berisi folder tersebut sebagaimana adanya saat itu. Apothem hanya
+menyimpan 10 set cadangan Antigravity terbaru, sehingga salinan dari instalasi
+yang lebih lama mungkin sudah hilang, dan instalasi, pembaruan, pencopotan, atau
+rollback berikutnya memangkasnya lagi. Salin dulu set yang Anda perlukan keluar
+dari `~/.apothem/backups/`.
 
 ## Gerbang konformitas
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Jalankan dari folder proyek Anda. Di Windows, gunakan `python` sebagai pengganti
+`python3` dan jalur lengkapnya, karena Windows PowerShell dan cmd tidak mengekspansi
+`~`: `$HOME\.apothem\src\apothem\conformity\gate.py` di PowerShell, atau
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` di cmd. Jalur itu adalah
+tempat installer menaruh engine, dan `-E -s` menjauhkan `PYTHONPATH` serta
+site-packages pengguna Anda dari gerbang; [Gerbang konformitas](/docs/conformity-gate)
+menjelaskan keduanya dan instalasi lainnya.
 
 ## Pemecahan masalah
 

@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Adapter harness Apothem untuk Codex (Beta)."
 machineTranslated: true
-sourceHash: "ca4ad5f675a665ea"
+sourceHash: "3aff73a78f7a248b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,7 +26,9 @@ ulang sebagai skill Codex.
 `~/.codex/hooks/`, `~/.codex/agents/*.toml`,
 `~/.agents/skills/*/SKILL.md`, `~/.agents/skills/*/agents/openai.yaml` untuk
 skill yang dipanggil pengguna, dan berkas pendukung di bawah
-`~/.config/apothem/{rules,templates}/`.
+`~/.config/apothem/{rules,templates}/`. Instalasi juga membuat folder data
+Apothem, secara default `~/.codex/.apothem/`, berisi `contexts/`, `learning/`,
+`memory/`, dan `plans/`.
 
 **Interpreter hook.** Sebelum menulis apa pun, pemasangan me-resolve interpreter CPython 3.10+. Di Windows, entri `commandWindows` pada setiap hook di `hooks.json` menjalankan path absolut interpreter tersebut, bukan peluncur `py -3`; entri `command` POSIX tetap menggunakan `python3`. Jalankan ulang `apothem update --harness codex` setelah interpreter dipindahkan atau dihapus. Jika tidak ada CPython 3.10+ yang ditemukan, pemasangan berhenti sebelum menulis berkas apa pun.
 
@@ -101,11 +103,70 @@ mencetak catatan yang menyebutkan alat-alat tersebut.
 `~/.codex/agents/` adalah direktori akar bersama kedua: alat lain yang didukung
 mencantumkan folder itu sebagai lokasi kompatibilitas (registri menyebutkannya),
 dan dokumentasinya tidak menyatakan apakah alat itu membaca berkas TOML yang
-ditulis instalasi `Codex` di sana.
+ditulis instalasi `Codex` di sana. Dengan `CODEX_HOME` disetel ke folder lain,
+instalasi menulis agennya di bawah folder itu, yang tidak tercantum dalam
+dokumentasi alat tersebut (dokumentasinya hanya menyebut `~/.codex/agents/`),
+sehingga catatan instalasi tidak menyebut folder itu. Jika instalasi sebelumnya
+meninggalkan agen Apothem di `~/.codex/agents/`, catatan itu menyebutkannya,
+karena instalasi ini tidak memperbarui maupun menghapusnya.
+
+Apothem membaca `CODEX_HOME` dengan cara yang sama seperti Codex. Nilainya
+dipakai apa adanya: `~` di awal tidak diekspansi, dan nilai relatif menunjuk
+folder di bawah folder tempat Anda menjalankan perintah. `CODEX_HOME` yang
+kosong dianggap tidak disetel. Codex berhenti dengan galat ketika `CODEX_HOME`
+menunjuk folder yang tidak ada; instalasi membuat folder itu, sehingga Codex
+dapat berjalan setelah instalasi dijalankan.
+
+`CODEX_HOME` di bawah `~/.config` berfungsi ketika `~/.config` adalah tautan ke
+dalam direktori home Anda, seperti yang dibuat pengelola dotfile; di Windows,
+junction dihitung sebagai tautan. Tautan `~/.config` yang mengarah ke luar
+direktori home Anda menghentikan setiap instalasi Codex sebelum menulis berkas
+apa pun, di mana pun `CODEX_HOME` berada, karena instalasi juga menulis aturan
+dan templat bersama di `~/.config/apothem/`. Menyetel `CODEX_HOME` ke folder
+tujuan tautan itu tidak membantu; buat tautan itu mengarah ke folder di dalam
+direktori home Anda. `CODEX_HOME` yang ditulis di dalam direktori home Anda
+tetapi dibawa keluar oleh sebuah tautan, seperti `~/work/codex` dengan `~/work`
+ditautkan ke drive lain, menghentikan instalasi, pencopotan, dan
+`apothem rollback`, di mana pun tautan itu berada di atas `CODEX_HOME`.
+`CODEX_HOME` yang ditulis sebagai jalur di luar direktori home Anda diikuti.
+Tautan pada jalur yang ditulis instalasi di dalam `CODEX_HOME` juga
+menghentikannya, dengan `target
+path crosses a link`, atau dengan `target escapes the allowed materialization
+root` ketika tautan itu mengarah ke luar folder yang menampung `CODEX_HOME`.
+
+`CODEX_HOME` tidak harus berasal dari profil shell Anda. `.envrc` milik proyek
+atau skrip yang Anda source juga dapat menyetelnya. Ketika nilainya menunjuk
+folder di luar direktori home Anda, instalasi, pembaruan, pencopotan, dan
+`apothem rollback` mengubah berkas di folder itu, karena itulah folder yang
+ditunjuknya. Tautan di `~/.config` yang mengarah ke luar direktori home Anda
+tetap menghentikan instalasi. Periksa `CODEX_HOME` sebelum menjalankan Apothem
+di folder proyek yang menyetelnya.
 
 Codex mereservasi `~/.codex/rules/` untuk kebijakan eksekusi `.rules`. Apothem
 tidak menempatkan aturan perilaku Markdown di sana; Apothem menyimpannya di
 `~/.config/apothem/` dan merujuknya dari `AGENTS.md` dan skill yang terpasang.
+Rilis sebelumnya ([changelog](/docs/changelog) menyebutkannya) menghapus seluruh
+folder `~/.codex/rules/`, beserta berkas `.rules` milik Anda, pada setiap
+instalasi dan pembaruan, setelah menyalinnya ke
+`~/.apothem/backups/<timestamp>/codex/.codex/rules/`. Rilis saat ini tidak
+pernah menghapus set cadangan yang menyimpan salinan itu, tetapi retensi rilis
+sebelumnya mungkin sudah menghapus set yang lebih lama. Salin
+`~/.apothem/backups/` ke tempat lain sebelum Anda menjalankan Apothem lagi,
+salin berkas `.rules` kembali ke `~/.codex/rules/` secara manual, lalu jalankan
+`apothem update`. `apothem rollback --install-id` membalikkan seluruh instalasi
+sebelumnya, sehingga itu bukan cara untuk memulihkan berkas-berkas ini.
+
+Codex memuat satu berkas instruksi dari folder home-nya (`~/.codex`, atau folder
+yang ditunjuk `CODEX_HOME`): `AGENTS.override.md` ketika berkas itu berisi teks,
+dan `AGENTS.md` hanya jika tidak. Blok Apothem masuk ke `AGENTS.md`, sehingga
+`AGENTS.override.md` berisi teks di folder itu mencegah Codex memuatnya, kecuali
+override tersebut adalah tautan simbolik ke `AGENTS.md`. Hard link atau salinan
+menjadi berkas terpisah begitu instalasi menulis ulang `AGENTS.md`, sehingga
+berkas itu mendapat catatan. `apothem install`, `apothem update`, dan
+`apothem verify` mencetak catatan yang menyebutkan berkas itu ketika hal itu
+terjadi. `AGENTS.override.md` yang kosong dilewati, sehingga tidak mendapat
+catatan. Untuk memuat blok tersebut, kosongkan atau hapus override itu, atau
+pindahkan teksnya ke `AGENTS.md` di luar blok Apothem.
 
 ## Plugin Codex
 
@@ -150,6 +211,12 @@ Perintah verify memastikan bahwa:
    memastikan bahwa berkas yang terpasang cocok dengan profil tersebut.
 3. Rutin verifikasi khusus adapter melaporkan keberhasilan.
 
+Ketika blok Apothem ada di `AGENTS.md` dan `AGENTS.override.md` berisi teks
+berada di sampingnya di home Codex, verify juga mencetak catatan yang
+menyebutkan override tersebut, karena Codex memuat berkas itu alih-alih blok
+tersebut. Catatan itu tidak menggagalkan pemeriksaan, dan verify tidak
+memberikannya ketika blok tidak terpasang.
+
 ## Pembaruan
 
 ```bash
@@ -190,8 +257,16 @@ dihapus. YAML profil bersama dan mesin Apothem tidak terpengaruh.
 ## Gerbang konformitas
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Jalankan dari folder proyek Anda. Di Windows, gunakan `python` sebagai pengganti
+`python3` dan jalur lengkapnya, karena Windows PowerShell dan cmd tidak mengekspansi
+`~`: `$HOME\.apothem\src\apothem\conformity\gate.py` di PowerShell, atau
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` di cmd. Jalur itu adalah
+tempat installer menaruh engine, dan `-E -s` menjauhkan `PYTHONPATH` serta
+site-packages pengguna Anda dari gerbang; [Gerbang konformitas](/docs/conformity-gate)
+menjelaskan keduanya dan instalasi lainnya.
 
 ## Pemecahan masalah
 

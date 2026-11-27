@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Adapter harness Apothem untuk Claude Code (GA)."
 machineTranslated: true
-sourceHash: "42277b35237235a2"
+sourceHash: "4e5a2944b6820b60"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,18 +17,22 @@ sourceHash: "42277b35237235a2"
 apothem install --harness claude-code
 ```
 
-Adapter `claude-code` memasang korpus Apothem bersama ke dalam pohon penemuan native Claude Code. Agen Markdown, aturan, skill, output-style, dan pengaturan dipasang di lokasi native-nya; prompt command dikonversi menjadi skill sehingga alur kerja yang dapat digunakan ulang tetap terlihat melalui permukaan skill Claude Code saat ini. Perender statusline disalin ke `~/.claude/statuslines/` tetapi tidak disambungkan: Claude Code membaca baris statusnya dari pengaturan `statusLine`, yang dibiarkan tidak disetel oleh adapter. Untuk mengaktifkannya, tambahkan ke `settings.json` sebuah entri `statusLine` dengan `"type": "command"` yang menjalankan `~/.claude/statuslines/render.py`. Nilai `commandWindows` pada cuplikan tersebut dijalankan di Windows dan menyebut interpreter tanpa tanda kutip. Ketika jalur interpreter mengandung spasi, pemasangan menulis bentuk pendek 8.3 Windows pada nilai itu jika volume memilikinya. Entri hook di `settings.json` tetap menggunakan jalur lengkap.
+Adapter `claude-code` memasang korpus Apothem bersama ke dalam pohon penemuan native Claude Code. Agen Markdown, aturan, skill, output-style, dan pengaturan dipasang di lokasi native-nya; prompt command dikonversi menjadi skill sehingga alur kerja yang dapat digunakan ulang tetap terlihat melalui permukaan skill Claude Code saat ini. Perender statusline disalin ke `~/.claude/statuslines/` tetapi tidak disambungkan: Claude Code membaca baris statusnya dari pengaturan `statusLine`, yang dibiarkan tidak disetel oleh adapter. Untuk mengaktifkannya, tambahkan ke `settings.json` sebuah entri `statusLine` dengan `"type": "command"` yang menjalankan `~/.claude/statuslines/render.py`. Perintah pada cuplikan tersebut menjalankan Python dengan `-E -s`, seperti halnya hook. Tidak ada instalasi atau pembaruan yang mengubah `statusLine`, jadi jika Anda menyalin perintah dari cuplikan sebelumnya, yang tidak memiliki `-E -s`, tambahkan sendiri `-E -s` setelah interpreter. Nilai `commandWindows`-nya dijalankan di Windows dan menyebut interpreter tanpa tanda kutip. Ketika jalur interpreter mengandung spasi, pemasangan menulis bentuk pendek 8.3 Windows pada nilai itu jika volume memilikinya. Entri hook di `settings.json` tetap menggunakan jalur lengkap.
 
 **Berkas yang ditulis:** `settings.json`, blok Apothem di `CLAUDE.md`, `agents/`, `rules/`, `skills/`,
 `statuslines/`, `output-styles/`, dan pohon pendukung `.apothem/support/`
 (`.apothem/support/hooks/`, `.apothem/support/conformity/`,
 `.apothem/support/schemas/`, `.apothem/support/templates/`) di bawah `~/.claude/`.
+Instalasi juga membuat folder data Apothem, secara default `~/.claude/.apothem/`,
+berisi `contexts/`, `learning/`, `memory/`, dan `plans/`.
 Berkas command dikonversi menjadi
 direktori skill anak. Dispatcher hook dan gerbang konformitas berjalan dari
 salinan termaterialisasinya — entri hook di `settings.json` memanggil
 `~/.claude/.apothem/support/hooks/dispatch.py` dan
 `~/.claude/.apothem/support/conformity/gate.py` melalui jalur absolut, sehingga
-tidak diperlukan paket `apothem` yang dapat diimpor di host.
+tidak diperlukan paket `apothem` yang dapat diimpor di host. Setiap entri
+menjalankan Python dengan `-E -s`, sehingga `PYTHONPATH`, variabel `PYTHON*`
+lainnya, dan site-packages pengguna Anda tidak pernah mencapai hook.
 
 `~/.claude/CLAUDE.md` tetap milik operator. Adapter menulis satu blok Apothem
 yang dibatasi sentinel ke dalamnya, yang memuat proyeksi profil (identitas,
@@ -58,7 +62,32 @@ cocok dicadangkan sebelum penggantian; entri tak terkait yang ditulis operator
 dipertahankan. `settings.json` digabungkan sehingga kunci yang ditulis operator
 tetap dapat dipulihkan.
 
-Berkas yang ditulis operator hanya dipertahankan di luar folder di bawah ini. Setiap pemasangan dan pembaruan menghapus setiap folder ini di bawah `~/.claude/` yang ada, apakah Apothem yang menulisnya atau bukan: `src/`, `conformity/`, `schemas/`, `hooks/`, `config/`, `scripts/`, `tools/`, `lib/`, `templates/`, `docs/`, `tests/`, `packaging/`, `mcp/`, `examples/`, `assets/`, `site/`, `public/`, dan `commands/`. Ia juga menghapus `statuslines/__init__.py` serta berkas `AGENTS.md` di `agents/`, `rules/`, `skills/`, `statuslines/`, dan `output-styles/`. Folder yang dihapus ikut terhapus seluruhnya, termasuk berkas yang Anda taruh di dalamnya. Perintah slash yang Anda simpan di `commands/` juga dihapus, dan Apothem memasang prompt perintahnya sendiri sebagai skill di bawah `skills/`. Skrip hook yang Anda simpan di `hooks/` dihapus, sehingga entri `settings.json` yang memanggilnya menunjuk ke berkas yang sudah tidak ada. Penyapuan berjalan sebelum pemasangan menulis berkasnya sendiri. Setiap jalur yang dihapus disalin ke `~/.apothem/backups/` terlebih dahulu, dan catatan pemasangan menyebutkan salinan itu. Pencopotan tidak memulihkannya. Untuk memulihkan jalur yang dihapus, jalankan `apothem rollback --harness claude-code --install-id ID` untuk pemasangan yang menghapusnya, seperti dijelaskan dalam [referensi rollback](/docs/cli-reference/rollback). `apothem rollback` biasa hanya membalikkan pemasangan terbaru. Catatan pemasangan dan salinannya disimpan untuk 10 pemasangan terbaru, sehingga jalur yang dihapus hanya dapat dipulihkan selama pemasangannya masih termasuk di antara 10 tersebut. `apothem diff --harness claude-code` mencantumkan penghapusan ini sebagai `Prune stale files` sebelum Anda memasang.
+Pemasangan dan pembaruan tidak menyentuh berkas milik Anda sendiri di bawah
+`~/.claude/`, termasuk perintah slash di `commands/` dan skrip hook di
+`hooks/`. Rilis sebelumnya justru menghapus seluruh folder di sana pada setiap
+pemasangan dan pembaruan (`commands/`, `hooks/`, `scripts/`, `templates/`, dan
+lainnya), beserta berkas yang Anda taruh di dalamnya;
+[changelog](/docs/changelog) menyebutkan rilis-rilis tersebut. Lihat
+[Memulihkan berkas yang dihapus rilis
+sebelumnya](#memulihkan-berkas-yang-dihapus-rilis-sebelumnya).
+
+### Memulihkan berkas yang dihapus rilis sebelumnya
+
+Setiap folder yang dihapus terlebih dahulu disalin ke
+`~/.apothem/backups/<timestamp>/claude_code/.claude/<folder>/`. Rilis saat ini
+tidak pernah menghapus set cadangan yang menyimpan folder seperti itu, tetapi
+retensi rilis sebelumnya mungkin sudah menghapus set yang lebih lama. Untuk
+memulihkan:
+
+1. Salin `~/.apothem/backups/` ke tempat lain sebelum Anda menjalankan Apothem
+   lagi.
+2. Salin berkas yang Anda perlukan dari salinan itu kembali ke `~/.claude/`
+   secara manual.
+3. Jalankan `apothem update` setelahnya.
+
+`apothem rollback --install-id` membalikkan seluruh pemasangan sebelumnya,
+termasuk `settings.json` dan `CLAUDE.md`, sehingga itu bukan cara untuk
+memulihkan berkas-berkas ini.
 
 Skill yang terpasang, dan skill yang dibundel dalam plugin Claude Code, membawa
 `user-invocable` alih-alih `userInvocable` milik korpus sumber, karena Claude
@@ -189,6 +218,30 @@ dengan baik dan semua ikatan hook di settings.json dapat di-resolve. Adapter
 tidak menulis entri server MCP apa pun: daftarkan server dengan
 `claude mcp add` (lihat [Server MCP](/docs/reference/mcp)).
 
+Claude Code juga membaca `AGENTS.md` milik proyek, mulai dari rilis yang
+disebutkan di [halaman memorinya](https://code.claude.com/docs/en/memory#agents-md).
+Dengan pengaturan default **Project instructions**, Claude Code melakukannya
+hanya ketika tidak ada `CLAUDE.md`, `.claude/CLAUDE.md`, atau `CLAUDE.local.md`
+di folder kerja atau folder di atasnya. Claude Code membaca berkas `AGENTS.md`
+di sana saat sesi dimulai, dan `AGENTS.md` milik folder di bawah folder kerja
+ketika alat Read-nya membuka berkas di folder itu dan folder itu tidak memiliki
+satu pun dari ketiga berkas tersebut. `~/.claude/CLAUDE.md` tidak dihitung,
+sehingga blok Apothem di sana tetap dimuat bersama `AGENTS.md` proyek.
+Instalasi Kimi Code menulis blok Apothem ke `AGENTS.md` proyek, sehingga di
+proyek seperti itu Claude Code memuat kedua blok;
+[registri harness](/docs/reference/harness-registry#shared-roots) mencantumkan
+pembaca berkas itu beserta kondisinya.
+
+**Project instructions** adalah pengaturan untuk seluruh pengguna, bukan per
+proyek: menyetelnya ke `claude-md` di `/config` membuat Claude Code hanya
+memakai berkas `CLAUDE.md`-nya di setiap proyek, dan `claude-md-and-agents-md`
+memuat kedua jenis berkas di mana pun berkas itu berada. Beberapa sesi tidak
+membaca `AGENTS.md` apa pun pengaturannya: sesi dengan plugin bawaan yang
+membacanya dimatikan, beberapa sesi pertama setelah peningkatan dari rilis yang
+belum dapat membacanya, dan, pada rilis awal, beberapa sesi di Amazon Bedrock
+atau dengan telemetri dimatikan. Halaman memori mencantumkannya dan menyebutkan
+rilis-rilisnya.
+
 `~/.claude/agents/` adalah direktori akar bersama yang dimiliki `Claude Code`,
 demikian pula `~/.claude/skills/` dan `~/.claude/CLAUDE.md`: alat lain yang
 didukung memuat jalur-jalur itu, sehingga agen, skill, dan blok Apothem yang ditulis
@@ -265,8 +318,16 @@ Paket `apothem` yang terpasang dan repositori sumber tidak terpengaruh.
 ## Gerbang konformitas
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Jalankan dari folder proyek Anda. Di Windows, gunakan `python` sebagai pengganti
+`python3` dan jalur lengkapnya, karena Windows PowerShell dan cmd tidak mengekspansi
+`~`: `$HOME\.apothem\src\apothem\conformity\gate.py` di PowerShell, atau
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` di cmd. Jalur itu adalah
+tempat installer menaruh engine, dan `-E -s` menjauhkan `PYTHONPATH` serta
+site-packages pengguna Anda dari gerbang; [Gerbang konformitas](/docs/conformity-gate)
+menjelaskan keduanya dan instalasi lainnya.
 
 Saat dijalankan terhadap repositori, gerbang mewajibkan bagian `## Bindings`
 pada setiap aturan, command, helper, dan skill. Saat dijalankan terhadap pohon

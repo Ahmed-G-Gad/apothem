@@ -2,7 +2,7 @@
 title: "Berkontribusi ke Apothem — Panduan Pengembang"
 description: "Pelihara dan perluas ekosistem Apothem dengan menulis aturan, command, helper, skill, dan hook menggunakan skema kanonis, persyaratan frontmatter, dan prosedur validasi."
 machineTranslated: true
-sourceHash: "82cbd13f4a28f8cb"
+sourceHash: "a2dea5f7e64b7fbc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -60,7 +60,10 @@ menunjukkan delta perilakunya.
 
 Driver pemasangan bersama memvalidasi setiap sumber dan target sebelum
 penulisan pertama. Driver ini menolak sumber manifest yang hilang, traversal
-target, jalur target di luar akar yang dipilih, dan penyeberangan symlink.
+target, jalur target di luar akar yang dipilih, dan penyeberangan symlink;
+junction Windows diperiksa sebagai symlink. Pengecualiannya adalah tautan yang
+dibuat pengelola dotfile di `~/.config`, atau di atau di atas folder skill,
+aturan, atau templat bersama, yang diikuti selama tetap berada di dalam home.
 Dry-run menjalankan validasi yang sama dan mengembalikan hasil `skipped` atau
 `unchanged` yang terstruktur tanpa membuat berkas.
 
@@ -128,8 +131,10 @@ Pola: huruf kecil, tanda hubung di antara kata, tanpa spasi atau garis bawah.
 - **Hook:** Di dalam folder `src/apothem/hooks/`. Semua penangan peristiwa ditulis
   dengan Python. Setiap command hook dalam templat `settings.json` Claude Code
   menggunakan bentuk exec: `command` adalah placeholder interpreter
-  `${PYTHON_BIN}`, yang di-resolve saat pemasangan, dan `args` berisi jalur
-  skrip beserta argumennya. Templat tersebut menjalankan
+  `${PYTHON_BIN}`, yang di-resolve saat pemasangan, dan `args` berisi `-E`, `-s`,
+  jalur skrip beserta argumennya. Kedua flag itu menjauhkan `PYTHONPATH`,
+  variabel `PYTHON*` lainnya, dan site-packages pengguna dari setiap hook;
+  pertahankan keduanya pada setiap hook yang Anda tambahkan. Templat tersebut menjalankan
   `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` dan
   `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` dengan jalur
   absolut, sehingga salinan yang terpasang tidak memerlukan paket `apothem`
@@ -650,12 +655,181 @@ Gunakan formatter / linter `Ruff` untuk berkas Python. Untuk Markdown, gunakan
 ```bash
 python -m pytest                      # unit, integration, property, conformity, scripts
 python -m pytest tests/property       # Hypothesis properties (profile loader, frontmatter, merge)
+python -m pytest tests/fuzz           # replay each fuzz target's seed inputs (no Atheris needed)
 ```
+
+Target fuzz di `tests/fuzz/` dijalankan di bawah Atheris di CI. Untuk melakukan
+fuzz pada salah satunya di mesin Anda sendiri (Linux atau macOS, Python 3.11
+atau lebih baru), pasang Atheris, taruh checkout di jalur, dan arahkan target ke
+salinan seed-nya:
+
+```bash
+python -m pip install atheris
+export PYTHONPATH="$PWD/src:$PWD/src/apothem/_vendor"
+mkdir -p /tmp/corpus && cp tests/fuzz/seeds/lenient-json/*.txt /tmp/corpus/
+python tests/fuzz/fuzz_lenient_json.py -max_total_time=60 /tmp/corpus
+```
+
+`tests/fuzz/README.md` mencantumkan target-target itu dan apa yang perlu
+dilakukan ketika salah satunya menemukan crash.
 
 Suite ini hermetis: suite lolos ketika checkout berada di bawah `$TMPDIR` dan
 ketika `python` di `PATH` tidak memiliki prasyarat CLI, karena pengujian
 integrasi menjalankan interpreter yang menjalankan pytest dan mentokenisasi jalur
 sementara dan jalur sumber yang bersarang, dimulai dari yang terpanjang.
+
+### Pengujian tidak pernah menulis ke home Anda yang sebenarnya
+
+Skrip probe atau asisten otomatis tidak boleh menjalankan pemasang atau adapter
+Apothem terhadap home Anda yang sebenarnya. Jalankan perilaku di dalam pengujian
+di bawah `tests/`, tempat `tests/conftest.py` mengarahkan home, ledger
+pemasangan, dan root cadangan ke folder sementara.
+
+Apothem juga menolak sendiri penulisan ini selama pytest berjalan, sehingga
+berkas pengujian yang disalin keluar dari `tests/` dan dijalankan tanpa
+`tests/conftest.py` tidak dapat mencapai home yang sebenarnya melalui Apothem.
+Selama `PYTEST_CURRENT_TEST` disetel dan tidak kosong (sebuah pengujian), atau
+`PYTEST_VERSION` memuat versi pytest yang sedang berjalan (seluruh sesi,
+termasuk koleksi dan hook sesi), penulisan, penghapusan, penyalinan, penggantian
+nama, atau berkas kunci di `~/.apothem` milik akun, `~/.config/apothem`, folder
+alat yang disebutkan registri harness di dalam home (`~/.claude`, `~/.qwen`,
+`~/.config/opencode`, dan seterusnya), atau berkas di luar folder-folder itu
+yang diubah oleh manifest propagasi (`~/.antigravity/profile.yaml` yang ditulis
+rilis sebelumnya) berhenti sebelum apa pun berubah, dengan galat seperti ini:
+
+```text
+RealHomeWriteError: Apothem refused to create the lock file
+C:\Users\you\.apothem\state\codex\<id>.install.lock: it is inside or holds
+C:\Users\you\.apothem, a protected path in this account's real home, while a
+pytest test is running (PYTEST_CURRENT_TEST is set:
+test_probe.py::test_install (call)). Nothing in C:\Users\you\.apothem was
+changed. ...
+```
+
+`PYTEST_VERSION` dengan nilai lain apa pun, seperti pin `8.2` yang diekspor
+shell atau job CI, tidak dihitung, begitu pula `PYTEST_CURRENT_TEST` yang
+kosong. Di luar pengujian mana pun, galat itu menyatakan `PYTEST_VERSION holds
+the version of the pytest imported in this process, <version>, outside any
+test` sebagai pengganti pengujiannya; galat itu tidak mengklaim bahwa sesi
+pytest sedang berjalan, karena sebuah proses dapat mengimpor pytest tanpa
+menjalankannya. `PYTEST_VERSION` yang diekspor shell atau job CI dengan versi
+persis pytest yang terpasang tetap dihitung, juga di luar pytest, dan dalam
+proses yang belum mengimpor pytest galat itu kemudian menyatakan
+`PYTEST_VERSION holds the installed pytest's
+version, <version>, though no pytest runs in this process`.
+
+Pemasangan, update, pencopotan, atau rollback berlingkup-proyek yang root
+proyeknya adalah home akun itu sendiri ditolak dengan cara yang sama, sebelum
+menulis apa pun: jika tidak, berkas proyeknya akan langsung mendarat di home.
+Folder proyek di dalam home tetap diizinkan. Home data yang langsung berada di
+home juga ditolak, apa pun nama yang diberikan profil kepadanya
+(`workspace.scope: user-home` dengan `directory_name` miliknya sendiri), sebelum
+home data itu dibuat dan sebelum penyimpanannya dihapus. Home data yang berupa
+tautan (junction di Windows) ke folder yang langsung berada di home ditolak
+dengan cara yang sama, begitu pula home data yang mengarah ke home itu sendiri,
+secara langsung atau melalui rantai tautan, yang penyimpanannya akan langsung
+mendarat di home.
+
+Ejaan berikut dari folder yang dilindungi juga dihitung: tautan atau junction ke
+dalamnya, dan folder yang ditukar dengan tautan selama pengujian. Di Windows,
+huruf besar-kecil, nama pendek (8.3), awalan `\\?\`, `\\.\`, dan `\??\`, share
+admin loopback seperti `\\localhost\C$` atau `\\--1.ipv6-literal.net\C$`, share
+yang dicapai melalui salah satu alamat mesin itu sendiri atau melalui drive yang
+dipetakan, dan alternate data stream (`.apothem:name`) juga dihitung, begitu
+pula jalur perangkat di balik salah satu awalan tersebut
+(`GLOBALROOT\Device\HarddiskVolume2` atau `Volume{GUID}`). Di macOS, huruf
+besar-kecil dan normalisasi Unicode juga diabaikan, dan
+`/System/Volumes/Data/<path>` dibaca sebagai `/<path>`. Hanya aturan string ini
+yang tidak menghubungi jaringan: jalur share, atau jalur di drive yang
+dipetakan, diperiksa dengan bertanya kepada host share tersebut.
+`tests/README.md` mencantumkan ejaan yang tidak terlihat oleh pemeriksaan ini,
+seperti hard link ke berkas di folder yang dilindungi, bind mount dari home, dan
+mount Linux yang tidak peka huruf besar-kecil.
+
+CLI memunculkan galat itu apa adanya, juga untuk pencopotan. Beberapa tahap
+memeriksa jalurnya sebelum perubahan pertama, sehingga penolakan di sana
+membiarkan semuanya seperti semula. Sapuan basi memeriksa setiap jalur basi.
+Rollback memeriksa setiap jalur yang disebutkan catatan pemasangannya (bahkan
+jalur yang akan dibiarkannya di tempat), penyimpanan data yang akan dihapusnya,
+dan folder tingkat pengguna di home yang akan dirapikannya terakhir. Rollback
+dan pencopotan memeriksa root cadangan dan ledger, dan pencopotan OpenClaw juga
+memeriksa `openclaw.json` dan setiap berkas aturan workspace. Pencopotan yang
+ditolak mencatat pencopotan yang belum selesai di ledger hanya ketika pencopotan
+itu sudah mengubah berkas di luar folder yang dilindungi, juga pada langkah
+sebelum penghapusan bersama (misalnya langkah pertama pencopotan konfigurasi
+native), sehingga cadangan berkas-berkas itu tetap dirujuk. Beberapa pemanggil
+internal sengaja menyerap galat itu (misalnya baris ledger best-effort),
+sehingga setiap penolakan juga dicatat ke log, dan `tests/conftest.py` membuat
+gagal pengujian yang setelahnya sebuah penolakan tercatat, bahkan ketika
+pengujian itu ditandai `xfail`. Penolakan yang tercatat di luar pengujian mana
+pun selama pytest mengoleksi sebuah node membuat koleksi node itu gagal.
+Penolakan lain yang tercatat di luar pengujian mana pun, di awal sesi, di antara
+dua laporan koleksi, setelah koleksi, di antara dua pengujian, setelah pengujian
+terakhir, di ringkasan, atau di `pytest_unconfigure`, dilaporkan ketika sesi
+selesai, dinamai menurut tempat terjadinya, dan membuat eksekusi gagal, juga
+ketika sebuah hook kemudian mengakhiri eksekusi dengan
+`pytest.exit(returncode=0)` atau `sys.exit(0)` (atau, di sistem apa pun, kode
+yang dipotong sistem POSIX menjadi 0 atau 5, seperti 256), juga setelah hook
+lain mengakhiri penyelesaian sesi dengan `sys.exit` atau sebuah exception, dan
+juga ketika worker paralel (`-n`) mencatatnya, sebelum atau setelah worker itu
+menyerahkan penolakannya ke proses utama. Worker menulis setiap penolakan,
+segera setelah memegangnya, ke berkas yang dibaca proses utama, sehingga
+penolakan yang dipegangnya sebelum ia crash atau dihentikan sebelum penyerahan
+itu, atau sebelum hook penyelesaian sesi menghentikannya di sana, tetap membuat
+eksekusi gagal. Tiga kasus masih hanya muncul di `stderr` dan membiarkan kode
+keluar apa adanya: penolakan yang tercatat setelah `yield` dari wrapper
+`pytest_unconfigure` `tryfirst` yang didaftarkan pytest setelah penjaga,
+penolakan yang tercatat dalam cleanup yang didaftarkan dengan
+`config.add_cleanup` (masing-masing kecuali `sys.exit` yang lolos kemudian
+mengakhiri eksekusi, atau salah satunya mengakhiri penyelesaian sesi
+sebelumnya), dan penolakan yang dicatat worker tetapi tidak diserahkan maupun
+ditulis ke berkas itu, karena worker berakhir atau dihentikan lebih dulu
+(misalnya hook penyelesaian sesi mencatatnya lalu membuat worker crash) atau
+karena berkas itu tidak dapat dibuat atau ditulis (ketika penulisan terakhir
+worker ke berkas itu gagal di tengah jalan, bagian yang sudah mencapai berkas
+tetap ada, dan proses utama membuat eksekusi gagal karenanya, seperti halnya
+ketika penulisan itu membuat berkas kosong, kecuali salinan yang ditulis di
+samping penyerahan sudah membuatnya kosong dan proses utama mengambil keluaran
+worker). Dalam kasus terakhir itu, keluaran hanya memuat penolakan yang
+diserahkan worker: penolakan yang ditemukannya setelah penyerahan, yang
+penulisannya membuat berkas kosong lagi, hanya muncul di `stderr` worker, dan
+tidak muncul di mana pun ketika worker crash selama penulisan itu; eksekusi
+tetap gagal karena penolakan yang telah diserahkannya. Di akhir eksekusi, proses
+utama memberi tahu setiap worker untuk keluar; worker yang masih menjalankan
+kode Python 5 detik kemudian diinterupsi (di Windows, tidak untuk worker yang
+terblokir dalam sleep atau panggilan lain), dan worker mana pun yang masih
+berjalan setelah 10 detik dihentikan. Penjaga tidak dapat mengubah kode keluar
+eksekusi yang berakhir melalui `os._exit` di proses utama (dalam hook, cleanup,
+atau handler `atexit`), melalui wrapper `pytest_cmdline_main` `tryfirst` yang
+didaftarkan pytest setelah penjaga, atau melalui hook `pytest_cmdline_main`
+yang kembali sebelum sesi apa pun berjalan; dengan `os._exit`, laporan terminal
+penjaga juga dapat hilang, dan dalam kasus pertama dan terakhir, penolakan yang
+belum dilaporkan penjaga hanya muncul sebagai baris `stderr`-nya. Log disimpan
+per proses: penolakan yang diserap proses Apothem anak hanya muncul sebagai
+baris di `stderr` anak itu, dan pengujian tidak dibuat gagal karenanya.
+
+Home yang dimaksud adalah home yang dicatat sistem operasi untuk akun itu, bukan
+`HOME` atau `USERPROFILE`. Pembacaan, dry run, dan pratinjau tetap berfungsi;
+satu-satunya pemeriksaan status yang mencatat pencopotan yang telah selesai di
+ledger adalah penulisan, sehingga pemeriksaan itu ditolak secara diam-diam dan
+dilaporkan. Pengujian yang memang harus menjalankan pemasangan nyata memulai
+Apothem tanpa `PYTEST_CURRENT_TEST` dan `PYTEST_VERSION` di lingkungan proses
+anak.
+
+Penolakan ini tidak mencakup folder yang dipindahkan `CODEX_HOME`,
+`CLAUDE_CONFIG_DIR`, atau `XDG_CONFIG_HOME` dari nama default-nya, di luar home
+atau di dalamnya (`XDG_CONFIG_HOME=~/xdg` menaruh folder OpenCode di
+`~/xdg/opencode`), folder status hook, atau program yang bukan Python, seperti
+pemasang shell. Pemeriksaan berjalan sebelum penulisan, berdasarkan jalur,
+sehingga folder yang ditukar dengan tautan di antara keduanya tidak terlihat.
+Ketika sistem tidak memiliki catatan home akun itu (pengguna container tanpa
+entri `passwd`), home akun sama sekali tidak dilindungi. Checkout yang berada
+di dalam folder yang dilindungi (misalnya di bawah `~/.claude`) penulisan
+Apothem-nya ditolak selama pengujian. Penolakan ini tidak melakukan apa pun di
+luar pytest, yaitu ketika lingkungan tidak memuat `PYTEST_CURRENT_TEST` yang
+tidak kosong maupun versi pytest yang terpasang di `PYTEST_VERSION`, itulah
+sebabnya aturan di atas tetap berlaku. `tests/README.md` mencantumkan setiap
+celah.
 
 ### Cakupan pengujian per paket
 
@@ -676,7 +850,7 @@ Naikkan batas bawah ketika cakupan meningkat; jangan pernah menurunkannya agar
 sebuah perubahan lolos. Untuk memeriksa secara lokal:
 
 ```bash
-python -m pytest --cov=src/apothem --cov-report=json:coverage.json
+python -m pytest --cov=src/apothem --cov-fail-under=0 --cov-report=json:coverage.json
 python scripts/dev/collect_metrics.py --coverage-json coverage.json --check-floors \
   --skip-hooks --skip-coldstart --harness zed
 ```
@@ -684,7 +858,8 @@ python scripts/dev/collect_metrics.py --coverage-json coverage.json --check-floo
 ### Artefak metrik
 
 Job `metrics` di CI menjalankan `scripts/dev/collect_metrics.py` pada setiap push
-dan pull request serta mengunggah `metrics.json` (`schema_version: 1`). Setiap
+dan pull request setelah kedua shard cakupan lolos, menggunakan data cakupan
+yang diukur keduanya, serta mengunggah `metrics.json` (`schema_version: 1`). Setiap
 nilai yang `null` membawa alasannya di bawah `nulls`.
 
 | Kunci | Yang diukur |
@@ -702,13 +877,25 @@ dihitung. Teks aturan tersebut juga ditulis ke dalam artefak di bawah
 
 ```text
 antigravity     ~/.gemini/{GEMINI,AGENTS}.md, ~/.gemini/config/{GEMINI,AGENTS}.md,
-                ~/.gemini/config/rules/*.md with trigger: always_on, project
-                GEMINI.md and AGENTS.md. The plugin rules/ folder is not a
-                documented launch surface.
+                ~/.gemini/config/rules/*.md with trigger: always_on, and in the
+                project GEMINI.md, AGENTS.md, .agents/{GEMINI,AGENTS}.md and
+                .agents/rules/*.md with trigger: always_on, plus, for each
+                plugin in ~/.gemini/config/plugins/ with a plugin.json not
+                marked disabled: true, its rules/AGENTS.md (else
+                rules/GEMINI.md) and its rules/*.md with trigger: always_on.
+                A rule file counts only when its first line opens the
+                frontmatter. Each file counted up to 24,000 bytes. @ includes
+                are not expanded, the user's own plugin on/off choice is not
+                read, and the 20,000-token budget across always-on rules is
+                not modeled.
 claude-code     ~/.claude/CLAUDE.md and ~/.claude/rules/**/*.md without paths:
-                frontmatter, plus the project equivalents.
-codebuddy       .codebuddy/rules/**/*.md (project and home) unless
-                alwaysApply: false, plus CODEBUDDY.md.
+                frontmatter, plus the project equivalents and CLAUDE.local.md;
+                the project AGENTS.md and .claude/AGENTS.md only when the
+                project has no CLAUDE.md, .claude/CLAUDE.md or CLAUDE.local.md.
+codebuddy       .codebuddy/rules/**/*.md (project and home) unless enabled:
+                false or alwaysApply: false, ~/.codebuddy/CODEBUDDY.md, the
+                project CODEBUDDY.local.md, and the first of CODEBUDDY.md and
+                .codebuddy/CODEBUDDY.md, else AGENTS.md.
 codex           The first non-empty of ~/.codex/AGENTS.override.md and
                 ~/.codex/AGENTS.md, plus the first of AGENTS.override.md,
                 AGENTS.md and the project_doc_fallback_filenames names that
@@ -717,16 +904,26 @@ codex           The first non-empty of ~/.codex/AGENTS.override.md and
 cursor          .cursor/rules/**/*.mdc with alwaysApply: true, and AGENTS.md.
 gemini-cli      ~/.gemini/GEMINI.md and the project GEMINI.md.
 github-copilot  .github/copilot-instructions.md and the project AGENTS.md.
-hermes          ~/.hermes/SOUL.md, plus the first of these kinds in the project
-                with a non-empty file (Hermes loads one): .hermes.md or
-                HERMES.md (the first of the two that exists is the only
-                candidate), AGENTS.override.md or AGENTS.md, CLAUDE.md, then
-                .cursorrules with .cursor/rules/*.mdc. The support tree and
-                apothem/rules/ are not launch surfaces.
-kimi-code       ~/.kimi-code/AGENTS.md, project AGENTS.md and .kimi-code/AGENTS.md.
+hermes          ~/.hermes/SOUL.md when it holds text, plus the first of these
+                kinds in the project with a non-empty file (Hermes loads one):
+                .hermes.md or HERMES.md (the first of the two that exists is
+                the only candidate), AGENTS.override.md or AGENTS.md,
+                CLAUDE.md, then .cursorrules with .cursor/rules/*.mdc. The
+                support tree and apothem/rules/ are not launch surfaces.
+kimi-code       ~/.kimi-code/AGENTS.md, the first non-empty of
+                ~/.agents/AGENTS.md and ~/.agents/agents.md, and the project
+                .kimi-code/AGENTS.md and AGENTS.md; blank files load nothing.
+                Kimi also reads AGENTS.md in each folder from the git root
+                down; the scratch project has no .git, so only its root is
+                read.
 kiro            .kiro/steering/**/*.md with inclusion: always or no inclusion
                 key, and the project AGENTS.md.
-open-claw       Workspace bootstrap files ~/.openclaw/workspace/*.md.
+open-claw       The non-blank bootstrap files in ~/.openclaw/workspace/, in
+                order: AGENTS.md, SOUL.md, IDENTITY.md, USER.md, BOOTSTRAP.md,
+                MEMORY.md; each up to 20,000 characters (USER.md 4,000),
+                60,000 in all. Approximate: OpenClaw's own trimming,
+                head-and-tail truncation, missing-file markers and per-session
+                filtering are not modeled.
 opencode        ~/.config/opencode/AGENTS.md, the project AGENTS.md, and every
                 file the instructions globs in opencode.json match.
 qwen-code       The context files named by context.fileName in

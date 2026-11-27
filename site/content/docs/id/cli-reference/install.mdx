@@ -2,7 +2,7 @@
 title: "install"
 description: "Referensi CLI untuk perintah apothem install."
 machineTranslated: true
-sourceHash: "16be1a92f6de53b3"
+sourceHash: "5ba6f0eafa4b1b6f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,12 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 Memuat dan memvalidasi profil bersama, memilih adapter bernama atau himpunan
 `all` selingkup registri, memvalidasi rencana materialisasi, lalu menulis
 konfigurasi native-harness beserta kohor pendukung. Adapter berlingkup-proyek
-memerlukan `--project PATH`.
+memerlukan `--project PATH`. Folder itu dibaca dengan tautannya diikuti dan `~`
+diperluas, dan catatan pemasangan menyebutkannya dengan cara itu. Pemasangan
+yang dicatat dengan ejaan lain dari folder itu, seperti tautan yang
+dipertahankan oleh kode Python atau rilis sebelumnya, dipindahkan ke ejaan
+tersebut setelah pemasangan lolos pemeriksaannya (lihat
+[`uninstall`](/docs/cli-reference/uninstall)).
 
 Alias bentuk-kontinu `apothem installing` (juga diterima sebagai
 `apothem Installing`) di-resolve ke handler yang sama.
@@ -57,6 +62,35 @@ di bawah konfirmasi per target tersendiri: langkah itu menulis cadangan di bawah
 `~/.apothem/backups` dan menghapus target yang dikonfirmasinya. Penghapusan
 tersebut dan cadangannya tetap berada di tempatnya ketika prompt pemasangan
 ditolak.
+Targetnya adalah folder alat di direktori home Anda yang dicantumkan prompt,
+termasuk `~/.agents` dan `~/.config/apothem`.
+Target yang dirinya sendiri berupa tautan, termasuk junction Windows, hanya
+kehilangan tautannya, dan tautan di dalam target dihapus tanpa dimasuki. Ketika
+`~/.config` adalah tautan yang mengarah keluar dari direktori home Anda, langkah
+awal bersih berhenti dengan `Clean-slate removal was refused` sebelum
+mencadangkan atau menghapus apa pun, karena menghapus `~/.config/apothem` akan
+menghapus folder di ujung lain tautan itu. Galat tersebut menyebutkan tautannya:
+ganti dengan folder nyata, atau arahkan ke folder di dalam direktori home Anda.
+Langkah ini juga berhenti sebelum mengubah apa pun, dan sebelum membuat profil
+awal, ketika direktori home Anda bukan jalur lengkap, merupakan root drive atau
+sistem berkas, merupakan tautan atau junction yang mengarah ke salah satunya,
+atau dicapai melalui tautan yang berputar.
+
+Langkah awal bersih menghapus profil default,
+`~/.config/apothem/profile.yaml`, bersama `~/.config/apothem`, lalu menulisnya
+kembali sesudahnya. Profil yang tidak dihapusnya, seperti profil yang Anda
+berikan dengan `--profile PATH` dari folder lain, sama sekali tidak ditulis.
+Penulisan kembali mengikuti aturan yang sama dengan setiap penulisan profil
+lainnya: penulisan itu ditolak ketika sebuah tautan akan membawanya keluar dari
+direktori home Anda. Ketika profil tidak dapat ditulis kembali, perintah keluar
+dengan 1 dan galatnya menyebutkan salinan cadangan yang memuatnya. Kode galatnya
+adalah `clean_slate.profile_restore_refused` ketika sebuah tautan menolak
+penulisan, dan `clean_slate.profile_restore_failed` ketika penulisan itu sendiri
+gagal. Ketika penghapusan berhenti di tengah jalan, misalnya pada berkas yang
+sedang dibuka program lain, profil ditulis kembali terlebih dahulu. Perintah
+kemudian keluar dengan 1 dengan kode galat `clean_slate.removal_failed`, dan
+galatnya menyebutkan folder cadangan. Jika profil tidak dapat ditulis kembali,
+galatnya adalah salah satu dari dua kode profil di atas sebagai gantinya.
 
 ## Folder di direktori home Anda
 
@@ -87,12 +121,41 @@ all seven                               ->  ~/.config/apothem/rules/ and templat
   penulisan yang gagal atau terputus tidak pernah meninggalkan folder skill
   setengah jadi dengan nama akhirnya. Jalankan pemasangan lagi untuk
   menyelesaikannya; pemasangan itu menggantikan folder staging yang tersisa.
-- Symlink pada atau di atas salah satu folder ini, seperti yang dibuat oleh
+- Tautan pada atau di atas salah satu folder ini, seperti yang dibuat oleh
   pengelola dotfile untuk `~/.config` atau `~/.agents`, diikuti ketika
-  mengarah ke suatu tempat di dalam direktori home Anda. Tautan yang keluar
-  dari direktori home Anda menghentikan pemasangan dengan
-  `target escapes the allowed materialization root`, demikian pula tautan di
-  dalam folder skill.
+  mengarah ke suatu tempat di dalam direktori home Anda. Di Windows, junction
+  dihitung sebagai tautan. Tautan yang keluar dari direktori home Anda
+  menghentikan pemasangan dengan `target escapes the
+  allowed materialization root`, diikuti oleh tautannya, folder yang ditujunya,
+  dan perbaikannya: ganti tautan itu dengan folder nyata. Folder skill yang
+  dirinya sendiri berupa tautan tidak pernah ditulis melaluinya: pemasangan
+  melewatinya dengan peringatan, atau berhenti jika Apothem pernah menulis
+  skill itu di sana sebelumnya. Tautan di dalam folder skill yang ditulis
+  Apothem diganti dengan folder pada saat berikutnya pemasangan menulis skill
+  itu.
+- Folder harness di bawah `~/.config`, seperti `~/.config/opencode/` milik
+  OpenCode atau `CODEX_HOME` di sana, juga mengikuti tautan di `~/.config` yang
+  mengarah ke suatu tempat di dalam direktori home Anda. Tautan di `~/.config`
+  yang keluar dari direktori home Anda menghentikan pemasangan sebelum menulis
+  berkas apa pun, demikian pula tautan pada jalur yang ditulis pemasangan di
+  dalam folder harness. Pada eksekusi pertama, profil awal, yang juga berada di
+  bawah `~/.config`, juga tidak ditulis melalui tautan yang keluar dari
+  direktori home Anda: eksekusi berhenti dengan `Apothem could
+  not create the starter profile`, seperti halnya `apothem quickstart`, `apothem profile
+  init`, `apothem profile set`, dan `apothem profile edit`. Untuk menyimpan
+  profil di luar direktori home Anda, buat profil itu di sana terlebih dahulu
+  dengan `apothem
+  profile init --profile PATH`, dengan PATH dieja sebagai jalurnya sendiri di
+  luar direktori home Anda, lalu berikan `--profile PATH` yang sama ke setiap
+  perintah. Itu hanya melewati langkah profil: pemasangan yang menulis di bawah
+  `~/.config` tetap berhenti di tautan itu. Untuk OpenCode, tetapkan juga
+  `XDG_CONFIG_HOME` (lihat [OpenCode](/docs/harnesses/opencode)). Harness yang
+  pemasangannya selalu menulis `~/.config/apothem/` memerlukan tautan yang
+  mengarah ke dalam direktori home Anda sebagai gantinya; halaman harness-nya
+  menyatakan hal itu.
+- Folder home yang dirinya sendiri berupa tautan, seperti profil pengguna
+  Windows yang dipindahkan ke drive lain di balik junction, diikuti: setiap
+  penulisan tetap berada di dalam folder yang ditujunya.
 - Pemasangan tidak menambahkan berkas skill atau aturan apa pun ke repositori
   Anda. Proyek mendapatkan berkas aturan adapter, ditambah folder data
   `.apothem/` yang dibuat oleh setiap pemasangan proyek.
@@ -101,6 +164,49 @@ all seven                               ->  ~/.config/apothem/rules/ and templat
   membawa entri `warnings` dengan `"outcome": "warning"` dan
   `"operation": "skill_conflict"` yang menyebutkan folder tersebut. Ganti nama
   atau pindahkan folder itu, lalu jalankan [`update`](/docs/cli-reference/update).
+- Aturan ini mencakup setiap folder skill bersama dalam tabel di atas:
+  `~/.agents/skills/`, `~/.codebuddy/skills/`, `~/.kiro/skills/`, dan
+  `~/.trae/skills/`. Catatan pemasangan menunjukkan bahwa folder skill di sana
+  milik Apothem selama folder pemasangannya (proyek, atau `CODEX_HOME`) masih
+  hidup: folder itu ada dan masih memuat salah satu berkas yang dicatat
+  pemasangan tersebut di dalamnya, dengan konten Apothem. Berkas yang dimiliki
+  Apothem dihitung selama berkas itu ada. Berkas milik Anda, seperti berkas
+  instruksi yang ditambahi blok oleh Apothem, hanya dihitung selama masih
+  memuat blok itu atau, untuk berkas tanpa blok, konten yang dicatat Apothem,
+  sehingga proyek yang di-clone ulang yang hanya menyimpan salinan berkasnya
+  sendiri tidak dianggap hidup. Berkas pendukung yang ditulis pemasangan di
+  bawah `.apothem/support/` dihitung; penyimpanan data di bawah `.apothem/`
+  (memori, konteks, rencana) tidak, begitu pula berkas yang dicapai melalui
+  tautan di dalam folder pemasangan.
+- Catatan lain mana pun, yang folder pemasangannya tidak lagi ada, tidak memuat
+  berkas Apothem, atau tidak dapat dibaca (drive atau share jaringan yang tidak
+  merespons, galat izin), menunjukkan bahwa folder skill milik Apothem hanya
+  selama folder itu memuat persis berkas-berkas yang dicatat pemasangan
+  tersebut, tanpa perubahan, tanpa berkas yang ditambahkan dan tanpa tautan di
+  dalamnya. Folder yang sudah memuat apa yang ditulis rilis ini dibiarkan apa
+  adanya, sehingga folder yang tidak disunting yang ditulis oleh rilis
+  sebelumnya tidak terpengaruh selama masih cocok dengan apa yang ditulis rilis
+  ini.
+- Folder bersama itu sendiri tidak pernah dihitung sebagai berkas milik folder
+  pemasangan, sehingga proyek yang dipasang di folder home tidak dianggap hidup
+  hanya karena `~/.agents/skills/` atau `~/.config/apothem/` ada di sana.
+- Jadi ketika hanya catatan seperti itu yang mencantumkan sebuah folder skill,
+  pemasangan melewatinya dan membiarkannya tidak tersentuh dalam tiga kasus:
+  Anda menaruh skill Anda sendiri di sana, Anda menyuntingnya (mengubah,
+  menambahkan, atau menghapus berkas), atau rilis sebelumnya yang tidak
+  mencatat berkasnya menulis folder itu dan rilis ini menulis sesuatu yang
+  berbeda. Hal yang sama berlaku ketika hanya pemasangan sebelumnya di folder
+  yang sama yang mencantumkannya: pemasangan yang melewati folder itu tidak
+  mencantumkannya, dan folder itu tetap tidak terbukti kecuali memuat persis
+  berkas-berkas yang dicatat pemasangan sebelumnya.
+  Peringatan pemasangan, update, dan dry-run menyebutkan penyebabnya dan dua
+  cara untuk melanjutkan, dengan kata-kata yang sama seperti
+  [`verify`](/docs/cli-reference/verify), yang melaporkan harness itu sebagai
+  tidak terverifikasi dan menyebutkan folder-folder tersebut. Untuk
+  mempertahankan skill Anda, biarkan di sana. Untuk menggunakan versi Apothem,
+  pindahkan folder itu keluar dari folder skill, lalu jalankan
+  [`update`](/docs/cli-reference/update) untuk harness tersebut (dengan
+  `--project` untuk harness berlingkup-proyek).
 - Setiap pemasangan, update, dan dry run semacam itu mencetak `Note:` yang
   menyebutkan folder yang ditulisnya di luar `--project`. Dalam amplop JSON,
   catatan ini berupa entri `warnings` dengan `"operation": "user_level_write"`
@@ -115,8 +221,56 @@ diam-diam. Dalam mode plain, ini berupa satu catatan terkelompok per harness
 di bawah `--verbose`, setiap kemampuan mencetak baris alasannya sendiri.
 Peringatan adapter lainnya juga dicetak pada baris `Warning:` tersendiri dalam
 mode plain, misalnya peringatan Zed yang menyebutkan berkas instruksi yang
-disembunyikan oleh `.rules` yang baru. Amplop `--format json` selalu membawa
-larik `warnings` lengkap terlepas dari tingkat verbositas.
+disembunyikan oleh `.rules` yang baru, dan peringatan yang menyebutkan berkas
+yang memuat penanda BEGIN Apothem tanpa END setelahnya: pemasangan
+mempertahankan teks setelah penanda itu dan menulis blok Apothem terpisah
+darinya, sehingga peringatan itu menyebutkan baris penandanya, memberikan
+langkah-langkah bernomor yang mengubah baris itu dan setiap baris penanda BEGIN
+lainnya kecuali yang membuka blok Apothem (termasuk penanda BEGIN yang Anda
+kutip di dalam kode), dan meminta Anda untuk tidak menambahkan kembali penanda
+END sebagai gantinya, karena itu
+akan menyisakan dua blok Apothem (lihat
+[Pemecahan masalah](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
+Begitu pula peringatan untuk berkas yang memuat dua blok utuh atau lebih di
+antara penanda Apothem, yang menyebutkan setiap blok berdasarkan baris-barisnya
+(lihat
+[Sebuah berkas memuat dua blok di antara penanda Apothem](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)),
+dan peringatan untuk berkas tempat Apothem tidak dapat membedakan bloknya dari
+teks Anda, yang menyebutkan setiap pasangan penanda dan cara memperbaikinya
+(lihat
+[Apothem tidak dapat membedakan bloknya dari teks Anda](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)):
+pemasangan membiarkan berkas seperti itu apa adanya (untuk pasangan penanda,
+selama catatan pemasangan mencantumkan berkas itu; lihat
+[`update`](/docs/cli-reference/update)). Pemasangan yang membiarkan berkas
+seperti itu apa adanya berakhir sebagai parsial, karena alat tidak mendapat
+blok Apothem terkini dari berkas itu: sebagai pengganti baris `✓`, pemasangan
+mencetak baris `✗` di standard error yang menyebutkan berkasnya (sehingga
+`--quiet` mempertahankannya), `status` amplop `--format json` bernilai
+`"partial"` dan peringatan berkas itu membawa
+`"detail": {"left_as_is": "1"}`, dan kode keluarnya `2`. Setiap pemasangan dan
+update berakhir seperti itu sampai Anda memperbaiki baris penanda yang
+disebutkan peringatan. Tanpa `--quiet`, pemasangan seperti itu dengan
+`--harness all` diakhiri dengan baris ringkasan yang diawali `!` sebagai
+pengganti `✓` dan menghitung berkas yang dibiarkan apa adanya:
+`! Installed <n> harnesses (<m> files written); <k> file(s) left as they are, named above.`
+Dengan `--clean`, pemasangan seperti itu tidak mencetak langkah berikutnya,
+`apothem verify`, yang gagal sampai Anda memperbaiki berkas itu. Dalam dry run,
+peringatan untuk berkas yang dibiarkan apa adanya menyatakan bahwa Apothem
+"would leave the file as it is", dan eksekusi tetap berakhir dengan `status`
+`"dry_run"` dan kode keluar `0`. Aturan dalam profil Anda yang membuka blok kode
+dan tidak pernah menutupnya tidak menyembunyikan penanda END dari blok yang
+ditulis pemasangan: pemasangan menutup blok kode itu di akhir blok. Blok yang
+ditulis rilis sebelumnya dari aturan seperti itu tidak memiliki baris penutup
+seperti itu. Blok kode milik Anda yang dibuka di atas blok Apothem dan tidak
+pernah ditutup adalah kasus yang berbeda: baris penutup di dalam blok
+menutupnya, sehingga blok terbaca sebagai kode. Pemasangan memperingatkan
+tentang blok seperti itu segera setelah menulisnya, dan peringatan itu
+menyebutkan blok kode yang perlu ditutup di atas penanda BEGIN (lihat
+[Apothem tidak dapat membedakan bloknya dari teks Anda](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+Dry run membaca berkas sebelum apa pun ditulis, sehingga tidak menunjukkan
+bahwa blok akan terbaca sebagai kode setelah ditulis.
+Amplop `--format json` selalu membawa larik `warnings` lengkap terlepas dari
+tingkat verbositas.
 
 Perintah install dan update juga mencetak pemberitahuan sebagai baris `Note:`.
 Sebuah pemberitahuan tidak pernah mengubah apa yang ditulis pemasangan. Ketika
@@ -154,6 +308,32 @@ backtick, tanda kutip ganda, atau backslash akan membuat perintah menjalankan
 berkas lain, sehingga pemasangan (dan `--dry-run`) berhenti dengan galat yang
 menyebutkan jalur tersebut dan tidak menulis apa pun; pindahkan atau ganti nama
 proyek lalu jalankan lagi. Spasi atau apostrof dalam jalur tidak menjadi masalah.
+
+Beberapa alat hanya memuat berkas pertama yang berisi teks dari daftar tetap di
+sebuah folder, sehingga berkas milik Anda yang berada di depan berkas yang
+ditulis Apothem mencegah alat memuat blok Apothem. Misalnya,
+[salah satu alat yang didukung](/docs/harnesses/codex#compatibility-notes)
+membaca `AGENTS.override.md` yang berisi teks alih-alih `AGENTS.md` yang ditulis
+Apothem di sebelahnya di folder home alat itu. Install dan update kemudian
+mencetak catatan yang menyebutkan berkas itu, termasuk dry run. Override yang
+kosong dilewati, begitu pula tautan simbolik ke `AGENTS.md`; hard link atau
+salinan mendapat catatan, karena pemasangan yang menulis ulang `AGENTS.md`
+membuatnya menjadi berkas terpisah. OpenCode 1 bekerja dengan cara berbeda:
+daftar `instructions` dalam `opencode.jsonc`, bahkan yang kosong, menggantikan
+daftar yang ditulis Apothem ke `opencode.json` di folder yang sama.
+`config.json`, `opencode.json`, atau `opencode.jsonc` di sana yang tidak dapat
+dibaca atau diurai, yang tingkat teratasnya bukan objek, yang nilai
+`instructions`-nya bukan daftar teks, atau yang memiliki `{file:path}` yang
+menyebutkan berkas yang tidak dapat dibaca menghentikannya dari memuat
+konfigurasi apa pun, demikian pula folder dengan salah satu nama itu. Install
+dan update juga mencetak catatan
+`instruction_override` untuk setiap berkas seperti itu, kecuali `opencode.json`
+yang bahkan tidak dapat diurai sebagai JSON5, yang ditolak dengan galat
+`config.unparseable`
+([catatan OpenCode](/docs/harnesses/opencode#compatibility-notes)). Catatan itu
+adalah entri `warnings` dengan `"outcome": "advisory"` dan `"operation": "instruction_override"`,
+`harness`, `path` berkas yang dibahas catatan itu, `target` yang ditulis
+pemasangan, dan sebuah `message`.
 
 Server MCP pada profil mendapatkan tiga pemberitahuan, masing-masing
 menyebutkan bidang profil yang bersangkutan:
@@ -234,6 +414,10 @@ stdout:
 }
 ```
 
+Pemasangan yang membiarkan berkas apa adanya karena baris penanda Apothem-nya
+memiliki `status` `"partial"` dan keluar dengan kode `2` (lihat
+[Catatan kemampuan](#catatan-kemampuan)).
+
 Untuk `--dry-run`, tidak ada yang ditulis dan `results` mencantumkan setiap
 jalur yang akan ditulis pemasangan, masing-masing dengan hasil yang akan
 diperolehnya (`created`, `updated`, atau `unchanged`) dan, untuk berkas yang
@@ -261,6 +445,11 @@ ditampilkan [`apothem diff`](/docs/cli-reference/diff):
   "error": null
 }
 ```
+
+Hasil yang ditolak di sebuah tautan menyebutkan tautan itu di `detail.symlink`
+dan jalur yang ditujunya di `detail.leads_to`. Hasil yang ditolak karena sebuah
+tautan membawa folder alat keluar dari direktori home Anda juga membawa
+perbaikannya di `detail.fix`.
 
 Ketika `--clean` diberikan, amplop juga membawa objek `clean` yang menjelaskan
 fase penghapusan — daftar disposisi per target, apakah eksekusi tersebut
@@ -323,7 +512,7 @@ apothem Installing --harness claude-code   # capitalized variant
 |---|---|
 | 0 | Adapter berhasil dipasang atau dry-run direncanakan dengan bersih |
 | 1 | Galat validasi, profil, harness, proyek, atau adapter yang diharapkan |
-| 2 | Materialisasi batch parsial setelah setidaknya satu penulisan |
+| 2 | Parsial: batch berhenti setelah setidaknya satu penulisan, atau pemasangan membiarkan berkas tempat Apothem menyimpan bloknya apa adanya karena baris penanda Apothem-nya (lihat [Catatan kemampuan](#catatan-kemampuan)); `status` bernilai `"partial"` |
 | 64 | Galat penggunaan: opsi atau perintah yang tidak dikenal, atau nilai opsi yang hilang atau tidak valid. Di bawah `--json`, galat berupa amplop JSON dengan kode `cli.usage`. |
 
 ## Lihat juga

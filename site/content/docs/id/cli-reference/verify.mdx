@@ -2,7 +2,7 @@
 title: "verify"
 description: "Referensi CLI untuk perintah apothem verify."
 machineTranslated: true
-sourceHash: "9147e25d2829a90c"
+sourceHash: "7e26b019bbe8ca71"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -23,6 +23,50 @@ terkelolanya ada dan valid. Tanpa `--profile`, pemeriksaannya bersifat
 `--profile`, pemeriksaan juga mensyaratkan **fidelitas profil**, sehingga
 pemasangan yang ada tetapi telah menyimpang gagal dalam verify, menjawab
 "apakah profil INI terpasang secara setia?" alih-alih sekadar "apakah ia ada?".
+Akhiran baris tidak dihitung, sehingga berkas yang disimpan dengan akhiran CRLF
+atau CR juga lolos.
+Dengan cara mana pun, berkas tempat Apothem menyimpan blok terkelola gagal dalam
+verify selama berkas itu memuat penanda BEGIN yang tidak memulai blok utuh apa
+pun, misalnya penanda yang penanda END-nya hilang (lihat
+[Pemecahan masalah](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)),
+dua blok utuh atau lebih di antara penanda Apothem (lihat
+[Sebuah berkas memuat dua blok di antara penanda Apothem](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)),
+atau tidak ada blok utuh tetapi ada pasangan penanda yang tidak dapat dibedakan
+Apothem dari teks Anda, misalnya bloknya berada di dalam blok kode milik Anda
+(lihat
+[Apothem tidak dapat membedakan bloknya dari teks Anda](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+Update mempertahankan penanda seperti itu, atau membiarkan berkas seperti itu
+apa adanya, sehingga menjalankan `apothem update` tidak menghilangkan kegagalan
+itu.
+Berkas yang diperiksa adalah berkas yang ditulisi blok oleh pemasangan harness
+itu dan berkas yang dicantumkan catatan pemasangannya sejak pencopotan terakhir
+yang selesai, termasuk berkas aturan di workspace OpenClaw yang tidak lagi
+digunakan pemasangan. Penanda di berkas milik Anda sendiri, misalnya berkas
+catatan sebuah proyek, tidak membuatnya gagal. Tanpa catatan pemasangan,
+`CLAUDE.md` dan dokumen profil tidak diperiksa: hanya catatan itu yang
+menunjukkan bahwa pemasangan menulisnya. Verify OpenClaw tetap gagal, tanpa
+menyebutkan berkasnya, ketika berkas aturan di workspace yang ditemukannya tidak
+memuat blok utuh atau memuat penanda BEGIN yang tidak memulai blok apa pun.
+Baris yang gagal menyebutkan setiap berkas seperti itu dan
+menyatakan apa yang perlu diperbaiki: baris penanda yang tersasar, dengan
+langkah-langkah bernomor yang mengubah baris itu dan setiap baris penanda BEGIN
+lainnya kecuali yang membuka blok Apothem, termasuk penanda BEGIN yang Anda
+kutip di dalam kode, untuk setiap berkas secara terpisah (catatan itu juga meminta Anda untuk tidak menambahkan
+kembali penanda END sebagai gantinya, karena itu akan menyisakan dua blok
+Apothem setelah pemasangan atau update menulis blok Apothem terpisah darinya);
+setiap blok utuh, berdasarkan baris-barisnya; atau,
+untuk pasangan penanda
+yang tidak dapat dibedakan Apothem dari teks Anda, baris setiap pasangan, cara
+keduanya terbaca dan cara memperbaikinya, beserta setiap penanda BEGIN yang
+tidak memulai pasangan penanda apa pun.
+Untuk berkas aturan OpenClaw, yang hanya ditulisi update selama berkas itu muat
+dalam batas per-berkas OpenClaw, catatan itu menyatakan bahwa update berikutnya
+menulis blok Apothem jika berkas itu kemudian muat dalam batas tersebut, yang
+juga dikurangi oleh teks Apothem lama yang Anda pertahankan (lihat
+[Open-Claw](/docs/harnesses/open-claw#rules-in-each-workspace)).
+Dalam mode plain, baris `Note:` mengikuti baris itu,
+yang kemudian tidak menyertakan jalur yang diharapkan, dan baris JSON mendapat
+objek `stray_begin` dengan `files` dan sebuah `message`.
 
 Untuk adapter yang menulis skill ke direktori home Anda, verify juga memeriksa
 bahwa setiap folder skill yang diharapkannya ada dengan sebuah `SKILL.md`,
@@ -31,10 +75,43 @@ satu dari alat-alat yang berbagi sebuah folder tetap lolos verifikasi. Verify
 gagal ketika sebuah folder hilang, dan ketika folder dengan nama skill Apothem
 milik sesuatu yang tidak ditulis oleh Apothem. Baris yang gagal menyebutkan
 yang mana: dalam mode plain, baris `Note:` mengikutinya, dan dalam baris JSON,
-objek `user_level` mencantumkan jalur `missing` dan `unlisted` serta sebuah
-`message`. Jalankan [`install`](/docs/cli-reference/install) untuk memulihkan
-folder yang hilang; ganti nama atau pindahkan folder asing, lalu jalankan
-[`update`](/docs/cli-reference/update).
+objek `user_level` mencantumkan jalur `missing`, `unlisted`, dan `unproven`
+serta sebuah `message`. Jalankan [`install`](/docs/cli-reference/install) untuk
+memulihkan folder yang hilang; ganti nama atau pindahkan folder asing, lalu
+jalankan [`update`](/docs/cli-reference/update). Folder `unproven` adalah folder
+yang tidak dapat dibuktikan Apothem sebagai tulisannya. Pemasangan yang
+mencantumkannya berada di folder yang sudah tidak ada, tidak memuat berkas
+Apothem, atau tidak dapat dibaca, atau tidak lagi mencantumkannya. Dan folder itu
+tidak memuat persis berkas-berkas yang mereka catat (lihat
+[`install`](/docs/cli-reference/install)). Anda membuat atau menyuntingnya, atau
+rilis sebelumnya menulisnya tanpa mencatat berkasnya. Catatan itu menyebutkan
+setiap folder tersebut dan memberikan dua cara untuk melanjutkan dari peringatan
+pemasangan. Untuk mempertahankannya, biarkan di tempatnya. Untuk menggunakan
+versi Apothem, pindahkan folder itu keluar dari folder skill, lalu jalankan
+`update` untuk harness tersebut; untuk harness berlingkup-proyek, catatan itu
+menyebutkan `--project`, dikutip untuk shell seperti doctor mengutipnya, atau
+dengan kata-kata. Folder yang sudah memuat apa yang ditulis rilis ini tidak
+pernah disebutkan, karena pemasangan mempertahankannya. Verify mencari folder
+yang tidak terbukti dan tidak tercantum hanya untuk harness yang terpasang,
+sehingga `verify --harness all` menyebutkannya hanya di bawah harness yang
+terpasang.
+
+Sebuah baris, terverifikasi atau tidak, dapat diikuti oleh catatan. Ketika apa
+yang ditulis Apothem sudah ada tetapi sebuah berkas milik Anda membuat alat
+tidak memuatnya, baris `Note:` menyebutkan berkas itu dan `warnings` amplop JSON
+mendapat entri dengan `"operation": "instruction_override"` (dijelaskan di
+[`install`](/docs/cli-reference/install)). Salah satu berkas seperti itu adalah
+`AGENTS.override.md` berisi teks di samping `AGENTS.md` yang dimuat
+[salah satu alat yang didukung](/docs/harnesses/codex#compatibility-notes) dari
+folder home-nya. Berkas lainnya adalah berkas yang dimuat
+[OpenCode 1](/docs/harnesses/opencode#compatibility-notes) dari folder
+konfigurasinya: `opencode.jsonc` dengan daftar `instructions` miliknya sendiri,
+serta `config.json`, `opencode.json`, atau `opencode.jsonc` yang sama sekali
+tidak dapat dimuat OpenCode 1. Catatan itu tidak membuat pemeriksaan gagal.
+Tidak ada catatan ketika blok Apothem tidak berada di `AGENTS.md` itu, atau
+ketika `opencode.json` tidak mencantumkan entri yang ditulis pemasangan; catatan
+untuk `opencode.json` yang tidak dapat dimuat OpenCode 1 hanya memerlukan
+dokumen profil yang ditulis pemasangan untuk memuat blok Apothem.
 
 Sapuan `--harness all` mematuhi `exclude_harnesses` milik profil — pengecualian
 yang sama dengan yang diterapkan batch `install`/`update` — sehingga verify

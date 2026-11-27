@@ -2,11 +2,11 @@
 title: "Hermes"
 description: "Adapter harness Apothem untuk Hermes (Pratinjau)."
 machineTranslated: true
-sourceHash: "2031f90de3f936a5"
+sourceHash: "6b5e4589566e8d9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-- **Vendor:** Hermes
+- **Vendor:** Nous Research
 - **Nama instalasi:** `hermes`
 - **Status:** Pratinjau
 - **Konfigurasi native:** `~/.hermes/config.yaml`
@@ -22,7 +22,25 @@ Hermes Agent dan memasang kohor pendukung Apothem di bawah akar harness.
 
 **Berkas yang ditulis:** `~/.hermes/config.yaml`, dokumen profil
 `~/.hermes/apothem/rules/00-apothem-profile.md`, dan berkas pendukung di bawah
-`~/.hermes/.apothem/support/`
+`~/.hermes/.apothem/support/`. Instalasi juga membuat folder data Apothem,
+secara default `~/.hermes/.apothem/`, berisi `contexts/`, `learning/`,
+`memory/`, dan `plans/`.
+
+Setiap instalasi dan pembaruan menghapus setiap berkas di
+`~/.hermes/apothem/rules/` yang tidak ditaruh Apothem di sana, setelah
+menyimpannya dalam set cadangan di bawah `~/.apothem/backups/`. Cadangan itu
+dihapus begitu ada 10 set cadangan harness yang lebih baru, jadi simpan berkas
+milik Anda sendiri di tempat lain.
+
+Rilis sebelumnya ([changelog](/docs/changelog) menyebutkannya) juga menghapus
+`~/.hermes/cli-config.yaml` dan `~/.hermes/profile.yaml` pada setiap instalasi
+dan pembaruan, setelah menyalinnya ke set cadangan di bawah
+`~/.apothem/backups/<timestamp>/hermes/`. Rilis saat ini tidak menyentuh kedua
+berkas itu. Untuk mendapatkannya kembali, salin `~/.apothem/backups/` ke tempat
+lain sebelum Anda menjalankan Apothem lagi, lalu salin berkas-berkas itu dari
+salinan tersebut kembali ke `~/.hermes/` secara manual.
+[Changelog](/docs/changelog#data-loss-in-earlier-releases-recover-your-files)
+memuat langkah pemulihan lengkapnya.
 
 Dokumen profil diakhiri dengan bagian berkas pendukung Apothem yang menyebutkan
 direktori absolut di bawah `~/.hermes/.apothem/support/` tempat setiap kutipan
@@ -81,10 +99,10 @@ sehingga berada paling akhir. Dokumentasi Hermes yang ditinjau tidak menyatakan
 salinan mana yang dimuat Hermes ketika dua lokasi memuat skill dengan nama yang
 sama; Apothem membaca urutan itu sebagai lokasi yang lebih awal yang menang,
 jadi perkirakan bahwa skill dengan nama yang sama yang Anda simpan di lokasi
-yang lebih awal akan didahulukan daripada salinan Apothem. Apothem hanya
-menulis ke `config.yaml` dan di bawah `~/.hermes/.apothem/support/`, tidak
-pernah ke lokasi-lokasi yang lebih awal itu, sehingga instalasi, pembaruan, dan
-pencopotan tidak mengganti skill yang Anda simpan di sana.
+yang lebih awal akan didahulukan daripada salinan Apothem. Instalasi Hermes
+tidak pernah menulis ke lokasi-lokasi yang lebih awal itu: di dalam
+`~/.hermes/`, instalasi hanya menulis `config.yaml`, `apothem/rules/`, dan
+`.apothem/`, sehingga instalasi, pembaruan, dan pencopotan tidak mengganti skill yang Anda simpan di sana.
 
 `apothem update` mempertahankan kunci yang Anda tambahkan ke `config.yaml`,
 termasuk `skills.config` dan entri `skills.external_dirs` milik Anda sendiri.
@@ -173,8 +191,16 @@ bersama yang dapat dibaca sebagai pembanding, tetap di tempatnya, dan pengaturan
 ## Gerbang konformitas
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Jalankan dari folder proyek Anda. Di Windows, gunakan `python` sebagai pengganti
+`python3` dan jalur lengkapnya, karena Windows PowerShell dan cmd tidak mengekspansi
+`~`: `$HOME\.apothem\src\apothem\conformity\gate.py` di PowerShell, atau
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` di cmd. Jalur itu adalah
+tempat installer menaruh engine, dan `-E -s` menjauhkan `PYTHONPATH` serta
+site-packages pengguna Anda dari gerbang; [Gerbang konformitas](/docs/conformity-gate)
+menjelaskan keduanya dan instalasi lainnya.
 
 ## Pemecahan masalah
 
