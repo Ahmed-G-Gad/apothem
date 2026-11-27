@@ -18,13 +18,13 @@ What it does not cover. The checks see the tree as it is when they run. Each
 file's levels are checked right before it is read, then opened one at a time
 from the root without following a link (``_safe_open``), and the file opened
 must be the one that check found, so a file, or a folder above it, swapped in
-between is not read through. A hard link reads as an ordinary file, because nothing in it tells where the other
-names of its data are; git and archive tools do not create one to a file
-outside the project. And ``git ls-files`` itself reads the repository's own git
-configuration: :func:`run_git` turns off the settings in it that start a
-program, but others, such as an ``include.path`` that names a named pipe or a
-network share, still apply (see ``_git.py``); the time limit bounds a wait one
-of them causes.
+between is not read through. A hard link reads as an ordinary file, because
+nothing in it tells where the other names of its data are; git and archive
+tools do not create one to a file outside the project. And ``git ls-files``
+itself reads the repository's own git configuration: :func:`run_git` turns
+off the settings in it that start a program, but others, such as an
+``include.path`` that names a named pipe or a network share, still apply (see
+``_git.py``); the time limit bounds a wait one of them causes.
 """
 
 from __future__ import annotations
@@ -381,8 +381,7 @@ def _read_file(root: Path, path: Path, seen: os.stat_result) -> bytes | str | No
     must be that same regular file; when it is not (it was swapped for another
     file, a link or a named pipe since), the result is None and nothing is
     read. The file is opened once per attempt, and each attempt starts
-    afresh. An open
-    refused because another program holds the file (see
+    afresh. An open refused because another program holds the file (see
     :func:`_held_by_another_program`) is tried once more after
     :data:`_RETRY_DELAY_SECONDS`, since such a hold is often brief. A refusal
     for lack of permission is not retried, and neither is an error while
