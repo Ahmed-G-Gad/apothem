@@ -31,27 +31,35 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
-from apothem.conformity._git import run_git
+from apothem.conformity._git import run_git, split_names
 from apothem.conformity._grep_base import (
     EXIT_FAIL,
     EXIT_PASS,
+    GitCheckError,
+    GitFailedError,
+    GitTimeoutError,
     GrepResult,
+    in_checkout,
     make_parser,
     parse_path_input,
 )
 
 # Per-class path patterns. Patterns are inclusive — a file matching
-# multiple patterns counts toward every class it matches.
+# multiple patterns counts toward every class it matches. Each pattern must
+# match the whole name (see :func:`_classify`), and ``re.DOTALL`` lets ``.``
+# cross a line break, which a staged name may hold.
 CODE_PATTERNS: Final[tuple[re.Pattern[str], ...]] = (
-    re.compile(r"^src/.+\.(?:py|ts|js|go|rs|rb|java|kt|swift)$"),
-    re.compile(r"^lib/.+\.(?:py|ts|js|go|rs)$"),
-    re.compile(r"^(?:rules|commands|agents|skills|hooks|tools)/.+\.(?:py|md)$"),
+    re.compile(r"^src/.+\.(?:py|ts|js|go|rs|rb|java|kt|swift)$", re.DOTALL),
+    re.compile(r"^lib/.+\.(?:py|ts|js|go|rs)$", re.DOTALL),
+    re.compile(
+        r"^(?:rules|commands|agents|skills|hooks|tools)/.+\.(?:py|md)$", re.DOTALL
+    ),
 )
 TEST_PATTERNS: Final[tuple[re.Pattern[str], ...]] = (
-    re.compile(r"^tests?/.+"),
-    re.compile(r".+/test_[A-Za-z0-9_]+\.py$"),
-    re.compile(r".+_test\.(?:py|go|rs)$"),
-    re.compile(r".+\.test\.(?:ts|js)$"),
+    re.compile(r"^tests?/.+", re.DOTALL),
+    re.compile(r".+/test_[A-Za-z0-9_]+\.py$", re.DOTALL),
+    re.compile(r".+_test\.(?:py|go|rs)$", re.DOTALL),
+    re.compile(r".+\.test\.(?:ts|js)$", re.DOTALL),
 )
 # Docs-class paths. This repo's documentation lives under
 # ``site/content/docs/`` (the ``no_toplevel_docs_grep`` validator hard-forbids
@@ -59,19 +67,19 @@ TEST_PATTERNS: Final[tuple[re.Pattern[str], ...]] = (
 # structurally unsatisfiable and contradict its sibling). Harness product
 # templates and per-folder README/CONTRIBUTING surfaces also count as
 # documentation for the four-class shape.
-# Each pattern is applied with ``re.Pattern.match`` (anchored at the path
-# start), so alternatives that should fire at any depth carry an explicit
-# ``(?:.*/)?`` optional-prefix.
+# Each pattern is applied with ``re.Pattern.fullmatch`` (anchored at both
+# ends of the path), so alternatives that should fire at any depth carry an
+# explicit ``(?:.*/)?`` optional-prefix.
 DOCS_PATTERNS: Final[tuple[re.Pattern[str], ...]] = (
-    re.compile(r"^site/content/docs/.+"),
-    re.compile(r"(?:.*/)?README\.md$"),
-    re.compile(r"(?:.*/)?CONTRIBUTING\.md$"),
-    re.compile(r".*/templates/.+\.(?:md|mdc)$"),
+    re.compile(r"^site/content/docs/.+", re.DOTALL),
+    re.compile(r"(?:.*/)?README\.md$", re.DOTALL),
+    re.compile(r"(?:.*/)?CONTRIBUTING\.md$", re.DOTALL),
+    re.compile(r".*/templates/.+\.(?:md|mdc)$", re.DOTALL),
 )
 CHANGELOG_PATTERNS: Final[tuple[re.Pattern[str], ...]] = (
-    re.compile(r"^CHANGELOG\.md$"),
-    re.compile(r"^CHANGES(?:\.md)?$"),
-    re.compile(r"^HISTORY\.md$"),
+    re.compile(r"^CHANGELOG\.md$", re.DOTALL),
+    re.compile(r"^CHANGES(?:\.md)?$", re.DOTALL),
+    re.compile(r"^HISTORY\.md$", re.DOTALL),
 )
 
 GREP_NAME: Final[str] = "production-ready-pr-grep"
@@ -81,8 +89,11 @@ STAGED_FLAG: Final[str] = "--staged"
 # Subprocess timeout for the git invocation; the per-grep budget is
 # `gate.PER_GREP_BUDGET_SECONDS` (~520ms) but the staged-diff check is a
 # single git command that completes well under that ceiling on
-# representative repositories.
-GIT_TIMEOUT_SECONDS: Final[int] = 5
+# representative repositories. The time limit is for a git that stalls, not
+# that budget. A timeout does not pass: the change set was not read, which is
+# not the same as an empty one. So the limit leaves room for a large index on a
+# slow or busy machine, since reading the index takes longer as it grows.
+GIT_TIMEOUT_SECONDS: Final[int] = 60
 
 
 @dataclass(frozen=True)
@@ -102,44 +113,75 @@ class Finding:
 
 
 def _classify(path: str) -> set[str]:
-    """Return the set of class labels the path matches."""
+    """Return the set of class labels the path matches.
+
+    A pattern must match the whole name: with ``match``, ``$`` also matches
+    before a final line break, so ``CHANGELOG.md`` followed by one would
+    count as the changelog.
+    """
     classes: set[str] = set()
-    if any(p.match(path) for p in CODE_PATTERNS):
+    if any(p.fullmatch(path) for p in CODE_PATTERNS):
         classes.add("code")
-    if any(p.match(path) for p in TEST_PATTERNS):
+    if any(p.fullmatch(path) for p in TEST_PATTERNS):
         classes.add("tests")
-    if any(p.match(path) for p in DOCS_PATTERNS):
+    if any(p.fullmatch(path) for p in DOCS_PATTERNS):
         classes.add("docs")
-    if any(p.match(path) for p in CHANGELOG_PATTERNS):
+    if any(p.fullmatch(path) for p in CHANGELOG_PATTERNS):
         classes.add("changelog")
     return classes
 
 
 def _staged_paths() -> list[str]:
-    """Return the staged-diff path list via git; empty on failure.
+    """Return the staged-diff path list via git; empty when there is none.
 
-    git runs through :func:`run_git`, so the repository's own settings cannot
-    make it start a program. ``-z`` ends each name with NUL, unquoted, so no
-    character in a name can split or hide it.
+    The list is empty when git is missing or the current folder is not a
+    checkout. git runs through :func:`run_git`, so the repository's own
+    settings cannot make it start a program. ``-z`` ends each name with NUL,
+    unquoted, and the output is read as file names, so a name comes back with
+    every byte it holds (a carriage return, a byte that is not UTF-8).
+    :func:`run_git` turns ``diff.relative`` off, so git lists every staged
+    name from the top of the work tree, as the class patterns expect, even
+    when the user's setting is on and the check runs in a subfolder. Raises
+    :class:`~apothem.conformity._grep_base.GitTimeoutError` when git runs past
+    ``GIT_TIMEOUT_SECONDS`` (the repository's own configuration can make git
+    wait for ever), and :class:`~apothem.conformity._grep_base.GitFailedError`
+    when git fails inside a checkout (a ``.git`` entry in the current folder or
+    one above it): a change set that was not read is not an empty one.
     """
     try:
         result = run_git(
             ["diff", "--cached", "--name-only", "-z"],
             check=True,
             timeout=GIT_TIMEOUT_SECONDS,
+            file_names=True,
         )
-    except (
-        subprocess.CalledProcessError,
-        subprocess.TimeoutExpired,
-        FileNotFoundError,
-    ):
+    except subprocess.TimeoutExpired as exc:
+        raise GitTimeoutError("git diff --cached", GIT_TIMEOUT_SECONDS) from exc
+    except subprocess.CalledProcessError as exc:
+        if in_checkout(Path.cwd()):
+            raise GitFailedError("git diff --cached", exc.returncode) from exc
         return []
-    return [name for name in result.stdout.split("\0") if name]
+    except FileNotFoundError:
+        return []
+    return split_names(result.stdout)
 
 
 def _check_staged() -> GrepResult:
-    """Substantive check: inspect the staged diff against the four-class shape."""
-    paths = _staged_paths()
+    """Substantive check: inspect the staged diff against the four-class shape.
+
+    A staged list that git did not deliver, within ``GIT_TIMEOUT_SECONDS`` or
+    at all in a checkout, does not pass: the result carries the reason as
+    ``check_error``.
+    """
+    try:
+        paths = _staged_paths()
+    except GitCheckError as exc:
+        return GrepResult(
+            grep=GREP_NAME,
+            path="<staged diff>",
+            passed=False,
+            check_error=str(exc),
+        )
     classes_present: set[str] = set()
     for path in paths:
         classes_present |= _classify(path)

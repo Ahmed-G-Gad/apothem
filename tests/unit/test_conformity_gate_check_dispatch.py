@@ -148,21 +148,31 @@ def test_main_list_enumerates_both_registries(
 def test_main_all_runs_every_standalone_validator(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     """``--all`` still dispatches every standalone validator and exits 0.
 
     ``_run_standalone`` is stubbed to PASS so the test asserts the dispatch
-    set is intact without depending on each validator's corpus verdict.
+    set is intact without depending on each validator's corpus verdict. The
+    validators run side by side, so the order they start in is not fixed; the
+    report still lists them in ``STANDALONE_MODULES`` order, each beside its
+    own output.
     """
     invoked: list[str] = []
 
     def _stub(name: str, root: Path) -> tuple[bool, str]:
         invoked.append(name)
-        return True, ""
+        return True, f"output of {name}"
 
     monkeypatch.setattr(gate, "_run_standalone", _stub)
 
     exit_code = gate.main(["gate", "--all", str(tmp_path)])
 
     assert exit_code == gate.EXIT_PASS
-    assert invoked == list(gate.STANDALONE_MODULES)
+    # Every validator ran, each as many times as it is listed (once).
+    assert sorted(invoked) == sorted(gate.STANDALONE_MODULES)
+    results = json.loads(capsys.readouterr().out)["results"]
+    assert [entry["validator"] for entry in results] == list(gate.STANDALONE_MODULES)
+    assert all(
+        entry["output"] == f"output of {entry['validator']}" for entry in results
+    )

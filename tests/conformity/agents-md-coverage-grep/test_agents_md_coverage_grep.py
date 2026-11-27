@@ -161,8 +161,8 @@ def test_commit_times_read_git_output_as_utf8_under_any_locale(
         "locale.getencoding = lambda: 'cp1252'\n"
         f"sys.path.insert(0, {str(_SRC)!r})\n"
         "from pathlib import Path\n"
-        "from apothem.conformity.agents_md_coverage_grep import _last_commit_times\n"
-        "print(json.dumps(_last_commit_times(Path(sys.argv[1])) is not None))\n"
+        "from apothem.conformity.agents_md_coverage_grep import _read_history\n"
+        "print(json.dumps(_read_history(Path(sys.argv[1])) is not None))\n"
     )
 
     completed = subprocess.run(

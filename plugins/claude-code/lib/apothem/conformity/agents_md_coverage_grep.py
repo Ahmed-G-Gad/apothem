@@ -42,22 +42,39 @@ mtime: a checkout rewrites mtimes, so only commit history carries the truth of
 "what changed when". A single ``git log`` pass buckets every tracked file to
 its nearest meaningful-folder ancestor; a folder is stale when its newest
 content commit postdates its committed companion's commit. Folders with no
-companion on disk are skipped entirely, a companion deleted since included —
-absence is not a finding under the root-only convention. The root
-``AGENTS.md`` is that canon, not a per-folder companion, so it is never
-checked against the root folder's content. The log names paths relative to
-the checked root and covers only history under it, so a subtree root checks
-its own folders. Where git history is unavailable (a shallow clone, a non-git
-tree), freshness is skipped and the sweep reports a clean pass — it never
-blocks a fresh clone.
+companion on disk are skipped entirely, including one that was deleted —
+absence is not a finding under the root-only convention. A companion whose
+newest commit deleted it and that is on disk again has not been committed
+since, so it is fresh like any other uncommitted companion. The
+``AGENTS.md`` at the top of the repository is that canon, not a per-folder
+companion, so it is never checked against the root folder's content. The log
+names paths relative to the checked root and covers only history under it, so
+a subtree root checks its own folders; the ``AGENTS.md`` of a subtree root is
+a per-folder companion there, as it is in a run on the whole repository, so
+both runs report it alike when that root carries a README (a source folder
+without one is a meaningful folder only in a run on the repository, never as
+a root). The log is read as text: a name with a control character comes in
+git's quoted form and a byte that is not UTF-8 as U+FFFD, so a folder with
+such a name is not matched. Where git history is unavailable (a non-git tree,
+no commit yet, or a partial clone whose history read fails: git may not fetch
+what the clone left out here, and no answer of git's tells that from a lost
+object), freshness is skipped and the sweep reports a clean pass — it never
+blocks a fresh clone. A git command that runs past its time limit (the
+repository's own configuration can make git wait for ever), or a git that
+refuses a checkout it found (another owner, a bad configuration line), is
+different: the history is there but was not read, so the sweep reports a
+``check_error`` and does not pass. The read of the whole history gets a long
+limit of its own, so a large history is slow rather than a failure.
 
 Posture. The result is advisory: the sweep surfaces findings and never
 silent-blocks by default, honoring the agnostic gate posture. The orchestrator
 reads the JSON ``advisory: true`` flag plus the inner ``passed`` field — a
 stale-companion finding surfaces as ``advisory_findings_present`` without
 gating the ``gate --all`` run. CI opts into strict enforcement separately.
-``_main`` always exits 0 so the advisory posture holds regardless of findings;
-the verdict travels in the JSON, not the exit code.
+``_main`` exits 0 on findings so the advisory posture holds; the verdict
+travels in the JSON, not the exit code. It exits 2 only when the sweep did not
+earn a verdict: it inspected no folder, a git command ran past its limit, or
+git refused the checkout.
 """
 
 from __future__ import annotations
@@ -71,25 +88,45 @@ from typing import Final
 
 from apothem.conformity._git import run_git
 from apothem.conformity._grep_base import (
+    CHECK_ERROR_KEY,
+    GitCheckError,
+    GitFailedError,
+    GitTimeoutError,
     finish_root_report,
+    in_checkout,
+    is_project_file,
     iter_tree_files,
+    nearest_linked_git_entry,
     parse_root_args,
+    project_file_target,
 )
 
 GREP_NAME: Final[str] = "agents-md-coverage-grep"
 RULE_ANCHOR: Final[str] = "rules/agents-md-convention.md"
 
-# Advisory posture: the sweep always exits 0 (the verdict travels in the JSON
-# ``advisory`` / ``passed`` fields), so only the pass code is needed here.
+# Advisory posture: the sweep exits 0 on findings (the verdict travels in the
+# JSON ``advisory`` / ``passed`` fields). ``finish_root_report`` returns the
+# failure code itself for a sweep that inspected nothing or could not finish,
+# so only the pass code is needed here.
 EXIT_PASS: Final[int] = 0
 
 # The agent-companion filename and its human-facing sibling.
 COMPANION_NAME: Final[str] = "AGENTS.md"
 README_NAME: Final[str] = "README.md"
 
-# Bound the git invocation so a hung `git log` cannot stall the sweep; a
-# timeout is treated as a transient git error and degrades to a clean pass.
-GIT_TIMEOUT_SECONDS: Final[int] = 10
+# Bound the git invocations so a hung git cannot stall the sweep. A timeout is
+# not missing history: the history is there but was not read, so the sweep
+# reports a check error and does not pass. The quick commands (``git
+# rev-parse``, ``git config``) get this limit, far above the fraction of a
+# second they take, so a slow or busy machine does not fail the check; a
+# repository whose own configuration makes git wait stops there.
+GIT_TIMEOUT_SECONDS: Final[int] = 60
+# The one read of the whole history gets a long limit, because its cost grows
+# with the history: about 18 seconds for 200,000 commits on a test machine.
+GIT_HISTORY_TIMEOUT_SECONDS: Final[int] = 300
+
+# The values git reads as true for a boolean setting ("" is a key with no value).
+_GIT_TRUE: Final[frozenset[str]] = frozenset({"", "true", "yes", "on", "1"})
 
 # Path segments that mark a directory as out of scope wherever they appear.
 # Vendored trees, generated output, caches, and ephemera are never navigable
@@ -151,15 +188,19 @@ class GrepResult:
     freshness_checked: bool
     passed: bool
     findings: list[Finding] = field(default_factory=list)
+    # Why the freshness check could not finish (a git command ran past its
+    # limit, or git refused the checkout); None otherwise.
+    check_error: str | None = None
 
     def to_json(self) -> str:
         """Return this report as a two-space-indented JSON string.
 
         Post-conditions: the payload carries ``{grep, root, folders_inspected,
-        freshness_checked, passed, findings, advisory}``; each finding is
-        flattened through ``dataclasses.asdict``.
+        freshness_checked, passed, findings, advisory}``, plus
+        ``check_error`` when it is set; each finding is flattened through
+        ``dataclasses.asdict``.
         """
-        payload = {
+        payload: dict[str, object] = {
             "grep": self.grep,
             "root": self.root,
             "folders_inspected": self.folders_inspected,
@@ -168,6 +209,8 @@ class GrepResult:
             "findings": [asdict(f) for f in self.findings],
             "advisory": True,
         }
+        if self.check_error is not None:
+            payload[CHECK_ERROR_KEY] = self.check_error
         return json.dumps(payload, indent=2)
 
 
@@ -225,9 +268,13 @@ def meaningful_folders(root: Path) -> list[str]:
     folders: set[str] = set()
 
     # Rule (A): folders carrying a contributor README, minus fixture/example leaves.
+    # A README that links to a regular file in the project counts; one that
+    # leads out of it, or to anything else, does not.
     for readme in iter_tree_files(
-        root, names=(README_NAME,), extra_prune=_EXCLUDED_SEGMENTS
+        root, names=(README_NAME,), extra_prune=_EXCLUDED_SEGMENTS, include_links=True
     ):
+        if project_file_target(root, readme) is None:
+            continue
         rel = _rel_posix(readme.parent, root_resolved)
         if rel is None or _has_excluded_segment(rel):
             continue
@@ -250,46 +297,148 @@ def meaningful_folders(root: Path) -> list[str]:
             continue
         if _has_excluded_segment(rel) or _is_harness_template_leaf(rel):
             continue
-        if (py_file.parent / README_NAME).is_file():
+        # A README that links to a regular file in the project counts.
+        if project_file_target(root, py_file.parent / README_NAME) is not None:
             continue
         folders.add(rel)
 
     return sorted(folders)
 
 
-def _last_commit_times(root: Path) -> dict[str, int] | None:
-    """Return a map of tracked-file POSIX path → last-commit unix timestamp.
+def _is_partial_clone(root: Path) -> bool:
+    """Return True iff the repository at *root* is a partial clone.
 
-    One ``git log`` pass, newest commit first: the first time a path is seen
-    is its last-touching commit. ``--relative -- .`` limits the pass to
-    history under *root* and names paths relative to it, so they match
-    :func:`meaningful_folders` when *root* is a subtree of the repository.
-    Returns None when git history is unavailable (no repository, shallow clone
-    with no log, git absent, or timeout) so the caller degrades to a
-    presence-only sweep. git runs through :func:`run_git`, which turns off the
-    repository's program-running settings (a signature check, say) and prints
-    path names as they are, decoded as UTF-8.
+    A partial clone (``git clone --filter=...``) leaves objects out and names
+    the remote that can send them later, its promisor: git sets
+    ``remote.<name>.promisor``, and older releases set
+    ``extensions.partialClone``. Only the repository's own settings count, and
+    a promisor setting only when it is true. Raises
+    :class:`~apothem.conformity._grep_base.GitTimeoutError` past
+    ``GIT_TIMEOUT_SECONDS``, like the other git commands here.
     """
+    try:
+        completed = run_git(
+            [
+                "config",
+                "--local",
+                "--get-regexp",
+                r"^(remote\..*\.promisor|extensions\.partialclone)$",
+            ],
+            cwd=root,
+            timeout=GIT_TIMEOUT_SECONDS,
+            discover=True,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise GitTimeoutError("git config", GIT_TIMEOUT_SECONDS) from exc
+    except OSError:
+        return False
+    if completed.returncode != 0:
+        return False
+    for line in completed.stdout.splitlines():
+        key, _, value = line.partition(" ")
+        if key == "extensions.partialclone" and value.strip():
+            return True
+        # A setting written with no value is true to git.
+        if key.endswith(".promisor") and value.strip().lower() in _GIT_TRUE:
+            return True
+    return False
+
+
+@dataclass(frozen=True)
+class _History:
+    """What one read of the history under a root found.
+
+    ``times`` maps each path, relative to the root, to the commit time of the
+    newest commit that touched it. ``deleted`` holds the paths that commit
+    deleted. ``root_is_top`` is True when the root is the top folder of the
+    repository's work tree.
+    """
+
+    times: dict[str, int]
+    deleted: frozenset[str]
+    root_is_top: bool
+
+
+def _read_history(root: Path) -> _History | None:
+    """Read the commit history under *root* in one ``git log`` pass.
+
+    First ``git rev-parse --show-prefix --verify --quiet HEAD`` within
+    ``GIT_TIMEOUT_SECONDS`` finds out whether there is a history to read, and
+    its first output line (the path of *root* below the top of the work tree,
+    empty at the top) says whether *root* is that top. Then one ``git log``
+    pass within ``GIT_HISTORY_TIMEOUT_SECONDS``, newest commit first: the
+    first time a path is seen is its last-touching commit, and
+    ``--name-status`` says whether that commit deleted it.
+    ``--relative -- .`` limits the pass to history under *root* and names
+    paths relative to it, so they match :func:`meaningful_folders` when *root*
+    is a subtree of the repository. git runs through :func:`run_git`, which
+    turns off the repository's program-running settings (a signature check,
+    say) and prints non-ASCII path names as they are, decoded as UTF-8.
+    Returns None when git history is unavailable (no repository, a ``.git``
+    entry that is a link in *root* or a folder above it, so git is not run,
+    no commit yet, git absent, or a partial clone whose read failed, whatever
+    the cause)
+    so the caller degrades to a presence-only sweep. Raises
+    :class:`~apothem.conformity._grep_base.GitTimeoutError` when a git command
+    runs past its limit, and
+    :class:`~apothem.conformity._grep_base.GitFailedError` when git fails
+    although *root* is inside a checkout (git refused the repository) or
+    after it found the history in a full clone: in both cases the history is
+    there but was not read.
+    """
+    if nearest_linked_git_entry(root) is not None:
+        return None
+    try:
+        head = run_git(
+            ["rev-parse", "--show-prefix", "--verify", "--quiet", "HEAD"],
+            cwd=root,
+            timeout=GIT_TIMEOUT_SECONDS,
+            discover=True,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise GitTimeoutError("git rev-parse", GIT_TIMEOUT_SECONDS) from exc
+    except OSError:
+        return None
+    if head.returncode != 0:
+        # Exit 1: HEAD names no commit yet. Any other failure outside a
+        # checkout is the no-repository case; in a checkout git refused it.
+        if head.returncode != 1 and in_checkout(root):
+            raise GitFailedError("git rev-parse", head.returncode)
+        return None
     try:
         completed = run_git(
             [
                 "log",
                 "--format=%x1e%ct",
-                "--name-only",
+                "--name-status",
                 "--no-renames",
                 "--relative",
                 "--",
                 ".",
             ],
             cwd=root,
-            timeout=GIT_TIMEOUT_SECONDS,
+            timeout=GIT_HISTORY_TIMEOUT_SECONDS,
+            discover=True,
         )
-    except (OSError, subprocess.SubprocessError):
+    except subprocess.TimeoutExpired as exc:
+        raise GitTimeoutError("git log", GIT_HISTORY_TIMEOUT_SECONDS) from exc
+    except OSError:
         return None
-    if completed.returncode != 0 or not completed.stdout:
+    if completed.returncode != 0:
+        # A partial clone can lack trees the read needs, and run_git does not
+        # let git fetch them: that history is not here to read. git tells a
+        # left-out object from a lost one in no answer the check can use
+        # (rev-list --missing=allow-promisor fails on both), so any failed
+        # read there counts as unavailable history, as every one did before
+        # the limits. In a full clone the history is there unread.
+        if _is_partial_clone(root):
+            return None
+        raise GitFailedError("git log", completed.returncode)
+    if not completed.stdout:
         return None
 
     times: dict[str, int] = {}
+    deleted: set[str] = set()
     current_ct: int | None = None
     # Split on "\n" only: str.splitlines() also breaks at the \x1e record
     # marker, which would strip it from every header line.
@@ -298,15 +447,21 @@ def _last_commit_times(root: Path) -> dict[str, int] | None:
             stamp = raw_line[1:].strip()
             current_ct = int(stamp) if stamp.isdigit() else None
             continue
-        # The name as git printed it: core.quotePath=false keeps it unquoted,
-        # and stripping would change a name that starts or ends with a space.
-        path = raw_line
-        if not path or current_ct is None:
+        # A change line is "<status>\t<name>". The name is as git printed it:
+        # core.quotePath=false keeps a non-ASCII name unquoted, and stripping
+        # would change a name that starts or ends with a space.
+        status, tab, path = raw_line.partition("\t")
+        if not tab or not path or current_ct is None:
             continue
         # Newest-first: keep only the first (most recent) commit per path.
         if path not in times:
             times[path] = current_ct
-    return times
+            if status == "D":
+                deleted.add(path)
+    # The first line of the rev-parse output is the path of the root below the
+    # top of the work tree; it is empty when the root is that top.
+    prefix = head.stdout.split("\n", 1)[0]
+    return _History(times=times, deleted=frozenset(deleted), root_is_top=not prefix)
 
 
 def _owning_folder(file_posix: str, folder_set: frozenset[str]) -> str:
@@ -333,31 +488,44 @@ def check(root: Path) -> GrepResult:
     ``result.passed`` is True iff (when git history is available) no *present*,
     committed per-folder companion is stale relative to its folder's
     directly-contained artifacts; it is always True when git history is
-    unavailable.
+    unavailable. A git command past its time limit, or a git that refused the
+    repository, is not missing history: ``passed`` is False and
+    ``check_error`` names the command.
     """
     folders = meaningful_folders(root)
     folder_set = frozenset(folders)
     findings: list[Finding] = []
 
     # Freshness — git-commit truth; skipped when history is unavailable.
-    commit_times = _last_commit_times(root)
-    freshness_checked = commit_times is not None
-    if commit_times is not None:
+    check_error: str | None = None
+    try:
+        history = _read_history(root)
+    except GitCheckError as exc:
+        history, check_error = None, str(exc)
+    freshness_checked = history is not None
+    if history is not None:
         content_ct: dict[str, int] = {}
         companion_ct: dict[str, int] = {}
-        for path, ct in commit_times.items():
+        for path, ct in history.times.items():
             if _has_excluded_segment(path):
                 continue
             owner = _owning_folder(path, folder_set)
             if path.rpartition("/")[2] == COMPANION_NAME:
                 companion_folder = path.rpartition("/")[0] or "."
-                # The root AGENTS.md is the repository's canon, not a
-                # per-folder companion, so it has no folder to fall behind.
-                # A companion deleted since is absent, and absence passes.
+                # The AGENTS.md at the top of the repository is its canon, not
+                # a per-folder companion, so it has no folder to fall behind.
+                # The AGENTS.md of a subtree root that is not the top of a
+                # repository is a per-folder companion.
+                is_canon = companion_folder == "." and history.root_is_top
+                # A companion whose newest commit deleted it is absent, and
+                # absence passes; one that is on disk again has not been
+                # committed since, so it is fresh. A committed companion that
+                # is gone from disk is absent too.
                 if (
-                    companion_folder != "."
+                    not is_canon
+                    and path not in history.deleted
                     and companion_folder in folder_set
-                    and (root / path).is_file()
+                    and is_project_file(root, root / path)
                 ):
                     companion_ct[companion_folder] = ct
                 continue
@@ -368,7 +536,9 @@ def check(root: Path) -> GrepResult:
                 continue
             newest_content = content_ct.get(folder, 0)
             if newest_content > companion_ct[folder]:
-                surface = f"{folder}/{COMPANION_NAME}"
+                surface = (
+                    COMPANION_NAME if folder == "." else f"{folder}/{COMPANION_NAME}"
+                )
                 findings.append(
                     Finding(
                         surface=surface,
@@ -385,8 +555,9 @@ def check(root: Path) -> GrepResult:
         root=str(root),
         folders_inspected=len(folders),
         freshness_checked=freshness_checked,
-        passed=not findings,
+        passed=not findings and check_error is None,
         findings=findings,
+        check_error=check_error,
     )
 
 
@@ -399,12 +570,15 @@ def _main(argv: list[str]) -> int:
     # ``gate._advisory_verdict``) and surfaces a stale-companion finding as
     # ``advisory_findings_present`` without failing the ``gate --all`` run.
     # CI opts into strict enforcement separately. A sweep that inspected no
-    # folder fails: that is a misconfiguration, not advisory drift.
+    # folder fails: that is a misconfiguration, not advisory drift. So does a
+    # sweep whose git command ran past its limit or whose checkout git
+    # refused: it did not finish.
     return finish_root_report(
         result.to_json(),
         passed=result.passed,
         inspected=result.folders_inspected,
         advisory=True,
+        check_error=result.check_error,
     )
 
 

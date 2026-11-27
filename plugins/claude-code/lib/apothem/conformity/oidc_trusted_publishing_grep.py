@@ -59,6 +59,13 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Final
 
+from apothem.conformity._grep_base import (
+    finish_root_report,
+    is_project_dir,
+    list_real_entries,
+    parse_root_args,
+)
+
 GREP_NAME: Final[str] = "oidc-trusted-publishing-grep"
 RULE_ANCHOR: Final[str] = "OIDC trusted publishing"
 
@@ -76,6 +83,12 @@ _PYPI_WORKFLOW_RE: Final[re.Pattern[str]] = re.compile(r"(?i)publish.*py.*\.ya?m
 _NPM_WORKFLOW_RE: Final[re.Pattern[str]] = re.compile(
     r"(?i)(?:publish|packaging).*npm.*\.ya?ml$"
 )
+
+
+def _is_publish_workflow_name(name: str) -> bool:
+    """Return True for a workflow file name this check reads."""
+    return bool(_PYPI_WORKFLOW_RE.search(name) or _NPM_WORKFLOW_RE.search(name))
+
 
 # Detection patterns operating on raw workflow text. These are
 # deliberately substring-based so the validator works without PyYAML.
@@ -239,7 +252,7 @@ def check(root: Path) -> GrepResult:
     workflows_dir = root / ".github" / "workflows"
     findings: list[Finding] = []
     inspected: list[str] = []
-    if not workflows_dir.is_dir():
+    if not is_project_dir(root, workflows_dir):
         return GrepResult(
             grep=GREP_NAME,
             root=str(root),
@@ -250,7 +263,9 @@ def check(root: Path) -> GrepResult:
         )
     pypi_workflows: list[Path] = []
     npm_workflows: list[Path] = []
-    for candidate in sorted(workflows_dir.iterdir()):
+    for candidate in sorted(
+        list_real_entries(workflows_dir, wanted_files=_is_publish_workflow_name)
+    ):
         if not candidate.is_file():
             continue
         if _PYPI_WORKFLOW_RE.search(candidate.name):
@@ -285,10 +300,6 @@ def check(root: Path) -> GrepResult:
 
 
 def _main(argv: list[str]) -> int:
-    # Imported here, not at module top: ``check()`` stays stdlib-only; only
-    # the command-line entry needs the shared parser and report stamp.
-    from apothem.conformity._grep_base import finish_root_report, parse_root_args
-
     root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     result = check(root)
     return finish_root_report(

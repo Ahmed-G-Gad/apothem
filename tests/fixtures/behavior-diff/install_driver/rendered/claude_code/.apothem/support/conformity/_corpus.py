@@ -40,8 +40,18 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import BinaryIO, Final
 
-from apothem.conformity._git import run_git
-from apothem.conformity._grep_base import GIT_LS_FILES_TIMEOUT_SECONDS
+from apothem.conformity._git import run_git, split_names
+from apothem.conformity._grep_base import (
+    GIT_LS_FILES_TIMEOUT_SECONDS,
+    GitFailedError,
+    GitTimeoutError,
+    linked_git_message,
+    nearest_linked_git_entry,
+)
+from apothem.conformity._project_paths import (
+    NAME_SURROGATE_TAG_BIT,
+    is_link,
+)
 
 # The largest file the corpus run reads, in bytes. It is well above any text a
 # project tracks, lockfiles and notebooks included; a larger tracked file is
@@ -124,18 +134,17 @@ _WINDOWS_UNHELD: Final[frozenset[str]] = frozenset(
     ':\\<>"|?*' + "".join(chr(code) for code in range(1, 32))
 )
 
-# Windows sets this bit in the tag of a reparse point that names another file or
-# folder: a symbolic link, a junction or a WSL link. ``os.lstat`` reports a
-# junction as a plain folder, so the tag is what shows it is a link.
-_NAME_SURROGATE_TAG_BIT: Final[int] = 0x20000000
-
 
 class CorpusListError(Exception):
-    """The tracked-file list cannot be read; the message says why.
+    """The tracked-file list cannot be read: git was not run, or did not start.
 
-    The message is a fixed sentence with git's exit code at most. git's own
-    error text is left out, because it can quote the repository's settings and
-    name files outside the project.
+    git is not run when the ``.git`` entry it would use is a link (see
+    :func:`~apothem.conformity._grep_base.nearest_linked_git_entry`), and
+    does not start when it is missing. The message is a fixed sentence, like
+    those of the git-check errors in :mod:`apothem.conformity._grep_base`,
+    except that a linked entry is named by its own path (by its full path when
+    it lies above the root). git's own error text is left out, because it can
+    quote the repository's settings and name files outside the project.
     """
 
 
@@ -158,37 +167,45 @@ def tracked_entries(root: Path) -> list[TrackedEntry]:
     """Return the index entries under *root*, each path built from its git name.
 
     Runs ``git ls-files -s -z`` in *root* through :func:`run_git`, which turns
-    off the repository's settings that start a program, gives git no input and
-    decodes its output as UTF-8 with any other byte replaced, so a file name
-    that is not UTF-8 names no file on disk and is skipped on its own instead
-    of failing the run. The call gives up after
+    off the repository's settings that start a program and gives git no input.
+    The output is read as file names, so a name keeps every byte it holds (a
+    carriage return, a byte that is not UTF-8) and names the file on disk; a
+    name that names no file there is skipped on its own instead of failing the
+    run. The call gives up after
     :data:`GIT_LS_FILES_TIMEOUT_SECONDS`. A file with a merge conflict, which
     the index lists once per stage, is kept once, and counts as a link or a
     submodule when any of its stages does. Each name is judged as git writes
     it (see :func:`name_skip`); no path is resolved and no link is followed.
 
-    Raises :class:`CorpusListError` when the list cannot be read: git cannot be
-    started, git exits with an error (for example, *root* is not inside a git
-    work tree), or git runs past the time limit.
+    Raises :class:`CorpusListError` when git is not run or cannot be started
+    (the ``.git`` entry git would use, in *root* or a folder above it, is a
+    link, so git would read another repository's index; or git did not
+    start),
+    :class:`~apothem.conformity._grep_base.GitFailedError` when git exits
+    with an error (for example, *root* is not inside a git work tree), and
+    :class:`~apothem.conformity._grep_base.GitTimeoutError` when git runs
+    past the time limit: the same errors, in the same words, as the
+    standalone validators' own git commands.
     """
+    linked = nearest_linked_git_entry(root)
+    if linked is not None:
+        raise CorpusListError(linked_git_message(root, linked))
     try:
         completed = run_git(
             ["ls-files", "-s", "-z"],
             cwd=root,
             timeout=GIT_LS_FILES_TIMEOUT_SECONDS,
+            discover=True,
+            file_names=True,
         )
     except subprocess.TimeoutExpired as exc:
-        raise CorpusListError(
-            f"git ls-files did not finish within {GIT_LS_FILES_TIMEOUT_SECONDS} seconds"
-        ) from exc
+        raise GitTimeoutError("git ls-files", GIT_LS_FILES_TIMEOUT_SECONDS) from exc
     except OSError as exc:
         raise CorpusListError("git did not start") from exc
     if completed.returncode != 0:
-        raise CorpusListError(
-            f"git ls-files failed with exit code {completed.returncode}"
-        )
+        raise GitFailedError("git ls-files", completed.returncode)
     modes: dict[str, str] = {}
-    for record in completed.stdout.split("\0"):
+    for record in split_names(completed.stdout):
         # Each record is "<mode> <object> <stage>\t<path>".
         details, tab, name = record.partition("\t")
         if not tab or not name:
@@ -256,13 +273,6 @@ def _windows_cannot_hold(part: str) -> bool:
         return True
     digits = bare[4:]
     return bare.startswith("git~") and digits.isascii() and digits.isdigit()
-
-
-def is_link(info: os.stat_result) -> bool:
-    """Return True when *info*, from ``os.lstat``, describes a link of any kind."""
-    if stat.S_ISLNK(info.st_mode):
-        return True
-    return bool(getattr(info, "st_reparse_tag", 0) & _NAME_SURROGATE_TAG_BIT)
 
 
 def leaves_root(root: Path, path: Path) -> bool:
@@ -499,7 +509,7 @@ if sys.platform == "win32":
         first = _create_file(path, _FILE_FLAG_OPEN_REPARSE_POINT)
         try:
             tag = _reparse_tag(first)
-            if tag is not None and tag & _NAME_SURROGATE_TAG_BIT:
+            if tag is not None and tag & NAME_SURROGATE_TAG_BIT:
                 raise OSError(errno.ELOOP, "a link is in the file's place", str(path))
             if tag == 0:
                 return first

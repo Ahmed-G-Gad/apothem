@@ -29,6 +29,12 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Final
 
+from apothem.conformity._grep_base import (
+    finish_root_report,
+    parse_root_args,
+    project_file_target,
+)
+
 # Strict-mode preamble fragments per code-craft-shell rule section 1.
 # A script that lacks ANY of the strict-mode fragments listed for its
 # shell family is a finding.
@@ -121,16 +127,17 @@ def _has_any(content: str, fragments: tuple[str, ...]) -> bool:
     return any(fragment in content for fragment in fragments)
 
 
-def _check_bash(path: Path, findings: list[Finding]) -> None:
-    if not path.exists():
+def _check_bash(root: Path, path: Path, findings: list[Finding]) -> None:
+    source = project_file_target(root, path)
+    if source is None:
         findings.append(
             Finding(
                 script=path.name,
-                detail="scripts/installer/install.sh absent at repo root",
+                detail="scripts/installer/install.sh absent at repo root, or a link to something other than a regular file in the project",
             )
         )
         return
-    content = path.read_text(encoding="utf-8")
+    content = source.read_text(encoding="utf-8")
     if not _has_any(content, BASH_STRICT_FRAGMENTS):
         findings.append(
             Finding(
@@ -154,16 +161,17 @@ def _check_bash(path: Path, findings: list[Finding]) -> None:
         )
 
 
-def _check_powershell(path: Path, findings: list[Finding]) -> None:
-    if not path.exists():
+def _check_powershell(root: Path, path: Path, findings: list[Finding]) -> None:
+    source = project_file_target(root, path)
+    if source is None:
         findings.append(
             Finding(
                 script=path.name,
-                detail="scripts/installer/install.ps1 absent at repo root",
+                detail="scripts/installer/install.ps1 absent at repo root, or a link to something other than a regular file in the project",
             )
         )
         return
-    content = path.read_text(encoding="utf-8")
+    content = source.read_text(encoding="utf-8")
     if not _has_any(content, POWERSHELL_STRICT_FRAGMENTS):
         findings.append(
             Finding(
@@ -194,22 +202,20 @@ def check(root: Path) -> GrepResult:
         root / "scripts/installer/install.sh",
         root / "scripts/installer/install.ps1",
     )
-    _check_bash(scripts[0], findings)
-    _check_powershell(scripts[1], findings)
+    _check_bash(root, scripts[0], findings)
+    _check_powershell(root, scripts[1], findings)
     return GrepResult(
         grep=GREP_NAME,
         root=str(root),
         passed=not findings,
         findings=findings,
-        inspected=sum(1 for script in scripts if script.is_file()),
+        inspected=sum(
+            1 for script in scripts if project_file_target(root, script) is not None
+        ),
     )
 
 
 def _main(argv: list[str]) -> int:
-    # Imported here, not at module top: ``check()`` stays stdlib-only; only
-    # the command-line entry needs the shared parser and report stamp.
-    from apothem.conformity._grep_base import finish_root_report, parse_root_args
-
     root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     result = check(root)
     return finish_root_report(

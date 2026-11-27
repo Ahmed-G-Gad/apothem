@@ -37,6 +37,12 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Final
 
+from apothem.conformity._grep_base import (
+    finish_root_report,
+    parse_root_args,
+    project_file_target,
+)
+
 GREP_NAME: Final[str] = "plans-discipline-language-grep"
 RULE_ANCHOR: Final[str] = "CLAUDE.md Plans Discipline (multi-surface language)"
 
@@ -127,9 +133,10 @@ class GrepResult:
 def _read_fixture(root: Path) -> str | None:
     """Return the fixture body, or None when the fixture file is absent."""
     fixture_file = root / FIXTURE_PATH
-    if not fixture_file.exists():
+    source = project_file_target(root, fixture_file)
+    if source is None:
         return None
-    return fixture_file.read_text(encoding="utf-8").strip()
+    return source.read_text(encoding="utf-8").strip()
 
 
 def _coverage(body: str, tokens: tuple[tuple[str, ...], ...]) -> float:
@@ -194,7 +201,7 @@ def check(root: Path) -> GrepResult:
             Finding(
                 surface=FIXTURE_PATH,
                 detail=(
-                    "byte-exact fixture absent at canonical path; "
+                    "byte-exact fixture absent at canonical path, or a link to something other than a regular file in the project; "
                     "byte-exact admission disabled for every surface"
                 ),
                 coverage=0.0,
@@ -202,7 +209,8 @@ def check(root: Path) -> GrepResult:
         )
     for surface_path in REQUIRED_SURFACES:
         full_path = root / surface_path
-        if not full_path.exists():
+        source = project_file_target(root, full_path)
+        if source is None:
             verdicts.append(
                 SurfaceVerdict(
                     surface=surface_path,
@@ -214,12 +222,12 @@ def check(root: Path) -> GrepResult:
             findings.append(
                 Finding(
                     surface=surface_path,
-                    detail="surface file absent at canonical path",
+                    detail="surface file absent at canonical path, or a link to something other than a regular file in the project",
                     coverage=0.0,
                 )
             )
             continue
-        body = full_path.read_text(encoding="utf-8")
+        body = source.read_text(encoding="utf-8")
         verdict, finding = _verdict_for_surface(surface_path, body, fixture_text)
         verdicts.append(verdict)
         if finding is not None:
@@ -235,10 +243,6 @@ def check(root: Path) -> GrepResult:
 
 
 def _main(argv: list[str]) -> int:
-    # Imported here, not at module top: ``check()`` stays stdlib-only; only
-    # the command-line entry needs the shared parser and report stamp.
-    from apothem.conformity._grep_base import finish_root_report, parse_root_args
-
     root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     result = check(root)
     return finish_root_report(

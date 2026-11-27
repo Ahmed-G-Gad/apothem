@@ -50,6 +50,14 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Final
 
+from apothem.conformity._grep_base import (
+    child_folder_files,
+    finish_root_report,
+    is_project_dir,
+    is_project_file,
+    parse_root_args,
+)
+
 GREP_NAME: Final[str] = "determinism-grep"
 RULE_ANCHOR: Final[str] = "rules/determinism.md"
 
@@ -257,13 +265,14 @@ def _iter_surfaces(root: Path) -> list[Path]:
     """Return the sorted command + skill surface set under root."""
     surfaces: list[Path] = []
     commands_dir = root / COMMANDS_DIR
-    if commands_dir.is_dir():
+    if is_project_dir(root, commands_dir):
         surfaces.extend(
-            p for p in commands_dir.glob("*.md") if p.name not in EXCLUDED_FILES
+            p
+            for p in commands_dir.glob("*.md")
+            if p.name not in EXCLUDED_FILES and is_project_file(root, p)
         )
     skills_dir = root / SKILLS_DIR
-    if skills_dir.is_dir():
-        surfaces.extend(skills_dir.glob("*/SKILL.md"))
+    surfaces.extend(child_folder_files(root, skills_dir, "SKILL.md"))
     return sorted(surfaces)
 
 
@@ -272,16 +281,19 @@ def check(root: Path) -> GrepResult:
     findings: list[Finding] = []
     surfaces = _iter_surfaces(root)
     missing: list[str] = []
-    if not (root / COMMANDS_DIR).is_dir():
+    if not is_project_dir(root, root / COMMANDS_DIR):
         missing.append(COMMANDS_DIR)
-    if not (root / SKILLS_DIR).is_dir():
+    if not is_project_dir(root, root / SKILLS_DIR):
         missing.append(SKILLS_DIR)
     for rel in missing:
         findings.append(
             Finding(
                 surface=rel,
                 kind="missing-surface-root",
-                detail=f"surface directory absent at canonical path {root / rel}",
+                detail=(
+                    f"surface directory absent at canonical path {root / rel}, "
+                    "or a link"
+                ),
             )
         )
     for path in surfaces:
@@ -296,10 +308,6 @@ def check(root: Path) -> GrepResult:
 
 
 def _main(argv: list[str]) -> int:
-    # Imported here, not at module top: ``check()`` stays stdlib-only; only
-    # the command-line entry needs the shared parser and report stamp.
-    from apothem.conformity._grep_base import finish_root_report, parse_root_args
-
     root = parse_root_args(argv, prog=GREP_NAME, doc=__doc__).root
     result = check(root)
     return finish_root_report(
