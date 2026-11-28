@@ -65,7 +65,7 @@ selectively.
 | `ecosystem-audit/references/procedure.md` | The five-phase audit procedure, improvement-classification taxonomy, failure-recovery table, cadence guidance, and phase-thread diagram (progressively disclosed by the router). |
 | `ecosystem-audit/references/audit-fortress.md` | The Audit-Fortress Phase Skeleton (canonical flowchart + per-command parameter table) the eleven audit-fortress commands cite. |
 | `plan-suite/SKILL.md` | The plan-suite skill's entry point. |
-| `plan-suite/master-template.md` | The canonical Master Plan Suite template resolved by `/plan-spec`, `/plan-generate`, `/plan-review`, `/plan-audit`, `/plan-design`, `/plan-execute`, `/plan-status`. |
+| `plan-suite/master-template.md` | The canonical Master Plan Suite template resolved by `/plan-spec`, `/plan-generate`, `/plan-review`, `/plan-audit`, `/plan-design`, `/plan-execute`, `/plan-status`, `/plan-amend`, and the `/plan` orchestrator that runs them. |
 | `research-suite/SKILL.md` | The research-suite skill's concise entry-point router. |
 | `research-suite/research-template.md` | The canonical Research Suite template resolved by the `/research-<stage>` commands. |
 | `research-suite/references/directory-structure.md` | The research-suite directory-structure map (progressively disclosed by the router). |
