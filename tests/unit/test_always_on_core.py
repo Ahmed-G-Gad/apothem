@@ -221,7 +221,12 @@ def test_demoted_list_names_existing_scoped_parents() -> None:
 
 
 def test_companions_never_reach_a_file_their_parent_does_not() -> None:
-    for parent in DEMOTED:
+    # Every scoped parent, not only the demoted ones: a companion that reaches
+    # further than its parent loads without it.
+    stems = _stems()
+    scoped = [s for s in stems if s not in ALWAYS_ON and _is_parent(s, stems)]
+    assert set(DEMOTED) <= set(scoped)
+    for parent in scoped:
         parent_globs = set(_globs(parent))
         for companion in _companions(parent):
             extra = set(_globs(companion)) - parent_globs
