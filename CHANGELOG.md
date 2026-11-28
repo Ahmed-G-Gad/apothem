@@ -9,6 +9,23 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- **The docs site has a decision records section.** The new
+  [decision records](https://apothem.ahmedgad.com/docs/adr) page explains
+  what an architecture decision record (ADR) is in Apothem, when one is
+  written (a plan settles a lasting decision, or an instruction file departs
+  from `AGENTS.md` on purpose), how records are numbered and marked, and the
+  template. Six records cover decisions the rules already rely on:
+  project-local plans, the one-line SPDX header, `AGENTS.md` as the canonical
+  instruction file, the static harness registry, the Apothem-owned support
+  folder, and additive releases. The reference pages that cited record
+  numbers and specification sections that are not in the repository link to
+  these records instead, in every language. The instruction-file coherence
+  check now also covers human-only authorship, plain language, the operating
+  loop, the synthesis posture and the living-documentation rule, and counts a
+  numbered `.mdx` record as the pairing for an override marker.
+
 ### Fixed
 
 - **The install docs name the installers' clean-slate flags and what

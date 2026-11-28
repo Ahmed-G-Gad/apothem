@@ -3,8 +3,8 @@
 # GitHub Copilot Instructions
 
 These are the repository-scoped instructions for GitHub Copilot when generating
-code, prose, or commits in this repository. They are mandatory and ship with
-every published checkout. They are coherent with [`AGENTS.md`](../AGENTS.md)
+code, prose, or commits in this repository. They are mandatory and are part
+of every clone of the repository. They are coherent with [`AGENTS.md`](../AGENTS.md)
 and [`CLAUDE.md`](../CLAUDE.md); where shared disciplines overlap (plans
 locality, authorship headers, ambiguity handling, naming, release freshness,
 human-only authorship, agent-guidance surface locality, session closure,
@@ -45,7 +45,7 @@ companions and are exempt from this canon.
 
 ## Operating Loop & Synthesis Posture
 
-Three shared claims this surface preserves, semantically equivalent to
+Two shared claims this surface preserves, semantically equivalent to
 [`AGENTS.md`](../AGENTS.md) and [`CLAUDE.md`](../CLAUDE.md):
 
 - **Operating loop.** The planning pipeline (`/plan`) flows into the hardening
@@ -61,21 +61,25 @@ Three shared claims this surface preserves, semantically equivalent to
   [`src/apothem/rules/multi-agent-workflow.md`](../src/apothem/rules/multi-agent-workflow.md)
   and reachable via `/workflow`; it is opt-in and default-off under the agnostic
   posture, so a clean install never auto-invokes it.
-- **Session closure.** Every session — an ad-hoc exchange as much as a plan
-  phase — ends with a formal, verifiable close: a Recommended Next Step, a
-  done / deferred ledger, and a verification attestation of what was checked and
-  how it came out. The discipline is specified at
-  [`src/apothem/rules/session-closure.md`](../src/apothem/rules/session-closure.md).
-  A session that trails off mid-thread, claims done without a checked outcome,
-  or buries deferred work silently is a structural failure.
+
+## Session Closure
+
+Every session — an ad-hoc exchange as much as a plan phase — ends with a
+formal, verifiable close: a Recommended Next Step, a done / deferred ledger,
+and a verification attestation of what was checked and how it came out. The
+discipline is specified at
+[`src/apothem/rules/session-closure.md`](../src/apothem/rules/session-closure.md),
+and it is one of the shared claims [`AGENTS.md`](../AGENTS.md) lists in its AI
+Surface Canon. A session that trails off mid-thread, claims done without a
+checked outcome, or buries deferred work silently is a structural failure.
 
 ## Coding Conventions
 
 Files and folders use **kebab-case** (`some-name.ext`,
 `some-folder/sub-folder/`). The canonical-uppercase exceptions are
-`CLAUDE.md`, `README.md`, `LICENSE`, `CHANGELOG.md`, `SECURITY.md`,
-`CODE_OF_CONDUCT.md`, `CONTRIBUTING.md`, and the few all-caps top-level files
-their respective conventions require.
+`AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `QWEN.md`, `README.md`, `LICENSE`,
+`CHANGELOG.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md`, and
+the few all-caps files their respective conventions require.
 
 Directive prose uses the **RFC 2119** modal hierarchy: `MUST`, `MUST NOT`,
 `SHOULD`, `SHOULD NOT`, `MAY`. Suggestions inside generated code carry the
@@ -187,8 +191,8 @@ The `<project-root>/.apothem/plans/` directory (a legacy
 [`site/content/docs/reference/plans-discipline.mdx`](../site/content/docs/reference/plans-discipline.mdx). Plans **MUST
 NEVER** be committed to a project's git history. If a plan converges to a
 durable decision, the decision is **promoted** to an ADR under
-the project's ratified ADR directory; the plan itself is then archived to
-`.apothem/plans/_archive/` or discarded.
+[`site/content/docs/adr/`](../site/content/docs/adr/index.mdx); the plan
+itself is then archived to `.apothem/plans/_archive/` or discarded.
 
 Plan filenames follow `YYYY-MM-DD--<kebab-case-slug>.md`. Plans transition
 through the lifecycle states **draft → in-progress → converged** (promote to
@@ -202,10 +206,10 @@ transcript that ends up pasted into source.
 
 ## Release Facade
 
-Public release surfaces must remain current-version-only in their narrative:
-the one Pages deployment and every other public-facing surface describe the
-current version, with no narrative that references earlier release work or
-internal planning history. Releases themselves are additive: every published
+Public release surfaces must remain fresh and current-version-only in their
+narrative: the one Pages deployment and every other public-facing surface
+describe the current version, with no narrative that references internal
+planning history or earlier launch work. Releases themselves are additive: every published
 release tag, GitHub Release, and npm version stays published, and none is
 deleted, moved, or reused.
 Apothem distributes through several install paths — tool-native plugins and
@@ -224,6 +228,12 @@ signature + SLSA provenance) to its own GitHub Release page as
 verification evidence. The GitHub Release is published only after local gates
 and the CI, Clean Install Gate, Harness Matrix, and Conformity workflows are
 green; publication is never the first validation step.
+
+Public repositories must not expose plan-internal launch identifiers, stale
+release stories, stale usernames, stale package coordinates, or historical
+cleanup narratives. When a platform preserves immutable history (package
+filenames, pull-request records, audit trails), document the platform limit
+plainly rather than inventing a fresh-state claim.
 
 ## Living Documentation
 
@@ -333,7 +343,8 @@ messages:
   `site/content/docs/adr/`. The coherence validator skips that claim's checks
   on a surface with the marker. It gives an advisory warning whenever a marker
   stands in for a claim the surface lacks, and a second one when that folder
-  holds no `.md` file; it never reads an ADR's content. A silent contradiction is a build failure.
+  holds no numbered ADR page (`NNNN-<slug>.md` or `.mdx`); it never reads an
+  ADR's content. A silent contradiction is a build failure.
 
 ## Output Format
 
@@ -407,6 +418,9 @@ itself in PR-review mode — verify each of the following:
 - [`site/content/docs/reference/ai-conventions.mdx`](../site/content/docs/reference/ai-conventions.mdx) — the multi-surface
   AI-conventions overview (which surfaces ship, the reconciliation rule,
   the override mechanism).
+- [`site/content/docs/adr/`](../site/content/docs/adr/index.mdx) — the
+  architecture decision records: what an ADR is here, when one is written,
+  and the template.
 - [`src/apothem/schemas/authorship-header.txt`](../src/apothem/schemas/authorship-header.txt) —
   the byte-exact header fixture.
 - [`src/apothem/schemas/header-exceptions.txt`](../src/apothem/schemas/header-exceptions.txt) —

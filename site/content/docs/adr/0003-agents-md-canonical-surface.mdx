@@ -1,0 +1,60 @@
+---
+title: "ADR 0003: AGENTS.md is the canonical instruction file"
+description: "The repository's instruction files mirror one another's shared claims, AGENTS.md wins any conflict, and a validator checks that they agree."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+- **Status:** Accepted
+- **Date:** 2026-07-07 (in force in the first release in this repository's history)
+
+## Context
+
+Several coding tools work in this repository, and each reads its own
+instruction file: `AGENTS.md`, `CLAUDE.md` and
+`.github/copilot-instructions.md`. Rules that matter to every tool, such as
+where plans go, the file header and the commit format, must say the same thing
+in each file. A rule edited in one file and missed in the others leaves the
+tools working to different rules, and the difference shows up only later, in
+the code they write.
+
+## Decision
+
+`AGENTS.md` is the canonical project instruction file. `CLAUDE.md` and
+`.github/copilot-instructions.md` mirror its shared claims, each in the framing
+that suits its tool. The shared claims are the ones `AGENTS.md` lists in its AI
+Surface Canon, together with the modal hierarchy, the forbidden patterns and
+the synced unit. When the files disagree on a shared claim, `AGENTS.md` wins
+and the other file is rewritten to match it.
+
+A file may depart from a shared claim only on purpose: it carries an inline
+`<!-- coherence-override: <claim-id> -->` marker, paired with an ADR in this
+section that explains why.
+
+## Consequences
+
+- A change to a shared claim is made in all three files in the same change.
+- The claim list in
+  [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml)
+  grows with every new shared claim, so the validator can check it.
+- Surface-specific sections, such as the tool-specific framing of each file,
+  may differ freely as long as they do not contradict a shared claim.
+
+## Where it is enforced
+
+- The `multi-surface-coherence` validator, which checks every claim in the
+  claim list against each required file, reports a file that leaves a claim out
+  or negates it, and reports each override marker as a warning.
+- The `copilot-instructions-presence` validator, which checks the sections of
+  `.github/copilot-instructions.md`.
+- The [multi-surface harness conventions](/docs/reference/ai-conventions)
+  reference, which describes the surfaces, the reconciliation rule and the
+  override marker.
+
+## Sources
+
+- The AI Surface Canon section of `AGENTS.md`, the claim list, and the
+  `multi-surface-coherence` validator, all present in the first release
+  commit (2026-07-07).
+- The reconciliation strategy `agents-md-wins`, stated on the
+  [multi-surface harness conventions](/docs/reference/ai-conventions) page in
+  the same commit.

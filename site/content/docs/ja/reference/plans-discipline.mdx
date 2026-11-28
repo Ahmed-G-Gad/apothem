@@ -2,11 +2,11 @@
 title: "計画ディシプリン — プロジェクトローカルな一時的作業メモリ"
 description: "フロントマタースキーマ、ライフサイクル遷移、ADR への昇格、フックとバリデーターによる強制を用いて、プロジェクトローカルの一時的な作業メモリを .apothem/plans/ で管理します（レガシーの .plans/ ツリーは apothem migrate-workspace でアップグレードされます）。"
 machineTranslated: true
-sourceHash: "78ba9223bd5803ab"
+sourceHash: "54218082c544af87"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **下流のコントリビューター向けの、正規の規範的な参照です。** 本ドキュメントは、プロジェクト仕様の計画ディシプリンのセクション（仕様 §3）を反映したものです。公開リポジトリに同梱される、独立した参照です。ここで導入されるディシプリンは基礎的なものであり、以下のすべての指令は、明示的に別の記載がない限り `MUST` です。アーキテクチャ上の根拠は [ADR-0001](/docs/reference/plans-discipline) に記録されています。
+> **下流のコントリビューター向けの、正規の規範的な参照です。** 本ドキュメントは、計画ディシプリンの独立した参照であり、公開リポジトリに同梱されます。ここで導入されるディシプリンは基礎的なものであり、以下のすべての指令は、明示的に別の記載がない限り `MUST` です。その基になった決定は [ADR 0001](/docs/adr/0001-project-local-plans) に記録されています。
 
 ---
 
@@ -188,12 +188,10 @@ CLAUDE.md
 
 ## 関連項目
 
-- [ADR-0001](/docs/reference/plans-discipline) — アーキテクチャ上の根拠、検討された代替案、受け入れられたトレードオフ。
+- [ADR 0001](/docs/adr/0001-project-local-plans) — プロジェクト内に置く計画に関する意思決定記録。[意思決定記録](/docs/adr) にすべての ADR とテンプレートがあります。
 - [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) — 著作者ヘッダーの SPDX 行のディシプリン（計画はカテゴリとして免除されています）。
 - ハーネス規約のページ — マルチサーフェスのハーネス規約（計画ディシプリンは、登録済みのすべてのハーネス指示ファイルと、オプトインされたすべての任意の面にわたる共有された主張として現れます）。パス:
 
 ```text
 site/content/docs/reference/ai-conventions.mdx
 ```
-
-- プロジェクト仕様 §3 — ここに反映されている完全な正規テキストです。

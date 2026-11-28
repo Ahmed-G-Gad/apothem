@@ -2,13 +2,13 @@
 title: "Cabeçalho de autoria — Linha de licença SPDX por arquivo"
 description: "Define e aplica marcadores de identificador de licença SPDX por arquivo usando cabeçalhos canônicos de uma única linha na sintaxe de comentário adequada para cada tipo de arquivo."
 machineTranslated: true
-sourceHash: "c3e4f3695b73611c"
+sourceHash: "9781c864fd5c8152"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 {/* REUSE-IgnoreStart */}
 
-> **Referência normativa canônica para colaboradores downstream.** Este documento espelha as seções de Autoria e Cabeçalho de arquivo da especificação do projeto (Especificação §0.5 + §4.6); é a referência independente distribuída com o repositório publicado. A justificativa arquitetural está registrada no ADR-0002.
+> **Referência normativa canônica para colaboradores downstream.** Este documento é a referência independente das regras de autoria e cabeçalho de arquivo e é distribuído com o repositório publicado. A decisão que o fundamenta está registrada no [ADR 0002](/docs/adr/0002-one-line-spdx-header).
 
 ---
 
@@ -123,7 +123,7 @@ A linha SPDX declara a licença do projeto de forma legível por máquina; o arq
 
 **Forma de linha única.** A procedência por arquivo é a única linha SPDX; o instrumento de copyright vive uma única vez no LICENSE da raiz. Caixas de banner multilinha com borda (copyright, site, e-mail, linhas de contato envolvidas em um quadro riscado) são rejeitadas pelo validador: elas duplicam os metadados de contato e copyright em cada arquivo sem acrescentar nada que o marcador de licença legível por máquina já não forneça às ferramentas REUSE/SPDX/SBOM. A fixture exata byte a byte em `src/apothem/schemas/authorship-header.txt` carrega a forma de linha única; o validador é executado contra esta fixture.
 
-**Referências cruzadas.** Arquivo LICENSE (MIT) — o instrumento legal prevalece em caso de conflito. ADR-0006 documenta a justificativa da ratificação do estreitamento do banner.
+**Referências cruzadas.** Arquivo LICENSE (MIT) — o instrumento legal prevalece em caso de conflito. O [ADR 0002](/docs/adr/0002-one-line-spdx-header) registra por que a linha única substitui uma caixa de banner.
 
 ---
 
@@ -215,10 +215,8 @@ A disciplina precisa sobreviver a toda sessão futura e a todo colaborador futur
 
 ## Veja também
 
-- ADR-0002 — justificativa arquitetural, alternativas consideradas.
-- ADR-0006 — ratificação do estreitamento do banner.
+- [ADR 0002](/docs/adr/0002-one-line-spdx-header) — o registro de decisão sobre o cabeçalho SPDX de uma linha.
 - [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt) — a fixture canônica exata, byte a byte.
 - [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt) — a lista de exceções (forma regex/glob).
 - [`scripts/inject-header.py`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.py) e [`scripts/inject-header.sh`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.sh) — o injetor.
 - [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py) — o validador.
-- Especificação do projeto §0.5 + §4.6 — o texto canônico espelhado aqui.

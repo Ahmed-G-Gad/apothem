@@ -1,0 +1,55 @@
+---
+title: "ADR 0005: Files with no native home install under an Apothem-owned support folder"
+description: "Adapters use each harness's documented native surface, and anything without one lands under .apothem/support/ inside the harness's configuration folder."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+- **Status:** Accepted
+- **Date:** 2026-07-07 (in force in the first release in this repository's history)
+
+## Context
+
+Apothem installs the same set of files (rules, skills, agents, hooks,
+templates, the conformity gate and its schemas) into many harnesses. Each
+harness documents its own folders and file formats, and not every harness has
+a native place for every kind of file. Writing files into folders a harness
+reserves for itself can break that harness or be overwritten by it, and
+spreading Apothem's own files over several similarly named folders makes them
+hard to find and to remove.
+
+## Decision
+
+Adapters install through each harness's documented native surface. A set of
+files may be converted when the native format differs, for example agents
+written as TOML for one harness and commands written as TOML for another.
+
+When a harness has no native place for a kind of file, the files land under
+one Apothem-owned folder, `.apothem/support/`, inside that harness's
+configuration folder, and the harness's native instruction file points to
+them. They are never forced into folders the harness reserves for itself.
+
+## Consequences
+
+- Each harness configuration holds one Apothem-owned dotted folder, so an
+  uninstall knows exactly what is Apothem's.
+- The hooks, the conformity gate and the schemas sit side by side under
+  `support/`, so the hooks find what they need in every harness that uses the
+  support folder for hooks.
+- An adapter author checks the harness's documentation for a native place
+  before falling back to the support folder.
+
+## Where it is enforced
+
+- `src/apothem/lib/propagation-manifest.yaml`, which declares each file set's
+  target, including the `${HARNESS_ROOT}/.apothem/support/` targets.
+- The Harness Installation Discipline section of `AGENTS.md`, `CLAUDE.md` and
+  `.github/copilot-instructions.md`.
+- The [cohort packaging contract](/docs/architecture/cohort-packaging-contract)
+  and [installation workflow](/docs/architecture/installation-workflow) pages.
+
+## Sources
+
+- The "Unified install layout" entry in the first release's section
+  of the [changelog](/docs/changelog).
+- The Harness Installation Discipline section of `AGENTS.md`, present in the
+  first release commit (2026-07-07).

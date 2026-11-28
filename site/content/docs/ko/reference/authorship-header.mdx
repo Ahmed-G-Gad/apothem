@@ -2,13 +2,13 @@
 title: "작성자 헤더 — 파일별 SPDX 라이선스 줄"
 description: "각 파일 타입에 맞는 주석 구문의 정식 한 줄 헤더로 파일별 SPDX 라이선스 식별자 마커를 정의하고 강제합니다."
 machineTranslated: true
-sourceHash: "c3e4f3695b73611c"
+sourceHash: "9781c864fd5c8152"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 {/* REUSE-IgnoreStart */}
 
-> **다운스트림 기여자를 위한 정식 규범 참조.** 이 문서는 프로젝트 명세의 작성자 및 파일 헤더 섹션(명세 §0.5 + §4.6)을 미러링합니다. 게시된 저장소와 함께 배포되는 독립형 참조입니다. 아키텍처 근거는 ADR-0002에 기록되어 있습니다.
+> **다운스트림 기여자를 위한 정식 규범 참조.** 이 문서는 작성자 및 파일 헤더 규칙의 독립형 참조이며, 게시된 저장소와 함께 배포됩니다. 그 바탕이 된 결정은 [ADR 0002](/docs/adr/0002-one-line-spdx-header)에 기록되어 있습니다.
 
 ---
 
@@ -91,7 +91,7 @@ SPDX 줄은 프로젝트의 라이선스를 기계가 읽을 수 있게 선언�
 
 **한 줄 형식.** 파일별 출처 정보는 SPDX 한 줄이며, 저작권 문서는 루트 LICENSE에 한 번만 있습니다. 테두리가 있는 여러 줄 배너 상자(괘선 프레임으로 감싼 저작권, 웹사이트, 이메일, 연락처 줄)는 검증기가 거부합니다. 이런 상자는 기계가 읽을 수 있는 라이선스 마커가 REUSE/SPDX/SBOM 도구에 이미 제공하는 것 외에는 아무것도 더하지 않으면서 연락처와 저작권 메타데이터를 모든 파일에 중복시키기 때문입니다. `src/apothem/schemas/authorship-header.txt`의 바이트 단위로 정확한 픽스처가 한 줄 형식을 담고 있으며, 검증기는 이 픽스처를 기준으로 실행됩니다.
 
-**상호 참조.** LICENSE 파일(MIT) — 충돌이 있으면 법적 문서가 우선합니다. ADR-0006은 배너 범위 축소를 비준한 근거를 문서화합니다.
+**상호 참조.** LICENSE 파일(MIT) — 충돌이 있으면 법적 문서가 우선합니다. [ADR 0002](/docs/adr/0002-one-line-spdx-header)는 한 줄 형식이 배너 상자를 대신하는 이유를 기록합니다.
 
 ---
 
@@ -152,10 +152,8 @@ Markdown 및 MDX 파일의 경우, SPDX 줄은 항상 주석 래퍼(`<!-- ... --
 
 ## 함께 보기
 
-- ADR-0002 — 아키텍처 근거, 검토한 대안.
-- ADR-0006 — 배너 범위 축소 비준.
+- [ADR 0002](/docs/adr/0002-one-line-spdx-header) — 한 줄 SPDX 헤더에 관한 결정 기록.
 - [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt) — 바이트 단위로 정확한 정식 픽스처.
 - [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt) — 예외 목록(정규식/glob 형태).
 - [`scripts/inject-header.py`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.py)와 [`scripts/inject-header.sh`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.sh) — 인젝터.
 - [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py) — 검증기.
-- 프로젝트 명세 §0.5 + §4.6 — 여기에 미러링된 정식 텍스트.

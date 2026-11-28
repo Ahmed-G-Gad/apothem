@@ -2,13 +2,13 @@
 title: "Autorschafts-Header — SPDX-Lizenzzeile pro Datei"
 description: "Definieren und erzwingen Sie SPDX-Lizenzbezeichner-Marker pro Datei mit kanonischen einzeiligen Headern in der für jeden Dateityp passenden Kommentarsyntax."
 machineTranslated: true
-sourceHash: "c3e4f3695b73611c"
+sourceHash: "9781c864fd5c8152"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 {/* REUSE-IgnoreStart */}
 
-> **Kanonische normative Referenz für nachgelagerte Mitwirkende.** Dieses Dokument spiegelt die Abschnitte der Projektspezifikation zu Autorschaft und Datei-Header (Spezifikation §0.5 + §4.6); es ist die eigenständige Referenz, die mit dem veröffentlichten Repository ausgeliefert wird. Die architektonische Begründung ist in ADR-0002 festgehalten.
+> **Kanonische normative Referenz für nachgelagerte Mitwirkende.** Dieses Dokument ist die eigenständige Referenz für die Regeln zu Autorschaft und Datei-Header und wird mit dem veröffentlichten Repository ausgeliefert. Die zugrunde liegende Entscheidung ist in [ADR 0002](/docs/adr/0002-one-line-spdx-header) festgehalten.
 
 ---
 
@@ -91,7 +91,7 @@ Die SPDX-Zeile deklariert die Lizenz des Projekts maschinenlesbar; die LICENSE-D
 
 **Einzeilige Form.** Die Herkunft pro Datei ist die einzige SPDX-Zeile; das Copyright-Instrument liegt einmalig in der LICENSE der Wurzel. Umrahmte mehrzeilige Banner-Boxen (Copyright-, Website-, E-Mail- und Kontaktzeilen in einem Linienrahmen) werden vom Validator abgelehnt: Sie duplizieren Kontakt- und Copyright-Metadaten in jeder Datei, ohne etwas hinzuzufügen, das der maschinenlesbare Lizenzmarker dem REUSE-/SPDX-/SBOM-Tooling nicht bereits liefert. Die byte-genaue Vorlage unter `src/apothem/schemas/authorship-header.txt` trägt die einzeilige Form; der Validator läuft gegen diese Vorlage.
 
-**Querverweise.** LICENSE-Datei (MIT) — im Konfliktfall ist das rechtliche Instrument maßgeblich. ADR-0006 dokumentiert die Begründung der Ratifizierung der Banner-Verschmälerung.
+**Querverweise.** LICENSE-Datei (MIT) — im Konfliktfall ist das rechtliche Instrument maßgeblich. [ADR 0002](/docs/adr/0002-one-line-spdx-header) hält fest, warum die einzelne Zeile einen Banner-Kasten ersetzt.
 
 ---
 
@@ -152,10 +152,8 @@ Die Disziplin muss jede künftige Sitzung und jeden künftigen Mitwirkenden übe
 
 ## Siehe auch
 
-- ADR-0002 — architektonische Begründung, erwogene Alternativen.
-- ADR-0006 — Ratifizierung der Banner-Verschmälerung.
+- [ADR 0002](/docs/adr/0002-one-line-spdx-header) — das Entscheidungsprotokoll zum einzeiligen SPDX-Header.
 - [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt) — die byte-genaue kanonische Vorlage.
 - [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt) — die Ausnahmeliste (Form mit Regex/Glob).
 - [`scripts/inject-header.py`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.py) und [`scripts/inject-header.sh`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.sh) — der Injektor.
 - [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py) — der Validator.
-- Projektspezifikation §0.5 + §4.6 — der hier gespiegelte kanonische Text.

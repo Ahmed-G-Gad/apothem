@@ -2,13 +2,13 @@
 title: "Header Kepengarangan — Baris Lisensi SPDX per Berkas"
 description: "Mendefinisikan dan menegakkan penanda pengidentifikasi lisensi SPDX per berkas menggunakan header satu baris kanonik dalam sintaks komentar yang sesuai untuk setiap tipe berkas."
 machineTranslated: true
-sourceHash: "c3e4f3695b73611c"
+sourceHash: "9781c864fd5c8152"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 {/* REUSE-IgnoreStart */}
 
-> **Referensi normatif kanonik untuk kontributor hilir.** Dokumen ini mencerminkan bagian Authorship & File-Header dari spesifikasi proyek (Spec §0.5 + §4.6); dokumen ini adalah referensi mandiri yang dikirimkan bersama repo yang dipublikasikan. Dasar pemikiran arsitekturalnya dicatat di ADR-0002.
+> **Referensi normatif kanonik untuk kontributor hilir.** Dokumen ini adalah referensi mandiri untuk aturan kepengarangan dan header berkas dan dikirimkan bersama repo yang dipublikasikan. Keputusan yang mendasarinya dicatat di [ADR 0002](/docs/adr/0002-one-line-spdx-header).
 
 ---
 
@@ -91,7 +91,7 @@ Baris SPDX mendeklarasikan lisensi proyek secara terbaca mesin; berkas LICENSE m
 
 **Bentuk satu baris.** Provenance per berkas adalah baris SPDX tunggal; instrumen hak cipta berada satu kali di LICENSE root. Kotak banner multibaris berbingkai (baris hak cipta, situs web, email, dan kontak yang dibungkus dalam bingkai bergaris) ditolak oleh validator: kotak itu menduplikasi metadata kontak dan hak cipta di setiap berkas tanpa menambahkan apa pun yang belum disediakan penanda lisensi terbaca mesin kepada perkakas REUSE/SPDX/SBOM. Fixture byte-persis di `src/apothem/schemas/authorship-header.txt` memuat bentuk satu baris; validator dijalankan terhadap fixture ini.
 
-**Rujukan silang.** Berkas LICENSE (MIT) — jika terjadi konflik, instrumen hukum yang berlaku. ADR-0006 mendokumentasikan dasar pemikiran ratifikasi penyempitan banner.
+**Rujukan silang.** Berkas LICENSE (MIT) — jika terjadi konflik, instrumen hukum yang berlaku. [ADR 0002](/docs/adr/0002-one-line-spdx-header) mencatat alasan satu baris menggantikan kotak banner.
 
 ---
 
@@ -152,10 +152,8 @@ Disiplin ini harus bertahan melewati setiap sesi mendatang dan setiap kontributo
 
 ## Lihat Juga
 
-- ADR-0002 — dasar pemikiran arsitektural, alternatif yang dipertimbangkan.
-- ADR-0006 — ratifikasi penyempitan banner.
+- [ADR 0002](/docs/adr/0002-one-line-spdx-header) — catatan keputusan tentang header SPDX satu baris.
 - [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt) — fixture kanonik byte-persis.
 - [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt) — daftar pengecualian (bentuk regex/glob).
 - [`scripts/inject-header.py`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.py) dan [`scripts/inject-header.sh`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.sh) — injektor.
 - [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py) — validator.
-- Spesifikasi proyek §0.5 + §4.6 — teks kanonik yang dicerminkan di sini.

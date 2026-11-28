@@ -1,0 +1,12 @@
+{
+  "title": "决策记录",
+  "pages": [
+    "0001-project-local-plans",
+    "0002-one-line-spdx-header",
+    "0003-agents-md-canonical-surface",
+    "0004-static-harness-registry",
+    "0005-apothem-owned-support-subtree",
+    "0006-additive-releases",
+    "..."
+  ]
+}

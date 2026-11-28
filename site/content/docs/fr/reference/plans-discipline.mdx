@@ -2,11 +2,11 @@
 title: "Discipline des plans — Mémoire de travail éphémère et locale au projet"
 description: "Gérez la mémoire de travail éphémère et locale au projet dans .apothem/plans/ (un arbre hérité .plans/ se met à niveau via apothem migrate-workspace) avec un schéma de frontmatter, des transitions de cycle de vie, la promotion vers des ADR et l'application via des hooks et des validateurs."
 machineTranslated: true
-sourceHash: "78ba9223bd5803ab"
+sourceHash: "54218082c544af87"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Référence normative canonique pour les contributeurs en aval.** Ce document reflète la section Discipline des plans de la spécification du projet (Spécification §3) ; c'est la référence autonome livrée avec le dépôt publié. La discipline introduite ici est fondamentale ; chaque directive ci-dessous est un `MUST` (DOIT) sauf mention explicite contraire. La justification architecturale est consignée dans [ADR-0001](/docs/reference/plans-discipline).
+> **Référence normative canonique pour les contributeurs en aval.** Ce document est la référence autonome de la Discipline des plans, livrée avec le dépôt publié. La discipline introduite ici est fondamentale ; chaque directive ci-dessous est un `MUST` (DOIT) sauf mention explicite contraire. La décision qui la fonde est consignée dans l'[ADR 0001](/docs/adr/0001-project-local-plans).
 
 ---
 
@@ -188,11 +188,10 @@ CLAUDE.md
 
 ## Voir aussi
 
-- [ADR-0001](/docs/reference/plans-discipline) — justification architecturale, alternatives envisagées, compromis acceptés.
+- [ADR 0001](/docs/adr/0001-project-local-plans) — le registre de décision sur les plans locaux au projet ; les [registres de décisions](/docs/adr) listent chaque ADR et le modèle.
 - [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) — la discipline de la ligne SPDX d'en-tête de paternité (les plans sont catégoriquement exemptés).
 - La page des conventions de l'environnement — conventions multi-surfaces de l'environnement (la Discipline des plans apparaît comme une affirmation partagée dans chaque fichier d'instructions d'environnement enregistré et dans chaque surface optionnelle retenue). Chemin :
 
 ```text
 site/content/docs/reference/ai-conventions.mdx
 ```
-- Spécification du projet §3 — le texte canonique complet reflété ici.

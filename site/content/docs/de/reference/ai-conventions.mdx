@@ -2,11 +2,11 @@
 title: "Multi-Surface-Harness-Konventionen"
 description: "Kanonische normative Referenz für die Multi-Surface-Konfiguration von Harnesses und ihre Kohärenz über die Laufzeiten für Chat, IDE-Vervollständigung und Pull-Request-Review hinweg."
 machineTranslated: true
-sourceHash: "ab1c94a20aecac87"
+sourceHash: "7ae40cdfd63ce888"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Kanonische normative Referenz für nachgelagerte Mitwirkende.** Dieses Dokument spiegelt die Abschnitte der Projektspezifikation zu den Multi-Surface-Harness-Konventionen (Spezifikation §0.6 + §2.8 + §4.7); es ist die eigenständige Referenz, die mit dem veröffentlichten Repository ausgeliefert wird. Die architektonische Begründung ist in ADR-0003 festgehalten.
+> **Kanonische normative Referenz für nachgelagerte Mitwirkende.** Dieses Dokument ist die eigenständige Referenz für die Multi-Surface-Harness-Konventionen und wird mit dem veröffentlichten Repository ausgeliefert. Die zugrunde liegende Entscheidung ist in [ADR 0003](/docs/adr/0003-agents-md-canonical-surface) festgehalten.
 
 ---
 
@@ -24,7 +24,7 @@ Die Konfiguration der Harness-Laufzeiten ist durch die Realität der Bereitstell
 
 Jede Konventionsoberfläche im Geltungsbereich (§3) ist ein *Kanal*, der die eine Konventionsspezifikation des Projekts ausdrückt. Die Spezifikation gliedert sich in:
 
-- **Gemeinsame Abschnitte** — Plan-Disziplin, strukturierte Rückfrage (oder ein oberflächenäquivalentes Mittel), Autorschafts-Header, Benennung, Antimuster, modale Hierarchie. Diese MÜSSEN in jeder erforderlichen Oberfläche erscheinen und MÜSSEN über die Oberflächen hinweg semantisch äquivalent sein.
+- **Gemeinsame Abschnitte** — die elf gemeinsamen Aussagen, die `AGENTS.md` in seinem AI Surface Canon aufführt: Ort der Pläne, Autorschafts-Header, Umgang mit Mehrdeutigkeit (strukturierte Rückfrage oder ein oberflächenäquivalentes Mittel), Benennung, Aktualität der Releases, ausschließlich menschliche Autorschaft, Ort der Anleitungen für Agenten, Sitzungsabschluss, verständliche Sprache auf öffentlichen Oberflächen, die Arbeitsschleife und die Synthesehaltung. Die Aussagenliste deckt außerdem die modale Hierarchie, die verbotenen Muster, die synchronisierte Einheit und die Regel zur lebenden Dokumentation ab. Diese MÜSSEN in jeder erforderlichen Oberfläche erscheinen und MÜSSEN über die Oberflächen hinweg semantisch äquivalent sein.
 - **Oberflächenspezifische Abschnitte** — Fähigkeits-Rahmungen, Muster für Tool-Aufrufe, Unterschiede zwischen Codegenerierung und Chat. Diese DÜRFEN sich zwischen den Oberflächen unterscheiden, DÜRFEN aber den gemeinsamen Abschnitten NICHT widersprechen.
 
 Der Validator `multi-surface-coherence` (§7) läuft bei jedem CI-Lauf und im Pre-Commit und prüft den Vertrag.
@@ -98,7 +98,7 @@ Wird erkannt, dass sich zwei Oberflächen bei einer gemeinsamen Aussage widerspr
 
 > `AGENTS.md` ist die kanonische Stimme des Projekts. Jede widersprechende Oberfläche wird so umgeschrieben, dass sie die Semantik von `AGENTS.md` in einer der Oberfläche angemessenen Rahmung spiegelt.
 
-Eine oberflächenspezifische Überschreibung ist nur mit einer expliziten Markierung `<!-- coherence-override: <claim-id> -->` in der Datei zulässig, die auf einen ADR verweist, der die bewusste Abweichung erklärt. Die Überschreibungsmarkierung ist selbst in der Erlaubnisliste des Validators aufgeführt und erscheint im CI-Bericht.
+Eine oberflächenspezifische Überschreibung ist nur mit einer expliziten Markierung `<!-- coherence-override: <claim-id> -->` in der Datei zulässig, die auf einen ADR unter [Entscheidungsprotokolle](/docs/adr) verweist, der die bewusste Abweichung erklärt. Der Validator meldet jede berücksichtigte Markierung als Warnung im CI-Bericht.
 
 Für dieses Repository ist die ratifizierte Abgleichsstrategie **`agents-md-wins`**: `AGENTS.md` ist kanonisch, und jeder aktive Harness-Spiegel bleibt semantisch äquivalent.
 
@@ -130,10 +130,9 @@ Drei Validatoren implementieren den Kohärenzvertrag gemeinsam:
 
 ## Siehe auch
 
-- ADR-0003 — architektonische Begründung, erwogene Alternativen.
+- [ADR 0003](/docs/adr/0003-agents-md-canonical-surface) — das Entscheidungsprotokoll zu `AGENTS.md` als kanonischer Oberfläche.
 - [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml) — die kanonische Fixture der Aussagenliste.
 - [`AGENTS.md`](https://github.com/ahmed-g-gad/apothem/blob/main/AGENTS.md) — die kanonische Stimme des Projekts.
 - [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) — der Spiegel für Claude Code.
 - [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline) — die kanonische Referenz der gemeinsamen Aussage zur Plan-Disziplin.
 - [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) — die kanonische Referenz der gemeinsamen Aussage zum Autorschafts-Header.
-- Projektspezifikation §0.6 + §2.8 + §4.7 — der vollständige kanonische Text, der hier gespiegelt wird.
