@@ -2,7 +2,7 @@
 title: "Защита веток"
 description: "Защита веток Apothem на main: действующее правило защиты, его обязательные проверки статуса и проверки, ожидающие добавления."
 machineTranslated: true
-sourceHash: "a8e8cbd39d06d78f"
+sourceHash: "ba617c87452fda60"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -58,9 +58,11 @@ Require Signed-off-by
 
 | Контекст | Рабочий процесс и задание | Как он сообщает статус для каждого pull request |
 |---|---|---|
-| `quality / <os> / py<ver>` (10) | `ci.yml`, задание `quality` | `ci.yml` запускается, когда pull request затрагивает путь кода или конфигурации. `ci-docs-stub.yml` сообщает те же контексты для pull request, затрагивающего только документацию. |
+| `quality / <os> / py<ver>` (10) | `ci.yml`, задание `quality` для `ubuntu-latest`; задание `quality-windows` для `windows-latest` | `ci.yml` запускается, когда pull request затрагивает путь кода или конфигурации. `ci-docs-stub.yml` сообщает те же контексты для pull request, затрагивающего только документацию. |
 | `coverage` | `ci.yml`, задание `coverage` | Так же, как `quality`. |
 | `Require Signed-off-by` | `dco.yml`, задание `dco` | Его триггер pull request не имеет фильтра `paths`, поэтому он запускается на каждом pull request в `main`. |
+
+В Windows задание `quality` запускает тесты для каждой версии Python в двух половинах, как ячейки `quality / windows-latest / py<ver> / shard 1 of 2` и `shard 2 of 2`. Эти ячейки не являются обязательными. Задание `quality-windows` сообщает обязательные контексты `quality / windows-latest / py<ver>`, и каждый из них проходит, только когда прошли все ячейки `quality`, поэтому сбой в любой ячейке делает красными все пять контекстов Windows.
 
 Ячейка предрелизной версии `quality / ubuntu-latest / py3.15` выполняется в `ci.yml` с `continue-on-error` и не является обязательной. Любой другой рабочий процесс, включая CodeQL, Scorecard и pip-audit, может сообщать статус, но его результат не контролирует слияние, если его контекст не добавлен в этот список.
 
