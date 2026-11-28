@@ -2,11 +2,11 @@
 title: "Hermes"
 description: "Hermes (पूर्वावलोकन) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "2031f90de3f936a5"
+sourceHash: "6b5e4589566e8d9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-- **विक्रेता:** Hermes
+- **विक्रेता:** Nous Research
 - **इंस्टॉल नाम:** `hermes`
 - **स्थिति:** पूर्वावलोकन
 - **नेटिव कॉन्फ़िग:** `~/.hermes/config.yaml`
@@ -23,7 +23,23 @@ apothem install --harness hermes
 
 **लिखी गई फ़ाइलें:** `~/.hermes/config.yaml`, प्रोफ़ाइल दस्तावेज़
 `~/.hermes/apothem/rules/00-apothem-profile.md`, और
-`~/.hermes/.apothem/support/` के अंतर्गत समर्थन फ़ाइलें
+`~/.hermes/.apothem/support/` के अंतर्गत समर्थन फ़ाइलें। इंस्टॉल Apothem डेटा
+फ़ोल्डर भी बनाता है, जो डिफ़ॉल्ट रूप से `~/.hermes/.apothem/` है, और उसमें
+`contexts/`, `learning/`, `memory/` और `plans/` होते हैं।
+
+हर इंस्टॉल और अपडेट `~/.hermes/apothem/rules/` की हर वह फ़ाइल हटा देता है जिसे
+Apothem ने वहाँ नहीं रखा, उसे `~/.apothem/backups/` के अंतर्गत एक बैकअप सेट में
+सहेजने के बाद। हार्नेस के 10 नए बैकअप सेट बन जाने पर वह बैकअप हटा दिया जाता है,
+इसलिए अपनी फ़ाइलें कहीं और रखें।
+
+पिछली रिलीज़ ([चेंजलॉग](/docs/changelog) उनके नाम बताता है) हर इंस्टॉल और अपडेट पर
+`~/.hermes/cli-config.yaml` और `~/.hermes/profile.yaml` को भी हटा देती थीं, उन्हें
+`~/.apothem/backups/<timestamp>/hermes/` के अंतर्गत एक बैकअप सेट में कॉपी करने के
+बाद। वर्तमान रिलीज़ दोनों फ़ाइलों को नहीं छूती। उन्हें वापस पाने के लिए, Apothem को
+फिर से चलाने से पहले `~/.apothem/backups/` को कहीं और कॉपी करें, फिर उस कॉपी से
+फ़ाइलों को हाथ से `~/.hermes/` में वापस कॉपी करें।
+[चेंजलॉग](/docs/changelog#data-loss-in-earlier-releases-recover-your-files) में
+पुनर्प्राप्ति के पूरे चरण हैं।
 
 प्रोफ़ाइल दस्तावेज़ एक Apothem समर्थन फ़ाइल अनुभाग के साथ समाप्त होता है, जो
 प्रत्येक रिपॉज़िटरी-शैली उद्धरण (`rules/<name>.md`, `templates/...`, `hooks/...`)
@@ -79,9 +95,9 @@ Hermes `.hermes.md` और `HERMES.md` को उस फ़ोल्डर स�
 वह अंत में आती है। समीक्षा किए गए Hermes दस्तावेज़ यह नहीं बताते कि जब दो स्थानों पर
 एक ही नाम का स्किल हो तो Hermes कौन-सी प्रति लोड करता है; Apothem इस क्रम को पहले
 वाले स्थानों के जीतने के रूप में पढ़ता है, इसलिए अपेक्षा करें कि उसी नाम का जो स्किल
-आप किसी पहले वाले स्थान में रखते हैं, वह Apothem प्रति पर प्राथमिकता लेगा। Apothem
-केवल `config.yaml` में और `~/.hermes/.apothem/support/` के अंतर्गत लिखता है, उन
-पहले वाले स्थानों में कभी नहीं, इसलिए इंस्टॉल, अपडेट, और अनइंस्टॉल वहाँ रखे आपके
+आप किसी पहले वाले स्थान में रखते हैं, वह Apothem प्रति पर प्राथमिकता लेगा। Hermes
+इंस्टॉल उन पहले वाले स्थानों में कभी नहीं लिखता: `~/.hermes/` के भीतर वह केवल
+`config.yaml`, `apothem/rules/` और `.apothem/` लिखता है, इसलिए इंस्टॉल, अपडेट, और अनइंस्टॉल वहाँ रखे आपके
 किसी स्किल को नहीं बदलते।
 
 `apothem update` उन कुंजियों को बनाए रखता है जिन्हें आप `config.yaml` में जोड़ते
@@ -170,8 +186,16 @@ apothem uninstall --harness hermes
 ## अनुरूपता गेट
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+इसे अपने प्रोजेक्ट फ़ोल्डर से चलाएँ। Windows पर `python3` के स्थान पर `python` और
+पूरा पथ उपयोग करें, क्योंकि Windows PowerShell और cmd `~` का विस्तार नहीं करते:
+PowerShell में `$HOME\.apothem\src\apothem\conformity\gate.py`, या cmd में
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`। यह पथ वह है जहाँ
+इंस्टॉलर इंजन रखता है, और `-E -s` आपके `PYTHONPATH` और उपयोगकर्ता site-packages को
+गेट से बाहर रखता है; [अनुरूपता गेट](/docs/conformity-gate) दोनों को और अन्य
+इंस्टॉल को समझाता है।
 
 ## समस्या निवारण
 

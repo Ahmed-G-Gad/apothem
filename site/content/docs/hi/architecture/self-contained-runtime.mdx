@@ -2,7 +2,7 @@
 title: "स्व-निहित रनटाइम"
 description: "Apothem का इंजन किसी भी चेकआउट से कैसे चलता है — वेंडर की गई निर्भरताएँ, PYTHONPATH=src आह्वान मॉडल, और प्लगइन-ट्री बूटस्ट्रैप।"
 machineTranslated: true
-sourceHash: "df04c51efc417e4a"
+sourceHash: "dc1f19f84eb15409"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -52,15 +52,20 @@ Apothem जानबूझकर `pyproject.toml` में कोई कंस�
 
 | सतह | आह्वान | संदर्भ |
 | ------- | ---------- | ------- |
-| इंजन CLI | `python -m apothem <command>` | `PYTHONPATH` पर `src/` वाला एक स्रोत ट्री (चेकआउट, npx कैश, प्लगइन ट्री) |
+| इंजन CLI | `apothem <command>`; किसी चेकआउट से, `PYTHONPATH=src python -m apothem <command>` | इंस्टॉलरों का `apothem` शिम और npm लॉन्चर पैकेज को उसके स्रोत ट्री से चलाते हैं और वर्तमान फ़ोल्डर को `sys.path` से बाहर रखते हैं; `-m` रूप उस चेकआउट के लिए है जिस पर आप भरोसा करते हैं |
 | हुक रनटाइम | `<resolved CPython> -E -s "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Claude Code का मूर्तीकरण: हार्नेस रूट के साझा `.apothem/support/` ट्री के अंतर्गत प्रति, निरपेक्ष पथ द्वारा |
 
-- `python -m apothem` `src/apothem/__main__.py` चलाता है, जो
+- इंजन का एंट्री पॉइंट, `src/apothem/__main__.py`,
   `src/apothem/_vendor` को `sys.path` पर रखता है, जाँचता है कि `click` और `rich`
   इम्पोर्ट-योग्य हैं, फिर `apothem.cli:main` — Click कमांड समूह — को कॉल करता है।
+  `python -m apothem` इसे सीधे चलाता है। `apothem` शिम और npm लॉन्चर इसे `runpy`
+  के माध्यम से एक `-c` प्रोग्राम से चलाते हैं, जो पहले वर्तमान फ़ोल्डर को `sys.path`
+  से हटा देता है।
 - मटेरियलाइज़ की गई `settings.json` / `hooks.json` में हुक प्रविष्टियाँ डिस्पैचर
   (और, Claude Code के लिए, `<harness-root>/.apothem/support/conformity/gate.py` पर
-  अनुरूपता गेट) को निरपेक्ष स्क्रिप्ट पथ द्वारा आह्वान करती हैं। दोनों स्वतंत्र
+  अनुरूपता गेट) को निरपेक्ष स्क्रिप्ट पथ द्वारा आह्वान करती हैं, और Python को
+  `-E -s` के साथ शुरू करती हैं ताकि कोई `PYTHON*` चर और कोई उपयोगकर्ता
+  site-packages हुक तक न पहुँचे। दोनों स्वतंत्र
   stdlib स्क्रिप्ट हैं जो अपना `sys.path` स्वयं बूटस्ट्रैप करती हैं, और गेट के स्कीमा
   फ़िक्स्चर उसके बगल में `<harness-root>/.apothem/support/schemas/` पर रहते हैं,
   ताकि हुक **होस्ट पर किसी इम्पोर्ट-योग्य `apothem` पैकेज के बिना** चलें। टेम्पलेट एक
@@ -70,14 +75,27 @@ Apothem जानबूझकर `pyproject.toml` में कोई कंस�
   `python -m apothem.hooks.dispatch` और
   `python -m apothem.conformity.gate` विकास के लिए वही कोड चलाते हैं।
 
-चेकआउट की `src/` डायरेक्टरी को `PYTHONPATH` के आगे जोड़ने से पैकेज डायरेक्टरी
-इम्पोर्ट-योग्य बन जाती है:
+किसी चेकआउट में, चेकआउट की `src/` डायरेक्टरी को `PYTHONPATH` के आगे जोड़ने से
+पैकेज डायरेक्टरी इम्पोर्ट-योग्य बन जाती है:
 
 ```bash
 PYTHONPATH=src python -m apothem <command>    # from the checkout root
 ```
 
-जब `apothem` लॉन्चर PATH पर नहीं होता, तब `install.sh` समापन पर यही रूप प्रिंट करता है, जिसमें वेंडर्ड डायरेक्टरी `src/` से पहले होती है और `python` के स्थान पर वह CPython होता है जिसे उसने रिज़ॉल्व किया। `install.ps1` PowerShell रूप में वही दो सेटिंग्स प्रिंट करता है: एक `$env:PYTHONPATH` असाइनमेंट, जो वेंडर्ड और `src/` डायरेक्टरियों को `;` से जोड़ता है, फिर `& '<CPython>' -m apothem <command>`।
+`-m` मॉड्यूल को सबसे पहले वर्तमान फ़ोल्डर से पढ़ता है, इसलिए यह रूप केवल चेकआउट
+रूट से या किसी अन्य ऐसे फ़ोल्डर से चलाएँ जिस पर आप भरोसा करते हैं।
+
+इंस्टॉलर कभी कोई `-m` कमांड प्रिंट नहीं करते। जब समापन पर `apothem` कमांड
+`PATH` पर नहीं होता, तो `install.sh` और `install.ps1` अपने रखे गए `apothem` शिम का
+पूरा पथ प्रिंट करते हैं। जब कोई शिम नहीं रखा जा सका, तो वे इसके बजाय एक स्व-निहित
+कमांड प्रिंट करते हैं। `install.sh` प्रिंट करता है
+`PYTHONSAFEPATH=1 PYTHONPATH='<vendor>:<src>' '<CPython>' -c '<program>'`,
+और उसके बाद कमांड। `install.ps1` एक PowerShell ब्लॉक प्रिंट करता है जो
+`& '<CPython>' -c "<program>"` के एक रन के लिए `PYTHONSAFEPATH` और `PYTHONPATH`
+(वेंडर्ड और `src/` फ़ोल्डर `;` से जुड़े हुए) सेट करता है, फिर दोनों को पहले जैसा कर
+देता है। प्रोग्राम वर्तमान फ़ोल्डर को `sys.path` से हटाता है और `apothem` पैकेज
+चलाता है; `PYTHONSAFEPATH=1` Python 3.11 और उसके बाद के संस्करणों को वह फ़ोल्डर
+शुरू में ही जोड़ने से रोकता है।
 
 ## प्लगइन-ट्री बूटस्ट्रैप
 
@@ -121,5 +139,5 @@ Microsoft Store लॉन्चर शिम को अस्वीकार क
 
 ## अनुशंसित अगला कदम
 
-चेकआउट की `src/` डायरेक्टरी को `PYTHONPATH` पर रखकर **`python -m apothem --help`
-चलाएँ**, ताकि पुष्टि हो सके कि स्व-निहित CLI पथ आपके होस्ट पर हल होता है।
+किसी Apothem चेकआउट के रूट से **`PYTHONPATH=src python -m apothem --help`** चलाएँ,
+ताकि पुष्टि हो सके कि स्व-निहित CLI पथ आपके होस्ट पर हल होता है।

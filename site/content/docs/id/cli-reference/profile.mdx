@@ -2,7 +2,7 @@
 title: "profile"
 description: "Referensi CLI untuk grup perintah apothem profile."
 machineTranslated: true
-sourceHash: "012b17d6a7a7bc49"
+sourceHash: "93fe295d7fa540f1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -87,7 +87,28 @@ dan profil di disk tidak berubah.
 
 ### `profile edit`
 
-Membuka profil bersama di editor sistem.
+Membuka profil bersama di editor sistem. Bila belum ada profil di jalur itu,
+`edit` terlebih dahulu menulis profil awal di sana, kerangka yang sama dengan yang
+ditulis `profile init`, lalu membukanya.
+
+### Profil di balik tautan
+
+Jalur profil yang ditulis di dalam direktori home Anda, seperti default
+`~/.config/apothem/profile.yaml`, tidak ditulis melalui tautan yang mengarah ke luar
+direktori home Anda. Tautan itu bisa berupa folder di atas profil, seperti
+`~/.config` (di Windows, junction dihitung sebagai tautan), atau berkas profil itu
+sendiri, seperti berkas dotfiles di drive lain. `profile init`, `profile set`,
+dan `profile edit` lalu berhenti sebelum menulis atau membuka apa pun. Bila belum ada
+profil, pesannya adalah `Apothem could not create the starter profile`. Di atas profil
+yang sudah ada, `profile set`, `profile edit`, dan `profile init --force` berhenti
+dengan `Apothem could not write the profile`; `profile init` tanpa `--force` berhenti
+lebih dulu dengan `profile file already exists`, seperti di tempat mana pun. `profile show`
+dan perintah yang hanya membaca profil tetap membacanya. Tautan yang tetap berada di
+dalam direktori home Anda, seperti yang dibuat pengelola dotfile, diikuti. Untuk
+menyimpan profil di luar direktori home Anda, berikan `--profile PATH` dengan jalur
+profil itu sendiri di sana, termasuk jalur yang dituju tautan berkas profil: jalur yang
+Anda tulis di luar direktori home Anda ditulis ke mana pun tautannya mengarah. Bila
+belum ada profil di sana, buat dulu dengan `apothem profile init --profile PATH`.
 
 ## Galat validasi
 

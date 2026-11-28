@@ -2,7 +2,7 @@
 title: "नियम लिखना"
 description: "Apothem के व्यवहार-नियम लिखें, उनका दायरा तय करें और उन्हें बनाए रखें।"
 machineTranslated: true
-sourceHash: "bc1f3351f9a5fd2c"
+sourceHash: "a7a12b4db14fbfe9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -74,12 +74,19 @@ apothem update --harness cursor --project /path/to/project
 
 ## नियम सत्यापन
 
-आपने जो नियम फ़ाइल लिखी है, उस पर फ़्रंटमैटर वैलिडेटर चलाएँ। Apothem चेकआउट से,
-`PYTHONPATH=src` पैकेज को आयात-योग्य बनाता है; स्क्रिप्ट इंस्टॉल के बाद, उसकी जगह
-`PYTHONPATH="$HOME/.apothem/src"` का उपयोग करें।
+आपने जो नियम फ़ाइल लिखी है, उस पर फ़्रंटमैटर वैलिडेटर चलाएँ। Apothem चेकआउट के रूट से,
+`PYTHONPATH=src` पैकेज को आयात-योग्य बनाता है (`python -m` मॉड्यूल पहले वर्तमान
+फ़ोल्डर से पढ़ता है, इसलिए ऐसे फ़ोल्डर का उपयोग करें जिस पर आपको भरोसा है):
 
 ```bash
 PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep src/apothem/rules/<rule>.md
+```
+
+स्क्रिप्ट इंस्टॉल के बाद, गेट को उसके स्क्रिप्ट पथ से `-E -s` के साथ चलाएँ
+([अनुरूपता गेट](/docs/conformity-gate) बताता है कि क्यों):
+
+```bash
+python3 -E -s "$HOME/.apothem/src/apothem/conformity/gate.py" --check frontmatter-grep <rule>.md
 ```
 
 `frontmatter-grep` जैसी प्रति-लेखन जाँच जाँचने के लिए फ़ाइल लेती है, या मानक इनपुट

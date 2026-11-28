@@ -2,7 +2,7 @@
 title: "하니스 어댑터 추상화"
 description: "HarnessAdapter 프로토콜 — Apothem 어댑터가 공유 프로필을 어떻게 변환하는지."
 machineTranslated: true
-sourceHash: "da20d21cbe60d343"
+sourceHash: "20a51a9c0e55e94a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -71,6 +71,8 @@ flowchart TD
 from pathlib import Path
 from typing import Protocol
 
+from apothem.harnesses._shared.install_driver_types import MaterializationRun
+
 class HarnessAdapter(Protocol):
     name: str
     output_path: Path
@@ -81,7 +83,7 @@ class HarnessAdapter(Protocol):
     def update(self, profile: dict[str, object]) -> object:
         ...
 
-    def uninstall(self) -> None:
+    def uninstall(self) -> MaterializationRun | None:
         ...
 
     def is_installed(self) -> bool:
@@ -90,6 +92,9 @@ class HarnessAdapter(Protocol):
     def verify(self) -> bool:
         ...
 ```
+
+기본 제공 어댑터는 `uninstall`에서 `MaterializationRun`을 반환하고, CLI는 그 경고와
+오류를 보고합니다. 보고할 것이 없는 어댑터는 `None`을 반환할 수 있습니다.
 
 프로젝트 범위 어댑터는 라이프사이클 메서드에서 추가로 `project: Path | None`을 받고
 `resolve_output_path(project)`를 노출할 수 있습니다. CLI는 메서드 시그니처가

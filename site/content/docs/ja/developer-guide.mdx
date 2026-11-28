@@ -2,7 +2,7 @@
 title: "Apothem への貢献 — 開発者ガイド"
 description: "正規スキーマ、フロントマターの要件、検証手順に沿ってルール、コマンド、ヘルパー、スキル、フックを作成し、Apothem エコシステムを保守・拡張します。"
 machineTranslated: true
-sourceHash: "82cbd13f4a28f8cb"
+sourceHash: "a2dea5f7e64b7fbc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -48,7 +48,8 @@ sourceHash: "82cbd13f4a28f8cb"
 ## 書き込み前の検証
 
 共有のインストールドライバーは、最初の書き込みの前に、すべてのソースとターゲットを検証します。
-存在しないマニフェストソース、ターゲットのトラバーサル、選択したルートの外にあるターゲットパス、シンボリックリンクの横断を拒否します。
+存在しないマニフェストソース、ターゲットのトラバーサル、選択したルートの外にあるターゲットパス、シンボリックリンクの横断を拒否します。Windows のジャンクションはシンボリックリンクとしてチェックされます。
+例外は、ドットファイル管理ツールが `~/.config`、または共有のスキル、ルール、テンプレートのフォルダーの位置かその上位に作るリンクで、これらはホームの中にとどまる限りたどられます。
 ドライランも同じ検証を実行し、ファイルを作成せずに、構造化された `skipped` または `unchanged` の結果を返します。
 
 ## 伏せ字化とサンプルデータ
@@ -101,7 +102,7 @@ sourceHash: "82cbd13f4a28f8cb"
 - **コマンド:** `{name}.md`
 - **ヘルパー:** `{name}.md`
 - **スキル:** フォルダ `src/apothem/skills/{name}/SKILL.md` の中（大文字小文字は厳密に `SKILL.md`）
-- **フック:** フォルダ `src/apothem/hooks/` の中。すべてのイベントハンドラーは Python です。Claude Code の `settings.json` テンプレートにあるすべてのフックコマンドは exec 形式を使い、`command` はインストール時に解決されるインタープリターのプレースホルダー `${PYTHON_BIN}`、`args` にはスクリプトのパスとその引数が入ります。このテンプレートは、`${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` と `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` を絶対パスで実行するため、インストール済みのコピーにはインポート可能な `apothem` パッケージは不要です。Claude Code プラグインは、代わりに `src/apothem/hooks/hooks.json` にフックを登録します。これらは `bash` を介して `hooks/lib/bootstrap.sh` を実行するシェルコマンドです。このスタブが Python を見つけて `dispatch.py` を実行するため、ハンドラーは Python のままです。新しいフックは、`hooks.json` と Claude Code の `settings.json` テンプレートの両方に登録します。`dispatch.py` は、`SessionStart` を `session_start_bootstrap.main()` へ、許可リストにあるそのほかのすべてのイベントを `emit_hook_context.main()` へルーティングします。`src/apothem/hooks/` または `scripts/` の下で許可されるシェルスタブは、6 つのロケーターおよびブートストラップファイル（`find-python.{ps1,sh}`、`find-pwsh.{ps1,sh}`、`bootstrap.{ps1,sh}`）だけです。それ以外の `.ps1` / `.sh` ファイルは、`scripts/dev/validate_hooks.py` の衛生チェックで不合格になります。
+- **フック:** フォルダ `src/apothem/hooks/` の中。すべてのイベントハンドラーは Python です。Claude Code の `settings.json` テンプレートにあるすべてのフックコマンドは exec 形式を使い、`command` はインストール時に解決されるインタープリターのプレースホルダー `${PYTHON_BIN}`、`args` には `-E`、`-s`、スクリプトのパスとその引数が入ります。この 2 つのフラグは、`PYTHONPATH`、その他の `PYTHON*` 変数、ユーザーの site-packages をすべてのフックから締め出します。追加するフックにも必ず付けてください。このテンプレートは、`${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` と `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` を絶対パスで実行するため、インストール済みのコピーにはインポート可能な `apothem` パッケージは不要です。Claude Code プラグインは、代わりに `src/apothem/hooks/hooks.json` にフックを登録します。これらは `bash` を介して `hooks/lib/bootstrap.sh` を実行するシェルコマンドです。このスタブが Python を見つけて `dispatch.py` を実行するため、ハンドラーは Python のままです。新しいフックは、`hooks.json` と Claude Code の `settings.json` テンプレートの両方に登録します。`dispatch.py` は、`SessionStart` を `session_start_bootstrap.main()` へ、許可リストにあるそのほかのすべてのイベントを `emit_hook_context.main()` へルーティングします。`src/apothem/hooks/` または `scripts/` の下で許可されるシェルスタブは、6 つのロケーターおよびブートストラップファイル（`find-python.{ps1,sh}`、`find-pwsh.{ps1,sh}`、`bootstrap.{ps1,sh}`）だけです。それ以外の `.ps1` / `.sh` ファイルは、`scripts/dev/validate_hooks.py` の衛生チェックで不合格になります。
 
 ### 相互参照
 
@@ -573,10 +574,85 @@ Markdown には `prettier` または同等のツールを使用します。
 ```bash
 python -m pytest                      # unit, integration, property, conformity, scripts
 python -m pytest tests/property       # Hypothesis properties (profile loader, frontmatter, merge)
+python -m pytest tests/fuzz           # replay each fuzz target's seed inputs (no Atheris needed)
 ```
+
+`tests/fuzz/` のファズターゲットは、CI では Atheris のもとで実行されます。
+自分のマシン（Linux または macOS、Python 3.11 以降）で 1 つをファジングするには、Atheris をインストールし、チェックアウトをパスに追加し、ターゲットにそのシードのコピーを指定します:
+
+```bash
+python -m pip install atheris
+export PYTHONPATH="$PWD/src:$PWD/src/apothem/_vendor"
+mkdir -p /tmp/corpus && cp tests/fuzz/seeds/lenient-json/*.txt /tmp/corpus/
+python tests/fuzz/fuzz_lenient_json.py -max_total_time=60 /tmp/corpus
+```
+
+`tests/fuzz/README.md` には、ターゲットの一覧と、ターゲットがクラッシュを見つけたときの対処が記載されています。
 
 このスイートは外部環境から隔離されています: チェックアウトが `$TMPDIR` 配下にある場合でも、`PATH` 上の `python` に CLI の前提条件が欠けている場合でも合格します。
 これは、統合テストが pytest を実行しているインタープリターを起動し、入れ子になった一時パスとソースパスを長いものから順にトークン化するためです。
+
+### テストは実際のホームに書き込まない
+
+プローブスクリプトや自動化されたアシスタントは、Apothem のインストーラーやアダプターを実際のホームに対して実行してはなりません。
+動作は `tests/` 以下のテストの中で実行してください。そこでは `tests/conftest.py` が、ホーム、インストール台帳、バックアップルートを一時フォルダーに向けます。
+
+Apothem 自身も pytest の実行中はこれらの書き込みを拒否するため、`tests/` からコピーされて `tests/conftest.py` なしで実行されたテストファイルが、Apothem を通じて実際のホームに到達することはできません。
+`PYTEST_CURRENT_TEST` が設定されていて空でない間（テスト中）、または `PYTEST_VERSION` が実行中の pytest のバージョンを保持している間（収集とセッションフックを含むセッション全体）、アカウントの `~/.apothem`、`~/.config/apothem`、ホーム内でハーネスレジストリが挙げるツールフォルダー（`~/.claude`、`~/.qwen`、`~/.config/opencode` など）、またはそれらのフォルダーの外で伝播マニフェストが変更するファイル（以前のリリースが書き込んだ `~/.antigravity/profile.yaml`）に対する書き込み、削除、コピー、名前変更、ロックファイルは、何かが変更される前に停止し、次のようなエラーになります:
+
+```text
+RealHomeWriteError: Apothem refused to create the lock file
+C:\Users\you\.apothem\state\codex\<id>.install.lock: it is inside or holds
+C:\Users\you\.apothem, a protected path in this account's real home, while a
+pytest test is running (PYTEST_CURRENT_TEST is set:
+test_probe.py::test_install (call)). Nothing in C:\Users\you\.apothem was
+changed. ...
+```
+
+シェルや CI ジョブがエクスポートする `8.2` のようなピンなど、それ以外の値を持つ `PYTEST_VERSION` は数えられず、空の `PYTEST_CURRENT_TEST` も同様です。
+どのテストの外でも、エラーはテストの代わりに `PYTEST_VERSION holds
+the version of the pytest imported in this process, <version>, outside any
+test` と示します。プロセスは pytest を実行せずにインポートできるため、pytest セッションが実行中であるとは主張しません。
+シェルや CI ジョブがインストール済みの pytest の正確なバージョンでエクスポートした `PYTEST_VERSION` は、pytest の外でも同じように数えられ、pytest をインポートしていないプロセスでは、エラーは `PYTEST_VERSION holds the installed pytest's
+version, <version>, though no pytest runs in this process` と示します。
+
+プロジェクトルートがアカウントのホームそのものであるプロジェクトスコープのインストール、更新、アンインストール、ロールバックも、何かを書き込む前に同じように拒否されます。そうしなければ、そのプロジェクトファイルがホームに直接置かれてしまうためです。
+ホーム内のプロジェクトフォルダーは引き続き許可されます。
+ホームの直下にあるデータホームも、プロファイルがどの名前を付けていても（独自の `directory_name` を持つ `workspace.scope: user-home`）、作成される前、およびそのストアが削除される前に拒否されます。
+ホーム直下のフォルダーへのリンク（Windows ではジャンクション）であるデータホームも同じように拒否され、直接またはリンクの連鎖を通じてホームそのものに至り、そのストアがホームの直下に置かれることになるデータホームも同様です。
+
+保護されたフォルダーの次の表記も数えられます: それを指すリンクまたはジャンクション、およびテスト中にリンクと入れ替えられたフォルダー。
+Windows では、大文字と小文字の違い、短い（8.3）名前、`\\?\`、`\\.\`、`\??\` の接頭辞、`\\localhost\C$` や `\\--1.ipv6-literal.net\C$` のようなループバックの管理共有、マシン自身のアドレスのいずれかで、またはマップされたドライブを通じて到達する共有、そして代替データストリーム（`.apothem:name`）も数えられ、これらの接頭辞の背後にあるデバイスパス（`GLOBALROOT\Device\HarddiskVolume2` または `Volume{GUID}`）も同様です。
+macOS では大文字と小文字の違いと Unicode 正規化も無視され、`/System/Volumes/Data/<path>` は `/<path>` として読まれます。
+ネットワークに接続しないのはこれらの文字列の規則だけです。共有パスやマップされたドライブ上のパスは、共有のホストに問い合わせてチェックされます。
+`tests/README.md` には、保護されたフォルダー内のファイルへのハードリンク、ホームのバインドマウント、大文字と小文字を区別しない Linux のマウントなど、チェックが検出しない表記が一覧されています。
+
+CLI は、アンインストールの場合も含め、エラーをそのまま送出します。
+一部の処理は最初の変更の前にパスをチェックするため、そこでの拒否はすべてを元のままにします。
+古い項目の一掃は、古いすべてのパスをチェックします。
+ロールバックは、インストールレコードが挙げるすべてのパス（そのまま残すものも含む）、削除するデータストア、最後に整理するホーム内のユーザーレベルのフォルダーをチェックします。
+ロールバックとアンインストールはバックアップルートと台帳をチェックし、OpenClaw のアンインストールはさらに `openclaw.json` とすべてのワークスペースのルールファイルもチェックします。
+拒否されたアンインストールは、保護されたフォルダーの外のファイルをすでに変更していた場合にだけ（共有の削除より前のステップ、たとえばネイティブ設定のアンインストールの最初のステップでの変更も含む）、未完了のアンインストールを台帳に記録するため、それらのファイルのバックアップは参照されたままになります。
+いくつかの内部の呼び出し元は意図的にエラーを吸収するため（たとえばベストエフォートの台帳の行）、すべての拒否はログにも記録され、`tests/conftest.py` は、拒否が記録された後のテストを、そのテストが `xfail` とマークされていても失敗させます。
+pytest がノードを収集している間にどのテストの外で記録されたものは、そのノードの収集を失敗させます。
+どのテストの外で記録されたそれ以外のもの（セッションの開始時、2 つの収集レポートの間、収集の後、2 つのテストの間、最後のテストの後、サマリー内、または `pytest_unconfigure` 内）は、セッションの終了時に、発生した場所の名前とともに報告され、実行を失敗させます。これは、フックがその後 `pytest.exit(returncode=0)` または `sys.exit(0)`（あるいは、どのシステムでも、256 のように POSIX システムが 0 または 5 に切り詰めるコード）で実行を終了した場合も、別のフックが `sys.exit` または例外でセッションの終了処理を終えた後も、そして並列ワーカー（`-n`）が、拒否をメインプロセスに引き渡す前か後に記録した場合も同様です。
+ワーカーは各拒否を、保持した時点ですぐに、メインプロセスが読み取るファイルに書き込みます。そのため、クラッシュした、またはその引き渡しの前に停止された、あるいはセッション終了フックがそこで停止させる前に保持していた拒否も、実行を失敗させます。
+次の 3 つのケースは引き続き `stderr` にだけ表示され、終了コードはそのままです: ガードの後に pytest が登録した `tryfirst` の `pytest_unconfigure` ラッパーの `yield` の後に記録されたもの、`config.add_cleanup` で登録されたクリーンアップの中で記録されたもの（いずれも、その後に合格の `sys.exit` が実行を終了するか、それより前に 1 つがセッションの終了処理を終えた場合を除く）、そしてワーカーが記録したものの、引き渡しもそのファイルへの書き込みもしなかったものです。後者は、ワーカーが先に終了または停止された（たとえば、セッション終了フックがそれを記録してからワーカーをクラッシュさせた）か、そのファイルを作成または書き込みできなかった場合です（ワーカーのそのファイルへの最後の書き込みが途中で失敗した場合、ファイルに届いた部分は残り、メインプロセスはそれによって実行を失敗させます。その書き込みがファイルを空のままにした場合も同様ですが、引き渡しの横に書き込まれたコピーがすでにファイルを空にしていて、メインプロセスがワーカーの出力を受け取った場合は除きます）。
+その最後のケースでは、出力はワーカーが引き渡した拒否だけを保持します。引き渡しの後に見つかり、その書き込みがファイルを再び空にするものは、ワーカーの `stderr` にだけ表示され、その書き込み中にワーカーがクラッシュした場合はどこにも表示されません。それでも実行は、引き渡された拒否によって失敗します。
+実行の最後に、メインプロセスは各ワーカーに終了を指示します。5 秒後にまだ Python コードを実行しているワーカーは割り込まれ（Windows では、スリープやその他の呼び出しでブロックされているものは除く）、10 秒後にまだ実行中のワーカーは停止されます。
+ガードは、メインプロセスで `os._exit` によって（フック、クリーンアップ、または `atexit` ハンドラーの中で）終了する実行、ガードの後に pytest が登録した `tryfirst` の `pytest_cmdline_main` ラッパーによって終了する実行、またはセッションが実行される前に戻る `pytest_cmdline_main` フックによって終了する実行の終了コードは変更できません。`os._exit` の場合はガードのターミナルレポートも失われることがあり、最初と最後のケースでは、ガードがまだ報告していない拒否は、その `stderr` の行としてだけ表示されます。
+ログはプロセスごとに保持されます。子の Apothem プロセスが吸収した拒否は、子の `stderr` の行としてだけ表示され、テストはそれによって失敗しません。
+
+ホームは、`HOME` や `USERPROFILE` ではなく、オペレーティングシステムがアカウントについて記録しているものです。
+読み取り、ドライラン、プレビューは引き続き動作します。完了したアンインストールを台帳に記録する 1 つのステータスチェックは書き込みであるため、静かに拒否されて報告されます。
+意図的に実際のインストールを実行する必要があるテストは、子の環境に `PYTEST_CURRENT_TEST` と `PYTEST_VERSION` を含めずに Apothem を起動します。
+
+この拒否は、`CODEX_HOME`、`CLAUDE_CONFIG_DIR`、`XDG_CONFIG_HOME` がデフォルトの名前から、ホームの外または中へ移したフォルダー（`XDG_CONFIG_HOME=~/xdg` は OpenCode のフォルダーを `~/xdg/opencode` に置きます）、フックの状態フォルダー、そしてシェルインストーラーのような Python 以外のプログラムには及びません。
+チェックは書き込みの前にパスによって行われるため、その間にリンクと入れ替えられたフォルダーは検出されません。
+システムにアカウントのホームの記録がない場合（`passwd` エントリーのないコンテナのユーザー）、アカウントのホームはまったく保護されません。
+保護されたフォルダーの中（たとえば `~/.claude` の下）にあるチェックアウトは、テスト中に Apothem の書き込みが拒否されます。
+この拒否は pytest の外では何もしません。つまり、環境が空でない `PYTEST_CURRENT_TEST` も、`PYTEST_VERSION` 内のインストール済みの pytest のバージョンも保持していない場合です。上記の規則が引き続き適用されるのはそのためです。
+`tests/README.md` には、すべての抜け穴が一覧されています。
 
 ### パッケージごとのカバレッジ
 
@@ -595,14 +671,14 @@ CI は 3 つのパッケージを測定し、それぞれに独自の下限を�
 ローカルで確認するには:
 
 ```bash
-python -m pytest --cov=src/apothem --cov-report=json:coverage.json
+python -m pytest --cov=src/apothem --cov-fail-under=0 --cov-report=json:coverage.json
 python scripts/dev/collect_metrics.py --coverage-json coverage.json --check-floors \
   --skip-hooks --skip-coldstart --harness zed
 ```
 
 ### メトリクスアーティファクト
 
-CI の `metrics` ジョブは、すべてのプッシュとプルリクエストで `scripts/dev/collect_metrics.py` を実行し、`metrics.json`（`schema_version: 1`）をアップロードします。
+CI の `metrics` ジョブは、すべてのプッシュとプルリクエストで、両方のカバレッジシャードが合格した後に、それらが測定したカバレッジデータを使って `scripts/dev/collect_metrics.py` を実行し、`metrics.json`（`schema_version: 1`）をアップロードします。
 `null` である値にはすべて、その理由が `nulls` の下に記録されています。
 
 | キー | 測定対象 |
@@ -618,13 +694,25 @@ CI の `metrics` ジョブは、すべてのプッシュとプルリクエスト
 
 ```text
 antigravity     ~/.gemini/{GEMINI,AGENTS}.md, ~/.gemini/config/{GEMINI,AGENTS}.md,
-                ~/.gemini/config/rules/*.md with trigger: always_on, project
-                GEMINI.md and AGENTS.md. The plugin rules/ folder is not a
-                documented launch surface.
+                ~/.gemini/config/rules/*.md with trigger: always_on, and in the
+                project GEMINI.md, AGENTS.md, .agents/{GEMINI,AGENTS}.md and
+                .agents/rules/*.md with trigger: always_on, plus, for each
+                plugin in ~/.gemini/config/plugins/ with a plugin.json not
+                marked disabled: true, its rules/AGENTS.md (else
+                rules/GEMINI.md) and its rules/*.md with trigger: always_on.
+                A rule file counts only when its first line opens the
+                frontmatter. Each file counted up to 24,000 bytes. @ includes
+                are not expanded, the user's own plugin on/off choice is not
+                read, and the 20,000-token budget across always-on rules is
+                not modeled.
 claude-code     ~/.claude/CLAUDE.md and ~/.claude/rules/**/*.md without paths:
-                frontmatter, plus the project equivalents.
-codebuddy       .codebuddy/rules/**/*.md (project and home) unless
-                alwaysApply: false, plus CODEBUDDY.md.
+                frontmatter, plus the project equivalents and CLAUDE.local.md;
+                the project AGENTS.md and .claude/AGENTS.md only when the
+                project has no CLAUDE.md, .claude/CLAUDE.md or CLAUDE.local.md.
+codebuddy       .codebuddy/rules/**/*.md (project and home) unless enabled:
+                false or alwaysApply: false, ~/.codebuddy/CODEBUDDY.md, the
+                project CODEBUDDY.local.md, and the first of CODEBUDDY.md and
+                .codebuddy/CODEBUDDY.md, else AGENTS.md.
 codex           The first non-empty of ~/.codex/AGENTS.override.md and
                 ~/.codex/AGENTS.md, plus the first of AGENTS.override.md,
                 AGENTS.md and the project_doc_fallback_filenames names that
@@ -633,16 +721,26 @@ codex           The first non-empty of ~/.codex/AGENTS.override.md and
 cursor          .cursor/rules/**/*.mdc with alwaysApply: true, and AGENTS.md.
 gemini-cli      ~/.gemini/GEMINI.md and the project GEMINI.md.
 github-copilot  .github/copilot-instructions.md and the project AGENTS.md.
-hermes          ~/.hermes/SOUL.md, plus the first of these kinds in the project
-                with a non-empty file (Hermes loads one): .hermes.md or
-                HERMES.md (the first of the two that exists is the only
-                candidate), AGENTS.override.md or AGENTS.md, CLAUDE.md, then
-                .cursorrules with .cursor/rules/*.mdc. The support tree and
-                apothem/rules/ are not launch surfaces.
-kimi-code       ~/.kimi-code/AGENTS.md, project AGENTS.md and .kimi-code/AGENTS.md.
+hermes          ~/.hermes/SOUL.md when it holds text, plus the first of these
+                kinds in the project with a non-empty file (Hermes loads one):
+                .hermes.md or HERMES.md (the first of the two that exists is
+                the only candidate), AGENTS.override.md or AGENTS.md,
+                CLAUDE.md, then .cursorrules with .cursor/rules/*.mdc. The
+                support tree and apothem/rules/ are not launch surfaces.
+kimi-code       ~/.kimi-code/AGENTS.md, the first non-empty of
+                ~/.agents/AGENTS.md and ~/.agents/agents.md, and the project
+                .kimi-code/AGENTS.md and AGENTS.md; blank files load nothing.
+                Kimi also reads AGENTS.md in each folder from the git root
+                down; the scratch project has no .git, so only its root is
+                read.
 kiro            .kiro/steering/**/*.md with inclusion: always or no inclusion
                 key, and the project AGENTS.md.
-open-claw       Workspace bootstrap files ~/.openclaw/workspace/*.md.
+open-claw       The non-blank bootstrap files in ~/.openclaw/workspace/, in
+                order: AGENTS.md, SOUL.md, IDENTITY.md, USER.md, BOOTSTRAP.md,
+                MEMORY.md; each up to 20,000 characters (USER.md 4,000),
+                60,000 in all. Approximate: OpenClaw's own trimming,
+                head-and-tail truncation, missing-file markers and per-session
+                filtering are not modeled.
 opencode        ~/.config/opencode/AGENTS.md, the project AGENTS.md, and every
                 file the instructions globs in opencode.json match.
 qwen-code       The context files named by context.fileName in

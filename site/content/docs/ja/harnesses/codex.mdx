@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Codex（ベータ）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "ca4ad5f675a665ea"
+sourceHash: "3aff73a78f7a248b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -23,7 +23,9 @@ apothem install --harness codex
 **書き込まれるファイル：** `~/.codex/AGENTS.md`、`~/.codex/hooks.json`、
 `~/.codex/hooks/`、`~/.codex/agents/*.toml`、
 `~/.agents/skills/*/SKILL.md`、ユーザー起動スキル向けの `~/.agents/skills/*/agents/openai.yaml`、
-および `~/.config/apothem/{rules,templates}/` 配下のサポートファイル。
+および `~/.config/apothem/{rules,templates}/` 配下のサポートファイル。インストールでは Apothem の
+データフォルダー（デフォルトは `~/.codex/.apothem/`）も作成され、その中に `contexts/`、`learning/`、
+`memory/`、`plans/` が置かれます。
 
 **フックインタープリター。** 何かを書き込む前に、インストールは CPython 3.10+ の
 インタープリターを解決します。Windows では、`hooks.json` 内の各フックの
@@ -70,9 +72,39 @@ Codex のアンインストールは、スキルをまだ使っている他の A
 Apothem が書き込んだのではなく、Apothem のスキルと同じ名前を持つスキルフォルダーはそのまま残され、その名前を挙げる警告が出ます。
 インストール時には、それらのツールを名指しする注記が出力されます。
 `~/.codex/agents/` は 2 つ目の共有ルートです。サポート対象の別のツールがこのフォルダーを互換性のための場所として挙げており（レジストリがそのツールを名指ししています）、そのドキュメントは、`Codex` のインストールがそこに書き込む TOML ファイルを読むかどうかを述べていません。
+`CODEX_HOME` を別のフォルダーに設定すると、インストールはエージェントを代わりにそのフォルダー配下に書き込みます。そのツールのドキュメントはそのフォルダーを挙げていない（`~/.codex/agents/` だけを挙げている）ため、インストールの注記はそのフォルダーを含めません。
+以前のインストールが `~/.codex/agents/` に Apothem のエージェントを残している場合、このインストールはそれらを更新も削除もしないため、注記がその旨を伝えます。
+
+Apothem は `CODEX_HOME` を Codex と同じように読みます。値は書かれたとおりに使われます。先頭の `~` は展開されず、相対的な値は、コマンドを実行するフォルダー配下のフォルダーを指します。
+空の `CODEX_HOME` は未設定として扱われます。
+Codex は、`CODEX_HOME` が存在しないフォルダーを指していると、エラーで停止します。インストールがそのフォルダーを作成するため、インストールの実行後は Codex が起動します。
+
+`~/.config` 配下の `CODEX_HOME` は、ドットファイル管理ツールが作るように `~/.config` がホームディレクトリ内へのリンクである場合に機能します。Windows ではジャンクションもリンクとして扱われます。
+ホームディレクトリの外へ向かう `~/.config` のリンクは、`CODEX_HOME` がどこにあっても、すべての Codex のインストールを、ファイルを 1 つも書き込む前に停止させます。インストールは `~/.config/apothem/` 内の共有ルールとテンプレートも書き込むためです。
+`CODEX_HOME` をリンクの行き先のフォルダーに設定しても解決しません。代わりに、リンクがホームディレクトリ内のフォルダーを指すようにしてください。
+ホームディレクトリ内のパスとして書かれていても、リンクによってその外へ出る `CODEX_HOME`（たとえば、`~/work` が別のドライブにリンクされている `~/work/codex`）は、リンクが `CODEX_HOME` より上のどこにあっても、インストール、アンインストール、`apothem rollback` を停止させます。
+ホームディレクトリの外のパスとして書かれた `CODEX_HOME` はそのまま使われます。
+インストールが `CODEX_HOME` 内に書き込むパス上のリンクもインストールを停止させます。その際のメッセージは `target path crosses a link` で、そのリンクが `CODEX_HOME` を含むフォルダーの外へ向かう場合は `target escapes the allowed materialization root` です。
+
+`CODEX_HOME` はシェルのプロファイルから来るとは限りません。
+プロジェクトの `.envrc` や、source するスクリプトも設定できます。
+それがホームディレクトリの外のフォルダーを指している場合、インストール、更新、アンインストール、`apothem rollback` はそのフォルダー内のファイルを変更します。それが指定されたフォルダーだからです。
+ホームディレクトリの外へ向かう `~/.config` のリンクは、その場合でもインストールを停止させます。
+それを設定するプロジェクトのフォルダーで Apothem を実行する前に、`CODEX_HOME` を確認してください。
 
 Codex は `~/.codex/rules/` を `.rules` 実行ポリシー用に予約しています。
 Apothem は Markdown の振る舞いルールをそこに配置しません。それらを `~/.config/apothem/` に保持し、`AGENTS.md` とインストールされたスキルから参照します。
+以前のリリース（[変更履歴](/docs/changelog)に記載）は、インストールと更新のたびに、`~/.codex/rules/` を `~/.apothem/backups/<timestamp>/codex/.codex/rules/` にコピーしたうえで、あなたの `.rules` ファイルごとフォルダー全体を削除していました。
+現在のリリースはそのコピーを保持するバックアップセットを削除することはありませんが、以前のリリースの保持ポリシーによって、古いセットがすでに削除されている可能性があります。
+Apothem を再度実行する前に `~/.apothem/backups/` を別の場所にコピーし、`.rules` ファイルを手で `~/.codex/rules/` に戻してから、`apothem update` を実行してください。
+`apothem rollback --install-id` は以前のインストール全体を取り消すため、これらのファイルを復旧する方法ではありません。
+
+Codex は、そのホームフォルダー（`~/.codex`、または `CODEX_HOME` が指すフォルダー）から命令ファイルを 1 つ読み込みます。そのファイルにテキストがあれば `AGENTS.override.md` を、そうでない場合に限り `AGENTS.md` を読み込みます。
+Apothem ブロックは `AGENTS.md` に入るため、そのフォルダーにテキストのある `AGENTS.override.md` があると、Codex はブロックを読み込みません。ただし、オーバーライドが `AGENTS.md` へのシンボリックリンクである場合は除きます。
+ハードリンクやコピーは、インストールが `AGENTS.md` を書き直した時点で別のファイルになるため、注記の対象になります。
+そうなった場合、`apothem install`、`apothem update`、`apothem verify` はそのファイルを名指しする注記を出力します。
+空の `AGENTS.override.md` は読み飛ばされるため、注記は出ません。
+ブロックを読み込ませるには、オーバーライドを空にするか削除するか、そのテキストを `AGENTS.md` の Apothem ブロックの外に移してください。
 
 ## Codex プラグイン
 
@@ -103,6 +135,9 @@ verify コマンドは次のことを確認します。
 2. 管理対象の各ターゲットが存在すること。管理対象のファイルは空ではなく、JSON または YAML の設定は解析できること。`--profile PATH` を追加すると、インストールされたファイルがそのプロファイルと一致することも確認します。
 3. アダプター固有の検証ルーチンが成功を報告すること。
 
+Apothem ブロックが `AGENTS.md` にあり、テキストのある `AGENTS.override.md` が Codex のホームでその隣にある場合、Codex はブロックの代わりにそのファイルを読み込むため、verify はそのオーバーライドを名指しする注記も出力します。
+この注記によって確認が失敗することはなく、ブロックがインストールされていない場合、verify は注記を出しません。
+
 ## 更新
 
 ```bash
@@ -131,8 +166,16 @@ apothem uninstall --harness codex
 ## コンフォーミティゲート
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+プロジェクトのフォルダーから実行します。Windows では、`python3` の代わりに `python` を使い、
+フルパスを指定します。Windows PowerShell と cmd は `~` を展開しないためです。
+PowerShell では `$HOME\.apothem\src\apothem\conformity\gate.py`、
+cmd では `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` です。このパスは
+インストーラーがエンジンを置く場所で、`-E -s` はあなたの `PYTHONPATH` とユーザーの
+site-packages をゲートから締め出します。両者とその他のインストールについては
+[コンフォーミティゲート](/docs/conformity-gate)で説明しています。
 
 ## トラブルシューティング
 

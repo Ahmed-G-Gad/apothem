@@ -2,7 +2,7 @@
 title: "Gemini CLI"
 description: "Gemini CLI (GA) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "231513ffdb2dcb22"
+sourceHash: "4b2afa3f4a237f9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,6 +34,10 @@ GEMINI.md
 .gemini/skills/
 .gemini/.apothem/support/
 ```
+
+प्रोजेक्ट को वह डेटा फ़ोल्डर भी मिलता है जो हर प्रोजेक्ट इंस्टॉल बनाता है,
+डिफ़ॉल्ट रूप से `.apothem/`, जिसमें `contexts/`, `learning/`, `memory/` और `plans/`
+होते हैं।
 
 ## प्रोफ़ाइल-से-नेटिव-कॉन्फ़िग मैपिंग
 
@@ -75,6 +79,14 @@ Gemini `tools` अनुमति-सूची बन जाता है, औ�
 Gemini प्रोफ़ाइल का उपयोग करते हैं। Gemini CLI अडैप्टर केवल `--project` के माध्यम
 से दिए गए प्रोजेक्ट में लिखता है।
 
+Gemini CLI आपकी होम डायरेक्टरी में दो ऐसी जगहें भी लोड करता है जिनमें अन्य Apothem
+इंस्टॉल लिखते हैं: `~/.agents/skills/`, उसके उपयोगकर्ता स्किल स्तर का हिस्सा, जहाँ
+कई इंस्टॉल Apothem की स्किल लिखते हैं ([हार्नेस रजिस्ट्री](/docs/reference/harness-registry#shared-roots) उन्हें
+सूचीबद्ध करती है), और `~/.gemini/GEMINI.md`, जहाँ
+[Antigravity](/docs/harnesses/antigravity) इंस्टॉल एक Apothem ब्लॉक लिखता है।
+जब इनमें से किसी जगह पहले से Apothem सामग्री होती है, तो `gemini-cli` इंस्टॉल करना
+एक नोट प्रिंट करता है जो उसका और उसे लिखने वाले इंस्टॉल का नाम बताता है।
+
 ## सत्यापन
 
 ```bash
@@ -113,11 +125,27 @@ Apothem फ़ाइलें हटाता है; उन फ़ोल्ड�
 जाती है; प्रोजेक्ट में कोई बैकअप फ़ाइल नहीं छोड़ी जाती। साझा प्रोफ़ाइल YAML और
 Apothem इंजन अप्रभावित रहते हैं।
 
+पहले की रिलीज़ ([चेंजलॉग](/docs/changelog) उनके नाम बताता है) हर इंस्टॉल और अपडेट पर
+प्रोजेक्ट की अपनी `skills/AGENTS.md` (प्रोजेक्ट रूट पर, `.gemini/` के अंतर्गत नहीं) भी हटा
+देती थीं, उसे `~/.apothem/backups/<timestamp>/gemini_cli/` के अंतर्गत एक बैकअप सेट में
+कॉपी करने के बाद। वर्तमान रिलीज़ उस फ़ाइल को नहीं छूती। उसे वापस पाने के लिए, Apothem फिर से
+चलाने से पहले `~/.apothem/backups/` को कहीं और कॉपी करें, फिर उस प्रति से फ़ाइल को हाथ से
+प्रोजेक्ट में वापस कॉपी करें। [चेंजलॉग](/docs/changelog#data-loss-in-earlier-releases-recover-your-files)
+में पुनर्प्राप्ति के पूरे चरण हैं।
+
 ## अनुरूपता गेट
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+इसे अपने प्रोजेक्ट फ़ोल्डर से चलाएँ। Windows पर, `python3` के स्थान पर `python` का
+और पूरे पथ का उपयोग करें, क्योंकि Windows PowerShell और cmd `~` का विस्तार नहीं करते:
+PowerShell में `$HOME\.apothem\src\apothem\conformity\gate.py`, या cmd में
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`। यह पथ वह जगह है
+जहाँ इंस्टॉलर इंजन रखता है, और `-E -s` आपके `PYTHONPATH` और उपयोगकर्ता
+site-packages को गेट से बाहर रखता है; [अनुरूपता गेट](/docs/conformity-gate)
+दोनों को और अन्य इंस्टॉल को समझाता है।
 
 ## समस्या निवारण
 

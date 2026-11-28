@@ -2,7 +2,7 @@
 title: "CodeBuddy"
 description: "Adapter harness Apothem untuk Tencent CodeBuddy (GA)."
 machineTranslated: true
-sourceHash: "fbf19289d20e8ab7"
+sourceHash: "325f29aff29de35e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -172,6 +172,10 @@ menggantikan kedua jalur tersebut:
 "/path/to/python" -E -s "/path/to/project/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart
 ```
 
+`-E -s` membuat Python mengabaikan `PYTHONPATH` dan variabel `PYTHON*` lainnya
+serta melewati site-packages pengguna Anda, sehingga tidak ada berkas di proyek yang
+dapat dimuat ke dalam hook.
+
 `--contract codebuddy` tidak mengubah apa pun pada keluaran: CodeBuddy membaca
 amplop yang sama dengan yang dibaca Claude Code. CodeBuddy menjalankan perintah
 hook melalui shell Anda, dan melalui Git Bash di Windows (CodeBuddy tidak
@@ -208,12 +212,14 @@ CodeBuddy sendiri untuk mematikan setiap hook.
 ## Pemetaan profil ke konfigurasi native
 
 Adapter membaca profil bersama Apothem dan merender berkas aturan proyek pada
-setiap eksekusi `apothem install` atau `apothem update`. CodeBuddy membaca
-setiap berkas `*.md` di bawah `.codebuddy/rules/` sebagai Markdown dengan
+setiap eksekusi `apothem install` atau `apothem update`. CodeBuddy Code membaca
+setiap berkas `*.md` di bawah `.codebuddy/rules/`, termasuk subfolder, sebagai Markdown dengan
 frontmatter YAML opsional (`alwaysApply`, `paths`, `enabled`) sesuai
-[dokumentasi CodeBuddy Rules](https://www.codebuddy.ai/docs/ide/Rules);
-berkas Apothem membawa `alwaysApply: true` sehingga permukaan tata kelola
-berlaku pada setiap interaksi. Frontmatter adalah konten pertama dalam berkas
+[dokumentasi memori CodeBuddy](https://www.codebuddy.ai/docs/cli/memory#modular-rules-with-codebuddy-rules);
+berkas Apothem membawa `alwaysApply: true`, sehingga CodeBuddy Code memuatnya ke
+setiap sesi yang dimulainya di folder root proyek. CodeBuddy Code membaca aturan proyek
+hanya dari folder tempat ia dimulai, dan membaca berkas aturan yang ditambahkan atau
+diubah instalasi hanya setelah dimulai ulang. Frontmatter adalah konten pertama dalam berkas
 dan blok yang dikelola Apothem mengikutinya; teks yang Anda tambahkan setelah
 blok tersebut dipertahankan pada setiap sinkronisasi. Profil bersama adalah
 sumber kebenaran; suntingan lokal-proyek pada berkas yang dihasilkan
@@ -224,7 +230,11 @@ Apothem.
 
 Permukaan aturan CodeBuddy berlingkup proyek di bawah `.codebuddy/rules/`.
 Adapter menulis berkas `apothem-rules.md` khusus yang berdampingan dengan
-berkas aturan apa pun yang ditulis operator di direktori yang sama. Berkas
+berkas aturan apa pun yang ditulis operator di direktori yang sama.
+[Halaman Rules](https://www.codebuddy.ai/docs/ide/User-guide/Rules#project-rules) milik CodeBuddy IDE
+menjelaskan satu folder per aturan, masing-masing berisi berkas `RULE.mdc`, alih-alih
+berkas `.md` biasa seperti milik Apothem. Halaman itu tidak menyebutkan apakah IDE juga
+memuat berkas `.md` biasa, dan Apothem belum memastikannya. Berkas
 memori proyek `CODEBUDDY.md`, `.codebuddy/settings.json` yang di-commit, dan
 `.mcp.json` proyek (server MCP) adalah milik operator; Apothem tidak menulisnya.
 CodeBuddy juga mendokumentasikan slash command; adapter tidak menulis satu pun
@@ -316,8 +326,16 @@ yang dibiarkan kosong dihapus. Setiap folder dicadangkan di bawah
 ## Gerbang konformitas
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Jalankan dari folder proyek Anda. Di Windows, gunakan `python` sebagai pengganti
+`python3` dan jalur lengkapnya, karena Windows PowerShell dan cmd tidak mengekspansi
+`~`: `$HOME\.apothem\src\apothem\conformity\gate.py` di PowerShell, atau
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` di cmd. Jalur itu adalah
+tempat installer menaruh engine, dan `-E -s` menjauhkan `PYTHONPATH` serta
+site-packages pengguna Anda dari gerbang; [Gerbang konformitas](/docs/conformity-gate)
+menjelaskan keduanya dan instalasi lainnya.
 
 ## Pemecahan masalah
 

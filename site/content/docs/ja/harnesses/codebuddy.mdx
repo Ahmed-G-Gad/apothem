@@ -2,7 +2,7 @@
 title: "CodeBuddy"
 description: "Tencent CodeBuddy（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "fbf19289d20e8ab7"
+sourceHash: "325f29aff29de35e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -124,6 +124,8 @@ Apothem は、ドキュメントまたはプローブによってそれがモデ
 "/path/to/python" -E -s "/path/to/project/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart
 ```
 
+`-E -s` により、Python は `PYTHONPATH` とその他の `PYTHON*` 変数を無視し、ユーザーの site-packages を読み飛ばすため、プロジェクト内のどのファイルもフックに読み込まれることはありません。
+
 `--contract codebuddy` は出力に対しては何もしません。CodeBuddy は Claude Code と同じエンベロープを読むためです。
 CodeBuddy はフックコマンドをあなたのシェルを通じて、Windows では Git Bash を通じて実行するため（cmd.exe と PowerShell のどちらもサポートしません）、コマンドは bash のクォートとスラッシュ区切りのインタープリターパスを使います。
 CodeBuddy が求めた場合は、Git for Windows をインストールしてください。
@@ -144,10 +146,11 @@ CodeBuddy が求めた場合は、Git for Windows をインストールしてく
 
 アダプターは Apothem の共有プロファイルを読み取り、`apothem install` または `apothem update` を
 実行するたびにプロジェクトのルールファイルをレンダリングします。
-[CodeBuddy のルールに関するドキュメント](https://www.codebuddy.ai/docs/ide/Rules)のとおり、
-CodeBuddy は `.codebuddy/rules/` 配下のすべての `*.md` ファイルを、任意の YAML フロントマター
+[CodeBuddy のメモリに関するドキュメント](https://www.codebuddy.ai/docs/cli/memory#modular-rules-with-codebuddy-rules)のとおり、
+CodeBuddy Code は `.codebuddy/rules/` 配下のすべての `*.md` ファイルを、サブフォルダーも含めて、任意の YAML フロントマター
 （`alwaysApply`、`paths`、`enabled`）を持つ Markdown として読み取ります。
-Apothem のファイルは `alwaysApply: true` を持つため、ガバナンス面はすべてのやり取りで適用されます。
+Apothem のファイルは `alwaysApply: true` を持つため、CodeBuddy Code はプロジェクトのルートフォルダーで開始するすべてのセッションにこれを読み込みます。
+CodeBuddy Code は開始したフォルダーからのみプロジェクトのルールを読み取り、インストールが追加または変更したルールファイルは再起動後にのみ読み取ります。
 フロントマターはファイルの最初のコンテンツであり、Apothem が管理するブロックがその後に続きます。
 ブロックの後にあなたが追加したテキストは、同期のたびに保持されます。信頼できる情報源は共有
 プロファイルです。生成されたファイルへのプロジェクトローカルな編集は、次回の同期が Apothem の
@@ -157,7 +160,10 @@ Apothem のファイルは `alwaysApply: true` を持つため、ガバナンス
 
 CodeBuddy のルール面は、`.codebuddy/rules/` 配下のプロジェクトスコープです。アダプターは専用の
 `apothem-rules.md` ファイルを書き込み、このファイルは同じディレクトリでオペレーターが作成する
-任意のルールファイルと共存します。`CODEBUDDY.md` プロジェクトメモリファイル、コミットされる
+任意のルールファイルと共存します。CodeBuddy IDE の
+[Rules のページ](https://www.codebuddy.ai/docs/ide/User-guide/Rules#project-rules)では、Apothem のようなプレーンな `.md` ファイルではなく、ルールごとに 1 つのフォルダーがあり、それぞれに `RULE.mdc` ファイルを置く形が説明されています。
+このページは IDE がプレーンな `.md` ファイルも読み込むかどうかを述べておらず、Apothem もそれを確認していません。
+`CODEBUDDY.md` プロジェクトメモリファイル、コミットされる
 `.codebuddy/settings.json`、プロジェクトの `.mcp.json`（MCP サーバー）はオペレーターの所有であり、
 Apothem はそれらを書き込みません。CodeBuddy はスラッシュコマンドも文書化していますが、アダプターは
 それを書き込まず、代わりにルールファイル内で規律を参照します。サブエージェントと 2 つのフックは
@@ -225,8 +231,16 @@ apothem uninstall --harness codebuddy --project /path/to/project
 ## コンフォーミティゲート
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+プロジェクトのフォルダーから実行します。Windows では、`python3` の代わりに `python` を使い、
+フルパスを指定します。Windows PowerShell と cmd は `~` を展開しないためです。
+PowerShell では `$HOME\.apothem\src\apothem\conformity\gate.py`、
+cmd では `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` です。このパスは
+インストーラーがエンジンを置く場所で、`-E -s` はあなたの `PYTHONPATH` とユーザーの
+site-packages をゲートから締め出します。両者とその他のインストールについては
+[コンフォーミティゲート](/docs/conformity-gate)で説明しています。
 
 ## トラブルシューティング
 

@@ -2,7 +2,7 @@
 title: "Skema profil bersama"
 description: "Skema untuk YAML profil bersama Apothem."
 machineTranslated: true
-sourceHash: "574a594762c4f468"
+sourceHash: "cdd83bde9f17392d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,13 +32,17 @@ identitas placeholder yang diharapkan dipersonalisasi oleh operator — dan
 memvalidasinya sebelum melaporkan keberhasilan:
 
 ```yaml
+# yaml-language-server: $schema=https://apothem.ahmedgad.com/schemas/profile.schema.json
+schema_version: 1
 identity:
-  name: "Example User"
-  email: "dev@example.invalid"
-  github: "example-user"
+  name: Example User
+  email: dev@example.invalid
+  github: example-user
 ```
 
-Perintah ini mencetak ajakan personalisasi yang menyebut bidang-bidang ini.
+Baris pertama mengarahkan editor yang mendukung YAML ke skema;
+`schema_version: 1` adalah versi skema profil. Perintah ini mencetak ajakan
+personalisasi yang menyebut bidang identitas.
 Jika sebuah identitas yang masih berupa placeholder kemudian sampai ke `install`
 atau `update`, perintah-perintah itu mencetak satu catatan informatif lalu
 melanjutkan — Apothem tidak pernah mengarang maupun terhenti karena identitas
@@ -48,6 +52,7 @@ placeholder.
 
 | Bidang | Wajib | Bawaan | Catatan |
 | --- | --- | --- | --- |
+| `schema_version` | Tidak | dibaca sebagai `1` | Versi skema profil; `profile init` menulis `1`. Versi yang lebih baru daripada yang didukung engine ditolak. |
 | `identity.name` | Ya | tidak ada | Nama tampilan operator yang tidak kosong. |
 | `identity.role` | Tidak | `senior software engineer` | Teks peran bersama. |
 | `identity.email` | Tidak | dihilangkan | Harus berformat email saat hadir. |
@@ -59,8 +64,13 @@ placeholder.
 | `preferences.test_framework` | Tidak | dihilangkan | String tidak kosong saat hadir. |
 | `rules` | Tidak | `[]` | String unik tidak kosong; baris baru dinormalisasi ke LF. |
 | `seriousness` | Tidak | `PERSONAL_USE` | Salah satu dari `EXPLORING`, `PERSONAL_USE`, `SHARED`, `PUBLIC_LAUNCH`. |
+| `enforcement.*` | Tidak | masing-masing `false` | Sakelar opt-in: `sprints`, `agent_teams`, `multitasking`, `continuous_execution`, `learning_loop`. |
+| `mcp_servers` | Tidak | `{}` | Server MCP yang diindeks oleh nama server. Masing-masing menetapkan `transport` (`stdio`, `http`, `sse` atau `streamable-http`): server `stdio` memerlukan `command`, yang lain memerlukan `url`. |
+| `agent_mcp_servers` | Tidak | `{}` | Per helper, diindeks oleh namanya, server MCP yang boleh dipanggilnya. Dibaca oleh instalasi Claude Code dan Gemini CLI. |
 | `harnesses` | Tidak | `{}` | Penggantian per-harness yang diindeks oleh ID harness yang didukung. |
 | `exclude_harnesses` | Tidak | `[]` | ID harness yang didukung yang dikecualikan dari `--harness all`. |
+| `workspace.directory_name` | Tidak | `.apothem` | Nama folder kerja bersama; satu komponen jalur. |
+| `workspace.scope` | Tidak | `project-local` | `project-local` (di bawah root proyek) atau `user-home` (di bawah direktori home Anda). |
 
 ## Kunci harness
 

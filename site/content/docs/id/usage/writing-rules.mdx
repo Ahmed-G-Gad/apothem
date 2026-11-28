@@ -2,7 +2,7 @@
 title: "Menulis aturan"
 description: "Tulis, batasi cakupan, dan pelihara aturan perilaku Apothem."
 machineTranslated: true
-sourceHash: "bc1f3351f9a5fd2c"
+sourceHash: "a7a12b4db14fbfe9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -74,12 +74,20 @@ kedua; harness cakupan pengguna tidak.
 
 ## Validasi aturan
 
-Jalankan validator frontmatter terhadap berkas aturan yang Anda tulis. Dari
-checkout Apothem, `PYTHONPATH=src` membuat paket dapat diimpor; setelah instalasi
-lewat skrip, gunakan `PYTHONPATH="$HOME/.apothem/src"` sebagai gantinya.
+Jalankan validator frontmatter terhadap berkas aturan yang Anda tulis. Dari root
+checkout Apothem, `PYTHONPATH=src` membuat paket dapat diimpor (`python -m`
+membaca modul dari folder saat ini terlebih dahulu, jadi gunakan folder yang Anda
+percayai):
 
 ```bash
 PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep src/apothem/rules/<rule>.md
+```
+
+Setelah instalasi lewat skrip, jalankan gerbang melalui jalur skripnya dengan `-E -s`
+([Gerbang konformitas](/docs/conformity-gate) menjelaskan alasannya):
+
+```bash
+python3 -E -s "$HOME/.apothem/src/apothem/conformity/gate.py" --check frontmatter-grep <rule>.md
 ```
 
 Pemeriksaan per-penulisan seperti `frontmatter-grep` menerima berkas yang akan

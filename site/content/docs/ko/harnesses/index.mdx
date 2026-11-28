@@ -2,7 +2,7 @@
 title: "하니스 어댑터"
 description: "Apothem 하니스 어댑터 — 하나의 공유 프로필, 열일곱 개의 지원 대상."
 machineTranslated: true
-sourceHash: "f4177d0bff3cb602"
+sourceHash: "48a032b0eced79dc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -57,14 +57,14 @@ apothem doctor
 
 ## 어댑터 작동 방식
 
-각 어댑터는 setuptools 진입점을 통해 등록된 `HarnessAdapter` 프로토콜을 구현합니다. 설치 시 CLI는 공유 YAML 프로필을 로드하고 검증하며, 레지스트리를 통해 어댑터를 해석하고, 머티리얼라이즈 계획을 검증한 다음, 플랫폼 네이티브 구성을 하니스의 네이티브 사용자 또는 프로젝트 위치에 작성합니다. 업데이트 시에는 현재 프로필 상태에서 다시 도출합니다.
+각 어댑터는 `HarnessAdapter` 프로토콜을 구현하며, CLI가 어댑터를 해석하는 정적 하니스 레지스트리(`src/apothem/lib/harness_registry.py`)에 나열됩니다. `pyproject.toml`의 `apothem.harnesses` 진입점도 같은 어댑터를 나열하고 테스트가 두 목록을 같게 유지하지만, CLI는 진입점을 읽지 않으므로 다른 패키지가 진입점을 선언해 어댑터를 추가할 수는 없습니다. 설치 시 CLI는 공유 YAML 프로필을 로드하고 검증하며, 레지스트리를 통해 어댑터를 해석하고, 머티리얼라이즈 계획을 검증한 다음, 플랫폼 네이티브 구성을 하니스의 네이티브 사용자 또는 프로젝트 위치에 작성합니다. 업데이트 시에는 현재 프로필 상태에서 다시 도출합니다.
 
 ```
 profile.yaml + packaged cohorts
     identity / preferences / rules
     commands / skills / delegated definitions / hooks / templates
          |
-         +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/antigravity-cli/plugins/apothem/
+         +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/config/plugins/apothem/
          +-- claude-code    --> ~/.claude/ native folders + ~/.claude/.apothem/support/
          +-- codex          --> ~/.codex/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- cursor         --> <project>/.cursor/rules/*.mdc + <project>/.cursor/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/

@@ -2,7 +2,7 @@
 title: "Kiro"
 description: "Kiro(GA)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "91ec41080bf29036"
+sourceHash: "8edb56102e3e27a7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -165,6 +165,9 @@ Apothem은 Kiro에 `PreToolUse`나 `PostToolUse` 훅을 등록하지 않습니�
 "/path/to/python" -E -s "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
 ```
 
+`-E -s`는 Python이 `PYTHONPATH`와 다른 `PYTHON*` 변수를 무시하고 사용자
+site-packages를 건너뛰게 하므로, 프로젝트의 어떤 파일도 훅에 로드될 수 없습니다.
+
 `--contract kiro`는 디스패처가 컨텍스트를 일반 텍스트로 출력하게 하며, 이는
 Kiro가 `SessionStart`에 대해 컨텍스트에 추가하는 형식입니다. Kiro는 Windows에서
 명령 동작에 쓰이는 셸을 문서화하지 않습니다. 명령은 sh와 cmd.exe용으로
@@ -225,6 +228,12 @@ Kiro의 스티어링 표면은 `.kiro/steering/` 아래에서 프로젝트 범�
 운영자 소유입니다. Apothem은 이를 작성하지 않습니다. 훅 파일
 `.kiro/hooks/apothem.json` 하나를 작성하며, `.kiro/hooks/`의 다른 파일은 작성하지
 않습니다.
+
+Kiro는 워크스페이스 루트의 `AGENTS.md` 파일도 읽으며, [Kimi Code](/docs/harnesses/kimi-code) 설치는
+프로젝트 `AGENTS.md`에 Apothem 블록을 작성하므로, 두 설치가 모두 있는 프로젝트에서는 그
+블록이 Kiro에도 전달됩니다. 파일에 이미 블록이 있으면 `kiro` 설치는 그 파일과 블록을 작성한
+설치를 알려 주는 안내를 출력합니다. [하니스 레지스트리](/docs/reference/harness-registry#shared-roots)에
+이 파일을 로드하는 다른 도구가 나와 있습니다.
 
 Kiro는 전역 스킬용으로 `~/.kiro/skills/`를 문서화하고 `~/.agents/skills/`는
 언급하지 않으므로, 설치는 도구 간 공용 폴더가 아니라 Kiro 폴더에 작성합니다.
@@ -299,8 +308,16 @@ apothem uninstall --harness kiro --project /path/to/project
 ## 적합성 게이트
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+프로젝트 폴더에서 실행하세요. Windows에서는 `python3` 대신 `python`과 전체 경로를
+사용하세요. Windows PowerShell과 cmd는 `~`를 확장하지 않기 때문입니다.
+PowerShell에서는 `$HOME\.apothem\src\apothem\conformity\gate.py`, cmd에서는
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`입니다. 이 경로는
+설치 프로그램이 엔진을 두는 곳이며, `-E -s`는 여러분의 `PYTHONPATH`와 사용자
+site-packages가 게이트에 닿지 않게 합니다. [적합성 게이트](/docs/conformity-gate)에서
+둘 다와 다른 설치 방식을 설명합니다.
 
 ## 문제 해결
 

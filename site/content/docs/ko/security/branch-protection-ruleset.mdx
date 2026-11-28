@@ -2,7 +2,7 @@
 title: "브랜치 보호"
 description: "main에 대한 Apothem 브랜치 보호: 현재 적용된 보호 규칙, 그 필수 상태 검사, 추가 대기 중인 검사입니다."
 machineTranslated: true
-sourceHash: "7d54aae6581f03ec"
+sourceHash: "a8e8cbd39d06d78f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,7 +22,7 @@ Apothem의 `main` 브랜치는 클래식 GitHub 브랜치 보호 규칙으로 �
 | **상태 검사 통과 요구** | `required_status_checks` | ✅ | [필수 상태 검사](#필수-상태-검사) 아래에 나열된 12개 컨텍스트가 통과해야 합니다. |
 | **병합 전 브랜치를 최신 상태로 유지 요구** | `required_status_checks.strict` | ❌ | 풀 리퀘스트는 필수 검사가 이전 `main`을 기준으로 통과했을 때에도 병합될 수 있습니다. 그런 다음 `main`으로의 푸시에서 실행되는 워크플로가 병합된 결과를 테스트합니다. |
 | **병합 전 대화 해결 요구** | `required_conversation_resolution` | ✅ | 열린 검토 스레드는 병합을 차단합니다. |
-| **서명된 커밋 요구** | `required_signatures` | ❌ | 릴리스 커밋은 로컬에서 서명됩니다. 강제 적용은 기여자 온보딩 문서가 SSH 또는 GPG 서명 설정을 기술할 때까지 기다립니다. |
+| **서명된 커밋 요구** | `required_signatures` | ❌ | 릴리스 커밋은 GitHub가 자체 키로 서명하는 스쿼시 병합으로 `main`에 들어갑니다. 메인테이너의 서명은 릴리스 태그에 있습니다. 강제 적용은 기여자 온보딩 문서가 SSH 또는 GPG 서명 설정을 기술할 때까지 기다립니다. |
 | **선형 히스토리 요구** | `required_linear_history` | ✅ | `main`의 공개 히스토리를 단일 선으로 유지합니다. |
 | **브랜치 잠금** | `lock_branch` | ❌ | `main`은 병합을 받아들입니다. |
 | **위 설정의 우회 허용 안 함** | `enforce_admins` | ❌ | 위 설정은 저장소 관리자를 구속하지 않습니다. 관리자는 필수 검사 없이 병합하거나 `main`에 직접 푸시할 수 있습니다. |

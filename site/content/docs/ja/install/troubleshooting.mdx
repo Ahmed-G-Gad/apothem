@@ -2,7 +2,7 @@
 title: "トラブルシューティング"
 description: "プラグイン、npx、インストーラーの各経路における、よくある Apothem のインストール失敗と実行時の問題への対処法。"
 machineTranslated: true
-sourceHash: "218cead5defe61ff"
+sourceHash: "35f716910f462ed6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,16 +32,12 @@ python.org または OS のパッケージリポジトリから CPython 3.10 以
 
 ### インストーラー実行後に `apothem` が見つからない
 
-インストーラーは、ソースツリーを `~/.apothem` に配置し、`apothem` シムを、既定では `~/.local/bin`（POSIX）または `%LOCALAPPDATA%\Microsoft\WindowsApps`（Windows）に書き込みます。
+インストーラーは、ソースツリーを `~/.apothem` に配置し、`apothem` シムを、既定では `~/.local/bin`（POSIX）または `%LOCALAPPDATA%\Microsoft\WindowsApps`（Windows）に書き込みます。`APOTHEM_BIN_DIR` でそのフォルダーを変更できます。
 `PATH` は編集しません。
-`apothem` が見つからない場合、そのディレクトリは `PATH` に含まれていません。そのディレクトリを追加するか、追加するまでは下記の `PYTHONPATH` 形式を使ってください。
-エンジンは、インストーラーが完了時に表示する呼び出し方法で実行します。
-
-```bash
-PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
-```
-
-または、`PATH` エントリを必要としない npx 形式（`npx @ahmed-g-gad/apothem <command>`）を使用します。
+`apothem` が見つからない場合、そのディレクトリは `PATH` に含まれていません。そのディレクトリを追加するか、シムをフルパスで実行してください。
+インストーラーは完了時にそのパスを表示します。
+シムを書き込まなかった場合は、現在のフォルダーを `sys.path` から外した状態でエンジンを起動するコマンドを表示します。そのコマンドをバナーからコピーしてください。
+npx 形式（`npx @ahmed-g-gad/apothem <command>`）には `PATH` エントリは必要ありません。
 
 ### `/plugin marketplace add` が失敗する
 
@@ -74,7 +70,7 @@ npx @ahmed-g-gad/apothem@latest --version
 
 ### インストーラーが停止する: メンテナーの公開鍵がローカルのキーリングにありません
 
-インストーラーは署名済みリリースタグを検証し、署名鍵がお使いのキーリングにない場合は停止します。一度鍵をインポートし、フィンガープリントが `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163` と表示されることを確認してから、インストーラーを再実行してください:
+ネットワーク経由のインストールはすべて、cosign の有無にかかわらず署名済みリリースタグを検証し、署名鍵がお使いのキーリングにない場合は停止します。一度鍵をインポートし、フィンガープリントが `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163` と表示されることを確認してから、インストーラーを再実行してください:
 
 ```bash title="macOS · Linux · WSL2 · BSD — import the key once"
 curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
@@ -85,7 +81,305 @@ gpg --fingerprint 70396FED9C634163
 & "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
 ```
 
-Windows では、上に示したとおり Git の `bash` を通してインポートしてください。`git verify-tag` は Git for Windows に同梱されている `gpg` のキーリングを読み取ります。`gpg` がないホストでは、`APOTHEM_VERIFY=checksum` を指定してインストールできます。この設定では、タグの署名ではなく、リリースアーカイブのダイジェストが検証されます。
+Windows では、上に示したとおり Git の `bash` を通してインポートしてください。`git verify-tag` は Git for Windows に同梱されている `gpg` のキーリングを読み取ります。
+[cosign](https://docs.sigstore.dev/cosign/system_config/installation/) をインストールしても、鍵のインポートの代わりにはなりません。cosign が `PATH` にある場合、インストーラーはタグに加えて署名済みのリリースアーカイブも検査します。
+`gpg` がないホストでは、`APOTHEM_VERIFY=checksum` と `APOTHEM_ALLOW_UNVERIFIED=1` を指定してインストールできますが、このモードはリリースを検証しません（[インストーラーが停止する: チェックサムモードには 2 つ目の変数が必要](#the-installer-stops-checksum-mode-needs-a-second-variable) を参照）。
+
+### インストーラーが停止する: gpg が見つからない
+
+GnuPG をインストールしてください。Windows では、`git verify-tag` が実行する `gpg` を同梱している Git for Windows をインストールします。
+その後、上に示したとおりメンテナーの鍵をインポートし、インストーラーを再実行してください。
+
+### インストーラーが停止する: タグがメンテナーの鍵で署名されていない
+
+メッセージは "Tag ... is signed by the key ..." となり、タグに署名した鍵を示します。
+タグの署名自体は有効ですが、その鍵は [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#maintainer-signing-key) が公開している鍵ではありません。
+Apothem のリリースタグはその鍵でのみ署名されるため、これは改ざんの可能性があるものとして扱ってください。インストールせず、SECURITY.md に記載された窓口から報告してください。
+独自の鍵で署名されたフォークは、ここで停止するのが想定どおりの動作です。
+
+### インストーラーが停止する: cosign がリリースの署名を確認できなかった
+
+まず、メッセージの末尾にある `cosign said:` のテキストを読んでください。
+
+- ネットワーク、プロキシ、または信頼ルートのエラーは、cosign が Sigstore に到達できなかったことを意味します。
+  オンラインのときに再試行するか、cosign をアップグレードするか、`APOTHEM_VERIFY=signature` を指定してインストールしてください。このモードでは、リリースタグをメンテナーの鍵だけで検査します。
+- `APOTHEM_REPO` で指定したフォークは、ここで停止するのが想定どおりの動作です。インストーラーは Apothem 自身のリリースワークフローしか受け付けません。
+- "expected GitHub Workflow SHA not found in certificate" は、cosign が検証した証明書が、署名済みタグの指すコミットとは別のコミットでの実行に対して発行されたことを意味します。そのため、その証明書は `SHA256SUMS` をそのコミットに結び付けません。
+  インストールせず、[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) に記載された窓口から報告してください。
+- Apothem 自身のリリースで ID または署名が一致しない場合は、`SHA256SUMS` がこのタグに対して Apothem のリリースワークフローによって署名されていないことを意味します。
+  インストールせず、[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) に記載された窓口から報告してください。
+
+代わりにインストーラーがバンドルをダウンロードできなかったと表示する場合は、接続を確認してください。リリースがバンドルを公開していない場合は、`APOTHEM_VERIFY=signature` を指定してインストールしてください。
+
+### インストーラーが停止する: 署名済みタグがリリースタグではない
+
+メッセージは "the signed tag object is not the vX.Y.Z release tag" となります。
+タグにはメンテナーの鍵の署名がありますが、署名されたオブジェクトは別のタグの名前を持っています。つまり、別のリリースの署名済みタグがこの名前に付け替えられています。
+これは改ざんの可能性があるものとして扱ってください。インストールせず、[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) に記載された窓口から報告してください。
+`APOTHEM_ALLOW_UNVERIFIED=1` はこの検査を回避しません。ただし、この変数は署名のないタグや別の鍵で署名されたタグを通してしまうため、この検査が保護するのはメンテナーの鍵の署名を持つタグだけです。
+
+### インストーラーが停止する: チェックサムモードには 2 つ目の変数が必要 [#the-installer-stops-checksum-mode-needs-a-second-variable]
+
+チェックサムモードはリリースを検証しません。
+SHA256SUMS はアーカイブと同じリリースから取得されるため、一致してもダウンロードが破損していないことしか示しません。リリースのファイルを変更できる人は、その両方を変更できます。
+そのため、`APOTHEM_VERIFY=checksum` は `APOTHEM_ALLOW_UNVERIFIED=1` も設定されている場合にのみ実行されます。
+それを受け入れる場合は両方を設定するか、`gpg`（と cosign）をインストールして `APOTHEM_VERIFY=checksum` なしで実行してください。
+
+### インストーラーが停止する: APOTHEM_HOME のフォルダーが Apothem のインストールではない
+
+インストーラーは、Apothem のインストール以外のものを保持しているフォルダーを置き換えません。
+そのフォルダーを別の場所に移動するか、`APOTHEM_HOME` を別のフォルダーに向けるか、`--yes`（PowerShell では `-Yes`）を付けて再実行してください。
+`--yes` を付けると、インストーラーはフォルダー全体をそのまま、隣に作る新しいフォルダー `<APOTHEM_HOME>.before-apothem-<time>` に移動し（中では元の名前を保ちます）、移動先を示してから、新規にインストールします。
+別のプロジェクトの git クローンも、そのようなフォルダーとして扱われます。
+`<APOTHEM_HOME>.before-apothem-<time>` と、それにインストーラーのプロセス ID を加えた同じ名前の両方がすでに存在する場合、インストーラーは何かを移動する前に "Could not move the existing ... aside; nothing was changed" で停止します。どちらかの名前を変更するか削除してから、再実行してください。
+
+### インストーラーが停止する: APOTHEM_HOME がシンボリックリンクである
+
+メッセージは "is a symbolic link" となります（Windows では、シンボリックリンクまたはジャンクション）。
+フォルダーを置き換えると、リンク先のフォルダーではなくリンク自体が置き換わってしまうため、インストーラーはこれを拒否します。
+`APOTHEM_HOME` をリンク先のフォルダーに設定してから、再実行してください。
+リンクの向こうにある既存の git クローンは、引き続きその場で更新されます。
+
+### インストーラーが停止する: git クローンにローカルの作業が残っている
+
+git クローンをリリースアーカイブで置き換えるには `--yes` が必要です。それでも、失われるローカルの作業がクローンに残っている間は、インストーラーは拒否します。追跡対象ファイルへの変更、stash、リモートにないコミット、またはクローンのソースツリー内の未追跡ファイルです。
+その作業をコミットしてプッシュするか、別の場所に移動してから、再実行してください。
+この検査は `--dry-run` でも実行されます。
+クローンにそのような作業がない場合、`--yes` はクローンを置き換え、クローン自体のツリーを `<APOTHEM_HOME>.before-apothem-<time>/<name>` に残します。`<name>` は `APOTHEM_HOME` の最後の部分です。インストーラーはそのパスを表示します。不要になったら、そのフォルダーを削除してください。
+
+### インストーラーが停止する: 既存のクローンが、更新が信頼してしまう設定になっている
+
+既存のクローンにフェッチする前に、インストーラー（と update スクリプト）はクローンの設定を確認します。
+`--dry-run` もこれらの確認を行います。
+"has changes to tracked files" は、ファイルに assume-unchanged または skip-worktree の印が付いていて git からその変更が見えない場合にも表示されます。`git update-index --no-assume-unchanged <file>` または `git update-index --no-skip-worktree <file>` を実行してから、変更をコミットするか stash してください。
+"is not the work tree of its git clone" は、git が `APOTHEM_HOME` に作業ツリーを見つけられないことを意味します。たとえば、クローンの git 設定で `core.bare` が `true` になっている場合です。クローンが `APOTHEM_HOME` にチェックアウトされるよう、これを `false` に設定してください。
+チェックアウト先を別のフォルダーにしてしまう `core.worktree` の設定は、その場での更新が受け付けない設定として報告されます（下記）。
+
+"own git config sets `<key>`, which an update in place does not accept in a clone's own config" は、クローンの `.git/config`、またはクローンにある場合は `.git/config.worktree` 内の設定を示します。
+その場での更新がそこで受け付けるのは、次の設定だけです（セクションとキーは大文字と小文字を区別せずに比較されます）。
+
+- `git clone` と `git init` が完全なクローンに書き込む設定:
+  `core.repositoryformatversion`、`core.filemode`、`core.bare`、`core.logallrefupdates`、`core.symlinks`、`core.ignorecase`、`core.precomposeunicode`、`core.longpaths`、`extensions.objectformat`、`extensions.refstorage`（値が `files` または `reftable` の場合のみ）、`extensions.worktreeconfig`、`remote.origin.url`、`remote.origin.fetch`、`remote.origin.tagopt`
+- git やエディターが追加するブランチの設定 `branch.<name>.<key>`。ただし、`branch.<name>.remote` と `branch.<name>.pushremote` は正確に `origin` でなければなりません。
+- `user.name`、`user.email`、`maintenance.auto`、`maintenance.strategy`、`pull.rebase`、`pull.ff`
+
+それ以外の設定は更新を停止させます。git にプログラムを実行させたり、設定、フック、属性、オブジェクトを別の場所から読み取らせたり、別の場所に接続させたりする可能性があるためです。
+`--mirror`、`--sparse`、`--recurse-submodules`、または `origin` 以外の名前のリモートで作成したクローンもここで停止します。`--filter` で作成した部分クローンも同様です。その場合、メッセージは `remote.origin.promisor` を示します。git がクローンを読み取る際に、不足しているオブジェクトをリモートから自動的にフェッチしてしまうためです。`--filter` なしでクローンし直してください。
+メッセージが示すファイルからその設定を削除してから（例: `git config --file ~/.apothem/.git/config --unset-all <key>`）、再実行してください。
+`--unset-all` は、複数回記述されている設定も削除します。
+ブランチの `remote` または `pushremote` の場合は、代わりに `origin` に設定してください（例: `git config --file ~/.apothem/.git/config branch.main.remote origin`）。
+"own git attributes name a filter or diff driver" は `.git/info/attributes` を示します。`filter=` または `diff=` の設定を削除してください。
+git はファイルを読み取る間にフィルターを実行し、`git diff` は diff ドライバーのテキスト変換（`textconv`）を実行するため、あなた自身またはシステムの git 設定が定義するドライバーが、クローンのファイルに対して実行されてしまいます。
+
+"which is not a plain file" は、`.git/info/attributes`、`.git/config`、または `.git/config.worktree` が、フォルダー、名前付きパイプ、その他の特殊ファイル、または Windows ではリンクである場合にそれを示します。
+git がそのようなファイルから、確認で読み取ったものとは別のテキストを読み取る可能性があります。
+通常のファイルに置き換えるか削除してから、再実行してください。
+
+"has a setting whose name holds a line break" は、メッセージが示すファイル内のセクション名に復帰文字（CR）が含まれていることを意味します。
+git はそのような名前を書き込むことはなく、読み取る側がその名前を 2 つの設定と解釈する可能性があります。
+テキストエディターでファイルを開き、そのセクションを削除してから、再実行してください。
+
+"borrows objects from another repository" は、`--reference` や `--shared` で作成したクローンのように、クローンに `objects/info/alternates` または `objects/info/http-alternates` ファイルがあることを意味します。
+その場合、git はインストーラーが確認しない設定の下で、その別のリポジトリからオブジェクトを読み取ります。
+`git -C ~/.apothem repack -a -d` を実行してオブジェクトをクローンにコピーし、メッセージが示すファイルを削除してから、再実行してください。
+
+"keeps submodule repositories in ..." と "holds a submodule at ..." は、クローンにサブモジュールがあることを意味します。前者はメッセージが示すフォルダーに保持されているもの、後者はインデックス内の示されたパスに記録されているものです。
+リリースツリーにサブモジュールはなく、git はサブモジュール内で実行されますが、その独自の設定をインストーラーは確認しません。
+クローンからサブモジュールとそのフォルダーを削除するか、クローンを別の場所に移動してから、再実行してください。
+`--yes` でクローンを置き換える場合も、`git status` がローカルの作業を探す前にこの確認を行います。
+更新中に、クローンの git フックが実行されることはありません。
+
+### インストーラーが停止する: クローン内の .gitattributes ファイルが未追跡、変更済み、またはドライバーを指定している
+
+git は、ファイルを比較およびチェックアウトする間に作業ツリー内の `.gitattributes` ファイルを適用し、そのようなファイルは git にプログラムを実行させることができます。
+それらのコマンドを実行する前に、インストーラーと update スクリプトは、クローンのどのフォルダーにあっても、名前の大文字と小文字がどう混在していても、コミットされたものではない `.gitattributes` ファイルで停止します。また、git が追跡していないクローン内の git リポジトリでも停止します。git はその中の `.gitattributes` ファイルも読み取るためです。
+`--dry-run` と `--yes` もこの確認を行います。
+エンジン自身のデータフォルダー（`backups`、`state`、`plans`、`memory`、`contexts`、`learning`、`providers`）は、クローンがそこでファイルを追跡していない限り読み取りません。どのリリースもそこには書き込みません。
+
+- "has a .gitattributes file that git does not track, at ..." は、git が追跡していないファイルを示します。無視されたファイルや未追跡フォルダー内のファイルも含みます。
+  それを削除してから、再実行してください。
+- "has a changed .gitattributes file at ..." は、内容がコミットされたコピーと異なる、変更がステージされている、またはリンクやフォルダーである追跡対象ファイルを示します。
+  あなたが変更した場合は、コミットされたコピーに戻してから（例: `git -C ~/.apothem checkout HEAD -- <path>`）、再実行してください。
+- "has a .gitattributes file at ... that names a filter or diff driver (filter= or diff=)" は、コミットされたコピーまたは作業ツリー内のコピーが、コメントの外でドライバーを指定している追跡対象ファイルを示します。ドライバーを指定するマクロ（`[attr]` 行）も含みます。
+  git は、クローンを読み取る間に、あなた自身またはシステムの git 設定が定義している可能性のあるそのドライバーを実行してしまいます。
+  その設定を削除してその変更をコミットしてから、再実行してください。
+  あなた自身またはシステムの属性ファイルだけが定義するマクロは対象外です。実行中、git はクローンの外の属性ファイルを読み取らないため、そのようなマクロはそこでは何のドライバーも指定しません。
+- "has a .gitattributes file at ... whose committed copy git could not read" は、クローンの git フォルダー内のコピーが欠落または破損している、あるいはそのバイト列が ID と一致しないことを意味します。git は読み取る際にこれを確認しません。
+  その場合、インストーラーはファイルの内容を確認できませんが、git は作業ツリー内のコピーを引き続き適用します。
+  `git -C ~/.apothem fsck` を実行して何が破損しているかを確認し、クローンを修復するか、別の場所に移動して新規にインストールしてから、再実行してください。
+- "Could not run git to read the committed .gitattributes files in ..." は、`install.ps1` と `update.ps1` だけが表示します。
+  PowerShell セッションで `git` が関数またはスクリプト（たとえばプロファイル内のラッパー）になっており、インストーラーがファイルを読み取るための git プログラムが `PATH` にありません。
+  `Get-Command git -CommandType Application` で見つかるよう、git のフォルダーを `PATH` に追加してから、再実行してください。
+- "holds a git repository that git does not track, at ..." は、独自の `.git` を持つフォルダーを示します。
+  git はそのようなフォルダーの中身を一切列挙しないため、そこにある `.gitattributes` ファイルは見えませんが、git は更新がそこに書き込むファイルにそれを適用します。
+  リリースツリーにそのようなフォルダーはありません。
+  そのフォルダーをクローンの外に移動してから、再実行してください。
+
+そのファイルや変更をあなたが作成していない場合は、他の誰かがクローンに書き込める状態です。クローンを別の場所に移動して新規にインストールし、`APOTHEM_HOME` があなただけが書き込めるフォルダーであることを確認してください。
+
+### インストーラーが停止する: src 配下に git が追跡していないファイルがある
+
+メッセージは "has files under src that git does not track, and the engine could load them:" となり、各ファイルを列挙します（最初の 20 個と、残りの数）。
+エンジンはクローンの `src` フォルダーから実行されるため、そこにある余分なファイルがエンジンの一部として実行される可能性があります。
+無視されたファイルも対象で、ソースの隣にある `.pyc` ファイルも対象です。
+`Src` や `SRC` という名前のフォルダーも `src` として扱われます。Windows と macOS では、その名前で見つかるためです。
+クローンを編集可能モードで `pip install` すると `src/apothem.egg-info` が書き込まれ、ファイルマネージャーは `.DS_Store` や `desktop.ini` を書き込むことがあります。
+それらのファイルを `~/.apothem/src` の外に移動してから、再実行してください。何も変更されていません。
+この確認は、その場での更新でもドライランでも、フェッチの前に実行されます。
+Python のキャッシュフォルダー（`__pycache__`）は対象外です。チェックアウトの後、エンジンがクローンから初めて実行される前に、更新は `src` 配下のすべての `__pycache__` フォルダーを削除するため、更新前にキャッシュされたバイトコードが読み込まれることはありません。
+
+"Could not remove the Python cache folders (__pycache__) under ..." は、その削除が失敗したことを意味します。たとえば、そのいずれかのフォルダー内のファイルが別のユーザーのものである場合や、Windows で別のプログラムが開いている場合です。
+クローンはすでに新しいリリースにチェックアウトされています。
+それらのフォルダーを自分で削除してから、再実行してください。
+
+### インストーラーが停止する: 別の実行がロックを保持している
+
+install、update、uninstall の各スクリプトは、実行中、`APOTHEM_HOME` の隣にロック（`<APOTHEM_HOME>.lock`、既定では `~/.apothem.lock`）を保持します。`apothem install`、`apothem update`、`apothem uninstall` の各コマンドはこれを取得しません。
+"Another Apothem install, update or uninstall is running on ..." というメッセージは、2 つ目の実行がロックが保持されていることを見つけたことを意味します。
+もう一方の実行が終わるのを待ってから、再実行してください。
+実行中のものがない場合は、メッセージが示すロックを削除してから、再実行してください。
+
+- "was left by an Apothem run that did not finish (process N is no longer running)" と "exists but names no running process" は、ロックを解放する前に実行が強制終了されたことを意味します。
+  Apothem の install、update、uninstall が実行中でないことを確認し、ロックを削除してから、再実行してください。
+  インストーラーがあなたの代わりにロックを削除することはありません。
+  POSIX ではロックはフォルダーです（`rm -rf ~/.apothem.lock`）。Windows PowerShell では、実行が終わると Windows が削除するファイルです。
+- "is the lock file of an Apothem PowerShell run" は、Git Bash、MSYS2、Cygwin、または WSL 配下の POSIX スクリプトが、PowerShell の実行が保持しているファイルを見つけた場合に表示されます。
+  Windows は実行が終わるとそのファイルを削除し、実行中は誰にも削除させません。
+  その実行が終わるのを待ってください。
+  Apothem の install、update、uninstall が実行中でない場合は、そのファイルを削除してから、再実行してください。
+  その他のシステムでは、メッセージは "is a file where the Apothem lock folder belongs" となります。実行中のものがなければファイルを削除してから、再実行してください。
+- "was made by an Apothem run in another environment" は、ロックフォルダーが別の環境のプロセスを示していることを意味します。たとえば、実行が Git Bash 配下のときの WSL、実行が WSL または MSYS2 配下のときの Git Bash、あるいは別のコンテナーです。
+  そのプロセスはここからは確認できません。
+  その実行が終わるのを待ってください。どこでも Apothem の install、update、uninstall が実行されていない場合にのみ、ロックを削除してください。
+- POSIX スクリプトは、`sudo` 配下の実行など別のユーザーに属するプロセスを実行中とみなすため、そのロックは保持されていると判断されます。
+  PowerShell は、POSIX スクリプトが（たとえば Git Bash 配下で）作成したロックフォルダーのプロセス ID を確認できないため、そのロックも保持されていると報告します。
+- `APOTHEM_HOME` がシンボリックリンク（または Windows ではジャンクション）である場合、POSIX と PowerShell のスクリプトはリンク先のフォルダーの隣でロックを取得します。そのため、リンク経由の実行とそのフォルダー経由の実行は互いを停止させます。メッセージはそのロックを示します。
+- "Could not create the lock ... Check that you can write to ..." は、メッセージが示すフォルダーに書き込めないことを意味します。`APOTHEM_HOME` を保持するフォルダー、または `APOTHEM_HOME` がリンクの場合はリンク先のフォルダーを保持するフォルダーです。
+  その場での更新、アンインストール、ドライランを含め、すべての実行がそこに書き込む必要があります。
+
+### インストーラーが停止する: 以前の実行が APOTHEM_HOME の隣にフォルダーを残した
+
+メッセージは "An earlier run was stopped part-way and left these folders beside ..." となり、各フォルダーとその内容を列挙します。
+Ctrl+C と終了シグナルは捕捉され、実行は後片付けをします。入れ替え中の強制終了や電源断はそうではなく、次のものを残すことがあります。
+
+- `.apothem-old.<name>.*`: 置き換えられていた以前のインストール。その `home` フォルダーにあります。
+  その `home` フォルダーが git クローンを保持していて `APOTHEM_HOME` が存在する場合（新しいインストールが移動し終えた後はそうなります）、その行は代わりに、その実行が保持していたクローンのツリーを含むと示します。まだ必要であれば、自分のフォルダーに移動してください。
+  `home` フォルダーが Apothem のインストールを保持しておらず `APOTHEM_HOME` が存在する場合、その行はそのように示します。実行が以前のインストールを移動している間にそこにフォルダーが現れ、実行はインストールを元に戻し、そのフォルダーには手を付けませんでした。
+  削除する前に、その内容を確認してください。
+- `.apothem-extract.<name>.*` または `.apothem-clone.<name>.*`: インストールされていた新しいソース。
+  実行がすでに `APOTHEM_HOME` のエントリをそこに移動していた場合、その行はそのすべてを示します。`backups` や `state` などのエンジンのデータと、そこにあったその他のファイルやフォルダーです。
+- `<APOTHEM_HOME>.before-apothem-<time>`: `APOTHEM_HOME` 自体が存在しない場合にのみ列挙されます。
+  `APOTHEM_HOME` の以前の内容を、`APOTHEM_HOME` の最後の部分にちなんだ名前のフォルダー内に、または以前のインストーラーが作成したフォルダーの場合は直下に保持しています。どちらであるかはその行が示します。
+
+`<name>` は `APOTHEM_HOME` の最後の部分（既定では `.apothem`）です。そのため、同じ親フォルダー内にある別の `APOTHEM_HOME` のフォルダー（そのホームでの実行が使用している可能性があるもの）は列挙されません。
+Windows と macOS では、大文字と小文字だけが異なる `<name>` もこのホームのものとして扱われます。既定では、そこでは `APP` と `app` が同じフォルダーを指すためです。
+この規則はファイルシステムではなくオペレーティングシステムに従います。WSL 配下では Windows ドライブ上であっても大文字と小文字が異なる名前は別のホームですが、大文字と小文字を区別する macOS のボリュームや Windows のフォルダーでは引き続き 1 つとして扱われるため、そこで名前が大文字と小文字だけ異なる別のホームも列挙されます。
+名前に `<name>` の部分がないフォルダーは、ホームを記録していなかった以前のインストーラーが作成したものです。そのフォルダーには、そのフォルダー内のどの Apothem ホームのものでもあり得るという注記が付き、その行は、エントリが作成元のホームから移動されたことを示します。
+クローンのインストールが作成したそのようなフォルダーについては、行は見つかったエンジンのデータだけを示すため、ほかに何かないか中を確認してください。
+対象はフォルダーだけです。そのような名前のファイルやリンクは列挙されません。
+インストーラーが読み取れないフォルダーは "could not be read" として列挙されます。
+
+何も変更されておらず、何も削除されていません。
+`APOTHEM_HOME` が存在しない場合は、まず以前のインストールをそこに戻してください。
+次に、一覧が新しいソースに移動されたと示すすべてのエントリを、移動元のホームに戻し（注記付きのフォルダーの場合は、まずどのホームかを確認してください）、列挙されたフォルダーを削除してから、再実行してください。
+この確認は、ドライランを含め、取得したインストールで実行されます。自分のチェックアウトからのインストール、更新、アンインストールでは実行されません。
+
+### インストーラーが停止する: 別のユーザーがクローンを所有している
+
+メッセージは "is owned by someone else, so git refuses to work in it (git reports "dubious ownership")" となります。
+git は別のユーザーが所有するクローンを読み取りません。
+`APOTHEM_HOME` を所有するユーザーとしてインストーラーを実行するか、フォルダーの所有権を取得するか、`APOTHEM_HOME` を自分が所有するフォルダーに向けてから、再実行してください。
+インストーラーはそのフォルダーを git の `safe.directory` リストに追加しません。
+その最初の git コマンドがそれ以外の理由で失敗した場合は "git could not read the clone at ..." の後に、git 自身の説明の最初の行が続きます。
+
+### インストーラーが警告する: 他のユーザーが APOTHEM_HOME を変更できる
+
+install と update のスクリプトは、ドライランを含め、あなた以外のユーザーが `APOTHEM_HOME` またはそれを保持するフォルダーに書き込める場合、またはそのいずれかを所有している場合に警告します。その場合、そのユーザーは `apothem` コマンドがあなたとして実行するコードを変更できるためです。確認を省略する実行は下に示します。
+実行は続行されます。警告は、フォルダー、それに書き込めるか所有しているのは誰か、そして修正方法を示します。
+警告は次のいずれかで始まります。
+
+- "Other users can change the code Apothem runs as you": 他のユーザーが `APOTHEM_HOME` に書き込める場合、または `APOTHEM_HOME` かそれを保持するフォルダーが他の誰かのものである場合（メッセージは、誰がどのフォルダーを所有しているかを示します）。
+  `APOTHEM_HOME` がリンクの場合、メッセージはリンク先のフォルダーを示します。
+- "Other users can replace ...": 他のユーザーが `APOTHEM_HOME`（またはそのリンク）を保持するフォルダーに書き込めるため、それを名前変更または削除できる場合。
+- "A new ... would let": `APOTHEM_HOME` がまだ存在せず、そこに新しいフォルダーを作ると他のユーザーに開かれてしまう場合。
+
+ローカルのチェックアウトからのインストールは、`APOTHEM_SOURCE` でそれを指定した場合も、そのチェックアウト自身の `scripts/installer/install.sh` または `install.ps1` を実行した場合も、確認されません。
+update スクリプトは、`APOTHEM_SOURCE` が設定されている場合にのみ確認を省略します。
+警告が、コードの変更を任せられる信頼できる人と意図的に共有しているグループを示している場合は、無視してかまいません。
+
+この確認は、`APOTHEM_HOME` とそれを保持するフォルダーのアクセス許可を読み取り、中の各ファイルのアクセス許可は読み取りません。
+
+Linux と macOS では、警告は、フォルダーのアクセス許可ビットで見つかった "all users" または "the group" と、アクセス制御リスト（ACL）が書き込みを許可する各ユーザーまたはグループを示します。ACL は、`getfacl` がインストールされている場合にそれを使って読み取ります。
+ACL がある場合、`ls` が表示するグループのビットはそのリストのマスクです。そのため、`getfacl` がグループ自身のエントリ（`group::`）を列挙する場合は、そのエントリによってグループを示すかどうかが決まります。`getfacl` がない場合、示されるグループは、マスクでは書き込みが許可されていても、グループ自身のエントリでは許可されていないものである可能性があります。
+警告が、あなた、ユーザー root、またはあなた自身のユーザー名を持つグループ（あなた自身のグループ）を示すことはありません。
+ドメインアカウントの `CORP\alice` のように `getfacl` がエスケープして書き出す名前は、それが表す名前として扱われます。
+修正するには、メッセージが示すコマンドを実行してください（Linux では、ACL が示す各ユーザーとグループからも書き込み権限を取り除きます）。
+
+```bash
+chmod go-w "$HOME/.apothem"
+```
+
+同じ設定で作成されたファイルも書き込み可能になっている可能性があります。フォルダーに対して `chmod -R go-w` を実行すると、それらも修正されます。
+`/tmp` のように、他のユーザーが `APOTHEM_HOME` を保持するフォルダーに書き込む必要がある場合は、`chmod +t` でそのスティッキービットを設定して、あなたがそこに置いたものを名前変更または削除できないようにするか、`APOTHEM_HOME` を移動してください。
+新規インストールの場合、警告はあなたの umask を報告します。`umask 022` を実行してから、インストーラーを再実行してください。
+WSL では、すべてのファイルがすべてのユーザーから書き込み可能に見える `/mnt/c` 配下ではなく、Linux のホームに `APOTHEM_HOME` を置いてください。
+
+メッセージが、あるユーザーがフォルダーを "owns" していると示す場合、そのユーザーはアクセス許可の内容にかかわらずフォルダーを変更でき、あなたをその所有者にできるのは root だけです。
+root が所有するフォルダーは問題ありません。
+`APOTHEM_HOME` を自分が所有するフォルダーに移動してください。
+
+Windows では、警告は、アクセス許可エントリがフォルダーの変更を許可している各アカウントまたはグループを、フォルダーの［セキュリティ］タブに表示されるとおりの名前で示します。Users、Authenticated Users、Everyone、INTERACTIVE（コンピューターまたはリモートデスクトップでサインインしているすべてのユーザーで、`C:\Users\Public` に作成されたものを変更できます）、Guests、またはあなたの組織や別のプログラムが作成したグループです。
+あなた、あなた自身のサインインセッション、SYSTEM、Administrators、TrustedInstaller、CREATOR OWNER、OWNER RIGHTS を示すことはありません。最後の 2 つは項目を作成または所有する人を表し、他の誰かが所有者である場合は専用のメッセージが表示されます。
+フォルダーが別のアカウントのものである場合、メッセージはそのように示し、`APOTHEM_HOME` をあなたのユーザーフォルダーに移動するよう求めます。
+メッセージに "access that folders made at the root of a drive inherit from the drive's default permissions" が加わる場合、フォルダーは `C:\apothem` のようにドライブのルートにあります。Windows は、サインインするすべてのユーザーに、そこに作成されたフォルダーの追加と変更を許可します。
+最も簡単な修正は、既定の `~\.apothem` と同様に、`APOTHEM_HOME` をあなたのユーザーフォルダー（`%USERPROFILE%`）に移動することです。
+フォルダーを今の場所に置いたままにするには、継承を無効にし、自分にフルコントロールを与えてから、警告が示すグループを削除してください。
+ドライブのルートにあるフォルダーの場合、それは Windows 10 と 11 では Authenticated Users、Windows Server では Users です。下のコマンドは両方を削除します。
+
+```powershell
+icacls "C:\apothem" /inheritance:d
+icacls "C:\apothem" /grant:r "${env:USERNAME}:(OI)(CI)F"
+icacls "C:\apothem" /remove:g *S-1-5-11 *S-1-5-32-545 *S-1-1-0 *S-1-5-4
+```
+
+グループを削除する前に、自分にアクセス権を与えてください。削除するエントリが、そのフォルダーに書き込む唯一の手段である可能性があります。
+`*S-...` という名前は、各グループ（Authenticated Users、Users、Everyone、INTERACTIVE）のセキュリティ ID で、どの言語の Windows でも機能します。
+警告が示すその他の名前は、それぞれ独立した `icacls` 行で、引用符で囲んで削除してください。`icacls` が見つけられない名前があると行全体が停止し、その行は何も削除しないまま "Successfully processed 0 files" と表示します。
+`S-` と数字からなる名前は、削除されたアカウントや別のサインインセッションなど、Windows が検索できないアカウントのセキュリティ ID です。前に `*` を付けてください。それでも `icacls` が何も削除しない場合は、フォルダーの［プロパティ］>［セキュリティ］>［詳細設定］で削除してください。
+すべての変更はそこでも行えます。
+警告が `APOTHEM_HOME` を保持するフォルダーについてのものである場合は、そのフォルダーで変更を行うか、`APOTHEM_HOME` を移動してください。
+`APOTHEM_HOME` にあるリンクやジャンクションのアクセス許可はそのフォルダーから引き継がれるため、そのフォルダーを変更できる他のユーザーはリンクを削除して自分のリンクを作成できます。
+
+`install.sh` と `update.sh` は、アクセス許可ビットが Windows のアクセス許可から作り出される Git Bash、MSYS2、Cygwin 配下では確認を行わないため、そこでは警告を表示しません。
+Windows では、Windows のアクセス許可を読み取る `install.ps1` または `update.ps1` を実行して、フォルダーを確認させてください。
+
+### インストーラーが停止する: 既存のクローンを更新できなかった
+
+インストーラーは既存のクローンにフェッチし、チェックアウトする前に新しいタグを確認するため、確認が失敗してもクローンは元のままです。
+ほかに 2 つのメッセージが、チェックアウトの前に更新を停止させます。
+"Could not fetch" は通常、ローカルのタグが origin のタグと異なることを意味します。`git -C ~/.apothem tag -d <tag>` で削除してから、再実行してください。
+"has changes to tracked files. Commit or stash them, then re-run." は、クローンに git が追跡するファイルへの未コミットの変更があることを意味します。それらをコミットするか stash してから、再実行してください。
+この確認は、あなた自身またはシステムの git 属性ファイル内の改行コードの設定（`eol` と `text`）を無視するため、一度も変更していないクローンがこのように報告されることがあります。`git -C ~/.apothem status` を一度実行してから、再実行してください。
+ドライランはクローンにフェッチしないため、通常の未コミットの変更は確認しませんが、ファイルに assume-unchanged または skip-worktree の印が付いている場合は同じメッセージで停止します（上記のクローンの設定のセクションを参照）。
+"Could not check out" は、チェックアウトがそれでもローカルの変更を上書きしてしまうことを意味します。
+インストーラーがローカルの変更を破棄することはありません。
+`main` のようなリリース以外の参照の場合、既存のクローンは origin にあるそのブランチのコピーに従います。
+
+### インストーラーまたは update スクリプトが終了コード 2 で終わる
+
+エンジンが部分的な結果で終了しました。
+Apothem のマーカー行のために Apothem のブロックを持つファイルをそのまま残して残りを書き込んだか、何かを書き込んだ後に停止したかのどちらかです。後者は、たとえば `APOTHEM_HARNESS=all` の実行で、あるツールが先のツールの後に失敗した場合です。
+そのメッセージはファイルを示すか、停止させたエラーを表示し、スクリプトは "The engine ended as partial (exit code 2)." で始まる行を 1 行加えます。
+インストーラーはそれでも verify を実行し、`apothem` コマンドを配置してバナーを表示します。update スクリプトもそれでも最後の行を表示します。
+パイプで実行する PowerShell（`irm ... | iex`）では、`$LASTEXITCODE` は `2` になり、セッションは開いたままです。
+1 回限りの `pwsh -Command "irm ... | iex"`（または `powershell -c`）は、部分的な実行を `$LASTEXITCODE` でしか報告せず、`0` で終了します。プロセスから終了コード `2` を得るには、コマンドの末尾に `; exit $LASTEXITCODE` を付けるか、`-File` でスクリプトをパスで実行してください。
+PowerShell、bash、またはその他の POSIX シェルからは、そのコマンドを単一引用符で囲んでください。
+二重引用符の中では、新しいプロセスが始まる前に呼び出し元のシェルが自身の `$LASTEXITCODE` を埋め込んでしまう（POSIX シェルは空文字列を埋め込む）ため、プロセスは実行の終了コードで終了しません。
+cmd.exe からは、二重引用符でかまいません。
+ドライランは何も書き込まないため、部分的な結果で終わることはありません。
+メッセージが示すものを修正してください。
+ファイルの場合は、あなた自身のテキストを残したまま修正し（[ファイルが Apothem のマーカー間に 2 つのブロックを保持している](#a-file-holds-two-blocks-between-apothems-markers) と [Apothem が自身のブロックとあなたのテキストを区別できない](#apothem-cannot-tell-its-block-from-your-text) を参照）、実行が未完了のまま残した各ツールについて、もう一度 `apothem update --harness <name>` を実行してください。
+[エンジンがファイルをそのまま残す場合](/docs/install/updating#when-the-engine-leaves-a-file-as-it-is) で、実行全体について説明しています。
 
 ### Windows で irm / iex がブロックされる
 
@@ -96,6 +390,36 @@ Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
+### インストーラーが現在のフォルダーのチェックアウトを無視した
+
+これは意図された動作です。
+パイプで実行するワンライナー（`curl ... | sh`、`irm ... | iex`）はローカルのツリーを使用せず、現在のフォルダーやその親フォルダーを探すこともありません。リリースを取得して検証します。
+チェックアウトからインストールするには、そのチェックアウト自身の `scripts/installer/install.sh`（または `install.ps1`）を、任意のフォルダーからパスで実行するか（例: `sh ~/src/apothem/scripts/installer/install.sh`）、`APOTHEM_SOURCE` をそのチェックアウトに設定してください。
+スクリプトにはフォルダー部分を含むパスを渡してください。`sh scripts/installer/install.sh` や `sh ./scripts/installer/install.sh` は機能しますが、フォルダー部分のない `sh install.sh` はチェックアウトからの実行とはみなされません。そのため、インストーラーは "Not using a checkout: to install from one, run this script as ./install.sh or by its full path, or set APOTHEM_SOURCE." と表示し、代わりにリリースを取得して検証します。
+`-c` での実行に印を付けるシェルでは、`sh -c` で開始したスクリプトもチェックアウトとして扱われません。
+dash は印を付けないため、dash 配下では、ソースツリー内の `scripts/installer` という名前のフォルダーから開始した `sh -c "<script>" ./install.sh` はそのツリーを使用します。そのようにスクリプトのテキストを開始するのは、信頼できるフォルダーからだけにしてください。
+同様に、別のソースツリーの `scripts/installer` フォルダーに保存してそこでパスで実行した `install.sh` のコピーは、そのツリー自身のインストーラーとなり、そのツリーをインストールします。
+ダウンロードしたスクリプトは空のフォルダーに保存してください。
+`install.sh` はシンボリックリンクをたどって実体のファイルに至り、それを保持するチェックアウトを使用します。
+`install.ps1` はその逆で、シンボリックリンクやジャンクションを経由して到達したチェックアウトを拒否し、1 行の注記を表示して、取得と検証を行う経路を使用します。
+実体のフォルダーから実行するか、`APOTHEM_SOURCE` を設定してください。
+インストーラー、`apothem` コマンド、npm ランチャー、フックも、現在のフォルダーを Python のモジュール検索パスから外すため、作業中のフォルダーにある `click.py` という名前のファイルはそれらに影響しません。
+自分で入力した `python -m apothem` コマンドはそうではありません。`-m` は現在のフォルダーのモジュールを最初に読み取るため、信頼できるフォルダーからだけ実行してください。
+
+### 古い `apothem` コマンドがまだ現在のフォルダーを参照する
+
+以前のリリースは、現在のフォルダーがエンジンのモジュールを覆い隠せるような方法で Python を起動する `apothem` コマンドのシムを書き込んでいました。
+更新はそのシムを書き換えません。
+インストーラー（`install.sh` または `install.ps1`）をもう一度実行して、それを置き換えてください。
+アンインストーラーは、古いシムと新しいシムの両方を削除します。
+
+### Git Bash: `/c/...` 形式の PYTHONPATH エントリが無視される
+
+Git Bash 配下では、インストーラーは通常 Windows の Python を実行し、Windows の Python は `PYTHONPATH` を `;` 区切りの Windows パスとして読み取ります。
+sh スクリプトと、それが書き込む `apothem` シムは、その Python のために `PYTHONPATH` のドライブパスとネットワークパスだけを残すため、`/c/Users/me/lib` のような POSIX 形式のエントリは削除されます。
+エントリは `C:\Users\me\lib` または `C:/Users/me/lib` のようにドライブパスで書き、エントリは `;` で区切ってください。
+Cygwin や MSYS2 自身の `python3` のような POSIX の Python は、`/` で始まる `:` 区切りのパスを読み取り、スクリプトはその Python のためにそれらを残します。
+
 ## 実行時の問題
 
 ### apothem install がハーネスを見つけられない
@@ -105,10 +429,212 @@ apothem doctor を実行して、ハーネスごとに 1 行ずつある Harness
 ### apothem verify がアダプターの失敗を報告する
 
 apothem install を再実行して、アダプターを再マテリアライズします。問題が解消しない場合は、[ハーネスアダプター](/docs/harnesses)配下のアダプター固有のページを確認してください。
+インストールが END のない BEGIN マーカーについて警告した場合、または失敗した行がそれを含むファイルを示している場合は、再実行しても解決しません。[ファイルに END マーカーのない Apothem の BEGIN マーカーがある](#a-file-has-an-apothem-begin-marker-with-no-end-marker) を参照してください。
+警告または行が、ファイルが Apothem のマーカー間に 2 つ以上のブロック全体を保持していると示している場合は、[ファイルが Apothem のマーカー間に 2 つのブロックを保持している](#a-file-holds-two-blocks-between-apothems-markers) を参照してください。
+ファイル内のマーカー行が自身のブロックを示すのかあなたのテキストなのかを Apothem が判断できないと示している場合は、[Apothem が自身のブロックとあなたのテキストを区別できない](#apothem-cannot-tell-its-block-from-your-text) を参照してください。
+
+### ファイルに END マーカーのない Apothem の BEGIN マーカーがある [#a-file-has-an-apothem-begin-marker-with-no-end-marker]
+
+Apothem は自身のテキストを、`<!-- BEGIN APOTHEM MANAGED BLOCK -->` マーカーから次の `<!-- END APOTHEM MANAGED BLOCK -->` マーカーまでのブロックに保持します。
+END マーカーがなくなった場合（手作業の編集や、その行を落としたマージによって）、またはあなたの BEGIN マーカーがブロック全体の外にある場合、Apothem のテキストがどこで終わり、あなたのテキストがどこから始まるのかを示すものがありません。
+そのため、Apothem はそのマーカーの後のテキストを決して切り取りません。
+
+- `apothem install` と `apothem update` はそれをそのまま残し、Apothem のブロックをそれとは別に書き込み、ファイルとマーカーの行を示す警告を、その行を変更する番号付きの手順とともに表示します（下記を参照）。
+  警告は、代わりに END マーカーを戻さないようにとも伝えます。Apothem のブロックがそれとは別に書き込まれているため、ファイルは 2 つの Apothem ブロックを保持することになり、install と update はそれをそのまま残してしまうためです。
+  ドライランは何かが書き込まれる前にファイルを読み取るため、ファイルがまだブロック全体を保持していない場合、その警告は次のように伝えます。代わりに END マーカーを戻すなら、2 つのマーカーの間にあなたの行があってはならない（次の実行がその間のすべての行を置き換えるか取り除くため）、そして install または update が Apothem のブロックをマーカーとは別に書き込んだ後は、まったく戻さないこと。
+  それまでは、古い Apothem のテキストのすぐ下、あなた自身の行の上に戻せば、ブロック全体が 1 つ残り、次の update がそれを書き直します。
+- `apothem uninstall` は Apothem のブロック全体を取り除き、残りはそのまま残し、ファイルとマーカーの行を同じ番号付きの手順とともに示します。インストールはマーカーをそのまま残し、ツールは引き続きその下のテキストを読み取ります。
+- `apothem verify` と `apothem doctor` は、迷子のマーカーが変更されるまで失敗し、ファイルとマーカーの行を同じ番号付きの手順とともに示します。現在のインストールが書き込むファイルについては、それまで `apothem status --profile` もドリフトを表示します。
+  `apothem install` をもう一度実行しても解消しません。
+  そのハーネスで Apothem がブロックを保持するファイルだけが対象となるため、あなた自身のファイル内のマーカーでそれらが失敗することはありません。
+
+インストール記録が、ブロック全体を保持していないものの、コード内にマーカーの組（コードブロックで引用したマーカーの例など）を保持するファイルを列挙している間、install、update、uninstall はそのファイル全体をそのまま残します。その組が、あなたのコードブロック内にある Apothem のブロックである可能性があるためです。
+その警告は、`apothem verify` の注記と同様に、まずその BEGIN マーカーを示し、続いて各組を示します。アンインストールは未完了のままになります（[Apothem が自身のブロックとあなたのテキストを区別できない](#apothem-cannot-tell-its-block-from-your-text) を参照）。
+インストール記録がない場合、コード内で引用した組はあなたのテキストであり、install と update は Apothem のブロックを迷子のマーカーとは別に書き込みます。
+さらに下のコード内で単独で引用した END マーカーで、その後にマーカーの組がないものは別です。それはその BEGIN マーカーを閉じるため、update はその 2 つの間の行を Apothem のブロックとして置き換え、uninstall はそれらを取り除きます。
+
+Apothem は、Markdown ビューアーと同様に、コードの外にある独立した行だけをマーカーとして読み取ります。そのため、文中で引用したマーカー、フェンスで囲んだコードブロック内のマーカー、空行の後でリスト項目（または余白）より 4 桁インデントされたコード内のマーカーはマーカーとはみなされず、2 つの別々のコードブロックで引用した BEGIN マーカーと END マーカーもマーカーとはみなされません。
+ファイルの末尾まで開いたままのコードフェンスは、いくつあってもテキストとして読み取られます。ただし、その上にあるコードの外の BEGIN マーカーの END マーカーがコード内にあり、その後に別のマーカーの組が続く場合は除きます。
+HTML ブロックやブロック引用の中のマーカー、または本文が左余白で続くリスト項目の後のマーカーは、Markdown ビューアーとは異なる読み取り方をされる場合があります。
+
+これらの警告が示す行番号はすべて、Apothem がファイルを読み取るとおりに行を数えたものです。行は CRLF、LF、または単独の CR で終わります。
+CR 改行で保存されたファイルや、行の中に迷子の CR が 1 つあるファイルでは、警告が示す行を変更する前に、同じ方法で行を数えてください。
+
+修正するには、警告内の番号付きの手順に従ってください。たとえば "Fix A, if lines 77 to 148 are Apothem's block: A1. Change line 3: add a word inside its comment." です。
+3 行目は迷子の BEGIN マーカーです。次の BEGIN マーカーより前に END マーカーがない、またはまったく END マーカーがないものです。
+`<!-- BEGIN APOTHEM MANAGED BLOCK (example) -->` のように、閉じる `-->` の直前に単語を加えると、その行はマーカーとして読み取られなくなります。
+これは行を追加も削除もしないため、ファイル内のほかの部分の読み取られ方は変わらず、Apothem の現在のブロックを開く BEGIN 行もそのまま残ります。
+この修正は、コードブロックで引用したものも含め、ファイル内のほかのすべての BEGIN マーカー行も、それぞれ 1 手順ずつ、ファイルの下から上へ変更します（[番号付きの修正に従う](#follow-a-numbered-fix) を参照）。そのままにした引用の BEGIN マーカーは、アンインストールが Apothem のブロックを取り除いた後に、その下の END マーカーと組になる可能性があるためです。
+それらの行を変更した後も Apothem のブロックが全体として残ることをファイルのレイアウトが示さない場合（たとえば、どの行も閉じていないあなたのコードブロックがそれを保持している場合）、修正はブロックのものも含め、ファイル内のすべての BEGIN マーカー行を変更します。たとえば "Fix A: A1. Below line 6, add a line of 3 backticks. A2. Change line 3: add a word inside its comment. A3. Change line 2: add a word inside its comment. Apothem then reads none of these lines as its markers, and the next update writes its block at the end of the file." です。
+この例のように、ファイルがどの行も閉じていないコードブロックの中で終わる場合、修正はまずそのコードブロックを閉じる行を最終行の下に加えるため、次の update がそこに書き込むブロックはコードになりません。
+変更したマーカー行の下にある、Apothem のルールを繰り返す古い Apothem のテキストは、その後あなたが手作業で削除するものになります。
+マーカー行を変更する代わりに END マーカーを戻さないでください。install または update が Apothem のブロックをそれとは別に書き込んだ後は、ファイルが 2 つの Apothem ブロックを保持することになります（[ファイルが Apothem のマーカー間に 2 つのブロックを保持している](#a-file-holds-two-blocks-between-apothems-markers) を参照）。
+マーカー行を変更すると、その下の END マーカーは何とも組になりません。
+その後、`apothem update` を実行して（ファイルがもうブロックを保持していなければ Apothem のブロックを書き戻します）、`apothem verify` を再度実行してください。
+END マーカーがコード内にあり、その後に別のマーカーの組が続く BEGIN マーカーには、別の警告が表示されます。[Apothem が自身のブロックとあなたのテキストを区別できない](#apothem-cannot-tell-its-block-from-your-text) を参照してください。
+
+### ファイルが Apothem のマーカー間に 2 つのブロックを保持している [#a-file-holds-two-blocks-between-apothems-markers]
+
+Apothem はファイルごとに 1 つのブロックを書き込みます。
+それでも、ファイルが 2 つのブロック全体を持つことはあります。update がその下に新しいブロックを書き込んだ後にあなたが END マーカーを戻した古いブロック、コードの外にあるあなたのマーカーの組（引用した例など）、または 2 回目に貼り付けたブロックです。
+その場合、Apothem はどちらが自身のものかを判断できません。
+
+- `apothem install` と `apothem update` はファイルをそのまま残し、各ブロックをその行で示す警告を表示します。たとえば "holds 2 whole blocks between Apothem's markers (lines 1 to 32, and lines 36 to 67)" です。
+  ファイルを修正するまで、実行は部分的な結果で終わります。`✓` 行の代わりにファイルを示す `✗` 行を表示し、`--format json` の `status` は `"partial"` となり、終了コード `2` で終了します。
+  ドライランでは、警告は Apothem が "would leave the file as it is" と伝えます。
+- `apothem verify`（`--profile` の有無にかかわらず）と `apothem doctor` は、ファイルを修正するまで失敗し、ファイルと各ブロックを示します（doctor の確認は `harness.stray_begin` で、そのメッセージは、ファイルが "Apothem markers to fix by hand" を保持していると伝えます）。現在のインストールが書き込むファイルについては、それまで `apothem status --profile` もドリフトを表示します。
+- `apothem uninstall` は、互いにまったく同じコピーであるブロック（2 回貼り付けたブロックなど）を取り除きます。
+  異なるブロックが残ってしまう場合は、ファイルをそのまま残し、"then run the uninstall again" で終わる同じ警告を表示し、修正するまで未完了（終了コード `2`）のままになります（[完了しなかったアンインストール](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish) を参照）。
+  インストール記録がない場合は、2 つのブロックを保持する Claude Code の `CLAUDE.md` やプロファイルドキュメントもそのまま残し、その警告は各ブロックを同じ方法で示します。
+  その警告は、修正後に `apothem update` を実行してから再度 `apothem uninstall` を実行するよう伝え、アンインストールを停止させることはありません。
+  その後のアンインストールの実行は、ブロックを取り除く前に、Apothem のブロックの周囲にあるあなたのマーカー行を示します。
+
+続いて警告は、各ブロックについて、それが Apothem のブロックである場合の番号付きの修正を 1 つずつ示します。たとえば "Fix A, if lines 1 to 32 are Apothem's block: A1. Change line 36: add a word inside its comment. Lines 1 to 32 are then the one block in the file." です（[番号付きの修正に従う](#follow-a-numbered-fix) を参照）。
+修正は、ほかのすべてのブロックの BEGIN マーカー行を変更します。上に BEGIN マーカーのない END マーカーは何とも組になりません。
+ファイルのレイアウトからそのケースが判断できないブロック（コードブロックを保持するブロックの下にあるものなど）には専用の修正がなく、代わりに "in any other case" のもう 1 つの修正が、ファイル内のすべての BEGIN マーカー行を変更します。
+警告が示す行で、示されたファイルを開いてください。
+
+1. Apothem のルールを保持するブロックの修正を選びます。
+   Apothem のフロントマターで始まるファイルでは、それはフロントマターのすぐ下のブロックです。アンインストールは、そのフロントマターをすぐ下のブロックと一緒にしか取り除きません。
+2. その修正の手順を、示された順序で実行します。
+   各手順は BEGIN マーカー行をその場で変更するため、その下のテキストは残ります。あなたのマーカーの組はあなたの例を保ち、古いまたは貼り付けた Apothem ブロックのテキストは、その END マーカー行まで、その後あなたが手作業で削除するものになります。
+   各修正は、次の update にもアンインストールにも有効です。
+   あなたの組を残すために Apothem のブロックを削除しないでください。次のアンインストールが、残った 1 つのブロックとしてあなたの組を取り除いてしまいます。
+   あなたの組をコードブロックに移動することもしないでください。Apothem 自身のブロックが全体でなくなると（END マーカーを失うなど）、インストール記録がファイルを列挙している間、コード内のマーカーの組によって install と update は Apothem のブロックを書き込めなくなります（[Apothem が自身のブロックとあなたのテキストを区別できない](#apothem-cannot-tell-its-block-from-your-text) を参照）。
+3. `apothem update` を実行してから、`apothem verify` を再度実行します。
+   完了しなかったアンインストールの後は、代わりに `apothem uninstall` を再度実行してください。
+
+Apothem のブロックの上にある BEGIN マーカーと下にある END マーカーは、Apothem のブロックが取り除かれて初めて現れる 2 つ目のブロックを作ります。
+その場合、アンインストールの警告は Apothem のブロックとその 2 つのマーカー行を示します。たとえば "once the block from line 5 to line 36 is out, the BEGIN marker at line 2 and the END marker at line 39 make another" と示し、"Do not delete the block from line 5 to line 36" と伝えます。次の実行が 2 行目から 39 行目までを Apothem のブロックとして読み取り、その間にあるものを置き換えるか取り除いてしまうためです。
+その 1 つの修正は、代わりにその BEGIN マーカー行を変更し、あなた自身のテキストを残します。たとえば "Fix A, if lines 5 to 36 are Apothem's block: A1. Change line 2: add a word inside its comment. Lines 5 to 36 are then the one block in the file." です。その後、アンインストールを再度実行してください。
+その下の END マーカーは何とも組にならなくなるため、たとえばコードブロックで引用する例として、そのまま残せます。
+両方の行を 1 つのコードブロックに入れないでください。そのコードブロックは Apothem のブロックも保持してしまいます。
+その BEGIN マーカーが古い Apothem ブロックの残りである場合、その下の古い Apothem のテキストは、その後あなたが手作業で削除するものになります。
+`apothem update` もそのようなファイルを修正せず、修正するまで `apothem verify` は失敗します。
+
+### Apothem が自身のブロックとあなたのテキストを区別できない [#apothem-cannot-tell-its-block-from-your-text]
+
+警告はファイルを示し、"Apothem cannot tell whether the marker lines in this file mark its block or text of yours" と伝えます。
+これは、Apothem のブロックの上にあるコードフェンスが開いたままになっていて、さらに下にあなたが追加したフェンスがそれを閉じた場合に表示されます。その場合、ブロックはあなたのコードブロックの中にあります。
+Markdown ビューアーはそれらの行をコードとして表示し、同じ行は例として引用したマーカーの組である可能性もあるため、Apothem はそれが自身のブロックなのかあなたのテキストなのかを判断できません。
+インデントされたコード内や段落の下にインデントされた組、そして END マーカーがコード内にあり、その後に別のマーカーの組が続く、コードの外の BEGIN マーカーも同様です。どちらの組も Apothem のブロックである可能性があります。
+Apothem 自身のブロック内の閉じる行が、その上で開いたままになっているあなたのコードブロックを閉じることもあります（下記を参照）。
+
+警告は、ファイル内の各マーカーの組を、その 2 つのマーカーの行で示し、それらがどこで読み取られるかを伝えます。たとえば "The BEGIN marker at line 6 and the END marker at line 38 sit inside a code block that opens at line 3." です。
+また、マーカーの組を始めないコードの外の各 BEGIN マーカーも示します。たとえば "The BEGIN marker at line 1 starts no marker pair: its END marker is gone, or the marker is yours." です。
+その後に、`apothem install`、`apothem update`、`apothem uninstall` の警告、`apothem verify` の注記、`apothem doctor` が表示する修正で、番号付きの修正が続きます。たとえば "Fix A: A1. Change line 6: add a word inside its comment. Apothem then reads none of these lines as its markers, and the next update writes its block at the end of the file." です。
+2 つのマーカー行がどちらもコードの外で読み取られる組（END マーカーがコード内にある BEGIN マーカーの後にあるもの）には、それが Apothem のブロックである場合の専用の修正が、ファイルのレイアウトからそれが唯一のブロック全体として読み取られることがわかる場合に示されます。最後の修正（ほかの修正が先にある場合は "in any other case"）は、ファイル内のすべての BEGIN マーカー行を変更します。
+読み方については [番号付きの修正に従う](#follow-a-numbered-fix) を参照してください。
+
+インストール記録がファイルを列挙している間（アンインストールが完了するまで。読み取れないインストール台帳も記録とみなされます。リンク経由でたどったホームのように、フォルダーの別の表記の下で作成された記録も、アンインストールの場合と同様に、実行時の表記に独自のインストールがまだ残っていて、ツールが [ホームディレクトリ内の共有フォルダー](/docs/cli-reference/install#folders-in-your-home-directory) に書き込む場合は記録とみなされます）、`apothem install` と `apothem update` はそのファイルを何も変更せず、その警告を表示します。ドライランでは、Apothem が "would leave the file as it is" と伝えます。
+END マーカーがコード内にあり、その後に別のマーカーの組がある、コードの外の BEGIN マーカーについては、記録の有無にかかわらずそうします。
+そのような実行はいずれも部分的な結果で終わります。`✓` 行の代わりにファイルを示す `✗` 行を表示し、`--format json` の `status` は `"partial"` となり、終了コード `2` で終了します。
+警告はそのことを "Until you fix these marker lines as this text says, install and update leave this file as it is and end as partial (exit code 2)." と伝えます。
+ファイルを書き込んだために成功で終わる実行の警告は、その文を "From the next run on, until you fix these marker lines" で始めます。
+これは、コードブロック内のあなたのマーカーの例も含め、マーカー行がそのままである限り続きます。そのような組は、あなたのコードブロック内にある Apothem のブロックである可能性があるため、警告は、あなたの例もその BEGIN マーカー行を変更するまで同じようにファイルを止めてしまうと付け加えます。変更するには、たとえば `<!-- BEGIN APOTHEM MANAGED BLOCK (example) -->` のように、コメントの中に単語を加えます。
+マーカー行がその上の段落の一部として読み取られる組については、"a marker example of yours that reads as part of a paragraph" と呼びます。
+ほかにこれを終わらせるものはありません。その組がある間は、アンインストールも完了しません。
+組を始めないコードの外の BEGIN マーカーは、ファイル内のすべてのマーカーの組がその下のコードで引用されている場合でも、これを変えません。そのマーカーは END マーカーを失った後の Apothem のブロックの残りである可能性がありますが、コード内の組があなたのコードブロック内にある Apothem のブロックである可能性もあるためです。
+警告はそのような BEGIN マーカーを最初に示し、各修正はそれを変更します。
+`apothem verify` の注記と `apothem doctor` が表示する修正は、install と update がファイルをそのまま残す場合にのみ、部分的な結果で終わることについての同じ文を示します。インストール記録がない場合、コード内で引用したマーカーの組はファイルを止めません（下記を参照）。ただし、その組がインストールの書き込むブロックとまったく同じものを保持している場合は除きます。
+注記と修正はそのブロックを確認しないため、そのような組についてはその文を省きます。次の update はファイルをそのまま残し、部分的な結果で終わり、そのことを伝えます。
+
+Apothem は、あなたのプロファイル内のルールが開いて閉じないコードブロックを、書き込むブロックの末尾で閉じるため、そのブロックの END マーカーがコード内に入ることはありません。
+以前のリリースがそのようなルールから書き込んだブロックには、閉じる行がありません。
+その後にあなたのマーカーの組がある場合、install と update はファイルをそのまま残します。
+その古いブロックを保つ修正はありません。その下にあるあなたの行がそのルールの開いたコードブロックを閉じており、次の update がブロックを置き換えると、その行があなたのテキストの上にコードブロックを開いてしまうためです。
+その後の組が Apothem のブロックである場合の修正は、古いブロックの BEGIN マーカー行を変更します。たとえば "Fix A, if lines 8 to 10 are Apothem's block: A1. Change line 1: add a word inside its comment." です。最後の修正はすべての BEGIN マーカー行を変更します。古いブロックのテキストは、その後あなたが手作業で削除するものになります。
+
+その閉じる行、またはあなたのプロファイル内のルールが書き込むコードブロックの閉じる行は、Apothem のブロックの上で開いて閉じられていないあなたのコードブロック（たとえばメモの末尾にあるもの）を閉じることもあります。
+その場合、ブロックはその BEGIN マーカーからコードとして読み取られます。
+それを書き込んだ install または update は、ファイルをそのまま残したとは伝えずに、すぐに警告を表示します。たとえば "The BEGIN marker at line 6 sits inside a code block that opens at line 3, and the END marker at line 44 is outside code." です。
+その修正はその BEGIN マーカー行を変更します。たとえば "Fix A: A1. Change line 6: add a word inside its comment." です。次の update は、あなたのコードブロックを閉じる行の下、ファイルの末尾に Apothem のブロックを書き込み、古いブロックはあなたが手作業で削除するものになります。
+ドライランは何かが書き込まれる前にファイルを読み取るため、書き込まれた後にブロックがコードとして読み取られることは示しません。
+代わりにブロックを削除しても解決しません。次の update が、同じ開いたコードブロックの下に再びそれを書き込みます。
+ルールがコードブロックを開いたままにした、END マーカーを失った古いブロックの下にブロックを書き込む update にも同じ警告が表示されます。その警告はその古い BEGIN マーカーも示し、各修正はそれを変更します。
+
+ファイルを修正するまで、`apothem verify` は失敗し、`apothem doctor` はそれを（`harness.stray_begin` として）報告します。現在のインストールが書き込むファイルについては、`apothem status --profile` もドリフトを表示します。
+インストール記録がない場合、verify と doctor は `CLAUDE.md` やプロファイルドキュメントを確認しません。インストールがそれらのファイルを書き込んだことは、記録だけが示すためです。
+OpenClaw の verify は、見つけた各ワークスペースのルールファイルを引き続き確認し、ファイルを示さずに失敗します。
+
+インストール記録がある場合、`apothem uninstall` はファイルをそのまま残し、インストールの残りを取り除き、ファイルを修正するまで未完了（終了コード `2`、2 回目の実行も含む）のままになります。インストール記録は残るため、後のインストールも引き続きファイルをそのまま残し、次のアンインストールも再びそれを示します。
+その警告は同じ方法で番号付きの修正を示し、"Then run the uninstall again." で終わります。たとえば "Fix A: A1. Change line 6: add a word inside its comment. Apothem then finds no block of its own in this file." です。
+そのようなファイルに残るマーカーの組は、あなたのものも含め、アンインストールを未完了のままにするため、各修正は、Apothem のブロックと呼ばないすべての組の BEGIN マーカー行を変更します。
+その `✗ <harness> uninstall did not finish:` 行は "1 file(s) hold marker lines Apothem cannot tell from your text, so Apothem left them as they are; fix the marker lines each warning names, keeping your own text, then run apothem uninstall again" と続きます。
+インストール記録がない場合、警告が表示されるのは、END マーカーがコード内にあり、その後に別のマーカーの組がある、コードの外の BEGIN マーカーだけです。アンインストールは、それと、記録が示さないパスのために、未完了（終了コード `2`）のままになります（[完了しなかったアンインストール](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish) を参照）。
+
+選んだ修正の手順はすべて実行してください。
+Apothem のブロックだけを削除し、コード内で引用した END マーカーの上にあなたの BEGIN マーカーを残し、その後にマーカーの組がない場合、その 2 つのマーカーは Apothem のブロックとして読み取られます。再度実行したアンインストールはその間の行を取り除き、後の install または update はそれらを置き換えます。
+
+インストール記録がない場合、コード内で引用したマーカーの組はあなたのテキストです。インストールはその後にブロックを追加します（Apothem がフロントマター付きで書き込むルールファイルでは、そのフロントマターとブロックは代わりに先頭に置かれます）。ただし、その組がインストールの書き込むブロックとまったく同じものを保持している場合は、ファイルをそのまま残して警告を表示します。
+そのため、インストール記録がなくなった場合（台帳が削除されたなど）は、あなたのコードブロックから Apothem のブロックを手作業で削除してください。後のインストールはそれをあなたのテキストとして扱います。
+
+修正するには、警告が示す行で、示されたファイルを開いてください。
+どのケースが正しいかを判断してください。修正が示す行が、マーカーの間に Apothem のルールがある Apothem のブロックなのか、あなたの例なのかです。
+その修正の手順を、示された順序で、ほかの手順は行わずに実行してください（[番号付きの修正に従う](#follow-a-numbered-fix) を参照）。
+その後、`apothem update` を実行してから、`apothem verify` を再度実行してください。
+完了しなかったアンインストールの後は、代わりに `apothem uninstall` を再度実行してください。
+
+### 番号付きの修正に従う [#follow-a-numbered-fix]
+
+Apothem がマーカー行を配置できないファイル、2 つ以上のブロック全体を持つファイル、END マーカーのない BEGIN マーカー、そしてインストール記録のないアンインストールが残す Apothem のブロックについての警告は、各修正を、そのケースを示すラベルの下に番号付きの手順として示します。たとえば "Fix A, if lines 6 to 38 are Apothem's block:"、またはどの行が Apothem のものであっても有効な修正には "Fix A:" です。
+修正 A の手順は "A1."、"A2." と続き、修正 B の手順は "B1."、"B2." と続き、1 つの段落にまとめられ、修正の最後に次の実行がどうなるかが示されます。
+1 つの修正の手順だけを実行してください。
+
+手順内の行番号はすべて、警告が表示された時点のファイルにおけるその行の番号で、Apothem が行を数えるとおりに数えたものです（[ファイルに END マーカーのない Apothem の BEGIN マーカーがある](#a-file-has-an-apothem-begin-marker-with-no-end-marker) を参照）。
+手順は、示された順序で、ファイルの下から上へ進みます。
+各手順は次のいずれかで、一字一句このとおりで、ピリオドで終わります。
+
+| 手順 | 行うこと |
+| --- | --- |
+| `Change line N: add a word inside its comment.` | `<!-- BEGIN APOTHEM MANAGED BLOCK (example) -->` のように、N 行目の閉じる `-->` の直前に単語を加えます。行はその場所に残り、マーカーとして読み取られなくなります。 |
+| `Below line N, add a line of 3 backticks.` | ファイルの最終行である N 行目のすぐ下に、その数のバッククォート文字（`tildes` の場合はチルダ文字）だけを含む新しい行を加えます。ピリオドの前に `, indented 2 spaces` がある場合は、その前にその数の空白を置きます。ない場合は、行を左余白から始めます。 |
+
+各 `Change line` 手順は、BEGIN マーカー行をその場で変更します。
+すべての Apothem ブロック、マーカーの組、迷子のマーカーは BEGIN マーカーで始まり、END マーカーはそのすぐ上の BEGIN マーカーとだけ組になります。そのため、上に BEGIN マーカーのない END マーカーは何も示さず、あなたが引用したものはそのままあなたのテキストとして残ります。
+変更した行も、独立した行にある HTML コメントのままです。行は移動せず、Markdown ビューアーはほかのすべての行を以前と同じように読み取ります。
+
+ブロックを残す修正は、ファイル内のほかのすべての BEGIN マーカー行を変更します。
+警告がそれを示すのは、そのブロックが唯一のブロック全体として読み取られることをファイルのレイアウトが示す場合だけです。ファイルの末尾まで続くあなたのコードブロックがそれを保持しておらず、最初に変更する行からそのブロックまでのどの行も、その BEGIN マーカーの読み取られ方を変えない場合です。
+その修正は "The next update then replaces Apothem's block"、"Lines 1 to 32 are then the one block in the file"、またはアンインストールの場合は "The uninstall run again then takes Apothem's block out" で終わります。
+ブロックを残さない修正は、ファイル内のすべての BEGIN マーカー行を変更し、"Apothem then reads none of these lines as its markers, and the next update writes its block at the end of the file"、またはアンインストールの場合は "Apothem then finds no block of its own in this file" で終わります。
+いずれの場合も、変更した行の下にある古い Apothem のテキストは、その END マーカー行とともに、その後あなたが手作業で削除するものになります。
+
+どの行も閉じていないあなたのコードブロックは、Markdown ビューアーではファイルの末尾まで続きますが、Apothem はその開く行をテキストとして読み取ります。
+あなたのプロファイルのルール内のコードブロックがそれを閉じてしまい、その場合 Apothem のブロックの BEGIN マーカーはコードとして読み取られます。
+そのため、ファイルがそのようなコードブロックの中で終わる場合、Apothem のブロックをファイルに残さない修正は、まずそのコードブロックを閉じる行を最終行の下に加えます。たとえば "A1. Below line 7, add a line of 3 backticks." です。次の install または update は、その後のファイルの末尾にブロックを追加します。
+そのようなコードブロックが保持するブロックを残す修正はありません。
+
+Apothem は、`<!--` で始まり後の行で終わるコメントのような HTML ブロック内のコードフェンスを、ほかのコードフェンスと同じように読み取ります。また、本文が左余白で続くリスト項目の行は、Apothem にとってはその項目を終わらせます。
+Markdown ビューアーはどちらも行いません。
+ファイルの末尾にあるコードブロックより上の行が HTML ブロックを始める可能性がある場合（タグで始まる行はすべて該当します。ただし、山かっこで囲んだリンク、プレーンテキストの行のすぐ下の行にあるタグ、コードブロック内の HTML は除きます）、またはその上でリスト項目の本文が左余白で続き、インデントされた行が後に続く場合、その閉じる行は、ビューアーでは逆にコードブロックを始めてしまう可能性があります。
+その場合、その修正は番号付きの手順を示さず、"Apothem cannot give numbered steps for this fix" と伝えて、コードブロックを開く行を示します。
+その行がコードブロックを開かないように、またはビューアーが示すコードブロックの終わりでコードブロックが閉じられるように、ファイルを手作業で編集してください。そうすると、そのファイルについての次の警告は番号付きの手順を示します。
 
 ### Claude Code でフックが発火しない
 
 ~/.claude/settings.json にフックのエントリがあるかを確認して、Apothem が組み込まれていることを確認します。ファイルにフックが欠けている場合は、apothem install をもう一度実行してください。
+
+### OpenCode が Apothem のルールを読み込まない
+
+`apothem install`、`apothem update`、`apothem verify` は、OpenCode の設定フォルダー内にあるあなたのファイルが、Apothem が `opencode.json` に書き込む `instructions` リストを OpenCode 1 に読み込ませない場合に、注記を表示します。
+
+- 独自の `instructions` リスト（空のものでも）を持つ `opencode.jsonc` は、Apothem のリストを置き換えてしまいます。
+  そのキーを削除するか、そのエントリを `opencode.json` 内のリストに移動してください。インストールは、自身が書き込んでいないエントリをそこに残します。
+- そこにある `config.json`、`opencode.json`、`opencode.jsonc` のうち、OpenCode 1 が読み取れない、または解析できないものは、OpenCode 1 にその設定を一切読み込ませません。
+  トップレベルがオブジェクトでないもの、`instructions` の値がテキストのリストでないもの、`{file:path}` が OpenCode 1 の読み取れないファイルを示すもの、そしてそれらの名前を持つフォルダーも同様です。
+  ファイルを、コメントと末尾のカンマだけを加えた 1 つの JSON オブジェクトにし、`instructions` をテキストのリストにするよう修正するか、フォルダーの外に移動してください。
+  OpenCode 1 が `{env:NAME}` の値を埋め込むとファイルが壊れると注記が示す場合は、その変数の値にバックスラッシュ、二重引用符、制御文字が含まれないよう変更してください。たとえば、Windows のパスをスラッシュで書きます。
+  Apothem があなたのプロファイル内の MCP サーバーのためにその `{env:NAME}` を書き込むと注記が示す場合、update はファイルから削除された参照を書き戻すため、変数を変更するか、そのままにしておくには、そのサーバーを `harnesses.opencode.mcp_servers.<name>` の下で改めて定義し、値をファイルに保存して、それを示す `{file:path}` として書いてください。
+  注記がファイルの 2 つ目の問題を示す場合は、それも修正してください。
+  `{file:path}` が示すファイルを OpenCode 1 が読み取れるかどうか Apothem が判断できないと注記が示す場合は、そのファイルも読み取れることを確認してください。
+
+これらの注記は OpenCode 1 についてのものです。
+OpenCode 2 は両方のリストを読み取り、`config.json` は読み取りません。
+解析できないファイルやトップレベルがオブジェクトでないファイルは読み飛ばし、`opencode.json` の場合はルールも読み込まれなくなります。わかっている場合は、OpenCode 2 がそのファイルをどう扱うかを注記が示します。
+注記はファイルも終了コードも変更しません。
+install または update が `opencode.json` をまったく解析できない場合は、代わりに `config.unparseable` エラーで停止します。
+詳しくは [OpenCode](/docs/harnesses/opencode) を参照してください。
 
 ## ヘルプを得る
 

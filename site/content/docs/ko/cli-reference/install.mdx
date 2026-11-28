@@ -2,7 +2,7 @@
 title: "install"
 description: "apothem install 명령에 대한 CLI 참조."
 machineTranslated: true
-sourceHash: "16be1a92f6de53b3"
+sourceHash: "5ba6f0eafa4b1b6f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,7 +20,10 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 공유 프로필을 로드하고 검증한 뒤, 이름이 지정된 어댑터 또는 레지스트리 전체의
 `all` 집합을 선택하고, 머티리얼라이즈 계획을 검증한 다음, 하니스 네이티브
 구성과 지원 코호트를 씁니다. 프로젝트 범위 어댑터에는 `--project PATH`가
-필요합니다.
+필요합니다. 폴더는 링크를 따라가고 `~`를 펼친 형태로 읽히며, 설치 기록도 그
+형태로 폴더를 지목합니다. Python 코드나 이전 릴리스가 남긴 링크처럼 폴더의 다른
+표기로 기록된 설치는, 설치가 점검을 통과하면 그 표기로 옮겨집니다
+([`uninstall`](/docs/cli-reference/uninstall) 참조).
 
 연속형 별칭 `apothem installing`(`apothem Installing`으로도 받아들여짐)은 같은
 핸들러로 해석됩니다.
@@ -52,6 +55,30 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 슬레이트 단계가 먼저 실행되며, 이 단계는 자체 대상별 확인을 거칩니다. 이 단계는
 `~/.apothem/backups` 아래에 백업을 쓰고, 확인된 대상을 제거합니다. 설치 프롬프트를
 거부해도 그 제거와 백업은 그대로 남습니다.
+대상은 프롬프트가 나열하는 홈 디렉터리의 도구 폴더이며, `~/.agents`와
+`~/.config/apothem`도 그중에 있습니다.
+대상 자체가 링크(Windows 정션 포함)이면 링크만 사라지며, 대상 안의 링크는
+그 안으로 들어가지 않고 제거됩니다. `~/.config`가 홈 디렉터리 밖으로 이어지는
+링크이면, `~/.config/apothem`을 제거하면 그 링크 끝에 있는 폴더가 삭제되므로,
+클린 슬레이트 단계는 무엇이든 백업하거나 제거하기 전에
+`Clean-slate removal was refused`와 함께 중단됩니다. 오류는 그 링크를 지목합니다.
+링크를 실제 폴더로 바꾸거나, 홈 디렉터리 안의 폴더를 가리키게 하세요. 홈
+디렉터리가 전체 경로가 아니거나, 드라이브나 파일 시스템의 루트이거나, 그런 루트로
+이어지는 링크나 정션이거나, 순환하는 링크를 거쳐 도달하는 경우에도 이 단계는
+무엇이든 바꾸기 전에, 그리고 시작 프로필을 만들기 전에 중단됩니다.
+
+클린 슬레이트 단계는 기본 프로필 `~/.config/apothem/profile.yaml`을
+`~/.config/apothem`과 함께 제거하고, 그 뒤에 다시 씁니다. 다른 폴더의 프로필을
+`--profile PATH`로 전달한 경우처럼 이 단계가 제거하지 않은 프로필은 전혀 쓰지
+않습니다. 다시 쓰기는 다른 모든 프로필 쓰기와 같은 규칙을 따릅니다. 링크가 쓰기를
+홈 디렉터리 밖으로 이끌 경우에는 거부됩니다. 프로필을 다시 쓸 수 없으면 명령은
+1로 종료하며, 오류는 프로필을 담고 있는 백업 사본을 지목합니다. 링크가 쓰기를
+거부했으면 오류 코드는 `clean_slate.profile_restore_refused`이고, 쓰기 자체가
+실패했으면 `clean_slate.profile_restore_failed`입니다. 다른 프로그램이 열어 둔
+파일 때문에 멈추는 경우처럼 제거가 도중에 멈추면, 먼저 프로필을 다시 씁니다. 그런
+다음 명령은 오류 코드 `clean_slate.removal_failed`와 함께 1로 종료하며, 오류는
+백업 폴더를 지목합니다. 프로필을 다시 쓸 수 없으면, 오류는 대신 위의 두 프로필
+코드 중 하나가 됩니다.
 
 ## 홈 디렉터리의 폴더
 
@@ -79,11 +106,35 @@ all seven                               ->  ~/.config/apothem/rules/ and templat
   완료되면 제자리로 이름이 바뀌므로, 실패하거나 중단된 쓰기가 최종 이름으로 반쯤
   쓰인 스킬 폴더를 남기는 일은 없습니다. 마무리하려면 설치를 다시 실행하세요.
   남아 있는 스테이징 폴더는 교체됩니다.
-- 이 폴더들 중 하나 또는 그 상위에 있는 심볼릭 링크(도트파일 관리자가
+- 이 폴더들 중 하나 또는 그 상위에 있는 링크(도트파일 관리자가
   `~/.config`나 `~/.agents`에 만드는 것처럼)는 홈 디렉터리 안의 어딘가로 이어질
-  때 따라갑니다. 홈 디렉터리를 벗어나는 링크는
-  `target escapes the allowed materialization root`와 함께 설치를 중단시키며,
-  스킬 폴더 안의 링크도 마찬가지입니다.
+  때 따라갑니다. Windows에서는 정션도 링크로 간주됩니다. 홈 디렉터리를 벗어나는
+  링크는 `target escapes the
+  allowed materialization root`와 함께 설치를 중단시키며, 그 뒤에 링크, 그
+  링크가 가리키는 폴더, 그리고 해결책(링크를 실제 폴더로 바꾸기)이
+  이어집니다. 그 자체가 링크인 스킬 폴더는 절대 그것을 거쳐 쓰지 않습니다.
+  설치는 경고와 함께 그 폴더를 건너뛰거나, Apothem이 전에 그곳에 그 스킬을
+  썼다면 중단됩니다. Apothem이 쓴 스킬 폴더 안의 링크는 다음에 설치가 그 스킬을
+  쓸 때 폴더로 교체됩니다.
+- OpenCode의 `~/.config/opencode/`나 그곳의 `CODEX_HOME`처럼 `~/.config` 아래에
+  있는 하니스 폴더도, 홈 디렉터리 안의 어딘가로 이어지는 `~/.config`의 링크를
+  따라갑니다. 홈 디렉터리를 벗어나는 `~/.config`의 링크는 설치가 어떤 파일도
+  쓰기 전에 설치를 중단시키며, 설치가 하니스 폴더 안에 쓰는 경로상의 링크도
+  마찬가지입니다. 첫 실행에서는 역시 `~/.config` 아래에 있는 시작 프로필도 홈
+  디렉터리를 벗어나는 링크를 거쳐 쓰지 않습니다. 실행은 `apothem quickstart`,
+  `apothem profile init`, `apothem profile set`, `apothem profile edit`와
+  마찬가지로 `Apothem could
+  not create the starter profile`과 함께 중단됩니다. 프로필을 홈 디렉터리 밖에
+  두려면, 먼저 PATH를 홈 디렉터리 밖의 실제 경로로 표기하여 `apothem
+  profile init --profile PATH`로 그곳에 프로필을 만들고, 각 명령에 같은
+  `--profile PATH`를 전달하세요. 그렇게 해도 프로필 단계만 통과할 뿐이며,
+  `~/.config` 아래에 쓰는 설치는 여전히 링크에서 중단됩니다. OpenCode의 경우
+  `XDG_CONFIG_HOME`도 설정하세요([OpenCode](/docs/harnesses/opencode) 참조).
+  설치가 항상 `~/.config/apothem/`에 쓰는 하니스는 대신 링크가 홈 디렉터리 안을
+  가리켜야 하며, 해당 하니스 페이지에 그렇게 적혀 있습니다.
+- Windows 사용자 프로필을 정션 뒤의 다른 드라이브로 옮긴 경우처럼 그 자체가
+  링크인 홈 폴더는 따라갑니다. 모든 쓰기는 그 링크가 가리키는 폴더 안에
+  머뭅니다.
 - 설치는 저장소에 스킬 파일이나 규칙 파일을 추가하지 않습니다. 프로젝트에는
   어댑터의 규칙 파일과, 모든 프로젝트 설치가 만드는 `.apothem/` 데이터 폴더가
   생깁니다.
@@ -92,6 +143,41 @@ all seven                               ->  ~/.config/apothem/rules/ and templat
   알려 주는 `"outcome": "warning"`과 `"operation": "skill_conflict"`가 담긴
   `warnings` 항목을 담습니다. 폴더의 이름을 바꾸거나 옮긴 다음
   [`update`](/docs/cli-reference/update)를 실행하세요.
+- 이 규칙은 위 표의 모든 공유 스킬 폴더에 적용됩니다.
+  `~/.agents/skills/`, `~/.codebuddy/skills/`, `~/.kiro/skills/`,
+  `~/.trae/skills/`입니다. 설치 기록은 그 설치 폴더(프로젝트 또는 `CODEX_HOME`)가
+  살아 있는 동안 그곳의 스킬 폴더가 Apothem의 것임을 보여 줍니다. 살아 있다는
+  것은 설치 폴더가 존재하고, 그 설치가 그 안에 기록한 파일 중 하나를 Apothem의
+  내용 그대로 아직 담고 있다는 뜻입니다. Apothem이 소유한 파일은 그곳에 있는 한
+  집계됩니다. Apothem이 블록을 추가한 지침 파일처럼 사용자의 파일은, 그 블록을
+  아직 담고 있는 동안만(블록이 없는 파일이라면 Apothem이 기록한 내용을 담고 있는
+  동안만) 집계되므로, 파일의 자체 사본만 유지하는 다시 클론한 프로젝트는 살아
+  있지 않습니다. 설치가 `.apothem/support/` 아래에 쓰는 지원 파일은 집계되지만,
+  `.apothem/` 아래의 데이터 저장소(memory, contexts, plans)는 집계되지 않으며,
+  설치 폴더 안의 링크를 거쳐 도달하는 파일도 집계되지 않습니다.
+- 그 밖의 기록, 즉 설치 폴더가 더 이상 존재하지 않거나, Apothem 파일을 담고
+  있지 않거나, 읽을 수 없는(응답하지 않는 드라이브나 네트워크 공유, 권한 오류)
+  기록은, 스킬 폴더가 그 설치가 기록한 파일만 정확히, 바뀌지 않은 채로, 추가된
+  파일과 내부 링크 없이 담고 있는 동안에만 그 폴더가 Apothem의 것임을 보여
+  줍니다. 이번 릴리스가 쓰는 내용을 이미 담고 있는 폴더는 그대로 유지되므로,
+  이전 릴리스가 쓰고 편집하지 않은 폴더는 이번 릴리스가 쓰는 내용과 여전히
+  일치하는 동안 영향을 받지 않습니다.
+- 공유 폴더 자체는 절대 설치 폴더의 파일로 집계되지 않으므로, 홈 폴더에 설치된
+  프로젝트는 `~/.agents/skills/`나 `~/.config/apothem/`이 있다는 이유만으로 살아
+  있는 것이 되지 않습니다.
+- 따라서 그런 기록만 스킬 폴더를 나열하는 경우, 설치는 세 가지 경우에 그 폴더를
+  건너뛰고 손대지 않습니다. 사용자가 직접 만든 스킬을 그곳에 두었거나, 사용자가
+  그것을 편집했거나(파일을 바꾸거나 추가하거나 제거함), 파일을 기록하지 않던
+  이전 릴리스가 그것을 썼고 이번 릴리스가 다른 내용을 쓰는 경우입니다.
+  같은 폴더의 이전 설치만 그것을 나열한 경우에도 마찬가지입니다. 그 폴더를
+  건너뛴 설치는 그것을 나열하지 않으며, 그 이전 설치가 기록한 파일만 정확히
+  담고 있지 않는 한 여전히 입증되지 않습니다.
+  설치, 업데이트, 드라이 런 경고는 원인과 두 가지 진행 방법을
+  [`verify`](/docs/cli-reference/verify)와 같은 문구로 알려 주며, verify는 그
+  하니스를 검증되지 않은 것으로 보고하고 그 폴더들을 지목합니다. 직접 만든
+  스킬을 유지하려면 그대로 두세요. Apothem의 버전을 사용하려면 폴더를 스킬
+  폴더 밖으로 옮긴 다음, 그 하니스에 대해 [`update`](/docs/cli-reference/update)를
+  실행하세요(프로젝트 범위 하니스라면 `--project`와 함께).
 - 이러한 모든 설치, 업데이트, 드라이 런은 `--project` 바깥에 쓰는 폴더의 이름을
   알려 주는 `Note:`를 출력합니다. JSON 봉투에서는
   `"operation": "user_level_write"`와 `paths` 목록이 담긴 `warnings`
@@ -105,8 +191,43 @@ all seven                               ->  ~/.config/apothem/rules/ and templat
 `Note: <harness> - 9 capabilities not projected; pass --verbose for detail`).
 `--verbose`에서는 각 기능이 자체 근거 줄을 출력합니다. 그 밖의 어댑터 경고도
 plain 모드에서 각자의 `Warning:` 줄에 출력됩니다. 예를 들어 새 `.rules`가 가리는
-지침 파일의 이름을 알려 주는 Zed 경고가 그렇습니다. `--format json` 봉투는
-상세 수준과 관계없이 항상 전체 `warnings` 배열을 담습니다.
+지침 파일의 이름을 알려 주는 Zed 경고, 그리고 뒤에 END가 없는 Apothem BEGIN
+마커를 담은 파일의 이름을 알려 주는 경고가 그렇습니다. 설치는 그 마커 뒤의
+텍스트를 유지하고 Apothem 블록을 그와 별도로 쓰므로, 경고는 마커의 줄을
+지목하고, 그 줄과 Apothem 블록을 여는 줄을 제외한 다른 모든 BEGIN 마커 줄(코드
+안에 인용한 BEGIN 마커도 포함)을 바꾸는 번호 매긴 단계를 제시하며, 대신 END
+마커를 다시 추가하지 말라고 안내합니다. 그렇게 하면
+Apothem 블록이 두 개 남게 되기 때문입니다([문제 해결](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)
+참조).
+Apothem 마커 사이에 완전한 블록이 둘 이상 있는 파일에 대한 경고도 마찬가지이며,
+이 경고는 각 블록을 줄 번호로 지목합니다([파일이 Apothem의 마커 사이에 두 블록을 담고 있음](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)
+참조). Apothem이 자신의 블록을 사용자의 텍스트와 구별할 수 없는 파일에 대한
+경고도 마찬가지이며, 이 경고는 각 마커 쌍과 고치는 방법을 지목합니다([Apothem이 자신의 블록과 여러분의 텍스트를 구별할 수 없음](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)
+참조). 설치는 그런 파일을 그대로 둡니다(마커 쌍의 경우, 설치 기록이 그 파일을
+나열하는 동안. [`update`](/docs/cli-reference/update) 참조). 그런 파일을 그대로
+두는 설치는 도구가 그 파일에서 현재 Apothem 블록을 얻지 못하므로 부분 결과로
+끝납니다. `✓` 줄 대신 그 파일을 지목하는 `✗` 줄을 표준 오류에 출력하고(따라서
+`--quiet`에서도 남습니다), `--format json` 봉투의 `status`는 `"partial"`이며 그
+파일의 경고에는 `"detail": {"left_as_is": "1"}`이 담기고, 종료 코드는 `2`입니다.
+경고가 지목하는 마커 줄을 고칠 때까지 모든 설치와 업데이트가 그렇게 끝납니다.
+`--quiet` 없이 `--harness all`로 실행한 그런 설치는 `✓` 대신 `!`로 시작하고
+그대로 둔 파일 수를 세는 요약 줄로 끝납니다.
+`! Installed <n> harnesses (<m> files written); <k> file(s) left as they are, named above.`
+`--clean`을 함께 쓰면, 그런 설치는 다음 단계인 `apothem verify`를 출력하지
+않습니다. 파일을 고칠 때까지 그 명령은 실패하기 때문입니다. 드라이 런에서는
+그대로 둘 파일에 대한 경고가 Apothem이
+"would leave the file as it is"라고 알리며, 실행은 여전히 `status`
+`"dry_run"`과 종료 코드 `0`으로 끝납니다. 프로필의 규칙이 코드 블록을 열고 닫지
+않더라도 설치가 쓰는 블록의 END 마커를 가리지 않습니다. 설치가 블록 끝에서 그
+코드 블록을 닫기 때문입니다. 이전 릴리스가 그런 규칙으로 쓴 블록에는 그런 닫는
+줄이 없습니다. Apothem 블록 위에서 열리고 닫히지 않는 사용자의 코드 블록은 다른
+경우입니다. 블록 안의 닫는 줄이 그 코드 블록을 닫으므로, 블록이 코드로 읽힙니다.
+설치는 그런 블록을 쓰는 즉시 경고하며, 경고는 BEGIN 마커 위에서 닫아야 할 코드
+블록을 지목합니다([Apothem이 자신의 블록과 여러분의 텍스트를 구별할 수 없음](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)
+참조).
+드라이 런은 아무것도 쓰기 전에 파일을 읽으므로, 블록이 쓰인 뒤 코드로 읽히게
+된다는 점은 보여 주지 않습니다.
+`--format json` 봉투는 상세 수준과 관계없이 항상 전체 `warnings` 배열을 담습니다.
 
 설치와 업데이트는 권고도 `Note:` 줄로 출력합니다. 권고는 설치가 쓰는 내용을
 절대 바꾸지 않습니다. 설치가 공유 루트, 즉 다른 도구도 로드하는 경로(예: 스킬
@@ -140,10 +261,33 @@ PowerShell은 각각 이를 읽을 수 있습니다. `$`, 백틱, 큰따옴표 �
 옮기거나 이름을 바꾼 다음 다시 실행하세요. 경로에 공백이나 아포스트로피가 있는
 것은 괜찮습니다.
 
+일부 도구는 폴더 안의 고정된 목록에서 텍스트가 있는 첫 번째 파일만 로드하므로,
+Apothem이 쓰는 파일보다 앞서는 사용자의 파일이 있으면 도구가 Apothem 블록을
+로드하지 못합니다. 예를 들어
+[지원되는 한 도구](/docs/harnesses/codex#compatibility-notes)는 그 도구의 홈
+폴더에서 Apothem이 옆에 쓰는 `AGENTS.md` 대신 텍스트가 있는
+`AGENTS.override.md`를 읽습니다. 그러면 설치와 업데이트는 드라이 런을 포함해 그
+파일의 이름을 알려 주는 참고를 출력합니다. 빈 재정의 파일은 건너뛰며,
+`AGENTS.md`로 가는 심볼릭 링크도 건너뜁니다. 하드 링크나 사본에는 참고가
+표시됩니다. `AGENTS.md`를 다시 쓰는 설치가 그것을 별도 파일로 남기기 때문입니다.
+OpenCode 1은 다르게 동작합니다. `opencode.jsonc`의 `instructions` 목록은 비어
+있더라도 같은 폴더에서 Apothem이 `opencode.json`에 쓰는 목록을 대체합니다. 그곳의
+`config.json`, `opencode.json` 또는 `opencode.jsonc`를 읽거나 파싱할 수 없거나,
+최상위가 객체가 아니거나, `instructions` 값이 텍스트 목록이 아니거나, 읽을 수
+없는 파일을 지목하는 `{file:path}`가 있으면 OpenCode 1은 구성을 전혀 로드하지
+못하며, 그런 이름 중 하나를 가진 폴더도 마찬가지입니다. 설치와 업데이트는 그런
+파일마다 `instruction_override` 참고도 출력합니다. 단, JSON5로도 파싱할 수 없는
+`opencode.json`은 `config.unparseable`
+오류와 함께 거부합니다
+([OpenCode 참고 사항](/docs/harnesses/opencode#compatibility-notes)). 참고는
+`"outcome": "advisory"`와 `"operation": "instruction_override"`,
+`harness`, 참고 대상 파일의 `path`, 설치가 쓰는 `target`, 그리고 `message`가
+담긴 `warnings` 항목입니다.
+
 프로필의 MCP 서버에는 세 가지 권고가 적용되며, 각 권고는 해당 프로필 필드의
 이름을 알려 줍니다.
 
-| 작업 | 조건 | 해결 방법 |
+| 작업 | 조건 | 해결책 |
 | --- | --- | --- |
 | `mcp_deprecated_transport` | `transport: sse`(MCP 사양은 HTTP+SSE를 지원 중단함) | 서버가 지원하면 `streamable-http`를 사용하세요. |
 | `mcp_plain_http` | 루프백이 아닌 호스트를 가리키는 `http://` URL | `https://` URL을 사용하세요. |
@@ -215,6 +359,9 @@ PowerShell은 각각 이를 읽을 수 있습니다. `$`, 백틱, 큰따옴표 �
 }
 ```
 
+Apothem 마커 줄 때문에 파일을 그대로 둔 설치는 `status`가 `"partial"`이며 종료
+코드 `2`로 종료합니다([기능 참고 사항](#기능-참고-사항) 참조).
+
 `--dry-run`에서는 아무것도 쓰이지 않으며, `results`는 설치가 쓸 모든 경로를
 나열합니다. 각 경로에는 그 경로가 갖게 될 결과(`created`, `updated` 또는
 `unchanged`)가 함께 표시되고, 여러분도 직접 편집하는 파일의 경우 `detail.diff`에
@@ -242,6 +389,10 @@ PowerShell은 각각 이를 읽을 수 있습니다. `$`, 백틱, 큰따옴표 �
   "error": null
 }
 ```
+
+링크에서 거부된 결과는 `detail.symlink`에 링크를, `detail.leads_to`에 그 링크가
+가리키는 경로를 지목합니다. 링크가 도구의 폴더를 홈 디렉터리 밖으로 이끌어
+거부된 결과는 `detail.fix`에 해결책도 담습니다.
 
 `--clean`을 지정하면, 봉투는 제거 단계를 설명하는 `clean` 객체를 추가로
 담습니다. 이 객체에는 대상별 처리 목록, 실행이 미리보기였는지 여부, 타임스탬프가
@@ -302,7 +453,7 @@ apothem Installing --harness claude-code   # capitalized variant
 |---|---|
 | 0 | 어댑터가 성공적으로 설치되었거나 드라이 런이 문제없이 계획됨 |
 | 1 | 예상된 검증, 프로필, 하니스, 프로젝트, 또는 어댑터 오류 |
-| 2 | 적어도 한 번 쓴 뒤에 발생한 부분적인 일괄 머티리얼라이즈 |
+| 2 | 부분 결과: 일괄 작업이 적어도 한 번 쓴 뒤에 멈추었거나, 설치가 Apothem 블록을 보관하는 파일을 그 Apothem 마커 줄 때문에 그대로 둠([기능 참고 사항](#기능-참고-사항) 참조). `status`는 `"partial"` |
 | 64 | 사용법 오류: 알 수 없는 옵션이나 명령, 또는 누락되었거나 잘못된 옵션 값. `--json`에서는 이 오류가 코드 `cli.usage`를 담은 JSON 봉투로 출력됩니다. |
 
 ## 함께 보기

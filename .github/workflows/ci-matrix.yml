@@ -2,11 +2,12 @@
 
 # Cross-platform OS × Python matrix workflow.
 #
-# Fifteen-cell matrix (3 OS × 5 Python) running pytest with xdist-driven
-# parallelism per cell. Complements ci.yml's `quality` job (2 OS × 5 Python =
-# 10 cells with the full lint + format + type-check + ecosystem-validator
-# slate) by adding macOS coverage and isolating the test suite for
-# expanded interpreter / OS reach.
+# A 3 OS × 5 Python matrix running pytest with xdist-driven parallelism per
+# cell; each Windows Python version runs as two shard cells, so the job has
+# twenty cells in all. Complements ci.yml's `quality` job (2 OS × 5 Python,
+# with the full lint + format + type-check + ecosystem-validator slate) by
+# adding macOS coverage and isolating the test suite for expanded
+# interpreter / OS reach.
 #
 # Each cell delegates to the reusable workflow at
 # `.github/workflows/reusable-python-setup.yml`, which performs harden-runner
@@ -16,7 +17,7 @@
 # top-level `permissions:` baseline is identical and per-cell timeouts
 # are passed through.
 #
-# fail-fast: false — one cell's failure surfaces all 15 results rather than
+# fail-fast: false — one cell's failure surfaces all 20 results rather than
 # cancelling siblings on first red. Cross-platform regressions otherwise
 # hide behind the first-OS failure.
 #
@@ -57,7 +58,9 @@ concurrency:
 jobs:
 
   test-matrix:
-    name: pytest / ${{ matrix.os }} / py${{ matrix.python-version }}
+    # A Windows cell runs half the suite (see the shard note on the matrix)
+    # and is named with its shard. No check of this workflow is required.
+    name: pytest / ${{ matrix.os }} / py${{ matrix.python-version }}${{ matrix.shard && format(' / shard {0} of 2', matrix.shard) || '' }}
     permissions:
       contents: read
     strategy:
@@ -73,6 +76,24 @@ jobs:
           - "3.12"
           - "3.13"
           - "3.14"
+        # The whole suite took 73 to 118 minutes on one Windows runner in
+        # ci.yml (November 2026), close to the 120-minute ceiling. So each
+        # Windows Python version runs as two cells, shard 1 and shard 2, each
+        # with `pytest --shard=K/2` (tests/conftest.py), which together run
+        # every test exactly once, as ci.yml's quality job does. Shard 0 is an
+        # Ubuntu or macOS cell that runs the whole suite.
+        shard: [0, 1, 2]
+        exclude:
+          - os: ubuntu-latest
+            shard: 1
+          - os: ubuntu-latest
+            shard: 2
+          - os: macos-latest
+            shard: 1
+          - os: macos-latest
+            shard: 2
+          - os: windows-latest
+            shard: 0
     # zizmor's self-repository audit asks for GitHub's `$/` form here. The
     # pinned actionlint (v1.7.12, .pre-commit-config.yaml) rejects any
     # reusable-workflow reference that is not `owner/repo/path@ref` or `./path`,
@@ -94,10 +115,10 @@ jobs:
       run-command: >-
         if command -v node >/dev/null; then time node -e 0; fi;
         python -m pytest -n auto --color=yes
+        ${{ matrix.shard && format('--shard={0}/2', matrix.shard) || '' }}
       egress-policy: audit
-      # The Windows cells run the whole suite in 45 to 89 minutes (median 64,
-      # 138 cells, 2026-11-10 to 2026-11-12), so the 90-minute limit cancelled
-      # healthy runs; they get 120. The other cells keep 90. The workflow
-      # validator checks the limit a job passes here the way it checks a job
-      # with its own steps: 120 at most for Windows and 90 for the rest.
-      timeout-minutes: ${{ matrix.os == 'windows-latest' && 120 || 90 }}
+      # A Windows shard runs half the suite, which took up to 118 minutes
+      # whole, and Pytest is nearly all of a cell's time, so a shard needs
+      # about 60. 90, the workflow validator's matrix-job ceiling, leaves room
+      # for that on every cell and still stops a hung run.
+      timeout-minutes: 90

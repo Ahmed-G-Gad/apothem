@@ -2,7 +2,7 @@
 title: "Abstraksi adapter harness"
 description: "Protokol HarnessAdapter — bagaimana adapter Apothem menerjemahkan profil bersama."
 machineTranslated: true
-sourceHash: "da20d21cbe60d343"
+sourceHash: "20a51a9c0e55e94a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -101,6 +101,8 @@ adapternya sendiri.
 from pathlib import Path
 from typing import Protocol
 
+from apothem.harnesses._shared.install_driver_types import MaterializationRun
+
 class HarnessAdapter(Protocol):
     name: str
     output_path: Path
@@ -111,7 +113,7 @@ class HarnessAdapter(Protocol):
     def update(self, profile: dict[str, object]) -> object:
         ...
 
-    def uninstall(self) -> None:
+    def uninstall(self) -> MaterializationRun | None:
         ...
 
     def is_installed(self) -> bool:
@@ -120,6 +122,10 @@ class HarnessAdapter(Protocol):
     def verify(self) -> bool:
         ...
 ```
+
+Adapter bawaan mengembalikan `MaterializationRun` dari `uninstall`, dan CLI
+melaporkan peringatan dan galatnya; adapter yang tidak punya apa pun untuk
+dilaporkan boleh mengembalikan `None`.
 
 Adapter lingkup-proyek dapat secara tambahan menerima `project: Path | None` pada
 metode siklus-hidup dan mengekspos `resolve_output_path(project)`. CLI hanya

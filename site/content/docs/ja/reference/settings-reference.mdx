@@ -2,7 +2,7 @@
 title: "settings.json ドキュメント"
 description: "Apothem エコシステム向けに、Claude Code のフック実行・権限・イベント・タイムアウト・Python ランタイム・検証・レイヤー化された設定の優先順位を構成します。"
 machineTranslated: true
-sourceHash: "f83dad93ea1dbe9c"
+sourceHash: "a7175abd0e0c77ac"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -38,7 +38,9 @@ sourceHash: "f83dad93ea1dbe9c"
 コンフォーミティゲート（`~/.claude/.apothem/support/conformity/gate.py`。その schema
 フィクスチャは隣の `~/.claude/.apothem/support/schemas/` にあります）は、いずれも標準ライブラリ
 のスタンドアロンスクリプトです — ホスト上にインポート可能な `apothem` パッケージは不要で、
-1 つのテンプレートがすべてのプラットフォームに対応します。
+1 つのテンプレートがすべてのプラットフォームに対応します。`-E -s` により、Python は `PYTHONPATH` と
+その他の `PYTHON*` 変数を無視し、ユーザーの site-packages を読み飛ばすため、アシスタントが開いた
+プロジェクト内のものがフックに読み込まれることはありません。
 
 ## フック構成スキーマ
 
@@ -88,13 +90,13 @@ sourceHash: "f83dad93ea1dbe9c"
 3 つのバリデータが、厳格さを増しながらフック面をカバーします。
 
 ```bash
-# 構造 + Python 衛生（高速・オフライン）
+# Structural + Python-hygiene (fast, offline)
 python scripts/dev/validate_hooks.py
 
-# エコシステム全体（構造 + frontmatter + 委譲フックチェック）
+# Full ecosystem (structure + frontmatter + delegated hook checks)
 python scripts/dev/validate_ecosystem.py
 
-# 敵対的スイープ（構成済みの各フックコマンドを劣化した入力で攻撃）
+# Adversarial sweep (storms every configured hook command with degraded inputs)
 python scripts/dev/chaos_pass.py
 ```
 

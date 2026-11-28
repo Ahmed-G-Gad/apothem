@@ -2,7 +2,7 @@
 title: "ハーネスレジストリ"
 description: "組み込みの Apothem ハーネスアダプターに関する技術的なレジストリリファレンス。"
 machineTranslated: true
-sourceHash: "242f7f2bf421b85e"
+sourceHash: "2f51bca3eb9467c5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -16,7 +16,7 @@ sourceHash: "242f7f2bf421b85e"
 
 | ハーネス | インストール名 | スコープ | フォーマット | ターゲット | MCP | 規約ピン |
 | --- | --- | --- | --- | --- | --- | --- |
-| Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md`; `~/.gemini/antigravity-cli/plugins/apothem/` | discovery-pending | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
+| Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md`; `~/.gemini/config/plugins/apothem/` | discovery-pending | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
 | Claude Code | `claude-code` | user | json | `~/.claude/settings.json`; `~/.claude/CLAUDE.md`; ネイティブの `agents`、`rules`、`skills`、`statuslines`、`output-styles`; `~/.claude/.apothem/support/` | discovery-pending | `src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md` |
 | CodeBuddy | `codebuddy` | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md`; `<project>/.codebuddy/agents/`; `<project>/.codebuddy/settings.local.json`; `<project>/.apothem/support/hooks/`; `~/.codebuddy/skills/`; `~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` |
 | Codex | `codex` | user | markdown | `~/.codex/AGENTS.md`; `hooks.json`; `hooks/`; `agents/*.toml`; `~/.agents/skills/`; `~/.config/apothem/` | discovery-pending | `src/apothem/harnesses/codex/STANDARD-CONVENTION-PIN.md` |
@@ -27,7 +27,7 @@ sourceHash: "242f7f2bf421b85e"
 | Hermes | `hermes` | user | yaml | `~/.hermes/config.yaml`; `~/.hermes/.apothem/support/` | native | `src/apothem/harnesses/hermes/STANDARD-CONVENTION-PIN.md` |
 | Kimi Code | `kimi-code` | project | markdown | `<project>/AGENTS.md`; `<project>/.kimi-code/skills/`; `<project>/.kimi-code/agents/`; `<project>/.kimi-code/.apothem/support/` | discovery-pending | `src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md` |
 | Kiro | `kiro` | project | markdown | `<project>/.kiro/steering/apothem-rules.md`; `<project>/.kiro/agents/`; `<project>/.kiro/hooks/apothem.json`; `<project>/.apothem/support/kiro/hooks/`; `~/.kiro/skills/`; `~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md` |
-| Open-Claw | `open-claw` | user | json | `~/.openclaw/openclaw.json`; `~/.openclaw/.apothem/support/` | unsupported | `src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md` |
+| Open-Claw | `open-claw` | user | json | `~/.openclaw/openclaw.json`; `~/.openclaw/.apothem/support/`; `<workspace>/apothem/AGENTS.md`（`bootstrap-extra-files` フックによって読み込まれます。レジストリのターゲット一覧にはないため、下の生成された表には含まれません） | unsupported | `src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md` |
 | OpenCode | `opencode` | user | json | `~/.config/opencode/opencode.json`; ネイティブの `commands`、`skills`、`agents`; `~/.config/opencode/.apothem/support/` | native | `src/apothem/harnesses/opencode/STANDARD-CONVENTION-PIN.md` |
 | Qwen Code | `qwen-code` | user | json | `~/.qwen/settings.json`; `~/.qwen/QWEN.md`; ネイティブの `commands`、`skills`、`agents`; `~/.qwen/.apothem/support/` | native | `src/apothem/harnesses/qwen_code/STANDARD-CONVENTION-PIN.md` |
 | Trae | `trae` | project | markdown | `<project>/.trae/rules/apothem-rules.md`; `<project>/.trae/agents/`; `~/.trae/skills/`; `~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/trae/STANDARD-CONVENTION-PIN.md` |
@@ -108,7 +108,7 @@ sourceHash: "242f7f2bf421b85e"
 | `~/.claude/agents/` | Claude Code | なし | Cursor |
 | `~/.codex/agents/` | Codex | なし | Cursor |
 | `~/.claude/CLAUDE.md` | Claude Code | なし | OpenCode、Windsurf |
-| `<project>/AGENTS.md` | Kimi Code | なし | Antigravity、CodeBuddy、Codex、Cursor、GitHub Copilot、Hermes、Kiro、OpenCode、Windsurf、Zed |
+| `<project>/AGENTS.md` | Kimi Code | なし | Antigravity、Claude Code、CodeBuddy、Codex、Cursor、GitHub Copilot、Hermes、Kiro、OpenCode、Windsurf、Zed |
 | `<project>/GEMINI.md` | Gemini CLI | なし | Antigravity、GitHub Copilot、Zed |
 | `~/.gemini/GEMINI.md` | Antigravity | なし | Gemini CLI |
 | `<project>/.github/copilot-instructions.md` | GitHub Copilot | なし | Zed |
@@ -133,7 +133,10 @@ sourceHash: "242f7f2bf421b85e"
 `~/.claude/CLAUDE.md` を読み込みません。`Codex` は各フォルダーで `AGENTS.override.md` と
 `AGENTS.md` のうち最初のものを採用するため、`<project>/AGENTS.md` を読み込むのは、
 その隣に `AGENTS.override.md` がない場合だけです。`CodeBuddy` は、プロジェクトに `CODEBUDDY.md`
-がない場合にのみ、`<project>/AGENTS.md` をプロジェクトメモリとして使います。`Zed` は、リストにある
+がない場合にのみ、`<project>/AGENTS.md` をプロジェクトメモリとして使います。`Claude Code` は、その[メモリのページ](https://code.claude.com/docs/en/memory#agents-md)が挙げるリリースで `AGENTS.md` を読み取り、インストールの注記がその最初のリリースを示します。既定の **Project
+instructions** 設定のもとでは、セッションの開始時に、作業フォルダーとその上位のフォルダーにあるすべての `AGENTS.md` と `.claude/AGENTS.md` を読み込みますが、それはそれらのフォルダーのいずれにも `CLAUDE.md`、`.claude/CLAUDE.md`、`CLAUDE.local.md` がない場合に限られます。親フォルダーから開いたプロジェクトのように、作業フォルダーより下位にあるフォルダーの `AGENTS.md` は、その Read ツールがそこにあるファイルを開き、かつそのフォルダーにもその 3 つのファイルがいずれもない場合に読み込みます。
+`~/.claude/CLAUDE.md` は数に入らないため、そこにある Apothem のブロックは `<project>/AGENTS.md` とともに読み込まれ続けます。`claude-md-and-agents-md` 設定は両方の種類のファイルを読み込み、`claude-md` と `managed-only` は `AGENTS.md` を読み込みません。
+どの設定でも `AGENTS.md` を読み取らないセッションもあり、メモリのページがそれらを挙げています。`Zed` は、リストにある
 プロジェクト命令ファイルのうち最初の 1 つだけを読み込みます。そのリストは、`.rules`、
 `.cursorrules`、`.windsurfrules`、`.clinerules`、`.github/copilot-instructions.md`、`AGENT.md`、
 `AGENTS.md`、`CLAUDE.md`、その後に `GEMINI.md` です。そのため、
@@ -199,8 +202,19 @@ Devin CLI と同じ方法でファイルを見つけます。そのため、`~/.
 | --- | --- |
 | `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | 各アダプターが、経過日数が 90 日以内の規約ピンを持ち、そのピンが少なくとも 1 つのベンダー URL を引用し、期限切れのディスカバリーターゲットを持たないことを確認します。CI は、すべてのプルリクエストで、毎週、そしてリリースの前にこれを実行します。 |
 | `python scripts/dev/check_vendor_urls.py` | ピンとハーネステンプレートが引用するすべてのベンダー URL を取得し、移動したページやリンク切れのページがあれば失敗します。これには、もはや名前解決できないホスト名や、検証に失敗する証明書も含まれます。タイムアウト、拒否またはリセットされた接続、5xx サーバーエラーは到達不能として報告され、失敗にはなりません。どのサーバーも保持できないプレースホルダーアドレスにのみ名前解決されるホスト名には、リクエストは送信されません。ベンダーのネームサーバーは、チェックの実行元の地域に対してこのようなアドレスを返すことがあります。そのホスト名はルーティング不能として報告され、チェックを失敗させず、そのページは手作業での確認が必要です。週次の規約モニターがこれを実行し、実行のたびに、そのようなホストごとに警告を出し、作成する issue にそのページを一覧表示します。 |
-| `python -m apothem.conformity.gate --all .` | ドキュメントと実装のコンフォーミティチェックを実行します。 |
+| `python scripts/dev/check_vendor_releases.py` | `scripts/dev/vendor-release-channels.json` にある各リリースチャネルに現在のバージョンを問い合わせます。対象は、npm パッケージの dist-tag、GitHub リポジトリの最新リリース（タグパターンを持つチャネルでは、最新 100 件のうちタグが一致する最新の安定版リリース）、または PyPI プロジェクトです。インストーラーのアドレスについては、そのアドレスのリダイレクト先を問い合わせます。答えを最後にレビューされた内容と比較します。新しいメジャーバージョン、ファイルが挙げるトリガーを超えたリリース、別の場所へリダイレクトするインストーラーのアドレス、またはもはや存在しないパッケージ、dist-tag、リリース、アドレスがあると失敗し、最新 100 件のどの安定版リリースにも一致しないタグパターンでも失敗します。より新しいマイナーまたはパッチバージョンは報告されますが、チャネルの `watch` レベルがそのレベルを挙げていない限り失敗にはなりません。応答しないレジストリや、応答が途中で途切れるレジストリも到達不能として報告され、失敗にはなりません。リクエストの各試行には合計 30 秒があり、20 分経過するとチェックはそれ以上チャネルに問い合わせないため、常にレポートを書き出します。リクエストの前に、すべてのハーネスフォルダーにエントリーがあること、および各チャネルの根拠となるフレーズがそのピンにあることを確認し、そうでないものがあれば 1 で終了します。その場合、レポートと issue が何が問題かを示します。週次の規約モニターが読み取り専用のトークンでこれを実行し、実行のサマリーにすべてのチャネルを一覧表示し、失敗した場合は issue を作成します。`--list` は、どのレジストリにも問い合わせずにチャネルを表示します。 |
+| `python3 -E -s src/apothem/conformity/gate.py --all .` | ドキュメントと実装のコンフォーミティチェックを実行します。 |
 | `python -m pytest` | レジストリのフィクスチャテストとアダプターの契約テストを実行します。 |
+
+## リリースチャネル
+
+`scripts/dev/vendor-release-channels.json` には、ハーネスフォルダーごとに 1 つのエントリーがあります。監視対象のハーネスは、そのリリースチャネルを一覧にします。各チャネルは、最後にレビューされたバージョンを日付とともに記録します。それはそのピンが挙げるバージョン、またはピンがバージョンを挙げていない場合は、チャネルが記録された時点でレジストリが提供していたバージョンです。記録はメジャーバージョンだけを保持することもできます。各チャネルは、それを挙げるピンのフレーズを引用します。バージョンの最初の数字がそのメジャーバージョンであり、0 も含まれます。そのため、0.26 から 0.27 に移る 0.x 系列は、より新しいマイナーバージョンとして報告され、失敗にはなりません。OpenClaw の年.月.リリース番号のようなカレンダーバージョンを持つチャネルは、より新しいリリースをすべて失敗にせずに報告し、`watch` レベルを取りません。Codex、Gemini CLI、Hermes、Qwen Code、GLM は 0.x 系列にあるため、それらのいずれかの新しいバージョンは、そのチャネルが `watch` レベルを設定していない限り、1.0 に達するまでは実行のサマリーに一覧表示されるだけで issue は作成されません。
+
+OpenCode には 4 つのチャネルがあります。`opencode-ai` は OpenCode 1 を、`@opencode/cli` は OpenCode 2 を提供します。`anomalyco/opencode` の GitHub リリースは、どの npm パッケージとして提供されるかに関係なく、新しいメジャー系列を示します。4 つ目のチャネルは、`opencode.ai/install` のリダイレクト先を問い合わせます。2026-11-03 には、OpenCode 1 のインストーラースクリプトにリダイレクトしていました。そのスクリプトは、`opencode-ai` の `latest` dist-tag が OpenCode 1 のバージョンを挙げている場合にそのバージョンをインストールし、OpenCode 2 をインストールすることは決してありません。2026-11-03 の OpenCode の決定では、2 つのシグナルのいずれかが現れたときに、OpenCode 2 が動作する場所で OpenCode 2 独自の形式を書き込むことに移行します。そのシグナルとは、OpenCode 2 が OpenCode 1 の形式の変換を削除する日付を告知すること、または `opencode.ai/install` か `opencode-ai` が OpenCode 2 に移ることです。チェックは 2 つ目のシグナルを監視します。`opencode-ai` チャネルとインストーラーチャネルはそれぞれトリガーを持ちます。`opencode-ai` の `latest` バージョンがメジャーバージョン 1 を超えたとき、または `opencode.ai/install` が OpenCode 1 のスクリプトへのリダイレクトをやめたときに、チェックは失敗します。そのスクリプト内部の変更はリダイレクトを変えないため、チェックはそれを認識しません。1 つ目のシグナルに答えるレジストリはないため、それは手作業での確認のままであり、OpenCode のピンの次回のレビューとともに 2027-02-01 までが期限です。
+
+Antigravity、Cursor、Kiro、Trae、Windsurf は監視対象ではありません。それぞれがデスクトップアプリ、またはスクリプトでインストールするコマンドラインツールであり、そのピンは、スクリプトが認証情報なしで問い合わせられるリリースチャネルを挙げていません。ファイルにはそれぞれの理由が記載されています。
+
+新しいリリースまたはリダイレクト先に対してピンを再確認した後は、そのチャネルの `reviewed`、`reviewed_on`、`reviewed_from` フィールドを更新してください。バージョンチャネルのトリガーは、それを削除または変更するまで毎週チェックを失敗させます。インストーラーのアドレスのトリガーは、`reviewed` が新しいリダイレクト先を記録すると止まるため、その先を記録するのはトリガーのアクションが完了した後にしてください。
 
 ## 生成されたハーネスアダプターリファレンス
 

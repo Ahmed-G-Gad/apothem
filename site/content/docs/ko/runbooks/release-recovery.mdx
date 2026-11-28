@@ -2,7 +2,7 @@
 title: "릴리스 복구 런북"
 description: "추가형 릴리스 모델에서 진행 도중 실패한 릴리스를 게시된 히스토리를 다시 쓰지 않고 단계별로 복구하는 절차입니다."
 machineTranslated: true
-sourceHash: "91a31722fb721a3e"
+sourceHash: "d3bcc2874d9e87b5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -47,8 +47,10 @@ git tag -v vX.Y.Z           # signature check
 무엇을 해야 하는지는 태그에서 무언가가 게시되었는지에 따라 달라집니다.
 
 - **아직 아무것도 게시되지 않음**(릴리스 워크플로가 게시 작업 전에 실패했고,
-  `publish-npm.yml`이 게시하지 않았음): 태그를 삭제하고 같은 커밋에 `-a -s`로
-  다시 태그합니다.
+  `publish-npm.yml`이 게시하지 않았으며, `publish-vscode.yml`이 Visual Studio
+  Marketplace에 게시하지 않았음): 태그를 삭제하고 같은 커밋에 `-a -s`로
+  다시 태그합니다. 누락된 플러그인 버전 올림처럼 실패를 먼저 `main`에서 고쳐야
+  한다면, 대신 새 릴리스 커밋에 태그하세요(release-cycle 런북의 실패 표 참조).
 
   ```bash
   git push --delete origin vX.Y.Z
@@ -57,10 +59,10 @@ git tag -v vX.Y.Z           # signature check
   git push origin vX.Y.Z
   ```
 
-- **무언가가 게시됨**(자산이 있는 GitHub Release 또는 npm 버전): 태그를 절대
+- **무언가가 게시됨**(자산이 있는 GitHub Release, npm 버전 또는 Marketplace 버전): 태그를 절대
   이동하거나, 삭제하거나, 재사용하지 마세요. `vX.Y.(Z+1)`로 앞으로 고칩니다.
 
-태그 이름은 절대 다른 커밋에 재사용되지 않습니다.
+태그에서 무언가가 게시된 뒤에는 그 이름이 절대 다른 커밋에 재사용되지 않습니다.
 
 ## 3. 게시자 복구
 

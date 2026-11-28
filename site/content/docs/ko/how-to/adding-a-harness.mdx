@@ -2,7 +2,7 @@
 title: "하니스 추가하기"
 description: "하니스 어댑터를 활성화하여 공유 프로필로부터 그 네이티브 구성이 머티리얼라이즈되도록 합니다."
 machineTranslated: true
-sourceHash: "6daae4aec1547438"
+sourceHash: "d42e0475934c3217"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,10 +13,10 @@ sourceHash: "6daae4aec1547438"
 
 - `~/.config/apothem/profile.yaml`에 공유 프로필(아직 없다면
   `apothem profile init`으로 생성).
-- `PATH`에 등록된 `apothem` CLI. 자체 포함 소스 트리를 설치했다면 각 커맨드
-  앞에 `PYTHONPATH="$HOME/.apothem/src"`를 붙이고 `apothem` 대신
-  `python -m apothem`을 실행하십시오 — 또는 `npx @ahmed-g-gad/apothem`을
-  사용하십시오.
+- `PATH`에 등록된 `apothem` CLI. 자체 포함 소스 트리를 설치했고 그 폴더가 아직
+  `PATH`에 없다면, shim을 전체 경로(기본값 `~/.local/bin/apothem`)로
+  실행하거나 설치 프로그램이 출력한 명령을 복사하십시오 — 또는
+  `npx @ahmed-g-gad/apothem`을 사용하십시오.
 
 ## 단계
 

@@ -2,7 +2,7 @@
 title: "Hook"
 description: "Penangan peristiwa tool yang terpicu pada SessionStart, PreToolUse, PostToolUse, dan Stop, memuat konteks pesan yang menegakkan isolasi git dan disiplin rencana, dengan kontrak runtime yang teruji dan status per pengguna."
 machineTranslated: true
-sourceHash: "2fe3999ec76b34d3"
+sourceHash: "e510ec34e7c5cded"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -48,6 +48,16 @@ itu masih ada, sehingga probe PATH berjalan sekali, bukan sebelum setiap
 panggilan tool; hapus berkas cache untuk memaksa probe baru. Hanya direktori
 status absolut dan jalur cache absolut yang dihormati.
 
+Setiap perintah hook menjalankan Python dengan `-E -s`, termasuk bootstrap plugin dan
+probe interpreter-nya. `-E` membuat Python mengabaikan `PYTHONPATH` dan variabel
+`PYTHON*` lainnya, dan `-s` mengecualikan site-packages pengguna Anda. Sebuah hook
+berjalan di folder mana pun yang dibuka asisten, dan entri `PYTHONPATH` yang kosong
+mewakili folder itu, sehingga tanpa flag tersebut `sitecustomize.py` atau
+`json.py` yang ditaruh di sana akan berjalan di dalam hook. Hook hanya memakai
+pustaka standar dan berkasnya sendiri. Dispatcher dan gerbang konformitas membaca
+masukannya sebagai UTF-8 sendiri, karena `-E` juga mematikan
+`PYTHONUTF8` dan `PYTHONIOENCODING`.
+
 Setiap permukaan mendaftarkan satu entri dispatcher per peristiwa dan matcher,
 yang mencantumkan setiap pesan yang dievaluasi matcher tersebut: satu proses
 membaca payload sekali, menjalankan setiap penjaga, dan menjawab dengan satu
@@ -59,7 +69,9 @@ mesin (`apothem install --harness claude-code`), yang hook bentuk exec-nya tidak
 memerlukan shell. Dispatcher adalah skrip stdlib mandiri: ia mem-bootstrap
 `sys.path`-nya sendiri, sehingga host tidak memerlukan paket `apothem` yang dapat
 diimpor. Dari checkout sumber, bentuk modul `python -m apothem.hooks.dispatch <event>`
-(dengan `PYTHONPATH=src`) menjalankan kode yang sama untuk pengembangan.
+(dengan `PYTHONPATH=src`, dijalankan dari root checkout: `-m` membaca modul dari
+folder saat ini terlebih dahulu) menjalankan kode yang sama untuk pengembangan.
+Perintah yang ditulis adapter menjalankan skrip melalui jalurnya dengan `-E -s`.
 Dispatcher memuat `hooks/lib/resolve_root.py` untuk resolusi root ekosistem dan
 mendelegasikan ke `hooks/emit_hook_context.py` dan
 `hooks/session_start_bootstrap.py`.

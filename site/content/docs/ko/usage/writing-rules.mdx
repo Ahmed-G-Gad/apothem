@@ -2,7 +2,7 @@
 title: "규칙 작성"
 description: "Apothem 동작 규칙을 작성하고, 범위를 정하고, 유지 관리합니다."
 machineTranslated: true
-sourceHash: "bc1f3351f9a5fd2c"
+sourceHash: "a7a12b4db14fbfe9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -72,12 +72,19 @@ apothem update --harness cursor --project /path/to/project
 
 ## 규칙 검증
 
-작성한 규칙 파일에 대해 프런트매터 검증기를 실행하세요. Apothem 체크아웃에서는
-`PYTHONPATH=src`가 패키지를 임포트할 수 있게 합니다. 스크립트로 설치한 뒤에는 그 대신
-`PYTHONPATH="$HOME/.apothem/src"`를 사용하세요.
+작성한 규칙 파일에 대해 프런트매터 검증기를 실행하세요. Apothem 체크아웃의 루트에서는
+`PYTHONPATH=src`가 패키지를 임포트할 수 있게 합니다(`python -m`은 현재 폴더의 모듈을
+먼저 읽으므로 신뢰하는 폴더를 사용하세요).
 
 ```bash
 PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep src/apothem/rules/<rule>.md
+```
+
+스크립트로 설치한 뒤에는 게이트를 스크립트 경로로 `-E -s`와 함께 실행하세요
+(이유는 [적합성 게이트](/docs/conformity-gate)에서 설명합니다).
+
+```bash
+python3 -E -s "$HOME/.apothem/src/apothem/conformity/gate.py" --check frontmatter-grep <rule>.md
 ```
 
 `frontmatter-grep` 같은 쓰기별 검사는 검사할 파일을 받거나, 표준 입력에서 내용을

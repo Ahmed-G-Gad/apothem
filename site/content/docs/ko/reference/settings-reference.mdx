@@ -2,7 +2,7 @@
 title: "settings.json 문서"
 description: "Apothem 생태계를 위해 Claude Code 훅 실행, 권한, 이벤트, 타임아웃, Python 런타임, 검증, 계층화된 설정 우선순위를 구성합니다."
 machineTranslated: true
-sourceHash: "f83dad93ea1dbe9c"
+sourceHash: "a7175abd0e0c77ac"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -38,7 +38,9 @@ sourceHash: "f83dad93ea1dbe9c"
 컨포미티 게이트(`~/.claude/.apothem/support/conformity/gate.py`, 그 옆 `~/.claude/.apothem/support/schemas/`
 에 schema 픽스처가 있음)는 모두 독립형 표준 라이브러리
 스크립트입니다 — 호스트에 임포트 가능한 `apothem` 패키지가 필요하지 않으며, 하나의
-템플릿이 모든 플랫폼을 처리합니다.
+템플릿이 모든 플랫폼을 처리합니다. `-E -s`는 Python이 `PYTHONPATH`와 다른 `PYTHON*`
+변수를 무시하고 사용자 site-packages를 건너뛰게 하므로, 어시스턴트가 연 프로젝트의 어떤 것도
+훅에 로드되지 않습니다.
 
 ## 훅 구성 Schema
 
@@ -88,13 +90,13 @@ sourceHash: "f83dad93ea1dbe9c"
 세 개의 검증기가 점점 더 엄격한 정도로 훅 표면을 다룹니다.
 
 ```bash
-# 구조 + Python 위생(빠름, 오프라인)
+# Structural + Python-hygiene (fast, offline)
 python scripts/dev/validate_hooks.py
 
-# 전체 생태계(구조 + frontmatter + 위임된 훅 검사)
+# Full ecosystem (structure + frontmatter + delegated hook checks)
 python scripts/dev/validate_ecosystem.py
 
-# 적대적 스윕(구성된 각 훅 명령을 저하된 입력으로 공격)
+# Adversarial sweep (storms every configured hook command with degraded inputs)
 python scripts/dev/chaos_pass.py
 ```
 

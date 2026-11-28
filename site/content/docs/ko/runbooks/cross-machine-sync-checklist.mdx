@@ -2,7 +2,7 @@
 title: "머신 간 동기화 검증 체크리스트"
 description: "Claude Code 어댑터가 완전한 이식성 검사와 함께 새 호스트에서 올바르게 설치, 검증, 제거되는지 확인하는 검증 절차입니다."
 machineTranslated: true
-sourceHash: "649ffe348614b809"
+sourceHash: "b241d44d7e0005f9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -110,6 +110,11 @@ make test                                                     # exit 0, no failu
 **예상:** 모든 게이트가 녹색이어야 합니다. 종료 코드와 요약 줄을 캡처하십시오.
 
 ## 5. 제거 검증
+
+이 명령들은 섹션 4에서 이동한 폴더인 `$HOME/.apothem`에서 실행하세요. 제거는
+`apothem` shim을 삭제하므로, `verify` 줄은 남겨 둔 소스에서 `python3 -m`으로 엔진을
+시작합니다. 이 방식은 현재 폴더의 모듈을 먼저 읽으므로, 그 폴더나 신뢰하는 다른
+폴더에서만 실행하세요.
 
 ```bash
 # POSIX path — interactive uninstall

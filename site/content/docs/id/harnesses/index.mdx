@@ -2,7 +2,7 @@
 title: "Adaptor harness"
 description: "Adaptor harness Apothem — satu profil bersama, tujuh belas target yang didukung."
 machineTranslated: true
-sourceHash: "f4177d0bff3cb602"
+sourceHash: "48a032b0eced79dc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -65,8 +65,12 @@ apothem doctor
 
 ## Cara kerja adaptor
 
-Setiap adaptor mengimplementasikan protokol `HarnessAdapter` yang terdaftar melalui
-entry-point setuptools. Saat instalasi, CLI memuat dan memvalidasi profil
+Setiap adaptor mengimplementasikan protokol `HarnessAdapter` dan tercantum dalam
+registri harness statis (`src/apothem/lib/harness_registry.py`), tempat CLI
+me-resolve adaptor. Entry point `apothem.harnesses` di `pyproject.toml`
+mencantumkan adaptor yang sama, dan sebuah tes menjaga kedua daftar tetap sama,
+tetapi CLI tidak membaca entry point, sehingga paket lain tidak dapat menambahkan
+adaptor dengan mendeklarasikannya. Saat instalasi, CLI memuat dan memvalidasi profil
 YAML bersama, me-resolve adaptor melalui registri, memvalidasi
 rencana materialisasi, dan menulis konfigurasi native-platform ke lokasi
 pengguna atau proyek native harness. Saat pemutakhiran, ia menurunkan-ulang dari state
@@ -77,7 +81,7 @@ profile.yaml + packaged cohorts
     identity / preferences / rules
     commands / skills / delegated definitions / hooks / templates
          |
-         +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/antigravity-cli/plugins/apothem/
+         +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/config/plugins/apothem/
          +-- claude-code    --> ~/.claude/ native folders + ~/.claude/.apothem/support/
          +-- codex          --> ~/.codex/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- cursor         --> <project>/.cursor/rules/*.mdc + <project>/.cursor/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/

@@ -2,7 +2,7 @@
 title: "एजेंट आर्किटेक्चर"
 description: "Apothem किस तरह एक ही एजेंटिक-क्षमता समूह को सत्रह हार्नेस पर—जिनके हुक सतह और नियम प्रारूप भिन्न हैं—प्रक्षेपित करता है।"
 machineTranslated: true
-sourceHash: "f7b510f076abbabd"
+sourceHash: "be0f8df513fb3c8f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,7 +40,7 @@ Apothem एक साझा प्रोफ़ाइल (`~/.config/apothem/prof
 | hermes | केवल समर्थन सामग्री | `config.yaml` साथ ही बाहरी स्किल निर्देशिका | वर्ग II-B | `config.yaml` |
 | kimi-code | केवल समर्थन सामग्री | `AGENTS.md` साथ ही `.kimi-code/.apothem/support/` के अंतर्गत समर्थन नियम | वर्ग I | कोई नहीं |
 | kiro | `.kiro/hooks/apothem.json` में नेटिव SessionStart; कोई टूल-इवेंट हुक नहीं (वेंडर उनके आउटपुट को अनदेखा करता है) | `.kiro/steering/apothem-rules.md` स्टीयरिंग फ़ाइल | वर्ग I | कोई नहीं |
-| open-claw | केवल समर्थन सामग्री | `openclaw.json` साथ ही अतिरिक्त स्किल निर्देशिका | वर्ग II-B | `openclaw.json` |
+| open-claw | केवल समर्थन सामग्री | `openclaw.json` साथ ही अतिरिक्त स्किल निर्देशिका, और `bootstrap-extra-files` हुक द्वारा लोड की जाने वाली वर्कस्पेस नियम फ़ाइल `apothem/AGENTS.md` | वर्ग II-B | `openclaw.json` |
 | opencode | केवल समर्थन सामग्री | प्रोफ़ाइल-रेंडर किया गया JSON साथ ही नेटिव कमांड, स्किल और एजेंट | वर्ग II-B | `opencode.json` |
 | qwen-code | नेटिव PreToolUse / Stop / SessionStart | `QWEN.md` साथ ही नेटिव कमांड, स्किल और एजेंट | वर्ग II-B | `settings.json` / `QWEN.md` |
 | trae | कोई नहीं | `.trae/rules/apothem-rules.md` प्रोजेक्ट नियम फ़ाइल | वर्ग I | कोई नहीं |
@@ -52,7 +52,7 @@ Apothem एक साझा प्रोफ़ाइल (`~/.config/apothem/prof
 
 - **claude-code** सबसे व्यापक नेटिव सतह वाला अडैप्टर है। इसमें नेटिव PreToolUse, PostToolUse, Stop, और SessionStart हुक होते हैं और यह वेंडर सेटिंग्स टेम्पलेट भेजता है। यह `CLAUDE.md` में एक सेंटिनल-सीमांकित प्रबंधित ब्लॉक लिखता है और सेंटिनलों के बाहर का ऑपरेटर-गद्य अपरिवर्तित छोड़ता है।
 - **codex** `hooks.json` के माध्यम से नेटिव लाइफ़साइकल हुक इंस्टॉल करता है, एजेंटों को TOML में बदलता है, कमांड प्रॉम्प्ट को Codex स्किल के रूप में लपेटता है, और `config.toml` को ऑपरेटर-स्वामित्व में छोड़ देता है।
-- **antigravity** `~/.gemini/GEMINI.md` को वैश्विक संदर्भ-लंगर के रूप में रखता है और `~/.gemini/antigravity-cli/plugins/apothem/` के अंतर्गत एक Apothem प्लगइन इंस्टॉल करता है। जब तक अडैप्टर Antigravity हुक-स्कीमा अनुवाद का स्वामी नहीं होता, तब तक हुक फ़ाइलें समर्थन सामग्री के रूप में रखी जाती हैं।
+- **antigravity** `~/.gemini/GEMINI.md` को वैश्विक संदर्भ-लंगर के रूप में रखता है और `~/.gemini/config/plugins/apothem/` के अंतर्गत एक Apothem प्लगइन इंस्टॉल करता है। जब तक अडैप्टर Antigravity हुक-स्कीमा अनुवाद का स्वामी नहीं होता, तब तक हुक फ़ाइलें समर्थन सामग्री के रूप में रखी जाती हैं।
 - **cursor** वेंडर MDC फ़्रंटमैटर (`description`, `globs`, `alwaysApply`) वाली एक `.mdc` फ़ाइल के माध्यम से नियम सक्रिय करता है; अडैप्टर कोई एकल-फ़ाइल `.cursorrules` नहीं लिखता।
 - **windsurf** `.devin/rules/` का उपयोग करता है; अडैप्टर कोई एकल-फ़ाइल `.windsurfrules` नहीं लिखता।
 - **hermes** और **open-claw** नेटिव कॉन्फ़िग फ़ाइलें रेंडर करते हैं और हर हार्नेस की प्रलेखित स्किल-डायरेक्टरी सेटिंग के माध्यम से Apothem समर्थन स्किल डायरेक्टरियाँ जोड़ते हैं। असमर्थित साझा समूह Apothem-स्वामित्व वाले समर्थन उप-वृक्षों के अंतर्गत रहते हैं।
@@ -124,7 +124,7 @@ CLI चलाता है:
 | अक्ष | सत्रह हार्नेस के आर-पार देखी गई सीमा |
 |------|---------------------------------------------|
 | हुक सतह | नेटिव मल्टी-इवेंट (claude-code, codex, qwen-code) → उन इवेंट पर नेटिव जिन्हें वेंडर मॉडल तक पहुँचाता है (codebuddy: SessionStart और PostToolUse; cursor: sessionStart; github-copilot: sessionStart और postToolUse; kiro: SessionStart; windsurf: SessionStart और PostToolUse) → केवल-समर्थन हुक सामग्री (antigravity, gemini-cli, hermes, kimi-code, open-claw, opencode) → अडैप्टर द्वारा कोई हुक पंजीकृत नहीं (glm, trae, zed) |
-| नियम-सक्रियण प्रारूप | सपाट `.md` (claude-code) → प्लगइन नियम (antigravity) → `.mdc` वर्कस्पेस (cursor) → निर्देशिका नियम (codebuddy, trae, windsurf) → स्टीयरिंग फ़ाइल (kiro) → प्रोजेक्ट-रूट सपाट फ़ाइल (zed) → एकल अंतःस्थापित फ़ाइल (codex, gemini-cli, github-copilot, kimi-code) → कॉन्फ़िग-संदर्भित समर्थन सामग्री (hermes, open-claw, opencode, qwen-code) → बैकएंड प्रोवाइडर कॉन्फ़िग (glm) |
+| नियम-सक्रियण प्रारूप | सपाट `.md` (claude-code) → प्लगइन नियम (antigravity) → `.mdc` वर्कस्पेस (cursor) → निर्देशिका नियम (codebuddy, trae, windsurf) → स्टीयरिंग फ़ाइल (kiro) → प्रोजेक्ट-रूट सपाट फ़ाइल (zed) → एकल अंतःस्थापित फ़ाइल (codex, gemini-cli, github-copilot, kimi-code) → हुक-लोडेड वर्कस्पेस नियम फ़ाइल (open-claw) → कॉन्फ़िग-संदर्भित समर्थन सामग्री (hermes, opencode, qwen-code) → बैकएंड प्रोवाइडर कॉन्फ़िग (glm) |
 | अडैप्टर वर्ग | वर्ग I रॉ-प्रसार → वर्ग II-A रॉ + वेंडर सेटिंग्स → वर्ग II-B प्रोफ़ाइल-रेंडर्ड एकल-सतह |
 
 

@@ -642,7 +642,9 @@ def _report_real_home_refusals() -> Iterator[None]:
 # --- Shards -----------------------------------------------------------------
 #
 # ``--shard=K/N`` runs one of N disjoint parts of the suite. The
-# ``coverage-shard`` job in ``.github/workflows/ci.yml`` runs two in parallel.
+# ``coverage-shard`` job in ``.github/workflows/ci.yml`` runs two in parallel,
+# and so does each Windows Python version of its ``quality`` job and each
+# Windows cell of ``.github/workflows/ci-matrix.yml``.
 
 
 def _shard(value: str) -> tuple[int, int]:

@@ -2,7 +2,7 @@
 title: "Daftar Periksa Verifikasi Sinkronisasi Antar-Mesin"
 description: "Prosedur verifikasi untuk memastikan adapter Claude Code terpasang, tervalidasi, dan terhapus dengan benar pada host baru, dengan pemeriksaan portabilitas yang lengkap."
 machineTranslated: true
-sourceHash: "649ffe348614b809"
+sourceHash: "b241d44d7e0005f9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -110,6 +110,11 @@ make test                                                     # exit 0, no failu
 **Diharapkan:** Setiap gerbang hijau. Tangkap kode keluar dan baris ringkasan.
 
 ## 5. Verifikasi Penghapusan
+
+Jalankan perintah-perintah ini dari `$HOME/.apothem`, folder yang dimasuki pada bagian 4.
+Uninstal menghapus shim `apothem`, sehingga baris `verify` menjalankan mesin dari
+sumber yang disimpan dengan `python3 -m`, yang membaca modul dari folder saat ini
+terlebih dahulu: jalankan hanya dari folder itu atau folder lain yang Anda percayai.
 
 ```bash
 # POSIX path — interactive uninstall

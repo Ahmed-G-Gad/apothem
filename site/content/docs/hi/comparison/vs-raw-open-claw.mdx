@@ -2,21 +2,26 @@
 title: "Apothem बनाम कच्चा Open-Claw कॉन्फ़िग"
 description: "Open-Claw कॉन्फ़िग को हाथ से बनाए रखना बनाम उसे Apothem के साझा प्रोफ़ाइल के माध्यम से प्रबंधित करना।"
 machineTranslated: true
-sourceHash: "5d78575328c10397"
+sourceHash: "a63d807f20acee09"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Open-Claw `~/.openclaw/openclaw.json` पढ़ता है। Apothem साझा कमांड समूह और स्किल
-समूह `~/.openclaw/.apothem/support/skills/` के अंतर्गत स्थापित करता है और वहाँ एक
-कुंजी, `skills.load.extraDirs`, लिखता है, जो उस निर्देशिका को सूचीबद्ध करती है ताकि
-OpenClaw स्किल लोड करे। इसका `agents.defaults.skills` एक नाम अनुमति-सूची है जिसके
-स्वामी आप हैं और MCP एक CLI सतह है, इसलिए Apothem इनमें से कोई भी नहीं लिखता।
+समूह `~/.openclaw/.apothem/support/skills/` के अंतर्गत स्थापित करता है और
+`~/.openclaw/openclaw.json` में दो जगह संपादन करता है। यह उस निर्देशिका को
+`skills.load.extraDirs` में जोड़ता है, ताकि OpenClaw स्किल लोड करे। यह पथ
+`apothem/AGENTS.md` को `hooks.internal.entries.bootstrap-extra-files` हुक प्रविष्टि की पथ सूची में जोड़ता है,
+और यदि वह प्रविष्टि नहीं है तो उसे `enabled: true` के साथ बनाता है, ताकि OpenClaw वह
+Apothem नियम फ़ाइल लोड करे जिसे यह हर वर्कस्पेस में लिखता है। इसका
+`agents.defaults.skills` एक नाम अनुमति-सूची है जिसके स्वामी आप हैं और MCP एक CLI
+सतह है, इसलिए Apothem इनमें से कोई भी नहीं लिखता।
 
 ## स्थिति
 
-**पूर्वावलोकन।** Open-Claw अडैप्टर वर्तमान में दस्तावेज़ीकृत कॉन्फ़िग फ़ाइल और
-अतिरिक्त स्किल-निर्देशिका सतह को लक्षित करता है। गैर-स्किल समूह Apothem समर्थन
-सामग्री बने रहते हैं।
+**पूर्वावलोकन।** Open-Claw अडैप्टर वर्तमान में दस्तावेज़ीकृत कॉन्फ़िग फ़ाइल,
+अतिरिक्त स्किल-निर्देशिका सतह और बंडल किए गए `bootstrap-extra-files` हुक को लक्षित करता है।
+नियम वर्कस्पेस फ़ाइल `apothem/AGENTS.md` के माध्यम से लोड होते हैं; टेम्पलेट,
+agents और हुक सामग्री Apothem समर्थन सामग्री बने रहते हैं।
 
 ## प्रयास की तुलना
 
@@ -32,9 +37,12 @@ OpenClaw स्किल लोड करे। इसका `agents.defaults.sk
 Open-Claw अडैप्टर `openclaw.json` लिखता है, Apothem के स्लैश कमांड को स्किल के रूप
 में लपेटता है, Apothem स्किल को संदर्भित समर्थन निर्देशिका में कॉपी करता है, और
 नियम, टेम्पलेट, agents तथा हुक सामग्री को Apothem समर्थन उप-वृक्ष के अंतर्गत रखता
-है। OpenClaw `skills.load.extraDirs` को अपने स्किल स्रोतों में सबसे निम्न प्राथमिकता
-पर पढ़ता है, इसलिए आपके वर्कस्पेस, `~/.agents/skills` या `~/.openclaw/skills` में
-उसी नाम का स्किल Apothem की प्रति के बजाय उपयोग किया जाता है।
+है। यह हर वर्कस्पेस में `apothem/AGENTS.md` भी लिखता है और उसे बंडल किए गए
+`bootstrap-extra-files` हुक के साथ पंजीकृत करता है, ताकि OpenClaw वर्कस्पेस की अपनी
+`AGENTS.md` में कोई बदलाव किए बिना Apothem नियम लोड करे।
+OpenClaw `skills.load.extraDirs` को अपने वर्कस्पेस, `~/.agents/skills`
+और `~/.openclaw/skills` स्रोतों के बाद पढ़ता है, इसलिए इनमें से किसी में भी उसी नाम का
+स्किल Apothem की प्रति के बजाय उपयोग किया जाता है।
 
 ## माइग्रेशन पथ
 

@@ -2,7 +2,7 @@
 title: "हार्नेस रजिस्ट्री"
 description: "अंतर्निर्मित Apothem हार्नेस अडैप्टरों के लिए तकनीकी रजिस्ट्री संदर्भ।"
 machineTranslated: true
-sourceHash: "242f7f2bf421b85e"
+sourceHash: "2f51bca3eb9467c5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -16,7 +16,7 @@ sourceHash: "242f7f2bf421b85e"
 
 | हार्नेस | इंस्टॉल नाम | दायरा | प्रारूप | टारगेट | MCP | परिपाटी पिन |
 | --- | --- | --- | --- | --- | --- | --- |
-| Antigravity | `antigravity` | उपयोगकर्ता | markdown | `~/.gemini/GEMINI.md`; `~/.gemini/antigravity-cli/plugins/apothem/` | खोज-लंबित | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
+| Antigravity | `antigravity` | उपयोगकर्ता | markdown | `~/.gemini/GEMINI.md`; `~/.gemini/config/plugins/apothem/` | खोज-लंबित | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
 | Claude Code | `claude-code` | उपयोगकर्ता | json | `~/.claude/settings.json`; `~/.claude/CLAUDE.md`; नेटिव `agents`, `rules`, `skills`, `statuslines`, `output-styles`; `~/.claude/.apothem/support/` | खोज-लंबित | `src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md` |
 | CodeBuddy | `codebuddy` | प्रोजेक्ट | markdown | `<project>/.codebuddy/rules/apothem-rules.md`; `<project>/.codebuddy/agents/`; `<project>/.codebuddy/settings.local.json`; `<project>/.apothem/support/hooks/`; `~/.codebuddy/skills/`; `~/.config/apothem/{rules,templates}/` | खोज-लंबित | `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` |
 | Codex | `codex` | उपयोगकर्ता | markdown | `~/.codex/AGENTS.md`; `hooks.json`; `hooks/`; `agents/*.toml`; `~/.agents/skills/`; `~/.config/apothem/` | खोज-लंबित | `src/apothem/harnesses/codex/STANDARD-CONVENTION-PIN.md` |
@@ -27,7 +27,7 @@ sourceHash: "242f7f2bf421b85e"
 | Hermes | `hermes` | उपयोगकर्ता | yaml | `~/.hermes/config.yaml`; `~/.hermes/.apothem/support/` | नेटिव | `src/apothem/harnesses/hermes/STANDARD-CONVENTION-PIN.md` |
 | Kimi Code | `kimi-code` | प्रोजेक्ट | markdown | `<project>/AGENTS.md`; `<project>/.kimi-code/skills/`; `<project>/.kimi-code/agents/`; `<project>/.kimi-code/.apothem/support/` | खोज-लंबित | `src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md` |
 | Kiro | `kiro` | प्रोजेक्ट | markdown | `<project>/.kiro/steering/apothem-rules.md`; `<project>/.kiro/agents/`; `<project>/.kiro/hooks/apothem.json`; `<project>/.apothem/support/kiro/hooks/`; `~/.kiro/skills/`; `~/.config/apothem/{rules,templates}/` | खोज-लंबित | `src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md` |
-| Open-Claw | `open-claw` | उपयोगकर्ता | json | `~/.openclaw/openclaw.json`; `~/.openclaw/.apothem/support/` | असमर्थित | `src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md` |
+| Open-Claw | `open-claw` | उपयोगकर्ता | json | `~/.openclaw/openclaw.json`; `~/.openclaw/.apothem/support/`; `<workspace>/apothem/AGENTS.md` (`bootstrap-extra-files` हुक द्वारा लोड किया जाता है; रजिस्ट्री की लक्ष्य सूची में नहीं है, इसलिए नीचे की जनित तालिका इसे छोड़ देती है) | असमर्थित | `src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md` |
 | OpenCode | `opencode` | उपयोगकर्ता | json | `~/.config/opencode/opencode.json`; नेटिव `commands`, `skills`, `agents`; `~/.config/opencode/.apothem/support/` | नेटिव | `src/apothem/harnesses/opencode/STANDARD-CONVENTION-PIN.md` |
 | Qwen Code | `qwen-code` | उपयोगकर्ता | json | `~/.qwen/settings.json`; `~/.qwen/QWEN.md`; नेटिव `commands`, `skills`, `agents`; `~/.qwen/.apothem/support/` | नेटिव | `src/apothem/harnesses/qwen_code/STANDARD-CONVENTION-PIN.md` |
 | Trae | `trae` | प्रोजेक्ट | markdown | `<project>/.trae/rules/apothem-rules.md`; `<project>/.trae/agents/`; `~/.trae/skills/`; `~/.config/apothem/{rules,templates}/` | खोज-लंबित | `src/apothem/harnesses/trae/STANDARD-CONVENTION-PIN.md` |
@@ -112,7 +112,7 @@ sourceHash: "242f7f2bf421b85e"
 | `~/.claude/agents/` | Claude Code | कोई नहीं | Cursor |
 | `~/.codex/agents/` | Codex | कोई नहीं | Cursor |
 | `~/.claude/CLAUDE.md` | Claude Code | कोई नहीं | OpenCode, Windsurf |
-| `<project>/AGENTS.md` | Kimi Code | कोई नहीं | Antigravity, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
+| `<project>/AGENTS.md` | Kimi Code | कोई नहीं | Antigravity, Claude Code, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
 | `<project>/GEMINI.md` | Gemini CLI | कोई नहीं | Antigravity, GitHub Copilot, Zed |
 | `~/.gemini/GEMINI.md` | Antigravity | कोई नहीं | Gemini CLI |
 | `<project>/.github/copilot-instructions.md` | GitHub Copilot | कोई नहीं | Zed |
@@ -139,7 +139,20 @@ sourceHash: "242f7f2bf421b85e"
 `AGENTS.override.md` और `AGENTS.md` में से पहली फ़ाइल लेता है, इसलिए वह
 `<project>/AGENTS.md` को केवल तब लोड करता है जब प्रोजेक्ट में उसके बगल में
 `AGENTS.override.md` न हो। `CodeBuddy` `<project>/AGENTS.md` को प्रोजेक्ट मेमोरी के रूप
-में केवल तब उपयोग करता है जब प्रोजेक्ट में `CODEBUDDY.md` न हो। `Zed` अपनी सूची की
+में केवल तब उपयोग करता है जब प्रोजेक्ट में `CODEBUDDY.md` न हो। `Claude Code` उन
+रिलीज़ों में `AGENTS.md` पढ़ता है जिनके नाम उसका
+[मेमोरी पृष्ठ](https://code.claude.com/docs/en/memory#agents-md) बताता है, और इंस्टॉल
+नोट उनमें से पहली बताता है। अपनी डिफ़ॉल्ट **Project instructions** सेटिंग के
+अंतर्गत, सत्र शुरू होने पर वह कार्यरत फ़ोल्डर और उसके ऊपर के फ़ोल्डरों में हर
+`AGENTS.md` और `.claude/AGENTS.md` लोड करता है, लेकिन केवल तब जब उन फ़ोल्डरों में से
+किसी में `CLAUDE.md`, `.claude/CLAUDE.md` या `CLAUDE.local.md` न हो। वह कार्यरत फ़ोल्डर
+के नीचे के किसी फ़ोल्डर का `AGENTS.md`, जैसे किसी पैरेंट फ़ोल्डर से खोला गया प्रोजेक्ट,
+तब लोड करता है जब उसका Read टूल वहाँ कोई फ़ाइल खोलता है और उस फ़ोल्डर में भी इन तीनों
+में से कोई फ़ाइल न हो। `~/.claude/CLAUDE.md` नहीं गिना जाता, इसलिए वहाँ का Apothem
+ब्लॉक `<project>/AGENTS.md` के साथ लोड होता रहता है। `claude-md-and-agents-md` सेटिंग
+दोनों प्रकार की फ़ाइलें लोड करती है, और `claude-md` और `managed-only` कोई `AGENTS.md`
+लोड नहीं करतीं। कुछ सत्र किसी भी सेटिंग में कोई `AGENTS.md` नहीं पढ़ते; मेमोरी पृष्ठ
+उन्हें सूचीबद्ध करता है। `Zed` अपनी सूची की
 केवल पहली प्रोजेक्ट निर्देश फ़ाइल लोड करता है: `.rules`, `.cursorrules`,
 `.windsurfrules`, `.clinerules`, `.github/copilot-instructions.md`, `AGENT.md`,
 `AGENTS.md`, `CLAUDE.md`, फिर `GEMINI.md`। इसलिए वह
@@ -211,8 +224,52 @@ sourceHash: "242f7f2bf421b85e"
 | --- | --- |
 | `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | पुष्टि करता है कि प्रत्येक अडैप्टर के पास एक परिपाटी पिन है जो अधिकतम 90 दिन पुराना है, कम से कम एक वेंडर URL उद्धृत करता है, और जिसका कोई अतिदेय खोज टारगेट नहीं है। CI इसे हर पुल रिक्वेस्ट पर, साप्ताहिक रूप से, और किसी रिलीज़ से पहले चलाता है। |
 | `python scripts/dev/check_vendor_urls.py` | पिन और हार्नेस टेम्पलेट द्वारा उद्धृत हर वेंडर URL को प्राप्त करता है और किसी स्थानांतरित या निष्क्रिय पृष्ठ पर विफल होता है, जिसमें ऐसा होस्ट नाम भी शामिल है जो अब हल नहीं होता या ऐसा प्रमाणपत्र जो सत्यापन में विफल होता है; टाइमआउट, अस्वीकृत या रीसेट कनेक्शन, या 5xx सर्वर त्रुटि को पहुँच से बाहर के रूप में रिपोर्ट किया जाता है और उससे यह विफल नहीं होता। जो होस्ट नाम केवल ऐसे प्लेसहोल्डर पते पर हल होता है जो किसी सर्वर का पता हो ही नहीं सकता, और जिसे वेंडर के नेम सर्वर उस क्षेत्र के लिए लौटा सकते हैं जहाँ से जाँच चलती है, उसे कोई अनुरोध नहीं भेजा जाता: उसे अनरूटेबल के रूप में रिपोर्ट किया जाता है, उससे जाँच विफल नहीं होती, और उसके पृष्ठों की जाँच हाथ से करनी पड़ती है। साप्ताहिक परिपाटी मॉनिटर इसे चलाता है, हर रन पर ऐसे हर होस्ट के बारे में चेतावनी देता है, और जो issue वह दर्ज करता है उसमें उसके पृष्ठ सूचीबद्ध करता है। |
-| `python -m apothem.conformity.gate --all .` | दस्तावेज़ीकरण और कार्यान्वयन अनुरूपता जाँचें चलाता है। |
+| `python scripts/dev/check_vendor_releases.py` | `scripts/dev/vendor-release-channels.json` के हर रिलीज़ चैनल से उसका वर्तमान संस्करण पूछता है: किसी npm पैकेज का dist-tag, किसी GitHub रिपॉज़िटरी की नवीनतम रिलीज़ (या, टैग पैटर्न वाले चैनल के लिए, नवीनतम 100 में से मेल खाते टैग वाली उसकी सबसे नई स्थिर रिलीज़), या कोई PyPI प्रोजेक्ट। किसी इंस्टॉलर पते के लिए, यह पूछता है कि पता कहाँ रीडायरेक्ट होता है। यह उत्तर की तुलना पिछली बार समीक्षित चीज़ से करता है। नया मेजर संस्करण, फ़ाइल द्वारा बताए गए किसी ट्रिगर से आगे की रिलीज़, किसी और जगह रीडायरेक्ट होने वाला इंस्टॉलर पता, या ऐसा पैकेज, dist-tag, रिलीज़ या पता जो अब मौजूद नहीं है, इसे विफल करता है, और वैसा ही ऐसा टैग पैटर्न भी जिससे नवीनतम 100 में से कोई स्थिर रिलीज़ मेल नहीं खाती। नया माइनर या पैच संस्करण रिपोर्ट किया जाता है और इसे विफल नहीं करता, जब तक चैनल का `watch` स्तर उस स्तर का नाम न ले। जो रजिस्ट्री उत्तर नहीं देती, या जिसका उत्तर बीच में टूट जाता है, उसे पहुँच से बाहर के रूप में रिपोर्ट किया जाता है और उससे भी यह विफल नहीं होता। किसी अनुरोध के हर प्रयास के पास कुल 30 सेकंड होते हैं, और 20 मिनट के बाद जाँच कोई और चैनल नहीं पूछती, इसलिए यह हमेशा अपनी रिपोर्ट लिखती है। किसी भी अनुरोध से पहले यह जाँचता है कि हर हार्नेस फ़ोल्डर की एक प्रविष्टि है और हर चैनल का साक्ष्य वाक्यांश उसके पिन में है, और जब ऐसा नहीं होता तो 1 के साथ बाहर निकलता है; तब रिपोर्ट और issue बताते हैं कि क्या गलत है। साप्ताहिक परिपाटी मॉनिटर इसे केवल-पठन टोकन के साथ चलाता है, रन सारांश में हर चैनल सूचीबद्ध करता है, और इसके विफल होने पर एक issue दर्ज करता है। `--list` किसी रजिस्ट्री से पूछे बिना चैनल प्रिंट करता है। |
+| `python3 -E -s src/apothem/conformity/gate.py --all .` | दस्तावेज़ीकरण और कार्यान्वयन अनुरूपता जाँचें चलाता है। |
 | `python -m pytest` | रजिस्ट्री फ़िक्स्चर परीक्षण और अडैप्टर अनुबंध परीक्षण चलाता है। |
+
+## रिलीज़ चैनल
+
+`scripts/dev/vendor-release-channels.json` में हर हार्नेस फ़ोल्डर के लिए एक प्रविष्टि
+है। निगरानी में रखा गया हार्नेस अपने रिलीज़ चैनल सूचीबद्ध करता है। हर चैनल पिछली बार
+समीक्षित संस्करण को तारीख के साथ दर्ज करता है। वह उसके पिन द्वारा बताया गया संस्करण
+है या, जहाँ पिन कोई संस्करण नहीं बताता, वह संस्करण जो चैनल दर्ज किए जाते समय
+रजिस्ट्री ने दिया था। कोई रिकॉर्ड केवल मेजर संस्करण भी रख सकता है। हर चैनल पिन के उस
+वाक्यांश को उद्धृत करता है जो उसका नाम लेता है। किसी संस्करण की पहली संख्या उसका मेजर
+संस्करण है, 0 सहित, इसलिए 0.26 से 0.27 पर जाने वाली 0.x लाइन नया माइनर संस्करण
+रिपोर्ट करती है और विफल नहीं होती। कैलेंडर संस्करणों वाला चैनल, जैसे OpenClaw की
+वर्ष.माह.रिलीज़ संख्याएँ, हर नई रिलीज़ को विफल हुए बिना रिपोर्ट करता है, और कोई `watch`
+स्तर नहीं लेता। Codex, Gemini CLI, Hermes, Qwen Code और GLM 0.x लाइनों पर हैं, इसलिए
+उनमें से किसी का नया संस्करण रन सारांश में सूचीबद्ध होता है और 1.0 तक पहुँचने तक कोई
+issue दर्ज नहीं करता, जब तक उसका चैनल कोई `watch` स्तर सेट न करे।
+
+OpenCode के चार चैनल हैं। `opencode-ai` OpenCode 1 को ले जाता है, और
+`@opencode/cli` OpenCode 2 को। `anomalyco/opencode` की GitHub रिलीज़ नई मेजर लाइन
+दिखाती हैं, चाहे वह किसी भी npm पैकेज के रूप में शिप हो। चौथा चैनल
+`opencode.ai/install` से पूछता है कि वह कहाँ रीडायरेक्ट होता है। 2026-11-03 को वह
+OpenCode 1 इंस्टॉलर स्क्रिप्ट पर रीडायरेक्ट होता था। वह स्क्रिप्ट वह संस्करण इंस्टॉल
+करती है जिसका नाम `opencode-ai` का `latest` dist-tag लेता है, जब वह OpenCode 1 संस्करण
+हो, और वह कभी OpenCode 2 इंस्टॉल नहीं करती। 2026-11-03 का OpenCode निर्णय, जहाँ
+OpenCode 2 चलता है वहाँ OpenCode 2 के अपने फ़ॉर्मैट लिखने की ओर तब बढ़ता है जब दो में से
+कोई एक संकेत दिखे: OpenCode 2 OpenCode 1 के फ़ॉर्मैट के अपने अनुवाद को हटाने की तारीख
+घोषित करे, या `opencode.ai/install` या `opencode-ai` OpenCode 2 पर चला जाए। जाँच दूसरे
+संकेत पर नज़र रखती है। `opencode-ai` चैनल और इंस्टॉलर चैनल दोनों एक ट्रिगर रखते हैं:
+जाँच तब विफल होती है जब `opencode-ai` का `latest` संस्करण मेजर संस्करण 1 से आगे बढ़
+जाए, या जब `opencode.ai/install` OpenCode 1 स्क्रिप्ट पर रीडायरेक्ट होना बंद कर दे। उस
+स्क्रिप्ट के भीतर का बदलाव रीडायरेक्ट नहीं बदलता, इसलिए जाँच उसे नहीं देखती। कोई
+रजिस्ट्री पहले संकेत का उत्तर नहीं देती, इसलिए वह हाथ से की जाने वाली जाँच बना रहता
+है, जो OpenCode पिन की अगली समीक्षा के साथ 2027-02-01 तक देय है।
+
+Antigravity, Cursor, Kiro, Trae और Windsurf निगरानी में नहीं हैं। हर एक डेस्कटॉप ऐप
+है, या स्क्रिप्ट से इंस्टॉल होने वाला कमांड-लाइन टूल, और उसका पिन ऐसा कोई रिलीज़ चैनल
+नहीं बताता जिससे कोई स्क्रिप्ट बिना क्रेडेंशियल के पूछ सके। फ़ाइल हर एक का कारण देती
+है।
+
+किसी नई रिलीज़ या रीडायरेक्ट लक्ष्य के विरुद्ध पिन की दोबारा जाँच करने के बाद, उस
+चैनल के `reviewed`, `reviewed_on` और `reviewed_from` फ़ील्ड अपडेट करें। किसी संस्करण
+चैनल पर ट्रिगर हर सप्ताह जाँच को विफल करता है जब तक आप उसे हटा या बदल न दें। किसी
+इंस्टॉलर पते पर ट्रिगर तब रुक जाता है जब `reviewed` नया लक्ष्य दर्ज कर ले, इसलिए वह
+लक्ष्य केवल ट्रिगर की कार्रवाई पूरी होने के बाद ही दर्ज करें।
 
 ## जनित हार्नेस अडैप्टर संदर्भ
 

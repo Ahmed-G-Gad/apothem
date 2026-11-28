@@ -2,7 +2,7 @@
 title: "quickstart"
 description: "apothem quickstart निर्देशित पहले-रन कमांड के लिए CLI संदर्भ।"
 machineTranslated: true
-sourceHash: "951e6d6877611c54"
+sourceHash: "a461df3fe9749c28"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -54,7 +54,12 @@ apothem quickstart [--harness NAME|all] [--project PATH] [--profile PATH]
   प्रति हार्नेस एक समूहबद्ध नोट के रूप में सारांशित किया जाता है (प्रति-क्षमता विवरण
   के लिए `--verbose` पास करें); पूरा सेट हमेशा `--format json` की warnings ऐरे में होता है।
 - **अगला चरण** — टर्मिनल आउटपुट अनुवर्ती कमांड के नाम बताता है (`apothem
-  verify …`, `apothem doctor`)।
+  verify …`, `apothem doctor`)। `--project` फ़ोल्डर को शेल के लिए उद्धृत किया जाता है,
+  जैसे [`doctor`](/docs/cli-reference/doctor) उसे उद्धृत करता है। जब उद्धरण उसे
+  नहीं सँभाल पाते, तो आउटपुट कमांड को `--project` तक प्रिंट करता है और उसके बाद फ़ोल्डर का
+  नाम शब्दों में बताता है, और JSON में `recommended_next` प्रविष्टि
+  `Run apothem verify --harness … with --project set to <folder>` पढ़ती है, जो जैसी है वैसी
+  चलाने के लिए कमांड नहीं है।
 
 ## विकल्प
 
@@ -85,11 +90,21 @@ apothem quickstart [--harness NAME|all] [--project PATH] [--profile PATH]
   "steps": [
     {"step": "profile", "outcome": "created", "path": "…", "placeholder_identity": ["name", "email", "github"]},
     {"step": "install", "status": "success", "harness": "all", "files_written": ["…"], "warnings": [], "results": []},
-    {"step": "recommend", "next": ["apothem verify --harness all --project .", "apothem doctor"]}
+    {"step": "recommend", "next": ["apothem verify --harness all --project \".\"", "apothem doctor"]}
   ],
-  "recommended_next": ["apothem verify --harness all --project .", "apothem doctor"]
+  "recommended_next": ["apothem verify --harness all --project \".\"", "apothem doctor"]
 }
 ```
+
+जब इंस्टॉल चरण किसी फ़ाइल को उसकी Apothem मार्कर पंक्तियों के कारण जैसी है वैसी छोड़ देता है
+(देखें [`install`](/docs/cli-reference/install#capability-notes)), तो दोनों
+`status` मान `"partial"` होते हैं और निकास कोड `2` होता है। सादे मोड में रन
+इंस्टॉल की `✗` पंक्ति प्रिंट करता है, फिर अनुशंसित अगले चरण। चूँकि
+`apothem verify` उस फ़ाइल के लिए तब तक विफल रहता है जब तक आप उसे ठीक नहीं करते, इसलिए पहला चरण
+इंस्टॉल द्वारा जैसी-की-तैसी छोड़ी गई हर फ़ाइल को उसकी चेतावनी के अनुसार ठीक करना और उन्हीं
+टूल के लिए `apothem update` चलाना होता है (सादे मोड में `Fix the files it left:`,
+और JSON में पहली `recommended_next` प्रविष्टि, `Fix each file the install left as it is, as its warning says, then run apothem update --harness …`),
+`apothem verify` के स्थान पर।
 
 ## उदाहरण
 
@@ -106,7 +121,7 @@ apothem quickstart --harness claude-code --json
 |---|---|
 | 0 | निर्देशित रन पूरा हुआ |
 | 1 | अपेक्षित सत्यापन, प्रोफ़ाइल, हार्नेस, प्रोजेक्ट या अडैप्टर त्रुटि |
-| 2 | कम से कम एक लेखन के बाद आंशिक बैच मूर्तीकरण |
+| 2 | आंशिक: कोई बैच कम से कम एक लेखन के बाद रुका, या इंस्टॉल ने ऐसी फ़ाइल को, जिसमें Apothem अपना ब्लॉक रखता है, उसकी Apothem मार्कर पंक्तियों के कारण जैसी है वैसी छोड़ दिया |
 | 64 | उपयोग त्रुटि: एक अज्ञात विकल्प या कमांड, या एक लुप्त या अमान्य विकल्प मान। `--json` के अंतर्गत त्रुटि `cli.usage` कोड वाला एक JSON एनवेलप होती है। |
 
 ## यह भी देखें

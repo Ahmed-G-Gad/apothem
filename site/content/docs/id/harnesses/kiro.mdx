@@ -2,7 +2,7 @@
 title: "Kiro"
 description: "Adapter harness Apothem untuk Kiro (GA)."
 machineTranslated: true
-sourceHash: "91ec41080bf29036"
+sourceHash: "8edb56102e3e27a7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -175,6 +175,10 @@ proyek Anda menggantikan kedua jalur tersebut:
 "/path/to/python" -E -s "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
 ```
 
+`-E -s` membuat Python mengabaikan `PYTHONPATH` dan variabel `PYTHON*` lainnya
+serta melewati site-packages pengguna Anda, sehingga tidak ada berkas di proyek yang
+dapat dimuat ke dalam hook.
+
 `--contract kiro` membuat dispatcher mencetak konteks sebagai teks biasa, yang
 merupakan apa yang ditambahkan Kiro ke konteks untuk `SessionStart`. Kiro tidak
 mendokumentasikan shell untuk tindakan perintah di Windows. Perintah ditulis
@@ -243,6 +247,13 @@ menulis berkas steering khusus `apothem-rules.md` dengan front matter
 operator (`product.md`, `tech.md`, `structure.md`). Spec Kiro (`.kiro/specs/`)
 dimiliki operator; Apothem tidak menulisnya. Adapter menulis satu berkas hook,
 `.kiro/hooks/apothem.json`, dan tidak ada berkas lain di `.kiro/hooks/`.
+
+Kiro juga membaca berkas `AGENTS.md` di root workspace, dan instalasi
+[Kimi Code](/docs/harnesses/kimi-code) menulis blok Apothem ke dalam `AGENTS.md` proyek,
+sehingga di proyek yang memiliki kedua instalasi, blok itu juga sampai ke Kiro. Bila
+berkas sudah memuat blok tersebut, memasang `kiro` mencetak catatan yang menyebut
+berkas itu dan instalasi yang menulisnya. [Registri harness](/docs/reference/harness-registry#shared-roots)
+mencantumkan alat lain yang memuat berkas tersebut.
 
 Kiro mendokumentasikan `~/.kiro/skills/` untuk skill global dan tidak menyebut
 `~/.agents/skills/`, sehingga instalasi menulis folder Kiro dan bukan folder
@@ -324,8 +335,16 @@ yang menjadi kosong dihapus. Setiap folder dicadangkan di bawah
 ## Gerbang konformitas
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Jalankan dari folder proyek Anda. Di Windows, gunakan `python` sebagai pengganti
+`python3` dan jalur lengkapnya, karena Windows PowerShell dan cmd tidak mengekspansi
+`~`: `$HOME\.apothem\src\apothem\conformity\gate.py` di PowerShell, atau
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` di cmd. Jalur itu adalah
+tempat installer menaruh engine, dan `-E -s` menjauhkan `PYTHONPATH` serta
+site-packages pengguna Anda dari gerbang; [Gerbang konformitas](/docs/conformity-gate)
+menjelaskan keduanya dan instalasi lainnya.
 
 ## Pemecahan masalah
 

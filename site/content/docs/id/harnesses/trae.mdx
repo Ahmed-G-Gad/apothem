@@ -2,7 +2,7 @@
 title: "Trae"
 description: "Adapter harness Apothem untuk Trae (GA)."
 machineTranslated: true
-sourceHash: "97ae18e3fc9b0b70"
+sourceHash: "1c892ed70350c956"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -49,7 +49,7 @@ Folder-folder ini dipakai bersama. Folder ini tidak privat bagi proyek:
   itu berada. Opsi ini tidak mengubah ke mana skill ditulis.
 - Instalasi tidak menambahkan berkas skill atau aturan ke repositori Anda.
   Proyek mendapatkan berkas aturan dan berkas subagent di `.trae/agents/`,
-  ditambah folder data `.apothem/` yang dibuat oleh setiap instalasi proyek.
+  ditambah folder data yang dibuat oleh setiap instalasi proyek, `.apothem/` secara default.
 - Folder home ditulis lebih dulu. Jika itu gagal, misalnya karena sebuah
   folder di jalur tersebut adalah tautan yang keluar dari direktori home Anda
   (tautan yang tetap berada di dalamnya diikuti) atau tidak dapat ditulisi,
@@ -205,8 +205,16 @@ yang menjadi kosong dihapus. Setiap folder dicadangkan di bawah
 ## Gerbang konformitas
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Jalankan dari folder proyek Anda. Di Windows, gunakan `python` sebagai pengganti
+`python3` dan jalur lengkapnya, karena Windows PowerShell dan cmd tidak mengekspansi
+`~`: `$HOME\.apothem\src\apothem\conformity\gate.py` di PowerShell, atau
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` di cmd. Jalur itu adalah
+tempat installer menaruh engine, dan `-E -s` menjauhkan `PYTHONPATH` serta
+site-packages pengguna Anda dari gerbang; [Gerbang konformitas](/docs/conformity-gate)
+menjelaskan keduanya dan instalasi lainnya.
 
 ## Pemecahan masalah
 

@@ -2,7 +2,7 @@
 title: "Kiro"
 description: "Kiro (GA) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "91ec41080bf29036"
+sourceHash: "8edb56102e3e27a7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -170,6 +170,10 @@ write, edit और shell गार्ड, संदर्भ-आकार सल
 "/path/to/python" -E -s "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
 ```
 
+`-E -s` के कारण Python `PYTHONPATH` और अन्य `PYTHON*` वेरिएबल को अनदेखा करता है
+और आपके उपयोगकर्ता site-packages को छोड़ देता है, ताकि प्रोजेक्ट की कोई भी फ़ाइल
+हुक में लोड न हो सके।
+
 `--contract kiro` डिस्पैचर से संदर्भ को सादे टेक्स्ट के रूप में प्रिंट करवाता है, जिसे
 Kiro `SessionStart` के लिए संदर्भ में जोड़ता है। Kiro Windows पर कमांड क्रियाओं के
 लिए कोई शेल प्रलेखित नहीं करता। कमांड sh और cmd.exe के लिए लिखा गया है, उद्धरण
@@ -234,6 +238,13 @@ Kiro की स्टीयरिंग सतह `.kiro/steering/` के अ�
 (`.kiro/specs/`) ऑपरेटर-स्वामित्व वाले हैं; Apothem उन्हें नहीं लिखता। यह एक हुक
 फ़ाइल, `.kiro/hooks/apothem.json`, लिखता है, और `.kiro/hooks/` में कोई अन्य फ़ाइल
 नहीं लिखता।
+
+Kiro वर्कस्पेस रूट की `AGENTS.md` फ़ाइल भी पढ़ता है, और [Kimi Code](/docs/harnesses/kimi-code) इंस्टॉल
+प्रोजेक्ट `AGENTS.md` में एक Apothem ब्लॉक लिखता है, इसलिए दोनों इंस्टॉल वाले प्रोजेक्ट में वह
+ब्लॉक Kiro तक भी पहुँचता है। जब फ़ाइल में ब्लॉक पहले से होता है, तो `kiro` इंस्टॉल करना एक
+नोट प्रिंट करता है जो उसका और उसे लिखने वाले इंस्टॉल का नाम बताता है।
+[हार्नेस रजिस्ट्री](/docs/reference/harness-registry#shared-roots) उन अन्य टूल को सूचीबद्ध करती है जो
+यह फ़ाइल लोड करते हैं।
 
 Kiro वैश्विक स्किल के लिए `~/.kiro/skills/` प्रलेखित करता है और
 `~/.agents/skills/` का उल्लेख नहीं करता, इसलिए इंस्टॉल Kiro फ़ोल्डर लिखता है, न कि
@@ -315,8 +326,16 @@ Apothem इंस्टॉल अब भी उनका उपयोग न क
 ## अनुरूपता गेट
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+इसे अपने प्रोजेक्ट फ़ोल्डर से चलाएँ। Windows पर, `python3` के स्थान पर `python` का
+और पूरे पथ का उपयोग करें, क्योंकि Windows PowerShell और cmd `~` का विस्तार नहीं करते:
+PowerShell में `$HOME\.apothem\src\apothem\conformity\gate.py`, या cmd में
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`। यह पथ वह जगह है
+जहाँ इंस्टॉलर इंजन रखता है, और `-E -s` आपके `PYTHONPATH` और उपयोगकर्ता
+site-packages को गेट से बाहर रखता है; [अनुरूपता गेट](/docs/conformity-gate)
+दोनों को और अन्य इंस्टॉल को समझाता है।
 
 ## समस्या निवारण
 

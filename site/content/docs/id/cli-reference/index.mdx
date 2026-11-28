@@ -2,7 +2,7 @@
 title: "Referensi CLI"
 description: "Referensi CLI Apothem — sinopsis, opsi, dan kode keluar per perintah untuk antarmuka baris perintah apothem."
 machineTranslated: true
-sourceHash: "d05ea2b5171674a9"
+sourceHash: "aa091d12392e27c9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -72,7 +72,7 @@ halaman mencantumkan kode yang dapat dikembalikannya.
 |---|---|
 | 0 | Berhasil |
 | 1 | Kegagalan yang diharapkan: galat validasi, profil, harness, proyek, atau adapter |
-| 2 | Hasil parsial: sebuah batch menulis atau menghapus sesuatu sebelum terjadi kegagalan (hanya perintah yang halamannya mencantumkannya) |
+| 2 | Hasil parsial: perintah hanya menyelesaikan sebagian pekerjaannya, misalnya proses yang menulis, menghapus, atau memulihkan berkas sebelum terjadi kegagalan, proses `status` atau `harnesses list` yang salah satu adapternya gagal melapor, atau uninstal yang meninggalkan sebagian berkas Apothem di tempatnya (hanya perintah yang halamannya mencantumkannya) |
 | 64 | Galat penggunaan: opsi atau perintah yang tidak dikenal, opsi wajib yang tidak ada, atau nilai opsi yang tidak valid |
 
 Galat penggunaan tidak pernah menyentuh sistem berkas. Di bawah `--json` (atau

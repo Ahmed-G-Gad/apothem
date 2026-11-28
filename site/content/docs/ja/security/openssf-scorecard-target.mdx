@@ -2,7 +2,7 @@
 title: "OpenSSF Scorecard の姿勢"
 description: "Apothem の OpenSSF Scorecard 目標と、スコアを改善し続けるために用いる証拠面。"
 machineTranslated: true
-sourceHash: "2a073782c97e3b02"
+sourceHash: "9f1955ad5cb7c858"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,16 +17,16 @@ Apothem は OpenSSF Scorecard の最高スコアを目標としつつ、新し�
 | **Binary-Artifacts** | [binary-artifacts-sweep.md](/docs/security/binary-artifacts-sweep) | ソースで追跡される実行可能バイナリはゼロです。生成された配布アーカイブは `dist/` に留まります。 |
 | **Branch-Protection** | [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) | `main` は、公開リリースへの昇格の前に保護されます。新しいリリースコミットが着地した後は、強制プッシュと削除がブロックされます。 |
 | **CI-Tests** | [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | Pytest マトリクス、ruff、mypy、Trivy、ドキュメントのビルド、パッケージングのスモークチェック。 |
-| **CII-Best-Practices** | OpenSSF Best Practices への登録 | プロジェクトは bestpractices.dev に[プロジェクト 16427](https://www.bestpractices.dev/en/projects/16427)として登録済みで、2026-11-08 から passing バッジを保持しています。このチェックはそれを評価します。 |
+| **CII-Best-Practices** | [OpenSSF Best Practices バッジ](/docs/security/openssf-best-practices) | OpenSSF Best Practices のページは、passing の 67 の基準すべてに、それぞれの根拠とともに回答しています。プロジェクトは bestpractices.dev に[プロジェクト 16427](https://www.bestpractices.dev/en/projects/16427)として登録済みで、2026-11-08 から passing バッジを保持しています。このチェックはそれを評価します。 |
 | **Code-Review** | ブランチ保護 + CODEOWNERS | リポジトリ管理者を除くすべての人に対して、`main` にはプルリクエストが必要です。プロジェクトのメンテナーが 1 人である間、ブランチ保護は承認レビューを 0 件と要求します（[branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) を参照）。レビュー済みの PR が存在するまで、Scorecard の履歴は限定的なままです。 |
 | **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | 新しい単独メンテナーのプロジェクトは、複数組織にわたる貢献履歴を作り出すことはできません。これは、コントリビューターが参加するにつれて自然に改善します。 |
 | **Dangerous-Workflow** | ワークフロー監査 | `pull_request_target` はありません。Actions は SHA で固定され、明示的な権限でスコープが限定されています。 |
-| **Dependency-Update-Tool** | [`.github/dependabot.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/dependabot.yml) | Dependabot は、GitHub Actions のピン、Web サイト、vsce パッケージャーのロックファイル、ハッシュロックされた CI の pip、pre-commit フックに対してはグループ化された週次の更新を、channel-smoke のロックファイルに対しては月次の更新を提案します。Dependabot のセキュリティ更新は、検出されたすべてのマニフェストをカバーします。ただし、`scripts/ci/` にある CI の依存関係とツールのロック済み一式は対象外です。これらは、アラートがロック済みのパッケージを挙げたときに `scripts/dev/refresh_ci_locks.py` が再生成します。`.gitattributes` は、この 1 つのファイルを GitHub のソースアーカイブに残します。このアーカイブは、アクションの既定のアーカイブモードで行うスキャンが読み取ります。Scorecard ワークフローは git モードで実行され、このファイルをクローンから読み取ります。 |
-| **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Hypothesis のプロパティテストが、パーサーと frontmatter の不変条件を検証します。上流の Scorecard は、Hypothesis をファザーの統合として評価しない場合があります。 |
+| **Dependency-Update-Tool** | [`.github/dependabot.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/dependabot.yml) | Dependabot は、GitHub Actions のピン、Web サイト、vsce パッケージャーのロックファイル、ハッシュロックされた CI の pip、pre-commit フック、ファジングのビルドイメージのダイジェストに対してはグループ化された週次の更新を、channel-smoke のロックファイルに対しては月次の更新を提案します。Dependabot のセキュリティ更新は、検出されたすべてのマニフェストをカバーします。ただし、`scripts/ci/` にある CI の依存関係とツールのロック済み一式は対象外です。これらは、アラートがロック済みのパッケージを挙げたときに `scripts/dev/refresh_ci_locks.py` が再生成します。`.gitattributes` は、この 1 つのファイルを GitHub のソースアーカイブに残します。このアーカイブは、アクションの既定のアーカイブモードで行うスキャンが読み取ります。Scorecard ワークフローは git モードで実行され、このファイルをクローンから読み取ります。 |
+| **Fuzzing** | [`tests/fuzz/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/fuzz) + [`.github/workflows/fuzzing.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/fuzzing.yml) | 5 つの Atheris ファズターゲットが、オペレーターが書くファイルやクラッシュで損傷しうるファイルを読むパーサーをカバーします。JSONC / JSON5 の設定リーダー（両方が受け付けるすべての入力で `json.loads` と照合）、オペレーターも編集しうるフックファイルでのフックエントリーのマージと削除、共有プロファイルのローダー、インストール台帳、frontmatter のプローブです。ClusterFuzzLite は、ダイジェストで固定された OSS-Fuzz の Python イメージ内で、[`.clusterfuzzlite/`](https://github.com/ahmed-g-gad/apothem/tree/main/.clusterfuzzlite) からこれらをビルドします。`src/apothem/` に触れる各プルリクエストを 5 分間ファズし、見つかったクラッシュがあれば失敗にします。また、保存されたコーパスを育てるために毎日 15 分間ファズします。Scorecard は `import atheris` のターゲットと ClusterFuzzLite のセットアップを評価します。すべての CI テスト実行でも各ターゲットのシード入力を再生するため、修正済みのクラッシュはどのオペレーティングシステムでも修正されたままになります。[`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) にある Hypothesis のプロパティテストも併存しますが、Scorecard はそれらを数えません。 |
 | **License** | [LICENSE](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) | リポジトリのルートにある MIT ライセンス。 |
 | **Maintained** | Git 履歴 | 現在のリリースコミットとアクティブなワークフローの頻度が、メンテナンスが行われていることを示します。非常に新しいリポジトリは、経過期間に関する警告を受ける場合があります。 |
 | **Packaging** | [`.github/workflows/`](https://github.com/ahmed-g-gad/apothem/tree/main/.github/workflows) | sdist、wheel、SBOM、SLSA 来歴、Sigstore 署名を生成する、リリース、Pages、npmjs.com のワークフロー。 |
-| **Pinned-Dependencies** | ワークフロー監査 + ハッシュロックされた要件 | Actions は SHA で固定されています。リリースツール、CI の pip アップグレード、CI のプロジェクト依存関係とテスト依存関係、CI ツール（`ruff`、`bandit`、`pip-audit`、`pip-licenses`、`pre-commit`）は、`--require-hashes` でインストールされます。プロジェクト、テスト、ツールのインストールは、`scripts/ci/` にある 9 つのロックファイルを読み込みます。pip のアップグレードとリリースツールはそれぞれ専用のロックファイルを読み込み、パッケージ自体は `--no-deps -e .` でインストールされます。 |
+| **Pinned-Dependencies** | ワークフロー監査 + ハッシュロックされた要件 | Actions は SHA で固定され、ファジングのビルドイメージのベースはダイジェストで固定されています。リリースツール、CI の pip アップグレード、CI のプロジェクト依存関係とテスト依存関係、CI ツール（`ruff`、`bandit`、`pip-audit`、`pip-licenses`、`pre-commit`）は、`--require-hashes` でインストールされます。プロジェクト、テスト、ツールのインストールは、`scripts/ci/` にある 9 つのロックファイルを読み込みます。pip のアップグレードとリリースツールはそれぞれ専用のロックファイルを読み込み、パッケージ自体は `--no-deps -e .` でインストールされます。 |
 | **SAST** | [`.github/workflows/codeql.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/codeql.yml) | Python と Actions を対象とする CodeQL の `security-extended` クエリ。 |
 | **Security-Policy** | [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) | 協調的開示ポリシー、サポート対象バージョンのマトリクス、対応のタイムライン。 |
 | **Signed-Releases** | [`.github/workflows/release.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/release.yml) | Sigstore のキーレス署名、SLSA 来歴、SBOM、チェックサム、リリース成果物。 |
@@ -39,7 +39,7 @@ Scorecard は各チェックを 0〜10 のスケールで採点し、総合ス�
 
 Scorecard ワークフローは `file_mode: git` を指定してアクションを実行するため、Scorecard はリポジトリのクローンを読み取ります。ソースアーカイブには `.github/` が含まれません（`export-ignore` を `.gitattributes` で指定）。そのため、アクションの既定のアーカイブモードでは、Dangerous-Workflow、Token-Permissions、Pinned-Dependencies、Packaging からワークフローが見えなくなります。
 
-Pinned-Dependencies は、2 つの理由により意図的に 10 未満に留まります。SLSA ジェネレーターはリリースタグで参照されます。これは SHA 固定の唯一の例外で、その来歴がそのタグに結び付けられているためです。evals ワークフローは、実行ごとに選ばれるバージョンの Claude Code CLI を `npm install --global` でインストールします。Scorecard がワークフロー内でスキャンする Python のインストールは、ハッシュロックされたもの、パッケージ自体のローカルインストール、同じ実行でビルドされた wheel のいずれかです。
+Pinned-Dependencies は、2 つの理由により意図的に 10 未満に留まります。SLSA ジェネレーターはリリースタグで参照されます。これは SHA 固定の唯一の例外で、その来歴がそのタグに結び付けられているためです。evals ワークフローは、実行ごとに選ばれるバージョンの Claude Code CLI を `npm install --global` でインストールします。Scorecard がワークフロー内でスキャンする Python のインストールは、ハッシュロックされたもの、パッケージ自体のローカルインストール、同じ実行でビルドされた wheel のいずれかです。Scorecard が読む範囲の外にある固定が 1 つあります。ClusterFuzzLite のアクションはコミットで固定されていますが、その `action.yml` は ClusterFuzzLite のビルドイメージと実行イメージをタグ `v1` で実行し、ワークフローからは上書きできません。
 
 ## 更新の周期
 

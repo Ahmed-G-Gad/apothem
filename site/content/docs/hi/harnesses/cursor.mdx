@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "Cursor (GA) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "817b5e32ce317949"
+sourceHash: "0aa24ff454d74139"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -189,6 +189,10 @@ Cursor ऐसे कमांड को जिसे वह नहीं ढू�
 "/path/to/python" -E -s "/path/to/project/.apothem/support/cursor/hooks/dispatch.py" --contract cursor sessionStart
 ```
 
+`-E -s` के कारण Python `PYTHONPATH` और अन्य `PYTHON*` वेरिएबल को अनदेखा करता है
+और आपके उपयोगकर्ता site-packages को छोड़ देता है, ताकि प्रोजेक्ट की कोई भी फ़ाइल
+हुक में लोड न हो सके।
+
 Windows होस्ट पर कमांड `& ` से शुरू होता है, जो PowerShell का कॉल ऑपरेटर है,
 क्योंकि Cursor का डेस्कटॉप ऐप हुक कमांड PowerShell के माध्यम से चलाता है, जहाँ
 उद्धृत प्रोग्राम पथ से शुरू होने वाली पंक्ति कॉल नहीं होती। `sh` आरंभिक `&` को
@@ -246,8 +250,8 @@ section of src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md. */}
 
 ## संगतता टिप्पणियाँ
 
-Cursor 0.45+ `.cursor/rules/` के माध्यम से प्रोजेक्ट-स्तरीय निर्देशों का समर्थन
-करता है। अडैप्टर डिफ़ॉल्ट रूप से प्रोजेक्ट-स्कोप वाली `.cursor/rules/` डायरेक्टरी
+Cursor, [Cursor नियम दस्तावेज़](https://cursor.com/docs/rules) के अनुसार,
+प्रोजेक्ट-स्तरीय निर्देश `.cursor/rules/` से पढ़ता है। अडैप्टर डिफ़ॉल्ट रूप से प्रोजेक्ट-स्कोप वाली `.cursor/rules/` डायरेक्टरी
 में लिखता है; Cursor के पास कोई प्रलेखित फ़ाइल-आधारित उपयोगकर्ता-वैश्विक नियम पथ
 नहीं है जिसे यह अडैप्टर प्रबंधित कर सके।
 
@@ -352,8 +356,16 @@ Apothem इंस्टॉल अब भी उनका उपयोग न क
 ## अनुरूपता गेट
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+इसे अपने प्रोजेक्ट फ़ोल्डर से चलाएँ। Windows पर, `python3` के स्थान पर `python` का
+और पूरे पथ का उपयोग करें, क्योंकि Windows PowerShell और cmd `~` का विस्तार नहीं करते:
+PowerShell में `$HOME\.apothem\src\apothem\conformity\gate.py`, या cmd में
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`। यह पथ वह जगह है
+जहाँ इंस्टॉलर इंजन रखता है, और `-E -s` आपके `PYTHONPATH` और उपयोगकर्ता
+site-packages को गेट से बाहर रखता है; [अनुरूपता गेट](/docs/conformity-gate)
+दोनों को और अन्य इंस्टॉल को समझाता है।
 
 ## समस्या निवारण
 
