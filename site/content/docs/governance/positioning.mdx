@@ -138,11 +138,11 @@ The fifteen-mandate registry is the canonical outward-axis governance surface. E
 
 ### M10 — Bidirectional Binding & Phase-Execution Threading
 
-**Scope.** Every substantive structural element carries reciprocal bindings to its peers in the canonical five-direction notation: **Drives →** / **Driven by ←** / **Satisfies →** / **Established by ↑** / **Cross-bound with ↔**. Every binding declared in one direction has a reciprocal back-pointer at the other end; half-edges are structural failures, not aesthetic preferences. A mechanical reciprocity-grep at `src/apothem/conformity/binding_reciprocity_grep.py` enforces the invariant at the gate.
+**Scope.** Every substantive structural element carries reciprocal bindings to its peers in the canonical five-direction notation: **Drives →** / **Driven by ←** / **Satisfies →** / **Established by ↑** / **Cross-bound with ↔**. Every binding declared in one direction has a reciprocal back-pointer at the other end; half-edges are structural failures, not aesthetic preferences. At the gate, `binding-reciprocity-corpus-grep` (`src/apothem/conformity/binding_reciprocity_corpus_grep.py`) reports every `Cross-bound with ↔` citation in the rules corpus that has no citation back, and on each write `binding-reciprocity-grep` holds every Bindings section to the canonical arrow notation.
 
 **Canonical specification.** `src/apothem/rules/bidirectional-binding.md`.
 
-**Why it matters.** Reciprocal bindings turn the corpus into a navigable graph. Any rule's `Cross-bound with ↔` row points at every peer that cites it, and every cited peer points back. Refactoring the corpus becomes mechanical — rename a rule, the reciprocity-grep flags every stale citation in the same change-set.
+**Why it matters.** Reciprocal bindings turn the corpus into a navigable graph. Any rule's `Cross-bound with ↔` row points at every peer that cites it, and every cited peer points back. Refactoring the corpus becomes mechanical — rename a rule, and its `Cross-bound with ↔` row lists every peer whose citation changes in the same change-set.
 
 ### M11 — Agile Sprints & Empirical Process Control
 

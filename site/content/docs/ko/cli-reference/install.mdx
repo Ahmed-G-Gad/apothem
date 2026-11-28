@@ -2,7 +2,7 @@
 title: "install"
 description: "apothem install 명령에 대한 CLI 참조."
 machineTranslated: true
-sourceHash: "5ba6f0eafa4b1b6f"
+sourceHash: "d8f52162347218a1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -55,8 +55,17 @@ apothem install --harness NAME|all [--profile PATH] [--dry-run]
 슬레이트 단계가 먼저 실행되며, 이 단계는 자체 대상별 확인을 거칩니다. 이 단계는
 `~/.apothem/backups` 아래에 백업을 쓰고, 확인된 대상을 제거합니다. 설치 프롬프트를
 거부해도 그 제거와 백업은 그대로 남습니다.
-대상은 프롬프트가 나열하는 홈 디렉터리의 도구 폴더이며, `~/.agents`와
-`~/.config/apothem`도 그중에 있습니다.
+대상은 `--harness`가 어떤 하니스를 지정하든 항상 홈 디렉터리의 같은 네
+폴더입니다.
+
+```text
+~/.claude
+~/.codex
+~/.agents
+~/.config/apothem
+```
+
+다른 폴더는 제거되지 않으며, `~/.config`의 나머지는 그대로 남습니다.
 대상 자체가 링크(Windows 정션 포함)이면 링크만 사라지며, 대상 안의 링크는
 그 안으로 들어가지 않고 제거됩니다. `~/.config`가 홈 디렉터리 밖으로 이어지는
 링크이면, `~/.config/apothem`을 제거하면 그 링크 끝에 있는 폴더가 삭제되므로,
@@ -327,7 +336,7 @@ OpenCode 1은 다르게 동작합니다. `opencode.jsonc`의 `instructions` 목�
 | `--harness NAME` | 설치할 하니스 어댑터, 또는 레지스트리 전체 집합을 뜻하는 `all`(필수). `all`을 사용하면 프로필의 `exclude_harnesses`에 나열된 하니스는 건너뛰지만, 명시적으로 이름을 지정한 하니스는 나열되어 있어도 설치됩니다. 등록된 이름은 `apothem harnesses list`를 실행하여 확인하세요. |
 | `--profile PATH` | 공유 프로필 YAML 경로. 기본값은 `~/.config/apothem/profile.yaml`입니다. |
 | `--dry-run` | 파일을 쓰지 않고 설치를 미리 봅니다. |
-| `--clean`, `--fresh` | 선택형 클린 슬레이트: 설치 전에 이전의 하니스별 설치 상태를 백업한 뒤 제거합니다. |
+| `--clean`, `--fresh` | 선택형 클린 슬레이트: 설치 전에 `--harness`가 어떤 하니스를 지정하든 [영향 범위 미리보기](#영향-범위-미리보기)에 나열된 네 폴더를 백업한 뒤 제거합니다. |
 | `--yes` | 클린 슬레이트 제거 중 대상별 확인을 건너뜁니다(비대화형 `--clean` 실행에 필수). |
 | `--project PATH` | 프로젝트 범위 하니스의 프로젝트 루트. |
 | `--quiet`, `-q` | 정보성 출력을 억제합니다. 오류만 출력됩니다. |

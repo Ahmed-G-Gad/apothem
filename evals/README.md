@@ -25,6 +25,8 @@ Each case is a directory whose name is the case name:
 └── scaffold.sh      # optional: seeds the empty workspace (runs only with --scaffold)
 ```
 
+An outcome case's seed script therefore sits at `outcomes/<pipeline>/<case>/scaffold.sh`.
+
 Unknown frontmatter keys fail a case at load time, so metadata travels in `tags`:
 
 | Tag | Meaning |

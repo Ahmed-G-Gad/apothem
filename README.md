@@ -345,6 +345,14 @@ APOTHEM_HARNESS=claude-code sh scripts/installer/install.sh                     
 $env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/install.ps1   # Windows
 ```
 
+The installers take three flags: `--dry-run` shows what the install would
+change and changes nothing, `--yes` skips the questions (and installs missing
+`click` and `rich` with pip without asking), and `--clean` (or `--fresh`) backs
+up and removes `~/.claude`, `~/.codex`, `~/.agents` and `~/.config/apothem`
+before a fresh install, whichever harness you install.
+`install.ps1` spells them `-DryRun`, `-Yes`, `-Clean` and `-Fresh`. See
+[Installer flags](https://apothem.ahmedgad.com/docs/install/#installer-flags).
+
 A piped one-liner never uses a local tree: `curl ... | sh` and `irm ... | iex`
 ignore the folder you run them from and its parent folders, and fetch and
 verify the release. The installer uses a local tree only when you run the

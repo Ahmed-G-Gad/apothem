@@ -35,6 +35,18 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   loop, the synthesis posture and the living-documentation rule, and counts a
   numbered `.mdx` record as the pairing for an override marker.
 
+### Fixed
+
+- **The install docs name the installers' clean-slate flags and what
+  `--clean` removes.** `install.sh --clean` (or `--fresh`) and
+  `install.ps1 -Clean` (or `-Fresh`) were described only in the scripts' own
+  help. The install page now has a table of every installer flag, and the
+  README lists them. The `apothem install` page said `--clean` removes "the prior
+  per-harness install state"; it removes the same four folders whichever
+  harness `--harness` names: `~/.claude`, `~/.codex`, `~/.agents` and
+  `~/.config/apothem`.
+
+
 ## [1.6.0] - 2026-11-28
 
 ### Data loss in earlier releases: recover your files

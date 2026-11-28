@@ -2,7 +2,7 @@
 title: "Instalasi"
 description: "Ikhtisar instalasi Apothem — delapan kanal instalasi, masing-masing dengan prasyaratnya, satu perintah siap-salin, dan langkah verifikasi: plugin Claude Code, shim npm, pemasang satu langkah, ekstensi keluarga VS Code, tiga ekstensi bootstrap baris perintah, dan mesin langsung."
 machineTranslated: true
-sourceHash: "cc205e0eab36c099"
+sourceHash: "ffdb3d79274d3b88"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -220,6 +220,30 @@ POSIX, termasuk `python3` milik Cygwin dan MSYS2 sendiri, menerima path POSIX
 yang digabung dengan `:` dan hanya mempertahankan entri yang diawali `/`.
 Perintah `git` pemasang yang tidak bekerja pada sebuah klon tidak membaca
 repositori di folder saat ini.
+
+### Flag pemasang
+
+`install.sh` menerima flag di bawah, dan `install.ps1` menerima sakelar yang
+sama sebagai parameter PowerShell. `install.bat` menerima ejaan `install.sh`
+untuk tiga baris pertama dan meneruskan masing-masing ke `install.ps1`. Perintah
+satu baris yang disalurkan lewat pipa tidak dapat meneruskan parameter
+PowerShell, jadi unduh `install.ps1` terlebih dahulu untuk menggunakannya:
+
+```bash title="Pass a flag (POSIX)"
+curl -fsSL https://apothem.ahmedgad.com/install.sh | sh -s -- --dry-run
+```
+
+```powershell title="Pass a flag (Windows PowerShell 5.1 or later)"
+irm https://apothem.ahmedgad.com/install.ps1 -OutFile install.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 -DryRun
+```
+
+| `install.sh` | `install.ps1` | Efek |
+|---|---|---|
+| `--clean`, `--fresh` | `-Clean`, `-Fresh` | Sebelum pemasangan, mencadangkan dan menghapus empat folder di direktori home Anda yang dicantumkan [`apothem install`](/docs/cli-reference/install#blast-radius-preview), termasuk `~/.claude` dan `~/.agents`, apa pun harness yang Anda pasang, lalu memasang dari awal. Pemasang meneruskannya ke mesin sebagai `apothem install --clean`, yang bertanya sebelum setiap penghapusan, menyimpan cadangan di bawah `~/.apothem/backups`, dan menulis kembali profil Anda. |
+| `--dry-run` | `-DryRun` | Mengambil dan memeriksa rilis di folder sementara dan menunjukkan apa yang akan diubah pemasangan, tanpa mengubah apa pun (lihat [Model kepercayaan](#model-kepercayaan)). |
+| `--yes` | `-Yes` | Tidak bertanya sebelum setiap penghapusan oleh `--clean`. Juga mengizinkan penggantian isi `APOTHEM_HOME` yang menurut [Model kepercayaan](#model-kepercayaan) memerlukan `--yes`. Juga memasang prasyarat Python yang belum ada (`click`, `rich`) dengan pip tanpa bertanya, seperti yang dilakukan `APOTHEM_AUTO_INSTALL_DEPS=1`. |
+| `-h`, `--help` | tidak ada | Mencetak flag dan model kepercayaan, lalu keluar. |
 
 ### Model kepercayaan
 

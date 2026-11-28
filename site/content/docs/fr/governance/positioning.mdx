@@ -2,7 +2,7 @@
 title: "Positionnement"
 description: "Comprendre Apothem comme une gouvernance de ratification d'artefacts dotée de quinze mandats, d'une discipline d'entrée par canal canonique et d'une architecture créative d'identité cognitive pour le travail piloté par un assistant."
 machineTranslated: true
-sourceHash: "e5b17260b2a78c11"
+sourceHash: "b81b17f4cc8e4c02"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -140,11 +140,11 @@ Le registre de quinze mandats est la surface canonique de gouvernance de l'axe e
 
 ### M10 — Liaison bidirectionnelle et enchaînement de l'exécution des phases
 
-**Portée.** Chaque élément structurel substantiel porte des liaisons réciproques vers ses pairs, dans la notation canonique à cinq directions : **Drives →** / **Driven by ←** / **Satisfies →** / **Established by ↑** / **Cross-bound with ↔**. Chaque liaison déclarée dans un sens a un pointeur de retour réciproque à l'autre extrémité ; les demi-arêtes sont des échecs structurels, et non des préférences esthétiques. Un grep mécanique de réciprocité, à `src/apothem/conformity/binding_reciprocity_grep.py`, applique cet invariant au portail.
+**Portée.** Chaque élément structurel substantiel porte des liaisons réciproques vers ses pairs, dans la notation canonique à cinq directions : **Drives →** / **Driven by ←** / **Satisfies →** / **Established by ↑** / **Cross-bound with ↔**. Chaque liaison déclarée dans un sens a un pointeur de retour réciproque à l'autre extrémité ; les demi-arêtes sont des échecs structurels, et non des préférences esthétiques. Au portail, `binding-reciprocity-corpus-grep` (`src/apothem/conformity/binding_reciprocity_corpus_grep.py`) signale chaque citation `Cross-bound with ↔` du corpus de règles qui n'a pas de citation en retour, et à chaque écriture `binding-reciprocity-grep` impose à chaque section Bindings la notation canonique des flèches.
 
 **Spécification canonique.** `src/apothem/rules/bidirectional-binding.md`.
 
-**Pourquoi c'est important.** Les liaisons réciproques transforment le corpus en graphe navigable. La ligne `Cross-bound with ↔` de toute règle pointe vers chaque pair qui la cite, et chaque pair cité pointe en retour. Refactoriser le corpus devient mécanique — renommez une règle, et le grep de réciprocité signale chaque citation périmée dans le même ensemble de modifications.
+**Pourquoi c'est important.** Les liaisons réciproques transforment le corpus en graphe navigable. La ligne `Cross-bound with ↔` de toute règle pointe vers chaque pair qui la cite, et chaque pair cité pointe en retour. Refactoriser le corpus devient mécanique — renommez une règle, et sa ligne `Cross-bound with ↔` liste chaque pair dont la citation change dans le même ensemble de modifications.
 
 ### M11 — Sprints agiles et contrôle empirique des processus
 

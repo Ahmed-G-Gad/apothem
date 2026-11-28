@@ -2,7 +2,7 @@
 title: "install"
 description: "CLI-Referenz für den Befehl apothem install."
 machineTranslated: true
-sourceHash: "5ba6f0eafa4b1b6f"
+sourceHash: "d8f52162347218a1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -63,8 +63,17 @@ mit einer eigenen Bestätigung pro Ziel: Er schreibt eine Sicherung unter
 `~/.apothem/backups` und entfernt die Ziele, die Sie bestätigen. Diese
 Entfernungen und die Sicherung bleiben bestehen, wenn die Installationsabfrage
 abgelehnt wird.
-Die Ziele sind die Werkzeugordner in Ihrem Home-Verzeichnis, die die Abfrage
-auflistet, darunter `~/.agents` und `~/.config/apothem`.
+Die Ziele sind immer dieselben vier Ordner in Ihrem Home-Verzeichnis, gleich
+welchen Harness `--harness` nennt:
+
+```text
+~/.claude
+~/.codex
+~/.agents
+~/.config/apothem
+```
+
+Kein anderer Ordner wird entfernt, und der Rest von `~/.config` bleibt erhalten.
 Bei einem Ziel, das selbst ein Link ist, eine Windows-Junction eingeschlossen,
 wird nur der Link entfernt, und ein Link innerhalb eines Ziels wird entfernt,
 ohne betreten zu werden. Ist `~/.config` ein Link, der aus Ihrem
@@ -403,7 +412,7 @@ Kommentare, nachgestellte Kommas und JSON5-Syntax verloren gingen. Daher gilt:
 | `--harness NAME` | Zu installierender Harness-Adapter oder `all` für die registry-weite Menge (erforderlich). Bei `all` werden Harnesses übersprungen, die in `exclude_harnesses` des Profils aufgeführt sind; ein ausdrücklich benannter Harness wird dagegen auch dann installiert, wenn er aufgeführt ist. Führen Sie `apothem harnesses list` aus, um die registrierten Namen zu sehen. |
 | `--profile PATH` | Pfad zur YAML-Datei des gemeinsamen Profils. Standard: `~/.config/apothem/profile.yaml`. |
 | `--dry-run` | Vorschau der Installation, ohne Dateien zu schreiben. |
-| `--clean`, `--fresh` | Optionaler sauberer Neuanfang: Der bisherige Installationszustand je Harness wird vor der Installation gesichert und entfernt. |
+| `--clean`, `--fresh` | Optionaler sauberer Neuanfang: Die vier unter [Wirkungsradius-Vorschau](#wirkungsradius-vorschau) aufgeführten Ordner werden vor der Installation gesichert und entfernt, gleich welchen Harness `--harness` nennt. |
 | `--yes` | Überspringt die Bestätigung je Ziel während einer Entfernung für den sauberen Neuanfang (erforderlich für nicht interaktive `--clean`-Läufe). |
 | `--project PATH` | Projektwurzel für Harnesses mit Projekt-Geltungsbereich. |
 | `--quiet`, `-q` | Unterdrückt informative Ausgaben; nur Fehler werden ausgegeben. |

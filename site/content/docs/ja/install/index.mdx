@@ -2,7 +2,7 @@
 title: "インストール"
 description: "Apothem のインストール概要 —— 8 つのインストールチャネル。それぞれに前提条件、コピーしてすぐ使える 1 つのコマンド、検証ステップがあります: Claude Code プラグイン、npm シム、ワンショットインストーラー、VS Code 系拡張機能、3 つのコマンドラインブートストラップ拡張機能、そして直接エンジン。"
 machineTranslated: true
-sourceHash: "cc205e0eab36c099"
+sourceHash: "ffdb3d79274d3b88"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -142,6 +142,28 @@ sh スクリプトは、実行する Python にどの形式を読むかを問い
 Windows の Python（Git Bash で通常使われるもの）は、エンジンのパスを `;` で連結した Windows 形式で受け取り、あなたの `PYTHONPATH` のうちドライブパスとネットワークパスだけを残します。
 POSIX の Python（Cygwin や MSYS2 自身の `python3` を含む）は、`:` で連結した POSIX パスを受け取り、`/` で始まるエントリーだけを残します。
 インストーラーの `git` コマンドのうちクローンを操作しないものは、カレントフォルダーのリポジトリを読みません。
+
+### インストーラーのフラグ
+
+`install.sh` は以下のフラグを受け付け、`install.ps1` は同じスイッチを PowerShell のパラメーターとして受け付けます。
+`install.bat` は最初の 3 行の `install.sh` の書き方を受け付け、それぞれを `install.ps1` に渡します。
+パイプで実行するワンライナーでは PowerShell のパラメーターを渡せないため、使うときは先に `install.ps1` をダウンロードしてください。
+
+```bash title="Pass a flag (POSIX)"
+curl -fsSL https://apothem.ahmedgad.com/install.sh | sh -s -- --dry-run
+```
+
+```powershell title="Pass a flag (Windows PowerShell 5.1 or later)"
+irm https://apothem.ahmedgad.com/install.ps1 -OutFile install.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 -DryRun
+```
+
+| `install.sh` | `install.ps1` | 効果 |
+|---|---|---|
+| `--clean`, `--fresh` | `-Clean`, `-Fresh` | インストールの前に、どのハーネスをインストールする場合でも、[`apothem install`](/docs/cli-reference/install#blast-radius-preview) が挙げるホームディレクトリ内の 4 つのフォルダー（`~/.claude` と `~/.agents` を含む）をバックアップして削除し、その後新しくインストールします。インストーラーはこれを `apothem install --clean` としてエンジンに渡します。エンジンは削除のたびに確認し、バックアップを `~/.apothem/backups` に残し、プロファイルを書き戻します。 |
+| `--dry-run` | `-DryRun` | 一時フォルダーでリリースを取得して確認し、インストールで何が変わるかを、何も変えずに表示します（[信頼モデル](#信頼モデル)を参照）。 |
+| `--yes` | `-Yes` | `--clean` による各削除の前に確認しません。また、[信頼モデル](#信頼モデル)が `--yes` を必要とするとしている、`APOTHEM_HOME` にあるものの置き換えも許可します。また、`APOTHEM_AUTO_INSTALL_DEPS=1` と同じく、不足している Python の前提パッケージ（`click`、`rich`）を確認せずに pip でインストールします。 |
+| `-h`, `--help` | なし | フラグと信頼モデルを表示して終了します。 |
 
 ### 信頼モデル
 

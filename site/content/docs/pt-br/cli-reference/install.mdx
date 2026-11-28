@@ -2,7 +2,7 @@
 title: "install"
 description: "Referência da CLI para o comando apothem install."
 machineTranslated: true
-sourceHash: "5ba6f0eafa4b1b6f"
+sourceHash: "d8f52162347218a1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -70,8 +70,17 @@ diretório pessoal aborta a operação antes que a instalação grave. Com
 própria para cada destino: ela grava um backup em `~/.apothem/backups` e remove
 os destinos que confirma. Essas remoções e o backup permanecem no lugar quando o
 prompt de instalação é recusado.
-Os destinos são as pastas de ferramentas no seu diretório pessoal que o prompt
-lista, entre elas `~/.agents` e `~/.config/apothem`.
+Os destinos são sempre as mesmas quatro pastas no seu diretório pessoal, seja
+qual for o harness que `--harness` nomeia:
+
+```text
+~/.claude
+~/.codex
+~/.agents
+~/.config/apothem
+```
+
+Nenhuma outra pasta é removida, e o restante de `~/.config` permanece.
 Um destino que é ele próprio um link, incluindo uma junção do Windows, perde
 apenas o link, e um link dentro de um destino é removido sem que se entre nele.
 Quando `~/.config` é um link que leva para fora do seu diretório pessoal, a etapa
@@ -374,7 +383,7 @@ comentários, vírgulas finais e a sintaxe JSON5. Por isso:
 | `--harness NAME` | Adaptador de harness a instalar, ou `all` para o conjunto de todo o registro (obrigatório). Com `all`, os harnesses listados em `exclude_harnesses` do perfil são ignorados, mas um harness nomeado explicitamente é instalado mesmo quando listado. Execute `apothem harnesses list` para ver os nomes registrados. |
 | `--profile PATH` | Caminho para o YAML do perfil compartilhado. O padrão é `~/.config/apothem/profile.yaml`. |
 | `--dry-run` | Mostra uma prévia da instalação sem gravar arquivos. |
-| `--clean`, `--fresh` | Recomeço limpo, ativado explicitamente: faz backup e remove o estado de instalação anterior de cada harness antes de instalar. |
+| `--clean`, `--fresh` | Recomeço limpo, ativado explicitamente: faz backup e remove as quatro pastas listadas em [Prévia do raio de impacto](#prévia-do-raio-de-impacto) antes de instalar, seja qual for o harness que `--harness` nomeia. |
 | `--yes` | Pula a confirmação por destino durante uma remoção de recomeço limpo (obrigatório em execuções não interativas de `--clean`). |
 | `--project PATH` | Raiz do projeto para os harnesses com escopo de projeto. |
 | `--quiet`, `-q` | Suprime a saída informativa; apenas os erros são emitidos. |
