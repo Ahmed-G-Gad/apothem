@@ -2,7 +2,7 @@
 title: "面向助手工具的仓库范围约定"
 description: "Apothem 如何将仓库范围的操作约定——规则、技能和委派工作者定义——物化为每个助手的原生指令面（AGENTS.md 及其各工具对应物）。"
 machineTranslated: true
-sourceHash: "e139310dc56fef79"
+sourceHash: "6f86dd3a62447308"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -101,7 +101,7 @@ stateDiagram-v2
 - **`<project-root>/.apothem/plans/` 下的写入触及 git**——绝不可以。该目录被 gitignore。
 - **与 `AGENTS.md` 相矛盾**——当本文件在共享准则上与
   `AGENTS.md` 重叠时，两者在语义上等价。特定于本面的覆盖需要一个内联
-  `<!-- coherence-override: <claim-id> -->` 标记，并配以在项目设计登记册中跟踪的架构决策记录（ADR）。ADR 目录面尚在筹备中；在它落地之前，覆盖须在助手的 frontmatter 中引用该内联标记加上理由。
+  `<!-- coherence-override: <claim-id> -->` 标记，并配以[决策记录](/docs/adr)中解释该分歧的架构决策记录（ADR）。
 
 ## 命名
 

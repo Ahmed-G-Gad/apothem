@@ -2,11 +2,11 @@
 title: "Conventions d'environnements multi-surfaces"
 description: "Référence normative canonique pour la configuration des environnements multi-surfaces et leur cohérence entre les environnements d'exécution de chat, de complétion dans l'IDE et de revue de PR."
 machineTranslated: true
-sourceHash: "ab1c94a20aecac87"
+sourceHash: "12a1b2b3fe445cae"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Référence normative canonique pour les contributeurs en aval.** Ce document reprend les sections Conventions d'environnements multi-surfaces de la spécification du projet (Spécification §0.6 + §2.8 + §4.7) ; c'est la référence autonome livrée avec le dépôt publié. La justification architecturale est consignée dans l'ADR-0003.
+> **Référence normative canonique pour les contributeurs en aval.** Ce document est la référence autonome des conventions d'environnements multi-surfaces, livrée avec le dépôt publié. La décision qui la fonde est consignée dans l'[ADR 0003](/docs/adr/0003-agents-md-canonical-surface).
 
 ---
 
@@ -24,7 +24,7 @@ La configuration des environnements d'exécution est plurielle du fait de la ré
 
 Chaque surface de conventions dans le périmètre (§3) est un *canal* qui exprime la spécification unique des conventions du projet. Cette spécification se décompose en :
 
-- **Sections partagées** — Discipline des plans, enquête structurée (ou équivalent propre à la surface), En-tête de paternité, Nommage, Anti-modèles, Hiérarchie modale. Elles DOIVENT figurer dans chaque surface requise et DOIVENT être sémantiquement équivalentes d'une surface à l'autre.
+- **Sections partagées** — les onze affirmations partagées que `AGENTS.md` énumère dans son AI Surface Canon : emplacement des plans, en-têtes de paternité, traitement de l'ambiguïté (enquête structurée ou équivalent propre à la surface), nommage, fraîcheur des versions publiées, paternité exclusivement humaine, emplacement des consignes pour agents, clôture de session, langage clair sur les surfaces publiques, la boucle opérationnelle et la posture de synthèse. La liste d'affirmations couvre aussi la hiérarchie modale, les motifs interdits et l'unité synchronisée. Elles DOIVENT figurer dans chaque surface requise et DOIVENT être sémantiquement équivalentes d'une surface à l'autre.
 - **Sections propres à une surface** — cadrages des capacités, motifs d'appel d'outils, différences entre génération de code et chat. Elles PEUVENT différer d'une surface à l'autre, mais NE DOIVENT PAS contredire les sections partagées.
 
 Le validateur `multi-surface-coherence` (§7) s'exécute à chaque exécution de la CI et en pre-commit, et vérifie le respect du contrat.
@@ -98,7 +98,7 @@ Lorsque deux surfaces sont détectées comme contradictoires sur une affirmation
 
 > `AGENTS.md` est la voix canonique du projet. Toute surface contradictoire est réécrite pour refléter la sémantique de `AGENTS.md` dans un cadrage adapté à la surface.
 
-Une dérogation propre à une surface n'est permise qu'avec un marqueur explicite, placé dans le fichier, `<!-- coherence-override: <claim-id> -->`, qui pointe vers un ADR expliquant la divergence délibérée. Le marqueur de dérogation est lui-même énuméré dans la liste d'autorisation du validateur et apparaît dans le rapport de CI.
+Une dérogation propre à une surface n'est permise qu'avec un marqueur explicite, placé dans le fichier, `<!-- coherence-override: <claim-id> -->`, qui pointe vers un ADR des [registres de décisions](/docs/adr) expliquant la divergence délibérée. Le validateur signale chaque marqueur pris en compte comme un avertissement dans le rapport de CI.
 
 Pour ce dépôt, la stratégie de réconciliation ratifiée est **`agents-md-wins`** : `AGENTS.md` est canonique, et chaque miroir d'environnement actif reste sémantiquement équivalent.
 
@@ -130,10 +130,9 @@ Trois validateurs mettent en œuvre conjointement le contrat de cohérence :
 
 ## Voir aussi
 
-- ADR-0003 — justification architecturale, alternatives envisagées.
+- [ADR 0003](/docs/adr/0003-agents-md-canonical-surface) — le registre de décision qui fait d'`AGENTS.md` la surface canonique.
 - [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml) — la fixture canonique de la liste d'affirmations.
 - [`AGENTS.md`](https://github.com/ahmed-g-gad/apothem/blob/main/AGENTS.md) — la voix canonique du projet.
 - [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) — le miroir pour Claude Code.
 - [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline) — la référence canonique de l'affirmation partagée Discipline des plans.
 - [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) — la référence canonique de l'affirmation partagée En-tête de paternité.
-- Spécification du projet §0.6 + §2.8 + §4.7 — le texte canonique complet repris ici.

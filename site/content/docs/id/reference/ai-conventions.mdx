@@ -2,11 +2,11 @@
 title: "Konvensi Harness Multi-Permukaan"
 description: "Referensi normatif kanonik untuk konfigurasi dan koherensi harness multi-permukaan di seluruh runtime chat, pelengkapan IDE, dan tinjauan PR."
 machineTranslated: true
-sourceHash: "ab1c94a20aecac87"
+sourceHash: "12a1b2b3fe445cae"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Referensi normatif kanonik untuk kontributor hilir.** Dokumen ini mencerminkan bagian Konvensi Harness Multi-Permukaan dari spesifikasi proyek (Spec §0.6 + §2.8 + §4.7); dokumen ini adalah referensi mandiri yang dikirimkan bersama repo yang dipublikasikan. Dasar pemikiran arsitekturalnya dicatat di ADR-0003.
+> **Referensi normatif kanonik untuk kontributor hilir.** Dokumen ini adalah referensi mandiri untuk konvensi harness multi-permukaan dan dikirimkan bersama repo yang dipublikasikan. Keputusan yang mendasarinya dicatat di [ADR 0003](/docs/adr/0003-agents-md-canonical-surface).
 
 ---
 
@@ -24,7 +24,7 @@ Konfigurasi runtime harness bersifat jamak karena realitas deployment. Ekosistem
 
 Setiap permukaan konvensi dalam cakupan (§3) adalah sebuah *kanal* yang mengekspresikan satu spesifikasi konvensi proyek. Spesifikasi itu diuraikan menjadi:
 
-- **Bagian bersama** — Disiplin Plan, kueri terstruktur (atau padanannya pada permukaan tersebut), Header Kepengarangan, Penamaan, Anti-Pola, Hierarki Modal. Bagian-bagian ini HARUS muncul di setiap permukaan yang diwajibkan dan HARUS setara secara semantik di semua permukaan.
+- **Bagian bersama** — sebelas klaim bersama yang dicantumkan `AGENTS.md` dalam AI Surface Canon-nya: lokasi plan, header kepengarangan, penanganan ambiguitas (kueri terstruktur atau padanannya pada permukaan tersebut), penamaan, kesegaran rilis, kepengarangan khusus manusia, lokasi panduan agen, penutupan sesi, bahasa yang lugas di permukaan publik, siklus operasi, dan sikap sintesis. Daftar klaim juga mencakup hierarki modal, pola terlarang, dan unit yang disinkronkan. Bagian-bagian ini HARUS muncul di setiap permukaan yang diwajibkan dan HARUS setara secara semantik di semua permukaan.
 - **Bagian khusus permukaan** — pembingkaian kapabilitas, pola pemanggilan tool, perbedaan codegen vs. chat. Bagian-bagian ini BOLEH berbeda antarpermukaan tetapi TIDAK BOLEH bertentangan dengan bagian bersama.
 
 Validator `multi-surface-coherence` (§7) dijalankan pada setiap eksekusi CI dan pada pre-commit, untuk menegaskan kontrak tersebut.
@@ -98,7 +98,7 @@ Ketika dua permukaan terdeteksi saling bertentangan pada sebuah klaim bersama, r
 
 > `AGENTS.md` adalah suara proyek kanonik. Setiap permukaan yang bertentangan ditulis ulang untuk mencerminkan semantik `AGENTS.md` dalam pembingkaian yang sesuai dengan permukaannya.
 
-Penimpaan khusus permukaan hanya diizinkan dengan penanda `<!-- coherence-override: <claim-id> -->` yang eksplisit di dalam berkas dan menunjuk ke ADR yang menjelaskan divergensi yang disengaja itu. Penanda penimpaan itu sendiri tercantum dalam daftar izin validator dan muncul dalam laporan CI.
+Penimpaan khusus permukaan hanya diizinkan dengan penanda `<!-- coherence-override: <claim-id> -->` yang eksplisit di dalam berkas dan menunjuk ke ADR di [Catatan keputusan](/docs/adr) yang menjelaskan divergensi yang disengaja itu. Validator melaporkan setiap penanda yang dihormati sebagai peringatan dalam laporan CI.
 
 Untuk repositori ini, strategi rekonsiliasi yang diratifikasi adalah **`agents-md-wins`**: `AGENTS.md` bersifat kanonik, dan setiap cermin harness yang aktif tetap setara secara semantik.
 
@@ -130,10 +130,9 @@ Tiga validator bersama-sama mengimplementasikan kontrak koherensi:
 
 ## Lihat Juga
 
-- ADR-0003 — dasar pemikiran arsitektural, alternatif yang dipertimbangkan.
+- [ADR 0003](/docs/adr/0003-agents-md-canonical-surface) — catatan keputusan tentang `AGENTS.md` sebagai permukaan kanonik.
 - [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml) — fixture daftar klaim kanonik.
 - [`AGENTS.md`](https://github.com/ahmed-g-gad/apothem/blob/main/AGENTS.md) — suara proyek kanonik.
 - [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) — cermin untuk Claude Code.
 - [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline) — referensi kanonik untuk klaim bersama Disiplin Plan.
 - [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) — referensi kanonik untuk klaim bersama Header Kepengarangan.
-- Spesifikasi proyek §0.6 + §2.8 + §4.7 — teks kanonik lengkap yang dicerminkan di sini.

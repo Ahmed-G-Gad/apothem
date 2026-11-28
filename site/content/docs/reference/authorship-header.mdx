@@ -6,7 +6,7 @@ description: "Define and enforce per-file SPDX license identifier markers using 
 
 {/* REUSE-IgnoreStart */}
 
-> **Canonical normative reference for downstream contributors.** This document mirrors the project specification's Authorship & File-Header sections (Spec §0.5 + §4.6); it is the standalone reference that ships with the published repo. The architectural rationale is recorded in ADR-0002.
+> **Canonical normative reference for downstream contributors.** This document is the standalone reference for the authorship and file-header rules, and it ships with the published repo. The decision behind it is recorded in [ADR 0002](/docs/adr/0002-one-line-spdx-header).
 
 ---
 
@@ -89,7 +89,7 @@ The SPDX line declares the project's license machine-readably; the LICENSE file 
 
 **Single-line form.** Per-file provenance is the single SPDX line; the copyright instrument lives once at the root LICENSE. Bordered multi-line banner boxes (copyright, website, email, contact lines wrapped in a ruled frame) are rejected by the validator: they duplicate contact and copyright metadata in every file without adding anything the machine-readable license marker does not already provide to REUSE/SPDX/SBOM tooling. The byte-exact fixture at `src/apothem/schemas/authorship-header.txt` carries the single-line form; the validator runs against this fixture.
 
-**Cross-references.** LICENSE file (MIT) — the legal instrument controls in case of conflict. ADR-0006 documents the banner-narrowing ratification rationale.
+**Cross-references.** LICENSE file (MIT) — the legal instrument controls in case of conflict. [ADR 0002](/docs/adr/0002-one-line-spdx-header) records why the single line replaces a banner box.
 
 ---
 
@@ -150,10 +150,8 @@ The discipline must survive every future session and every future contributor. M
 
 ## See Also
 
-- ADR-0002 — architectural rationale, alternatives considered.
-- ADR-0006 — banner-narrowing ratification.
+- [ADR 0002](/docs/adr/0002-one-line-spdx-header) — the decision record for the one-line SPDX header.
 - [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt) — the byte-exact canonical fixture.
 - [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt) — the exception list (regex/glob form).
 - [`scripts/inject-header.py`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.py) and [`scripts/inject-header.sh`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.sh) — the injector.
 - [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py) — the validator.
-- Project specification §0.5 + §4.6 — the canonical text mirrored here.

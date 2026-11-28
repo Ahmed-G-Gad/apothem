@@ -2,11 +2,11 @@
 title: "Convenciones de entorno multi-superficie"
 description: "Referencia normativa canónica para la configuración de entornos multi-superficie y su coherencia entre los tiempos de ejecución de chat, de autocompletado en el IDE y de revisión de pull requests."
 machineTranslated: true
-sourceHash: "ab1c94a20aecac87"
+sourceHash: "12a1b2b3fe445cae"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Referencia normativa canónica para colaboradores de aguas abajo.** Este documento refleja las secciones de Convenciones de entorno multi-superficie de la especificación del proyecto (Especificación §0.6 + §2.8 + §4.7); es la referencia independiente que se distribuye con el repositorio publicado. La justificación arquitectónica se registra en ADR-0003.
+> **Referencia normativa canónica para colaboradores de aguas abajo.** Este documento es la referencia independiente de las convenciones de entorno multisuperficie y se distribuye con el repositorio publicado. La decisión en la que se basa se registra en [ADR 0003](/docs/adr/0003-agents-md-canonical-surface).
 
 ---
 
@@ -24,7 +24,7 @@ La configuración del tiempo de ejecución de los entornos es plural por la real
 
 Cada superficie de convenciones dentro del alcance (§3) es un *canal* que expresa la especificación única de convenciones del proyecto. La especificación se descompone en:
 
-- **Secciones compartidas**: Disciplina de planes, indagación estructurada (o su equivalente en la superficie), Encabezado de autoría, Nomenclatura, Antipatrones, Jerarquía modal. Estas DEBEN aparecer en cada superficie obligatoria y DEBEN ser semánticamente equivalentes entre superficies.
+- **Secciones compartidas**: las once afirmaciones compartidas que `AGENTS.md` enumera en su AI Surface Canon: ubicación de los planes, encabezados de autoría, tratamiento de la ambigüedad (indagación estructurada o su equivalente en la superficie), nomenclatura, vigencia de las versiones publicadas, autoría exclusivamente humana, ubicación de la guía para agentes, cierre de sesión, lenguaje claro en las superficies públicas, el ciclo operativo y la postura de síntesis. La lista de afirmaciones también cubre la jerarquía modal, los patrones prohibidos y la unidad sincronizada. Estas DEBEN aparecer en cada superficie obligatoria y DEBEN ser semánticamente equivalentes entre superficies.
 - **Secciones específicas de cada superficie**: encuadres de capacidades, patrones de llamada a herramientas, diferencias entre la generación de código y el chat. Estas PUEDEN diferir entre superficies, pero NO DEBEN contradecir las secciones compartidas.
 
 El validador `multi-surface-coherence` (§7) se ejecuta en cada ejecución de CI y en el pre-commit, y comprueba el contrato.
@@ -98,7 +98,7 @@ Cuando se detecta que dos superficies se contradicen en una afirmación comparti
 
 > `AGENTS.md` es la voz canónica del proyecto. Toda superficie en contradicción se reescribe para reflejar la semántica de `AGENTS.md` con el encuadre propio de esa superficie.
 
-Una anulación específica de una superficie solo se permite con un marcador explícito dentro del archivo, `<!-- coherence-override: <claim-id> -->`, que apunte a un ADR que explique la divergencia deliberada. El propio marcador de anulación figura en la lista de permitidos del validador y aparece en el informe de CI.
+Una anulación específica de una superficie solo se permite con un marcador explícito dentro del archivo, `<!-- coherence-override: <claim-id> -->`, que apunte a un ADR en [Registros de decisiones](/docs/adr) que explique la divergencia deliberada. El validador informa cada marcador respetado como una advertencia en el informe de CI.
 
 Para este repositorio, la estrategia de reconciliación ratificada es **`agents-md-wins`**: `AGENTS.md` es canónico y cada espejo de entorno activo se mantiene semánticamente equivalente.
 
@@ -130,10 +130,9 @@ Tres validadores implementan conjuntamente el contrato de coherencia:
 
 ## Véase también
 
-- ADR-0003 — justificación arquitectónica y alternativas consideradas.
+- [ADR 0003](/docs/adr/0003-agents-md-canonical-surface) — el registro de decisión sobre `AGENTS.md` como superficie canónica.
 - [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml) — el fixture canónico de la lista de afirmaciones.
 - [`AGENTS.md`](https://github.com/ahmed-g-gad/apothem/blob/main/AGENTS.md) — la voz canónica del proyecto.
 - [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) — el espejo para Claude Code.
 - [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline) — la referencia canónica de la afirmación compartida Disciplina de planes.
 - [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) — la referencia canónica de la afirmación compartida Encabezado de autoría.
-- Especificación del proyecto §0.6 + §2.8 + §4.7 — el texto canónico completo que se refleja aquí.

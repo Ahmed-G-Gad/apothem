@@ -2,13 +2,13 @@
 title: "लेखकत्व हेडर — प्रति-फ़ाइल SPDX लाइसेंस लाइन"
 description: "प्रत्येक फ़ाइलप्रकार के लिए उपयुक्त टिप्पणी सिंटैक्स में कैनोनिकल एकल-लाइन हेडर का उपयोग करते हुए प्रति-फ़ाइल SPDX लाइसेंस आइडेंटिफ़ायर मार्कर परिभाषित और प्रवर्तित करें।"
 machineTranslated: true
-sourceHash: "c3e4f3695b73611c"
+sourceHash: "9781c864fd5c8152"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 {/* REUSE-IgnoreStart */}
 
-> **डाउनस्ट्रीम योगदानकर्ताओं के लिए कैनोनिकल मानक संदर्भ।** यह दस्तावेज़ परियोजना विनिर्देश के Authorship & File-Header अनुभागों (Spec §0.5 + §4.6) को प्रतिबिंबित करता है; यह वह स्वतंत्र संदर्भ है जो प्रकाशित रिपॉज़िटरी के साथ शिप होता है। आर्किटेक्चरल औचित्य ADR-0002 में दर्ज है।
+> **डाउनस्ट्रीम योगदानकर्ताओं के लिए कैनोनिकल मानक संदर्भ।** यह दस्तावेज़ लेखकत्व और फ़ाइल-हेडर नियमों का स्वतंत्र संदर्भ है और प्रकाशित रिपॉज़िटरी के साथ शिप होता है। इसके पीछे का निर्णय [ADR 0002](/docs/adr/0002-one-line-spdx-header) में दर्ज है।
 
 ---
 
@@ -91,7 +91,7 @@ SPDX लाइन परियोजना का लाइसेंस मश�
 
 **एकल-लाइन रूप।** प्रति-फ़ाइल प्रोवेनेंस एकल SPDX लाइन है; कॉपीराइट उपकरण रूट LICENSE में एक ही बार रहता है। सीमायुक्त बहु-लाइन बैनर बॉक्स (एक रेखांकित फ़्रेम में लिपटी कॉपीराइट, वेबसाइट, ईमेल, संपर्क लाइनें) वैलिडेटर द्वारा अस्वीकार किए जाते हैं: वे हर फ़ाइल में संपर्क और कॉपीराइट मेटाडेटा दोहराते हैं, और ऐसा कुछ नहीं जोड़ते जो मशीन-पठनीय लाइसेंस मार्कर REUSE/SPDX/SBOM टूलिंग को पहले से प्रदान नहीं करता। `src/apothem/schemas/authorship-header.txt` पर बाइट-सटीक फ़िक्स्चर एकल-लाइन रूप वहन करता है; वैलिडेटर इसी फ़िक्स्चर के विरुद्ध चलता है।
 
-**क्रॉस-संदर्भ।** LICENSE फ़ाइल (MIT) — विवाद की स्थिति में विधिक उपकरण ही नियंत्रक होता है। ADR-0006 बैनर-संकुचन के अनुसमर्थन का औचित्य दर्ज करता है।
+**क्रॉस-संदर्भ।** LICENSE फ़ाइल (MIT) — विवाद की स्थिति में विधिक उपकरण ही नियंत्रक होता है। [ADR 0002](/docs/adr/0002-one-line-spdx-header) दर्ज करता है कि एक पंक्ति बैनर बॉक्स की जगह क्यों लेती है।
 
 ---
 
@@ -152,10 +152,8 @@ Markdown और MDX फ़ाइलों के लिए, SPDX लाइन �
 
 ## यह भी देखें
 
-- ADR-0002 — आर्किटेक्चरल औचित्य, विचार किए गए विकल्प।
-- ADR-0006 — बैनर-संकुचन का अनुसमर्थन।
+- [ADR 0002](/docs/adr/0002-one-line-spdx-header) — एक-पंक्ति SPDX हेडर का निर्णय रिकॉर्ड।
 - [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt) — बाइट-सटीक कैनोनिकल फ़िक्स्चर।
 - [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt) — अपवाद सूची (regex/glob रूप)।
 - [`scripts/inject-header.py`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.py) और [`scripts/inject-header.sh`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.sh) — इंजेक्टर।
 - [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py) — वैलिडेटर।
-- परियोजना विनिर्देश §0.5 + §4.6 — यहाँ प्रतिबिंबित कैनोनिकल पाठ।

@@ -4,7 +4,7 @@ description: "Canonical normative reference for multi-surface harness configurat
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **Canonical normative reference for downstream contributors.** This document mirrors the project specification's Multi-Surface Harness Conventions sections (Spec §0.6 + §2.8 + §4.7); it is the standalone reference that ships with the published repo. The architectural rationale is recorded in ADR-0003.
+> **Canonical normative reference for downstream contributors.** This document is the standalone reference for the multi-surface harness conventions, and it ships with the published repo. The decision behind it is recorded in [ADR 0003](/docs/adr/0003-agents-md-canonical-surface).
 
 ---
 
@@ -22,7 +22,7 @@ Harness-runtime configuration is plural by deployment reality. The published eco
 
 Every convention surface in scope (§3) is a *channel* expressing the project's single conventions specification. The specification is decomposed into:
 
-- **Shared sections** — Plans Discipline, structured inquiry (or surface-equivalent), Authorship Header, Naming, Anti-Patterns, Modal Hierarchy. These MUST appear in every required surface and MUST be semantically equivalent across surfaces.
+- **Shared sections** — the eleven shared claims `AGENTS.md` lists in its AI Surface Canon: plans locality, authorship headers, ambiguity handling (structured inquiry or a surface equivalent), naming, release freshness, human-only authorship, agent-guidance surface locality, session closure, public-surface plain language, the operating loop, and the synthesis posture. The claim list also covers the modal hierarchy, the forbidden patterns, and the synced unit. These MUST appear in every required surface and MUST be semantically equivalent across surfaces.
 - **Surface-specific sections** — capability framings, tool-call patterns, codegen-vs-chat differences. These MAY differ across surfaces but MUST NOT contradict shared sections.
 
 The `multi-surface-coherence` validator (§7) runs on every CI run and on pre-commit, asserting the contract.
@@ -96,7 +96,7 @@ When two surfaces are detected as contradicting on a shared claim, the default r
 
 > `AGENTS.md` is the canonical project voice. Any contradicting surface is rewritten to mirror `AGENTS.md` semantics in surface-appropriate framing.
 
-A surface-specific override is permitted only with an explicit, in-file `<!-- coherence-override: <claim-id> -->` marker that points at an ADR explaining the deliberate divergence. The override marker is itself enumerated in the validator's allow-list and surfaces in the CI report.
+A surface-specific override is permitted only with an explicit, in-file `<!-- coherence-override: <claim-id> -->` marker that points at an ADR under [decision records](/docs/adr) explaining the deliberate divergence. The validator reports each honored marker as a warning in the CI report.
 
 For this repository the ratified reconciliation strategy is **`agents-md-wins`**: `AGENTS.md` is canonical, and every active harness mirror stays semantically equivalent.
 
@@ -128,10 +128,9 @@ Three validators co-implement the coherence contract:
 
 ## See Also
 
-- ADR-0003 — architectural rationale, alternatives considered.
+- [ADR 0003](/docs/adr/0003-agents-md-canonical-surface) — the decision record for `AGENTS.md` as the canonical surface.
 - [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml) — the canonical claim list fixture.
 - [`AGENTS.md`](https://github.com/ahmed-g-gad/apothem/blob/main/AGENTS.md) — the canonical project voice.
 - [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) — the Claude Code mirror.
 - [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline) — the Plans Discipline shared claim's canonical reference.
 - [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) — the Authorship Header shared claim's canonical reference.
-- Project specification §0.6 + §2.8 + §4.7 — the full canonical text mirrored here.
