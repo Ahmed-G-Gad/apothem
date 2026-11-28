@@ -1,13 +1,15 @@
 ---
 title: "Apothem v1.6.0 — recover lost files, safer uninstall"
-description: "Apothem v1.6.0 stops removing folders that hold your own files, shows how to recover them from backups, makes uninstall remove only what Apothem wrote, and tightens the installer's release checks."
+description: "Apothem v1.6.0 stops removing folders that hold your own files, shows how to recover them from backups, makes uninstall remove only what Apothem wrote, tightens the installer's release checks, and makes the conformity gate safe and fast to run on a project you did not make."
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-Apothem v1.6.0 fixes a data-loss bug, makes uninstall and update leave your
-files alone apart from the cases listed under *Safer uninstall and update*,
-and checks each release more strictly before it installs. Read the first
-section before you upgrade.
+Apothem v1.6.0, released on 2026-11-28, fixes a data-loss bug, makes
+uninstall and update leave your files alone apart from the cases listed under
+*Safer uninstall and update*, and checks each release more strictly before it
+installs. It also makes the conformity gate safe and fast to run on a project
+you did not make, rebuilds the `ui-design` skill, and fixes the documentation
+sidebar in every language. Read the first section before you upgrade.
 
 ## What this release fixes
 
@@ -104,6 +106,9 @@ with the same warning.
   When no install record matches, it prints `uninstall did not finish`
   instead of `Uninstalled`, then a `Note:` line that names what it left,
   what it still removed and what to check next.
+  An uninstall that an unexpected error or `Ctrl+C` stops while it removes
+  the recorded files is recorded as unfinished too, so running it again
+  finishes the job.
 - **Links are left alone.** An install, update or uninstall no longer enters,
   removes or backs up anything through a symbolic link or a Windows junction
   in a folder it cleans up. It leaves the link in place and names it in a
@@ -183,7 +188,9 @@ with the same warning.
   wrote, so a command someone else committed to a project's hook files no
   longer runs when you run `apothem doctor`. It reports any other command
   as `hook.unchecked`. Hooks installed by an earlier release stay unchecked
-  until you run `apothem update`.
+  until you run `apothem update`. With `--project`, it reads at most 100
+  commands from one hook file, and it skips a hook file larger than 4 MB or
+  reached through a link, naming it as `hook.unchecked`.
 - **The installers keep the engine's data.** Replacing an install at
   `APOTHEM_HOME` with `--yes` used to delete the whole folder, with the rollback backups,
   install records, plans and memory. The installer now checks the new release
@@ -251,6 +258,33 @@ that made such a run start a program. The gate now turns those options off on
 git's command line, and on Windows it no longer runs a `git.exe` from the
 folder it was started in.
 
+Such a project can also hold links, named pipes and a `.git` entry that
+points somewhere else. The gate now handles them as follows:
+
+- **It reads files one level at a time.** Every project file a check reads is
+  opened folder by folder from the project folder, never through a symbolic
+  link or a Windows junction, and a read never waits on a named pipe. A file
+  swapped for a link while the gate runs is not read through. Each report
+  lists the links and special files it left out under `skipped_links`.
+- **It refuses to run git on a linked `.git`.** Before a check runs `git`, it
+  looks at the `.git` entry of the project and of each folder above it that
+  git searches. If any of them is a link, the check does not run `git` and
+  fails with a message that names the link.
+- **`--all-perwrite` reads only regular text files inside the project,** up to
+  64 MiB each, and counts every path it skips, by reason.
+- **A stalled check no longer holds up the run.** Each check has 10 minutes.
+  One still running then is stopped, with every program it started, and
+  reported as failed instead of passed.
+- **`link-check` never looks up a link to a network share,** so a link such as
+  `\\host\share\page.md` in a checked file no longer opens a connection to
+  that host.
+- **Path names are read byte for byte,** and a failed `git` in a `--staged`
+  check run from a subfolder now fails the check instead of passing it.
+
+The gate is also faster: `--all` runs its checks side by side, at most eight
+at once, and a full run on Apothem's own repository dropped from about 100
+seconds to about 12 on Windows.
+
 ## Harness changes worth knowing
 
 ### OpenCode
@@ -311,6 +345,50 @@ folder it was started in.
   where the Antigravity CLI loads plugins. This folder is shared by the CLI,
   the App and the IDE, so the plugin applies in all three. An install or
   update over an earlier install backs up the old folder and removes it.
+
+## The `ui-design` skill, rebuilt
+
+The `ui-design` skill now reads the project before it asks anything, then
+picks a scope (a component, a page or an app screen) that decides which steps
+and checks run. Its rules sit in four bands: a baseline that never bends,
+habits that bend only with a written reason, polish findings you fix or
+acknowledge, and bookkeeping that never changes the verdict. Each build
+writes a short record at the top of its stylesheet and an entry in a
+`design-log.md` build log, so a later session reads past decisions instead of
+guessing them. The `design-critic` reviewer checks the opening screen before
+the rest is built, and the whole page before delivery. `DESIGN.md` is now
+optional: the skill writes it only when you ask or a multi-page redesign
+needs it. The skill keeps its working files in `.apothem/ui-design/`, out of
+version control, and asks before it adds that folder to `.gitignore`. It
+fetches a page only after you approve its address, and starts a development
+server or a project script only after you approve the folder and the exact
+command.
+
+## Documentation
+
+- **The sidebar is back at full width in every language.** On tablets and
+  desktops it had shrunk to a strip a few pixels wide. Each section's title
+  now opens its overview page, a separate button opens and closes the section
+  and tells a screen reader whether it is open, and each page is listed once.
+  Every translated sidebar lists the same pages in the same order as the
+  English one.
+- **Page text shows as written.** Fields that ran together now show one per
+  line, and backticks and asterisks no longer show as literal characters.
+- **Links in a translated page keep you in your language.** A link to another
+  docs page opens its translated copy, at the matching section, when your
+  language has one.
+- **Every translation is current.** The translated pages in all eleven
+  languages were refreshed to match the current English text.
+
+## For contributors
+
+- **Tests cannot write into your real home folder.** While pytest runs,
+  Apothem stops any write, removal or lock file in `~/.apothem`,
+  `~/.config/apothem` or a tool folder in your home with `RealHomeWriteError`,
+  before anything changes. Reads, dry runs and previews still work.
+- **CI checks more before a merge.** It fails a pull request whose docs
+  sidebar differs from the English page order, whose built pages show a
+  literal `**` or backtick, or that edits the notes of a released version.
 
 ## How to upgrade
 
