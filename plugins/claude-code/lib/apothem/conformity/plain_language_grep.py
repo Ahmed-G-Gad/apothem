@@ -25,9 +25,8 @@ the supplied root and inspects ONLY in-scope surfaces:
 - ``site/content/docs/**/*.{md,mdx}`` — the documentation tree.
 
 OUT of scope (skipped wholesale): technical documentation routes
-(``adr/``, ``blog/``, ``comparison/``, ``reference/``, the
-agent-architecture concept page, and the instruction-surface convention
-references; a decision record names the instruction files it decides about),
+(``blog/``, ``comparison/``, ``reference/``, the agent-architecture
+concept page, and the instruction-surface convention references),
 generated reference inventory blocks, ``rules/**``,
 ``commands/**``, ``agents/**``, ``skills/**``, ``.plans/**``, ``tests/**``,
 ``scripts/**``, every ``*.py`` / ``*.sh`` / ``*.ps1`` source file,
@@ -128,7 +127,6 @@ _DOCS_PATH_PARTS: Final[tuple[str, ...]] = ("site", "content", "docs")
 _README_FILENAME: Final[str] = "README.md"
 _MARKDOWN_SUFFIXES: Final[frozenset[str]] = frozenset({".md", ".mdx"})
 _TECHNICAL_DOC_PREFIXES: Final[tuple[str, ...]] = (
-    "site/content/docs/adr/",
     "site/content/docs/blog/",
     "site/content/docs/comparison/",
     "site/content/docs/reference/",
@@ -279,6 +277,16 @@ _README_ALLOWED_BRANDS: Final[frozenset[str]] = (
     - _GENERIC_MECHANISTIC_NOUNS
 )
 
+# Decision-record allowlist. A page under ``site/content/docs/adr/`` records a
+# decision about the instruction files themselves, so it names
+# ``.github/copilot-instructions.md``, ``AGENTS.md`` (and the
+# ``agents-md-wins`` strategy, the converted ``agents`` cohort) and the
+# ``AI Surface Canon`` section by their real names. Only those tokens clear;
+# every other forbidden token (process vocabulary, stage labels, other harness
+# names) is still flagged in new decision-record prose.
+_ADR_PAGE_PARENT: Final[str] = "site/content/docs/adr"
+_ADR_PAGE_ALLOWED_TOKENS: Final[frozenset[str]] = frozenset({"ai", "agents", "copilot"})
+
 
 @dataclass(frozen=True)
 class Finding:
@@ -363,19 +371,22 @@ def _delocalise_docs_path(norm: str) -> str:
 
 
 def _harness_page_allowlist(rel_path: str) -> frozenset[str]:
-    """Return the allowed-brand token set for a harness-page surface.
+    """Return the allowed-token set for a harness-page or decision-record surface.
 
     A page at ``site/content/docs/harnesses/<stem>.mdx`` may freely reference its own
     canonical brand identifier - the page IS the product description.
     Returns the lower-cased token set from
     ``_HARNESS_PAGE_ALLOWED_BRANDS[stem]`` when the path matches the
-    harness-page parent; ``frozenset()`` otherwise (no exemption).
+    harness-page parent; a decision record under ``site/content/docs/adr/``
+    gets ``_ADR_PAGE_ALLOWED_TOKENS``; ``frozenset()`` otherwise (no exemption).
     """
     norm = _delocalise_docs_path(rel_path.replace("\\", "/"))
     if norm == _README_FILENAME:
         return _README_ALLOWED_BRANDS
     if norm == _PRODUCT_INDEX_PATH:
         return _README_ALLOWED_BRANDS
+    if norm.startswith(_ADR_PAGE_PARENT + "/"):
+        return _ADR_PAGE_ALLOWED_TOKENS
     if not norm.startswith(_HARNESS_PAGE_PARENT + "/"):
         return frozenset()
     stem = Path(norm).stem

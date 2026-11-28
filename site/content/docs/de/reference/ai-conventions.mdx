@@ -2,7 +2,7 @@
 title: "Multi-Surface-Harness-Konventionen"
 description: "Kanonische normative Referenz für die Multi-Surface-Konfiguration von Harnesses und ihre Kohärenz über die Laufzeiten für Chat, IDE-Vervollständigung und Pull-Request-Review hinweg."
 machineTranslated: true
-sourceHash: "12a1b2b3fe445cae"
+sourceHash: "7ae40cdfd63ce888"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,7 +24,7 @@ Die Konfiguration der Harness-Laufzeiten ist durch die Realität der Bereitstell
 
 Jede Konventionsoberfläche im Geltungsbereich (§3) ist ein *Kanal*, der die eine Konventionsspezifikation des Projekts ausdrückt. Die Spezifikation gliedert sich in:
 
-- **Gemeinsame Abschnitte** — die elf gemeinsamen Aussagen, die `AGENTS.md` in seinem AI Surface Canon aufführt: Ort der Pläne, Autorschafts-Header, Umgang mit Mehrdeutigkeit (strukturierte Rückfrage oder ein oberflächenäquivalentes Mittel), Benennung, Aktualität der Releases, ausschließlich menschliche Autorschaft, Ort der Anleitungen für Agenten, Sitzungsabschluss, verständliche Sprache auf öffentlichen Oberflächen, die Arbeitsschleife und die Synthesehaltung. Die Aussagenliste deckt außerdem die modale Hierarchie, die verbotenen Muster und die synchronisierte Einheit ab. Diese MÜSSEN in jeder erforderlichen Oberfläche erscheinen und MÜSSEN über die Oberflächen hinweg semantisch äquivalent sein.
+- **Gemeinsame Abschnitte** — die elf gemeinsamen Aussagen, die `AGENTS.md` in seinem AI Surface Canon aufführt: Ort der Pläne, Autorschafts-Header, Umgang mit Mehrdeutigkeit (strukturierte Rückfrage oder ein oberflächenäquivalentes Mittel), Benennung, Aktualität der Releases, ausschließlich menschliche Autorschaft, Ort der Anleitungen für Agenten, Sitzungsabschluss, verständliche Sprache auf öffentlichen Oberflächen, die Arbeitsschleife und die Synthesehaltung. Die Aussagenliste deckt außerdem die modale Hierarchie, die verbotenen Muster, die synchronisierte Einheit und die Regel zur lebenden Dokumentation ab. Diese MÜSSEN in jeder erforderlichen Oberfläche erscheinen und MÜSSEN über die Oberflächen hinweg semantisch äquivalent sein.
 - **Oberflächenspezifische Abschnitte** — Fähigkeits-Rahmungen, Muster für Tool-Aufrufe, Unterschiede zwischen Codegenerierung und Chat. Diese DÜRFEN sich zwischen den Oberflächen unterscheiden, DÜRFEN aber den gemeinsamen Abschnitten NICHT widersprechen.
 
 Der Validator `multi-surface-coherence` (§7) läuft bei jedem CI-Lauf und im Pre-Commit und prüft den Vertrag.

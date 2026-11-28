@@ -2,7 +2,7 @@
 title: "Convenções de harness multissuperfície"
 description: "Referência normativa canônica para a configuração e a coerência de harnesses multissuperfície entre os runtimes de chat, de autocompletar no IDE e de revisão de PR."
 machineTranslated: true
-sourceHash: "12a1b2b3fe445cae"
+sourceHash: "7ae40cdfd63ce888"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,7 +24,7 @@ A configuração dos runtimes de harness é plural pela realidade da implantaç�
 
 Cada superfície de convenções no escopo (§3) é um *canal* que expressa a especificação única de convenções do projeto. A especificação se decompõe em:
 
-- **Seções compartilhadas** — as onze afirmações compartilhadas que o `AGENTS.md` lista em seu AI Surface Canon: localização dos planos, cabeçalhos de autoria, tratamento de ambiguidade (indagação estruturada ou equivalente da superfície), nomenclatura, atualidade das versões publicadas, autoria exclusivamente humana, localização das orientações para agentes, encerramento de sessão, linguagem simples nas superfícies públicas, o ciclo operacional e a postura de síntese. A lista de afirmações também cobre a hierarquia modal, os padrões proibidos e a unidade sincronizada. Elas DEVEM aparecer em todas as superfícies obrigatórias e DEVEM ser semanticamente equivalentes entre as superfícies.
+- **Seções compartilhadas** — as onze afirmações compartilhadas que o `AGENTS.md` lista em seu AI Surface Canon: localização dos planos, cabeçalhos de autoria, tratamento de ambiguidade (indagação estruturada ou equivalente da superfície), nomenclatura, atualidade das versões publicadas, autoria exclusivamente humana, localização das orientações para agentes, encerramento de sessão, linguagem simples nas superfícies públicas, o ciclo operacional e a postura de síntese. A lista de afirmações também cobre a hierarquia modal, os padrões proibidos, a unidade sincronizada e a regra de documentação viva. Elas DEVEM aparecer em todas as superfícies obrigatórias e DEVEM ser semanticamente equivalentes entre as superfícies.
 - **Seções específicas da superfície** — enquadramentos de capacidades, padrões de chamada de ferramentas, diferenças entre geração de código e chat. Elas PODEM diferir entre as superfícies, mas NÃO DEVEM contradizer as seções compartilhadas.
 
 O validador `multi-surface-coherence` (§7) é executado em toda execução de CI e no pre-commit, verificando o contrato.

@@ -2,7 +2,7 @@
 title: "Konvensi Harness Multi-Permukaan"
 description: "Referensi normatif kanonik untuk konfigurasi dan koherensi harness multi-permukaan di seluruh runtime chat, pelengkapan IDE, dan tinjauan PR."
 machineTranslated: true
-sourceHash: "12a1b2b3fe445cae"
+sourceHash: "7ae40cdfd63ce888"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,7 +24,7 @@ Konfigurasi runtime harness bersifat jamak karena realitas deployment. Ekosistem
 
 Setiap permukaan konvensi dalam cakupan (§3) adalah sebuah *kanal* yang mengekspresikan satu spesifikasi konvensi proyek. Spesifikasi itu diuraikan menjadi:
 
-- **Bagian bersama** — sebelas klaim bersama yang dicantumkan `AGENTS.md` dalam AI Surface Canon-nya: lokasi plan, header kepengarangan, penanganan ambiguitas (kueri terstruktur atau padanannya pada permukaan tersebut), penamaan, kesegaran rilis, kepengarangan khusus manusia, lokasi panduan agen, penutupan sesi, bahasa yang lugas di permukaan publik, siklus operasi, dan sikap sintesis. Daftar klaim juga mencakup hierarki modal, pola terlarang, dan unit yang disinkronkan. Bagian-bagian ini HARUS muncul di setiap permukaan yang diwajibkan dan HARUS setara secara semantik di semua permukaan.
+- **Bagian bersama** — sebelas klaim bersama yang dicantumkan `AGENTS.md` dalam AI Surface Canon-nya: lokasi plan, header kepengarangan, penanganan ambiguitas (kueri terstruktur atau padanannya pada permukaan tersebut), penamaan, kesegaran rilis, kepengarangan khusus manusia, lokasi panduan agen, penutupan sesi, bahasa yang lugas di permukaan publik, siklus operasi, dan sikap sintesis. Daftar klaim juga mencakup hierarki modal, pola terlarang, unit yang disinkronkan, dan aturan dokumentasi hidup. Bagian-bagian ini HARUS muncul di setiap permukaan yang diwajibkan dan HARUS setara secara semantik di semua permukaan.
 - **Bagian khusus permukaan** — pembingkaian kapabilitas, pola pemanggilan tool, perbedaan codegen vs. chat. Bagian-bagian ini BOLEH berbeda antarpermukaan tetapi TIDAK BOLEH bertentangan dengan bagian bersama.
 
 Validator `multi-surface-coherence` (§7) dijalankan pada setiap eksekusi CI dan pada pre-commit, untuk menegaskan kontrak tersebut.

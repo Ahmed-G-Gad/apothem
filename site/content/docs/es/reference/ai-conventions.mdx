@@ -2,7 +2,7 @@
 title: "Convenciones de entorno multi-superficie"
 description: "Referencia normativa canónica para la configuración de entornos multi-superficie y su coherencia entre los tiempos de ejecución de chat, de autocompletado en el IDE y de revisión de pull requests."
 machineTranslated: true
-sourceHash: "12a1b2b3fe445cae"
+sourceHash: "7ae40cdfd63ce888"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,7 +24,7 @@ La configuración del tiempo de ejecución de los entornos es plural por la real
 
 Cada superficie de convenciones dentro del alcance (§3) es un *canal* que expresa la especificación única de convenciones del proyecto. La especificación se descompone en:
 
-- **Secciones compartidas**: las once afirmaciones compartidas que `AGENTS.md` enumera en su AI Surface Canon: ubicación de los planes, encabezados de autoría, tratamiento de la ambigüedad (indagación estructurada o su equivalente en la superficie), nomenclatura, vigencia de las versiones publicadas, autoría exclusivamente humana, ubicación de la guía para agentes, cierre de sesión, lenguaje claro en las superficies públicas, el ciclo operativo y la postura de síntesis. La lista de afirmaciones también cubre la jerarquía modal, los patrones prohibidos y la unidad sincronizada. Estas DEBEN aparecer en cada superficie obligatoria y DEBEN ser semánticamente equivalentes entre superficies.
+- **Secciones compartidas**: las once afirmaciones compartidas que `AGENTS.md` enumera en su AI Surface Canon: ubicación de los planes, encabezados de autoría, tratamiento de la ambigüedad (indagación estructurada o su equivalente en la superficie), nomenclatura, vigencia de las versiones publicadas, autoría exclusivamente humana, ubicación de la guía para agentes, cierre de sesión, lenguaje claro en las superficies públicas, el ciclo operativo y la postura de síntesis. La lista de afirmaciones también cubre la jerarquía modal, los patrones prohibidos, la unidad sincronizada y la regla de documentación viva. Estas DEBEN aparecer en cada superficie obligatoria y DEBEN ser semánticamente equivalentes entre superficies.
 - **Secciones específicas de cada superficie**: encuadres de capacidades, patrones de llamada a herramientas, diferencias entre la generación de código y el chat. Estas PUEDEN diferir entre superficies, pero NO DEBEN contradecir las secciones compartidas.
 
 El validador `multi-surface-coherence` (§7) se ejecuta en cada ejecución de CI y en el pre-commit, y comprueba el contrato.

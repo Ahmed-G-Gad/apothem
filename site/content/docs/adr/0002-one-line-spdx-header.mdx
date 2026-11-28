@@ -44,7 +44,8 @@ lockfiles, generated and vendored files, binaries, and everything under
 - The `file-header` validator, run with `--strict` in CI and by the
   pre-commit hook.
 - The injector, `scripts/inject-header.py` and `scripts/inject-header.sh`.
-- The header guard hooks that add the line when a file is created.
+- The Write and Edit header guard hooks, which report a missing or malformed
+  header and recommend the corrected content (advisory).
 - The header claims in `AGENTS.md`, `CLAUDE.md` and
   `.github/copilot-instructions.md`.
 - The [authorship header](/docs/reference/authorship-header) reference, which

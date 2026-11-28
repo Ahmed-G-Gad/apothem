@@ -2,7 +2,7 @@
 title: "Conventions d'environnements multi-surfaces"
 description: "Référence normative canonique pour la configuration des environnements multi-surfaces et leur cohérence entre les environnements d'exécution de chat, de complétion dans l'IDE et de revue de PR."
 machineTranslated: true
-sourceHash: "12a1b2b3fe445cae"
+sourceHash: "7ae40cdfd63ce888"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,7 +24,7 @@ La configuration des environnements d'exécution est plurielle du fait de la ré
 
 Chaque surface de conventions dans le périmètre (§3) est un *canal* qui exprime la spécification unique des conventions du projet. Cette spécification se décompose en :
 
-- **Sections partagées** — les onze affirmations partagées que `AGENTS.md` énumère dans son AI Surface Canon : emplacement des plans, en-têtes de paternité, traitement de l'ambiguïté (enquête structurée ou équivalent propre à la surface), nommage, fraîcheur des versions publiées, paternité exclusivement humaine, emplacement des consignes pour agents, clôture de session, langage clair sur les surfaces publiques, la boucle opérationnelle et la posture de synthèse. La liste d'affirmations couvre aussi la hiérarchie modale, les motifs interdits et l'unité synchronisée. Elles DOIVENT figurer dans chaque surface requise et DOIVENT être sémantiquement équivalentes d'une surface à l'autre.
+- **Sections partagées** — les onze affirmations partagées que `AGENTS.md` énumère dans son AI Surface Canon : emplacement des plans, en-têtes de paternité, traitement de l'ambiguïté (enquête structurée ou équivalent propre à la surface), nommage, fraîcheur des versions publiées, paternité exclusivement humaine, emplacement des consignes pour agents, clôture de session, langage clair sur les surfaces publiques, la boucle opérationnelle et la posture de synthèse. La liste d'affirmations couvre aussi la hiérarchie modale, les motifs interdits, l'unité synchronisée et la règle de documentation vivante. Elles DOIVENT figurer dans chaque surface requise et DOIVENT être sémantiquement équivalentes d'une surface à l'autre.
 - **Sections propres à une surface** — cadrages des capacités, motifs d'appel d'outils, différences entre génération de code et chat. Elles PEUVENT différer d'une surface à l'autre, mais NE DOIVENT PAS contredire les sections partagées.
 
 Le validateur `multi-surface-coherence` (§7) s'exécute à chaque exécution de la CI et en pre-commit, et vérifie le respect du contrat.

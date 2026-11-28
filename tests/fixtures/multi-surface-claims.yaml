@@ -445,7 +445,7 @@ claims:
       - .windsurfrules
     semantic-equivalence-tokens:
       - documented public surface
-      - same change-set
+      - documentation page
       - update-reference-inventory.mjs
       - docs-reference-sync
 
@@ -465,7 +465,7 @@ claims:
       - /plan
       - /fortress
       - release gate
-      - plan → harden → ship
+      - release-gated state
 
   - id: synthesis.posture
     claim: "A non-trivial mission SHOULD use genuinely-independent critique-synthesis multi-agent work, specified at src/apothem/rules/multi-agent-workflow.md and reachable via /workflow; it is opt-in and default-off, so a clean install never auto-invokes it."

@@ -33,7 +33,8 @@ them. They are never forced into folders the harness reserves for itself.
 - Each harness configuration holds one Apothem-owned dotted folder, so an
   uninstall knows exactly what is Apothem's.
 - The hooks, the conformity gate and the schemas sit side by side under
-  `support/`, so the hooks find what they need in every harness.
+  `support/`, so the hooks find what they need in every harness that uses the
+  support folder for hooks.
 - An adapter author checks the harness's documentation for a native place
   before falling back to the support folder.
 

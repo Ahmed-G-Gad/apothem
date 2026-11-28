@@ -39,8 +39,9 @@ adapters. It is a parity check: a test asserts that the adapters found under
 - `tests/unit/test_adapter_discovery.py`, the parity test between discovery
   and the registry.
 - `tests/unit/test_harness_registry.py`, which checks the registry's entries,
-  and the registry-capability-consistency validator, which checks them against
-  each adapter's `capabilities.yml`.
+  and the registry-capability-consistency validator, which checks each
+  registry capability cell against an install entry in the propagation
+  manifest, the adapter's materializer, or a documented projection.
 - The Harness Adapter Pattern section of `AGENTS.md` and `CLAUDE.md`.
 - The [harness registry](/docs/reference/harness-registry) reference.
 
