@@ -45,6 +45,42 @@ pages, blog posts, and static assets.
   `CNAME`, `robots.txt`, `security.txt`, `ai.txt`, the `llms.txt` /
   `llms-full.txt` summaries, the logo set, and the social-preview images.
 
+### Route and component files
+
+`app/` and `components/` have no README of their own, so this table is their
+file index. Name a new route or component here in the same change.
+
+| File | Role |
+|------|------|
+| `app/layout.tsx` | The one root layout: renders `<html>` for every locale, with a head script that sets `lang` and `dir` from the URL before paint, and the site providers. |
+| `app/page.tsx` | The English landing page. |
+| `app/not-found.tsx` | The 404 page, with the site's navigation and links back into the docs. |
+| `app/sitemap.ts` | Emits `/sitemap.xml`: the landing page, the docs index and every authored docs page in each routed locale, with hreflang alternates. |
+| `app/global.css` | The site-wide styles and theme colours. |
+| `app/docs/layout.tsx` | The English docs layout: the English page tree in the shared docs shell. |
+| `app/[lang]/layout.tsx` | The layout of the non-English routes; mounts `locale-override.tsx` so the language switcher shows the active language. |
+| `app/[lang]/docs/layout.tsx` | The docs layout of one language: its own page tree, falling back to English for an untranslated page, in the shared docs shell. |
+| `app/api/search/[locale]/route.ts` | Emits one static search index per routed locale at build time, which keeps each file under GitHub Pages' size limit. |
+| `components/docs-shell.tsx` | The docs chrome both docs layouts render: brand mark, theme toggle, GitHub link and sidebar. |
+| `components/docs-landmarks.tsx` | Wraps two Fumadocs layout slots so a docs page has a `nav` and a `main` landmark. |
+| `components/sidebar-folder.tsx` | The sidebar section with its own open/close button (see above). |
+| `components/localized-link.tsx` | The MDX link component of the per-locale docs route (see below). |
+| `components/static-search-dialog.tsx` | The search dialog, which loads the static per-locale index and searches it in the browser. |
+| `components/site-providers.tsx` | Wraps Fumadocs' `RootProvider` and switches language without an `/en/` prefix for English. |
+| `components/locale-override.tsx` | Gives a non-English subtree its own locale in the providers' context. |
+| `components/locale-switcher.tsx` | The language menu on the landing pages. |
+| `components/document-locale.tsx` | Keeps `<html lang>` and `dir` on the current page's language after a move on the client. |
+| `components/chrome-lang.tsx` | Marks the English labels of the docs chrome as English on a translated page. |
+| `components/stale-translation-notice.tsx` | The note on a translated page whose English page changed after the translation, with a link to the English page. |
+| `components/landing-nav.tsx` / `components/landing-footer.tsx` | The landing page's top navigation and footer; on a translated landing page their links keep the language. |
+| `components/feature-grid.tsx` / `components/feature-matrix.tsx` | The landing page's feature cards and its comparison table. |
+| `components/command-block.tsx` | The landing quick-start command block, with a copy button per command. |
+| `components/hero-badges.tsx` | The landing badge row; each badge reads its value live from shields.io. |
+| `components/brand-mark.tsx` / `components/animated-mark.tsx` | The logo, still and animated, in a light and a dark version. |
+| `components/github-icon.tsx` | The GitHub glyph as an inline SVG. |
+| `components/theme-toggle.tsx` | The light and dark theme switch, shared by the landing and docs headers. |
+| `components/ui/badge.tsx` / `components/ui/button.tsx` / `components/ui/card.tsx` | Small styled building blocks the landing and 404 pages use. |
+
 ## Local Development
 
 ```bash

@@ -20,7 +20,7 @@
 
 ## Adapter subpackage shape
 
-Each harness subpackage carries the same core module set: `__init__.py` (the adapter class), `install.py`, `uninstall.py`, `update.py`, and `verify.py`. Adapters that render a native configuration file also carry `materializer.py`. Every subpackage also ships two declarative companions — `capabilities.yml` (the adapter's per-cohort capability matrix, cross-checked by the registry-capability-consistency validator) and `STANDARD-CONVENTION-PIN.md` (the pinned upstream-convention reference the adapter honors) — and, where the harness materializes native config from fixed files, a `templates/` directory. Template-propagation and conversion behavior is declared in `lib/propagation-manifest.yaml`.
+Each harness subpackage carries the same core module set: `__init__.py` (the adapter class), `install.py`, `uninstall.py`, `update.py`, and `verify.py`. Adapters that render a native configuration file also carry `materializer.py`. Every subpackage also ships two declarative companions — `capabilities.yml` (the adapter's per-cohort capability matrix, cross-checked by the registry-capability-consistency validator) and `STANDARD-CONVENTION-PIN.md` (the pinned upstream-convention reference the adapter honors) — and, where the harness materializes native config from fixed files, a `templates/` directory. Template-propagation and conversion behavior is declared in `lib/propagation-manifest.yaml`. One adapter carries a module beyond that set: `open_claw/rules_file.py` writes the Apothem rules file, `apothem/AGENTS.md`, into each OpenClaw workspace the install finds and registers it with OpenClaw's `bootstrap-extra-files` hook; `open_claw/install.py` and `open_claw/uninstall.py` call it. The adapter subpackages have no README of their own, so this section is their file index. The install driver every adapter delegates to is the [`_shared/`](_shared/) package, which has its own README.
 
 ## The seventeen harnesses
 
@@ -60,6 +60,7 @@ Each harness subpackage carries the same core module set: `__init__.py` (the ada
 
 ## Related
 
+- [`_shared/`](_shared/) — the shared install driver package every adapter's `install.py` delegates to, with the merge, backup, rollback and retention code behind it.
 - [`lib/harness_materializer.py`](../lib/harness_materializer.py) — shared building blocks for the single-file materializers.
 - [`lib/harness_protocol.py`](../lib/harness_protocol.py) — the `HarnessAdapter` Protocol contract, defined in the foundation layer and re-exported here.
 - [`lib/harness_registry.py`](../lib/harness_registry.py) — central exact-seventeen registry and adapter contract metadata.
