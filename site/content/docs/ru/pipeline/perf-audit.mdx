@@ -2,7 +2,7 @@
 title: "/perf-audit"
 description: "/perf-audit — Проводит аудит по бюджетам производительности для каждого класса (среда выполнения хуков, verify-ecosystem, шлюз соответствия, тесты, делегированные исполнители, shell, lint) методом USE."
 machineTranslated: true
-sourceHash: "fecd1962acded819"
+sourceHash: "c5ac007ca3ec2927"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,7 +25,7 @@ sourceHash: "fecd1962acded819"
 
 ## Входы
 
-Репозиторий хоста, содержащий `hooks/`, `src/apothem/benchmarks/`, `tests/` и заглушки начальной загрузки хуков `hooks/lib/bootstrap.{sh,ps1}`
+Копия репозитория Apothem, содержащая `src/apothem/hooks/`, `src/apothem/benchmarks/`, `tests/` и заглушки начальной загрузки хуков `src/apothem/hooks/lib/bootstrap.{sh,ps1}`
 
 ## Выходы
 
@@ -44,7 +44,7 @@ sourceHash: "fecd1962acded819"
 | Симптом | Причина | Восстановление |
 |---------|-------|----------|
 | Шлюз качества FAIL | Выход не соответствует стандартам | Исправьте выход и перезапустите |
-| Отсутствует входной файл | В репозитории нет `src/apothem/benchmarks/` | Добавьте драйверы бенчмарков и перезапустите; команда не запустится, пока их нет |
+| Это не копия Apothem | В репозитории нет `src/apothem/benchmarks/` | Исправлять нечего: команда сообщает, что измерение неприменимо, и `/audit` его пропускает |
 
 ## Примеры
 

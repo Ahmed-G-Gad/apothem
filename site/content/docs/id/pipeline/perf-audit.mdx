@@ -2,7 +2,7 @@
 title: "/perf-audit"
 description: "/perf-audit — Mengaudit terhadap anggaran kinerja per kelas (runtime hook, verify-ecosystem, gerbang konformitas, tes, pekerja terdelegasi, shell, lint), menggunakan metode USE."
 machineTranslated: true
-sourceHash: "fecd1962acded819"
+sourceHash: "c5ac007ca3ec2927"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,7 +25,7 @@ Dengan argumen:
 
 ## Masukan
 
-Repositori host yang berisi `hooks/`, `src/apothem/benchmarks/`, `tests/`, dan stub bootstrap hook `hooks/lib/bootstrap.{sh,ps1}`
+Salinan repositori Apothem yang berisi `src/apothem/hooks/`, `src/apothem/benchmarks/`, `tests/`, dan stub bootstrap hook `src/apothem/hooks/lib/bootstrap.{sh,ps1}`
 
 ## Keluaran
 
@@ -44,7 +44,7 @@ Perintah ini menjalankan lima fase audit: penyerapan masukan, penemuan anggaran 
 | Gejala | Penyebab | Pemulihan |
 |---------|-------|----------|
 | Gerbang kualitas FAIL | Keluaran tidak memenuhi standar | Perbaiki keluaran dan jalankan ulang |
-| File masukan hilang | Repositori tidak memiliki `src/apothem/benchmarks/` | Tambahkan driver benchmark, lalu jalankan ulang; perintah menolak berjalan hingga driver tersebut ada |
+| Bukan salinan repositori Apothem | Repositori tidak memiliki `src/apothem/benchmarks/` | Tidak ada yang perlu diperbaiki: perintah melaporkan dimensi ini sebagai tidak berlaku, dan `/audit` melewatinya |
 
 ## Contoh
 

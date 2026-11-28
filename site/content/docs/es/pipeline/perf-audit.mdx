@@ -2,7 +2,7 @@
 title: "/perf-audit"
 description: "/perf-audit — Audita frente a presupuestos de rendimiento por clase (tiempo de ejecución de hooks, verify-ecosystem, puerta de conformidad, pruebas, trabajadores delegados, shell, lint), con el método USE."
 machineTranslated: true
-sourceHash: "fecd1962acded819"
+sourceHash: "c5ac007ca3ec2927"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,7 +25,7 @@ Con argumentos:
 
 ## Entradas
 
-Repositorio anfitrión que contiene `hooks/`, `src/apothem/benchmarks/`, `tests/` y los stubs de arranque de hooks `hooks/lib/bootstrap.{sh,ps1}`
+Una copia del repositorio de Apothem que contiene `src/apothem/hooks/`, `src/apothem/benchmarks/`, `tests/` y los stubs de arranque de hooks `src/apothem/hooks/lib/bootstrap.{sh,ps1}`
 
 ## Salidas
 
@@ -44,7 +44,7 @@ El comando ejecuta cinco fases de auditoría: ingesta de entradas, descubrimient
 | Síntoma | Causa | Recuperación |
 |---------|-------|----------|
 | Puerta de calidad FAIL | La salida no cumple los estándares | Corrige la salida y vuelve a ejecutar |
-| Falta un archivo de entrada | El repositorio no tiene `src/apothem/benchmarks/` | Añade los controladores de benchmarks y vuelve a ejecutar; el comando se niega hasta que existan |
+| No es una copia de Apothem | El repositorio no tiene `src/apothem/benchmarks/` | No hay nada que corregir: el comando informa de que la dimensión no aplica y `/audit` la omite |
 
 ## Ejemplos
 
