@@ -58,8 +58,11 @@ file index. Name a new route or component here in the same change.
 | `app/sitemap.ts` | Emits `/sitemap.xml`: the landing page, the docs index and every authored docs page in each routed locale, with hreflang alternates. |
 | `app/global.css` | The site-wide styles and theme colours. |
 | `app/docs/layout.tsx` | The English docs layout: the English page tree in the shared docs shell. |
+| `app/docs/[[...slug]]/page.tsx` | The English docs page route: renders one page at its `/docs/...` URL and emits every English page at build time. |
 | `app/[lang]/layout.tsx` | The layout of the non-English routes; mounts `locale-override.tsx` so the language switcher shows the active language. |
+| `app/[lang]/page.tsx` | The landing card of one non-English language, which leads into that language's docs. |
 | `app/[lang]/docs/layout.tsx` | The docs layout of one language: its own page tree, falling back to English for an untranslated page, in the shared docs shell. |
+| `app/[lang]/docs/[[...slug]]/page.tsx` | The docs page route of one language: renders its translation, or the English page marked as English, shows the out-of-date notice on a stale translation, and keeps body links in that language. |
 | `app/api/search/[locale]/route.ts` | Emits one static search index per routed locale at build time, which keeps each file under GitHub Pages' size limit. |
 | `components/docs-shell.tsx` | The docs chrome both docs layouts render: brand mark, theme toggle, GitHub link and sidebar. |
 | `components/docs-landmarks.tsx` | Wraps two Fumadocs layout slots so a docs page has a `nav` and a `main` landmark. |

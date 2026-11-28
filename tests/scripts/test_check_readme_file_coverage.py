@@ -217,17 +217,23 @@ class TestReadmeLessSubfolders:
     sits in was checked, although the parent README is the subfolder's index.
     """
 
-    def test_nearest_ancestor_readme_skips_readme_less_levels(
-        self, tmp_path: Path
-    ) -> None:
-        _tree(tmp_path, {"pkg/README.md": "", "pkg/a/b/mod.py": ""})
-        assert cov.nearest_ancestor_readme(Path("pkg/a/b"), tmp_path) == Path(
+    def test_nearest_ancestor_readme_skips_readme_less_levels(self) -> None:
+        tracked = {Path("pkg/README.md"), Path("pkg/a/b/mod.py")}
+        assert cov.nearest_ancestor_readme(Path("pkg/a/b"), tracked) == Path(
             "pkg/README.md"
         )
 
-    def test_nearest_ancestor_readme_is_none_without_one(self, tmp_path: Path) -> None:
-        _tree(tmp_path, {"pkg/a/mod.py": ""})
-        assert cov.nearest_ancestor_readme(Path("pkg/a"), tmp_path) is None
+    def test_nearest_ancestor_readme_is_none_without_one(self) -> None:
+        tracked = {Path("pkg/a/mod.py")}
+        assert cov.nearest_ancestor_readme(Path("pkg/a"), tracked) is None
+
+    def test_nearest_ancestor_readme_ignores_an_untracked_readme(self) -> None:
+        # Presence is read from the tracked set: a README.md on disk that git
+        # does not track must not change which README governs the folder.
+        tracked = {Path("pkg/README.md"), Path("pkg/a/b/mod.py")}
+        assert cov.nearest_ancestor_readme(Path("pkg/a/b"), tracked) == Path(
+            "pkg/README.md"
+        )
 
     def test_unnamed_subfolder_module_is_reported_against_the_parent_readme(
         self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
@@ -291,3 +297,130 @@ class TestReadmeLessSubfolders:
     def test_a_front_page_readme_governs_no_subfolder(self, tmp_path: Path) -> None:
         _tree(tmp_path, {"README.md": "# Apothem\n", ".github/scripts/guard.sh": ""})
         assert cov.main([str(tmp_path), "--strict"]) == 0
+
+    def test_an_untracked_local_readme_does_not_exempt_a_subfolder(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # The regression this pins: the check looked for README.md on disk, so
+        # an untracked local README in a subfolder skipped the folder locally
+        # while CI, which never sees that file, still checked it.
+        _tree(
+            tmp_path,
+            {
+                "scripts/README.md": "# scripts\n",
+                "scripts/release/README.md": "| `notes.py` | Local only. |",
+                "scripts/release/notes.py": "",
+            },
+        )
+        tracked = {Path("scripts/README.md"), Path("scripts/release/notes.py")}
+        monkeypatch.setattr(cov, "tracked_files", lambda _root: tracked)
+        assert cov.main([str(tmp_path), "--strict"]) == 1
+
+    def test_conformity_single_file_fixtures_are_not_held(self, tmp_path: Path) -> None:
+        _tree(
+            tmp_path,
+            {
+                "tests/README.md": "| `conformity/` | Per-validator self-tests. |",
+                "tests/conformity/bare-except-grep/pass.py": "",
+                "tests/conformity/bare-except-grep/fail.py": "",
+                "tests/conformity/magic-number-grep/pass.py": "",
+            },
+        )
+        assert cov.main([str(tmp_path), "--strict"]) == 0
+
+
+@pytest.mark.usefixtures("track_everything")
+class TestCollidingNames:
+    """A name more than one indexed file carries must be named by its path.
+
+    The regression this pins: ``site/README.md`` named ``app/page.tsx`` and so
+    vouched, through the bare name ``page.tsx``, for three other ``page.tsx``
+    routes it never listed.
+    """
+
+    def test_a_colliding_name_needs_its_relative_path(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        _tree(
+            tmp_path,
+            {
+                "site/README.md": "| `app/page.tsx` | Landing. |",
+                "site/app/page.tsx": "",
+                "site/app/[lang]/page.tsx": "",
+                "site/app/docs/[[...slug]]/page.tsx": "",
+            },
+        )
+        assert cov.main([str(tmp_path), "--strict"]) == 1
+        out = capsys.readouterr().out
+        reported = [line.strip() for line in out.splitlines() if line.startswith("  ")]
+        assert reported == ["app/[lang]/page.tsx", "app/docs/[[...slug]]/page.tsx"]
+
+    def test_every_colliding_path_named_reports_ok(self, tmp_path: Path) -> None:
+        _tree(
+            tmp_path,
+            {
+                "site/README.md": (
+                    "| `app/page.tsx` | Landing. |\n"
+                    "| `app/[lang]/page.tsx` | Local landing. |\n"
+                    "| `app/docs/[[...slug]]/page.tsx` | Docs. |\n"
+                ),
+                "site/app/page.tsx": "",
+                "site/app/[lang]/page.tsx": "",
+                "site/app/docs/[[...slug]]/page.tsx": "",
+            },
+        )
+        assert cov.main([str(tmp_path), "--strict"]) == 0
+
+    def test_a_name_shared_with_the_readme_folder_collides(
+        self, tmp_path: Path
+    ) -> None:
+        # The README's own install.py row must not also vouch for the one below.
+        _tree(
+            tmp_path,
+            {
+                "pkg/README.md": "| `install.py` | Top level. |",
+                "pkg/install.py": "",
+                "pkg/sub/install.py": "",
+            },
+        )
+        assert cov.main([str(tmp_path), "--strict"]) == 1
+
+    def test_a_placeholder_segment_names_every_sibling(self, tmp_path: Path) -> None:
+        _tree(
+            tmp_path,
+            {
+                "harnesses/README.md": "Each adapter carries `<adapter>/install.py`.",
+                "harnesses/alpha/install.py": "",
+                "harnesses/beta/install.py": "",
+            },
+        )
+        assert cov.main([str(tmp_path), "--strict"]) == 0
+
+    def test_a_unique_name_still_passes_by_its_bare_name(self, tmp_path: Path) -> None:
+        _tree(
+            tmp_path,
+            {
+                "scripts/README.md": "| `notes.py` | Release notes. |",
+                "scripts/release/notes.py": "",
+            },
+        )
+        assert cov.main([str(tmp_path), "--strict"]) == 0
+
+
+class TestPathNamedIn:
+    """Matching a file's relative path in README prose."""
+
+    def test_exact_relative_path_counts(self) -> None:
+        assert cov.path_named_in("| `app/[lang]/page.tsx` | x |", "app/[lang]/page.tsx")
+
+    def test_a_longer_path_does_not_name_its_suffix(self) -> None:
+        assert not cov.path_named_in("| `app/docs/page.tsx` | x |", "docs/page.tsx")
+
+    def test_a_longer_file_name_does_not_count(self) -> None:
+        assert not cov.path_named_in("`app/page.tsx.bak`", "app/page.tsx")
+
+    def test_star_placeholder_counts(self) -> None:
+        assert cov.path_named_in("`*/verify.py`", "codex/verify.py")
+
+    def test_the_file_name_must_be_literal(self) -> None:
+        assert not cov.path_named_in("`codex/<module>`", "codex/verify.py")
