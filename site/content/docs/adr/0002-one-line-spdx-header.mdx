@@ -1,6 +1,6 @@
 ---
 title: "ADR 0002: Each file carries a one-line SPDX header"
-description: "Every applicable file starts with the single line SPDX-License-Identifier: MIT; the full copyright statement lives once, in the root LICENSE."
+description: "Every applicable file starts with a single SPDX license line for MIT; the full copyright statement lives once, in the root LICENSE."
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,8 +18,13 @@ so a tool can add it and a validator can check it.
 
 ## Decision
 
+{/* REUSE-IgnoreStart */}
+
 Every applicable file begins with exactly one line,
 `SPDX-License-Identifier: MIT`, written in the comment style of its file type.
+
+{/* REUSE-IgnoreEnd */}
+
 A shebang stays on line 1, and on Markdown and MDX files the YAML frontmatter
 comes first. The root [`LICENSE`](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE)
 holds the full copyright statement, once. Bordered banner boxes are not used,
