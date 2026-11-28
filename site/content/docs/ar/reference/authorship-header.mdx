@@ -2,13 +2,13 @@
 title: "ترويسة التأليف — سطر رخصة SPDX لكل ملف"
 description: "تعريف علامات مُعرِّف رخصة SPDX لكل ملف وفرضها باستخدام ترويسات مرجعية أحادية السطر بصيغة التعليق المناسبة لكل نوع ملف."
 machineTranslated: true
-sourceHash: "c3e4f3695b73611c"
+sourceHash: "9781c864fd5c8152"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 {/* REUSE-IgnoreStart */}
 
-> **مرجع معياري معتمد للمساهمين اللاحقين.** يعكس هذا المستند أقسام التأليف وترويسة الملف في مواصفة المشروع (المواصفة §0.5 + §4.6)؛ وهو المرجع المستقلّ الذي يُشحَن مع المستودع المنشور. والأساس المعماري مُسجَّل في <bdi>ADR-0002</bdi>.
+> **مرجع معياري معتمد للمساهمين اللاحقين.** هذا المستند هو المرجع المستقلّ لقواعد التأليف وترويسة الملف، ويُشحَن مع المستودع المنشور. والقرار الذي يقوم عليه مُسجَّل في [<bdi>ADR 0002</bdi>](/docs/adr/0002-one-line-spdx-header).
 
 ---
 
@@ -91,7 +91,7 @@ sourceHash: "c3e4f3695b73611c"
 
 **الصيغة أحادية السطر.** منشأ كل ملف هو سطر <bdi>SPDX</bdi> الواحد؛ ويعيش صكّ حقوق النشر مرة واحدة في <bdi>LICENSE</bdi> الجذر. صناديق اللافتة المؤطَّرة متعددة الأسطر (أسطر حقوق النشر والموقع الإلكتروني والبريد الإلكتروني والاتصال ملفوفة في إطار مُسطَّر) يرفضها المدقّق: فهي تُكرِّر بيانات الاتصال وحقوق النشر الوصفية في كل ملف دون أن تضيف شيئًا لا توفّره علامة الرخصة المقروءة آليًا أصلًا لأدوات <bdi>REUSE/SPDX/SBOM</bdi>. وتحمل التجهيزة المطابقة بالبايت في <bdi>`src/apothem/schemas/authorship-header.txt`</bdi> الصيغة أحادية السطر؛ ويعمل المدقّق على هذه التجهيزة.
 
-**الإحالات المتبادلة.** ملف <bdi>LICENSE</bdi> (<bdi>MIT</bdi>) — الصكّ القانوني هو الحاكم عند التعارض. ويوثّق <bdi>ADR-0006</bdi> مسوّغ المصادقة على تضييق اللافتة.
+**الإحالات المتبادلة.** ملف <bdi>LICENSE</bdi> (<bdi>MIT</bdi>) — الصكّ القانوني هو الحاكم عند التعارض. ويسجّل [<bdi>ADR 0002</bdi>](/docs/adr/0002-one-line-spdx-header) سبب حلول السطر الواحد محلّ صندوق اللافتة.
 
 ---
 
@@ -152,10 +152,8 @@ sourceHash: "c3e4f3695b73611c"
 
 ## انظر أيضًا
 
-- <bdi>ADR-0002</bdi> — الأساس المعماري، والبدائل التي دُرِست.
-- <bdi>ADR-0006</bdi> — المصادقة على تضييق اللافتة.
+- [<bdi>ADR 0002</bdi>](/docs/adr/0002-one-line-spdx-header) — سجلّ القرار الخاص بترويسة <bdi>SPDX</bdi> ذات السطر الواحد.
 - [<bdi>`src/apothem/schemas/authorship-header.txt`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt) — التجهيزة المرجعية المطابقة بالبايت.
 - [<bdi>`src/apothem/schemas/header-exceptions.txt`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt) — قائمة الاستثناءات (بصيغة <bdi>regex/glob</bdi>).
 - [<bdi>`scripts/inject-header.py`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.py) و[<bdi>`scripts/inject-header.sh`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.sh) — الحاقن.
 - [<bdi>`src/apothem/conformity/file_header_grep.py`</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py) — المدقّق.
-- مواصفة المشروع §0.5 + §4.6 — النص المرجعي المعكوس هنا.

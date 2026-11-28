@@ -2,11 +2,11 @@
 title: "计划规范——项目本地的临时工作记忆"
 description: "在 .apothem/plans/ 中管理项目本地的临时工作记忆（旧版 .plans/ 树通过 apothem migrate-workspace 升级），包含 frontmatter 模式、生命周期转换、提升为 ADR，以及通过钩子和校验器进行强制执行。"
 machineTranslated: true
-sourceHash: "78ba9223bd5803ab"
+sourceHash: "54218082c544af87"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **面向下游贡献者的规范性参考。** 本文档镜像项目规范的计划规范章节（规范 §3）；它是随发布仓库一同提供的独立参考。这里引入的规范是基础性的；除非明确另行标注，下面每条指令都是 `MUST`（必须）。架构理由记录于 [ADR-0001](/docs/reference/plans-discipline)。
+> **面向下游贡献者的规范性参考。** 本文档是计划规范的独立参考，随发布仓库一同提供。这里引入的规范是基础性的；除非明确另行标注，下面每条指令都是 `MUST`（必须）。其所依据的决定记录于 [ADR 0001](/docs/adr/0001-project-local-plans)。
 
 ---
 
@@ -188,11 +188,10 @@ CLAUDE.md
 
 ## 另见
 
-- [ADR-0001](/docs/reference/plans-discipline) — 架构理由、所考虑的替代方案、所接受的权衡。
+- [ADR 0001](/docs/adr/0001-project-local-plans) — 关于计划保存在项目内的决策记录；[决策记录](/docs/adr) 列出所有 ADR 及模板。
 - [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header) — 作者署名头 SPDX 行规范（计划按类别豁免）。
 - 工具约定页 — 多面工具约定（计划规范作为一个共享声明出现在每个已注册的工具指令文件以及每个选用的可选面中）。路径：
 
 ```text
 site/content/docs/reference/ai-conventions.mdx
 ```
-- 项目规范 §3 — 此处镜像的完整规范文本。

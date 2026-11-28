@@ -2,11 +2,11 @@
 title: "多表面工具约定"
 description: "关于多表面工具配置及其在聊天、IDE 补全和 PR 评审运行时之间一致性的规范性权威参考。"
 machineTranslated: true
-sourceHash: "ab1c94a20aecac87"
+sourceHash: "7ae40cdfd63ce888"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **面向下游贡献者的规范性权威参考。** 本文档镜像项目规范中的多表面工具约定章节（规范 §0.6 + §2.8 + §4.7）；它是随已发布仓库一同提供的独立参考。架构理由记录于 ADR-0003。
+> **面向下游贡献者的规范性权威参考。** 本文档是多表面工具约定的独立参考，随已发布仓库一同提供。其所依据的决定记录于 [ADR 0003](/docs/adr/0003-agents-md-canonical-surface)。
 
 ---
 
@@ -24,7 +24,7 @@ sourceHash: "ab1c94a20aecac87"
 
 范围内（§3）的每个约定表面都是表达项目单一约定规范的一个*通道*。该规范被分解为：
 
-- **共享章节**——计划纪律、结构化询问（或表面等价物）、作者署名头、命名、反模式、情态层级。这些章节必须（MUST）出现在每个必需的表面中，并且必须（MUST）在各表面之间语义等价。
+- **共享章节**——`AGENTS.md` 在其 AI Surface Canon 中列出的十一项共享声明：计划的存放位置、作者署名头、歧义处理（结构化询问或表面等价物）、命名、发布时效、仅限人类署名、代理指引的存放位置、会话收尾、公共表面的平实语言、运行闭环以及综合立场。声明列表还涵盖情态层级、禁止模式、同步单元以及活文档规则。这些章节必须（MUST）出现在每个必需的表面中，并且必须（MUST）在各表面之间语义等价。
 - **表面专属章节**——能力框定、工具调用模式、代码生成与聊天之间的差异。这些章节在各表面之间可以（MAY）不同，但不得（MUST NOT）与共享章节相矛盾。
 
 `multi-surface-coherence` 校验器（§7）在每次 CI 运行和 pre-commit 时运行，以断言该契约。
@@ -98,7 +98,7 @@ IDE 内指令文件**不是** `AGENTS.md` 或 `CLAUDE.md` 的逐字副本。`AGE
 
 > `AGENTS.md` 是规范的项目之声。任何与之矛盾的表面都会被重写，以适合该表面的框定方式镜像 `AGENTS.md` 的语义。
 
-只有带有一个明确的文件内 `<!-- coherence-override: <claim-id> -->` 标记、且该标记指向一份解释这一刻意分歧的 ADR 时，才允许表面专属的覆盖。覆盖标记本身被列举在校验器的允许列表中，并出现在 CI 报告中。
+只有带有一个明确的文件内 `<!-- coherence-override: <claim-id> -->` 标记、且该标记指向[决策记录](/docs/adr)中一份解释这一刻意分歧的 ADR 时，才允许表面专属的覆盖。校验器会把每个被采纳的标记作为警告列入 CI 报告。
 
 对于本仓库，已批准的调和策略是 **`agents-md-wins`**：`AGENTS.md` 是规范的，每个活跃的工具镜像都保持语义等价。
 
@@ -130,10 +130,9 @@ IDE 内指令文件**不是** `AGENTS.md` 或 `CLAUDE.md` 的逐字副本。`AGE
 
 ## 另请参阅
 
-- ADR-0003——架构理由、考虑过的替代方案。
+- [ADR 0003](/docs/adr/0003-agents-md-canonical-surface)——确立 `AGENTS.md` 为规范表面的决策记录。
 - [`tests/fixtures/multi-surface-claims.yaml`](https://github.com/ahmed-g-gad/apothem/blob/main/tests/fixtures/multi-surface-claims.yaml)——规范的声明清单夹具。
 - [`AGENTS.md`](https://github.com/ahmed-g-gad/apothem/blob/main/AGENTS.md)——规范的项目之声。
 - [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md)——Claude Code 镜像。
 - [`site/content/docs/reference/plans-discipline.mdx`](/docs/reference/plans-discipline)——计划纪律共享声明的规范参考。
 - [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header)——作者署名头共享声明的规范参考。
-- 项目规范 §0.6 + §2.8 + §4.7——此处所镜像的完整规范文本。

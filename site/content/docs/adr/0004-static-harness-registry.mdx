@@ -1,0 +1,52 @@
+---
+title: "ADR 0004: The static harness registry is authoritative at runtime"
+description: "The engine resolves every adapter from a static registry; scanning the harnesses folder is only a test that the registry and the folder agree."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+- **Status:** Accepted
+- **Date:** 2026-07-07 (in force in the first release in this repository's history)
+
+## Context
+
+Apothem has one adapter subpackage per supported harness under
+`src/apothem/harnesses/`. The engine needs the list of adapters every time it
+runs, including from a plain checkout with no package installed. A list found
+by scanning folders at runtime changes whenever a folder is added, renamed or
+left half-written, so an adapter could appear or vanish without anyone
+deciding it should.
+
+## Decision
+
+The harness registry, `src/apothem/lib/harness_registry.py` with its data table
+in `src/apothem/lib/harness_registry_data.py`, is authoritative at runtime. The
+engine resolves every adapter from this static registry.
+
+Discovery by folder convention (`discover_adapters`) is not used to resolve
+adapters. It is a parity check: a test asserts that the adapters found under
+`src/apothem/harnesses/` are exactly the ones in the registry.
+
+## Consequences
+
+- The engine loads the same adapters from a checkout, a wheel or a plugin
+  copy.
+- Adding a harness means adding both its subpackage and its registry entry. An
+  adapter that follows the folder convention but is missing from the registry
+  fails the parity test instead of being picked up silently.
+
+## Where it is enforced
+
+- `tests/unit/test_adapter_discovery.py`, the parity test between discovery
+  and the registry.
+- `tests/unit/test_harness_registry.py`, which checks the registry's entries,
+  and the registry-capability-consistency validator, which checks each
+  registry capability cell against an install entry in the propagation
+  manifest, the adapter's materializer, or a documented projection.
+- The Harness Adapter Pattern section of `AGENTS.md` and `CLAUDE.md`.
+- The [harness registry](/docs/reference/harness-registry) reference.
+
+## Sources
+
+- The Harness Adapter Pattern section of `AGENTS.md` and
+  `src/apothem/lib/harness_registry.py`, both present in the first release
+  commit (2026-07-07).

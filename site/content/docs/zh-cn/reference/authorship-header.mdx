@@ -2,13 +2,13 @@
 title: "作者署名头——逐文件 SPDX 许可行"
 description: "使用规范的单行头部，以每种文件类型相应的注释语法，定义并强制执行逐文件的 SPDX 许可标识符标记。"
 machineTranslated: true
-sourceHash: "c3e4f3695b73611c"
+sourceHash: "9781c864fd5c8152"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 {/* REUSE-IgnoreStart */}
 
-> **面向下游贡献者的规范性权威参考。** 本文档镜像项目规范中的作者署名与文件头章节（规范 §0.5 + §4.6）；它是随已发布仓库一同提供的独立参考。架构理由记录于 ADR-0002。
+> **面向下游贡献者的规范性权威参考。** 本文档是作者署名与文件头规则的独立参考，随已发布仓库一同提供。其所依据的决定记录于 [ADR 0002](/docs/adr/0002-one-line-spdx-header)。
 
 ---
 
@@ -91,7 +91,7 @@ SPDX 行以机器可读方式声明项目的许可；LICENSE 文件以权威方�
 
 **单行形式。** 逐文件溯源就是这一行 SPDX；版权文书在根目录的 LICENSE 中只存放一份。带边框的多行横幅框（版权、网站、邮箱、联系方式各行包在一个划线框架中）会被校验器拒绝：它们在每个文件中重复联系方式和版权元数据，却没有增加任何机器可读许可标记尚未向 REUSE/SPDX/SBOM 工具提供的东西。位于 `src/apothem/schemas/authorship-header.txt` 的字节精确夹具承载这一单行形式；校验器针对此夹具运行。
 
-**交叉引用。** LICENSE 文件（MIT）——发生冲突时以法律文书为准。ADR-0006 记录横幅收窄的批准理由。
+**交叉引用。** LICENSE 文件（MIT）——发生冲突时以法律文书为准。[ADR 0002](/docs/adr/0002-one-line-spdx-header) 记录了单行形式取代横幅框的原因。
 
 ---
 
@@ -152,10 +152,8 @@ SPDX 行以机器可读方式声明项目的许可；LICENSE 文件以权威方�
 
 ## 另请参阅
 
-- ADR-0002——架构理由、考虑过的替代方案。
-- ADR-0006——横幅收窄的批准。
+- [ADR 0002](/docs/adr/0002-one-line-spdx-header)——关于单行 SPDX 文件头的决策记录。
 - [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt)——字节精确的规范夹具。
 - [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt)——例外清单（正则/glob 形式）。
 - [`scripts/inject-header.py`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.py) 和 [`scripts/inject-header.sh`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.sh)——注入器。
 - [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py)——校验器。
-- 项目规范 §0.5 + §4.6——此处所镜像的规范文本。

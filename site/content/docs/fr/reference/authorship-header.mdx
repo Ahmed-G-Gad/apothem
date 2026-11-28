@@ -2,13 +2,13 @@
 title: "En-tête de paternité — Ligne de licence SPDX par fichier"
 description: "Définir et faire respecter des marqueurs d'identifiant de licence SPDX par fichier à l'aide d'en-têtes canoniques d'une seule ligne, dans la syntaxe de commentaire appropriée à chaque type de fichier."
 machineTranslated: true
-sourceHash: "c3e4f3695b73611c"
+sourceHash: "9781c864fd5c8152"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 {/* REUSE-IgnoreStart */}
 
-> **Référence normative canonique pour les contributeurs en aval.** Ce document reprend les sections Paternité et En-tête de fichier de la spécification du projet (Spécification §0.5 + §4.6) ; c'est la référence autonome livrée avec le dépôt publié. La justification architecturale est consignée dans l'ADR-0002.
+> **Référence normative canonique pour les contributeurs en aval.** Ce document est la référence autonome des règles de paternité et d'en-tête de fichier, livrée avec le dépôt publié. La décision qui la fonde est consignée dans l'[ADR 0002](/docs/adr/0002-one-line-spdx-header).
 
 ---
 
@@ -91,7 +91,7 @@ La ligne SPDX déclare la licence du projet de manière lisible par machine ; le
 
 **Forme à une seule ligne.** La provenance par fichier est la seule ligne SPDX ; l'instrument de copyright vit une seule fois dans le LICENSE racine. Les boîtes de bannière multilignes encadrées (copyright, site web, e-mail, lignes de contact enveloppées dans un cadre tracé) sont rejetées par le validateur : elles dupliquent les métadonnées de contact et de copyright dans chaque fichier sans rien ajouter que le marqueur de licence lisible par machine ne fournisse déjà à l'outillage REUSE/SPDX/SBOM. La fixture exacte à l'octet près, située dans `src/apothem/schemas/authorship-header.txt`, porte la forme à une seule ligne ; le validateur s'exécute contre cette fixture.
 
-**Références croisées.** Fichier LICENSE (MIT) — l'instrument juridique prévaut en cas de conflit. ADR-0006 documente la justification de la ratification du resserrement de la bannière.
+**Références croisées.** Fichier LICENSE (MIT) — l'instrument juridique prévaut en cas de conflit. L'[ADR 0002](/docs/adr/0002-one-line-spdx-header) explique pourquoi la ligne unique remplace un cadre de bannière.
 
 ---
 
@@ -152,10 +152,8 @@ La discipline doit survivre à chaque session future et à chaque contributeur f
 
 ## Voir aussi
 
-- ADR-0002 — justification architecturale, alternatives envisagées.
-- ADR-0006 — ratification du resserrement de la bannière.
+- [ADR 0002](/docs/adr/0002-one-line-spdx-header) — le registre de décision sur l'en-tête SPDX d'une seule ligne.
 - [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt) — la fixture canonique exacte à l'octet près.
 - [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt) — la liste d'exceptions (forme regex/glob).
 - [`scripts/inject-header.py`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.py) et [`scripts/inject-header.sh`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.sh) — l'injecteur.
 - [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py) — le validateur.
-- Spécification du projet §0.5 + §4.6 — le texte canonique reflété ici.

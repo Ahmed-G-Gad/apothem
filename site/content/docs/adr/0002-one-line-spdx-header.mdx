@@ -1,0 +1,64 @@
+---
+title: "ADR 0002: Each file carries a one-line SPDX header"
+description: "Every applicable file starts with a single SPDX license line for MIT; the full copyright statement lives once, in the root LICENSE."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+- **Status:** Accepted
+- **Date:** 2026-07-07 (in force in the first release in this repository's history)
+
+## Context
+
+Each source file needs a license marker that license scanners can read
+(`reuse lint`, scancode-toolkit, SBOM tools). A bordered, multi-line banner
+that repeats the copyright holder, website, email and GitHub handle in every
+file adds nothing those tools need, and every copy must be kept in step with
+the root `LICENSE`. The marker also has to be placed the same way every time,
+so a tool can add it and a validator can check it.
+
+## Decision
+
+{/* REUSE-IgnoreStart */}
+
+Every applicable file begins with exactly one line,
+`SPDX-License-Identifier: MIT`, written in the comment style of its file type.
+
+{/* REUSE-IgnoreEnd */}
+
+A shebang stays on line 1, and on Markdown and MDX files the YAML frontmatter
+comes first. The root [`LICENSE`](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE)
+holds the full copyright statement, once. Bordered banner boxes are not used,
+and the validator rejects them.
+
+The byte-exact text is the fixture
+[`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt).
+Files that cannot or must not carry the line, such as `LICENSE`, JSON files,
+lockfiles, generated and vendored files, binaries, and everything under
+`.audit/` and `.apothem/`, are listed in
+[`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt).
+
+## Consequences
+
+- One line per file is easy to add by tool and easy to check.
+- Copyright details change in one place, the root `LICENSE`.
+- A new exemption is an entry in the exceptions file, which the validator and
+  the injector both read.
+
+## Where it is enforced
+
+- The `file-header` validator, run with `--strict` in CI and by the
+  pre-commit hook.
+- The injector, `scripts/inject-header.py` and `scripts/inject-header.sh`.
+- The Write and Edit header guard hooks, which report a missing or malformed
+  header and recommend the corrected content (advisory).
+- The header claims in `AGENTS.md`, `CLAUDE.md` and
+  `.github/copilot-instructions.md`.
+- The [authorship header](/docs/reference/authorship-header) reference, which
+  gives the per-file-type forms, the insertion rules and the exception list.
+
+## Sources
+
+- The File Headers section of `AGENTS.md` and the
+  [authorship header](/docs/reference/authorship-header) page, both present in
+  the first release commit (2026-07-07) with the single-line form and the rejection of
+  banner boxes.

@@ -1,0 +1,111 @@
+---
+title: "Architecture decision records"
+description: "What an architecture decision record (ADR) is in Apothem, when one is written, how ADRs are numbered and marked, and the template every ADR follows."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+An architecture decision record (ADR) states one decision that shapes how
+Apothem is built or how contributors work on it: the problem it answers, what
+was decided, and what follows from it. The instruction files, rules and
+reference pages state these decisions as rules. The ADRs here say why each rule
+exists and where it is enforced, so a contributor can check a rule against its
+reason before changing it.
+
+Every ADR on this site is drawn from the repository itself: its git history,
+the [changelog](/docs/changelog) and the existing documentation. An ADR records
+only what the repository shows was decided. When the repository does not show
+how a decision was reached, the ADR says so and does not fill the gap.
+
+## When an ADR is written
+
+An ADR is written in two cases.
+
+- **A plan converges.** Plans are working notes kept in
+  `<project-root>/.apothem/plans/` and never committed. When a plan settles a
+  lasting decision, the decision is promoted to a new ADR here, and the plan
+  records the ADR's path in its `promotes-to` field. The
+  [plans discipline](/docs/reference/plans-discipline) describes the plan
+  lifecycle.
+- **An instruction file departs from the canonical one on purpose.** The
+  repository's instruction files mirror each other's shared claims (see
+  [multi-surface harness conventions](/docs/reference/ai-conventions)). A file
+  that must say something different carries an inline
+  `<!-- coherence-override: <claim-id> -->` marker, and the marker is paired
+  with an ADR here that explains the difference. The coherence validator
+  reports a warning when a marker is in place and this folder holds no
+  numbered ADR page.
+
+A change that only restates or tidies an existing rule needs no ADR. A change
+that reverses or replaces a decision recorded here needs a new ADR that
+supersedes the old one.
+
+## Numbering and status
+
+ADRs are numbered in the order they are written, as four digits: `0001`,
+`0002` and so on. A number is never reused, and an ADR is never deleted. The
+page's file name is the number followed by a short kebab-case slug, for
+example `0001-project-local-plans.mdx`.
+
+Each ADR carries one status:
+
+| Status | Meaning |
+|---|---|
+| Proposed | Written for review; not yet in force. |
+| Accepted | In force. The rules, code and checks it names follow it. |
+| Superseded | Replaced by a later ADR, which it names. The page stays as the record. |
+| Rejected | Considered and turned down. The page stays so the question is not reopened without new facts. |
+
+An ADR's date is the day the decision first appears in the repository. A
+decision that was already in force in the first release in this repository's
+history carries that release's date, 2026-07-07.
+
+## Records
+
+| ADR | Decision | Status |
+|---|---|---|
+| [0001](/docs/adr/0001-project-local-plans) | Plans stay in the project and are never committed | Accepted |
+| [0002](/docs/adr/0002-one-line-spdx-header) | Each file carries a one-line SPDX header | Accepted |
+| [0003](/docs/adr/0003-agents-md-canonical-surface) | `AGENTS.md` is the canonical instruction file | Accepted |
+| [0004](/docs/adr/0004-static-harness-registry) | The static harness registry is authoritative at runtime | Accepted |
+| [0005](/docs/adr/0005-apothem-owned-support-subtree) | Files with no native home install under an Apothem-owned support folder | Accepted |
+| [0006](/docs/adr/0006-additive-releases) | Releases are additive | Accepted |
+
+## Template
+
+Copy this block into `site/content/docs/adr/NNNN-short-slug.mdx`, add the new
+page to the `adr` list in `site/scripts/author-ia.mjs`, run
+`node scripts/author-ia.mjs` from `site/`, and add a row to the table above.
+
+```mdx
+---
+title: "ADR NNNN: One-line statement of the decision"
+description: "One sentence on what was decided and why it matters."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+- **Status:** Proposed | Accepted | Superseded by [ADR NNNN](/docs/adr/NNNN-slug) | Rejected
+- **Date:** YYYY-MM-DD (the day the decision first appears in the repository)
+
+## Context
+
+The problem and the forces at play, in present tense. Facts only, each one
+traceable to the repository.
+
+## Decision
+
+What is decided, stated as a rule a contributor can follow.
+
+## Consequences
+
+What follows from the decision: what gets easier, what gets harder, and what
+contributors must now do.
+
+## Where it is enforced
+
+The files, validators, tests and documentation pages that carry the decision.
+
+## Sources
+
+The commits, pull requests, changelog entries and documentation the record is
+drawn from.
+```

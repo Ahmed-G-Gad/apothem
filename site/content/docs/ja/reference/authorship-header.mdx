@@ -2,13 +2,13 @@
 title: "著作者ヘッダー — ファイルごとの SPDX ライセンス行"
 description: "ファイルタイプごとに適切なコメント構文で、正規の単一行ヘッダーを用いて、ファイルごとの SPDX ライセンス識別子マーカーを定義し、強制します。"
 machineTranslated: true
-sourceHash: "c3e4f3695b73611c"
+sourceHash: "9781c864fd5c8152"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 {/* REUSE-IgnoreStart */}
 
-> **下流のコントリビューター向けの、正規かつ規範的なリファレンス。** 本ドキュメントは、プロジェクト仕様の著作者とファイルヘッダーのセクション（仕様 §0.5 + §4.6）を反映したものであり、公開リポジトリに同梱される単独のリファレンスです。アーキテクチャ上の根拠は ADR-0002 に記録されています。
+> **下流のコントリビューター向けの、正規かつ規範的なリファレンス。** 本ドキュメントは、著作者とファイルヘッダーの規則の単独のリファレンスであり、公開リポジトリに同梱されます。その基になった決定は [ADR 0002](/docs/adr/0002-one-line-spdx-header) に記録されています。
 
 ---
 
@@ -91,7 +91,7 @@ SPDX 行はプロジェクトのライセンスを機械可読な形で宣言し
 
 **単一行の形式。** ファイルごとの来歴は単一の SPDX 行であり、著作権に関する法的文書はルートの LICENSE に 1 か所だけ存在します。枠線付きの複数行バナーボックス（罫線の枠で囲んだ、著作権、ウェブサイト、メール、連絡先の行）は、バリデーターによって拒否されます。これらは、連絡先と著作権のメタデータをすべてのファイルに重複して持たせるだけで、機械可読なライセンスマーカーがすでに REUSE/SPDX/SBOM のツールに提供している以上のものを何も加えないからです。`src/apothem/schemas/authorship-header.txt` にあるバイト単位で正確なフィクスチャが単一行の形式を保持しており、バリデーターはこのフィクスチャに対して実行されます。
 
-**相互参照。** LICENSE ファイル（MIT）— 食い違いがある場合は、法的文書が優先されます。ADR-0006 は、バナーの範囲を縮小する決定を正式に承認した際の根拠を記録しています。
+**相互参照。** LICENSE ファイル（MIT）— 食い違いがある場合は、法的文書が優先されます。[ADR 0002](/docs/adr/0002-one-line-spdx-header) は、1 行の形式がバナーボックスに代わる理由を記録しています。
 
 ---
 
@@ -152,10 +152,8 @@ Markdown と MDX のファイルでは、SPDX 行は常にそのコメントラ�
 
 ## 関連項目
 
-- ADR-0002 — アーキテクチャ上の根拠と、検討した代替案。
-- ADR-0006 — バナーの範囲縮小の承認。
+- [ADR 0002](/docs/adr/0002-one-line-spdx-header) — 1 行の SPDX ヘッダーに関する意思決定記録。
 - [`src/apothem/schemas/authorship-header.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/authorship-header.txt) — バイト単位で正確な正規のフィクスチャ。
 - [`src/apothem/schemas/header-exceptions.txt`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/schemas/header-exceptions.txt) — 例外リスト（正規表現 / glob 形式）。
 - [`scripts/inject-header.py`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.py) と [`scripts/inject-header.sh`](https://github.com/ahmed-g-gad/apothem/blob/main/scripts/inject-header.sh) — インジェクター。
 - [`src/apothem/conformity/file_header_grep.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/file_header_grep.py) — バリデーター。
-- プロジェクト仕様 §0.5 + §4.6 — ここに反映している正規のテキスト。

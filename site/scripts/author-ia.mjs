@@ -79,6 +79,7 @@ const rootPages = [
   'blog',
   '---Project---',
   'changelog',
+  'adr',
   'community',
   'brand',
 ];
@@ -178,6 +179,11 @@ const sections = {
     'posts/cross-harness-convention-convergence', '!posts',
   ]],
   'conformity-gate': ['Conformity gate', ['index']],
+  adr: ['Decision records', [
+    'index', '0001-project-local-plans', '0002-one-line-spdx-header',
+    '0003-agents-md-canonical-surface', '0004-static-harness-registry',
+    '0005-apothem-owned-support-subtree', '0006-additive-releases',
+  ]],
 };
 
 // Recursively collect the page keys a section directory carries: every

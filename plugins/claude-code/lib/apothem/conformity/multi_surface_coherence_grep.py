@@ -68,6 +68,10 @@ CLAIMS_FIXTURE_RELATIVE: Final[Path] = (
     Path("tests") / "fixtures" / "multi-surface-claims.yaml"
 )
 ADR_DIR_RELATIVE: Final[Path] = Path("site") / "content" / "docs" / "adr"
+# A numbered decision record page: ``NNNN-<slug>.md`` or ``NNNN-<slug>.mdx``
+# (the docs site writes its pages as MDX). The section's ``index`` page and
+# its ``meta.json`` do not count as an ADR.
+ADR_PAGE_RE: Final[re.Pattern[str]] = re.compile(r"^[0-9]{4}-[a-z0-9-]+\.mdx?$")
 CANONICAL_SURFACE: Final[str] = "AGENTS.md"
 
 # Coverage parameters. The fixture's claims carry 3-5 tokens; the threshold
@@ -103,7 +107,8 @@ NEGATION_ANALYSIS_SKIP_TOKENS: Final[frozenset[str]] = frozenset(
 # "MUST NOT" → "MUST" self-shadowing pattern.
 NEGATION_LEADING_WINDOW: Final[int] = 25
 
-# Override marker per reconciliation rule §4.7.3.
+# Override marker per the reconciliation rule on the AI-conventions reference
+# page (site/content/docs/reference/ai-conventions.mdx).
 OVERRIDE_RE: Final[re.Pattern[str]] = re.compile(
     r"<!--\s*coherence-override:\s*([a-z0-9.\-]+)\s*-->"
 )
@@ -359,11 +364,14 @@ def _has_override_marker(body: str, claim_id: str) -> bool:
 
 
 def _adr_dir_populated() -> bool:
-    """Return True when the site ADR directory contains at least one ``*.md`` file."""
+    """Return True when the site ADR directory holds at least one numbered ADR page."""
     adr_dir = ECOSYSTEM_ROOT / ADR_DIR_RELATIVE
     if not adr_dir.is_dir():
         return False
-    return any(adr_dir.glob("*.md"))
+    return any(
+        entry.is_file() and ADR_PAGE_RE.match(entry.name) is not None
+        for entry in adr_dir.iterdir()
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -596,7 +604,8 @@ def check(content: str, path: Path | None = None) -> GrepResult:
         findings.extend(_evaluate_claim(claim, surface_cache))
 
     # Emit a single advisory if any override marker is in flight but
-    # the ADR directory is empty — the spec requires an ADR pairing.
+    # the ADR directory holds no numbered ADR page: every override marker is
+    # paired with an ADR.
     has_overrides = any(f.rule == RULE_OVERRIDE_HONOURED for f in findings)
     if has_overrides and not _adr_dir_populated():
         findings.append(
@@ -604,7 +613,7 @@ def check(content: str, path: Path | None = None) -> GrepResult:
                 line=0,
                 match=str(ADR_DIR_RELATIVE.as_posix()),
                 context=(
-                    "override marker(s) in flight but no ADR files exist at"
+                    "override marker(s) in flight but no numbered ADR page exists at"
                     f" {ADR_DIR_RELATIVE.as_posix()}; pairing pending"
                 ),
                 rule=RULE_OVERRIDE_HONOURED,

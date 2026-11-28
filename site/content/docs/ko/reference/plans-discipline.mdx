@@ -2,11 +2,11 @@
 title: "계획 디시플린 — 프로젝트 로컬 임시 작업 메모리"
 description: "프론트매터 스키마, 라이프사이클 전이, ADR로의 승격, 훅과 검증기를 통한 강제를 사용하여 .apothem/plans/(레거시 .plans/ 트리는 apothem migrate-workspace로 업그레이드됨)에 있는 프로젝트 로컬 임시 작업 메모리를 관리합니다."
 machineTranslated: true
-sourceHash: "78ba9223bd5803ab"
+sourceHash: "54218082c544af87"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-> **다운스트림 기여자를 위한 정규 규범 참조.** 이 문서는 프로젝트 명세의 계획 디시플린 섹션(Spec §3)을 미러링합니다. 게시된 저장소와 함께 배포되는 독립형 참조입니다. 여기서 도입하는 디시플린은 기초적이며, 아래의 모든 지시는 명시적으로 달리 표시되지 않는 한 `MUST`입니다. 아키텍처적 근거는 [ADR-0001](/docs/reference/plans-discipline)에 기록되어 있습니다.
+> **다운스트림 기여자를 위한 정규 규범 참조.** 이 문서는 계획 디시플린의 독립형 참조이며, 게시된 저장소와 함께 배포됩니다. 여기서 도입하는 디시플린은 기초적이며, 아래의 모든 지시는 명시적으로 달리 표시되지 않는 한 `MUST`입니다. 그 바탕이 된 결정은 [ADR 0001](/docs/adr/0001-project-local-plans)에 기록되어 있습니다.
 
 ---
 
@@ -188,12 +188,10 @@ CLAUDE.md
 
 ## 함께 보기
 
-- [ADR-0001](/docs/reference/plans-discipline). 아키텍처적 근거, 고려한 대안, 수용한 트레이드오프.
+- [ADR 0001](/docs/adr/0001-project-local-plans) — 프로젝트 안에 두는 계획에 관한 결정 기록. [결정 기록](/docs/adr)에 모든 ADR과 템플릿이 있습니다.
 - [`site/content/docs/reference/authorship-header.mdx`](/docs/reference/authorship-header). 저작권 헤더 SPDX 라인 디시플린(계획은 범주적으로 면제됨).
 - 하니스 규약 페이지. 다중 표면 하니스 규약을 다룹니다(계획 디시플린은 등록된 모든 하니스 지시 파일과 옵트인한 모든 선택적 표면에 걸친 공유 주장으로 나타납니다). 경로:
 
 ```text
 site/content/docs/reference/ai-conventions.mdx
 ```
-
-- 프로젝트 명세 §3. 여기에 미러링된 전체 정규 텍스트.
