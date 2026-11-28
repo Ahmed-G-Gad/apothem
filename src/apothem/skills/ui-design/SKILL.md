@@ -1,7 +1,7 @@
 ---
 name: "ui-design"
 version: "0.2.0"
-updated: "2026-11-26"
+updated: "2026-11-28"
 description: "Designs, redesigns, or audits a user interface to a banded floor. Reads the project first, asks one intake question, sets scope and genre, and builds the hero first. Records each decision in a build record and a build log; writes DESIGN.md only when asked or a multi-page redesign needs it. Use when the user asks to 'design a landing page', 'redesign this page', 'restyle', 'build this component with all its states', 'audit this UI before a redesign', or 'pick a palette and type scale'. Not for a critique that ends in ranked fixes (design-critic) or backend logic."
 archetype: "authoring-template"
 userInvocable: true
