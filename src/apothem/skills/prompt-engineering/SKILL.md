@@ -116,7 +116,7 @@ When the design reaches a decision in any authoritative-data category per `rules
 ## Bindings (§0.j five-direction)
 
 - **Drives →** ● Every prompt-design engagement under the ai-engineering cohort. ● Every eval-case set authored to validate a prompt against its task contract. ● The structured-prompt-with-output-schema shape every consumer inherits.
-- **Satisfies →** ● The ai-engineering cohort's prompt-design-and-eval mission. ● `CLAUDE.md` File Headers discipline (the SPDX line at the artifact head).
+- **Satisfies →** ● The ai-engineering cohort's prompt-design-and-eval mission. ● The host's header convention per `rules/host-discovery.md` (the canonical SPDX line inside the Apothem repository).
 - **Established by ↑** ● `CLAUDE.md` Source Layout (skills/ class declaration with the folder-with-`SKILL.md` convention). ● `CLAUDE.md` Ambiguity Handling (structured inquiry over fabrication).
 - **Gated by ←** ● The harness's Read / Write / Edit / Glob / Grep tool surface. ● The structured-inquiry channel's availability (ambiguity routes there or to `TODO(clarify)`).
 - **Cross-bound with ↔** ↔ `rules/interactive-questions.md` (structured-inquiry channel for ambiguity and refusal escalation). ↔ `rules/clean-room-generation.md` (the prompt is re-derived from contract, never pattern-matched). ↔ `scripts/inject-header.py` (authorship-line injection for new files, inside the Apothem repository only). ↔ `src/apothem/schemas/header-exceptions.txt` (header exemption catalog). ↔ `skills/ecosystem-audit/SKILL.md` + `skills/plan-suite/SKILL.md` (sibling skills under the same registry section).
