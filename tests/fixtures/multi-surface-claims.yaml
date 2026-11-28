@@ -6,7 +6,7 @@
 # semantically equivalent across surfaces under the reconciliation
 # strategy `agents-md-wins` (AGENTS.md is the canonical project voice; surface
 # overrides require an inline `<!-- coherence-override: <claim-id> -->`
-# marker paired with a project ADR.
+# marker paired with an ADR under site/content/docs/adr/).
 #
 # The validator parses each surface, locates each claim by heading
 # hierarchy + body keyword extraction (using the
@@ -81,7 +81,7 @@ claims:
       - plans
 
   - id: plans.lifecycle
-    claim: "Plans transition: draft -> in-progress -> converged (promote to ADR) -> abandoned."
+    claim: "Plans transition: draft -> in-progress -> converged (promote to ADR, filed under site/content/docs/adr/) or abandoned."
     required-in:
       - AGENTS.md
       - CLAUDE.md
@@ -146,7 +146,7 @@ claims:
       - SPDX
 
   - id: header.exempt-classes
-    claim: "The SPDX line is exempt for: LICENSE, JSON, lockfiles, generated, vendored, .audit/, .plans/, .keep, binaries (full list at src/apothem/schemas/header-exceptions.txt)."
+    claim: "The SPDX line is exempt for: LICENSE, JSON, lockfiles, generated, vendored, .audit/, .apothem/ (a legacy .plans/ tree is not exempt; apothem migrate-workspace moves it under .apothem/plans/), .keep, binaries (full list at src/apothem/schemas/header-exceptions.txt)."
     required-in:
       - AGENTS.md
       - CLAUDE.md
@@ -159,6 +159,7 @@ claims:
       - exempt
       - LICENSE
       - lockfiles
+      - .apothem/
       - src/apothem/schemas/header-exceptions.txt
 
   # --- Structured Inquiry Behavior --------------------------------
@@ -216,7 +217,7 @@ claims:
   # --- Naming --------------------------------------------------------------
 
   - id: naming.kebab-case-files
-    claim: "Files / folders use kebab-case; canonical-uppercase exceptions for CLAUDE.md, README.md, LICENSE, etc."
+    claim: "Files / folders use kebab-case; canonical-uppercase exceptions for AGENTS.md, CLAUDE.md, README.md, LICENSE, etc."
     required-in:
       - AGENTS.md
       - CLAUDE.md
@@ -295,6 +296,37 @@ claims:
       - basically
       - kind of
       - directive
+
+  - id: forbidden.non-human-authorship
+    claim: "Git authorship surfaces name human contributors only; AI tools, assistants, models, IDE extensions, and runtimes are never added as co-authors."
+    required-in:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/copilot-instructions.md
+    optional-in:
+      - site/content/docs/architecture/agents.mdx
+      - .cursorrules
+      - .windsurfrules
+    semantic-equivalence-tokens:
+      - human contributors
+      - co-authors
+      - git authorship
+
+  - id: plain-language.user-facing-copy
+    claim: "User-facing copy (README, CHANGELOG, documentation and site pages) stays free of the process-tooling vocabulary in src/apothem/rules/plain-language.md; the plain-language-grep validator checks the root README.md and the user-facing pages under site/content/docs/."
+    required-in:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/copilot-instructions.md
+    optional-in:
+      - site/content/docs/architecture/agents.mdx
+      - .cursorrules
+      - .windsurfrules
+    semantic-equivalence-tokens:
+      - user-facing copy
+      - process-tooling vocabulary
+      - plain-language-grep
+      - src/apothem/rules/plain-language.md
 
   # --- Modal Hierarchy -----------------------------------------------------
 
@@ -398,3 +430,56 @@ claims:
       - conformity validators
       - per-harness instruction templates
       - settings template
+
+  # --- Living Documentation ------------------------------------------------
+
+  - id: docs.living-documentation
+    claim: "Any change to a documented public surface MUST update its documentation page in the same change-set; source-generated reference pages are regenerated with node site/scripts/update-reference-inventory.mjs, and the CI docs-reference-sync drift gate enforces it."
+    required-in:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/copilot-instructions.md
+    optional-in:
+      - site/content/docs/architecture/agents.mdx
+      - .cursorrules
+      - .windsurfrules
+    semantic-equivalence-tokens:
+      - documented public surface
+      - same change-set
+      - update-reference-inventory.mjs
+      - docs-reference-sync
+
+  # --- Operating Loop & Synthesis Posture ----------------------------------
+
+  - id: loop.plan-harden-ship
+    claim: "The planning pipeline (/plan) flows into the hardening pipeline (/fortress), which closes at the release gate: plan -> harden -> ship."
+    required-in:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/copilot-instructions.md
+    optional-in:
+      - site/content/docs/architecture/agents.mdx
+      - .cursorrules
+      - .windsurfrules
+    semantic-equivalence-tokens:
+      - /plan
+      - /fortress
+      - release gate
+      - plan → harden → ship
+
+  - id: synthesis.posture
+    claim: "A non-trivial mission SHOULD use genuinely-independent critique-synthesis multi-agent work, specified at src/apothem/rules/multi-agent-workflow.md and reachable via /workflow; it is opt-in and default-off, so a clean install never auto-invokes it."
+    required-in:
+      - AGENTS.md
+      - CLAUDE.md
+      - .github/copilot-instructions.md
+    optional-in:
+      - site/content/docs/architecture/agents.mdx
+      - .cursorrules
+      - .windsurfrules
+    semantic-equivalence-tokens:
+      - critique-synthesis
+      - src/apothem/rules/multi-agent-workflow.md
+      - /workflow
+      - opt-in
+      - default-off
