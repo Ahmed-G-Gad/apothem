@@ -25,8 +25,9 @@ the supplied root and inspects ONLY in-scope surfaces:
 - ``site/content/docs/**/*.{md,mdx}`` — the documentation tree.
 
 OUT of scope (skipped wholesale): technical documentation routes
-(``blog/``, ``comparison/``, ``reference/``, the agent-architecture
-concept page, and the instruction-surface convention references),
+(``adr/``, ``blog/``, ``comparison/``, ``reference/``, the
+agent-architecture concept page, and the instruction-surface convention
+references; a decision record names the instruction files it decides about),
 generated reference inventory blocks, ``rules/**``,
 ``commands/**``, ``agents/**``, ``skills/**``, ``.plans/**``, ``tests/**``,
 ``scripts/**``, every ``*.py`` / ``*.sh`` / ``*.ps1`` source file,
@@ -127,6 +128,7 @@ _DOCS_PATH_PARTS: Final[tuple[str, ...]] = ("site", "content", "docs")
 _README_FILENAME: Final[str] = "README.md"
 _MARKDOWN_SUFFIXES: Final[frozenset[str]] = frozenset({".md", ".mdx"})
 _TECHNICAL_DOC_PREFIXES: Final[tuple[str, ...]] = (
+    "site/content/docs/adr/",
     "site/content/docs/blog/",
     "site/content/docs/comparison/",
     "site/content/docs/reference/",

@@ -1,0 +1,53 @@
+---
+title: "ADR 0006: Releases are additive"
+description: "Every published release tag, GitHub Release and npm version stays published; public pages describe only the current version."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+- **Status:** Accepted
+- **Date:** 2026-10-14 (first shipped in the 2026-10-15 release)
+
+## Context
+
+Apothem publishes each release in several places: a git tag, a GitHub Release
+with signed artifacts, and an npm version. npm never lets a published version
+number be used again, and published tags and releases are what users and
+their tooling pin to. A rule that kept only one release visible at a time
+conflicted with that: it could not be followed without deleting published
+history.
+
+## Decision
+
+Releases are additive. Every published release tag, GitHub Release and npm
+version stays published, and none is deleted, moved or reused. Each release
+adds one commit on `main` and one tag.
+
+Public pages describe the current version only. They carry no narrative about
+earlier releases, earlier launch work or internal planning. Where a platform
+keeps history that cannot be removed, such as package file names or pull
+request records, the documentation states that limit plainly.
+
+## Consequences
+
+- A broken release is fixed by publishing a new version, never by moving or
+  deleting a tag.
+- Anyone pinned to a published version can still fetch it and verify its
+  signatures.
+- The changelog keeps every release's entry, while the rest of the public pages
+  speak only about the current version.
+
+## Where it is enforced
+
+- The Release Facade section of `AGENTS.md`, `CLAUDE.md` and
+  `.github/copilot-instructions.md`, and the `release.current-version-only`
+  claim the `multi-surface-coherence` validator checks across them.
+- The [release engineering policy](/docs/governance/release-engineering-policy#release-model-additive)
+  and the [release recovery runbook](/docs/runbooks/release-recovery).
+
+## Sources
+
+- [Pull request #56](https://github.com/ahmed-g-gad/apothem/pull/56), which
+  stated the additive model in the release rule, the release engineering
+  policy and the release recovery runbook.
+- The 2026-10-15 release's section of the [changelog](/docs/changelog), entry "The
+  release-facade rule states the additive release model".

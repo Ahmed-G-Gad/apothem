@@ -1,0 +1,64 @@
+---
+title: "ADR 0001: Plans stay in the project and are never committed"
+description: "Planning notes live in the project's own .apothem/plans/ folder, are gitignored, and become permanent only by promotion to an ADR."
+---
+{/* SPDX-License-Identifier: MIT */}
+
+- **Status:** Accepted
+- **Date:** 2026-07-07 (in force in the first release in this repository's history)
+
+## Context
+
+Working on a project produces notes written to think with rather than to ship:
+design sketches, task breakdowns, refactor strategies, debugging journals. A
+harness writes these wherever it defaults to, often a folder inside its own
+configuration directory in the user's home. Notes kept there are cut off from
+the project they describe, mix notes from unrelated projects, and travel with a
+synced harness configuration to other machines. Notes committed to a project's
+git history stay there for good, although they were never meant to last.
+
+## Decision
+
+Plans live in `<project-root>/.apothem/plans/`, the one place for them. They
+are never written to a harness configuration directory or any other global
+location, and they are never committed: the canonical `.gitignore` snippet
+ignores the contents of `.apothem/`.
+
+A plan moves through `draft`, `in-progress` and `converged`, or ends as
+`abandoned`. When a plan settles a lasting decision, the decision is promoted
+to an ADR in this section, and the plan records the ADR's path in its
+`promotes-to` field. Promotion is the only way plan content becomes permanent.
+
+A project that still keeps plans in a `<project-root>/.plans/` folder moves
+them with `apothem migrate-workspace`.
+
+## Consequences
+
+- Plans sit next to the code they describe and never reach another project.
+- Nothing in a plan reaches git history, so a plan can be rough and short-lived.
+- A decision a team needs to keep must be written up as an ADR; a plan alone
+  is not a record.
+- Plan files are exempt from the SPDX header (see
+  [ADR 0002](/docs/adr/0002-one-line-spdx-header)); their frontmatter records
+  where they came from.
+
+## Where it is enforced
+
+- The shared claim on plans in [`AGENTS.md`](https://github.com/ahmed-g-gad/apothem/blob/main/AGENTS.md),
+  [`CLAUDE.md`](https://github.com/ahmed-g-gad/apothem/blob/main/CLAUDE.md) and
+  [`.github/copilot-instructions.md`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/copilot-instructions.md),
+  checked by the `plans-discipline-language` and `multi-surface-coherence`
+  validators.
+- The `no-global-plans` validator, the plan-write guard hook, and the
+  `/plan` command, which writes only to the project's `.apothem/plans/`.
+- The [plans discipline](/docs/reference/plans-discipline) reference, which
+  gives the full rule, the frontmatter schema and the `.gitignore` snippet.
+- [`apothem migrate-workspace`](/docs/cli-reference/migrate-workspace).
+
+## Sources
+
+- The plans claim in `AGENTS.md` and the
+  [plans discipline](/docs/reference/plans-discipline) page, both present in
+  the first release commit (2026-07-07).
+- The [changelog](/docs/changelog) entry for the first release, listing `migrate-workspace`
+  among the CLI commands.
