@@ -1,8 +1,8 @@
 ---
 name: "workflow"
 version: "0.1.0"
-updated: "2026-10-24"
-description: "Use to run a non-trivial mission as an independent multi-agent workflow: parallel subagents under named return contracts, refute-by-default verification of every finding, disclosed beyond-mission fixes and one recommended next step. Runs only when the user invokes it as '/workflow <mission>'; dispatch is confirmation-gated."
+updated: "2026-11-28"
+description: "Use for a non-trivial mission that needs independent parallel work plus adversarial verification: decomposes it, dispatches independent subagents under named return contracts, runs a refute-by-default critique on every finding, and discloses any beyond-mission fixes. Runs only when the user invokes it, as in 'fan out and verify'."
 argument-hint: "[<<mission>>] [--autonomous] [--verify-panel N]"
 disable-model-invocation: true
 portability: "universal"
@@ -59,7 +59,7 @@ Mission deliverables land at their domain-natural host locations per `rules/host
 
 ### File-Authoring Contract
 
-Every NEW codebase file routes through `scripts/inject-header.{sh,py}` for the canonical authorship-header banner (byte-exact fixture at `src/apothem/schemas/authorship-header.txt`); exempt classes at `src/apothem/schemas/header-exceptions.txt`. Edits preserve any existing banner; the header-inject-guard hook enforces the contract at every Write / Edit.
+Every NEW codebase file follows the project's own header and license convention, found per `rules/host-discovery.md`, or carries no header when the project has none. In a user project the workflow MUST NOT stamp the Apothem SPDX header or run Apothem scripts; inside the Apothem repository, a new file gets the canonical header through `scripts/inject-header.py`. Edits preserve any existing header.
 
 ### Structured Inquiry on Ambiguity
 

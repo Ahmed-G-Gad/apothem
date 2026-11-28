@@ -16,7 +16,7 @@ Deploy a Quality Team (CM-25A) for parallel verification items.
 
 **6.6 — Coherence Check (CM-15):** Implementation matches specs. Update plan files if a spec error is found.
 
-**6.7 — Plan-Internal Isolation Check (CM-7):** Scan ALL codebase deliverables and development artifacts (per the protected-artifacts list in `CLAUDE.md` CM-7) for leaked plan-internal references (per the forbidden-terms list in `CLAUDE.md` CM-7). Any occurrence is a finding: remove and replace with natural domain-appropriate language. The entire codebase and its git history must read as if no plan ever existed.
+**6.7 — Plan-Internal Isolation Check (CM-7):** Scan ALL codebase deliverables and development artifacts (the protected artifacts of `rules/operational-mandates.md` §CM-7) for leaked plan-internal references (the closed term set in `rules/plain-language.md` §1). Any occurrence is a finding: remove and replace with natural domain-appropriate language. The entire codebase and its git history must read as if no plan ever existed.
 
 **6.8 — Failure Remediation:** Diagnose, fix, re-run, commit (CM-13B). If unresolvable → mark BLOCKED, inform the user.
 

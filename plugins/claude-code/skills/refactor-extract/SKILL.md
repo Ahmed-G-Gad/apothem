@@ -67,7 +67,7 @@ The skill edits codebase artifacts at their domain-natural locations under the h
 
 ### File-Authoring Contract
 
-Every NEW codebase file the extraction creates routes through `scripts/inject-header.py` so the canonical authorship-header banner is injected at the head; the injector is idempotent and detects the filetype variant automatically from the byte-exact fixture at `src/apothem/schemas/authorship-header.txt`. Exempt classes (LICENSE, JSON configuration files, lockfiles, generated assets, vendored trees, `.audit/` ephemera, `.apothem/plans/` ephemera, `.keep` / `.gitkeep` markers, binary files) are enumerated at `src/apothem/schemas/header-exceptions.txt`. Edits to existing files preserve any existing banner.
+Every NEW codebase file the extraction creates follows the project's own header and license convention, found per `rules/host-discovery.md`, or carries no header when the project has none. In a user project the skill MUST NOT stamp the Apothem SPDX header or run Apothem scripts; inside the Apothem repository, a new file gets the canonical header through `scripts/inject-header.py`. Edits to existing files preserve any existing header.
 
 ### Structured Inquiry on Ambiguity
 

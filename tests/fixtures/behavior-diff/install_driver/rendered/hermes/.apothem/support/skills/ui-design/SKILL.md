@@ -1,8 +1,8 @@
 ---
 name: "ui-design"
 version: "0.2.0"
-updated: "2026-11-26"
-description: "Designs, redesigns, or audits a user interface to a banded floor. Reads the project first, asks one intake question, sets scope and genre, and builds the hero first. Records each decision in a build record and a build log; writes DESIGN.md only when asked or a multi-page redesign needs it. Use when the user asks to 'design a landing page', 'redesign this page', 'restyle', 'build this component with all its states', 'audit this UI', or 'pick a palette and type scale'. Not for critique-only review (design-critic) or backend logic."
+updated: "2026-11-28"
+description: "Designs, redesigns, or audits a user interface to a banded floor. Reads the project first, asks one intake question, sets scope and genre, and builds the hero first. Records each decision in a build record and a build log; writes DESIGN.md only when asked or a multi-page redesign needs it. Use when the user asks to 'design a landing page', 'redesign this page', 'restyle', 'build this component with all its states', 'audit this UI before a redesign', or 'pick a palette and type scale'. Not for a critique that ends in ranked fixes (design-critic) or backend logic."
 archetype: "authoring-template"
 userInvocable: true
 argument-hint: "[surface or page] [--scope page|component|app] [--genre editorial|product-minimal|atmospheric|playful] [--redesign full|restyle|polish] [--custom] [--fast] [--verbatim]"
@@ -18,14 +18,14 @@ Design, redesign, or audit an interface so that it meets a stated brief and a ba
 
 ## Detection Signal
 
-The user asks to design, restyle, redesign, or audit a page, screen, component, form, or dashboard; for a palette, type scale, or spacing system; or to fix an interface that looks cramped, dated, or hard to use.
+The user asks to design, restyle, or redesign a page, screen, component, form, or dashboard, or to audit one against the banded floor before a redesign; for a palette, type scale, or spacing system; or to fix an interface that looks cramped, dated, or hard to use.
 
 **Falsifiable counter-signal.** A request to fix application logic, an API, or a data query is NOT a match.
 
 ## Non-Goals
 
 - **Not a brand-identity studio.** Names, logos, and brand strategy come from the user as tokens.
-- **Not a reviewer.** Independent critique belongs to the `design-critic` subagent; this skill grades only its own output.
+- **Not a reviewer.** An independent critique that ends in ranked fixes belongs to the `design-critic` subagent. This skill's audit records a before-state against its banded floor as the first step of a redesign; otherwise the skill grades only its own output.
 - **Not a copywriter.** It edits and arranges the user's material and marks each gap with `TODO(clarify)`.
 - **Not an application builder.** Behavior it wires up on request is graded only on the surface it renders.
 

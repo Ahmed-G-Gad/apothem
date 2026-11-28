@@ -42,7 +42,7 @@ This skill carries a deliberately narrow surface. It is NOT:
 4. **Author the Action stage.** Enumerate the ordered remediation steps. Each Action step names the exact command or operation, the expected post-condition, and a one-line precondition that must hold before it runs.
 5. **Author the Rollback stage — paired to every Action.** For each Action step, author the inverse operation that returns the service to its pre-Action state. An Action whose rollback cannot be executed because the operation is irreversible is named explicitly as irreversible, and that Action carries a `no-default: user decision required` confirmation gate per `rules/interactive-questions.md` §6. **Action–Rollback parity is the central invariant: no Action ships without a paired Rollback or an explicit irreversibility declaration.**
 6. **Author the Verification stage.** State the ordered checks that confirm recovery: the health endpoint returns healthy, the error rate falls below threshold, the security signal clears. Each check names the command and the pass condition.
-7. **Emit the runbook file.** Write the runbook to its host-natural location, route the new file through `scripts/inject-header.py`, and confirm every Action step has a paired Rollback step (or a declared irreversibility gate) before the file is considered complete.
+7. **Emit the runbook file.** Write the runbook to its host-natural location, give the new file the project's own header convention per `rules/host-discovery.md` (the Apothem header only inside the Apothem repository), and confirm every Action step has a paired Rollback step (or a declared irreversibility gate) before the file is considered complete.
 
 ## Workflow — Execution
 
@@ -76,7 +76,7 @@ The skill emits one runbook document per invocation at the host's ratified runbo
 
 ### File-Authoring Contract
 
-Every NEW file the skill creates routes through `scripts/inject-header.py` so the canonical `SPDX-License-Identifier: MIT` header is injected in the comment family matching the filetype; the injector is idempotent and detects the variant from the byte-exact fixture at `src/apothem/schemas/authorship-header.txt`. The exempt classes are enumerated at `src/apothem/schemas/header-exceptions.txt`. Edits to existing runbooks preserve any existing header.
+Every NEW file the skill creates follows the project's own header and license convention, found per `rules/host-discovery.md`, or carries no header when the project has none. In a user project the skill MUST NOT stamp the Apothem SPDX header or run Apothem scripts; inside the Apothem repository, a new file gets the canonical header through `scripts/inject-header.py`. Edits to existing runbooks preserve any existing header.
 
 ### Structured Inquiry on Ambiguity
 
@@ -92,4 +92,4 @@ When the skill reaches a decision in any of the seven authoritative-data categor
 - **Satisfies →** ● The developer and security cohorts' need for tested, reversible operational procedures. ● `CLAUDE.md` Source Layout row "incident-runbook" (skills/ class).
 - **Established by ↑** ● `CLAUDE.md` Source Layout (skills/ folder-with-`SKILL.md` class). ● `CLAUDE.md` Ambiguity Handling (structured inquiry over fabrication).
 - **Gated by ←** ● The harness's Write / Edit / Bash tool surface. ● The host's discovered runbook conventions per `rules/host-discovery.md`.
-- **Cross-bound with ↔** ↔ `rules/interactive-questions.md` (structured-inquiry channel; per-file destructive-op floor for live Actions). ↔ `rules/host-discovery.md` (service-surface discovery). ↔ `scripts/inject-header.py` (authorship-header injection). ↔ `src/apothem/schemas/header-exceptions.txt` (header-exempt classes). ↔ `skills/plan-suite/SKILL.md` + `skills/ecosystem-audit/SKILL.md` (sibling skills under the same registry section).
+- **Cross-bound with ↔** ↔ `rules/interactive-questions.md` (structured-inquiry channel; per-file destructive-op floor for live Actions). ↔ `rules/host-discovery.md` (service-surface discovery). ↔ `scripts/inject-header.py` (authorship-header injection, inside the Apothem repository only). ↔ `src/apothem/schemas/header-exceptions.txt` (header-exempt classes). ↔ `skills/plan-suite/SKILL.md` + `skills/ecosystem-audit/SKILL.md` (sibling skills under the same registry section).

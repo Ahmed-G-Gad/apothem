@@ -46,7 +46,7 @@ Workflow outputs land at their domain-natural locations under the host project p
 
 ### File-Authoring Contract
 
-Every NEW codebase file the workflow creates routes through `scripts/inject-header.{sh,py}` so the canonical `SPDX-License-Identifier` `MIT` banner is injected at the head in the comment family matching the filetype; the injector is idempotent and detects the variant from the byte-exact fixture at `src/apothem/schemas/authorship-header.txt`. Exempt classes are enumerated at `src/apothem/schemas/header-exceptions.txt`. Edits to existing files preserve any existing banner; the header-inject-guard hook enforces the contract at every Write / Edit.
+Every NEW codebase file the workflow creates follows the project's own header and license convention, found per `rules/host-discovery.md`, or carries no header when the project has none. In a user project the workflow MUST NOT stamp the Apothem SPDX header or run Apothem scripts; inside the Apothem repository, a new file gets the canonical header through `scripts/inject-header.py`. Edits to existing files preserve any existing header.
 
 ### Structured Inquiry on Ambiguity
 

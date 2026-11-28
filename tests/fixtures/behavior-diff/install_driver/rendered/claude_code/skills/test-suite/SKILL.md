@@ -72,7 +72,7 @@ Discover the deployed repository's behavior contracts and its ratified test fram
 | Host-Agnostic Discovery (M1) | Discover the test framework, coverage tool, and test-location convention; never assume pytest or any single framework. |
 | Behavior-First (M8) | Tests assert observable behavior with pre / post / failure conditions; implementation-coupled tests are findings. |
 | Structured Inquiry (CM-2) | Framework ambiguity and contract ambiguity route through the canonical channel; free-form prose as primary input is forbidden. |
-| File Headers | Every authored test file carries the canonical SPDX header via `scripts/inject-header.py`. |
+| File Headers | Every authored test file follows the project's own header convention per `rules/host-discovery.md`; the canonical header through `scripts/inject-header.py` applies only inside the Apothem repository. |
 | Pre-Emission Gate (M4) | The report and authored test files pass the fifteen-bar gate before promotion. |
 | Worker Orchestration (CM-25) | The test-runner agent carries an explicit 200-token return contract. |
 
@@ -81,7 +81,7 @@ Discover the deployed repository's behavior contracts and its ratified test fram
 ## Output
 
 - The report at the consuming suite's `_inputs/test-suite-report.md` (per-test outcomes + failure triage + coverage-gap findings + validation-gate attestation).
-- The authored behavior-first test files at the host's ratified test location, each carrying the canonical SPDX header.
+- The authored behavior-first test files at the host's ratified test location, each carrying the header the project's own convention calls for (the canonical SPDX header only inside the Apothem repository).
 
 ---
 

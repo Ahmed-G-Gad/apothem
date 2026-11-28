@@ -1,7 +1,7 @@
 ---
 trigger: glob
-description: "The full token-efficiency rewrite protocol the always-on parent rule references: the L1 prose-scaffolding elimination classes (filler / throat-clearing / restatement / hedge-padding / ceremonial-scaffolding / connective-bloat), the per-class compression heuristics, the extract-discard-re-derive-verify procedure, and worked before/after examples. Demand-loads when the assistant rewrites an authoring surface for token efficiency."
-globs: "**/*.md, **/*.mdx, **/rules/**, **/skills/**, **/commands/**, **/agents/**, **/docs/**"
+description: "The full token-efficiency rewrite protocol the parent rule references: the L1 prose-scaffolding elimination classes (filler / throat-clearing / restatement / hedge-padding / ceremonial-scaffolding / connective-bloat), the per-class compression heuristics, the extract-discard-re-derive-verify procedure, and worked before/after examples. Demand-loads when the assistant rewrites an authoring surface for token efficiency."
+globs: "**/rules/**, **/skills/**, **/commands/**, **/agents/**, **/docs/**"
 ---
 
 <!-- SPDX-License-Identifier: MIT -->
@@ -67,7 +67,7 @@ The heuristic is conservative: when removal is uncertain (the span may carry an 
 
 ## Enforcement
 
-Path-filtered (the seven glob patterns in this rule's `pathFilter` field — `**/*.md`, `**/*.mdx`, `**/rules/**`, `**/skills/**`, `**/commands/**`, `**/agents/**`, `**/docs/**`), demand-loaded companion to `rules/token-efficiency-rewrite.md`. The parent carries the always-on directive (two preservation tiers, anchor-preservation invariant, semantic-regression gate, same-change discipline, when-not-to-rewrite carve-out); this companion carries the four-step procedure, the six L1 elimination classes, the per-class compression heuristics, and the worked examples. The mechanical matcher at `conformity/token_efficiency_grep.py` operationalizes the L3 anchor-diff zero-drift check.
+Path-filtered (the five glob patterns in this rule's `pathFilter` field, the same five as the parent's — `**/rules/**`, `**/skills/**`, `**/commands/**`, `**/agents/**`, `**/docs/**`), demand-loaded companion to `rules/token-efficiency-rewrite.md`. The parent carries the standing directive (two preservation tiers, anchor-preservation invariant, semantic-regression gate, same-change discipline, when-not-to-rewrite carve-out); this companion carries the four-step procedure, the six L1 elimination classes, the per-class compression heuristics, and the worked examples. The mechanical matcher at `conformity/token_efficiency_grep.py` operationalizes the L3 anchor-diff zero-drift check.
 
 ## Bindings (§0.j five-direction)
 

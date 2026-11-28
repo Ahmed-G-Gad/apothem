@@ -87,7 +87,7 @@ The primary output is the upgrade report (markdown) written to STDOUT. The bump 
 
 ### File-Authoring Contract
 
-The skill edits manifest and lockfile artifacts in place; new files are rare. A NEW file routes through `scripts/inject-header.py` so the canonical single-line SPDX header is injected at the head — the injector is idempotent and detects the filetype variant automatically. Lockfiles and JSON config are header-exempt per `src/apothem/schemas/header-exceptions.txt`, so manifest and lock edits preserve the file's existing head. The header-inject-guard hook at `hooks/messages/pretooluse-{write,edit}-header-guard.md` enforces the contract at every Write / Edit invocation.
+The skill edits manifest and lockfile artifacts in place; new files are rare. A NEW file follows the project's own header and license convention, found per `rules/host-discovery.md`, or carries no header when the project has none. In a user project the skill MUST NOT stamp the Apothem SPDX header or run Apothem scripts; inside the Apothem repository, a new file gets the canonical header through `scripts/inject-header.py`. Manifest and lock edits preserve the file's existing head.
 
 ### Structured Inquiry on Ambiguity
 
