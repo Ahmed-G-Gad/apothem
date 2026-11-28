@@ -1,5 +1,6 @@
 ---
 name: CLAUDE
+version: 1.0.4
 updated: 2026-11-28
 description: Project-scoped Claude Code instructions for the Apothem source repository.
 scope: project
