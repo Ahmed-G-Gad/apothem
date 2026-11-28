@@ -1,6 +1,6 @@
 ---
 name: Apothem Agent Instructions
-updated: 2026-10-24
+updated: 2026-11-28
 description: Canonical project-scoped instructions for AI coding agents working in the Apothem source repository; the surface CLAUDE.md and .github/copilot-instructions.md mirror.
 scope: project
 portability: project-local
@@ -36,7 +36,8 @@ Shared claims that every active AI-assistant surface preserves:
   upgrade an existing one via `apothem migrate-workspace`. The directory is
   gitignored by the canonical `.gitignore` snippet; plans are never committed
   to git history. Plan state transitions are `draft -> in-progress ->
-  converged` (promote to ADR) or `abandoned`.
+  converged` (promote to ADR, filed under `site/content/docs/adr/`) or
+  `abandoned`.
 - Every applicable new file begins with the canonical
   `SPDX-License-Identifier: MIT` header line, in the comment family matching
   the filetype. The byte-exact fixture is
@@ -146,10 +147,19 @@ src/apothem/
   benchmarks/     — per-class performance benchmark drivers
   _vendor/        — vendored third-party dependencies (self-contained checkout)
 scripts/          — operator / dev / release executables (dev/ holds the audit + validation tooling)
-tests/
+tests/           — the per-folder contract for each subtree is tests/README.md
   unit/           — unit tests (pytest, no network, no filesystem side-effects)
-  integration/    — integration tests (full adapter round-trip)
-  conformity/     — conformity-gate fixture tests
+  integration/    — integration tests (full adapter round-trip, behavior-diff walls)
+  conformity/     — per-validator conformity-gate self-tests
+  conformity-scenarios/ — end-to-end F-* gate scenarios (run by verify.py, not pytest)
+  hooks/          — hook-infrastructure tests
+  scripts/        — tests for the executables under scripts/
+  packaging/      — release-artifact packaging tests
+  commands/       — slash-command behavior tests
+  property/       — property-based (Hypothesis) tests
+  fuzz/           — fuzz targets and their seed-replay test
+  fixtures/       — shared fixtures (claim list, behavior-diff goldens)
+  _shared/        — test helpers imported as tests._shared
 ```
 
 ## Development Commands
@@ -289,7 +299,11 @@ instruction anchor; they are not forced into vendor-reserved directories.
 - `pathlib.Path` over `os.path`; `dataclasses` for value containers.
 - `ruff check` and `mypy --strict` (scoped) must pass before every commit.
 - Conventional Commits: `type(scope): subject` under 72 chars, imperative mood.
-- Kebab-case for files and folders; see [Apothem naming conventions](https://apothem.ahmedgad.com/docs/reference/naming-conventions/).
+- Kebab-case for files and folders, with canonical-uppercase exceptions:
+  `AGENTS.md`, `CLAUDE.md`, `GEMINI.md`, `QWEN.md`, `README.md`, `LICENSE`,
+  `CHANGELOG.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `CONTRIBUTING.md`,
+  and the few all-caps files their conventions require; see
+  [Apothem naming conventions](https://apothem.ahmedgad.com/docs/reference/naming-conventions/).
 
 ## Harness Adapter Pattern
 
@@ -306,6 +320,11 @@ Each adapter sub-package under `src/apothem/harnesses/<name>/` exposes:
   profile. Template-propagation adapters instead consume
   `src/apothem/lib/propagation-manifest.yaml` and may convert cohorts into the
   harness-native format declared there.
+- `capabilities.yml` and `STANDARD-CONVENTION-PIN.md` — the declarative
+  companions every adapter ships: the per-cohort capability matrix and the
+  pinned upstream-convention reference. Adapters that install fixed files
+  also carry a `templates/` directory. `src/apothem/harnesses/README.md` is
+  the full contract for the subpackage shape.
 
 Adapters are cataloged in the harness registry
 (`src/apothem/lib/harness_registry.py`), which is **authoritative at runtime**:
