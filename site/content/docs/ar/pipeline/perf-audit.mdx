@@ -2,7 +2,7 @@
 title: "\u2066/perf-audit\u2069"
 description: "\u200F\u2066/perf-audit\u2069 — يدقّق مقابل ميزانيات الأداء لكلّ صنف (زمن تشغيل الخطّافات، وverify-ecosystem، وبوابة المطابقة، والاختبارات، والعمّال المُفوَّضون، وshell، وlint)، باستخدام أسلوب USE."
 machineTranslated: true
-sourceHash: "fecd1962acded819"
+sourceHash: "c5ac007ca3ec2927"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,7 +25,7 @@ sourceHash: "fecd1962acded819"
 
 ## المدخلات
 
-مستودع مُضيف يحتوي على <bdi>`hooks/`</bdi> و<bdi>`src/apothem/benchmarks/`</bdi> و<bdi>`tests/`</bdi>، وعلى هياكل التمهيد الأولية للخطّافات <bdi>`hooks/lib/bootstrap.{sh,ps1}`</bdi>
+نسخة من مستودع <bdi>Apothem</bdi> تحتوي على <bdi>`src/apothem/hooks/`</bdi> و<bdi>`src/apothem/benchmarks/`</bdi> و<bdi>`tests/`</bdi>، وعلى هياكل التمهيد الأولية للخطّافات <bdi>`src/apothem/hooks/lib/bootstrap.{sh,ps1}`</bdi>
 
 ## المخرجات
 
@@ -44,7 +44,7 @@ sourceHash: "fecd1962acded819"
 | العَرَض | السبب | الاستعادة |
 |---------|-------|----------|
 | بوابة الجودة <bdi>FAIL</bdi> | المُخرَج لا يفي بالمعايير | أصلِح المُخرَج وأعِد التشغيل |
-| ملف إدخال مفقود | المستودع يفتقد <bdi>`src/apothem/benchmarks/`</bdi> | أضِف مُشغِّلات المقاييس المرجعية، ثم أعِد التشغيل؛ يرفض الأمر التشغيل ما دامت غائبة |
+| ليست نسخة من مستودع <bdi>Apothem</bdi> | المستودع يفتقد <bdi>`src/apothem/benchmarks/`</bdi> | لا شيء يحتاج إلى إصلاح: يُبلغ الأمر أن هذا البُعد غير منطبق، ويتخطّاه <bdi>`/audit`</bdi> |
 
 ## أمثلة
 
