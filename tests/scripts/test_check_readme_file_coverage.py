@@ -206,3 +206,88 @@ class TestMain:
         )
         assert cov.main([str(tmp_path), "--strict"]) == 0
         assert "1 folders checked" in capsys.readouterr().out
+
+
+@pytest.mark.usefixtures("track_everything")
+class TestReadmeLessSubfolders:
+    """A folder with no README is held to the nearest README above it.
+
+    The regression this pins: ``scripts/release/extract_release_notes.py`` and
+    two ``tests/_shared/`` helpers went unnamed because only the folder a README
+    sits in was checked, although the parent README is the subfolder's index.
+    """
+
+    def test_nearest_ancestor_readme_skips_readme_less_levels(
+        self, tmp_path: Path
+    ) -> None:
+        _tree(tmp_path, {"pkg/README.md": "", "pkg/a/b/mod.py": ""})
+        assert cov.nearest_ancestor_readme(Path("pkg/a/b"), tmp_path) == Path(
+            "pkg/README.md"
+        )
+
+    def test_nearest_ancestor_readme_is_none_without_one(self, tmp_path: Path) -> None:
+        _tree(tmp_path, {"pkg/a/mod.py": ""})
+        assert cov.nearest_ancestor_readme(Path("pkg/a"), tmp_path) is None
+
+    def test_unnamed_subfolder_module_is_reported_against_the_parent_readme(
+        self, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        _tree(
+            tmp_path,
+            {
+                "scripts/README.md": "| `named.py` | Listed. |",
+                "scripts/release/named.py": "",
+                "scripts/release/extract_notes.py": "",
+            },
+        )
+        assert cov.main([str(tmp_path), "--strict"]) == 1
+        out = capsys.readouterr().out
+        assert "scripts/README.md does not name:" in out
+        reported = [line.strip() for line in out.splitlines() if line.startswith("  ")]
+        assert reported == ["release/extract_notes.py"]
+
+    def test_a_subfolder_with_its_own_readme_is_not_held_to_the_parent(
+        self, tmp_path: Path
+    ) -> None:
+        _tree(
+            tmp_path,
+            {
+                "scripts/README.md": "# scripts\n",
+                "scripts/ci/README.md": "| `lock.py` | A lock. |",
+                "scripts/ci/lock.py": "",
+            },
+        )
+        assert cov.main([str(tmp_path), "--strict"]) == 0
+
+    def test_tests_pages_and_data_in_a_subfolder_are_not_held(
+        self, tmp_path: Path
+    ) -> None:
+        # A test area, a documentation corpus and data files are described as a
+        # whole by the README above them, not file by file.
+        _tree(
+            tmp_path,
+            {
+                "tests/README.md": "| `unit/` | Unit tests. |",
+                "tests/unit/test_widget.py": "",
+                "tests/unit/conftest.py": "",
+                "tests/unit/widget.test.mjs": "",
+                "site/README.md": "# site\n",
+                "site/content/docs/page.mdx": "",
+                "site/content/docs/meta.json": "",
+            },
+        )
+        assert cov.main([str(tmp_path), "--strict"]) == 0
+
+    def test_a_helper_module_beside_tests_is_held(self, tmp_path: Path) -> None:
+        _tree(
+            tmp_path,
+            {
+                "tests/README.md": "| `_shared/` | Helpers. |",
+                "tests/_shared/release_fixture.py": "",
+            },
+        )
+        assert cov.main([str(tmp_path), "--strict"]) == 1
+
+    def test_a_front_page_readme_governs_no_subfolder(self, tmp_path: Path) -> None:
+        _tree(tmp_path, {"README.md": "# Apothem\n", ".github/scripts/guard.sh": ""})
+        assert cov.main([str(tmp_path), "--strict"]) == 0

@@ -17,6 +17,12 @@ audit package added every one of them without touching that package's README.
 Three independent occurrences of one defect class is the point at which the
 check should be mechanical rather than remembered.
 
+A folder with no README of its own is indexed by the README above it:
+``scripts/README.md`` names the files of ``scripts/release/``. Its source
+modules are therefore checked against the nearest README above it; checking
+only the folder a README sits in let a new release script and two test helpers
+go unnamed.
+
 What it does NOT check. Whether a described row is *accurate* — only whether a
 shipped file is named at all. Presence is what drifts silently; a wrong
 description tends to be noticed when read. `agents_md_coverage_grep.py` in the
@@ -91,6 +97,36 @@ IGNORED_NAMES = frozenset(
 )
 IGNORED_SUFFIXES = frozenset({".pyc", ".pyo", ".png", ".ico", ".svg", ".woff2"})
 
+# In a folder with no README of its own, only source modules are held to the
+# nearest README above it. Such folders are mostly corpora a README describes
+# as a whole rather than file by file: the documentation pages under
+# site/content/docs/, eval cases, fuzz seeds. A module there is code another
+# file runs or imports, which a reader needs to find by name.
+SOURCE_SUFFIXES = frozenset(
+    {
+        ".py",
+        ".sh",
+        ".ps1",
+        ".psm1",
+        ".bat",
+        ".cmd",
+        ".js",
+        ".mjs",
+        ".cjs",
+        ".jsx",
+        ".ts",
+        ".tsx",
+    }
+)
+
+# Test modules are named by their test area's row, not one by one: a README
+# that listed every test file would restate the folder and drift on the next
+# test. Helper modules beside them (``_shared/``, an oracle module) are not
+# tests, so they still need a name.
+TEST_MODULE = re.compile(
+    r"^(test_.*\.py|.*_test\.py|conftest\.py|.*\.(test|spec)\.[cm]?[jt]sx?)$"
+)
+
 # Some READMEs are published product front pages, not file indexes: they
 # introduce the project to a newcomer or a marketplace visitor. Holding one to
 # the per-folder contract would demand an implementation-file table in copy
@@ -153,6 +189,15 @@ def tracked_files(root: Path) -> set[Path]:
     return {Path(line) for line in result.stdout.splitlines() if line}
 
 
+def is_indexable(name: str) -> bool:
+    """Return True for a file name a README is expected to name."""
+    return (
+        name not in IGNORED_NAMES
+        and Path(name).suffix not in IGNORED_SUFFIXES
+        and not name.startswith(".")
+    )
+
+
 def shipped_files(folder: Path, root: Path, tracked: set[Path]) -> list[Path]:
     """Return the tracked files a reader would expect the README to name."""
     return sorted(
@@ -160,10 +205,68 @@ def shipped_files(folder: Path, root: Path, tracked: set[Path]) -> list[Path]:
         for entry in folder.iterdir()
         if entry.is_file()
         and entry.relative_to(root) in tracked
-        and entry.name not in IGNORED_NAMES
-        and entry.suffix not in IGNORED_SUFFIXES
-        and not entry.name.startswith(".")
+        and is_indexable(entry.name)
     )
+
+
+def nearest_ancestor_readme(folder: Path, root: Path) -> Path | None:
+    """Return the README of the nearest folder above ``folder`` that has one.
+
+    ``folder`` and the result are relative to ``root``; the walk stops at the
+    root, and the result is ``None`` when no folder on the way carries a README.
+    """
+    for ancestor in folder.parents:
+        candidate = ancestor / "README.md"
+        if (root / candidate).is_file():
+            return candidate
+    return None
+
+
+def is_subfolder_module(name: str) -> bool:
+    """Return True for a file a README-less folder's governing README must name."""
+    return (
+        is_indexable(name)
+        and Path(name).suffix in SOURCE_SUFFIXES
+        and not TEST_MODULE.match(name)
+    )
+
+
+def subfolder_findings(root: Path, tracked: set[Path]) -> dict[Path, list[str]]:
+    """Return the modules of README-less folders that the governing README never names.
+
+    A folder with no README of its own is indexed by the nearest README above
+    it: ``scripts/README.md`` names the files of ``scripts/release/``, and
+    ``tests/README.md`` those of ``tests/_shared/``. Checking only the folder a
+    README sits in let such a subfolder's new module go unnamed. Only source
+    modules count here (see ``SOURCE_SUFFIXES`` and ``TEST_MODULE``). The
+    result maps each governing README's folder to the unnamed files, written
+    relative to that folder. A front-page README, or one in an excluded tree,
+    governs nothing, so its README-less subfolders are not checked.
+    """
+    texts: dict[Path, str] = {}
+    findings: dict[Path, list[str]] = {}
+    for rel in sorted(tracked):
+        folder = rel.parent
+        if folder == Path() or (root / folder / "README.md").is_file():
+            continue
+        if (
+            is_excluded(rel)
+            or not is_subfolder_module(rel.name)
+            or not (root / rel).is_file()
+        ):
+            continue
+        readme = nearest_ancestor_readme(folder, root)
+        if readme is None or readme in FRONT_PAGE_READMES or is_excluded(readme):
+            continue
+        if readme not in texts:
+            texts[readme] = (root / readme).read_text(
+                encoding="utf-8", errors="replace"
+            )
+        if not named_in(texts[readme], rel.name):
+            findings.setdefault(readme.parent, []).append(
+                rel.relative_to(readme.parent).as_posix()
+            )
+    return findings
 
 
 def named_in(readme_text: str, filename: str) -> bool:
@@ -215,6 +318,10 @@ def main(argv: list[str] | None = None) -> int:
         for entry in files:
             if not named_in(text, entry.name):
                 findings.append((folder.relative_to(args.root), entry.name))
+
+    for folder, names in subfolder_findings(args.root, tracked).items():
+        findings.extend((folder, name) for name in names)
+    findings.sort(key=lambda finding: (finding[0].as_posix(), finding[1]))
 
     if findings:
         current: Path | None = None
