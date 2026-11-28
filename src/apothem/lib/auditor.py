@@ -20,8 +20,11 @@ The serialized run (:meth:`Findings.to_dict`) validates against the bundled
 ``advisory-finding.schema.json`` contract, the same shape the changed-path
 audit entry point (:func:`pr_audit`) emits.
 
-Standalone invocation (no package installation required; the plugin tree is
-self-contained)::
+Internal module. No Apothem command, hook or workflow calls it, and neither
+its entry point nor ``APOTHEM_AUDITOR_STRICT`` is a documented public setting;
+both exist for maintainers and the tests (``tests/unit/test_auditor.py``). A
+caller that makes it public documents both on the conformity-gate page in the
+same change. The entry point needs no package installation::
 
     python -m apothem.lib.auditor <path> [<path> ...] [--strict] [--json]
 """

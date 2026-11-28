@@ -2,7 +2,7 @@
 title: "소스 레이아웃"
 description: "Apothem이 src/ 레이아웃을 사용하는 이유와 트리의 구성 방식입니다."
 machineTranslated: true
-sourceHash: "4620a2bd8d95e2cd"
+sourceHash: "8626e36ce01afc61"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,6 +25,7 @@ Apothem은 [PyPA src-layout](https://packaging.python.org/en/latest/discussions/
 
 ```
 src/apothem/
+    _vendor/        vendored third-party dependencies
     agents/         persistent agent definitions (*.md)
     audit/          inventory and provenance tools
     benchmarks/     performance benchmarks
@@ -38,7 +39,7 @@ src/apothem/
     rules/          behavioral rules (*.md)
     schemas/        YAML/JSON schemas
     skills/         reusable skill templates (folder/SKILL.md)
-    statuslines/    status-line config (*.json)
+    statuslines/    statusline definition and renderer
     templates/      reusable template artifacts
 ```
 

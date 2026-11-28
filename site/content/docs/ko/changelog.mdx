@@ -20,6 +20,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- **The install docs name the installers' clean-slate flags and what
+  `--clean` removes.** `install.sh --clean` (or `--fresh`) and
+  `install.ps1 -Clean` (or `-Fresh`) were described only in the scripts' own
+  help. The install page now has a table of every installer flag, and the
+  README lists them. The `apothem install` page said `--clean` removes "the prior
+  per-harness install state"; it removes the same four folders whichever
+  harness `--harness` names: `~/.claude`, `~/.codex`, `~/.agents` and
+  `~/.config/apothem`.
+
 - **Skills and commands no longer stamp Apothem's license header in your
   project.** Their instructions told the assistant to run Apothem's own
   header script and add Apothem's `SPDX-License-Identifier: MIT` line to

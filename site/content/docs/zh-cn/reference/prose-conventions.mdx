@@ -2,7 +2,7 @@
 title: "散文约定"
 description: "强制执行 RFC 2119 情态层级，禁止营销形容词和模糊填充词，使用绝对 ISO-8601 日期，并验证指令性散文的滴水不漏。"
 machineTranslated: true
-sourceHash: "ade825a58eb1c3d7"
+sourceHash: "366516186263000e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,4 +34,4 @@ sourceHash: "ade825a58eb1c3d7"
 
 ## 4. 验证器
 
-`scripts/dev/validate_ecosystem.py` 的 UDA 滴水不漏检查是 §2.3 的机械化强制执行表面。每次写入的 `markdown` 系列合规性 grep 验证器，在 PreToolUse Write/Edit 钩子边界上强制执行更广泛的散文质量标准。
+`scripts/dev/validate_ecosystem.py` 的 UDA 滴水不漏检查是 §2.3 的机械化强制执行表面。每次写入时运行的合规性验证器（其中包括 `hedging-grep`、`token-efficiency-grep`、`link-check` 和 `file-header-grep`），在 PreToolUse Write/Edit 钩子边界上检查更广泛的散文质量标准。其中只有 `file-header-grep` 会阻断；其余三个仅为建议性检查：只报告发现的问题，不阻断任何操作。

@@ -2,7 +2,7 @@
 title: "定位"
 description: "将 Apothem 理解为工件批准式治理——具有十五条强制规定、规范通道输入纪律，以及面向助手驱动工作的认知身份创意架构。"
 machineTranslated: true
-sourceHash: "e5b17260b2a78c11"
+sourceHash: "b81b17f4cc8e4c02"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -140,11 +140,11 @@ sourceHash: "e5b17260b2a78c11"
 
 ### M10——双向绑定与阶段执行串联
 
-**范围。** 每个实质性的结构元素都以规范的五方向记法携带与其同级元素的互惠绑定：**驱动 →** / **被驱动 ←** / **满足 →** / **确立于 ↑** / **交叉绑定 ↔**。在一个方向上声明的每个绑定，在另一端都有一个互惠的回指；半边是结构性失败，而不是审美偏好。位于 `src/apothem/conformity/binding_reciprocity_grep.py` 的机械互惠 grep 在闸门处强制执行该不变量。
+**范围。** 每个实质性的结构元素都以规范的五方向记法携带与其同级元素的互惠绑定：**驱动 →** / **被驱动 ←** / **满足 →** / **确立于 ↑** / **交叉绑定 ↔**。在一个方向上声明的每个绑定，在另一端都有一个互惠的回指；半边是结构性失败，而不是审美偏好。在闸门处，`binding-reciprocity-corpus-grep`（`src/apothem/conformity/binding_reciprocity_corpus_grep.py`）报告规则语料库中每一处没有回引的 `Cross-bound with ↔` 引用；每次写入时，`binding-reciprocity-grep` 让每个 Bindings 章节遵守规范的箭头记法。
 
 **权威规范。** `src/apothem/rules/bidirectional-binding.md`。
 
-**为何重要。** 互惠绑定把语料库变成一张可导航的图。任何规则的 `Cross-bound with ↔` 行都指向每一个引用它的同级规则，而每个被引用的同级规则也都指回来。重构语料库因而变得机械——重命名一条规则，互惠 grep 就会在同一变更集中标出每一处过时的引用。
+**为何重要。** 互惠绑定把语料库变成一张可导航的图。任何规则的 `Cross-bound with ↔` 行都指向每一个引用它的同级规则，而每个被引用的同级规则也都指回来。重构语料库因而变得机械——重命名一条规则，它的 `Cross-bound with ↔` 行就会列出在同一变更集中需要更改引用的每一个同级规则。
 
 ### M11——敏捷冲刺与经验式过程控制
 

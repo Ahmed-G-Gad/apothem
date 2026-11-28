@@ -2,7 +2,7 @@
 title: "Installation"
 description: "Aperçu de l'installation d'Apothem — huit canaux d'installation, chacun avec ses prérequis, une commande prête à copier et une étape de vérification : le plugin Claude Code, le shim npm, les installateurs en une seule étape, l'extension de la famille VS Code, les trois extensions d'amorçage en ligne de commande et le moteur direct."
 machineTranslated: true
-sourceHash: "cc205e0eab36c099"
+sourceHash: "ffdb3d79274d3b88"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -233,6 +233,31 @@ les chemins réseau de votre `PYTHONPATH`. Un Python POSIX, y compris le
 et ne conserve que les entrées qui commencent par `/`. Les commandes `git` des
 installateurs qui ne travaillent pas sur un clone ne lisent pas de dépôt situé
 dans le dossier courant.
+
+### Options des installateurs
+
+`install.sh` accepte les options ci-dessous, et `install.ps1` les mêmes
+commutateurs sous forme de paramètres PowerShell. `install.bat` accepte
+l'écriture de `install.sh` des trois premières lignes et transmet chacune à
+`install.ps1`. Une commande d'une ligne passée par un tube ne peut pas
+transmettre de paramètre PowerShell : téléchargez d'abord `install.ps1` pour en
+utiliser un :
+
+```bash title="Pass a flag (POSIX)"
+curl -fsSL https://apothem.ahmedgad.com/install.sh | sh -s -- --dry-run
+```
+
+```powershell title="Pass a flag (Windows PowerShell 5.1 or later)"
+irm https://apothem.ahmedgad.com/install.ps1 -OutFile install.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 -DryRun
+```
+
+| `install.sh` | `install.ps1` | Effet |
+|---|---|---|
+| `--clean`, `--fresh` | `-Clean`, `-Fresh` | Avant l'installation, sauvegarde puis supprime les quatre dossiers de votre répertoire personnel que liste [`apothem install`](/docs/cli-reference/install#blast-radius-preview), dont `~/.claude` et `~/.agents`, quel que soit l'environnement que vous installez, puis installe à neuf. L'installateur le transmet au moteur sous la forme `apothem install --clean`, qui demande avant chaque suppression, garde la sauvegarde sous `~/.apothem/backups` et réécrit votre profil. |
+| `--dry-run` | `-DryRun` | Récupère et vérifie la version dans un dossier temporaire et montre ce que l'installation changerait, sans rien changer (voir [Modèle de confiance](#modèle-de-confiance)). |
+| `--yes` | `-Yes` | Ne demande pas avant chaque suppression de `--clean`. Autorise aussi les remplacements de ce qui se trouve dans `APOTHEM_HOME` pour lesquels le [Modèle de confiance](#modèle-de-confiance) exige `--yes`. Installe aussi avec pip, sans demander, les prérequis Python manquants (`click`, `rich`), comme le fait `APOTHEM_AUTO_INSTALL_DEPS=1`. |
+| `-h`, `--help` | aucun | Affiche les options et le modèle de confiance, puis s'arrête. |
 
 ### Modèle de confiance
 
