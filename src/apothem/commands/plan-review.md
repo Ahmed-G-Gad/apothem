@@ -80,7 +80,7 @@ Review outputs are plan-suite-internal: scorecards write to `<project-root>/.apo
 
 ### File-Authoring Contract
 
-Plan-suite review artifacts (PLAN-NOTES.md scorecard updates, PROGRESS.md Review Summary updates, the per-phase REPORT.md when revisions touch one, the augmented Manifest) are plan-internal and header-exempt per the `.apothem/**` exception class at `src/apothem/schemas/header-exceptions.txt`. The injector at `scripts/inject-header.{sh,py}` is therefore NOT invoked on review emissions. The contract applies to any orchestrator that materializes this command's findings into a non-plan artifact (a separate audit report at the host's documentation surface, for example) — that orchestrator routes the new file through the injector per the canonical authorship-header policy.
+Plan-suite review artifacts (PLAN-NOTES.md scorecard updates, PROGRESS.md Review Summary updates, the per-phase REPORT.md when revisions touch one, the augmented Manifest) are plan-internal and header-exempt per the `.apothem/**` exception class at `src/apothem/schemas/header-exceptions.txt`. The injector at `scripts/inject-header.{sh,py}` is therefore NOT invoked on review emissions. The contract applies to any orchestrator that materializes this command's findings into a non-plan artifact (a separate audit report at the host's documentation surface, for example) — that orchestrator gives the new file the project's own header convention per `rules/host-discovery.md`.
 
 ### Structured Inquiry on Ambiguity
 

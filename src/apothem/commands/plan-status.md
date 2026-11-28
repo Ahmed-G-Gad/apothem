@@ -55,7 +55,7 @@ This command emits NO files — its output is prose written to the operator's te
 
 ### File-Authoring Contract
 
-Writes nothing. The injector at `scripts/inject-header.{sh,py}` is never invoked from this command's surface. The contract applies to any orchestrator that materializes this command's findings into files — that orchestrator routes the new file (audit report, dashboard markdown, status.json) through the injector per the canonical authorship-header policy and lands it at a non-plan-internal path under the host's documentation tree.
+Writes nothing. The injector at `scripts/inject-header.{sh,py}` is never invoked from this command's surface. The contract applies to any orchestrator that materializes this command's findings into files — that orchestrator gives the new file (audit report, dashboard markdown, status.json) the project's own header convention per `rules/host-discovery.md` and lands it at a non-plan-internal path under the host's documentation tree.
 
 ### Structured Inquiry on Ambiguity
 
