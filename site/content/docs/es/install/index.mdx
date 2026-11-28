@@ -2,7 +2,7 @@
 title: "Instalación"
 description: "Resumen de la instalación de Apothem — ocho canales de instalación, cada uno con sus requisitos previos, un comando listo para copiar y un paso de verificación: el plugin de Claude Code, el shim de npm, los instaladores de un solo paso, la extensión de la familia VS Code, las tres extensiones de arranque de línea de comandos y el motor directo."
 machineTranslated: true
-sourceHash: "cc205e0eab36c099"
+sourceHash: "0ff204172c43dd9e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -213,6 +213,26 @@ incluido el `python3` propio de Cygwin y de MSYS2, recibe rutas POSIX unidas con
 `:` y conserva solo las entradas que empiezan por `/`. Los comandos `git` de los
 instaladores que no trabajan sobre un clon no leen un repositorio de la carpeta
 actual.
+
+### Opciones del instalador
+
+`install.sh` acepta las opciones siguientes, e `install.ps1` acepta los mismos
+interruptores como parámetros de PowerShell. `install.bat` acepta la forma de
+`install.sh` de las tres primeras filas y pasa cada una a `install.ps1`. Un comando
+de una línea canalizado no puede pasar un parámetro de PowerShell, así que descarga
+primero `install.ps1` para usar uno:
+
+```bash title="Pass a flag"
+curl -fsSL https://apothem.ahmedgad.com/install.sh | sh -s -- --dry-run    # POSIX
+irm https://apothem.ahmedgad.com/install.ps1 -OutFile install.ps1; pwsh -NoProfile -File install.ps1 -DryRun   # Windows
+```
+
+| `install.sh` | `install.ps1` | Efecto |
+|---|---|---|
+| `--clean`, `--fresh` | `-Clean`, `-Fresh` | Antes de instalar, respalda y elimina las cuatro carpetas de tu directorio personal que lista [`apothem install`](/docs/cli-reference/install#blast-radius-preview), entre ellas `~/.claude` y `~/.agents`, sea cual sea el entorno que instales, y luego instala desde cero. El instalador lo pasa al motor como `apothem install --clean`, que pregunta antes de cada eliminación, guarda la copia de seguridad en `~/.apothem/backups` y vuelve a escribir tu perfil. |
+| `--dry-run` | `-DryRun` | Descarga y comprueba la versión en una carpeta temporal y muestra lo que cambiaría la instalación, sin cambiar nada (consulta [Modelo de confianza](#modelo-de-confianza)). |
+| `--yes` | `-Yes` | No pregunta antes de cada eliminación de `--clean`. También permite los reemplazos de lo que hay en `APOTHEM_HOME` que el [Modelo de confianza](#modelo-de-confianza) indica que necesitan `--yes`. |
+| `-h`, `--help` | ninguno | Muestra las opciones y el modelo de confianza, y termina. |
 
 ### Modelo de confianza
 

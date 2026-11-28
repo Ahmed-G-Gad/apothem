@@ -2,7 +2,7 @@
 title: "install"
 description: "Referencia de la CLI para el comando apothem install."
 machineTranslated: true
-sourceHash: "5ba6f0eafa4b1b6f"
+sourceHash: "d8f52162347218a1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -62,8 +62,17 @@ la instalación. Con `--clean`, el paso de borrón y cuenta nueva se ejecuta
 primero bajo su propia confirmación por destino: escribe una copia de seguridad
 en `~/.apothem/backups` y elimina los destinos que confirma. Esas eliminaciones y
 la copia de seguridad se mantienen cuando se rechaza la solicitud de instalación.
-Los destinos son las carpetas de herramientas de tu directorio personal que
-lista la solicitud, entre ellas `~/.agents` y `~/.config/apothem`.
+Los destinos son siempre las mismas cuatro carpetas de tu directorio personal,
+sea cual sea el entorno que nombre `--harness`:
+
+```text
+~/.claude
+~/.codex
+~/.agents
+~/.config/apothem
+```
+
+No se elimina ninguna otra carpeta, y el resto de `~/.config` se conserva.
 Un destino que es en sí mismo un enlace, incluida una unión de Windows, pierde
 solo el enlace, y un enlace dentro de un destino se elimina sin entrar en él.
 Cuando `~/.config` es un enlace que sale de tu directorio personal, el paso de
@@ -379,7 +388,7 @@ comentarios, las comas finales y la sintaxis JSON5. Por eso:
 | `--harness NAME` | Adaptador de entorno que se instala, o `all` para el conjunto de todo el registro (obligatorio). Con `all`, se omiten los entornos listados en `exclude_harnesses` del perfil, pero un entorno indicado explícitamente se instala aunque figure en la lista. Ejecuta `apothem harnesses list` para ver los nombres registrados. |
 | `--profile PATH` | Ruta al YAML del perfil compartido. Valor predeterminado: `~/.config/apothem/profile.yaml`. |
 | `--dry-run` | Previsualiza la instalación sin escribir archivos. |
-| `--clean`, `--fresh` | Borrón y cuenta nueva opcional: respalda y elimina el estado de instalación anterior de cada entorno antes de instalar. |
+| `--clean`, `--fresh` | Borrón y cuenta nueva opcional: respalda y elimina las cuatro carpetas que lista [Vista previa del radio de impacto](#vista-previa-del-radio-de-impacto) antes de instalar, sea cual sea el entorno que nombre `--harness`. |
 | `--yes` | Omite la confirmación por destino durante una eliminación de borrón y cuenta nueva (obligatorio en ejecuciones no interactivas de `--clean`). |
 | `--project PATH` | Raíz del proyecto para los entornos con alcance de proyecto. |
 | `--quiet`, `-q` | Suprime la salida informativa; solo se emiten errores. |

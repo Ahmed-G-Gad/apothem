@@ -2,7 +2,7 @@
 title: "Installation"
 description: "Überblick über die Apothem-Installation — acht Installationskanäle, jeder mit seinen Voraussetzungen, einem kopierbereiten Befehl und einem Verifizierungsschritt: das Claude Code-Plugin, der npm-Shim, die Ein-Schritt-Installer, die Erweiterung für die VS Code-Familie, die drei Kommandozeilen-Bootstrap-Erweiterungen und die direkte Engine."
 machineTranslated: true
-sourceHash: "cc205e0eab36c099"
+sourceHash: "0ff204172c43dd9e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -220,6 +220,26 @@ Laufwerks- und Netzwerkpfade Ihres `PYTHONPATH`. Ein POSIX-Python, einschließli
 des eigenen `python3` von Cygwin und MSYS2, erhält POSIX-Pfade, mit `:` verbunden,
 und behält nur Einträge, die mit `/` beginnen. Die `git`-Befehle der Installer, die
 nicht auf einem Klon arbeiten, lesen kein Repository im aktuellen Ordner.
+
+### Installer-Optionen
+
+`install.sh` nimmt die folgenden Optionen an, `install.ps1` dieselben Schalter als
+PowerShell-Parameter. `install.bat` akzeptiert die `install.sh`-Schreibweise der
+ersten drei Zeilen und gibt jede an `install.ps1` weiter. Ein über eine Pipe
+ausgeführter Einzeiler kann keinen PowerShell-Parameter übergeben; laden Sie
+`install.ps1` daher zuerst herunter, um einen zu verwenden:
+
+```bash title="Pass a flag"
+curl -fsSL https://apothem.ahmedgad.com/install.sh | sh -s -- --dry-run    # POSIX
+irm https://apothem.ahmedgad.com/install.ps1 -OutFile install.ps1; pwsh -NoProfile -File install.ps1 -DryRun   # Windows
+```
+
+| `install.sh` | `install.ps1` | Wirkung |
+|---|---|---|
+| `--clean`, `--fresh` | `-Clean`, `-Fresh` | Vor der Installation werden die vier Ordner in Ihrem Home-Verzeichnis, die [`apothem install`](/docs/cli-reference/install#blast-radius-preview) aufführt, darunter `~/.claude` und `~/.agents`, gesichert und entfernt, gleich welchen Harness Sie installieren; dann wird frisch installiert. Der Installer gibt die Option als `apothem install --clean` an die Engine weiter, die vor jeder Entfernung fragt, die Sicherung unter `~/.apothem/backups` ablegt und Ihr Profil zurückschreibt. |
+| `--dry-run` | `-DryRun` | Holt und prüft das Release in einem temporären Ordner und zeigt, was die Installation ändern würde, ohne etwas zu ändern (siehe [Vertrauensmodell](#vertrauensmodell)). |
+| `--yes` | `-Yes` | Fragt nicht vor jeder Entfernung durch `--clean`. Erlaubt außerdem die Ersetzungen dessen, was unter `APOTHEM_HOME` liegt, für die das [Vertrauensmodell](#vertrauensmodell) `--yes` verlangt. |
+| `-h`, `--help` | keine | Gibt die Optionen und das Vertrauensmodell aus und beendet sich. |
 
 ### Vertrauensmodell
 

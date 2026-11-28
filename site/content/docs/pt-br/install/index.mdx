@@ -2,7 +2,7 @@
 title: "Instalação"
 description: "Visão geral da instalação do Apothem — oito canais de instalação, cada um com seus pré-requisitos, um comando pronto para copiar e uma etapa de verificação: o plugin do Claude Code, o shim do npm, os instaladores de uma única etapa, a extensão da família VS Code, as três extensões de bootstrap de linha de comando e o motor direto."
 machineTranslated: true
-sourceHash: "cc205e0eab36c099"
+sourceHash: "0ff204172c43dd9e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -211,6 +211,26 @@ mantém apenas os caminhos com unidade e de rede do seu `PYTHONPATH`. Um Python 
 incluindo o próprio `python3` do Cygwin e do MSYS2, recebe caminhos POSIX unidos com `:`
 e mantém apenas as entradas que começam com `/`. Os comandos `git` dos instaladores
 que não atuam sobre um clone não leem um repositório na pasta atual.
+
+### Flags dos instaladores
+
+`install.sh` aceita as flags abaixo, e `install.ps1` aceita as mesmas chaves como
+parâmetros do PowerShell. `install.bat` aceita a grafia de `install.sh` das três
+primeiras linhas e repassa cada uma ao `install.ps1`. Um comando de uma linha
+executado por pipe não consegue passar um parâmetro do PowerShell, então baixe
+primeiro o `install.ps1` para usar um:
+
+```bash title="Pass a flag"
+curl -fsSL https://apothem.ahmedgad.com/install.sh | sh -s -- --dry-run    # POSIX
+irm https://apothem.ahmedgad.com/install.ps1 -OutFile install.ps1; pwsh -NoProfile -File install.ps1 -DryRun   # Windows
+```
+
+| `install.sh` | `install.ps1` | Efeito |
+|---|---|---|
+| `--clean`, `--fresh` | `-Clean`, `-Fresh` | Antes da instalação, faz backup e remove as quatro pastas do seu diretório pessoal que [`apothem install`](/docs/cli-reference/install#blast-radius-preview) lista, entre elas `~/.claude` e `~/.agents`, seja qual for o harness que você instala, e depois instala do zero. O instalador repassa isso ao motor como `apothem install --clean`, que pergunta antes de cada remoção, guarda o backup em `~/.apothem/backups` e grava seu perfil de volta. |
+| `--dry-run` | `-DryRun` | Busca e verifica a versão em uma pasta temporária e mostra o que a instalação mudaria, sem mudar nada (veja [Modelo de confiança](#trust-model)). |
+| `--yes` | `-Yes` | Não pergunta antes de cada remoção do `--clean`. Também permite as substituições do que está em `APOTHEM_HOME` que o [Modelo de confiança](#trust-model) lista como dependentes de `--yes`. |
+| `-h`, `--help` | nenhum | Mostra as flags e o modelo de confiança e encerra. |
 
 ### Modelo de confiança [#trust-model]
 

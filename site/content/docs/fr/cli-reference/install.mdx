@@ -2,7 +2,7 @@
 title: "install"
 description: "Référence de la CLI pour la commande apothem install."
 machineTranslated: true
-sourceHash: "5ba6f0eafa4b1b6f"
+sourceHash: "d8f52162347218a1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -71,8 +71,17 @@ remise à zéro s'exécute d'abord, sous sa propre confirmation par cible : elle
 écrit une sauvegarde sous `~/.apothem/backups` et supprime les cibles qu'elle
 confirme. Ces suppressions et la sauvegarde restent en place lorsque l'invite
 d'installation est refusée.
-Les cibles sont les dossiers d'outils de votre répertoire personnel que liste
-l'invite, dont `~/.agents` et `~/.config/apothem`.
+Les cibles sont toujours les quatre mêmes dossiers de votre répertoire
+personnel, quel que soit l'environnement que nomme `--harness` :
+
+```text
+~/.claude
+~/.codex
+~/.agents
+~/.config/apothem
+```
+
+Aucun autre dossier n'est supprimé, et le reste de `~/.config` est conservé.
 Une cible qui est elle-même un lien, jonction Windows comprise, ne perd que le
 lien, et un lien situé à l'intérieur d'une cible est supprimé sans y entrer.
 Lorsque `~/.config` est un lien qui mène hors de votre répertoire personnel,
@@ -398,7 +407,7 @@ les commentaires, les virgules finales et la syntaxe JSON5. Par conséquent :
 | `--harness NAME` | Adaptateur d'environnement à installer, ou `all` pour l'ensemble couvrant tout le registre (obligatoire). Avec `all`, les environnements listés dans `exclude_harnesses` du profil sont ignorés, mais un environnement nommé explicitement est installé même s'il figure dans cette liste. Exécutez `apothem harnesses list` pour obtenir les noms enregistrés. |
 | `--profile PATH` | Chemin vers le YAML du profil partagé. Par défaut : `~/.config/apothem/profile.yaml`. |
 | `--dry-run` | Prévisualise l'installation sans écrire de fichiers. |
-| `--clean`, `--fresh` | Table rase à activer explicitement : sauvegarde puis supprime l'état d'installation antérieur propre à chaque environnement avant d'installer. |
+| `--clean`, `--fresh` | Table rase à activer explicitement : sauvegarde puis supprime les quatre dossiers listés sous [Aperçu du rayon d'impact](#aperçu-du-rayon-dimpact) avant d'installer, quel que soit l'environnement que nomme `--harness`. |
 | `--yes` | Ignore la confirmation par cible lors d'une suppression en table rase (obligatoire pour les exécutions `--clean` non interactives). |
 | `--project PATH` | Racine de projet pour les environnements à portée de projet. |
 | `--quiet`, `-q` | Supprime la sortie informative ; seules les erreurs sont émises. |

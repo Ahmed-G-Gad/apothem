@@ -209,6 +209,25 @@ including Cygwin's and MSYS2's own `python3`, gets POSIX paths joined with `:`
 and keeps only entries that start with `/`. The installers' `git` commands
 that do not work on a clone do not read a repository in the current folder.
 
+### Installer flags
+
+`install.sh` takes the flags below, and `install.ps1` takes the same switches
+as PowerShell parameters. `install.bat` accepts the `install.sh` spelling of
+the first three rows and passes each one to `install.ps1`. A piped one-liner
+cannot pass a PowerShell parameter, so download `install.ps1` first to use one:
+
+```bash title="Pass a flag"
+curl -fsSL https://apothem.ahmedgad.com/install.sh | sh -s -- --dry-run    # POSIX
+irm https://apothem.ahmedgad.com/install.ps1 -OutFile install.ps1; pwsh -NoProfile -File install.ps1 -DryRun   # Windows
+```
+
+| `install.sh` | `install.ps1` | Effect |
+|---|---|---|
+| `--clean`, `--fresh` | `-Clean`, `-Fresh` | Before the install, back up and remove the four folders in your home directory that [`apothem install`](/docs/cli-reference/install#blast-radius-preview) lists, `~/.claude` and `~/.agents` among them, whichever harness you install, then install fresh. The installer passes it to the engine as `apothem install --clean`, which asks before each removal, keeps the backup under `~/.apothem/backups` and writes your profile back. |
+| `--dry-run` | `-DryRun` | Fetch and check the release in a temporary folder and show what the install would change, without changing anything (see [Trust model](#trust-model)). |
+| `--yes` | `-Yes` | Do not ask before each removal of `--clean`. Also allows the replacements of what is at `APOTHEM_HOME` that the [Trust model](#trust-model) lists as needing `--yes`. |
+| `-h`, `--help` | none | Print the flags and the trust model, then exit. |
+
 ### Trust model
 
 With no `APOTHEM_REF` set, the installer resolves the highest
