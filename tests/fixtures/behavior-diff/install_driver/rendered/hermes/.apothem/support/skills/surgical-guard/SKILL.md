@@ -50,7 +50,7 @@ Changes land at their domain-natural host locations per `rules/host-discovery.md
 
 ### File-Authoring Contract
 
-Edits preserve any existing authorship banner — the surgical discipline never strips a header (corner case B of the header-inject-guard hook at `hooks/messages/pretooluse-{write,edit}-header-guard.md`). New files route through `scripts/inject-header.{sh,py}`; exempt classes at `src/apothem/schemas/header-exceptions.txt`.
+Edits preserve any existing authorship banner — the surgical discipline never strips a header (corner case B of the header-inject-guard hook at `hooks/messages/pretooluse-{write,edit}-header-guard.md`). A new file follows the project's own header and license convention, found per `rules/host-discovery.md`, or carries no header when the project has none. In a user project the skill MUST NOT stamp the Apothem SPDX header or run Apothem scripts; inside the Apothem repository, a new file gets the canonical header through `scripts/inject-header.py`.
 
 ### Structured Inquiry on Ambiguity
 

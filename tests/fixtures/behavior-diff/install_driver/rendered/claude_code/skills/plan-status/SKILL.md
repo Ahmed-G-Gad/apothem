@@ -138,7 +138,7 @@ Deploy an Audit Team (CM-25A) — parallel agents for spot-checks. Each returns 
 
 **Plan-Internal Isolation Readiness (CM-7):**
 
-- 3 random task descriptions → verify domain language (no CM-7 forbidden terms per `CLAUDE.md` CM-7).
+- 3 random task descriptions → verify domain language (no CM-7 forbidden terms: `rules/operational-mandates.md` §CM-7, with the closed term set in `rules/plain-language.md` §1).
 - 3 random acceptance criteria → verify domain-testable (not plan-process-testable).
 - If any execution reports exist: spot-check 2 commit messages and 1 branch name → verify zero plan-internal references.
 

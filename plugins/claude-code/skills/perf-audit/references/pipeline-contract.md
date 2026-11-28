@@ -8,7 +8,7 @@
 
 **Handoff Manifest.**
 
-- **Consumed.** The deployed source tree (`hooks/`, `tools/`, `tests/`, `agents/`, `hooks/lib/` shell stubs), the four benchmark drivers under `src/apothem/benchmarks/` (`bench_hooks.py`, `bench_validate_ecosystem.py`, `bench_tests.py`, `bench_agents.py`), and the per-class budget table at `rules/performance-discipline.md` §1.
+- **Consumed.** The Apothem checkout (`src/apothem/hooks/`, `tests/`, `src/apothem/agents/`, the shell stubs under `src/apothem/hooks/lib/`), the five benchmark drivers under `src/apothem/benchmarks/` (`bench_hooks.py`, `bench_validate_ecosystem.py`, `bench_tests.py`, `bench_agents.py`, `bench_install.py`), and the per-class budget table at `rules/performance-discipline.md` §1.
 - **Emitted.** The audit report at `_inputs/perf-audit-findings.md` carrying per-class measurements, exceedance deltas, USE-method hot-path identification, severity-classified findings, and a remediation backlog ratified for the fortress-phase consumer.
 
 **Pre-flight inquiry.** Phase 1 surfaces every budget-override candidate (operator amendments per `rules/performance-discipline.md` §4) through the structured-inquiry channel (`rules/authority-inquiry.md`). Phase 2 surfaces every host-environment ambiguity (Python interpreter selection, shell availability, parallel-worker count) through the canonical channel with the three-segment annotation per `rules/interactive-questions.md` §3.

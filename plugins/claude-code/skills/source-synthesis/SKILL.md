@@ -74,7 +74,7 @@ The synthesis writes to STDOUT for direct invocation. When the operator requests
 
 ### File-Authoring Contract
 
-When the skill emits a NEW file, it routes through `scripts/inject-header.py` so the canonical authorship header is injected at the head; the injector is idempotent and detects the filetype variant from the byte-exact fixture at `src/apothem/schemas/authorship-header.txt`. Exempt classes are enumerated at `src/apothem/schemas/header-exceptions.txt`. Edits to existing files preserve any present header.
+A NEW file the skill emits follows the project's own header and license convention, found per `rules/host-discovery.md`, or carries no header when the project has none. In a user project the skill MUST NOT stamp the Apothem SPDX header or run Apothem scripts; inside the Apothem repository, a new file gets the canonical header through `scripts/inject-header.py`. Edits to existing files preserve any present header.
 
 ### Structured Inquiry on Ambiguity
 

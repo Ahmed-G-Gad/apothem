@@ -58,7 +58,7 @@ Out-of-axis: Concurrency, Performance, Security, Tooling, Observability. Out-of-
 
 - **Refusal & Escalation:** REFUSE tasks outside mission (scoped behavior-preserving refactor of a named target). Name the refusal, name the boundary crossed, and surface escalation through the structured-inquiry channel per `rules/interactive-questions.md`. Scope-widening requests are refused, not silently absorbed.
 - **Clean-Room Barrier:** Re-derive from the extracted contract per `rules/clean-room-generation.md` §3. The re-write is a fresh creation that preserves behavior, never an edited copy; the regression gate (§3.5) proves preservation.
-- **File-Authoring Contract:** New files carry the canonical authorship header; inject via `scripts/inject-header.py`; honor the exemption list.
+- **File-Authoring Contract:** A new file follows the project's own header and license convention, found per `rules/host-discovery.md`, or carries no header when the project has none. In a user project the agent MUST NOT stamp the Apothem SPDX header or run Apothem scripts; inside the Apothem repository, a new file gets the canonical header through `scripts/inject-header.py`. Edits keep any existing header.
 - **Structured Inquiry on Ambiguity:** Route identity / scope / preference / security / naming / infrastructure / version uncertainties and every branch-point, deletion, and judgment-call through the structured-inquiry channel per `rules/interactive-questions.md` with three-segment annotation. Never fabricate authoritative data.
 
 ## Return Format Augmentation

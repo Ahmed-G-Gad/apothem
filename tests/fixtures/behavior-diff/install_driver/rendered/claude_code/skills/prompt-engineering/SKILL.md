@@ -104,7 +104,7 @@ The skill emits the prompt, its eval cases, and the rationale. For direct invoca
 
 ### File-Authoring Contract
 
-When the skill emits a NEW file (a prompt record, an eval-case file), the file routes through `scripts/inject-header.py` so the canonical authorship-header line per `src/apothem/schemas/authorship-header.txt` is injected at the head; the injector is idempotent and detects the comment-family variant automatically from the filetype. Exempt classes (LICENSE, JSON configuration files, lockfiles, generated assets, vendored trees, `.audit/` ephemera, `.apothem/plans/` ephemera, `.keep` / `.gitkeep` markers, binary files) are enumerated at `src/apothem/schemas/header-exceptions.txt`. Edits to existing prompt records preserve any existing header.
+A NEW file the skill emits (a prompt record, an eval-case file) follows the project's own header and license convention, found per `rules/host-discovery.md`, or carries no header when the project has none. In a user project the skill MUST NOT stamp the Apothem SPDX header or run Apothem scripts; inside the Apothem repository, a new file gets the canonical header through `scripts/inject-header.py`. Edits to existing prompt records preserve any existing header.
 
 ### Structured Inquiry on Ambiguity
 
@@ -117,7 +117,7 @@ When the design reaches a decision in any authoritative-data category per `rules
 ## Bindings (§0.j five-direction)
 
 - **Drives →** ● Every prompt-design engagement under the ai-engineering cohort. ● Every eval-case set authored to validate a prompt against its task contract. ● The structured-prompt-with-output-schema shape every consumer inherits.
-- **Satisfies →** ● The ai-engineering cohort's prompt-design-and-eval mission. ● `CLAUDE.md` File Headers discipline (the SPDX line at the artifact head).
+- **Satisfies →** ● The ai-engineering cohort's prompt-design-and-eval mission. ● The host's header convention per `rules/host-discovery.md` (the canonical SPDX line inside the Apothem repository).
 - **Established by ↑** ● `CLAUDE.md` Source Layout (skills/ class declaration with the folder-with-`SKILL.md` convention). ● `CLAUDE.md` Ambiguity Handling (structured inquiry over fabrication).
 - **Gated by ←** ● The harness's Read / Write / Edit / Glob / Grep tool surface. ● The structured-inquiry channel's availability (ambiguity routes there or to `TODO(clarify)`).
-- **Cross-bound with ↔** ↔ `rules/interactive-questions.md` (structured-inquiry channel for ambiguity and refusal escalation). ↔ `rules/clean-room-generation.md` (the prompt is re-derived from contract, never pattern-matched). ↔ `scripts/inject-header.py` (authorship-line injection for new files). ↔ `src/apothem/schemas/header-exceptions.txt` (header exemption catalog). ↔ `skills/ecosystem-audit/SKILL.md` + `skills/plan-suite/SKILL.md` (sibling skills under the same registry section).
+- **Cross-bound with ↔** ↔ `rules/interactive-questions.md` (structured-inquiry channel for ambiguity and refusal escalation). ↔ `rules/clean-room-generation.md` (the prompt is re-derived from contract, never pattern-matched). ↔ `scripts/inject-header.py` (authorship-line injection for new files, inside the Apothem repository only). ↔ `src/apothem/schemas/header-exceptions.txt` (header exemption catalog). ↔ `skills/ecosystem-audit/SKILL.md` + `skills/plan-suite/SKILL.md` (sibling skills under the same registry section).

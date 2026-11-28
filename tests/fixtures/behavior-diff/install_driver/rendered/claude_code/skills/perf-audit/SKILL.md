@@ -1,12 +1,12 @@
 ---
 name: "perf-audit"
-description: "Audits an Apothem installation's per-class budgets (hooks, ecosystem verification, conformity gate, tests, agents, shell, lint) with its benchmark drivers, ranking findings HIGH, MEDIUM or LOW. Use for 'audit performance' or 'check the performance budgets' on an Apothem tree. Measures only."
+description: "Audits an Apothem installation's per-class budgets (hooks, ecosystem verification, conformity gate, tests, agents, shell, lint, install resolution) with its benchmark drivers, ranking findings HIGH, MEDIUM or LOW. Use for 'audit Apothem performance budgets' or 'check the Apothem performance budgets' on an Apothem checkout. Measures only."
 argument-hint: "[path/to/repo/] [--focus CLASS] [--dry-run]"
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-24"
+  updated: "2026-11-28"
   portability: "universal"
 ---
 
@@ -50,8 +50,8 @@ Governance scales with seriousness per the seriousness-scaling discipline; the q
 
 | Argument | Type | Required | Description |
 | -------- | ---- | -------- | ----------- |
-| `path/to/repo/` | Path | Yes | Root of the deployed repository. MUST contain `hooks/`, `src/apothem/benchmarks/`, `tests/`, and the canonical hook bootstrap stubs at `hooks/lib/bootstrap.{sh,ps1}`. Absence of `src/apothem/benchmarks/` triggers the gap-surfacing path per the Refusal & Escalation stanza. |
-| `--focus CLASS` | Enum | No | Restrict the audit to one budget class from `{hooks, verify-ecosystem, conformity-gate, tests, agents, shell, lint}`. Default (omitted): every class. Useful for a focused re-measurement of one class post-remediation. |
+| `path/to/repo/` | Path | Yes | Root of an Apothem checkout. MUST contain `src/apothem/hooks/`, `src/apothem/benchmarks/`, `tests/`, and the hook bootstrap stubs at `src/apothem/hooks/lib/bootstrap.{sh,ps1}`. Any other repository has no budgets to measure: absence of `src/apothem/benchmarks/` ends the run as not applicable, with no findings, per the Refusal & Escalation stanza. |
+| `--focus CLASS` | Enum | No | Restrict the audit to one budget class from `{hooks, verify-ecosystem, conformity-gate, tests, agents, shell, lint, install}`. Default (omitted): every class. Useful for a focused re-measurement of one class post-remediation. |
 | `--dry-run` | Flag | No | Report what would be measured — no driver fires, no report emitted. Enumerates the per-class budget table, the benchmark-driver invocation forms that would fire, the focus-class scope, and the report-emission path without consuming benchmark runtime. |
 
 ---
@@ -60,13 +60,13 @@ Governance scales with seriousness per the seriousness-scaling discipline; the q
 
 ### Phase 0 — Input Ingest
 
-Read the deployed structural surface. Deploy a Research Team (CM-25A) — one agent per surface class (hooks tree, tools tree, tests tree, agents tree, shell stubs at `hooks/lib/`). Each agent returns a structured summary ≤ 500 tokens (CM-25C), required fields `status` · `file-inventory` · `benchmark-driver-presence` · `gaps`.
+Read the deployed structural surface. Deploy a Research Team (CM-25A) — one agent per surface class (hooks tree, tests tree, agents tree, shell stubs at `src/apothem/hooks/lib/`). Each agent returns a structured summary ≤ 500 tokens (CM-25C), required fields `status` · `file-inventory` · `benchmark-driver-presence` · `gaps`.
 
 **Required reads** (verify each driver exists and exposes its invocation form per the `rules/performance-discipline.md` §1 Verifier column):
 
-- `src/apothem/benchmarks/bench_hooks.py` (`--event=<name>`), `bench_validate_ecosystem.py` (`--check=<name>`), `bench_tests.py` (`--module=<path>`), `bench_agents.py` (`--pattern=<name>`).
-- `hooks/lib/bootstrap.sh` + `hooks/lib/bootstrap.ps1` — the canonical-pair stubs for the §1.1 shell sub-budget measurement.
-- `conformity/gate.py` — the orchestrator entry-point for the per-dispatch budget measurement.
+- `src/apothem/benchmarks/bench_hooks.py` (`--event=<name>`), `bench_validate_ecosystem.py` (`--check=<name>`), `bench_tests.py` (`--module=<path>`), `bench_agents.py` (`--pattern=<name>`), `bench_install.py` (no arguments).
+- `src/apothem/hooks/lib/bootstrap.sh` + `src/apothem/hooks/lib/bootstrap.ps1` — the canonical-pair stubs for the §1.1 shell sub-budget measurement.
+- `src/apothem/conformity/gate.py` — the orchestrator entry-point for the per-dispatch budget measurement.
 
 **Externalize the inventory** at `_inputs/perf-audit-input-inventory.md` (free-form `{kebab-case-topic}.md` per `rules/context-management-scratch.md` §1). Driver-presence gaps surface in PLAN-NOTES.md under `## Open Performance-Audit Questions` for operator audit before Phase 1.
 
@@ -80,7 +80,7 @@ Surface every operator-override candidate per `rules/performance-discipline.md` 
 
 ### Phase 2 — Benchmark Execution
 
-Drive the four benchmark drivers against the deployed repository. Honor `--focus CLASS` when set; otherwise execute every class. Deploy a Quality Team (CM-25A) — each driver in its own agent slot per `rules/agent-orchestration.md` §2.1 (the 3+ independent-parallel-operations threshold is satisfied). Each agent returns structured measurements ≤ 200 tokens (CM-25C audit-return budget), required fields `class` · `subject` · `measured-ms` · `budget-ms` · `delta-pct` · `exit-code`.
+Drive the five benchmark drivers against the checkout. Honor `--focus CLASS` when set; otherwise execute every class. Deploy a Quality Team (CM-25A) — each driver in its own agent slot per `rules/agent-orchestration.md` §2.1 (the 3+ independent-parallel-operations threshold is satisfied). Each agent returns structured measurements ≤ 200 tokens (CM-25C audit-return budget), required fields `class` · `subject` · `measured-ms` · `budget-ms` · `delta-pct` · `exit-code`.
 
 **Per-class invocation map.**
 
@@ -88,10 +88,11 @@ Drive the four benchmark drivers against the deployed repository. Honor `--focus
 | ----- | -------- | ----------- |
 | Hook handler | `python src/apothem/benchmarks/bench_hooks.py --event=<name>` | PreToolUse · PostToolUse · UserPromptSubmit · Notification (10s); SessionStart · PreCompact · PostCompact (30s); Stop (60s) |
 | Verify-ecosystem | `python src/apothem/benchmarks/bench_validate_ecosystem.py [--check=<name>]` | Composite (30s); per-check subcommands (5s each) |
-| Conformity-gate | `time python conformity/gate.py <representative-file>` | Single-file dispatch (1s); composite-sweep over `rules/**` (30s) |
+| Conformity-gate | `time python -m apothem.conformity.gate <representative-file>` | Single-file dispatch (1s); composite-sweep over `rules/**` (30s) |
 | Test-suite | `time pytest -n auto` (60s); `python src/apothem/benchmarks/bench_tests.py --module=<path>` (per-module 10s) | Full suite; every test module |
-| Agent-spawn | `python src/apothem/benchmarks/bench_agents.py --pattern=<name>` | research · audit · quality · generation (60s each) |
-| Shell-execution (§1.1) | `time bash hooks/lib/bootstrap.sh SessionStart` (500ms); `Measure-Command { pwsh -NoProfile -File hooks/lib/bootstrap.ps1 -Event SessionStart }` (1500ms) | bootstrap stubs; find-python locator (200ms, embedded); shellcheck (5s); Invoke-ScriptAnalyzer (10s); ruff check (5s) |
+| Agent-spawn | `python src/apothem/benchmarks/bench_agents.py --pattern=<name>` | research · audit · quality · generation (60s each); the driver reports `NOT MEASURED` and exits 3 without a host harness, which the report records as a gap, not a failure |
+| Install-all | `python src/apothem/benchmarks/bench_install.py` | Dry-run install-all resolution sweep across every adapter (0.25s) |
+| Shell-execution (§1.1) | `time bash src/apothem/hooks/lib/bootstrap.sh SessionStart` (500ms); `Measure-Command { pwsh -NoProfile -File src/apothem/hooks/lib/bootstrap.ps1 -Event SessionStart }` (1500ms) | bootstrap stubs; find-python locator (200ms, embedded); shellcheck (5s); Invoke-ScriptAnalyzer (10s); ruff check (5s) |
 
 Record every measurement with its verifier exit code. Exit code 0 attests budget compliance per `rules/performance-discipline.md` §2; non-zero exit codes surface as findings.
 

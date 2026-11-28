@@ -72,7 +72,7 @@ The rotation report writes to STDOUT. NEVER write a captured secret value to a t
 
 ### File-Authoring Contract
 
-When the skill emits a NEW file (rare; the rotation path edits existing config in place), the file routes through `scripts/inject-header.py` so the canonical single-line SPDX license header is injected at the head; the injector is idempotent and detects the filetype variant automatically from the byte-exact fixture at `src/apothem/schemas/authorship-header.txt`. Exempt classes (LICENSE, JSON configuration files, lockfiles, generated assets, `.env` files, `.audit/` ephemera, binary files) are enumerated at `src/apothem/schemas/header-exceptions.txt`. Edits to existing config preserve any existing header.
+When the skill emits a NEW file (rare; the rotation path edits existing config in place), the file follows the project's own header and license convention, found per `rules/host-discovery.md`, or carries no header when the project has none. In a user project the skill MUST NOT stamp the Apothem SPDX header or run Apothem scripts; inside the Apothem repository, a new file gets the canonical header through `scripts/inject-header.py`. A `.env` file never carries a header. Edits to existing config preserve any existing header.
 
 ### Structured Inquiry on Ambiguity
 

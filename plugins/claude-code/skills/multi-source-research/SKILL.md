@@ -73,7 +73,7 @@ The skill's primary output is the cited research report (markdown), written to S
 
 ### File-Authoring Contract
 
-When the skill emits a NEW file, the file routes through `scripts/inject-header.py` so the canonical `SPDX-License-Identifier` `MIT` header per `src/apothem/schemas/authorship-header.txt` is injected at the head; the injector is idempotent and detects the filetype variant automatically. Exempt classes — LICENSE, JSON configuration files, lockfiles, generated assets, vendored trees, ephemera, `.keep` markers, binary files — are enumerated at `src/apothem/schemas/header-exceptions.txt`.
+A NEW file the skill emits follows the project's own header and license convention, found per `rules/host-discovery.md`, or carries no header when the project has none. In a user project the skill MUST NOT stamp the Apothem SPDX header or run Apothem scripts; inside the Apothem repository, a new file gets the canonical header through `scripts/inject-header.py`.
 
 ### Structured Inquiry on Ambiguity
 

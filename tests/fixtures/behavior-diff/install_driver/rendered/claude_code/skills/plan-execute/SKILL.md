@@ -140,7 +140,7 @@ Per `CLAUDE.md` Section 7.6 (including CM-22 §4: ecosystem gap detection). SHAR
 ## Critical Rules
 
 - **NEVER assume.** Invoke the structured-inquiry channel for any ambiguity (canonical channel per `rules/interactive-questions.md`).
-- **NEVER embed plan-internal references** in codebase deliverables or development artifacts — enforce the CM-7 forbidden-terms and protected-artifacts lists (`CLAUDE.md` CM-7).
+- **NEVER embed plan-internal references** in codebase deliverables or development artifacts — enforce CM-7 (`rules/operational-mandates.md` §CM-7; forbidden terms: the closed term set in `rules/plain-language.md` §1).
 - **NEVER mark complete** without all verifications passing.
 - **NEVER claim a gate** without its command, output, and the SHA it ran on; **NEVER trust** a gate result recorded before HEAD moved; **NEVER edit** recorded gate state by hand.
 - **NEVER skip** quality gates. On a **code-bearing** phase, also never skip developer-guide updates or the dependency audit (scope per seriousness); a **non-code** phase has neither, so those two are not applicable (Step 5 skips them).

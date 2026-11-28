@@ -49,7 +49,7 @@ Plan-suite-internal updates (per-phase `phases/NN-topic/REPORT.md`, `PROGRESS.md
 
 ### File-Authoring Contract
 
-Every NEW codebase file the executor creates routes through `scripts/inject-header.{sh,py}` so the canonical authorship-header banner per `site/content/docs/reference/authorship-header.mdx` is injected at the head; the injector is idempotent and detects the filetype variant automatically from the byte-exact fixture at `src/apothem/schemas/authorship-header.txt`. The exempt classes (LICENSE, JSON configuration files, lockfiles, generated assets, vendored trees, `.audit/` ephemera, `<project-root>/.apothem/plans/` ephemera, `.keep` / `.gitkeep` markers, binary files) are enumerated at `src/apothem/schemas/header-exceptions.txt`. Plan-suite artifacts (REPORT.md, PROGRESS.md updates, PLAN-NOTES.md updates) are header-exempt under the `.apothem/**` exception class. Edits to existing files preserve any existing banner; the header-inject-guard hook at `hooks/messages/pretooluse-{write,edit}-header-guard.md` enforces the contract at every Write / Edit invocation.
+Every NEW codebase file the executor creates follows the project's own header and license convention, found per `rules/host-discovery.md`, or carries no header when the project has none. In a user project the executor MUST NOT stamp the Apothem SPDX header or run Apothem scripts; inside the Apothem repository, a new file gets the canonical header through `scripts/inject-header.py`. There, the exempt classes are enumerated at `src/apothem/schemas/header-exceptions.txt`, and the header-inject-guard hook at `hooks/messages/pretooluse-{write,edit}-header-guard.md` reports a missing header at every Write / Edit; it stays silent in any other project. Plan-suite artifacts (REPORT.md, PROGRESS.md updates, PLAN-NOTES.md updates) are header-exempt under the `.apothem/**` exception class. Edits to existing files preserve any existing header.
 
 ### Structured Inquiry on Ambiguity
 
@@ -243,7 +243,7 @@ Verify each skipped task's declared outputs exist on disk before proceeding.
 
 **3.2 — Search Before Implement:** Find reusable components. Flag existing similar logic.
 
-**3.3 — Implement:** Per phase specs + preamble standards. Best solution with rationale. Strict logical rigor. All values configurable. **Plan-internal isolation (CM-7):** enforce per the canonical forbidden-terms and protected-artifacts lists in `CLAUDE.md` CM-7. Every artifact reads as natural domain-language with zero trace of planning structure. **Cognitive-filter application:** Filters 1+5 always-on; the full suite for non-trivial decisions. Seriousness scaling per `rules/cognitive-identity.md` Section 2.
+**3.3 — Implement:** Per phase specs + preamble standards. Best solution with rationale. Strict logical rigor. All values configurable. **Plan-internal isolation (CM-7):** enforce CM-7 (CM-7 is defined at `rules/operational-mandates.md` §CM-7; the forbidden terms are the closed term set in `rules/plain-language.md` §1, and the protected artifacts are the output artifacts CM-7 names: every codebase deliverable and development artifact, including the in-scope surfaces in `rules/plain-language.md` §3). Every artifact reads as natural domain-language with zero trace of planning structure. **Cognitive-filter application:** Filters 1+5 always-on; the full suite for non-trivial decisions. Seriousness scaling per `rules/cognitive-identity.md` Section 2.
 
 **3.4 — Verify Integration:** Imports resolve, interfaces match, types align, no regressions. Run tests immediately. If unfixable without design changes beyond scope → STOP and consult the user.
 
@@ -303,7 +303,7 @@ Deploy a Quality Team (CM-25A) for parallel verification items.
 
 **6.6 — Coherence Check (CM-15):** Implementation matches specs. Update plan files if a spec error is found.
 
-**6.7 — Plan-Internal Isolation Check (CM-7):** Scan ALL codebase deliverables and development artifacts (per the protected-artifacts list in `CLAUDE.md` CM-7) for leaked plan-internal references (per the forbidden-terms list in `CLAUDE.md` CM-7). Any occurrence is a finding: remove and replace with natural domain-appropriate language. The entire codebase and its git history must read as if no plan ever existed.
+**6.7 — Plan-Internal Isolation Check (CM-7):** Scan ALL codebase deliverables and development artifacts (the protected artifacts of `rules/operational-mandates.md` §CM-7) for leaked plan-internal references (the closed term set in `rules/plain-language.md` §1). Any occurrence is a finding: remove and replace with natural domain-appropriate language. The entire codebase and its git history must read as if no plan ever existed.
 
 **6.8 — Failure Remediation:** Diagnose, fix, re-run, commit (CM-13B). If unresolvable → mark BLOCKED, inform the user.
 
@@ -376,7 +376,7 @@ If any context-health signal from `rules/context-management.md` §1 or any regre
 ## Critical Rules
 
 - **NEVER assume.** Invoke the structured-inquiry channel for any ambiguity (canonical channel per `rules/interactive-questions.md`).
-- **NEVER embed plan-internal references** in codebase deliverables or development artifacts — enforce the CM-7 forbidden-terms and protected-artifacts lists (`CLAUDE.md` CM-7).
+- **NEVER embed plan-internal references** in codebase deliverables or development artifacts — enforce CM-7 (`rules/operational-mandates.md` §CM-7; forbidden terms: the closed term set in `rules/plain-language.md` §1).
 - **NEVER mark complete** without all verifications passing.
 - **NEVER claim a gate** without its command, output, and the SHA it ran on; **NEVER trust** a gate result recorded before HEAD moved; **NEVER edit** recorded gate state by hand.
 - **NEVER skip** quality gates. On a **code-bearing** phase, also never skip developer-guide updates or the dependency audit (scope per seriousness); a **non-code** phase has neither, so those two are not applicable (Step 5 skips them).

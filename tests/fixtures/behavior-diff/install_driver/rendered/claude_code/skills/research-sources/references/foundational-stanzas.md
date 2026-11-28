@@ -14,7 +14,7 @@ This command emits `{suite}/sources/<id>.md` (per-source extractions) and `{suit
 
 ### File-Authoring Contract
 
-Research-suite state files under `{suite}/` (the source ledger, the per-source extractions, the discovery scratch) are header-exempt per the `.apothem/**` exception class enumerated at `src/apothem/schemas/header-exceptions.txt`. The injector at `scripts/inject-header.{sh,py}` is therefore NOT invoked on these emissions. When this command incidentally authors a non-state file at a host-natural location, that file is subject to the canonical header discipline. The contract is explicit: this command never injects banners on suite-state emissions; all banner-applicable files are out of its emission surface.
+Research-suite state files under `{suite}/` (the source ledger, the per-source extractions, the discovery scratch) are header-exempt per the `.apothem/**` exception class enumerated at `src/apothem/schemas/header-exceptions.txt`. The injector at `scripts/inject-header.{sh,py}` is therefore NOT invoked on these emissions. When this command incidentally authors a non-state file at a host-natural location, that file follows the project's own header convention per `rules/host-discovery.md`. The contract is explicit: this command never injects banners on suite-state emissions; all banner-applicable files are out of its emission surface.
 
 ### Structured Inquiry on Ambiguity
 

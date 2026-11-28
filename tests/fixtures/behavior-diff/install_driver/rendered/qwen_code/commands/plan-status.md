@@ -46,7 +46,7 @@ This command emits NO files — its output is prose written to the operator's te
 
 ### File-Authoring Contract
 
-Writes nothing. The injector at `scripts/inject-header.{sh,py}` is never invoked from this command's surface. The contract applies to any orchestrator that materializes this command's findings into files — that orchestrator routes the new file (audit report, dashboard markdown, status.json) through the injector per the canonical authorship-header policy and lands it at a non-plan-internal path under the host's documentation tree.
+Writes nothing. The injector at `scripts/inject-header.{sh,py}` is never invoked from this command's surface. The contract applies to any orchestrator that materializes this command's findings into files — that orchestrator gives the new file (audit report, dashboard markdown, status.json) the project's own header convention per `rules/host-discovery.md` and lands it at a non-plan-internal path under the host's documentation tree.
 
 ### Structured Inquiry on Ambiguity
 
@@ -148,7 +148,7 @@ Deploy an Audit Team (CM-25A) — parallel agents for spot-checks. Each returns 
 
 **Plan-Internal Isolation Readiness (CM-7):**
 
-- 3 random task descriptions → verify domain language (no CM-7 forbidden terms per `CLAUDE.md` CM-7).
+- 3 random task descriptions → verify domain language (no CM-7 forbidden terms: `rules/operational-mandates.md` §CM-7, with the closed term set in `rules/plain-language.md` §1).
 - 3 random acceptance criteria → verify domain-testable (not plan-process-testable).
 - If any execution reports exist: spot-check 2 commit messages and 1 branch name → verify zero plan-internal references.
 

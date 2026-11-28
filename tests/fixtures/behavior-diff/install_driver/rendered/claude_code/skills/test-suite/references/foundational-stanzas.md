@@ -14,7 +14,7 @@ The report lands at the consuming suite's `_inputs/test-suite-report.md` per the
 
 ### File-Authoring Contract
 
-Authored test files are codebase artifacts and carry the canonical `SPDX-License-Identifier: MIT` header in the comment family matching the filetype, injected via `scripts/inject-header.py --mode fix-in-place <path>` per the File Headers discipline. The exemption list at `src/apothem/schemas/header-exceptions.txt` governs which paths skip the banner; test files are not exempt. The report itself is header-exempt per the `.apothem/**` exception class.
+Authored test files are codebase artifacts. Each new one follows the project's own header and license convention, found per `rules/host-discovery.md`, or carries no header when the project has none. In a user project the command MUST NOT stamp the Apothem SPDX header or run Apothem scripts. Inside the Apothem repository, test files are not exempt and get the canonical header through `scripts/inject-header.py --mode fix-in-place <path>`. The report itself is header-exempt per the `.apothem/**` exception class.
 
 ### Structured Inquiry on Ambiguity
 
