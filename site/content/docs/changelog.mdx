@@ -17,603 +17,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
-### Changed
-
-- **CI checks the docs sidebar of every language and the built pages.** A
-  new step runs `npm run ia:check`, which fails when a sidebar list, English
-  or translated, differs from the English page order the site's list script
-  writes. Another runs `npm run check:built-docs` after the docs build, which
-  fails when a sidebar section cannot be opened and closed from a button with
-  its state exposed, or a page shows a literal `**` or backtick outside code,
-  and lists every match.
-- **The CI metrics job reuses the coverage shards' data instead of running the
-  test suite again.** The `ci.yml` metrics job ran the whole suite under
-  coverage on one runner in 18 to 30 minutes, and its 30-minute limit cancelled
-  some runs. The two coverage shards now measure all of `src/apothem`, and the
-  metrics job combines their data and reports the same per-package figures and
-  floors in about a minute, so the suite runs under coverage once per CI run
-  instead of twice. The `coverage` job's reports keep only the engine folders,
-  read from `[tool.coverage.run] source` in `pyproject.toml`, so the engine
-  figure and its 80% floor stay the same.
-- **CI fails a pull request that edits released release notes.** A release
-  renames `[Unreleased]` in `CHANGELOG.md` to the new version. A branch cut
-  before the release could then merge the release in with no conflict and
-  leave its entry inside the released section. A new step in the required
-  `quality / ubuntu-latest / py3.12` check compares every released section
-  with the base branch and names the section that changed. A commit trailer
-  `Changelog-Released-Edit: <version> <reason>` allows a deliberate
-  correction to that version's notes only.
-- **`python -m apothem.conformity.gate --all` takes seconds, not minutes.**
-  The gate now runs its standalone validators side by side, at most eight at once, and
-  still reports them in the same order. `redundancy-grep` skips paragraph pairs
-  whose distinct-word counts rule out a match, with the same findings as before.
-  A full `gate --all .` on this repository went from about 100 seconds to about
-  12 on Windows.
-- **Apothem refuses to write into the real home while pytest runs.** While
-  `PYTEST_CURRENT_TEST` is set and not empty (a test), or `PYTEST_VERSION`
-  holds the running pytest's version (the whole session: collection,
-  module-level code and session hooks), a write, removal, copy, rename
-  or lock file in a protected path of the account's home stops with
-  `RealHomeWriteError` before anything changes. The protected paths
-  are `~/.apothem`, `~/.config/apothem`, each tool folder the harness
-  registry names in the home (`~/.claude`, `~/.codex`, `~/.agents`,
-  `~/.config/opencode`, `~/.gemini` and the rest), and each path outside
-  those folders that the propagation manifest changes in the home: today that
-  is `~/.antigravity/profile.yaml`, a file an earlier release wrote that the
-  Antigravity stale sweep removes. The home is the one the operating system
-  records for the account, not `HOME`. Reads, dry runs and previews still
-  work, and outside pytest nothing is refused unless the environment carries
-  a `PYTEST_CURRENT_TEST` that is not empty, or the installed pytest's exact
-  version in `PYTEST_VERSION` (a shell or a CI job may export it to pin what
-  it installs). A `PYTEST_VERSION` with any other value, such as a pin like
-  `9.1` for `9.1.0`, does not count, nor does an empty `PYTEST_CURRENT_TEST`,
-  and the error names the variable that turned the refusal on and the value
-  it holds. A project-scope install, update, uninstall or rollback whose
-  project root is the home itself is refused before it writes anything. A
-  data home right in the home, under a name the profile chose, or one that is
-  a link to a folder right in the home or to the home itself (also through a
-  chain of links), is refused before it is created and before its stores are
-  removed: an install or update has written the project's files by then and
-  undoes those writes (recording a rollback), and an uninstall has removed
-  them by then and records itself unfinished. Some passes check their paths
-  before the first change, so a refusal there leaves everything as it was:
-  a stale sweep every stale path; a rollback every path its install record
-  names, the data stores it would remove and the user-level folders in the
-  home it would tidy last; a rollback and an uninstall the backup root and
-  the ledger; and an OpenClaw uninstall `openclaw.json` and every workspace's
-  rules file, one outside `~/.openclaw` included. The stale sweep now also
-  decides which stale paths it keeps (a link, a path reached through one, a
-  live folder under another name) before it removes the first, in every run;
-  it never removes a link, so it keeps the same paths as before. Links and
-  junctions into a protected folder count; on Windows so do letter case, short
-  (8.3) names, the `\\?\`, `\\.\` and `\??\` prefixes, loopback admin shares
-  (IPv6 included), shares reached by the machine's own addresses or through
-  a mapped drive, alternate data streams and device paths behind a prefix
-  (`GLOBALROOT\Device\HarddiskVolume2`, `Volume{GUID}`); on macOS letter case,
-  Unicode normalization and the `/System/Volumes/Data` spelling of a path.
-  Only the string rules make no network contact: a share path is checked by
-  asking its host. The CLI raises the error as it is. A refused uninstall
-  records an unfinished uninstall only when it had already changed files
-  outside the protected folders, in a step before the shared removal too,
-  so the backups of those files stay referenced. The test suite fails a test
-  after which a refusal was absorbed in the test's own process, also when the
-  test is marked `xfail`; one absorbed outside any test fails the collection
-  of the node pytest was collecting then, or else the run when the session
-  finishes, named for where it happened, also when a hook then ends the run
-  with `pytest.exit(returncode=0)` or `sys.exit(0)` (or, on any system, a code
-  a POSIX system cuts to 0 or 5, such as 256), also after another hook ended
-  the session finish with `sys.exit` or an exception, and also when a worker
-  process of a parallel run absorbs it, before or after it handed its refusals
-  to the main process: a worker writes each refusal, as soon as it holds it,
-  to a file the main process reads, so one it held before it crashed or was
-  stopped short of that hand-off, or before a session-finish hook stopped it
-  there, still fails the run. Three cases still show only on `stderr` and
-  leave the exit code as it is: one absorbed after the `yield` of a `tryfirst`
-  `pytest_unconfigure` wrapper that pytest registered after the guard, one
-  absorbed in a cleanup registered with `config.add_cleanup` (each unless a
-  passing `sys.exit` then ends the run), and one a worker absorbs but neither
-  hands over nor writes to that file, because the worker ended or was stopped
-  first (a session-finish hook absorbed it and then crashed the worker, say)
-  or because that file could not be made or written. At the end of the run the
-  main process tells each worker to exit; a worker still running Python code 5
-  seconds later is interrupted (on Windows, not one blocked in a sleep or
-  another call), and any worker still running after 10 seconds is stopped. The
-  guard cannot change the exit code of a run that ends through `os._exit` in
-  the main process (in a hook, a cleanup or an `atexit` handler), through a
-  `tryfirst` `pytest_cmdline_main` wrapper that pytest registered after the
-  guard, or through a `pytest_cmdline_main` hook that returns before any
-  session runs; with `os._exit` the guard's terminal report can be lost too,
-  and in the first and the last case a refusal the guard has not reported yet
-  shows only as its `stderr` line. With no system record of the account's home
-  (no `passwd` entry), the home is not protected. A test that must run a real
-  install starts Apothem without `PYTEST_CURRENT_TEST` and `PYTEST_VERSION` in
-  the child's environment. `tests/README.md` lists what the refusal does not
-  cover, such as a bind mount of the home, a refusal absorbed in a child
-  process and a folder swapped for a link between the check and the write.
-
-- **The `ui-design` skill is rewritten around a banded rule catalog and a
-  written build record.** The skill now reads the project before it asks
-  anything. It then sets a scope (component, page, or app screen) and a genre,
-  and these decide which steps and checks run. Every rule sits in one of four
-  bands. The baseline never bends, and a habit rule bends only by a waiver with
-  a reason. A polish finding closes by a fix or an acknowledgement, and
-  bookkeeping never changes the verdict. Each build writes a record at the top
-  of its stylesheet and an entry in the `design-log.md` build log, so a later
-  session reads past decisions instead of guessing them. Page work starts from
-  an inventory of the real material and the visitor's job, which set the page's
-  sections and their order. A named page shape records each build, so the next
-  one can rotate instead of repeating it. The `design-critic` reviewer checks
-  the opening screen before the rest is built, and the whole page before
-  delivery. `DESIGN.md` is now an optional locked system: the skill writes it
-  only when you ask or a multi-page redesign needs it, and `design-log.md` sits
-  beside it. Once it exists, its tokens win over any new direction. The skill
-  keeps its working state, the project-scan and brand caches, the
-  before-records of a redesign and the review captures, in
-  `.apothem/ui-design/`, which stays out of version control. The skill asks
-  before it adds that folder to `.gitignore`. The skill may now start the
-  reviewer in a fresh context, and the tool that starts it is now one of the
-  skill's pre-approved tools. No fetch tool is pre-approved. Every fetch, such
-  as a brand's homepage, an archive photo or a platform's logo, goes through
-  the host's fetch tool. The skill names the address first, and the fetch runs
-  only after you approve it. With no fetch tool that meets the skill's safety
-  checks, or when you decline, the skill asks you for the brand's color values
-  and font names. A fetch uses HTTPS only, through a fetch tool the host says
-  refuses private and reserved addresses and reports each redirect or follows
-  none that leaves the host. A development server, a project script or a
-  browser check runs only when the host offers the tool and you approve the
-  folder and the exact command. Otherwise the skill lists the screens it needs
-  and continues from the source.
-
-### Fixed
-
-- **The documentation sidebar shows at full width again, with each page
-  listed once, in every language.** On every tablet and desktop page the
-  sidebar had collapsed to a strip a few pixels wide, so its links could not
-  be read and the header text overlapped. It is back at its full width. Each
-  section's title is now the link to its overview page, instead of the title
-  followed by the same page under a near-identical name, and a separate button
-  beside it opens and closes the section from the keyboard and tells a screen
-  reader whether it is open. A screen reader names that button "show or hide
-  pages" after the section name, in the page's language, so it is not heard
-  as a second copy of the link. A section with a single page, such as
-  "Conformity gate", is one link. The blog posts are no longer listed a second
-  time inside an extra "Posts" folder, and the "Page not found" page is no
-  longer listed. The sidebar of every language lists the same pages in the
-  same order as the English one: the `backups` command, the evals guide and
-  the OpenSSF Best Practices page were missing from their place in the
-  translated sidebars. Two entries with the same name, "CLI reference", are
-  now "CLI overview" and "CLI reference", and the `CLAUDE.md` page title no
-  longer shows stray backtick characters.
-- **Docs page text shows as written.** The fields at the top of each harness
-  page, each command page and the positioning page, the plan-integrity
-  criteria on the cross-cutting mandates page and the sign-off fields of the
-  deployment checklist show one per line instead of running together. The
-  changelog and three architecture pages no longer repeat their title as a
-  second top-level heading. Backtick and asterisk characters no longer show as
-  literal text in four command-page summaries, the quick start's "The apothem
-  command" box, bold phrases in the Japanese, Korean and Simplified Chinese
-  pages, and the cut-off descriptions in the rules, commands and helpers
-  tables; a cut no longer leaves half a link, an unclosed emphasis, bold or
-  strikethrough marker, or an open parenthesis either. The
-  summaries of four command pages and the raw Cursor comparison say which file
-  or folder a path names, so it reads as part of the sentence.
-- **The release version bumper stops early when the docs packages are not
-  installed.** The docs reference generator now reads Markdown with packages
-  that `site/package.json` declares. `scripts/release/bump_version.py` checks
-  for `site/node_modules` before it changes any file and, when the folder is
-  missing, stops and names the fix, `npm ci --prefix site`. The generator run
-  on its own also stops before writing any page and names the same command.
-- **The OpenSSF Best Practices page matches the registered entry.** Apothem
-  is registered on bestpractices.dev as project 16427 and has held the passing
-  badge since 2026-11-08; the page says so, and so does the Scorecard posture
-  page in every language. The README header now shows the passing badge,
-  and the Scorecard badge and links read the project's current score instead
-  of a record from May. Each answer on the page has the same status as the
-  entry, and the counts, dates, fuzzing coverage and dismissed code-scanning
-  alerts it describes are current.
-- **The conformity gate reads every byte of a path name, and a failed
-  `git diff` does not pass from a subfolder.** The gate read git's lists of
-  path names as text, which turned a carriage return in a name into a line
-  feed and a byte that is not UTF-8 into the replacement character. The
-  changed name matched no file, so `semver-stability-grep --staged` skipped
-  that module and passed a staged change that dropped a public function, and
-  `--all-perwrite` left the file out. `--all-perwrite`, `no-global-plans-grep`
-  and both `--staged` checks now read each name byte for byte.
-  `production-ready-pr-grep` matches each of its rules against the whole name,
-  so a name that ends in a line break, such as `CHANGELOG.md` followed by one,
-  does not count as the changelog, and a code file with a line break inside its
-  name counts as code. On Windows, git cannot be handed a name
-  that is not UTF-8 (only an index made on another system holds one), so
-  `semver-stability-grep --staged` reports a `check_error` for it and does not
-  pass, and `--all-perwrite` counts such a file as `missing` without reading
-  it. The history read of `agents-md-coverage-grep` reads each name byte for
-  byte too, so a name git would quote, one with a quote, a backslash or a
-  control character, keeps its commit time. Both `--staged` checks read the
-  staged names from the top of the work tree whatever your `diff.relative`
-  setting is: with it on, a run from a subfolder got names the check could not
-  use, and it passed.
-  Both `--staged` checks, and `agents-md-coverage-grep` on a subfolder, now
-  look for the checkout in the folders above the one they run in, up to where
-  git stops looking (a `GIT_CEILING_DIRECTORIES` folder, or another file
-  system outside Windows): run from a subfolder, a `git` that failed, for
-  example on `diff.renameLimit = abc`, was read as no staged change and
-  passed. `conventional-commit-grep` run on a subfolder of a checkout passed
-  without reading any commit; it now reads the repository above, as git does,
-  when that repository tracks or stages a file in the subfolder. Where the
-  repository ignores case, as on Windows and macOS, a tracked subfolder whose
-  name was changed on disk only in upper or lower case counts too. The check
-  reads the case setting only when git lists no file in the subfolder, so a
-  tracked subfolder costs one `git` command. A folder the
-  repository above does not track, such as a new project inside a home-folder
-  dotfiles repository, still passes. An empty `.git` folder above it, with no
-  repository further up, makes it fail with `git-failed`.
-  `semver-stability-grep --staged` looked for `src/apothem` below the current
-  folder only, so from a subfolder it ran no git and passed whatever was
-  staged; it now also looks in the folders above,
-  up to the nearest folder that holds a repository or where git stops
-  looking, and runs git in the nearest folder that holds
-  `src/apothem/__init__.py`. It reads the version file from that folder too:
-  it read `src/apothem/__init__.py` from the top of the repository, so for a
-  package below the top it never saw a MAJOR version bump. When a `.git` file
-  that git refuses lies between the current folder and the package, git runs
-  in the current folder instead, stops at that file, and the check reports a
-  `check_error`. The search reads a `.git` file as git does: it must start
-  with `gitdir:` and one space, only the line endings at its end are dropped,
-  and a file over 1 MiB is refused. On Windows, a `.git` file that names a
-  network, device or NT path (`\\host\share`, `\\?\`, `\??\`) is refused, and
-  the search itself never looks that path up, so it does not connect to the
-  host the file names. On Windows the search also refuses, without looking it
-  up, a path that Git for Windows refuses: one with a name that ends in a dot
-  or a space or that is a device name such as `aux`, `aux.d`, `lpt0` or
-  `CONIN$` (but not `com0`, which Git for Windows accepts), or
-  with a `:`, a control character or one of `<>"|?*` after the drive. A byte
-  that is not UTF-8 is read as Git for Windows reads it: from `0xA0` up as
-  that character, a lower one as its two hex digits (`0x9F` reads `9f`), an
-  encoded surrogate pair as the character it stands for, and a lone encoded
-  surrogate refused. On Linux and macOS it is read byte for byte, as git
-  reads it. So such a worktree is not taken for a broken one. A project
-  without the package still passes without running git. The check also names
-  `src/apothem` after `--`, so git reads it as a path where that folder is
-  missing.
-- **`agents-md-coverage-grep` judges a re-created companion and a subfolder
-  root as it should.** A per-folder `AGENTS.md` that a commit deleted and that
-  was written again was timed by the deleting commit, so the new file was
-  reported stale before it was ever committed. It now counts as new until you
-  commit it. A run on a subfolder treated that subfolder's own `AGENTS.md` as
-  the canon and passed it, while a run on the whole repository reported it;
-  only the `AGENTS.md` at the top of the repository is the canon now, so both
-  runs agree for a subfolder that has a README of its own.
-- **An uninstall that stops part way is recorded and reported like one that
-  ran all its steps.** An uninstall that an unexpected error (an exception,
-  such as a backup that cannot be written) or `Ctrl+C` stops in the step that
-  removes what the install record lists appends an `uninstall-incomplete`
-  record, also when it had changed nothing, so running it again finishes the
-  job. One stopped before that step appends the record only when a step
-  before the one that stopped had changed or backed up a file: an Open-Claw
-  uninstall stopped at `openclaw.json` appends it when its rules-file step had
-  taken Apothem's block out of a workspace's rules file, and nothing when that
-  step changed nothing (also when it found Apothem's rules file behind a
-  link). One stopped inside that rules-file step, or inside the older-layout
-  sweep of Antigravity or Kimi Code, appends nothing and exits `1`, whatever
-  the step had changed, as it reports nothing the step did; the backups that
-  step took stay under `~/.apothem/backups/` with no record. A rules-file step
-  that reports an error instead (a rules file it cannot rewrite, or an
-  `openclaw.json` with comments) is a failed step: the uninstall records
-  itself unfinished with that step's backups, prints `did not finish:` and
-  exits `2` when that step had changed a file or found Apothem's rules file
-  behind a link, otherwise `1`. An uninstall that stops after taking
-  Apothem's entries out of a file such as `openclaw.json` exits `2` with
-  `uninstall stopped after removing files`, as one that removed files does;
-  one stopped by `Ctrl+C` prints `Aborted!` and exits `1`. A stopped uninstall
-  now also reports what it found that leaves it unfinished: each step that
-  failed before it stopped, each link keeping Apothem's own files in place,
-  the files of an earlier release's install that differ from what this
-  release writes, the files of an install with no record, a file that holds
-  two different blocks between Apothem's markers and a file with marker lines
-  Apothem cannot tell from your text. Each gets a `✗ <harness> uninstall did
-  not finish:` line and is added to the end of its `results` row's message;
-  the line for the files of an earlier release's install or of an install
-  with no record also says how to fix, before `apothem update`, each file the
-  uninstall left with Apothem's markers in it. An install with no record also
-  gets its `Note:` line, with the check of the `--project` folder before
-  `apothem update`, and the row's `kept_reason`.
-  When the reasons, the steps that failed before the stop included, name one
-  link, that row carries it in `detail.symlink` and `detail.leads_to`, as
-  does the row of an uninstall refused because a link leads its folder out of
-  your home directory. Such a link, or such files, make it exit `2`, also when
-  it removed nothing. Its warnings also name a link its steps left in place,
-  as for one that ran all its steps. An error that stops the settings-file
-  step of Hermes, Open-Claw, OpenCode or Qwen Code now reads `uninstall
-  stopped: <error>`, as one in a later step does. So does an error in the step
-  OpenCode's uninstall takes after the one that removes what the install
-  record lists, which closes an install recorded under another spelling of its
-  folder: the uninstall exits `2`, as it had removed files, and that install
-  stays recorded. A later run does not close it yet: OpenCode then reads as
-  not installed, so the uninstall skips it. Installing OpenCode at the folder
-  again, with a profile outside the linked folder, and then uninstalling it
-  closes that install.
-
-### Security
-
-- **`apothem doctor --project` reads project hook files more carefully.**
-  Doctor now reads each hook command from the keys the tool itself reads (an
-  `args` list only for Claude Code, the one tool that runs one) and takes at
-  most 100 commands from one file. It reads no hook file larger than 4 MB or
-  that is not a regular file, and no project hook file reached through a link.
-  When the tool runs hooks from such a file (including a settings file the
-  hooks are merged into), a `hook.unchecked` line names it; for a link, the
-  line also names the link on the path. An update keeps the file as it is, so
-  the fix says to shrink or replace the file, or to check where the link leads
-  and replace it, or remove only the link itself and run the `update` command
-  the fix ends with. A link, or a Python file the install did not write, in the
-  hook script's folder gets a fix that says to remove it (for a link, only the
-  link itself), since an update keeps it too. A hook script the install
-  recorded outside the project is not started, and its line says so. Doctor
-  follows no link to the files a hook command runs, and a command whose known
-  paths cannot be looked up is reported as `hook.unchecked`. A missing hook
-  script's fix now runs `update` to put the scripts back, and the last line
-  says "some hook commands" of a harness that also started others that passed.
-  For a recorded interpreter inside the project, the fix runs `apothem update`
-  from a folder outside the project, with an Apothem that runs under a Python
-  outside the project, which records that Python instead. Before that, you
-  deactivate the project's virtual environment if it is active; for npx,
-  `APOTHEM_PYTHON` picks the Python. The update runs outside the project
-  because `python -m apothem`, run in the project folder, would start a folder
-  named `apothem` committed there. A ledger doctor cannot open, or an
-  error while it checks the hook files, is now named as such instead of
-  stopping the check.
-- **The conformity gate's `--all-perwrite` reads only regular files inside the
-  project it checks.** It lists the tracked files with `git ls-files`, and git
-  lists each entry exactly as the repository's index holds it. A project that
-  came with its `.git` folder from someone else, in an archive or a shared
-  folder, was able to list a `../` or absolute path, or track a link to a file
-  elsewhere, and the gate read that file and printed its path. A link to
-  `/dev/zero` made the gate read until it ran out of memory, a named pipe made
-  it wait forever, and a huge file with no data written in it used up memory.
-  The gate now reads a listed path only when it is a regular file of at most 64
-  MiB holding UTF-8 text, reached through real folders inside the project. It
-  counts every path it skips, by reason, under `files_skipped`: entries that
-  leave the project, symbolic links and Windows junctions at any level (even
-  ones that point inside it, and entries the index marks as links), submodules,
-  named pipes and devices, missing and unreadable files, larger files, files
-  that are not UTF-8 text, and the files it leaves out by design (binary
-  suffixes, plan suites, test fixtures and vendored trees, judged on the path
-  inside the project). An entry with an empty, `.` or `..` part (a leading `/`
-  among them), or a part that names `.git` on Windows (`.git` in any case,
-  `.git.`, `GIT~1`), also fails the run, because git refuses each of these by
-  default; on Windows, a name the system cannot hold as written, such as
-  `a:b.md`, or one Windows reads as a device or a short name (`CON`, `NUL`,
-  `GIT~2`), is counted as an unsupported name instead, which does not fail the
-  run. A text file over the size limit, or one that cannot be read, also fails
-  the run, since a finding it holds would go unseen, and the report names those
-  entries under `files_not_passed` and their reasons on stderr; a file another
-  program holds (on Windows, open without sharing it; elsewhere, a write lease
-  being broken) is tried again once, after 0.2 seconds. Over the size limit, a
-  file counts as binary when a quarter or more of its first 8000 bytes are NUL,
-  so a large zero-filled image or a mostly Latin UTF-16 file does not fail the
-  run while text with a stray NUL still does. A file swapped for another file, a
-  link or a named pipe between its check and its open is looked up once more
-  and, swapped again, counted as unreadable; the gate never waits on the pipe or
-  reads through a link at the file's own name, while a Windows file that
-  deduplication or cloud tiering keeps behind a reparse point is read through
-  its program, and is unreadable when that program is stopped. A tracked file a
-  link points to is still checked under its own path. Each `git ls-files` call,
-  in `--all-perwrite` and in `no-global-plans-grep`, now stops after 60 seconds,
-  so a repository setting that makes git wait, such as an `include.path` that
-  points at a named pipe, holds up each call for that long at most;
-  `no-global-plans-grep` reports its timeout as `check_error` and, when git
-  fails, gives git's exit code instead of git's own text. A `--all-perwrite` run
-  that read no file reports `passed: false` with `empty_scope_expected: false`,
-  plus a `check_error` with a fixed reason when the file list cannot be read:
-  git missing, git failing with a given exit code, or the time limit. git's own
-  message is left out, because it can name files outside the project. Such a run
-  exits `2` under `--strict`; it used to pass with nothing checked.
-- **`link-check` no longer looks up a link to a network share.** It resolved
-  every link in a checked file against the disk, so a Markdown link to
-  `\\host\share\page.md` in any file of a checked project made Windows open a
-  network connection to that host, which sends the user's sign-in to it and can
-  wait about 21 seconds per host. A link that names a place by itself (a
-  network share, a drive such as `C:`, a backslash-rooted path or a `file:`
-  address) is now counted as external and never looked up, and a relative link
-  is resolved by its name instead of by following links on disk. In
-  `--all-perwrite`, `link-check` also looks up nothing outside the project: a
-  link that leaves it counts as external, and the search for a
-  `site/content/docs` folder stops at the project folder.
-- **A stalled validator or `git` command no longer holds up the conformity
-  gate's `--all` and `--check` runs, and no longer counts as a pass.**
-  `--all` and `--check` ran each standalone validator as a program of its
-  own with no time limit, so one that never finished stopped the whole run.
-  A project that came with its `.git` folder from someone else, in an
-  archive or a shared folder, can cause that: an `include.path` in its
-  `.git/config` that names a named pipe makes `git` wait for ever. The gate
-  now gives each standalone validator 10 minutes. One still running then is
-  stopped together with every program it started, and reported with `passed:
-  false` and a `check_error` that says it did not finish. Each validator
-  runs in a session of its own on Linux and macOS, where a `SIGTERM` or
-  `SIGHUP` to the gate stops it before the gate exits, even one that arrives
-  while the gate starts or stops it (the exit code stays 128 plus the
-  signal's number when a Ctrl+C follows during that step), and in a job
-  object on Windows, which ends its programs when the gate ends too. On
-  Windows, when Windows grants the job, each program the gate starts waits,
-  suspended, until it is in the job, so a program it starts at once, such as
-  the real `git` behind Git for Windows' launcher, is stopped with it. A
-  program the gate cannot resume is stopped, and the error says whether it
-  is in the job. A `git` that cannot be resumed, or that something else told
-  to end before it was resumed, even with exit code `0`, counts as a failed
-  `git` with exit code `128`, never as a missing one or as `git`'s own
-  answer, so the `git` checks named next fail rather than pass. A `git`
-  ended just after the resume cannot be told apart from one that ran, and
-  its exit code counts. So does one ended just before the resume when the
-  gate reads its exit code more than 1 ms after the resume, for example on a
-  busy machine or while other threads in the calling process are busy, and
-  one ended with exit code `259`, the code Windows gives a running program,
-  while Windows is still ending it. A `git` that ran and printed its answer
-  is not taken for one that was ended when the machine or other threads in
-  the calling process are busy. On every platform, when the gate itself
-  starts the program, a Ctrl+C that arrives during the start waits until the
-  program runs (on Windows, until the gate has tried to resume it), so it
-  does not leave a program suspended or running past its time limit, and a
-  start that fails once Popen has the program's process ID stops that
-  program. A second Ctrl+C that arrives while the gate stops a program waits
-  until the stop is done. One that arrives just before the stop begins makes
-  the gate try the stop again, up to three times, and then stop the program
-  without holding signals back, again up to three times, so one more Ctrl+C
-  does not skip the stop. A handler the calling process set for another
-  signal can still leave the program running (on Windows, suspended), when
-  its error lands in the few microseconds after the program starts, before
-  the gate records it. When the gate changes its own signal handlers, a
-  signal that arrives mid-change no longer leaves a handler changed, such as
-  Ctrl+C ignored for the rest of the process. On Linux and macOS the gate
-  blocks Ctrl+C, `SIGTERM` and `SIGHUP`, and no other signal, for the few
-  microseconds the change takes, so such a signal waits and meets the
-  handlers then in place. The gate then unblocks only the signals it
-  blocked. For any other signal, on Windows, and for a signal that arrived
-  just before the block, a change the signal stopped is made again, up to
-  three times. When putting its handlers back fails at every try, the gate
-  makes one last try for each handler left. A handler stays changed when an
-  error stops that last try too, such as a `TimeoutError` from a timer the
-  calling process set that fires each time, and in rare cases when several
-  signals whose handlers raise arrive back to back, within microseconds, and
-  skip the last try. An error that comes back at every try, such as a
-  `RecursionError` near Python's recursion limit, ends the change within two
-  tries and goes on. The gate puts its handlers back with calls no deeper
-  than the ones that changed them, so near that limit it does not leave
-  Ctrl+C ignored. A `SIGTERM` handler that the calling process sets during a
-  run stays in place. On Linux and macOS, in a Python subinterpreter, where
-  no signal handler may be set, the gate runs its programs without changing
-  handlers; on Windows, Python cannot read a program's output from an
-  isolated subinterpreter, which allows no daemon threads. After a stop the
-  gate waits up to half a second for the stopped program to end, so on Linux
-  and macOS it does not linger as a defunct process, and a Ctrl+C during
-  that wait does not replace a termination already under way. Ctrl+C prints
-  one line and exits `130`. The `git` commands of
-  `conventional-commit-grep`, `agents-md-coverage-grep` and the `--staged`
-  checks of `production-ready-pr-grep` and `semver-stability-grep` had
-  limits of 5 or 10 seconds, but a command that ran past its limit passed:
-  the commit-subject check took it for a folder without history, the
-  companion check skipped its freshness test, and the `--staged` checks read
-  an empty change set or skipped the file. On Windows, where `git` on `PATH`
-  is usually the launcher Git installs, the limit did not even end the wait.
-  Each of these commands now has 1 minute, far more than it takes, the limit holds
-  on every platform, and a command past it reports `passed: false` with a
-  `check_error` that names the command. So does a `git` that refuses a
-  checkout it found, such as one another user owns or one with a bad
-  configuration line, which used to count as a repository with no commit.
-  This can turn a run that passed red: a folder whose `.git` entry git
-  cannot open, such as an empty `.git` folder outside any other checkout or
-  a `.git` file that names a folder that no longer exists, now fails these
-  checks, because the history they need may be there unread.
-  `agents-md-coverage-grep` exits `2` for either although its findings are
-  otherwise advisory, and its read of the whole history now gets 5 minutes,
-  so a large history is slow rather than a failure. A plain folder that is
-  not inside any git checkout, a repository with no commit yet, a partial
-  clone, where any failed history read counts as history that is not
-  available, or a machine without `git` still passes these checks.
-  `no-global-plans-grep` still fails, as before, outside a checkout git can
-  read or without `git`. The gate's advisory default still exits `0` on such
-  a result, and `--strict` exits `2`.
-
-- **The conformity gate's `--all` validators open and list only real files
-  inside the project they check.** A project that came from someone else, in
-  an archive or a shared folder, can hold symbolic links and, on Windows,
-  junctions that lead out of it. The shared tree walk entered junctions,
-  returned linked files and looked up the target of each symbolic link, so
-  `dynamism-grep` read a linked page outside the project, and a junction back
-  to a folder above it made the walk go round the tree until the path grew too
-  long. Most validators that look in fixed places, such as
-  `.github/workflows/`, `.apothem/plans/`, `src/apothem/rules/` or
-  `pyproject.toml`, read through links of either kind, and many opened
-  whatever sat at the path, so a named pipe there made the gate wait forever
-  and a link to `/dev/zero` made a read that never ended. Every `--all`
-  validator now opens and lists only regular files and real folders that it
-  reaches through real folders below the root, and never follows a link. A
-  link, a named pipe, a device, a socket, or on Windows a name ending in a dot
-  or a space, counts as missing. A few checks still use a link without
-  entering it: for a fixed file that is a symbolic link, such as a
-  `CLAUDE.md` that points at another file, the gate reads the link's text and
-  opens the named file only when it is a regular file inside the project (a
-  linked `.gitattributes` still counts as missing, because git does not read
-  it); `no-global-plans-grep` reports a plans folder or an `.apothem` folder
-  that is a link, by name; `no-toplevel-docs-grep` reports a root `docs` link;
-  and `naming-grep` checks a link's own name. Each report lists the links and
-  special files it left out under `skipped_links`, and a validator whose
-  folder is a link fails instead of passing as if the folder were not there
-  yet. The checks that run git read the `.git` folder through git itself;
-  see the next entry for when they do not run it.
-- **The checks that run git have a plain rule for links.** The three `--all`
-  validators that run git, and `--all-perwrite`, follow it. In `--all` and
-  `--all-perwrite`, the gate itself opens only regular files inside the root,
-  checking each folder on the way with `lstat`, including every path git
-  lists, and never reads inside a `.git` entry. Before they run git, they look
-  with `lstat` at the `.git` entry of the root and of every folder above it
-  that git searches, as the tree is at that moment; if any of them is a link,
-  or cannot be looked at, they do not run git. This also refuses projects git
-  would handle safely, such as every project below a home folder whose `.git`
-  is a link, even one with its own repository: that is the deliberate cost of
-  a simple rule. They run git without `GIT_DIR` and the other variables that
-  name the repository, its stores or its index. Which repository git then
-  reads is not checked: a `gitdir:` line, `commondir`, alternates,
-  `core.worktree`, an include, or a link inside the git folder can name
-  another one, and git follows them, so git can reach a network path or wait
-  until its time limit. The gate uses git's output only as names, modes,
-  status letters, the subject of the last commit, commit times and a few
-  settings, and never opens a path git prints without checking each level
-  inside the root. When they find a link, they list it under `skipped_links`
-  (by its full path when it lies above the root), `no-global-plans-grep`
-  reports it as a failing finding, and `--all-perwrite` lists no tracked files
-  and fails with a `check_error` that names it. A `.git` entry the gate cannot
-  look at (a path too long, a share it cannot reach, no access) is not a link
-  and is not listed under `skipped_links`: `conventional-commit-grep` fails
-  with the status `git-failed` and a `check_error`, the companion coverage
-  check and `--all-perwrite` fail with a `check_error` that says the entry
-  could not be looked at, and `no-global-plans-grep` reports it as a finding.
-- **The two `--staged` checks follow the same rule for a `.git` link, and a
-  skipped folder is always named.** `production-ready-pr-grep --staged` and
-  `semver-stability-grep --staged` ran git in the current folder without
-  looking at its `.git` entry, so a `.git` link there, or in a folder above it
-  that git searches, made them read another repository's staged names and
-  files. They now look first and fail with a `check_error` that names the link,
-  says the `.git` entry in the folder they run in is a link, or says the entry
-  could not be looked at, without running git; they still read the repository
-  a hook's `GIT_DIR` names, but a project whose own `.git` is a link now fails
-  them, even in a hook. `conventional-commit-grep` keeps
-  the status `not-a-git-repo` for a `.git` link but now gives a `check_error`
-  that names it. A folder whose `.git` entry is a link, a dangling one
-  included, was left out of every tree walk as a nested checkout with nothing
-  in the report; `skipped_links` now names that `.git` entry, in the walk and
-  in the stray-plans check of `no-global-plans-grep`. A plain `.git` file or
-  an empty `.git` folder, which git does not take for a repository, also hid
-  its folder from both; such a folder is now checked. `skipped_links` also
-  names a folder the walk cannot list (no access, a path too long, a read
-  error), where before it read as empty. Every folder a walk or the
-  stray-plans check skips as a nested checkout is now listed under a new
-  `skipped_checkouts` key, whatever its `.git` entry names, since one
-  `gitdir:` line can hide any folder; the list never changes the verdict.
-- **A file swapped for a link or a named pipe while the gate checks it is not
-  read through.** The `--all` validators checked each level of a path and
-  then opened the file by name, so someone writing to the project while the
-  gate ran could swap a checked file, or a folder above it, for a link out of
-  the project or for a named pipe: the read took the outside file's content
-  or waited until the time limit. `--all-perwrite` already refused a link in
-  the file's own place, but opened a file through a folder above it swapped
-  for a link. Every project file a validator reads is now opened one level
-  at a time from the root, each folder inside the one opened before it, and
-  no level through a link, and the read never waits on a pipe. A swapped
-  file is not read: an `--all` validator counts it as missing or unreadable,
-  as it counts a link, and lists its entry under `skipped_links`, and
-  `--all-perwrite` counts it as a `link` or `unreadable`. The `.git` file a
-  nested checkout holds is read the same way, from the root the walk started
-  at. A `.git` link to a regular file now counts as a repository without its
-  `gitdir:` line being read through the link. The five validators that read
-  a CI matrix or publish workflow, a workflow's concurrency settings, the
-  installer scripts or the Plans Discipline surfaces now report a file they
-  cannot read, for example for lack of permission, as a finding that names
-  the file unreadable, instead of stopping with a traceback. A hard link
-  still reads as an ordinary file, and on Windows a program that holds an
-  opportunistic lock on a file can still make a read wait, as it could
-  before.
-
-## [1.6.0] - 2026-11-26
+## [1.6.0] - 2026-11-28
 
 ### Data loss in earlier releases: recover your files
 
@@ -860,6 +264,151 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Changed
 
+- **CI checks the docs sidebar of every language and the built pages.** A
+  new step runs `npm run ia:check`, which fails when a sidebar list, English
+  or translated, differs from the English page order the site's list script
+  writes. Another runs `npm run check:built-docs` after the docs build, which
+  fails when a sidebar section cannot be opened and closed from a button with
+  its state exposed, or a page shows a literal `**` or backtick outside code,
+  and lists every match.
+- **The CI metrics job reuses the coverage shards' data instead of running the
+  test suite again.** The `ci.yml` metrics job ran the whole suite under
+  coverage on one runner in 18 to 30 minutes, and its 30-minute limit cancelled
+  some runs. The two coverage shards now measure all of `src/apothem`, and the
+  metrics job combines their data and reports the same per-package figures and
+  floors in about a minute, so the suite runs under coverage once per CI run
+  instead of twice. The `coverage` job's reports keep only the engine folders,
+  read from `[tool.coverage.run] source` in `pyproject.toml`, so the engine
+  figure and its 80% floor stay the same.
+- **CI fails a pull request that edits released release notes.** A release
+  renames `[Unreleased]` in `CHANGELOG.md` to the new version. A branch cut
+  before the release could then merge the release in with no conflict and
+  leave its entry inside the released section. A new step in the required
+  `quality / ubuntu-latest / py3.12` check compares every released section
+  with the base branch and names the section that changed. A commit trailer
+  `Changelog-Released-Edit: <version> <reason>` allows a deliberate
+  correction to that version's notes only.
+- **`python -m apothem.conformity.gate --all` takes seconds, not minutes.**
+  The gate now runs its standalone validators side by side, at most eight at once, and
+  still reports them in the same order. `redundancy-grep` skips paragraph pairs
+  whose distinct-word counts rule out a match, with the same findings as before.
+  A full `gate --all .` on this repository went from about 100 seconds to about
+  12 on Windows.
+- **Apothem refuses to write into the real home while pytest runs.** While
+  `PYTEST_CURRENT_TEST` is set and not empty (a test), or `PYTEST_VERSION`
+  holds the running pytest's version (the whole session: collection,
+  module-level code and session hooks), a write, removal, copy, rename
+  or lock file in a protected path of the account's home stops with
+  `RealHomeWriteError` before anything changes. The protected paths
+  are `~/.apothem`, `~/.config/apothem`, each tool folder the harness
+  registry names in the home (`~/.claude`, `~/.codex`, `~/.agents`,
+  `~/.config/opencode`, `~/.gemini` and the rest), and each path outside
+  those folders that the propagation manifest changes in the home: today that
+  is `~/.antigravity/profile.yaml`, a file an earlier release wrote that the
+  Antigravity stale sweep removes. The home is the one the operating system
+  records for the account, not `HOME`. Reads, dry runs and previews still
+  work, and outside pytest nothing is refused unless the environment carries
+  a `PYTEST_CURRENT_TEST` that is not empty, or the installed pytest's exact
+  version in `PYTEST_VERSION` (a shell or a CI job may export it to pin what
+  it installs). A `PYTEST_VERSION` with any other value, such as a pin like
+  `9.1` for `9.1.0`, does not count, nor does an empty `PYTEST_CURRENT_TEST`,
+  and the error names the variable that turned the refusal on and the value
+  it holds. A project-scope install, update, uninstall or rollback whose
+  project root is the home itself is refused before it writes anything. A
+  data home right in the home, under a name the profile chose, or one that is
+  a link to a folder right in the home or to the home itself (also through a
+  chain of links), is refused before it is created and before its stores are
+  removed: an install or update has written the project's files by then and
+  undoes those writes (recording a rollback), and an uninstall has removed
+  them by then and records itself unfinished. Some passes check their paths
+  before the first change, so a refusal there leaves everything as it was:
+  a stale sweep every stale path; a rollback every path its install record
+  names, the data stores it would remove and the user-level folders in the
+  home it would tidy last; a rollback and an uninstall the backup root and
+  the ledger; and an OpenClaw uninstall `openclaw.json` and every workspace's
+  rules file, one outside `~/.openclaw` included. The stale sweep now also
+  decides which stale paths it keeps (a link, a path reached through one, a
+  live folder under another name) before it removes the first, in every run;
+  it never removes a link, so it keeps the same paths as before. Links and
+  junctions into a protected folder count; on Windows so do letter case, short
+  (8.3) names, the `\\?\`, `\\.\` and `\??\` prefixes, loopback admin shares
+  (IPv6 included), shares reached by the machine's own addresses or through
+  a mapped drive, alternate data streams and device paths behind a prefix
+  (`GLOBALROOT\Device\HarddiskVolume2`, `Volume{GUID}`); on macOS letter case,
+  Unicode normalization and the `/System/Volumes/Data` spelling of a path.
+  Only the string rules make no network contact: a share path is checked by
+  asking its host. The CLI raises the error as it is. A refused uninstall
+  records an unfinished uninstall only when it had already changed files
+  outside the protected folders, in a step before the shared removal too,
+  so the backups of those files stay referenced. The test suite fails a test
+  after which a refusal was absorbed in the test's own process, also when the
+  test is marked `xfail`; one absorbed outside any test fails the collection
+  of the node pytest was collecting then, or else the run when the session
+  finishes, named for where it happened, also when a hook then ends the run
+  with `pytest.exit(returncode=0)` or `sys.exit(0)` (or, on any system, a code
+  a POSIX system cuts to 0 or 5, such as 256), also after another hook ended
+  the session finish with `sys.exit` or an exception, and also when a worker
+  process of a parallel run absorbs it, before or after it handed its refusals
+  to the main process: a worker writes each refusal, as soon as it holds it,
+  to a file the main process reads, so one it held before it crashed or was
+  stopped short of that hand-off, or before a session-finish hook stopped it
+  there, still fails the run. Three cases still show only on `stderr` and
+  leave the exit code as it is: one absorbed after the `yield` of a `tryfirst`
+  `pytest_unconfigure` wrapper that pytest registered after the guard, one
+  absorbed in a cleanup registered with `config.add_cleanup` (each unless a
+  passing `sys.exit` then ends the run), and one a worker absorbs but neither
+  hands over nor writes to that file, because the worker ended or was stopped
+  first (a session-finish hook absorbed it and then crashed the worker, say)
+  or because that file could not be made or written. At the end of the run the
+  main process tells each worker to exit; a worker still running Python code 5
+  seconds later is interrupted (on Windows, not one blocked in a sleep or
+  another call), and any worker still running after 10 seconds is stopped. The
+  guard cannot change the exit code of a run that ends through `os._exit` in
+  the main process (in a hook, a cleanup or an `atexit` handler), through a
+  `tryfirst` `pytest_cmdline_main` wrapper that pytest registered after the
+  guard, or through a `pytest_cmdline_main` hook that returns before any
+  session runs; with `os._exit` the guard's terminal report can be lost too,
+  and in the first and the last case a refusal the guard has not reported yet
+  shows only as its `stderr` line. With no system record of the account's home
+  (no `passwd` entry), the home is not protected. A test that must run a real
+  install starts Apothem without `PYTEST_CURRENT_TEST` and `PYTEST_VERSION` in
+  the child's environment. `tests/README.md` lists what the refusal does not
+  cover, such as a bind mount of the home, a refusal absorbed in a child
+  process and a folder swapped for a link between the check and the write.
+
+- **The `ui-design` skill is rewritten around a banded rule catalog and a
+  written build record.** The skill now reads the project before it asks
+  anything. It then sets a scope (component, page, or app screen) and a genre,
+  and these decide which steps and checks run. Every rule sits in one of four
+  bands. The baseline never bends, and a habit rule bends only by a waiver with
+  a reason. A polish finding closes by a fix or an acknowledgement, and
+  bookkeeping never changes the verdict. Each build writes a record at the top
+  of its stylesheet and an entry in the `design-log.md` build log, so a later
+  session reads past decisions instead of guessing them. Page work starts from
+  an inventory of the real material and the visitor's job, which set the page's
+  sections and their order. A named page shape records each build, so the next
+  one can rotate instead of repeating it. The `design-critic` reviewer checks
+  the opening screen before the rest is built, and the whole page before
+  delivery. `DESIGN.md` is now an optional locked system: the skill writes it
+  only when you ask or a multi-page redesign needs it, and `design-log.md` sits
+  beside it. Once it exists, its tokens win over any new direction. The skill
+  keeps its working state, the project-scan and brand caches, the
+  before-records of a redesign and the review captures, in
+  `.apothem/ui-design/`, which stays out of version control. The skill asks
+  before it adds that folder to `.gitignore`. The skill may now start the
+  reviewer in a fresh context, and the tool that starts it is now one of the
+  skill's pre-approved tools. No fetch tool is pre-approved. Every fetch, such
+  as a brand's homepage, an archive photo or a platform's logo, goes through
+  the host's fetch tool. The skill names the address first, and the fetch runs
+  only after you approve it. With no fetch tool that meets the skill's safety
+  checks, or when you decline, the skill asks you for the brand's color values
+  and font names. A fetch uses HTTPS only, through a fetch tool the host says
+  refuses private and reserved addresses and reports each redirect or follows
+  none that leaves the host. A development server, a project script or a
+  browser check runs only when the host offers the tool and you approve the
+  folder and the exact command. Otherwise the skill lists the screens it needs
+  and continues from the source.
+
 - **The CI coverage check runs the test suite in two halves at once.** The
   `ci.yml` coverage job ran the whole suite under coverage on one runner in 14
   to 30 minutes, so its 30-minute limit cancelled some runs. Two jobs,
@@ -1003,6 +552,173 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   excludes both names, so the `tailwind` group is the only one they fit.
 
 ### Fixed
+
+- **The documentation sidebar shows at full width again, with each page
+  listed once, in every language.** On every tablet and desktop page the
+  sidebar had collapsed to a strip a few pixels wide, so its links could not
+  be read and the header text overlapped. It is back at its full width. Each
+  section's title is now the link to its overview page, instead of the title
+  followed by the same page under a near-identical name, and a separate button
+  beside it opens and closes the section from the keyboard and tells a screen
+  reader whether it is open. A screen reader names that button "show or hide
+  pages" after the section name, in the page's language, so it is not heard
+  as a second copy of the link. A section with a single page, such as
+  "Conformity gate", is one link. The blog posts are no longer listed a second
+  time inside an extra "Posts" folder, and the "Page not found" page is no
+  longer listed. The sidebar of every language lists the same pages in the
+  same order as the English one: the `backups` command, the evals guide and
+  the OpenSSF Best Practices page were missing from their place in the
+  translated sidebars. Two entries with the same name, "CLI reference", are
+  now "CLI overview" and "CLI reference", and the `CLAUDE.md` page title no
+  longer shows stray backtick characters.
+- **Docs page text shows as written.** The fields at the top of each harness
+  page, each command page and the positioning page, the plan-integrity
+  criteria on the cross-cutting mandates page and the sign-off fields of the
+  deployment checklist show one per line instead of running together. The
+  changelog and three architecture pages no longer repeat their title as a
+  second top-level heading. Backtick and asterisk characters no longer show as
+  literal text in four command-page summaries, the quick start's "The apothem
+  command" box, bold phrases in the Japanese, Korean and Simplified Chinese
+  pages, and the cut-off descriptions in the rules, commands and helpers
+  tables; a cut no longer leaves half a link, an unclosed emphasis, bold or
+  strikethrough marker, or an open parenthesis either. The
+  summaries of four command pages and the raw Cursor comparison say which file
+  or folder a path names, so it reads as part of the sentence.
+- **The release version bumper stops early when the docs packages are not
+  installed.** The docs reference generator now reads Markdown with packages
+  that `site/package.json` declares. `scripts/release/bump_version.py` checks
+  for `site/node_modules` before it changes any file and, when the folder is
+  missing, stops and names the fix, `npm ci --prefix site`. The generator run
+  on its own also stops before writing any page and names the same command.
+- **The OpenSSF Best Practices page matches the registered entry.** Apothem
+  is registered on bestpractices.dev as project 16427 and has held the passing
+  badge since 2026-11-08; the page says so, and so does the Scorecard posture
+  page in every language. The README header now shows the passing badge,
+  and the Scorecard badge and links read the project's current score instead
+  of a record from May. Each answer on the page has the same status as the
+  entry, and the counts, dates, fuzzing coverage and dismissed code-scanning
+  alerts it describes are current.
+- **The conformity gate reads every byte of a path name, and a failed
+  `git diff` does not pass from a subfolder.** The gate read git's lists of
+  path names as text, which turned a carriage return in a name into a line
+  feed and a byte that is not UTF-8 into the replacement character. The
+  changed name matched no file, so `semver-stability-grep --staged` skipped
+  that module and passed a staged change that dropped a public function, and
+  `--all-perwrite` left the file out. `--all-perwrite`, `no-global-plans-grep`
+  and both `--staged` checks now read each name byte for byte.
+  `production-ready-pr-grep` matches each of its rules against the whole name,
+  so a name that ends in a line break, such as `CHANGELOG.md` followed by one,
+  does not count as the changelog, and a code file with a line break inside its
+  name counts as code. On Windows, git cannot be handed a name
+  that is not UTF-8 (only an index made on another system holds one), so
+  `semver-stability-grep --staged` reports a `check_error` for it and does not
+  pass, and `--all-perwrite` counts such a file as `missing` without reading
+  it. The history read of `agents-md-coverage-grep` reads each name byte for
+  byte too, so a name git would quote, one with a quote, a backslash or a
+  control character, keeps its commit time. Both `--staged` checks read the
+  staged names from the top of the work tree whatever your `diff.relative`
+  setting is: with it on, a run from a subfolder got names the check could not
+  use, and it passed.
+  Both `--staged` checks, and `agents-md-coverage-grep` on a subfolder, now
+  look for the checkout in the folders above the one they run in, up to where
+  git stops looking (a `GIT_CEILING_DIRECTORIES` folder, or another file
+  system outside Windows): run from a subfolder, a `git` that failed, for
+  example on `diff.renameLimit = abc`, was read as no staged change and
+  passed. `conventional-commit-grep` run on a subfolder of a checkout passed
+  without reading any commit; it now reads the repository above, as git does,
+  when that repository tracks or stages a file in the subfolder. Where the
+  repository ignores case, as on Windows and macOS, a tracked subfolder whose
+  name was changed on disk only in upper or lower case counts too. The check
+  reads the case setting only when git lists no file in the subfolder, so a
+  tracked subfolder costs one `git` command. A folder the
+  repository above does not track, such as a new project inside a home-folder
+  dotfiles repository, still passes. An empty `.git` folder above it, with no
+  repository further up, makes it fail with `git-failed`.
+  `semver-stability-grep --staged` looked for `src/apothem` below the current
+  folder only, so from a subfolder it ran no git and passed whatever was
+  staged; it now also looks in the folders above,
+  up to the nearest folder that holds a repository or where git stops
+  looking, and runs git in the nearest folder that holds
+  `src/apothem/__init__.py`. It reads the version file from that folder too:
+  it read `src/apothem/__init__.py` from the top of the repository, so for a
+  package below the top it never saw a MAJOR version bump. When a `.git` file
+  that git refuses lies between the current folder and the package, git runs
+  in the current folder instead, stops at that file, and the check reports a
+  `check_error`. The search reads a `.git` file as git does: it must start
+  with `gitdir:` and one space, only the line endings at its end are dropped,
+  and a file over 1 MiB is refused. On Windows, a `.git` file that names a
+  network, device or NT path (`\\host\share`, `\\?\`, `\??\`) is refused, and
+  the search itself never looks that path up, so it does not connect to the
+  host the file names. On Windows the search also refuses, without looking it
+  up, a path that Git for Windows refuses: one with a name that ends in a dot
+  or a space or that is a device name such as `aux`, `aux.d`, `lpt0` or
+  `CONIN$` (but not `com0`, which Git for Windows accepts), or
+  with a `:`, a control character or one of `<>"|?*` after the drive. A byte
+  that is not UTF-8 is read as Git for Windows reads it: from `0xA0` up as
+  that character, a lower one as its two hex digits (`0x9F` reads `9f`), an
+  encoded surrogate pair as the character it stands for, and a lone encoded
+  surrogate refused. On Linux and macOS it is read byte for byte, as git
+  reads it. So such a worktree is not taken for a broken one. A project
+  without the package still passes without running git. The check also names
+  `src/apothem` after `--`, so git reads it as a path where that folder is
+  missing.
+- **`agents-md-coverage-grep` judges a re-created companion and a subfolder
+  root as it should.** A per-folder `AGENTS.md` that a commit deleted and that
+  was written again was timed by the deleting commit, so the new file was
+  reported stale before it was ever committed. It now counts as new until you
+  commit it. A run on a subfolder treated that subfolder's own `AGENTS.md` as
+  the canon and passed it, while a run on the whole repository reported it;
+  only the `AGENTS.md` at the top of the repository is the canon now, so both
+  runs agree for a subfolder that has a README of its own.
+- **An uninstall that stops part way is recorded and reported like one that
+  ran all its steps.** An uninstall that an unexpected error (an exception,
+  such as a backup that cannot be written) or `Ctrl+C` stops in the step that
+  removes what the install record lists appends an `uninstall-incomplete`
+  record, also when it had changed nothing, so running it again finishes the
+  job. One stopped before that step appends the record only when a step
+  before the one that stopped had changed or backed up a file: an Open-Claw
+  uninstall stopped at `openclaw.json` appends it when its rules-file step had
+  taken Apothem's block out of a workspace's rules file, and nothing when that
+  step changed nothing (also when it found Apothem's rules file behind a
+  link). One stopped inside that rules-file step, or inside the older-layout
+  sweep of Antigravity or Kimi Code, appends nothing and exits `1`, whatever
+  the step had changed, as it reports nothing the step did; the backups that
+  step took stay under `~/.apothem/backups/` with no record. A rules-file step
+  that reports an error instead (a rules file it cannot rewrite, or an
+  `openclaw.json` with comments) is a failed step: the uninstall records
+  itself unfinished with that step's backups, prints `did not finish:` and
+  exits `2` when that step had changed a file or found Apothem's rules file
+  behind a link, otherwise `1`. An uninstall that stops after taking
+  Apothem's entries out of a file such as `openclaw.json` exits `2` with
+  `uninstall stopped after removing files`, as one that removed files does;
+  one stopped by `Ctrl+C` prints `Aborted!` and exits `1`. A stopped uninstall
+  now also reports what it found that leaves it unfinished: each step that
+  failed before it stopped, each link keeping Apothem's own files in place,
+  the files of an earlier release's install that differ from what this
+  release writes, the files of an install with no record, a file that holds
+  two different blocks between Apothem's markers and a file with marker lines
+  Apothem cannot tell from your text. Each gets a `✗ <harness> uninstall did
+  not finish:` line and is added to the end of its `results` row's message;
+  the line for the files of an earlier release's install or of an install
+  with no record also says how to fix, before `apothem update`, each file the
+  uninstall left with Apothem's markers in it. An install with no record also
+  gets its `Note:` line, with the check of the `--project` folder before
+  `apothem update`, and the row's `kept_reason`.
+  When the reasons, the steps that failed before the stop included, name one
+  link, that row carries it in `detail.symlink` and `detail.leads_to`, as
+  does the row of an uninstall refused because a link leads its folder out of
+  your home directory. Such a link, or such files, make it exit `2`, also when
+  it removed nothing. Its warnings also name a link its steps left in place,
+  as for one that ran all its steps. An error that stops the settings-file
+  step of Hermes, Open-Claw, OpenCode or Qwen Code now reads `uninstall
+  stopped: <error>`, as one in a later step does. So does an error in the step
+  OpenCode's uninstall takes after the one that removes what the install
+  record lists, which closes an install recorded under another spelling of its
+  folder: the uninstall exits `2`, as it had removed files, and that install
+  stays recorded. A later run does not close it yet: OpenCode then reads as
+  not installed, so the uninstall skips it. Installing OpenCode at the folder
+  again, with a profile outside the linked folder, and then uninstalling it
+  closes that install.
 
 - **`apothem doctor` starts GitHub Copilot's hooks, and Cursor's on Windows.**
   Doctor looked for a hook's command line only under `command` (and Codex's
@@ -2254,6 +1970,284 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   focused and moves the focus to the page content.
 
 ### Security
+
+- **`apothem doctor --project` reads project hook files more carefully.**
+  Doctor now reads each hook command from the keys the tool itself reads (an
+  `args` list only for Claude Code, the one tool that runs one) and takes at
+  most 100 commands from one file. It reads no hook file larger than 4 MB or
+  that is not a regular file, and no project hook file reached through a link.
+  When the tool runs hooks from such a file (including a settings file the
+  hooks are merged into), a `hook.unchecked` line names it; for a link, the
+  line also names the link on the path. An update keeps the file as it is, so
+  the fix says to shrink or replace the file, or to check where the link leads
+  and replace it, or remove only the link itself and run the `update` command
+  the fix ends with. A link, or a Python file the install did not write, in the
+  hook script's folder gets a fix that says to remove it (for a link, only the
+  link itself), since an update keeps it too. A hook script the install
+  recorded outside the project is not started, and its line says so. Doctor
+  follows no link to the files a hook command runs, and a command whose known
+  paths cannot be looked up is reported as `hook.unchecked`. A missing hook
+  script's fix now runs `update` to put the scripts back, and the last line
+  says "some hook commands" of a harness that also started others that passed.
+  For a recorded interpreter inside the project, the fix runs `apothem update`
+  from a folder outside the project, with an Apothem that runs under a Python
+  outside the project, which records that Python instead. Before that, you
+  deactivate the project's virtual environment if it is active; for npx,
+  `APOTHEM_PYTHON` picks the Python. The update runs outside the project
+  because `python -m apothem`, run in the project folder, would start a folder
+  named `apothem` committed there. A ledger doctor cannot open, or an
+  error while it checks the hook files, is now named as such instead of
+  stopping the check.
+- **The conformity gate's `--all-perwrite` reads only regular files inside the
+  project it checks.** It lists the tracked files with `git ls-files`, and git
+  lists each entry exactly as the repository's index holds it. A project that
+  came with its `.git` folder from someone else, in an archive or a shared
+  folder, was able to list a `../` or absolute path, or track a link to a file
+  elsewhere, and the gate read that file and printed its path. A link to
+  `/dev/zero` made the gate read until it ran out of memory, a named pipe made
+  it wait forever, and a huge file with no data written in it used up memory.
+  The gate now reads a listed path only when it is a regular file of at most 64
+  MiB holding UTF-8 text, reached through real folders inside the project. It
+  counts every path it skips, by reason, under `files_skipped`: entries that
+  leave the project, symbolic links and Windows junctions at any level (even
+  ones that point inside it, and entries the index marks as links), submodules,
+  named pipes and devices, missing and unreadable files, larger files, files
+  that are not UTF-8 text, and the files it leaves out by design (binary
+  suffixes, plan suites, test fixtures and vendored trees, judged on the path
+  inside the project). An entry with an empty, `.` or `..` part (a leading `/`
+  among them), or a part that names `.git` on Windows (`.git` in any case,
+  `.git.`, `GIT~1`), also fails the run, because git refuses each of these by
+  default; on Windows, a name the system cannot hold as written, such as
+  `a:b.md`, or one Windows reads as a device or a short name (`CON`, `NUL`,
+  `GIT~2`), is counted as an unsupported name instead, which does not fail the
+  run. A text file over the size limit, or one that cannot be read, also fails
+  the run, since a finding it holds would go unseen, and the report names those
+  entries under `files_not_passed` and their reasons on stderr; a file another
+  program holds (on Windows, open without sharing it; elsewhere, a write lease
+  being broken) is tried again once, after 0.2 seconds. Over the size limit, a
+  file counts as binary when a quarter or more of its first 8000 bytes are NUL,
+  so a large zero-filled image or a mostly Latin UTF-16 file does not fail the
+  run while text with a stray NUL still does. A file swapped for another file, a
+  link or a named pipe between its check and its open is looked up once more
+  and, swapped again, counted as unreadable; the gate never waits on the pipe or
+  reads through a link at the file's own name, while a Windows file that
+  deduplication or cloud tiering keeps behind a reparse point is read through
+  its program, and is unreadable when that program is stopped. A tracked file a
+  link points to is still checked under its own path. Each `git ls-files` call,
+  in `--all-perwrite` and in `no-global-plans-grep`, now stops after 60 seconds,
+  so a repository setting that makes git wait, such as an `include.path` that
+  points at a named pipe, holds up each call for that long at most;
+  `no-global-plans-grep` reports its timeout as `check_error` and, when git
+  fails, gives git's exit code instead of git's own text. A `--all-perwrite` run
+  that read no file reports `passed: false` with `empty_scope_expected: false`,
+  plus a `check_error` with a fixed reason when the file list cannot be read:
+  git missing, git failing with a given exit code, or the time limit. git's own
+  message is left out, because it can name files outside the project. Such a run
+  exits `2` under `--strict`; it used to pass with nothing checked.
+- **`link-check` no longer looks up a link to a network share.** It resolved
+  every link in a checked file against the disk, so a Markdown link to
+  `\\host\share\page.md` in any file of a checked project made Windows open a
+  network connection to that host, which sends the user's sign-in to it and can
+  wait about 21 seconds per host. A link that names a place by itself (a
+  network share, a drive such as `C:`, a backslash-rooted path or a `file:`
+  address) is now counted as external and never looked up, and a relative link
+  is resolved by its name instead of by following links on disk. In
+  `--all-perwrite`, `link-check` also looks up nothing outside the project: a
+  link that leaves it counts as external, and the search for a
+  `site/content/docs` folder stops at the project folder.
+- **A stalled validator or `git` command no longer holds up the conformity
+  gate's `--all` and `--check` runs, and no longer counts as a pass.**
+  `--all` and `--check` ran each standalone validator as a program of its
+  own with no time limit, so one that never finished stopped the whole run.
+  A project that came with its `.git` folder from someone else, in an
+  archive or a shared folder, can cause that: an `include.path` in its
+  `.git/config` that names a named pipe makes `git` wait for ever. The gate
+  now gives each standalone validator 10 minutes. One still running then is
+  stopped together with every program it started, and reported with `passed:
+  false` and a `check_error` that says it did not finish. Each validator
+  runs in a session of its own on Linux and macOS, where a `SIGTERM` or
+  `SIGHUP` to the gate stops it before the gate exits, even one that arrives
+  while the gate starts or stops it (the exit code stays 128 plus the
+  signal's number when a Ctrl+C follows during that step), and in a job
+  object on Windows, which ends its programs when the gate ends too. On
+  Windows, when Windows grants the job, each program the gate starts waits,
+  suspended, until it is in the job, so a program it starts at once, such as
+  the real `git` behind Git for Windows' launcher, is stopped with it. A
+  program the gate cannot resume is stopped, and the error says whether it
+  is in the job. A `git` that cannot be resumed, or that something else told
+  to end before it was resumed, even with exit code `0`, counts as a failed
+  `git` with exit code `128`, never as a missing one or as `git`'s own
+  answer, so the `git` checks named next fail rather than pass. A `git`
+  ended just after the resume cannot be told apart from one that ran, and
+  its exit code counts. So does one ended just before the resume when the
+  gate reads its exit code more than 1 ms after the resume, for example on a
+  busy machine or while other threads in the calling process are busy, and
+  one ended with exit code `259`, the code Windows gives a running program,
+  while Windows is still ending it. A `git` that ran and printed its answer
+  is not taken for one that was ended when the machine or other threads in
+  the calling process are busy. On every platform, when the gate itself
+  starts the program, a Ctrl+C that arrives during the start waits until the
+  program runs (on Windows, until the gate has tried to resume it), so it
+  does not leave a program suspended or running past its time limit, and a
+  start that fails once Popen has the program's process ID stops that
+  program. A second Ctrl+C that arrives while the gate stops a program waits
+  until the stop is done. One that arrives just before the stop begins makes
+  the gate try the stop again, up to three times, and then stop the program
+  without holding signals back, again up to three times, so one more Ctrl+C
+  does not skip the stop. A handler the calling process set for another
+  signal can still leave the program running (on Windows, suspended), when
+  its error lands in the few microseconds after the program starts, before
+  the gate records it. When the gate changes its own signal handlers, a
+  signal that arrives mid-change no longer leaves a handler changed, such as
+  Ctrl+C ignored for the rest of the process. On Linux and macOS the gate
+  blocks Ctrl+C, `SIGTERM` and `SIGHUP`, and no other signal, for the few
+  microseconds the change takes, so such a signal waits and meets the
+  handlers then in place. The gate then unblocks only the signals it
+  blocked. For any other signal, on Windows, and for a signal that arrived
+  just before the block, a change the signal stopped is made again, up to
+  three times. When putting its handlers back fails at every try, the gate
+  makes one last try for each handler left. A handler stays changed when an
+  error stops that last try too, such as a `TimeoutError` from a timer the
+  calling process set that fires each time, and in rare cases when several
+  signals whose handlers raise arrive back to back, within microseconds, and
+  skip the last try. An error that comes back at every try, such as a
+  `RecursionError` near Python's recursion limit, ends the change within two
+  tries and goes on. The gate puts its handlers back with calls no deeper
+  than the ones that changed them, so near that limit it does not leave
+  Ctrl+C ignored. A `SIGTERM` handler that the calling process sets during a
+  run stays in place. On Linux and macOS, in a Python subinterpreter, where
+  no signal handler may be set, the gate runs its programs without changing
+  handlers; on Windows, Python cannot read a program's output from an
+  isolated subinterpreter, which allows no daemon threads. After a stop the
+  gate waits up to half a second for the stopped program to end, so on Linux
+  and macOS it does not linger as a defunct process, and a Ctrl+C during
+  that wait does not replace a termination already under way. Ctrl+C prints
+  one line and exits `130`. The `git` commands of
+  `conventional-commit-grep`, `agents-md-coverage-grep` and the `--staged`
+  checks of `production-ready-pr-grep` and `semver-stability-grep` had
+  limits of 5 or 10 seconds, but a command that ran past its limit passed:
+  the commit-subject check took it for a folder without history, the
+  companion check skipped its freshness test, and the `--staged` checks read
+  an empty change set or skipped the file. On Windows, where `git` on `PATH`
+  is usually the launcher Git installs, the limit did not even end the wait.
+  Each of these commands now has 1 minute, far more than it takes, the limit holds
+  on every platform, and a command past it reports `passed: false` with a
+  `check_error` that names the command. So does a `git` that refuses a
+  checkout it found, such as one another user owns or one with a bad
+  configuration line, which used to count as a repository with no commit.
+  This can turn a run that passed red: a folder whose `.git` entry git
+  cannot open, such as an empty `.git` folder outside any other checkout or
+  a `.git` file that names a folder that no longer exists, now fails these
+  checks, because the history they need may be there unread.
+  `agents-md-coverage-grep` exits `2` for either although its findings are
+  otherwise advisory, and its read of the whole history now gets 5 minutes,
+  so a large history is slow rather than a failure. A plain folder that is
+  not inside any git checkout, a repository with no commit yet, a partial
+  clone, where any failed history read counts as history that is not
+  available, or a machine without `git` still passes these checks.
+  `no-global-plans-grep` still fails, as before, outside a checkout git can
+  read or without `git`. The gate's advisory default still exits `0` on such
+  a result, and `--strict` exits `2`.
+
+- **The conformity gate's `--all` validators open and list only real files
+  inside the project they check.** A project that came from someone else, in
+  an archive or a shared folder, can hold symbolic links and, on Windows,
+  junctions that lead out of it. The shared tree walk entered junctions,
+  returned linked files and looked up the target of each symbolic link, so
+  `dynamism-grep` read a linked page outside the project, and a junction back
+  to a folder above it made the walk go round the tree until the path grew too
+  long. Most validators that look in fixed places, such as
+  `.github/workflows/`, `.apothem/plans/`, `src/apothem/rules/` or
+  `pyproject.toml`, read through links of either kind, and many opened
+  whatever sat at the path, so a named pipe there made the gate wait forever
+  and a link to `/dev/zero` made a read that never ended. Every `--all`
+  validator now opens and lists only regular files and real folders that it
+  reaches through real folders below the root, and never follows a link. A
+  link, a named pipe, a device, a socket, or on Windows a name ending in a dot
+  or a space, counts as missing. A few checks still use a link without
+  entering it: for a fixed file that is a symbolic link, such as a
+  `CLAUDE.md` that points at another file, the gate reads the link's text and
+  opens the named file only when it is a regular file inside the project (a
+  linked `.gitattributes` still counts as missing, because git does not read
+  it); `no-global-plans-grep` reports a plans folder or an `.apothem` folder
+  that is a link, by name; `no-toplevel-docs-grep` reports a root `docs` link;
+  and `naming-grep` checks a link's own name. Each report lists the links and
+  special files it left out under `skipped_links`, and a validator whose
+  folder is a link fails instead of passing as if the folder were not there
+  yet. The checks that run git read the `.git` folder through git itself;
+  see the next entry for when they do not run it.
+- **The checks that run git have a plain rule for links.** The three `--all`
+  validators that run git, and `--all-perwrite`, follow it. In `--all` and
+  `--all-perwrite`, the gate itself opens only regular files inside the root,
+  checking each folder on the way with `lstat`, including every path git
+  lists, and never reads inside a `.git` entry. Before they run git, they look
+  with `lstat` at the `.git` entry of the root and of every folder above it
+  that git searches, as the tree is at that moment; if any of them is a link,
+  or cannot be looked at, they do not run git. This also refuses projects git
+  would handle safely, such as every project below a home folder whose `.git`
+  is a link, even one with its own repository: that is the deliberate cost of
+  a simple rule. They run git without `GIT_DIR` and the other variables that
+  name the repository, its stores or its index. Which repository git then
+  reads is not checked: a `gitdir:` line, `commondir`, alternates,
+  `core.worktree`, an include, or a link inside the git folder can name
+  another one, and git follows them, so git can reach a network path or wait
+  until its time limit. The gate uses git's output only as names, modes,
+  status letters, the subject of the last commit, commit times and a few
+  settings, and never opens a path git prints without checking each level
+  inside the root. When they find a link, they list it under `skipped_links`
+  (by its full path when it lies above the root), `no-global-plans-grep`
+  reports it as a failing finding, and `--all-perwrite` lists no tracked files
+  and fails with a `check_error` that names it. A `.git` entry the gate cannot
+  look at (a path too long, a share it cannot reach, no access) is not a link
+  and is not listed under `skipped_links`: `conventional-commit-grep` fails
+  with the status `git-failed` and a `check_error`, the companion coverage
+  check and `--all-perwrite` fail with a `check_error` that says the entry
+  could not be looked at, and `no-global-plans-grep` reports it as a finding.
+- **The two `--staged` checks follow the same rule for a `.git` link, and a
+  skipped folder is always named.** `production-ready-pr-grep --staged` and
+  `semver-stability-grep --staged` ran git in the current folder without
+  looking at its `.git` entry, so a `.git` link there, or in a folder above it
+  that git searches, made them read another repository's staged names and
+  files. They now look first and fail with a `check_error` that names the link,
+  says the `.git` entry in the folder they run in is a link, or says the entry
+  could not be looked at, without running git; they still read the repository
+  a hook's `GIT_DIR` names, but a project whose own `.git` is a link now fails
+  them, even in a hook. `conventional-commit-grep` keeps
+  the status `not-a-git-repo` for a `.git` link but now gives a `check_error`
+  that names it. A folder whose `.git` entry is a link, a dangling one
+  included, was left out of every tree walk as a nested checkout with nothing
+  in the report; `skipped_links` now names that `.git` entry, in the walk and
+  in the stray-plans check of `no-global-plans-grep`. A plain `.git` file or
+  an empty `.git` folder, which git does not take for a repository, also hid
+  its folder from both; such a folder is now checked. `skipped_links` also
+  names a folder the walk cannot list (no access, a path too long, a read
+  error), where before it read as empty. Every folder a walk or the
+  stray-plans check skips as a nested checkout is now listed under a new
+  `skipped_checkouts` key, whatever its `.git` entry names, since one
+  `gitdir:` line can hide any folder; the list never changes the verdict.
+- **A file swapped for a link or a named pipe while the gate checks it is not
+  read through.** The `--all` validators checked each level of a path and
+  then opened the file by name, so someone writing to the project while the
+  gate ran could swap a checked file, or a folder above it, for a link out of
+  the project or for a named pipe: the read took the outside file's content
+  or waited until the time limit. `--all-perwrite` already refused a link in
+  the file's own place, but opened a file through a folder above it swapped
+  for a link. Every project file a validator reads is now opened one level
+  at a time from the root, each folder inside the one opened before it, and
+  no level through a link, and the read never waits on a pipe. A swapped
+  file is not read: an `--all` validator counts it as missing or unreadable,
+  as it counts a link, and lists its entry under `skipped_links`, and
+  `--all-perwrite` counts it as a `link` or `unreadable`. The `.git` file a
+  nested checkout holds is read the same way, from the root the walk started
+  at. A `.git` link to a regular file now counts as a repository without its
+  `gitdir:` line being read through the link. The five validators that read
+  a CI matrix or publish workflow, a workflow's concurrency settings, the
+  installer scripts or the Plans Discipline surfaces now report a file they
+  cannot read, for example for lack of permission, as a finding that names
+  the file unreadable, instead of stopping with a traceback. A hard link
+  still reads as an ordinary file, and on Windows a program that holds an
+  opportunistic lock on a file can still make a read wait, as it could
+  before.
 
 - **`apothem doctor --project` starts only hook commands that run Apothem's
   own code.** Doctor started any command in a project's hook files that named
