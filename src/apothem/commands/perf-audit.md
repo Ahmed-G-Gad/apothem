@@ -1,8 +1,8 @@
 ---
 name: "perf-audit"
 version: "0.1.0"
-updated: "2026-10-24"
-description: "Audits an Apothem installation's per-class budgets (hooks, ecosystem verification, conformity gate, tests, agents, shell, lint) with its benchmark drivers, ranking findings HIGH, MEDIUM or LOW. Use for 'audit Apothem performance budgets' or 'check the Apothem performance budgets' on an Apothem checkout. Measures only."
+updated: "2026-11-28"
+description: "Audits an Apothem installation's per-class budgets (hooks, ecosystem verification, conformity gate, tests, agents, shell, lint, install resolution) with its benchmark drivers, ranking findings HIGH, MEDIUM or LOW. Use for 'audit Apothem performance budgets' or 'check the Apothem performance budgets' on an Apothem checkout. Measures only."
 argument-hint: "[path/to/repo/] [--focus CLASS] [--dry-run]"
 disable-model-invocation: false
 portability: "universal"
@@ -79,7 +79,7 @@ Route through the structured-inquiry channel with the three-segment annotation (
 | Argument | Type | Required | Description |
 | -------- | ---- | -------- | ----------- |
 | `path/to/repo/` | Path | Yes | Root of an Apothem checkout. MUST contain `src/apothem/hooks/`, `src/apothem/benchmarks/`, `tests/`, and the hook bootstrap stubs at `src/apothem/hooks/lib/bootstrap.{sh,ps1}`. Any other repository has no budgets to measure: absence of `src/apothem/benchmarks/` ends the run as not applicable, with no findings, per the Refusal & Escalation stanza. |
-| `--focus CLASS` | Enum | No | Restrict the audit to one budget class from `{hooks, verify-ecosystem, conformity-gate, tests, agents, shell, lint}`. Default (omitted): every class. Useful for a focused re-measurement of one class post-remediation. |
+| `--focus CLASS` | Enum | No | Restrict the audit to one budget class from `{hooks, verify-ecosystem, conformity-gate, tests, agents, shell, lint, install}`. Default (omitted): every class. Useful for a focused re-measurement of one class post-remediation. |
 | `--dry-run` | Flag | No | Report what would be measured — no driver fires, no report emitted. Enumerates the per-class budget table, the benchmark-driver invocation forms that would fire, the focus-class scope, and the report-emission path without consuming benchmark runtime. |
 
 ---
