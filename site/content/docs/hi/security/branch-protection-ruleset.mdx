@@ -2,7 +2,7 @@
 title: "ब्रांच सुरक्षा"
 description: "main पर Apothem ब्रांच सुरक्षा: लाइव सुरक्षा नियम, उसके आवश्यक स्टेटस चेक, और जोड़े जाने के लिए लंबित चेक।"
 machineTranslated: true
-sourceHash: "a8e8cbd39d06d78f"
+sourceHash: "ba617c87452fda60"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -58,9 +58,11 @@ Require Signed-off-by
 
 | संदर्भ | वर्कफ़्लो और जॉब | यह हर पुल रिक्वेस्ट पर कैसे रिपोर्ट करता है |
 |---|---|---|
-| `quality / <os> / py<ver>` (10) | `ci.yml`, जॉब `quality` | `ci.yml` तब चलता है जब कोई पुल रिक्वेस्ट किसी कोड या कॉन्फ़िग पथ को छूता है। केवल-दस्तावेज़ पुल रिक्वेस्ट पर `ci-docs-stub.yml` वही संदर्भ रिपोर्ट करता है। |
+| `quality / <os> / py<ver>` (10) | `ci.yml`, `ubuntu-latest` के लिए जॉब `quality`; `windows-latest` के लिए जॉब `quality-windows` | `ci.yml` तब चलता है जब कोई पुल रिक्वेस्ट किसी कोड या कॉन्फ़िग पथ को छूता है। केवल-दस्तावेज़ पुल रिक्वेस्ट पर `ci-docs-stub.yml` वही संदर्भ रिपोर्ट करता है। |
 | `coverage` | `ci.yml`, जॉब `coverage` | `quality` के समान। |
 | `Require Signed-off-by` | `dco.yml`, जॉब `dco` | इसके पुल-रिक्वेस्ट ट्रिगर में कोई `paths` फ़िल्टर नहीं है, इसलिए यह `main` के हर पुल रिक्वेस्ट पर चलता है। |
+
+Windows पर, `quality` जॉब हर Python संस्करण के टेस्ट दो हिस्सों में चलाता है, सेल `quality / windows-latest / py<ver> / shard 1 of 2` और `shard 2 of 2` के रूप में। ये सेल आवश्यक नहीं हैं। `quality-windows` जॉब आवश्यक `quality / windows-latest / py<ver>` संदर्भ रिपोर्ट करता है, और हर संदर्भ तभी पास होता है जब हर `quality` सेल पास हुआ हो, इसलिए किसी भी सेल में विफलता पाँचों Windows संदर्भों को लाल कर देती है।
 
 `quality / ubuntu-latest / py3.15` प्रीरिलीज़ सेल `ci.yml` में `continue-on-error` के साथ चलता है और आवश्यक नहीं है। CodeQL, Scorecard और pip-audit सहित कोई भी अन्य वर्कफ़्लो स्टेटस रिपोर्ट कर सकता है, लेकिन उसका परिणाम मर्ज को तब तक गेट नहीं करता जब तक उसका संदर्भ इस सूची में न जोड़ा जाए।
 
