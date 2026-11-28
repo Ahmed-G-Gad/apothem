@@ -2,7 +2,7 @@
 title: "ブランチ保護"
 description: "main に対する Apothem のブランチ保護 — 現行の保護ルール、その必須ステータスチェック、追加予定のチェック。"
 machineTranslated: true
-sourceHash: "a8e8cbd39d06d78f"
+sourceHash: "ba617c87452fda60"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -58,9 +58,11 @@ Require Signed-off-by
 
 | コンテキスト | ワークフローとジョブ | すべてのプルリクエストで報告される仕組み |
 |---|---|---|
-| `quality / <os> / py<ver>`（10） | `ci.yml`、ジョブ `quality` | プルリクエストがコードまたは設定のパスに触れると、`ci.yml` が実行されます。ドキュメントのみのプルリクエストでは、`ci-docs-stub.yml` が同じコンテキストを報告します。 |
+| `quality / <os> / py<ver>`（10） | `ci.yml`、`ubuntu-latest` ではジョブ `quality`、`windows-latest` ではジョブ `quality-windows` | プルリクエストがコードまたは設定のパスに触れると、`ci.yml` が実行されます。ドキュメントのみのプルリクエストでは、`ci-docs-stub.yml` が同じコンテキストを報告します。 |
 | `coverage` | `ci.yml`、ジョブ `coverage` | `quality` と同じです。 |
 | `Require Signed-off-by` | `dco.yml`、ジョブ `dco` | そのプルリクエストトリガーには `paths` フィルターがないため、`main` へのすべてのプルリクエストで実行されます。 |
+
+Windows では、`quality` ジョブが Python の各バージョンのテストを 2 つに分けて、セル `quality / windows-latest / py<ver> / shard 1 of 2` と `shard 2 of 2` として実行します。これらのセルは必須ではありません。`quality-windows` ジョブが必須の `quality / windows-latest / py<ver>` コンテキストを報告し、各コンテキストはすべての `quality` セルが成功した場合にのみ成功するため、いずれかのセルが失敗すると Windows の 5 つのコンテキストすべてが赤になります。
 
 プレリリースのセル `quality / ubuntu-latest / py3.15` は、`continue-on-error` 付きで `ci.yml` 内で実行され、必須ではありません。CodeQL、Scorecard、pip-audit を含むその他のワークフローはステータスを報告することがありますが、そのコンテキストがこのリストに追加されない限り、その結果がマージをゲートすることはありません。
 

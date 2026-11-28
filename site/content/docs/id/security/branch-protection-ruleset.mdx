@@ -2,7 +2,7 @@
 title: "Proteksi branch"
 description: "Proteksi branch Apothem pada main: aturan proteksi yang aktif, pemeriksaan status wajibnya, dan pemeriksaan yang menunggu untuk ditambahkan."
 machineTranslated: true
-sourceHash: "a8e8cbd39d06d78f"
+sourceHash: "ba617c87452fda60"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -58,9 +58,11 @@ Require Signed-off-by
 
 | Konteks | Alur kerja dan job | Cara konteks melapor pada setiap pull request |
 |---|---|---|
-| `quality / <os> / py<ver>` (10) | `ci.yml`, job `quality` | `ci.yml` berjalan ketika pull request menyentuh jalur kode atau konfigurasi. `ci-docs-stub.yml` melaporkan konteks yang sama pada pull request yang hanya berisi dokumentasi. |
+| `quality / <os> / py<ver>` (10) | `ci.yml`, job `quality` untuk `ubuntu-latest`; job `quality-windows` untuk `windows-latest` | `ci.yml` berjalan ketika pull request menyentuh jalur kode atau konfigurasi. `ci-docs-stub.yml` melaporkan konteks yang sama pada pull request yang hanya berisi dokumentasi. |
 | `coverage` | `ci.yml`, job `coverage` | Sama seperti `quality`. |
 | `Require Signed-off-by` | `dco.yml`, job `dco` | Pemicu pull request-nya tidak memiliki filter `paths`, sehingga berjalan pada setiap pull request ke `main`. |
+
+Di Windows, job `quality` menjalankan pengujian untuk setiap versi Python dalam dua bagian, sebagai sel `quality / windows-latest / py<ver> / shard 1 of 2` dan `shard 2 of 2`. Sel-sel tersebut tidak diwajibkan. Job `quality-windows` melaporkan konteks wajib `quality / windows-latest / py<ver>`, dan masing-masing hanya lulus ketika setiap sel `quality` lulus, sehingga kegagalan di sel mana pun membuat kelima konteks Windows menjadi merah.
 
 Sel prarilis `quality / ubuntu-latest / py3.15` berjalan di `ci.yml` dengan `continue-on-error` dan tidak diwajibkan. Alur kerja lain mana pun, termasuk CodeQL, Scorecard, dan pip-audit, boleh melaporkan status, tetapi hasilnya tidak menggerbang merge kecuali konteksnya ditambahkan ke daftar ini.
 
