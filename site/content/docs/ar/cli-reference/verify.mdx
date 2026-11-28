@@ -2,7 +2,7 @@
 title: "verify"
 description: "مرجع واجهة سطر الأوامر لأمر apothem verify."
 machineTranslated: true
-sourceHash: "9147e25d2829a90c"
+sourceHash: "7e26b019bbe8ca71"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,7 +21,45 @@ apothem verify --harness NAME|all [--profile PATH] [--project PATH]
 يكون الفحص **بنيويًا** — يجب أن يكون كل هدف مُدار موجودًا وصالحًا. ومع
 <bdi>`--profile`</bdi> يشترط الفحص إضافةً إلى ذلك **الأمانة للملف التعريفي**، فيُخفق
 التحقّق من تثبيتٍ موجود لكنه منحرف، مجيبًا عن السؤال «هل هذا الملف التعريفي بعينه
-مثبّت بأمانة؟» لا عن مجرّد «هل هو موجود؟».
+مثبّت بأمانة؟» لا عن مجرّد «هل هو موجود؟». ولا تُحتسَب نهايات
+الأسطر، فالملف المحفوظ بنهايات <bdi>CRLF</bdi> أو <bdi>CR</bdi> يجتاز أيضًا.
+وفي الحالتين، يُخفق التحقّق من ملف يحتفظ فيه <bdi>Apothem</bdi> بكتلة مُدارة ما دام
+يحمل علامة <bdi>BEGIN</bdi> لا تبدأ أي كتلة كاملة، مثل علامة فُقدت علامة <bdi>END</bdi>
+الخاصة بها (انظر
+[استكشاف الأخطاء وإصلاحها](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker))،
+أو كتلتين كاملتين أو أكثر بين علامات <bdi>Apothem</bdi> (انظر
+[ملف يحمل كتلتين بين علامات <bdi>Apothem</bdi>](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers))،
+أو لا كتلة كاملة بل أزواج علامات لا يستطيع <bdi>Apothem</bdi> تمييزها من نصّك، مثل
+وجود كتلته داخل كتلة شيفرة من كتلك (انظر
+[يتعذّر على <bdi>Apothem</bdi> تمييز كتلته من نصّك](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+ويُبقي التحديث مثل هذه العلامة، أو يترك مثل هذا الملف كما هو، ولذا فإن تشغيل
+<bdi>`apothem update`</bdi> لا يُزيل الإخفاق.
+والملفات المفحوصة هي تلك التي يكتب تثبيت إطار العمل كتلةً فيها،
+وتلك التي تسردها سجلّات تثبيته منذ آخر إلغاء تثبيت اكتمل، ومنها
+ملف القواعد في مساحة عمل <bdi>OpenClaw</bdi> لم يعد التثبيت يستخدمها. أما
+العلامة في ملف خاص بك، مثل ملف ملاحظات مشروع، فلا تُخفِق
+التحقّق. ومن دون سجلّ تثبيت، لا يُفحَص <bdi>`CLAUDE.md`</bdi> ولا مستند الملف التعريفي:
+إذ لا يُظهر أن التثبيت كتبهما إلا السجلّ. ويظلّ تحقّق <bdi>OpenClaw</bdi>
+يُخفق، دون تسمية الملف، حين يحمل ملف القواعد في مساحة عمل يجدها
+لا كتلة كاملة أو علامة <bdi>BEGIN</bdi> لا تبدأ أيًّا منها.
+ويسمّي الصف الفاشل كل ملف كهذا
+ويذكر ما يجب إصلاحه: سطر العلامة الشاردة، مع خطوات مرقّمة تغيّر
+ذلك السطر وكل سطر علامة <bdi>BEGIN</bdi> آخر عدا الذي يفتح كتلة <bdi>Apothem</bdi>،
+ومنها علامة <bdi>BEGIN</bdi> تقتبسها في الشيفرة، لكل ملف على حدة (وتقول الملاحظة أيضًا ألّا تعيد إضافة علامة
+<bdi>END</bdi> بدلًا من ذلك، لأن ذلك سيترك كتلتين لـ<bdi>Apothem</bdi> بعد أن يكون تثبيت أو
+تحديث قد كتب كتلة <bdi>Apothem</bdi> منفصلةً عنها)؛ أو كل كتلة كاملة، بأسطرها؛
+أو،
+لأزواج العلامات التي
+لا يستطيع <bdi>Apothem</bdi> تمييزها من نصّك، أسطر كل زوج، وكيف تُقرأ
+وكيف تُصلَح، مع كل علامة <bdi>BEGIN</bdi> لا تبدأ أي زوج علامات.
+وبالنسبة إلى ملف قواعد <bdi>OpenClaw</bdi>، الذي لا يكتب فيه التحديث إلا ما دام ضمن
+حدّ <bdi>OpenClaw</bdi> لكل ملف، تقول الملاحظة إن التحديث التالي يكتب كتلة
+<bdi>Apothem</bdi> إذا صار الملف حينها ضمن ذلك الحدّ، ويُحتسَب ضمنه نصّ
+<bdi>Apothem</bdi> القديم الذي تُبقيه (انظر
+[<bdi>Open-Claw</bdi>](/docs/harnesses/open-claw#rules-in-each-workspace)).
+وفي الوضع العادي يلي الصفَّ سطرُ <bdi>`Note:`</bdi>،
+ويُسقِط الصف حينها المسار المتوقّع، ويكتسب صف <bdi>JSON</bdi> كائن <bdi>`stray_begin`</bdi>
+يحمل <bdi>`files`</bdi> و<bdi>`message`</bdi>.
 
 بالنسبة إلى المحوّل الذي يكتب المهارات إلى دليلك المنزلي، يتحقّق <bdi>verify</bdi>
 أيضًا من أن كل مجلّد مهارة يتوقّعه موجود ومعه <bdi>`SKILL.md`</bdi>، أيًّا كان التثبيت
@@ -29,10 +67,40 @@ apothem verify --harness NAME|all [--profile PATH] [--project PATH]
 تتشارك مجلّدًا. ويُخفق حين يكون مجلّد مفقودًا، وحين يعود مجلّد يحمل اسم مهارة من
 <bdi>Apothem</bdi> إلى شيء لم يكتبه <bdi>Apothem</bdi>. ويذكر الصف الفاشل أيّهما:
 في الوضع العادي يليه سطر <bdi>`Note:`</bdi>، وفي صف <bdi>JSON</bdi> يسرد كائن
-<bdi>`user_level`</bdi> المسارات <bdi>`missing`</bdi> و<bdi>`unlisted`</bdi>
+<bdi>`user_level`</bdi> المسارات <bdi>`missing`</bdi> و<bdi>`unlisted`</bdi> و<bdi>`unproven`</bdi>
 ورسالة <bdi>`message`</bdi>. شغّل [<bdi>`install`</bdi>](/docs/cli-reference/install)
 لاستعادة مجلّد مفقود؛ وأعد تسمية المجلّد الغريب أو انقله، ثم شغّل
-[<bdi>`update`</bdi>](/docs/cli-reference/update).
+[<bdi>`update`</bdi>](/docs/cli-reference/update). والمجلّد
+<bdi>`unproven`</bdi> هو مجلّد لا يستطيع <bdi>Apothem</bdi> إثبات أنه كتبه. فالتثبيتات التي
+سردته موجودة في مجلّدات زالت، أو لا تحمل ملفات <bdi>Apothem</bdi>، أو تتعذّر
+قراءتها، أو أنها لم تعد تسرده. وهو لا يحمل بالضبط الملفات التي
+سجّلتها (انظر [<bdi>`install`</bdi>](/docs/cli-reference/install)). فإمّا أنك أنشأته أو عدّلته،
+أو أن إصدارًا سابقًا كتبه دون تسجيل ملفاته. وتسمّي الملاحظة
+كلًّا منها وتعطي الطريقين اللذين يعرضهما تحذير التثبيت. للإبقاء عليه، اتركه
+في مكانه. ولاستخدام نسخة <bdi>Apothem</bdi>، انقله خارج مجلّد المهارات، ثم
+شغّل <bdi>`update`</bdi> لإطار العمل ذاك؛ وبالنسبة إلى إطار عمل ذي نطاق المشروع تذكر الملاحظة
+<bdi>`--project`</bdi>، مقتبسًا للصدفة كما يقتبسه <bdi>doctor</bdi>، أو بالكلمات. والمجلّد
+الذي يحمل أصلًا ما يكتبه هذا الإصدار لا يُسمّى أبدًا، لأن
+التثبيت يُبقيه. ولا يبحث <bdi>verify</bdi> عن المجلّدات غير المُثبَتة وغير المسرودة إلا لإطار
+عمل مُثبَّت، ولذا لا يسمّيها <bdi>`verify --harness all`</bdi> إلا تحت
+أُطُر العمل المُثبَّتة.
+
+يمكن أن تلي الصفَّ، سواء تُحقِّق منه أم لا، ملاحظةٌ. فعندما يكون ما كتبه <bdi>Apothem</bdi>
+في مكانه لكن ملفًا من ملفاتك يمنع الأداة من تحميله، يسمّي سطر <bdi>`Note:`</bdi>
+ذلك الملف ويكتسب <bdi>`warnings`</bdi> في غلاف <bdi>JSON</bdi> مُدخلًا يحمل
+<bdi>`"operation": "instruction_override"`</bdi> (موصوفًا تحت
+[<bdi>`install`</bdi>](/docs/cli-reference/install)). ومن هذه الملفات
+<bdi>`AGENTS.override.md`</bdi> يحمل نصًّا إلى جانب <bdi>`AGENTS.md`</bdi> الذي
+[تحمّله أداة مدعومة](/docs/harnesses/codex#compatibility-notes) من مجلّدها
+المنزلي. ومنها أيضًا ملفات
+[تحمّلها <bdi>OpenCode 1</bdi>](/docs/harnesses/opencode#compatibility-notes) من مجلّد
+إعداداتها: ملف <bdi>`opencode.jsonc`</bdi> بقائمة <bdi>`instructions`</bdi> خاصة به، و
+ملف <bdi>`config.json`</bdi> أو <bdi>`opencode.json`</bdi> أو <bdi>`opencode.jsonc`</bdi> لا تستطيع <bdi>OpenCode 1</bdi>
+تحميله أصلًا. ولا تُخفِق الملاحظة الفحص. ولا تظهر ملاحظة حين لا تكون
+كتلة <bdi>Apothem</bdi> في ملف <bdi>`AGENTS.md`</bdi> ذاك، أو حين لا يسرد <bdi>`opencode.json`</bdi>
+أي مُدخل كتبه التثبيت؛ أما ملاحظة ملف <bdi>`opencode.json`</bdi> الذي لا تستطيع <bdi>OpenCode 1</bdi>
+تحميله فلا تحتاج إلا إلى أن يحمل مستند الملف التعريفي الذي يكتبه التثبيت
+كتلة <bdi>Apothem</bdi>.
 
 يحترم المسح بـ <bdi>`--harness all`</bdi> قائمة <bdi>`exclude_harnesses`</bdi> في
 الملف التعريفي — وهي الاستثناءات نفسها التي طبّقتها دفعة

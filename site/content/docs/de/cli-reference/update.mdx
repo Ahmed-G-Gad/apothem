@@ -2,7 +2,7 @@
 title: "update"
 description: "CLI-Referenz für den Befehl apothem update."
 machineTranslated: true
-sourceHash: "0f47915f4f7819de"
+sourceHash: "7e96f7b81b7e328d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,7 +21,86 @@ apothem update --harness NAME|all [--profile PATH] [--dry-run]
 `update` materialisiert die Harness-Ausgabe aus dem aktuellen gemeinsamen Profil
 neu. Der Befehl verwendet dieselbe Profilvalidierung, dieselbe Auswahl mit
 `--harness all`, dieselbe Prüfung des Projekt-Geltungsbereichs, dasselbe
-Dry-Run-Verhalten und denselben JSON-Umschlag wie `install`.
+Dry-Run-Verhalten und denselben JSON-Umschlag wie `install` und gibt dieselben
+Empfehlungshinweise aus, einschließlich des Hinweises `instruction_override`,
+wenn eine Datei von Ihnen ein Werkzeug daran hindert, das zu laden, was Apothem
+schreibt (siehe [`install`](/docs/cli-reference/install)). Wie `install`
+zeichnet er den aufgelösten `--project`-Ordner auf und verschiebt eine
+Installation, die unter einer anderen Schreibweise dieses Ordners aufgezeichnet
+ist, auf diese. Er warnt außerdem vor einer Datei, die einen BEGIN-Marker ohne
+nachfolgenden END-Marker enthält: Der Text nach diesem Marker bleibt, wie er
+ist, und der Block von Apothem wird getrennt davon geschrieben, daher nennt die
+Warnung die Zeile des Markers, gibt einen nummerierten Schritt, der diese Zeile
+ändert, und sagt, den END-Marker nicht stattdessen wieder hinzuzufügen, was
+dann zwei Apothem-Blöcke hinterließe (siehe
+[Fehlerbehebung](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
+Eine Datei, die zwei oder mehr vollständige Blöcke zwischen den Markern von
+Apothem enthält, bleibt unverändert, mit einer Warnung, die jeden Block mit
+seinen Zeilen nennt (siehe
+[Eine Datei enthält zwei Blöcke zwischen den Markern von Apothem](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)).
+Eine Datei, in der Apothem seinen Block nicht von Ihrem Text unterscheiden
+kann, etwa wenn sein Block in einem Codeblock von Ihnen steht, bleibt
+unverändert, solange ein Installationsdatensatz sie auflistet (ein
+Installations-Ledger, der nicht gelesen werden kann, zählt als solcher; ein
+Datensatz unter einer anderen Schreibweise des Ordners, etwa Ihr
+Home-Verzeichnis, über einen Link erreicht, zählt ebenfalls, wie bei der
+Deinstallation, wenn die Schreibweise, unter der Sie ausführen, noch eine
+eigene Installation hat und das Werkzeug die
+[gemeinsamen Ordner in Ihrem Home-Verzeichnis](/docs/cli-reference/install#folders-in-your-home-directory)
+schreibt), mit einer Warnung, die jedes Markerpaar darin und dessen Behebung
+nennt (siehe
+[Apothem kann seinen Block nicht von Ihrem Text unterscheiden](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+Das gilt auch neben einem BEGIN-Marker, der kein Markerpaar beginnt, etwa dem,
+was vom Block von Apothem übrig ist, nachdem sein END-Marker verloren ging: Die
+Warnung nennt diesen BEGIN-Marker zuerst, und jede nummerierte Behebung in der
+Warnung ändert ihn. Ohne Installationsdatensatz ist ein Markerpaar, das Sie in
+Code zitieren, Ihr Text, und die Aktualisierung fügt ihren Block danach ein, mit
+oder ohne einen solchen BEGIN-Marker, es sei denn, das Paar enthält genau den
+Block, den die Aktualisierung schreibt: Dann lässt sie die Datei unverändert,
+mit der Warnung. Eine Datei, in der ein BEGIN-Marker außerhalb von Code seinen
+END-Marker in Code hat, mit einem weiteren Markerpaar danach, bleibt mit der
+Warnung unverändert, ob mit oder ohne Datensatz. Eine Regel in Ihrem Profil, die
+einen Codeblock öffnet und nie schließt, verursacht das für den Block, den die
+Aktualisierung schreibt, nicht: Die Aktualisierung schließt diesen Codeblock am
+Ende des Blocks. Ein Block, den ein früheres Release aus einer solchen Regel
+geschrieben hat, hat keine solche schließende Zeile und kann es daher
+verursachen. Ein Codeblock von Ihnen, der oberhalb des Blocks von Apothem öffnet
+und nie schließt, ist ein anderer Fall: Eine schließende Zeile im Block schließt
+ihn, sodass der Block als Code gelesen wird, und die Aktualisierung, die einen
+solchen Block schreibt, warnt sofort und nennt den Codeblock, der oberhalb des
+BEGIN-Markers zu schließen ist. Ein Dry-Run liest die Datei, bevor etwas
+geschrieben wird, und zeigt daher nicht, dass der Block nach dem Schreiben als
+Code gelesen würde. In einem Dry-Run sagt die Warnung für eine unverändert
+gelassene Datei, dass Apothem "would leave the file as it is".
+
+Eine Aktualisierung, die eine Datei wegen ihrer Markerzeilen unverändert lässt
+(zwei oder mehr vollständige Blöcke oder Markerpaare, die Apothem nicht zuordnen
+kann), endet als teilweise, wie eine Installation: Das Werkzeug erhält aus
+dieser Datei keinen aktuellen Apothem-Block, daher gibt sie statt der `✓`-Zeile
+auf der Standardfehlerausgabe eine `✗`-Zeile aus, die die Datei nennt, der
+`status` des `--format json`-Umschlags ist `"partial"`, die Warnung zu dieser
+Datei trägt `"detail": {"left_as_is": "1"}`, und der Exit-Code ist `2`. Jede
+Aktualisierung endet so, bis Sie die Markerzeilen korrigieren, die die Warnung
+nennt; ein Marker-Beispiel von Ihnen in einem Codeblock hält eine solche Datei
+ebenfalls zurück, bis Sie seine BEGIN-Markerzeile ändern. Ohne `--quiet` endet
+eine solche Aktualisierung mit `--harness all` mit einer Zusammenfassungszeile,
+die statt mit `✓` mit `!` beginnt und die unverändert gelassenen Dateien zählt:
+`! Updated <n> harnesses (<m> files written); <k> file(s) left as they are, named above.`
+Ein Dry-Run endet weiterhin mit `status` `"dry_run"` und Exit-Code `0`.
+
+In jedem Ordner, in den Apothem schreibt (ein Skills-Ordner, die
+Unterstützungsdateien unter `.apothem/support/`), vergleicht `update` jeden
+Eintrag, den er schreibt. Ein Dateieintrag wird neu geschrieben, wenn er
+abweicht. Ein Ordnereintrag (ein Skill, der Skill-Ordner eines Befehls oder ein
+Ordner innerhalb der Unterstützungsdateien wie `hooks/lib/`) wird als Ganzes
+ersetzt, wenn irgendetwas darin von dem abweicht, was dieses Release dort
+schreibt: Die Aktualisierung sichert ihn zuerst unter `~/.apothem/backups/`,
+daher ist eine Datei, die Sie darin hinzugefügt haben, oder eine Apothem-Datei,
+die Sie bearbeitet haben, danach nicht mehr darin. Kopieren Sie eine solche
+Datei aus dem Backup-Satz, oder verschieben Sie sie vor der Aktualisierung
+heraus. Eine Datei von Ihnen direkt in einem Ordner, in den Apothem schreibt
+(etwa `.apothem/support/hooks/mine.py`), und Ihre eigenen Ordner neben denen
+von Apothem werden nicht angetastet.
 
 Für die Adapter mit Projekt-Geltungsbereich, die Skills in Ihr Home-Verzeichnis
 schreiben (siehe
@@ -29,7 +108,8 @@ schreiben (siehe
 bringt `update` auch diese Ordner auf den aktuellen Stand und gibt denselben
 `Note:` aus, der sie benennt. Ein Adapter, der installiert wurde, bevor er Skills
 schrieb, erhält sie bei seiner nächsten Aktualisierung. Ein Skill-Ordner, den
-Apothem nicht geschrieben hat, wird mit einer Warnung übersprungen, wie bei
+Apothem nicht geschrieben hat oder bei dem es nicht nachweisen kann, dass es ihn
+geschrieben hat, wird mit einer Warnung übersprungen, die die Behebung nennt, wie bei
 [`install`](/docs/cli-reference/install#folders-in-your-home-directory).
 Eine Installation, die den gemeinsamen Skills-Ordner früher geschrieben hat, wird
 bei ihrer nächsten Aktualisierung in die Form umgeschrieben, die alle
@@ -72,7 +152,9 @@ akzeptiert) wird auf denselben Handler aufgelöst.
 }
 ```
 
-`--dry-run` gibt `status: "dry_run"` und `files_written: []` zurück.
+`--dry-run` gibt `status: "dry_run"` und `files_written: []` zurück. Eine
+Aktualisierung, die eine Datei wegen ihrer Apothem-Markerzeilen unverändert
+gelassen hat, gibt `status: "partial"` zurück und beendet sich mit Code `2`.
 
 ## Beispiele
 
@@ -90,7 +172,7 @@ apothem updating --harness claude-code   # lowercase variant
 |---|---|
 | 0 | Adapter erfolgreich aktualisiert oder Dry-Run sauber geplant |
 | 1 | Erwarteter Validierungs-, Profil-, Harness-, Projekt- oder Adapterfehler |
-| 2 | Teilweise Batch-Materialisierung nach mindestens einem Schreibvorgang |
+| 2 | Teilweise: Ein Batch hat nach mindestens einem Schreibvorgang angehalten, oder die Aktualisierung hat eine Datei, in der Apothem seinen Block hält, wegen ihrer Apothem-Markerzeilen unverändert gelassen; `status` ist `"partial"` |
 | 64 | Verwendungsfehler: eine unbekannte Option oder ein unbekannter Befehl oder ein fehlender oder ungültiger Optionswert. Unter `--json` ist der Fehler ein JSON-Umschlag mit dem Code `cli.usage`. |
 
 ## Siehe auch

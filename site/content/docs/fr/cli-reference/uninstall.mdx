@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "Référence de la CLI pour la commande apothem uninstall."
 machineTranslated: true
-sourceHash: "85553b3611d8d842"
+sourceHash: "774c779bd9ded4af"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,21 +20,203 @@ Supprime les cibles de l'environnement gérées par l'adaptateur, puis les
 répertoires que l'installation a créés, une fois qu'ils sont vides (un
 répertoire contenant quoi que ce soit qui vous appartient est conservé).
 
+## Ce que supprime une désinstallation
+
+Une installation enregistre le SHA-256 de chaque fichier qu'elle copie en place
+(skills, commandes, règles, etc.)
+dans le journal d'installation (`~/.apothem/state/<harness>/ledger.jsonl`). Une
+désinstallation ne supprime un tel fichier que tant qu'il a encore ce contenu,
+puis chaque dossier qui ne contient plus rien, y compris un dossier vide que
+vous avez créé dans un dossier Apothem. Tout le reste est conservé et reçoit une
+ligne `Warning:` : un fichier que vous avez ajouté à un dossier Apothem, un
+fichier Apothem que vous avez modifié, un fichier à vous qui porte un nom
+Apothem, et un chemin que l'enregistrement d'installation ne liste pas. Un
+fichier que vous conservez conserve son dossier.
+
+Une installation enregistrée par une version antérieure n'indique pas quels
+fichiers Apothem a écrits. Pour elle, la désinstallation compare chaque fichier
+avec ce que cette version écrit à ce chemin et supprime ceux qui ont les mêmes
+octets. Deux emplacements contiennent l'interpréteur Python que l'installation
+a trouvé : la commande de la statusline et un commentaire dans le portail de
+conformité. Un tel emplacement n'est considéré comme identique que lorsqu'il
+contient `py -3`, le seul lanceur qu'une version antérieure y écrivait, ou le
+chemin complet d'un fichier d'interpréteur présent sur cette machine, et rien
+d'autre. Un chemin à cet endroit qui contient `&`, `#` ou `$` (un nom
+d'utilisateur Windows tel que `R&D`), ou qui ne désigne aucun fichier ici,
+n'est jamais considéré comme identique : ce fichier est donc conservé. Un
+chemin vers un interpréteur que vous avez depuis mis à niveau ou supprimé ne
+désigne pas non plus de fichier ici, et ce fichier est donc conservé lui
+aussi : exécutez `apothem update`, puis désinstallez à nouveau. Les entrées de
+hook d'Apothem dans un fichier de paramètres ou de hooks ne sont pas comparées
+de cette façon : elles sont reconnues au script de répartition qu'elles
+exécutent, quel que soit l'interpréteur qui le précède, et supprimées après la
+sauvegarde du fichier.
+
+Un fichier portant un nom qu'Apothem écrit et qui diffère (écrit par cette
+version antérieure, ou modifié par vous) est conservé, et la désinstallation
+n'aboutit pas : elle affiche `✗ <harness> uninstall did not finish:` avec le
+nombre de tels chemins (un dossier compte une fois, et ses fichiers sont listés
+sous sa ligne `Warning:`) et se termine avec le code `2`. Il en va de même pour
+un chemin que cette version antérieure a enregistré et que la version actuelle n'écrit plus,
+puisqu'il n'y a rien avec quoi le comparer. Une installation sans aucun
+enregistrement (son journal a été supprimé) se termine de la même façon, car
+rien n'indique lesquels de ses fichiers Apothem a écrits ; chaque chemin
+qu'elle conserve hors d'un lien est listé sous une seule ligne `Warning:`, y
+compris les fichiers que vous avez ajoutés, puisque rien ne permet de les
+distinguer. Les dossiers partagés de votre répertoire personnel sont eux aussi
+conservés pour elle. Certaines parties sont tout de même supprimées : les
+lignes d'Apothem dans un fichier partagé tel qu'un fichier de règles ou
+`hooks.json` (un fichier qui ne contient plus rien d'autre est supprimé aussi ;
+un fichier dont le bloc a perdu son marqueur END reste tel quel, voir
+[Une désinstallation qui n'a pas abouti](#une-désinstallation-qui-na-pas-abouti)),
+les magasins de mémoire, de contextes et d'apprentissage du dossier de données
+(sauvegardés d'abord ; ils contiennent vos données, pas seulement celles
+d'Apothem) et, pour certains environnements, des dossiers d'une ancienne
+disposition que l'environnement liste comme obsolètes. Après la ligne `✗`, une
+ligne `Note:
+<harness> - no install record matched` nomme les dossiers partagés qu'elle a
+laissés et ce qu'elle a tout de même supprimé. Pour un environnement à portée
+de projet, elle indique aussi de vérifier que `--project` désigne le dossier
+dans lequel vous avez installé avant d'exécuter `apothem update`, puisqu'une
+mise à jour dans un autre dossier installe à cet endroit ; le dossier est cité
+entre guillemets comme dans les autres commandes affichées, ou nommé tel quel
+lorsque ces guillemets ne peuvent pas le porter, dans les mêmes cas que la
+ligne `Warning:` des magasins de données ci-dessous. Lorsqu'un avertissement
+nomme un fichier pour un marqueur Apothem que la désinstallation a laissé (un
+marqueur BEGIN sans END après lui, deux blocs différents entre les marqueurs
+d'Apothem, ou des paires de marqueurs qu'Apothem ne peut pas situer), la ligne
+`✗` indique de corriger ce fichier avant la mise à jour, avec le conseil
+propre à ce type de marqueur (voir
+[Une désinstallation qui n'a pas abouti](#une-désinstallation-qui-na-pas-abouti)) ;
+pour un environnement à portée de projet, la ligne `Note:` l'indique aussi.
+Seul `CLAUDE.md` ou un document de profil qui contient deux blocs différents
+est omis de cette ligne (voir ci-dessous). La
+ligne `Note:` est également affichée sous `--quiet`, sur le flux d'erreur. Dans
+la sortie `--format json`, la ligne `uninstall` de l'environnement a
+`"outcome": "error"`, porte cette note dans son message et a
+`"detail": {"kept_reason": "no-record"}`.
+`apothem update` écrit les fichiers de cette version et les enregistre : l'exécuter
+puis relancer `apothem uninstall` termine donc le travail. Avant cela, copiez
+tout fichier listé que vous avez modifié ou ajouté : la mise à jour écrase les
+chemins qu'elle écrit et remplace en entier chaque entrée de dossier Apothem
+qu'elle écrit (elle sauvegarde d'abord les deux, sous `~/.apothem/backups/`,
+mais rien ne les remet en place). Corrigez d'abord aussi tout fichier qu'un
+avertissement nomme pour un marqueur Apothem (voir
+[Une désinstallation qui n'a pas abouti](#une-désinstallation-qui-na-pas-abouti)).
+Pour une installation enregistrée par une version antérieure, un fichier situé
+dans un dossier Apothem sous un nom qu'Apothem n'écrit jamais vous appartient :
+il est listé sous la ligne `Warning:` des fichiers modifiés ou qui vous
+appartiennent, il est conservé, et la désinstallation aboutit tout de même.
+
+Lorsque le dernier enregistrement à cet emplacement est une désinstallation qui
+a abouti (et qu'une installation postérieure s'est arrêtée avant de pouvoir
+s'enregistrer, par exemple), la désinstallation compare chaque chemin avec ce
+que cette version écrit, à l'exception des dossiers partagés de votre
+répertoire personnel : ceux-ci restent tels quels, comme en l'absence
+d'enregistrement (voir
+[Dossiers partagés dans votre répertoire personnel](#dossiers-partagés-dans-votre-répertoire-personnel)).
+Elle ne supprime un fichier que lorsqu'il a exactement les mêmes octets, et
+elle supprime un dossier qui ne contient aucun fichier. Rien à cet endroit
+n'indique quel interpréteur cette installation a trouvé : un fichier qui
+contient le chemin d'un interpréteur (la commande de la statusline, le
+commentaire dans le portail de conformité) n'est donc jamais considéré comme
+identique et est conservé. Tant que le portail reste en place, l'environnement
+apparaît toujours comme installé : vérifiez donc ce fichier et supprimez-le à
+la main. Tout le reste est conservé aussi (un fichier à vous, un fichier
+Apothem que vous avez modifié, un cache écrit par un autre programme) et reçoit
+une ligne `Warning:`, et la désinstallation aboutit. Un fichier laissé dans un
+dossier dont les autres fichiers ont été supprimés est listé sous la ligne des
+fichiers modifiés ou qui vous appartiennent ; tout autre chemin est listé sous
+une ligne indiquant qu'aucun enregistrement d'installation ne le liste, qu'il
+ne correspond pas à ce que cette version écrit et que vous pouvez le supprimer
+à la main si vous n'en voulez plus. Un
+fichier ayant exactement les mêmes octets derrière un lien arrête la
+désinstallation, comme le font les propres fichiers d'Apothem derrière un lien
+pour une installation enregistrée (voir ci-dessous). Si une telle
+désinstallation n'aboutit pas (un fichier qu'elle n'a pas pu supprimer, par
+exemple), l'environnement apparaît toujours comme installé, et relancer la
+désinstallation fonctionne de la même façon, y compris après une installation
+qui a échoué et annulé ses propres modifications. Après un rollback, ou après
+uniquement des désinstallations qui n'ont pas abouti, un tel chemin arrête la
+désinstallation comme lorsqu'il n'y a aucun enregistrement.
+
+Lorsqu'aucune installation n'est enregistrée à cet emplacement, comme dans les
+cas ci-dessus, la désinstallation laisse aussi le bloc géré d'Apothem là où il
+se trouve : dans `~/.claude/CLAUDE.md` pour Claude Code, et dans le document de
+profil `apothem/rules/00-apothem-profile.md` du dossier d'un outil configuré
+par un seul fichier de paramètres, tel qu'Open-Claw, OpenCode ou Qwen Code.
+Rien n'indique quelle installation a écrit ce bloc : le fichier reste donc tel
+quel, et une ligne `Warning:` le nomme ; l'avertissement n'arrête pas la
+désinstallation. Si vous ne voulez plus du bloc (Claude Code lit toujours
+`CLAUDE.md`), retirez-le à la main avec la correction numérotée que donne
+l'avertissement, par exemple « Fix A: A1. Change line 5: add a word inside its
+comment. Apothem then finds no block of its own in this file. » (voir
+[Suivre une correction numérotée](/docs/install/troubleshooting#follow-a-numbered-fix)).
+L'avertissement désigne le bloc par ses lignes, et la correction modifie sur
+place sa ligne de marqueur BEGIN, de sorte qu'aucune ligne à vous ne se lit
+différemment ; l'ancien texte Apothem situé en dessous, jusqu'à sa ligne de
+marqueur END, est alors à vous de le supprimer à la main. Un marqueur BEGIN à
+vous au-dessus du bloc, ou un marqueur d'une paire que vous citez, ne fait pas
+partie du bloc : la correction modifie aussi chacune de ces lignes, puisqu'elle
+se lirait sinon comme appartenant à Apothem une fois le bloc retiré. Lorsque ce
+fichier contient deux blocs différents entre les marqueurs d'Apothem (une paire
+de marqueurs à vous hors du code, par exemple), supprimer du premier marqueur
+BEGIN au marqueur END suivant emporterait du texte à vous : l'avertissement
+donne donc pour un tel fichier un autre texte (voir
+[Une désinstallation qui n'a pas abouti](#une-désinstallation-qui-na-pas-abouti)) :
+il désigne chaque bloc par ses lignes, ou le bloc d'Apothem et les lignes de
+marqueur qui l'entourent, et indique comment corriger le fichier en conservant
+votre propre texte. Lorsqu'il désigne le bloc d'Apothem et les lignes de
+marqueur qui l'entourent, il indique ensuite de supprimer à la main le bloc
+d'Apothem si vous n'en voulez plus. Lorsqu'il désigne deux blocs entiers ou
+plus, il indique plutôt d'exécuter `apothem update`, puis à nouveau
+`apothem uninstall` : un marqueur BEGIN à vous au-dessus du bloc d'Apothem et un
+marqueur END en dessous, que ce texte ne nomme pas, formeraient un seul bloc
+une fois le bloc d'Apothem supprimé à la main, et la mise à jour suivante
+remplacerait les lignes situées entre eux. La désinstallation relancée nomme
+d'abord ces lignes de marqueur. Cet avertissement n'arrête pas non plus la
+désinstallation, et la ligne `✗` ne nomme pas ce fichier. Corrigez-le aussi
+avant d'exécuter `apothem update` : une mise à jour ne le corrige pas.
+
 La mémoire, les contextes et les magasins d'apprentissage du répertoire de
 travail partagé sont sauvegardés et supprimés uniquement lorsque c'est le
 dernier environnement installé dans ce répertoire. La désinstallation les
 supprime à l'emplacement enregistré par l'installation : elle les retrouve donc
 là où l'installation les a écrits (voir les champs `workspace` du profil). Le
-répertoire `plans/` n'est jamais supprimé.
+répertoire `plans/` n'est jamais supprimé. Ici, une installation dont le
+dossier n'existe plus (un projet supprimé) compte toujours comme utilisant les
+magasins, contrairement aux dossiers partagés ci-dessous, et la désinstallation
+le signale (voir ci-dessous).
 
-Demande une confirmation, sauf si `--yes` est fourni. Lorsqu'aucune invite
-n'est possible (`--format json`, car le texte de l'invite corromprait l'unique
-document JSON, ou un shell non interactif, sans TTY), la commande refuse
-d'emblée avec une erreur structurée `uninstall.confirmation_required` (code de
-sortie 1), sauf si `--yes` est fourni. Si un environnement sélectionné n'est pas
-installé, la commande réussit (code de sortie 0) et, en sortie texte, affiche
+Demande une confirmation, sauf si
+`--yes` est fourni. Lorsqu'aucune invite n'est possible (`--format json`, car
+le texte de l'invite corromprait l'unique document JSON, ou un shell non
+interactif, sans TTY), la commande refuse d'emblée avec une erreur structurée
+`uninstall.confirmation_required` (code de sortie 1), sauf si `--yes` est
+fourni. Si un environnement sélectionné n'est pas installé, la commande réussit
+(code de sortie 0) et, en sortie texte, affiche
 `NAME is not installed; nothing to remove.`, où `NAME` est l'identifiant de
-l'environnement.
+l'environnement. Un fichier dont Apothem ne peut pas distinguer les lignes de
+marqueur de votre texte compte comme installé tant qu'un enregistrement
+d'installation le liste, et aussi tant que le journal d'installation ne peut
+pas être lu : la désinstallation s'arrête alors sur le journal endommagé (code
+de sortie 1) et le nomme, comme elle le fait pour un fichier contenant un bloc
+entier, au lieu de signaler l'environnement comme non installé.
+
+La désinstallation s'arrête avant de supprimer quoi que ce soit lorsqu'un lien
+fait sortir le dossier d'un outil de votre répertoire personnel, par exemple
+`~/work/tool` avec `~/work` lié à un autre lecteur. Sous Windows, une jonction
+compte comme un lien. Lors d'une exécution interactive, la commande ne demande
+pas de confirmation au préalable. Une exécution qui ne peut pas poser de
+question (sortie JSON, ou absence de terminal) s'arrête tout de même d'abord et
+demande `--yes` ; l'erreur de lien s'affiche une fois que vous le fournissez.
+L'erreur contient `uninstall
+refused: target path crosses a link`, nomme le lien et le dossier vers lequel il
+mène, et indique quoi faire ; la commande se termine avec le code 1. Faites
+pointer le lien vers un dossier situé dans votre répertoire personnel, ou
+remplacez-le par le dossier lui-même, puis relancez la désinstallation. Un
+dossier que vous écrivez comme un chemin hors de votre répertoire personnel est
+suivi.
 
 Les magasins de données partagés sous `.apothem/` à la racine d'installation
 (`memory/`, `contexts/`, `learning/`) restent en place tant qu'un autre
@@ -43,6 +225,50 @@ l'environnement que vous supprimez est le dernier à cette racine, la commande
 copie d'abord chaque magasin dans la racine de sauvegarde d'Apothem
 (`~/.apothem/backups/`), puis le supprime avec tout son contenu. Tout ce que
 vous conservez dans `plans/` n'est jamais supprimé.
+
+Lorsque les seules installations qui conservent les magasins se trouvent dans
+des dossiers qui n'existent plus, la commande conserve les magasins et affiche
+une ligne `Warning:` qui nomme l'une de ces installations et les étapes qui la
+libèrent. Une désinstallation dans un dossier vide recréé ne trouve rien
+d'installé : les étapes installent donc d'abord à nouveau l'outil à cet
+endroit, avec le même `--profile` que celui utilisé par cette installation. Les
+magasins se trouvent hors de ce dossier : c'est donc le profil de cette
+installation qui les a placés là où ils sont. Une installation sans ce profil
+écrit ses propres magasins, et la désinstallation qui la suit laisse ceux-ci
+sans aucune installation qui les utilise. Apothem n'enregistre pas le profil
+qu'une installation a utilisé : l'avertissement affiche donc
+`--profile <the profile it used>`, à compléter par vous. Pour un outil installé
+dans un projet, les étapes sont les suivantes :
+
+```bash
+mkdir -p /path/to/old-project
+apothem install --harness cursor --project /path/to/old-project --profile /path/to/that-profile.yaml
+apothem uninstall --harness cursor --project /path/to/old-project --yes
+```
+
+L'avertissement place le dossier entre guillemets doubles sous Windows et entre
+guillemets simples ailleurs. Lorsque ces guillemets ne peuvent pas porter le
+dossier, l'avertissement donne les mêmes étapes en toutes lettres et nomme le
+dossier tel quel. Sous Windows, cela se produit lorsque le dossier contient `$`,
+un accent grave, `%`, `!`, un guillemet double droit ou courbe ou un caractère
+de contrôle, qu'un shell Windows modifierait entre guillemets doubles ; `&`,
+`^`, `|`, `<` ou `>` dans un dossier sans espace, que PowerShell et Git Bash
+transmettent alors au `apothem.cmd` de l'installateur sans ses guillemets, de
+sorte que l'invite de commandes les interprète ; ou deux barres obliques
+inverses consécutives, comme au début d'un partage réseau (`\\server\share`),
+que Git Bash lit comme une seule. Ailleurs, cela se produit lorsque le dossier
+contient un guillemet simple droit ou courbe (un shell peut aussi fermer des
+guillemets simples sur un guillemet courbe), un caractère de contrôle, deux
+barres obliques inverses consécutives ou une barre oblique inverse finale (fish
+lit deux barres comme une seule entre guillemets simples, et une barre finale
+y échappe le guillemet fermant).
+
+Pour un outil installé dans votre répertoire personnel, l'avertissement donne
+les mêmes étapes en toutes lettres : le dossier dans lequel il a été installé
+peut provenir d'une variable d'environnement (`XDG_CONFIG_HOME`, par exemple)
+qu'une commande affichée ne reprendrait pas. Les magasins disparaissent avec
+cette désinstallation lorsqu'aucune autre installation ne les utilise encore.
+Vous pouvez aussi supprimer les magasins à la main.
 
 ## Dossiers partagés dans votre répertoire personnel
 
@@ -60,6 +286,23 @@ encore.
   comme deux installations : le désinstaller du projet A conserve donc les
   dossiers tant que le projet B les utilise encore. La dernière désinstallation
   les supprime (voir le second exemple ci-dessous).
+- Un dossier compte comme un seul dossier, quelle que soit la façon dont votre
+  dossier personnel était écrit lors de chaque installation. Lorsque votre
+  dossier personnel est un lien, comme `/home` menant à `/var/home` sur Fedora
+  Silverblue ou un profil utilisateur Windows déplacé derrière une jonction,
+  une installation effectuée via le lien et une installation effectuée via le
+  dossier vers lequel il mène utilisent les mêmes dossiers. Deux outils
+  installés ainsi sont deux installations, et en désinstaller un conserve les
+  dossiers pour l'autre. Un même outil installé des deux façons est une seule
+  installation : le désinstaller, avec votre dossier personnel écrit de l'une
+  ou l'autre façon, supprime ce que l'une ou l'autre installation a écrit ainsi
+  que les dossiers qu'aucune autre installation n'utilise. Si cette
+  désinstallation s'arrête avant d'aboutir, les deux installations restent
+  enregistrées jusqu'à ce que vous corrigiez ce qui l'a arrêtée et relanciez la
+  désinstallation. Une
+  désinstallation ne trouve une installation qu'avec votre dossier personnel
+  écrit de l'une des façons utilisées par une installation de cet outil ; écrit
+  de toute autre façon, elle ne trouve rien à supprimer.
 - Seul ce que liste l'enregistrement propre à l'installation est supprimé. Une
   installation effectuée avant que les dossiers ne soient gérés n'a pas
   d'enregistrement de ce type : la désinstaller ne supprime donc rien dans votre
@@ -88,6 +331,362 @@ porte `path`, `holders` (les installations qui conservent le dossier), `stale`
 (les installations ignorées), ainsi que `kept` et `total` (les entrées
 enregistrées conservées et les entrées que l'installation listait).
 
+Une désinstallation affiche aussi une ligne `Warning:` pour chaque élément
+qu'elle a laissé en place volontairement. Apothem ne supprime rien à travers un
+lien symbolique ou une jonction Windows : un lien situé dans un dossier qu'il
+supprime est donc conservé, tout comme un dossier résiduel d'une version
+antérieure atteint à travers un lien. Les chemins conservés pour le même lien,
+ou pour la même raison (pas ce qu'Apothem a écrit, absent de l'enregistrement
+d'installation), s'affichent sur une seule ligne avec leur nombre. Sous une
+ligne de chemins conservés,
+chaque fichier conservé est listé, y compris les fichiers d'un dossier conservé
+(un dossier conservé qui ne contient rien est listé lui-même). Un fichier
+qu'Apothem a écrit et qu'il n'a pas pu supprimer est listé sous la ligne `✗`
+qui le signale, et non comme fichier conservé. Avec `--quiet`, ces lignes ne
+s'affichent
+que lorsque la désinstallation n'aboutit pas, et alors sur la sortie d'erreur
+standard avec la ligne `✗`, afin que les chemins concernés par son conseil
+restent visibles. Une ligne qui nomme un marqueur Apothem laissé dans un
+fichier s'affiche sur la sortie d'erreur standard sous `--quiet` même lorsque
+la désinstallation aboutit : l'outil lit toujours tout ancien texte Apothem
+situé sous ce marqueur, une installation ultérieure conserve les deux, et
+`verify` échoue alors jusqu'à ce que vous les supprimiez. Dans l'enveloppe
+`--format json`,
+chacune de ces lignes est une entrée `warnings` avec `"outcome": "warning"`,
+le `message` de la ligne, `count` (le nombre de chemins qu'elle couvre),
+`paths` (chacun d'eux) et, pour les chemins conservés, `files` (chaque fichier
+conservé). Ces avertissements n'arrêtent pas la désinstallation. Quatre types
+l'arrêtent : les fichiers d'une installation enregistrée par une version
+antérieure qui diffèrent de ce que cette version écrit, les fichiers d'une
+installation sans aucun enregistrement (voir
+[Ce que supprime une désinstallation](#ce-que-supprime-une-désinstallation)), un
+fichier qui contient deux blocs différents entre les marqueurs d'Apothem, et un
+fichier dont Apothem ne peut pas distinguer les lignes de marqueur de votre
+texte (voir
+[Une désinstallation qui n'a pas abouti](#une-désinstallation-qui-na-pas-abouti)).
+
+Les propres fichiers d'Apothem atteints à travers un lien sont un cas à part :
+la plupart des outils les chargent encore, si bien que la désinstallation n'a
+pas abouti. (OpenClaw ne charge plus son fichier de règles une fois que la
+désinstallation a retiré le chemin d'Apothem de son entrée de hook : pour
+OpenClaw, la ligne `✗` ne le signale donc que tant qu'il le charge encore ;
+voir [OpenClaw](/docs/harnesses/open-claw#uninstalling).) Supposons que
+`~/.claude/rules` soit une jonction vers un dossier de dotfiles qui contient
+encore les règles écrites par Apothem : la commande affiche
+`✗ <harness> uninstall did not finish:` avec le lien et le nombre de chemins
+qu'elle a laissés, conserve l'enregistrement de l'installation et se termine
+avec le code `2`. Remplacez le lien par un vrai dossier contenant les mêmes
+fichiers, puis relancez la commande. Pour une installation dont
+l'enregistrement liste les fichiers qu'elle a écrits, un dossier lié qui ne
+contient que vos propres fichiers, ou des fichiers Apothem que vous avez
+modifiés, n'arrête pas la désinstallation : le lien est conservé avec un
+avertissement et la désinstallation aboutit. Pour une installation enregistrée
+par une version antérieure, tout fichier derrière le lien sous un nom que cette
+version écrit arrête la désinstallation, modifié ou non, car rien ne le
+distingue de ce que cette version antérieure a écrit. Remplacez le lien par un
+vrai dossier contenant les mêmes fichiers, puis suivez les étapes décrites
+ci-dessus pour une telle installation : copiez tout fichier que vous avez
+modifié, corrigez tout fichier qu'un avertissement nomme pour un marqueur
+Apothem, exécutez `apothem update`, puis désinstallez à nouveau.
+
+Lorsqu'une étape de suppression signale une erreur (un fichier installé dont le
+chemin sort de votre dossier personnel, par exemple), la commande affiche
+`✗ <harness> uninstall
+did not finish: <reason>` au lieu de `Uninstalled`, une fois par raison avec le
+nombre de chemins concernés. Lorsqu'un lien situé dans un dossier de votre
+répertoire personnel fait sortir ces chemins de celui-ci
+(`target escapes the allowed materialization root`), la ligne nomme aussi le
+lien et le dossier vers lequel il mène, et indique de remplacer le lien par un
+vrai dossier ; des chemins situés derrière deux liens donnent deux lignes. Le
+lien reçoit toujours son avertissement indiquant qu'il a été laissé en place.
+L'installation reste enregistrée : relancer la commande supprime donc ce que la
+première exécution a laissé. Les notes de rétention ne sont pas affichées, car
+les dossiers qu'elles décrivent n'ont pas été libérés. Dans la sortie JSON,
+l'environnement reçoit une ligne `results` avec `"outcome": "error"` et
+`"operation": "uninstall"`, suivie d'une ligne pour chaque étape en échec.
+Lorsque les raisons nomment un seul lien, cette ligne le porte dans
+`detail.symlink` et le dossier vers lequel il mène dans `detail.leads_to`. La
+ligne d'une étape liste les fichiers qu'elle a conservés dans `files` et les
+fichiers écrits par Apothem qu'elle n'a pas pu supprimer dans `stuck`. Le
+`status` de l'enveloppe est `"partial"` et le code de sortie `2` lorsque la
+désinstallation a supprimé des fichiers avant l'échec de l'étape, ou lorsqu'un
+autre environnement a été supprimé ; sinon, `status` vaut `"error"` et le code
+de sortie est `1`. Le champ `error` de premier niveau reste `null` : les
+raisons se trouvent dans `results`. Une désinstallation qui s'arrête sur une
+exception (une sauvegarde qui ne peut pas être écrite, par exemple) affiche
+`✗ <harness> uninstall
+stopped after removing files:` lorsqu'elle avait supprimé des fichiers, ou
+retiré les entrées ou le bloc d'Apothem d'un fichier tel que `openclaw.json`,
+avant de s'arrêter (ou
+`failed:` lorsqu'elle n'avait rien modifié), avec le message, et reçoit une
+ligne `results` avec son message, suivie d'une ligne pour chaque étape qui a
+échoué avant elle.
+Lorsqu'une étape avait échoué avant l'arrêt, ou qu'elle avait trouvé ce qui
+laisse une désinstallation inachevée (les propres fichiers d'Apothem derrière un
+lien, des fichiers d'une installation enregistrée par une version antérieure
+qui diffèrent de ce que cette version écrit, les fichiers d'une installation
+sans enregistrement, un fichier qui contient deux blocs différents entre les
+marqueurs d'Apothem, ou un fichier dont Apothem ne peut pas distinguer les
+lignes de marqueur de votre texte), une ligne
+`✗ <harness> uninstall did not finish:` suit pour chaque raison, comme
+ci-dessus, et le même texte est ajouté à la fin du message de la ligne. Pour
+une installation sans enregistrement, la ligne `Note:` les suit, avec sa
+vérification du dossier `--project` pour un environnement à portée de projet,
+et le `detail` de la ligne contient `"kept_reason": "no-record"`, comme décrit
+dans [Ce que supprime une désinstallation](#ce-que-supprime-une-désinstallation).
+Lorsque ces raisons et les étapes qui ont échoué avant l'arrêt nomment un seul
+lien, la ligne le porte dans `detail.symlink` et le dossier vers lequel il mène
+dans `detail.leads_to`. Elle se termine avec le code `2`
+et le `status` `"partial"` lorsqu'elle avait d'abord supprimé ou modifié des
+fichiers, trouvé les propres fichiers d'Apothem derrière un lien, conservé des
+fichiers de l'installation d'une version antérieure ou d'une installation sans
+enregistrement, ou laissé un fichier qui contient deux blocs différents entre
+les marqueurs d'Apothem ou des lignes de marqueur qu'Apothem ne peut pas
+distinguer de votre texte, ou lorsqu'un autre environnement a été supprimé, et
+avec le code `1` sinon. Une erreur inattendue (une exception, telle qu'une
+sauvegarde qui ne peut pas être écrite) dans la première étape d'une
+désinstallation d'Open-Claw, d'Antigravity ou de Kimi Code ne signale rien de ce
+que cette étape a fait (voir [Une désinstallation qui n'a pas abouti](#une-désinstallation-qui-na-pas-abouti)) :
+la désinstallation affiche `failed:` et se termine avec le code `1` (`2`
+lorsqu'un autre environnement a été supprimé), quoi que l'étape ait modifié.
+Lorsque l'étape du fichier de règles d'Open-Claw signale plutôt une erreur (un
+fichier de règles qu'elle ne peut pas réécrire, ou un
+`openclaw.json` contenant des commentaires), il s'agit d'une étape en échec,
+comme ci-dessus : la désinstallation affiche `did not finish:`, s'enregistre
+comme inachevée avec les sauvegardes de cette étape, et se termine avec le code
+`2` lorsque cette étape avait modifié un fichier ou trouvé le fichier de règles
+d'Apothem derrière un lien, ou lorsqu'un autre environnement a été supprimé, et
+avec le code `1` sinon. `Ctrl+C`
+affiche `Aborted!` et se termine avec le code `1`, quoi que la désinstallation
+ait supprimé jusque-là. Une
+désinstallation refusée (un lien qui fait sortir le dossier de votre répertoire
+personnel, par exemple) ne supprime rien et se termine avec le code `1` ; sa
+ligne nomme ce lien dans `detail.symlink` et le dossier vers lequel il mène dans
+`detail.leads_to`, et une ligne pour l'étape refusée la suit.
+
+### Une désinstallation qui n'a pas abouti
+
+Lorsqu'une désinstallation n'aboutit pas, elle ajoute au journal d'installation
+un enregistrement `uninstall-incomplete` au lieu d'un enregistrement
+`uninstall`. Cela se produit lorsqu'une étape a échoué, lorsque les propres
+fichiers d'Apothem restent derrière un lien, lorsqu'un fichier contient deux
+blocs différents entre les marqueurs d'Apothem ou des lignes de marqueur
+qu'Apothem ne peut pas distinguer de votre texte (voir ci-dessous), lorsque des
+fichiers d'une installation enregistrée par une version antérieure diffèrent de
+ce que cette version écrit, et lorsque l'installation n'a pas d'enregistrement.
+Les quatre derniers cas se terminent avec le code `2` et le `status`
+`"partial"` même lorsque rien n'a été supprimé, y compris lors d'une seconde
+exécution avant que vous ayez corrigé ce qu'ils nomment. Les deux derniers
+n'aboutissent qu'après `apothem update` (voir
+[Ce que supprime une désinstallation](#ce-que-supprime-une-désinstallation)).
+Une désinstallation qu'une exception ou `Ctrl+C` interrompt ajoute, selon
+l'étape où elle s'est arrêtée :
+
+- dans la première étape d'Open-Claw, qui retire le bloc d'Apothem du fichier
+  de règles de chaque espace de travail, ou d'Antigravity et de Kimi Code, qui
+  supprime ce qu'une ancienne disposition a laissé : rien, même pour les
+  fichiers que cette étape avait modifiés jusque-là, dont les sauvegardes
+  restent sous `~/.apothem/backups/` sans enregistrement qui les protège de
+  `backups prune` ;
+- dans l'étape qui retire les entrées d'Apothem du fichier de paramètres d'un
+  outil configuré par un seul fichier de paramètres, tel qu'Open-Claw, OpenCode
+  ou Qwen Code : l'enregistrement uniquement lorsque la première étape
+  d'Open-Claw avait retiré le bloc d'Apothem d'un fichier de règles ou en avait
+  sauvegardé un, et rien sinon, y compris lorsque cette étape a trouvé le
+  fichier de règles d'Apothem derrière un lien ;
+- dans l'étape qui supprime ce que liste l'enregistrement d'installation, la
+  dernière étape de toute désinstallation sauf celle d'OpenCode :
+  l'enregistrement, même lorsqu'elle n'a rien modifié ;
+- dans l'étape que la désinstallation d'OpenCode effectue après celle-ci, qui
+  clôt une installation enregistrée sous une autre écriture de son dossier
+  (lorsque `XDG_CONFIG_HOME` désigne le dossier vers lequel mène un lien
+  `~/.config`, par exemple) : rien de plus, de sorte que cette installation
+  reste enregistrée. Une exécution ultérieure ne la clôt pas encore : les
+  fichiers d'Apothem ayant disparu du dossier, OpenCode apparaît comme non
+  installé à cet endroit, si bien que `uninstall` l'ignore, et `status`,
+  `verify` et `rollback` ne voient pas non plus cette installation. Pour la
+  clore, installez de nouveau OpenCode dans le dossier, puis désinstallez-le :
+  `apothem install --harness opencode --profile PATH` avec un profil situé hors
+  du dossier lié (`apothem profile init --profile PATH` en crée un), puis
+  `apothem uninstall --harness opencode`.
+
+Lorsque rien n'est ajouté, le journal reste tel qu'il était. L'installation
+reste enregistrée dans tous les cas. Sauf dans ce dernier cas, `apothem status`,
+`verify` et `rollback` la voient toujours, et l'environnement apparaît comme
+installé tant que quelque chose que l'installation a écrit est toujours là tel
+qu'elle l'a écrit (voir ci-dessous) : relancer `uninstall` termine donc le
+travail. Une installation sans enregistrement n'a rien à conserver : seuls ses
+fichiers sur le disque font apparaître l'environnement comme installé, et
+`rollback` n'a rien à annuler. Un `install`, un `update`, un `rollback` ou un
+`uninstall` abouti de cet environnement à cet emplacement remplace l'état, tout
+comme la suppression à la main des fichiers restants : lorsqu'aucun des
+fichiers d'Apothem ne reste tel qu'il l'a écrit et que rien ne reste dans son
+dossier `.apothem`, l'environnement apparaît comme non installé, quoi que
+contienne par ailleurs le dossier. La première commande qui vérifie si
+l'environnement est installé (`status`, `verify`, `uninstall`) ajoute alors un
+enregistrement `uninstall` qui clôt l'installation. Après une désinstallation
+qui a abouti, en revanche, aucun enregistrement ne liste les fichiers qu'une
+installation a écrits : seuls une installation, une mise à jour ou une
+désinstallation qui aboutit y remplacent alors l'état.
+`backups prune` conserve l'enregistrement, ainsi que les sauvegardes qu'il
+référence, tant que l'installation à laquelle il appartient est conservée.
+Après une désinstallation qui a abouti, il conserve l'enregistrement avec celui
+de cette désinstallation, de sorte que relancer la désinstallation fonctionne
+toujours de la même façon.
+
+Ce qui compte encore : un fichier entier que l'installation a écrit, tant qu'il
+est inchangé (pour une installation enregistrée par une version antérieure,
+tant qu'il est présent) ; tout ce qui se trouve dans les dossiers dans lesquels
+Apothem installe sous `.apothem` ; et un fichier où Apothem conserve un bloc
+géré à côté de votre propre texte, tant que le bloc s'y trouve encore, quoi que
+vous ayez écrit autour. Ces fichiers sont `CLAUDE.md`, le document de profil
+dans lequel le profil partagé est projeté, le fichier de règles de chaque
+espace de travail OpenClaw, ainsi que `AGENTS.md` et les autres fichiers
+d'instructions auxquels l'installation ajoute un bloc.
+
+Un bloc géré s'étend d'un marqueur `<!-- BEGIN APOTHEM MANAGED BLOCK -->` au
+marqueur `<!-- END APOTHEM MANAGED BLOCK -->` suivant, chacun sur une ligne
+distincte ; Apothem ne lit un marqueur que sous cette forme et hors du code,
+comme le ferait un afficheur Markdown : un bloc de code délimité (fermé par une
+clôture du même caractère, au moins aussi longue, sans rien après elle) ou du
+code indenté de quatre colonnes au-delà de son élément de liste (ou de la
+marge) après une ligne vide. Ainsi, un marqueur que vous citez dans une phrase
+ou un exemple de code est votre texte, et un marqueur BEGIN et un marqueur END
+que vous citez dans deux blocs de code distincts ne forment pas un bloc.
+Apothem ferme une clôture de code qu'une règle de votre profil laisse ouverte à
+la fin du bloc qu'il écrit ; dans un bloc écrit par une version antérieure, une
+telle clôture ne masque le marqueur END que lorsqu'une autre paire de marqueurs
+suit (voir ci-dessous). Une clôture que vous laissez ouverte jusqu'à la fin du
+fichier est lue comme du texte, quel que soit leur nombre, sauf si un marqueur
+BEGIN hors du code situé au-dessus a son marqueur END dans le code et qu'une
+autre paire de marqueurs les suit.
+Une marque d'ordre des octets au début du fichier (telle que l'enregistrent
+certains éditeurs Windows) ne masque pas un marqueur sur la première ligne. Des
+marqueurs situés dans un bloc HTML ou une citation, ou après un élément de
+liste dont le texte se poursuit à la marge de gauche, peuvent encore être lus
+autrement que par un afficheur Markdown.
+
+Si le bloc d'Apothem se trouve dans un bloc de code à vous (une clôture laissée
+ouverte au-dessus de lui et fermée par une clôture en dessous, ou par une ligne
+de fermeture dans le bloc), ou si un bloc de code entre un marqueur BEGIN et
+son END
+masque cet END avec une autre paire de marqueurs après lui, Apothem ne peut
+pas distinguer son bloc d'un exemple à vous. La désinstallation laisse un tel
+fichier tel quel, supprime le reste de l'installation et n'aboutit pas : elle
+affiche `✗ <harness> uninstall did not finish:` suivi de « 1 file(s) hold marker
+lines Apothem cannot tell from your text, so Apothem left them as they are;
+fix the marker lines each warning names, keeping your own text, then run
+apothem uninstall again », et se termine avec le code `2`, y compris lors
+d'une seconde exécution. L'enregistrement d'installation reste : une
+installation ultérieure laisse donc le fichier tel quel, et la désinstallation
+suivante le nomme de nouveau. Son avertissement désigne chaque paire de
+marqueurs du fichier par ses lignes, ainsi que chaque marqueur BEGIN hors du
+code qui ne commence aucune paire. Sans enregistrement d'installation, seul un
+marqueur BEGIN dont le marqueur END est masqué de cette façon reçoit
+l'avertissement : une paire située dans un bloc de code à vous est alors votre
+texte, et la désinstallation reste inachevée pour ce marqueur et pour les
+chemins qu'aucun enregistrement n'indique. L'avertissement donne alors des
+corrections numérotées et se termine par « Then run the uninstall again. », par
+exemple « Fix A: A1. Change line 6: add a word inside its comment. Apothem then
+finds no block of its own in this file. » L'ancien texte Apothem situé sous une
+ligne que vous modifiez, jusqu'à sa ligne de marqueur END, est alors à vous de
+le supprimer à la main. Avec plusieurs corrections, choisissez celle dont le
+cas est vrai et effectuez chacune de ses étapes dans l'ordre indiqué : une
+paire de marqueurs laissée dans ce fichier maintient la désinstallation
+inachevée, y compris une paire à vous ; chaque correction modifie donc la ligne
+de marqueur BEGIN de chaque paire qu'elle ne désigne pas comme le bloc
+d'Apothem, ainsi que chaque marqueur BEGIN qui ne commence aucune paire (voir
+[Apothem ne distingue pas son bloc de votre texte](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+Une fois que le fichier ne contient plus de telle paire, relancer la
+désinstallation la fait aboutir.
+
+Si le marqueur END a
+disparu, rien n'indique où s'arrête le texte d'Apothem et où commence le vôtre :
+la désinstallation laisse donc le fichier tel quel, le nomme dans un
+avertissement et aboutit (sauf si autre chose la laisse inachevée, comme une
+installation sans enregistrement) ; il en va de même d'une nouvelle tentative
+après une désinstallation qui n'a pas abouti. Si un marqueur BEGIN reste sans
+END après lui une fois le bloc d'Apothem retiré (une ligne à vous, ou ce qui
+reste d'un ancien bloc qui a perdu son marqueur END), la désinstallation nomme
+aussi ce fichier et la ligne du marqueur, avec une étape numérotée qui modifie
+cette ligne (un mot ajouté dans son commentaire), afin qu'elle ne se lise plus
+comme un marqueur : une installation la conserve telle quelle, et l'outil lit
+toujours le texte situé en dessous. Tout ancien texte Apothem situé en dessous
+est alors à vous de le supprimer à la main. Un `install` ou un `update`
+conserve tel quel le texte qui suit un tel marqueur, écrit le bloc d'Apothem à
+part et nomme le fichier, et `verify` échoue jusqu'à ce que le marqueur soit
+modifié (voir
+[Un fichier a un marqueur BEGIN d'Apothem sans marqueur END](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
+
+Un fichier qui contient deux blocs différents entre les marqueurs (une paire de
+marqueurs que vous citez hors d'un bloc de code, un ancien bloc dont vous avez
+remis le marqueur END, ou un bloc que vous avez collé une seconde fois) est
+laissé tel quel et nommé, et la désinstallation n'aboutit pas : elle affiche
+`✗ <harness> uninstall did not finish:` suivi de « 1 file(s) hold two different
+blocks between Apothem's markers, so Apothem left them as they are; fix each as
+its warning says, keeping your own text (follow one of its numbered fixes,
+which change marker lines in place), then run apothem uninstall again », et se
+termine avec le code `2`, y compris lors d'une seconde exécution. Son
+avertissement désigne chaque bloc par ses lignes, comme le font install et
+update, et donne une correction numérotée pour chaque bloc, pour le cas où il
+s'agit du bloc d'Apothem : la correction modifie la ligne de marqueur BEGIN de
+chaque autre bloc et conserve leur texte (dans un fichier qui commence par le
+frontmatter d'Apothem, le bloc d'Apothem est celui situé juste en dessous). Ne
+supprimez pas le bloc d'Apothem pour conserver une paire
+à vous : la désinstallation suivante retirerait alors le seul bloc restant, le
+vôtre.
+Un
+`apothem update` ne corrige pas un tel fichier : il laisse tel quel un fichier
+contenant deux blocs entiers, avec le même avertissement, et `verify` échoue
+jusqu'à ce que vous le corrigiez (voir
+[Un fichier contient deux blocs entre les marqueurs d'Apothem](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)).
+
+Un marqueur BEGIN au-dessus du bloc d'Apothem et un marqueur END en dessous
+forment un second bloc qui n'apparaît qu'une fois le bloc d'Apothem retiré.
+L'avertissement de la désinstallation désigne alors le bloc d'Apothem et ces
+deux lignes de marqueur, par exemple « once the block from line 5 to line 36 is
+out, the BEGIN marker at line 2 and the END marker at line 39 make another », et
+indique de ne pas supprimer le bloc d'Apothem : l'exécution suivante lirait
+alors les lignes 2 à 39 comme le bloc d'Apothem. Sa seule correction modifie
+plutôt cette ligne de marqueur BEGIN, en conservant votre propre texte, et le
+marqueur END situé en dessous ne s'apparie alors avec rien ; si ce marqueur
+BEGIN est ce qui reste d'un ancien bloc Apothem, l'ancien texte Apothem situé
+en dessous est alors à vous de le supprimer à la main.
+Ne placez pas les deux lignes dans un même bloc de code : il contiendrait aussi
+le bloc d'Apothem. Un `apothem update` ne corrige pas non plus un tel fichier,
+et `verify` échoue jusqu'à ce que vous le corrigiez. Les numéros de ligne
+comptent un CR isolé comme une fin de ligne, au même titre que CRLF et LF (voir
+[Un fichier a un marqueur BEGIN d'Apothem sans marqueur END](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
+
+Lorsque l'étape suivante de la désinstallation consiste à exécuter
+`apothem update` et qu'un avertissement nomme un fichier pour un marqueur
+Apothem (dans l'enveloppe `--format json`, son `detail` contient
+`marker_left`), la ligne `✗`, ainsi que l'avertissement de chaque chemin
+qu'elle conserve pour une version antérieure ou pour un enregistrement
+manquant, vous indiquent de corriger d'abord ce fichier, avec le conseil propre
+à ce type de marqueur.
+
+Si le journal ne peut pas recevoir l'enregistrement `uninstall-incomplete` (un
+disque plein, par exemple), le journal reste tel qu'il était, et une ligne
+`Warning:` nomme le journal et les dossiers des sauvegardes effectuées par la
+désinstallation : aucun enregistrement ne protège ces sauvegardes de
+`backups prune`, copiez donc celles dont vous avez besoin. Sans enregistrement
+de ce passage inachevé, relancer la commande peut trouver l'environnement non
+installé et ne rien supprimer ; supprimez alors à la main les fichiers que les
+lignes `✗` et `Warning:` ont listés. Tant que l'environnement apparaît comme
+installé, relancer la commande fonctionne comme avant : par rapport à
+l'enregistrement d'installation ou, après une désinstallation qui a abouti sans
+installation enregistrée depuis, de la même façon que ce passage (voir
+[Ce que supprime une désinstallation](#ce-que-supprime-une-désinstallation)).
+Lorsque l'enregistrement `uninstall` d'une désinstallation qui a abouti ne peut
+pas être enregistré sur
+le disque, la désinstallation le retire à nouveau du journal et se termine comme
+inachevée. Elle aboutit, avec le même type d'avertissement, lorsque le journal
+se termine toujours par une désinstallation aboutie : l'enregistrement est
+resté dans le journal malgré tout, ou la désinstallation en suivait une qui
+avait abouti. Une interruption (`Ctrl+C`) après l'enregistrement laisse la
+désinstallation aboutie.
+
 Si un dossier reste en place à cause d'une installation que vous ne retrouvez
 pas, la note la nomme. Lorsque le dossier du projet a été supprimé,
 l'installation est ignorée et le dossier disparaît à la prochaine
@@ -96,6 +695,60 @@ bloc Apothem de son fichier de règles, `uninstall` signale l'environnement comm
 non installé et ne libère pas sa revendication ; exécutez `install` pour cet
 environnement et ce projet, puis `uninstall`, afin de la libérer.
 `apothem verify` indique si un dossier est toujours complet.
+
+`--project` est lu en suivant ses liens et avec `~` développé. Une installation
+effectuée depuis du code Python avec le dossier du projet écrit autrement, à
+travers un lien par exemple, est toujours trouvée sous l'écriture que conserve
+son enregistrement. Un `install` ou un
+`update` enregistre le dossier résolu. Une fois que l'installation a passé ses
+vérifications, elle déplace une installation enregistrée sous une autre
+écriture vers l'écriture résolue, de sorte que l'installation est toujours
+trouvée après la suppression du lien ; une installation refusée ne modifie
+aucun enregistrement. `uninstall` déplace une telle installation de la même
+façon avant de supprimer quoi que ce soit : une désinstallation qui n'aboutit
+pas est donc enregistrée sous le dossier résolu, où relancer `uninstall` la
+trouve toujours une fois le lien supprimé. Un dossier qu'un enregistrement
+désigne autrement sur le disque (un chemin
+`\\localhost\C$` vers un dossier enregistré comme `C:\...`) conserve l'écriture
+de l'enregistrement, et une installation ou une désinstallation dans un dossier
+qui a encore sa propre installation en place laisse tel quel un enregistrement
+sous une autre écriture. Une
+écriture dont l'installation est toujours en place passe avant une écriture
+dont l'installation a été supprimée ; entre deux installations en place, celle
+qui a le plus de fichiers dans le dossier, puis la plus récente. Une
+installation dont aucun fichier ne se trouve dans le dossier n'est pas prise
+pour celle-ci, sauf si sa désinstallation n'a pas abouti : relancer
+`uninstall` la fait alors aboutir. Les noms de dossier sont comparés
+exactement : dans un dossier sensible à la casse (un dossier créé par WSL, par
+exemple), `Proj` et `proj` sont deux dossiers et ne sont jamais pris l'un pour
+l'autre, et désinstaller l'un conserve les dossiers partagés que l'autre
+utilise. Dans un dossier Windows ordinaire, ils sont un seul dossier tant qu'il
+existe ; une fois qu'il a disparu, seule l'écriture de l'enregistrement le
+retrouve. Un volume cloné attaché à côté de son original n'est pas pris pour
+celui-ci lorsque Windows peut nommer les deux volumes.
+Un enregistrement situé sur un autre partage réseau (un chemin
+`\\server\share` ou une lettre de lecteur mappée sur un partage) est comparé
+uniquement par son texte, de sorte qu'un partage injoignable ne bloque pas la
+recherche des enregistrements. Les notes sur les dossiers partagés vérifient
+toujours chaque dossier enregistré : elles peuvent donc encore attendre un tel
+partage.
+
+Trois cas ne sont pas trouvés comme vous pourriez vous y attendre. Une
+installation qu'une version antérieure a enregistrée deux fois, une fois depuis
+la ligne de commande et une fois depuis Python à travers un lien, conserve le
+second enregistrement après `uninstall`, et les dossiers partagés restent en
+place pour elle. Supprimez celle-ci depuis Python avec le dossier écrit tel
+qu'il l'était à l'installation. Une installation enregistrée sous une écriture
+`\\localhost\C$` d'un dossier de cet ordinateur n'est pas trouvée depuis son
+écriture `C:\`, puisqu'un enregistrement situé sur un partage n'est pas
+recherché depuis un autre emplacement. Enfin, lorsque deux installations ont
+été effectuées à travers deux liens vers deux dossiers différents, et que l'un
+des liens a ensuite été redirigé vers l'autre dossier, la désinstallation prend
+l'installation qui a le plus de fichiers dans ce dossier. Si les deux ont écrit
+les mêmes noms de fichiers (deux installations de la même version), ou si une
+version antérieure les a enregistrées (elle ne listait pas ses fichiers), elle
+prend la plus récente, dont les fichiers peuvent se trouver dans le dossier
+vers lequel le lien menait auparavant.
 
 Une suppression `--harness all` est délibérément exhaustive : elle couvre
 chaque environnement enregistré, y compris ceux que le champ `exclude_harnesses`
@@ -113,7 +766,7 @@ forme `apothem Uninstalling`) se résout vers le même gestionnaire.
 | `--harness NAME` | Adaptateur d'environnement à supprimer, ou `all` pour l'ensemble couvrant tout le registre (obligatoire). |
 | `--yes` | Ignore l'invite de confirmation. |
 | `--project PATH` | Racine du projet pour les environnements à portée de projet. |
-| `--quiet`, `-q` | Supprime la sortie informative ; seules les erreurs sont émises. |
+| `--quiet`, `-q` | Supprime la sortie informative ; seules les erreurs sont émises. Une désinstallation qui n'aboutit pas affiche tout de même ses lignes `Warning:`, qui listent ce qu'elle a conservé, sur la sortie d'erreur standard, et toute désinstallation y affiche une ligne `Warning:` qui nomme un marqueur Apothem laissé dans un fichier. |
 | `--verbose`, `-v` | Accepté par cohérence avec les autres commandes ; cette commande n'affiche aucune sortie supplémentaire. |
 | `--format plain\|json` | Format de sortie (par défaut : `plain`). |
 | `--json` | Raccourci de `--format json`. |
@@ -149,7 +802,12 @@ Lorsque l'adaptateur est installé et supprimé avec succès :
 }
 ```
 
-Lorsque l'adaptateur n'était pas installé, la commande se termine avec le code `0`. Dans la sortie JSON, l'enveloppe contient `"status": "success"` et `"action": "uninstalled"`, et la ligne de résultats contient `"outcome": "skipped"` avec le message `"not installed; no files removed"`. Le champ `status` ne prend jamais la valeur `"not_installed"`.
+Lorsque l'adaptateur n'était pas installé, la commande se termine avec le code `0`. Dans la sortie JSON, l'enveloppe contient `"status": "success"` et `"action": "uninstalled"`, et la ligne de résultats contient `"outcome": "skipped"` avec le message `"not installed; no files
+removed"`. Le champ `status` ne prend jamais la valeur `"not_installed"`.
+
+Un résultat refusé à cause d'un lien nomme le lien dans `detail.symlink` et le
+dossier vers lequel il mène dans `detail.leads_to`, comme dans
+[`apothem install`](/docs/cli-reference/install#json-output).
 
 ## Exemples
 
@@ -176,8 +834,8 @@ apothem uninstall --harness cursor --project A --yes     # removes it: no instal
 | Code | Signification |
 |---|---|
 | 0 | Adaptateur désinstallé, ou qui n'était pas installé |
-| 1 | Environnement introuvable, confirmation refusée ou impossible (mode non interactif ou JSON sans `--yes`), ou échec de chaque suppression |
-| 2 | Suppression partielle — au moins un environnement a été supprimé avant un échec |
+| 1 | Environnement introuvable, confirmation refusée ou impossible (mode non interactif ou JSON sans `--yes`), rien n'a été supprimé parce que chaque environnement installé a échoué avant de supprimer ou de modifier quoi que ce soit, n'a nommé aucun lien qui maintient en place les propres fichiers d'Apothem, n'a conservé aucun fichier de l'installation d'une version antérieure ni d'une installation sans enregistrement et n'a laissé aucun fichier contenant deux blocs différents entre les marqueurs d'Apothem ni des lignes de marqueur qu'Apothem ne peut pas distinguer de votre texte (une erreur inattendue, une exception, dans la première étape d'une désinstallation d'Open-Claw, d'Antigravity ou de Kimi Code compte comme un tel échec, quoi que cette étape ait modifié), ou la commande a été interrompue (`Ctrl+C`, qui affiche `Aborted!`), quoi qu'elle ait supprimé jusque-là |
+| 2 | Suppression partielle — une désinstallation a échoué ou s'est arrêtée après avoir supprimé des fichiers ou retiré d'un fichier les entrées d'Apothem (sauf une erreur inattendue dans une telle première étape, voir `1`), au moins un environnement a été supprimé et un autre a échoué, une désinstallation a laissé en place les propres fichiers d'Apothem parce qu'un lien y mène, un fichier contient deux blocs différents entre les marqueurs d'Apothem ou des lignes de marqueur qu'Apothem ne peut pas distinguer de votre texte, des fichiers d'une installation enregistrée par une version antérieure diffèrent de ce que cette version écrit, ou une installation n'a pas d'enregistrement indiquant quels fichiers Apothem a écrits |
 | 64 | Erreur d'utilisation : une option ou une commande inconnue, ou une valeur d'option manquante ou invalide. Sous `--json`, l'erreur est une enveloppe JSON avec le code `cli.usage`. |
 
 ## Voir aussi

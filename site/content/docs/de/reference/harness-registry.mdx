@@ -2,7 +2,7 @@
 title: "Harness-Registry"
 description: "Technische Registry-Referenz für die integrierten Apothem-Harness-Adapter."
 machineTranslated: true
-sourceHash: "242f7f2bf421b85e"
+sourceHash: "2f51bca3eb9467c5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,7 +17,7 @@ jedes Adapters rückführbar.
 
 | Harness | Installationsname | Geltungsbereich | Format | Ziele | MCP | Konventions-Pin |
 | --- | --- | --- | --- | --- | --- | --- |
-| Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md`; `~/.gemini/antigravity-cli/plugins/apothem/` | discovery-pending | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
+| Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md`; `~/.gemini/config/plugins/apothem/` | discovery-pending | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
 | Claude Code | `claude-code` | user | json | `~/.claude/settings.json`; `~/.claude/CLAUDE.md`; native `agents`, `rules`, `skills`, `statuslines`, `output-styles`; `~/.claude/.apothem/support/` | discovery-pending | `src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md` |
 | CodeBuddy | `codebuddy` | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md`; `<project>/.codebuddy/agents/`; `<project>/.codebuddy/settings.local.json`; `<project>/.apothem/support/hooks/`; `~/.codebuddy/skills/`; `~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` |
 | Codex | `codex` | user | markdown | `~/.codex/AGENTS.md`; `hooks.json`; `hooks/`; `agents/*.toml`; `~/.agents/skills/`; `~/.config/apothem/` | discovery-pending | `src/apothem/harnesses/codex/STANDARD-CONVENTION-PIN.md` |
@@ -28,7 +28,7 @@ jedes Adapters rückführbar.
 | Hermes | `hermes` | user | yaml | `~/.hermes/config.yaml`; `~/.hermes/.apothem/support/` | native | `src/apothem/harnesses/hermes/STANDARD-CONVENTION-PIN.md` |
 | Kimi Code | `kimi-code` | project | markdown | `<project>/AGENTS.md`; `<project>/.kimi-code/skills/`; `<project>/.kimi-code/agents/`; `<project>/.kimi-code/.apothem/support/` | discovery-pending | `src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md` |
 | Kiro | `kiro` | project | markdown | `<project>/.kiro/steering/apothem-rules.md`; `<project>/.kiro/agents/`; `<project>/.kiro/hooks/apothem.json`; `<project>/.apothem/support/kiro/hooks/`; `~/.kiro/skills/`; `~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md` |
-| Open-Claw | `open-claw` | user | json | `~/.openclaw/openclaw.json`; `~/.openclaw/.apothem/support/` | unsupported | `src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md` |
+| Open-Claw | `open-claw` | user | json | `~/.openclaw/openclaw.json`; `~/.openclaw/.apothem/support/`; `<workspace>/apothem/AGENTS.md` (geladen vom Hook `bootstrap-extra-files`; nicht in der Zielliste der Registry, daher lässt die generierte Tabelle unten sie aus) | unsupported | `src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md` |
 | OpenCode | `opencode` | user | json | `~/.config/opencode/opencode.json`; native `commands`, `skills`, `agents`; `~/.config/opencode/.apothem/support/` | native | `src/apothem/harnesses/opencode/STANDARD-CONVENTION-PIN.md` |
 | Qwen Code | `qwen-code` | user | json | `~/.qwen/settings.json`; `~/.qwen/QWEN.md`; native `commands`, `skills`, `agents`; `~/.qwen/.apothem/support/` | native | `src/apothem/harnesses/qwen_code/STANDARD-CONVENTION-PIN.md` |
 | Trae | `trae` | project | markdown | `<project>/.trae/rules/apothem-rules.md`; `<project>/.trae/agents/`; `~/.trae/skills/`; `~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/trae/STANDARD-CONVENTION-PIN.md` |
@@ -115,7 +115,7 @@ jedem Leser bereit.
 | `~/.claude/agents/` | Claude Code | keine | Cursor |
 | `~/.codex/agents/` | Codex | keine | Cursor |
 | `~/.claude/CLAUDE.md` | Claude Code | keine | OpenCode, Windsurf |
-| `<project>/AGENTS.md` | Kimi Code | keine | Antigravity, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
+| `<project>/AGENTS.md` | Kimi Code | keine | Antigravity, Claude Code, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
 | `<project>/GEMINI.md` | Gemini CLI | keine | Antigravity, GitHub Copilot, Zed |
 | `~/.gemini/GEMINI.md` | Antigravity | keine | Gemini CLI |
 | `<project>/.github/copilot-instructions.md` | GitHub Copilot | keine | Zed |
@@ -143,7 +143,21 @@ lädt daher `~/.claude/CLAUDE.md` nicht. `Codex` nimmt in jedem Ordner die erste
 von `AGENTS.override.md` und `AGENTS.md`, daher lädt es `<project>/AGENTS.md`
 nur, wenn das Projekt keine `AGENTS.override.md` daneben hat. `CodeBuddy` nutzt
 `<project>/AGENTS.md` nur dann als Projektgedächtnis, wenn das Projekt keine
-`CODEBUDDY.md` hat. `Zed` lädt nur die erste Projekt-Anweisungsdatei in seiner
+`CODEBUDDY.md` hat. `Claude Code` liest `AGENTS.md` in den Releases, die seine
+[Memory-Seite](https://code.claude.com/docs/en/memory#agents-md) nennt, und
+der Installationshinweis nennt das erste davon. Unter seiner
+Standardeinstellung **Project instructions** lädt es beim Start einer Sitzung
+jede `AGENTS.md` und `.claude/AGENTS.md` im Arbeitsordner und in den Ordnern
+darüber, aber nur, wenn keiner dieser Ordner eine `CLAUDE.md`,
+`.claude/CLAUDE.md` oder `CLAUDE.local.md` enthält. Die `AGENTS.md` eines
+Ordners unterhalb des Arbeitsordners, etwa eines Projekts, das aus einem
+übergeordneten Ordner geöffnet wurde, lädt es, wenn sein Read-Tool dort eine
+Datei öffnet und auch dieser Ordner keine dieser drei Dateien hat.
+`~/.claude/CLAUDE.md` zählt nicht, daher wird der Apothem-Block dort weiterhin
+neben `<project>/AGENTS.md` geladen. Die Einstellung `claude-md-and-agents-md`
+lädt beide Arten von Dateien, und `claude-md` und `managed-only` laden keine
+`AGENTS.md`. Manche Sitzungen lesen unter keiner Einstellung eine `AGENTS.md`;
+die Memory-Seite führt sie auf. `Zed` lädt nur die erste Projekt-Anweisungsdatei in seiner
 Liste: `.rules`, `.cursorrules`, `.windsurfrules`, `.clinerules`,
 `.github/copilot-instructions.md`, `AGENT.md`, `AGENTS.md`, `CLAUDE.md`, dann
 `GEMINI.md`. Daher lädt es `<project>/.github/copilot-instructions.md`,
@@ -219,8 +233,59 @@ Die Registry bleibt durch diese Prüfungen synchron:
 | --- | --- |
 | `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | Bestätigt, dass jeder Adapter einen Konventions-Pin hat, der höchstens 90 Tage alt ist, mindestens eine Vendor-URL zitiert und kein überfälliges Discovery-Ziel hat. Die CI führt die Prüfung bei jedem Pull Request, wöchentlich und vor einem Release aus. |
 | `python scripts/dev/check_vendor_urls.py` | Ruft jede Vendor-URL ab, die die Pins und Harness-Templates zitieren, und schlägt bei einer verschobenen oder toten Seite fehl, einschließlich eines Hostnamens, der nicht mehr auflöst, oder eines Zertifikats, dessen Verifizierung fehlschlägt; ein Timeout, eine abgelehnte oder zurückgesetzte Verbindung oder ein 5xx-Serverfehler wird als nicht erreichbar gemeldet und lässt die Prüfung nicht fehlschlagen. Ein Hostname, der nur auf eine Platzhalteradresse auflöst, die kein Server haben kann und die die Nameserver eines Vendors für die Region zurückgeben können, aus der die Prüfung läuft, erhält keine Anfrage: Er wird als nicht routbar gemeldet, lässt die Prüfung nicht fehlschlagen, und seine Seiten müssen von Hand geprüft werden. Der wöchentliche Konventionsmonitor führt sie aus, warnt bei jedem Lauf vor jedem solchen Host und listet dessen Seiten in dem Issue auf, das er erstellt. |
-| `python -m apothem.conformity.gate --all .` | Führt die Konformitätsprüfungen für Dokumentation und Implementierung aus. |
+| `python scripts/dev/check_vendor_releases.py` | Fragt jeden Release-Kanal in `scripts/dev/vendor-release-channels.json` nach seiner aktuellen Version: den dist-tag eines npm-Pakets, das neueste Release eines GitHub-Repositorys (oder, bei einem Kanal mit Tag-Muster, sein neuestes stabiles Release mit passendem Tag unter den neuesten 100) oder ein PyPI-Projekt. Bei einer Installer-Adresse fragt es, wohin die Adresse weiterleitet. Es vergleicht die Antwort mit dem zuletzt geprüften Stand. Eine neue Hauptversion, ein Release jenseits eines Auslösers, den die Datei nennt, eine Installer-Adresse, die anderswohin weiterleitet, oder ein Paket, dist-tag, Release oder eine Adresse, die nicht mehr existiert, lässt es fehlschlagen, ebenso ein Tag-Muster, zu dem kein stabiles Release unter den neuesten 100 passt. Eine neuere Neben- oder Patch-Version wird gemeldet und lässt es nicht fehlschlagen, es sei denn, die `watch`-Stufe des Kanals nennt diese Stufe. Eine Registry, die nicht antwortet oder deren Antwort mittendrin abbricht, wird als nicht erreichbar gemeldet und lässt es ebenfalls nicht fehlschlagen. Jeder Versuch einer Anfrage hat insgesamt 30 Sekunden, und nach 20 Minuten fragt die Prüfung keinen weiteren Kanal mehr, sodass sie immer ihren Bericht schreibt. Vor jeder Anfrage prüft sie, dass jeder Harness-Ordner einen Eintrag hat und dass die Belegphrase jedes Kanals in seinem Pin steht, und sie endet mit 1, wenn das nicht der Fall ist; der Bericht und das Issue sagen dann, was falsch ist. Der wöchentliche Konventionsmonitor führt sie mit einem schreibgeschützten Token aus, listet jeden Kanal in der Laufzusammenfassung auf und erstellt ein Issue, wenn sie fehlschlägt. `--list` gibt die Kanäle aus, ohne eine Registry zu fragen. |
+| `python3 -E -s src/apothem/conformity/gate.py --all .` | Führt die Konformitätsprüfungen für Dokumentation und Implementierung aus. |
 | `python -m pytest` | Führt die Registry-Fixture-Tests und die Adapter-Vertragstests aus. |
+
+## Release-Kanäle
+
+`scripts/dev/vendor-release-channels.json` hat einen Eintrag für jeden
+Harness-Ordner. Ein beobachteter Harness führt seine Release-Kanäle auf. Jeder
+Kanal verzeichnet die zuletzt geprüfte Version mit Datum. Das ist die Version,
+die sein Pin nennt, oder, wo der Pin keine nennt, die Version, die die Registry
+auslieferte, als der Kanal erfasst wurde. Ein Eintrag kann auch nur eine
+Hauptversion enthalten. Jeder Kanal zitiert die Phrase des Pins, die ihn nennt.
+Die erste Zahl einer Version ist ihre Hauptversion, 0 eingeschlossen, daher
+meldet eine 0.x-Linie, die von 0.26 auf 0.27 wechselt, eine neuere
+Nebenversion und schlägt nicht fehl. Ein Kanal mit Kalenderversionen, etwa den
+Nummern Jahr.Monat.Release von OpenClaw, meldet jedes neuere Release, ohne
+fehlzuschlagen, und nimmt keine `watch`-Stufe an. Codex, Gemini CLI, Hermes,
+Qwen Code und GLM sind auf 0.x-Linien, daher wird eine neue Version eines
+davon in der Laufzusammenfassung aufgeführt und erstellt kein Issue, bis sie
+1.0 erreicht, es sei denn, ihr Kanal setzt eine `watch`-Stufe.
+
+OpenCode hat vier Kanäle. `opencode-ai` trägt OpenCode 1, und `@opencode/cli`
+trägt OpenCode 2. Die GitHub-Releases von `anomalyco/opencode` zeigen eine neue
+Hauptlinie, unabhängig davon, als welches npm-Paket sie ausgeliefert wird. Der
+vierte Kanal fragt `opencode.ai/install`, wohin es weiterleitet. Am 2026-11-03
+leitete es auf das Installer-Skript von OpenCode 1 weiter. Dieses Skript
+installiert die Version, die der dist-tag `latest` von `opencode-ai` nennt,
+wenn das eine Version von OpenCode 1 ist, und es installiert nie OpenCode 2.
+Die OpenCode-Entscheidung vom 2026-11-03 geht dazu über, dort, wo OpenCode 2
+läuft, die eigenen Formate von OpenCode 2 zu schreiben, sobald eines von zwei
+Signalen auftritt: OpenCode 2 kündigt ein Datum an, an dem es seine Übersetzung
+der Formate von OpenCode 1 entfernt, oder `opencode.ai/install` oder
+`opencode-ai` wechselt zu OpenCode 2. Die Prüfung beobachtet das zweite Signal.
+Der Kanal `opencode-ai` und der Installer-Kanal tragen je einen Auslöser: Die
+Prüfung schlägt fehl, wenn die `latest`-Version von `opencode-ai` über
+Hauptversion 1 hinausgeht oder wenn `opencode.ai/install` nicht mehr auf das
+Skript von OpenCode 1 weiterleitet. Eine Änderung innerhalb dieses Skripts
+ändert die Weiterleitung nicht, daher sieht die Prüfung sie nicht. Keine
+Registry beantwortet das erste Signal, daher bleibt es eine Prüfung von Hand,
+fällig bis 2027-02-01 mit der nächsten Überprüfung des OpenCode-Pins.
+
+Antigravity, Cursor, Kiro, Trae und Windsurf werden nicht beobachtet. Jedes ist
+eine Desktop-App oder ein Kommandozeilen-Tool, das sich mit einem Skript
+installiert, und sein Pin nennt keinen Release-Kanal, den ein Skript ohne
+Zugangsdaten abfragen kann. Die Datei gibt für jedes den Grund an.
+
+Nachdem Sie einen Pin gegen ein neues Release oder Weiterleitungsziel erneut
+geprüft haben, aktualisieren Sie die Felder `reviewed`, `reviewed_on` und
+`reviewed_from` dieses Kanals. Ein Auslöser auf einem Versionskanal lässt die
+Prüfung jede Woche fehlschlagen, bis Sie ihn entfernen oder ändern. Ein
+Auslöser auf einer Installer-Adresse hört auf, sobald `reviewed` das neue Ziel
+verzeichnet, daher verzeichnen Sie dieses Ziel erst, nachdem die Aktion des
+Auslösers erledigt ist.
 
 ## Generierte Harness-Adapter-Referenz
 

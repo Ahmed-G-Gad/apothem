@@ -2,7 +2,7 @@
 title: "Hooks"
 description: "Werkzeug-Ereignishandler, die bei SessionStart, PreToolUse, PostToolUse und Stop auslösen und Nachrichtenkontexte laden, die die Git-Isolation und die Plan-Disziplin durchsetzen, mit einem getesteten Laufzeitvertrag und benutzerspezifischem Zustand."
 machineTranslated: true
-sourceHash: "2fe3999ec76b34d3"
+sourceHash: "e510ec34e7c5cded"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -50,6 +50,16 @@ jedem Werkzeugaufruf; löschen Sie die Cache-Datei, um eine neue Suche zu
 erzwingen. Berücksichtigt werden nur ein absolutes Zustandsverzeichnis und ein
 absoluter zwischengespeicherter Pfad.
 
+Jeder Hook-Befehl startet Python mit `-E -s`, den Bootstrap des Plugins und
+seine Interpreter-Suche eingeschlossen. `-E` lässt Python `PYTHONPATH` und die
+anderen `PYTHON*`-Variablen ignorieren, und `-s` lässt Ihre Site-Packages des
+Benutzers aus. Ein Hook läuft in dem Ordner, den der Assistent geöffnet hat,
+und ein leerer `PYTHONPATH`-Eintrag steht für diesen Ordner, sodass ohne die
+Flags eine dort abgelegte `sitecustomize.py` oder `json.py` innerhalb des Hooks
+laufen würde. Die Hooks verwenden nur die Standardbibliothek und ihre eigenen
+Dateien. Der Dispatcher und das Konformitäts-Gate lesen ihre Eingabe selbst als
+UTF-8, weil `-E` auch `PYTHONUTF8` und `PYTHONIOENCODING` abschaltet.
+
 Jede Oberfläche registriert einen Dispatcher-Eintrag pro Ereignis und Matcher,
 der jede Nachricht auflistet, die dieser Matcher auswertet: Ein Prozess liest die
 Nutzlast einmal, führt jeden Wächter aus und antwortet mit einem Umschlag, sodass
@@ -61,8 +71,10 @@ Exec-Form-Hooks keine Shell benötigen. Der Dispatcher ist ein eigenständiges
 Skript, das nur die Standardbibliothek nutzt: Er initialisiert seinen eigenen
 `sys.path`, sodass auf dem Host kein importierbares `apothem`-Paket benötigt
 wird. Aus einem Quell-Checkout führt die Modulform
-`python -m apothem.hooks.dispatch <event>` (mit `PYTHONPATH=src`) denselben Code
-für die Entwicklung aus. Der Dispatcher lädt `hooks/lib/resolve_root.py` zur
+`python -m apothem.hooks.dispatch <event>` (mit `PYTHONPATH=src`, ausgeführt aus
+der Wurzel des Checkouts: `-m` liest Module zuerst aus dem aktuellen Ordner)
+denselben Code für die Entwicklung aus. Die Befehle, die die Adapter schreiben,
+führen das Skript über seinen Pfad mit `-E -s` aus. Der Dispatcher lädt `hooks/lib/resolve_root.py` zur
 Auflösung der Ökosystem-Wurzel und delegiert an `hooks/emit_hook_context.py`
 und `hooks/session_start_bootstrap.py`.
 

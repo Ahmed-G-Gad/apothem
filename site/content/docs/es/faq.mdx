@@ -2,7 +2,7 @@
 title: "Preguntas frecuentes"
 description: "Preguntas habituales sobre el propósito de Apothem, los entornos compatibles, la opcionalidad de la suite de plan, la personalización de reglas, los tipos de artefactos y las ubicaciones del estado del ecosistema."
 machineTranslated: true
-sourceHash: "39f28c46787a7498"
+sourceHash: "bc73f569d994fb5b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -29,7 +29,7 @@ Actualmente, el registro cubre los siguientes entornos compatibles:
 ```text
 Claude Code, GitHub Copilot, Cursor, Gemini CLI, Codex, Windsurf, OpenCode,
 Antigravity, Open-Claw, Hermes, Qwen Code, CodeBuddy, Kiro, Trae, Zed,
-GLM (Z.ai) y Kimi Code
+GLM (Z.ai), and Kimi Code
 ```
 
 El adaptador de Claude Code se materializa en `~/.claude/`; su despachador de hooks es neutral respecto al anfitrión: primero resuelve la raíz del ecosistema a partir de `$CLAUDE_PROJECT_DIR`, después de `$LLM_PROJECT_DIR`, luego prueba búsquedas relativas al script y al directorio de trabajo, y por último recurre a `$HOME/.claude`.
@@ -42,13 +42,16 @@ cadena de herramientas de validación son útiles de forma independiente.
 
 ## ¿Cómo personalizo las reglas sin bifurcar el repositorio?
 
-Añade una cadena a la lista `rules:` en `~/.config/apothem/profile.yaml` y vuelve a ejecutar la instalación o la actualización. Los archivos de regla bajo `src/apothem/rules/` editan el árbol de código fuente empaquetado, que el instalador del archivo comprimido reemplaza cuando se ejecuta con `--yes`.
+Añade una cadena a la lista `rules:` en `~/.config/apothem/profile.yaml` y vuelve a ejecutar la instalación o la actualización. Los archivos de regla bajo `src/apothem/rules/` forman parte del árbol de código fuente instalado, así que una edición allí no sobrevive a la actualización del propio Apothem. Volver a ejecutar el instalador cuando instala el archivo comprimido de la versión, como hace cuando cosign está instalado, reemplaza los archivos de código fuente de una instalación desde ese archivo comprimido, incluidas las ediciones. Una nueva ejecución que toma en cambio la ruta de clonado con git, como hace sin cosign, los reemplaza solo con `--yes` (`-Yes` en PowerShell), lo que convierte la instalación en un clon. Actualizar un clon de git se detiene ante un archivo rastreado editado hasta que confirmes (commit) o guardes con stash el cambio, y después extrae la copia del archivo de la versión.
 
 ## ¿Cómo desactivo una regla temporalmente?
 
-Cambia el nombre del archivo para que quede fuera del patrón
-`src/apothem/rules/*.md` o muévelo a un directorio hermano que el cargador no
-explore.
+Apothem no tiene ninguna clave de perfil que desactive una regla empaquetada
+concreta. Renombrar o mover un archivo bajo `src/apothem/rules/` cambia el árbol
+de código fuente instalado, así que, igual que una edición (consulta la respuesta
+anterior), no sobrevive a la actualización del propio Apothem. Para ajustar el
+comportamiento sin tocar el árbol de código fuente, añade tu propia regla a la
+lista `rules:` de tu perfil y ejecuta `apothem update`.
 
 ## ¿Cuál es la diferencia entre reglas, skills y trabajadores delegados?
 
@@ -95,7 +98,7 @@ un checkout compartido, un directorio sincronizado). Consulta
 ## ¿Apothem necesita pip?
 
 No, no para el motor en sí. El motor es un árbol de fuentes autocontenido con
-dependencias incorporadas: se ejecuta como `python -m apothem` desde cualquier
+dependencias incorporadas: se ejecuta desde cualquier
 checkout, la caché de npx o el árbol del plugin sobre Python del sistema 3.10+, y
 no instala nada de su propio código en `site-packages` (`click` y `rich` son los
 únicos prerrequisitos del intérprete). La única excepción opcional: si falta

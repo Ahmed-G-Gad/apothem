@@ -2,7 +2,7 @@
 title: "كتابة القواعد"
 description: "أنشئ قواعد سلوك Apothem وحدِّد نطاقها وصُنها."
 machineTranslated: true
-sourceHash: "bc1f3351f9a5fd2c"
+sourceHash: "a7a12b4db14fbfe9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -72,12 +72,20 @@ apothem update --harness cursor --project /path/to/project
 
 ## التحقق من القواعد
 
-شغِّل أداة التحقّق من الـ<bdi>frontmatter</bdi> على ملف القاعدة الذي كتبته. من نسخة مسحوبة من
-<bdi>Apothem</bdi>، يجعل <bdi>`PYTHONPATH=src`</bdi> الحزمة قابلة للاستيراد؛ وبعد التثبيت بالسكربت،
-استخدم <bdi>`PYTHONPATH="$HOME/.apothem/src"`</bdi> مكانه.
+شغِّل أداة التحقّق من الـ<bdi>frontmatter</bdi> على ملف القاعدة الذي كتبته. من جذر نسخة مسحوبة من
+<bdi>Apothem</bdi>، يجعل <bdi>`PYTHONPATH=src`</bdi> الحزمة قابلة للاستيراد
+(يقرأ <bdi>`python -m`</bdi> الوحدات من المجلد الحالي أولًا، لذا استخدم مجلدًا
+تثق به):
 
 ```bash
 PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep src/apothem/rules/<rule>.md
+```
+
+بعد التثبيت بالسكربت، شغّل البوابة عبر مسار السكربت الخاص بها مع <bdi>`-E -s`</bdi>
+(ويشرح [بوابة المطابقة](/docs/conformity-gate) السبب):
+
+```bash
+python3 -E -s "$HOME/.apothem/src/apothem/conformity/gate.py" --check frontmatter-grep <rule>.md
 ```
 
 يأخذ الفحص الخاص بكل عملية كتابة مثل <bdi>`frontmatter-grep`</bdi> الملفَ المراد فحصه، أو

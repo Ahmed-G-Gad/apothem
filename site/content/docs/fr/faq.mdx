@@ -2,7 +2,7 @@
 title: "FAQ"
 description: "Questions courantes sur la finalité d'Apothem, les environnements pris en charge, le caractère optionnel des suites de planification, la personnalisation des règles, les types d'artefacts et l'emplacement de l'état de l'écosystème."
 machineTranslated: true
-sourceHash: "39f28c46787a7498"
+sourceHash: "bc73f569d994fb5b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,12 +41,15 @@ sont utiles indépendamment.
 
 ## Comment personnaliser les règles sans forker le dépôt ?
 
-Ajoutez une chaîne à la liste `rules:` de `~/.config/apothem/profile.yaml`, puis relancez l'installation ou la mise à jour. Les fichiers de règles sous `src/apothem/rules/` modifient l'arborescence source packagée, que l'installateur d'archive remplace lorsqu'il est exécuté avec `--yes`.
+Ajoutez une chaîne à la liste `rules:` de `~/.config/apothem/profile.yaml`, puis relancez l'installation ou la mise à jour. Les fichiers de règles sous `src/apothem/rules/` font partie de l'arborescence source installée : une modification à cet endroit ne survit donc pas à la mise à jour d'Apothem lui-même. Une nouvelle exécution de l'installateur qui installe l'archive de release, comme il le fait lorsque cosign est installé, remplace les fichiers source d'une installation par archive de release, modifications comprises. Une nouvelle exécution qui passe plutôt par le clone git, comme elle le fait sans cosign, ne les remplace qu'avec `--yes` (`-Yes` sous PowerShell), qui fait basculer l'installation vers un clone. La mise à jour d'un clone git s'arrête sur un fichier suivi modifié jusqu'à ce que vous validiez (commit) ou mettiez de côté (stash) la modification, puis extrait la copie du fichier fournie par la release.
 
 ## Comment désactiver une règle temporairement ?
 
-Renommez le fichier en dehors du motif `src/apothem/rules/*.md`
-ou déplacez-le vers un répertoire frère que le chargeur n'analyse pas.
+Apothem n'a aucune clé de profil qui désactive une seule règle packagée. Renommer ou déplacer
+un fichier sous `src/apothem/rules/` modifie l'arborescence source installée ; comme
+une modification (voir la réponse ci-dessus), cela ne survit donc pas à la mise à jour d'Apothem lui-même. Pour
+ajuster le comportement sans toucher à l'arborescence source, ajoutez votre propre règle à la
+liste `rules:` de votre profil et exécutez `apothem update`.
 
 ## Quelle est la différence entre règles, compétences et travailleurs délégués ?
 
@@ -94,7 +97,7 @@ travail partagée, un répertoire synchronisé). Voir
 ## Apothem a-t-il besoin de pip ?
 
 Non — pas pour le moteur lui-même. Le moteur est une arborescence source autonome
-avec des dépendances intégrées — il s'exécute comme `python -m apothem` depuis
+avec des dépendances intégrées — il s'exécute depuis
 n'importe quel dépôt extrait, le cache npx ou l'arborescence du plugin sur un
 Python système 3.10+, et n'installe aucune partie de son propre code dans
 `site-packages` (`click` et `rich` sont les seuls prérequis de l'interpréteur).

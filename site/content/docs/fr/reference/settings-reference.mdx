@@ -2,7 +2,7 @@
 title: "Documentation de settings.json"
 description: "Configurez l'exécution des hooks de Claude Code, les permissions, les événements, les délais d'attente, le runtime Python, la validation et la précédence des réglages en couches pour l'écosystème Apothem."
 machineTranslated: true
-sourceHash: "f83dad93ea1dbe9c"
+sourceHash: "a7175abd0e0c77ac"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -37,7 +37,9 @@ Chaque hook configuré utilise la forme de commande exec de Claude Code. Le mod�
 `~/.claude/.apothem/support/hooks/dispatch.py`. Le répartiteur et le portail de conformité (`~/.claude/.apothem/support/conformity/gate.py`, avec ses fixtures de schéma
 à ses côtés à `~/.claude/.apothem/support/schemas/`) sont des scripts autonomes de la bibliothèque
 standard — aucun paquet `apothem` importable n'est requis sur l'hôte, et un seul
-modèle sert chaque plateforme.
+modèle sert chaque plateforme. `-E -s` fait ignorer à Python `PYTHONPATH` et
+les autres variables `PYTHON*` et lui fait sauter les site-packages de l'utilisateur, de sorte que rien
+dans le projet ouvert par l'assistant ne se charge dans un hook.
 
 ## Schéma de configuration des hooks
 
@@ -87,13 +89,13 @@ motif de localisateur + répartition pour l'activer.
 Trois validateurs couvrent la surface des hooks, par rigueur croissante :
 
 ```bash
-# Structurel + hygiène Python (rapide, hors ligne)
+# Structural + Python-hygiene (fast, offline)
 python scripts/dev/validate_hooks.py
 
-# Écosystème complet (structure + frontmatter + vérifications de hooks déléguées)
+# Full ecosystem (structure + frontmatter + delegated hook checks)
 python scripts/dev/validate_ecosystem.py
 
-# Balayage adversarial (assaille chaque commande de hook configurée avec des entrées dégradées)
+# Adversarial sweep (storms every configured hook command with degraded inputs)
 python scripts/dev/chaos_pass.py
 ```
 

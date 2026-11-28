@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "Adaptador de entorno de Apothem para Cursor (GA)."
 machineTranslated: true
-sourceHash: "817b5e32ce317949"
+sourceHash: "0aa24ff454d74139"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -197,6 +197,10 @@ de las dos rutas:
 "/path/to/python" -E -s "/path/to/project/.apothem/support/cursor/hooks/dispatch.py" --contract cursor sessionStart
 ```
 
+`-E -s` hace que Python ignore `PYTHONPATH` y las demás variables `PYTHON*`
+y omita tus site-packages de usuario, de modo que ningún archivo del proyecto
+puede cargarse en el hook.
+
 En un host Windows el comando empieza con `& `, el operador de llamada de
 PowerShell, porque la aplicación de escritorio de Cursor ejecuta los comandos de
 hook a través de PowerShell, donde una línea que empieza con una ruta de programa
@@ -261,8 +265,8 @@ sincronización.
 
 ## Notas de compatibilidad
 
-Cursor 0.45+ admite instrucciones a nivel de proyecto mediante
-`.cursor/rules/`. El adaptador escribe en el directorio `.cursor/rules/` con
+Cursor lee las instrucciones a nivel de proyecto desde `.cursor/rules/`, según
+la [documentación de reglas de Cursor](https://cursor.com/docs/rules). El adaptador escribe en el directorio `.cursor/rules/` con
 alcance de proyecto de forma predeterminada; Cursor no tiene ninguna ruta
 documentada de reglas globales de usuario basada en archivos que este adaptador
 pueda gestionar.
@@ -370,8 +374,17 @@ quedan, y una carpeta que queda vacía se elimina. Cada carpeta se respalda bajo
 ## Puerta de conformidad
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Ejecútalo desde la carpeta de tu proyecto. En Windows, usa `python` en lugar de
+`python3` y la ruta completa, ya que Windows PowerShell y cmd no expanden `~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` en PowerShell, o
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` en cmd. La ruta es
+donde el instalador coloca el motor, y `-E -s` mantiene tu `PYTHONPATH` y tus
+site-packages de usuario fuera de la puerta;
+[Puerta de conformidad](/docs/conformity-gate) explica ambas cosas y las demás
+instalaciones.
 
 ## Solución de problemas
 

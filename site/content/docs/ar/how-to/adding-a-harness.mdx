@@ -2,7 +2,7 @@
 title: "إضافة بيئة"
 description: "فعّل محوّل بيئة لكي تُجسَّد تهيئتها الأصلية من الملف التعريفي المشترك."
 machineTranslated: true
-sourceHash: "6daae4aec1547438"
+sourceHash: "d42e0475934c3217"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,10 +13,10 @@ sourceHash: "6daae4aec1547438"
 
 - ملف تعريفي مشترك في <bdi>`~/.config/apothem/profile.yaml`</bdi> (أنشئ واحدًا عبر
   <bdi>`apothem profile init`</bdi> إن لم يكن موجودًا بعد).
-- واجهة <bdi>`apothem`</bdi> على <bdi>`PATH`</bdi> لديك. إذا ثبّتّ شجرة المصدر القائمة بذاتها،
-  فصدّر كل أمر بـ <bdi>`PYTHONPATH="$HOME/.apothem/src"`</bdi>
-  وشغّل <bdi>`python -m apothem`</bdi> بدلًا من <bdi>`apothem`</bdi> — أو استخدم
-  <bdi>`npx @ahmed-g-gad/apothem`</bdi>.
+- واجهة <bdi>`apothem`</bdi> على <bdi>`PATH`</bdi> لديك. إذا ثبّتّ شجرة المصدر القائمة بذاتها
+  ولم يكن مجلّدها على <bdi>`PATH`</bdi> بعد، فشغّل الغلاف بمساره الكامل
+  (<bdi>`~/.local/bin/apothem`</bdi> افتراضيًا) أو انسخ الأمر الذي طبعه المُثبِّت
+  — أو استخدم <bdi>`npx @ahmed-g-gad/apothem`</bdi>.
 
 ## الخطوات
 

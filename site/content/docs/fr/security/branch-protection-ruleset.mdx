@@ -2,7 +2,7 @@
 title: "Protection de branche"
 description: "Protection de branche d'Apothem sur main : la règle de protection en vigueur, ses vérifications de statut requises et les vérifications en attente d'ajout."
 machineTranslated: true
-sourceHash: "7d54aae6581f03ec"
+sourceHash: "a8e8cbd39d06d78f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,7 +22,7 @@ Cette page consigne exactement les paramètres en vigueur, tels que lus pour la 
 | **Exiger que les vérifications de statut réussissent** | `required_status_checks` | ✅ | Les 12 contextes listés sous [Vérifications de statut requises](#vérifications-de-statut-requises) doivent réussir. |
 | **Exiger que les branches soient à jour avant la fusion** | `required_status_checks.strict` | ❌ | Une pull request peut être fusionnée lorsque ses vérifications requises ont réussi par rapport à un `main` plus ancien. Les workflows qui s'exécutent lors d'un push sur `main` testent ensuite le résultat fusionné. |
 | **Exiger la résolution des conversations avant la fusion** | `required_conversation_resolution` | ✅ | Les fils de revue ouverts bloquent la fusion. |
-| **Exiger des commits signés** | `required_signatures` | ❌ | Les commits de publication sont signés localement. L'application obligatoire de cette règle attend que la documentation d'intégration des contributeurs décrive la configuration de la signature SSH ou GPG. |
+| **Exiger des commits signés** | `required_signatures` | ❌ | Les commits de publication arrivent sur `main` sous forme de fusions squash que GitHub signe avec sa propre clé ; la signature du mainteneur figure sur l'étiquette de publication. L'application obligatoire de cette règle attend que la documentation d'intégration des contributeurs décrive la configuration de la signature SSH ou GPG. |
 | **Exiger un historique linéaire** | `required_linear_history` | ✅ | Maintient l'historique public de `main` sur une seule ligne. |
 | **Verrouiller la branche** | `lock_branch` | ❌ | `main` accepte les fusions. |
 | **Ne pas autoriser le contournement des paramètres ci-dessus** | `enforce_admins` | ❌ | Les paramètres ci-dessus ne s'imposent pas à un administrateur du dépôt. Un administrateur peut fusionner sans les vérifications requises ou pousser directement sur `main`. |

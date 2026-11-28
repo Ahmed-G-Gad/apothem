@@ -2,7 +2,7 @@
 title: "Ajouter un environnement"
 description: "Activer un adaptateur d'environnement pour que sa configuration native soit matérialisée depuis le profil partagé."
 machineTranslated: true
-sourceHash: "6daae4aec1547438"
+sourceHash: "d42e0475934c3217"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,9 +14,9 @@ la configuration native de cet environnement depuis votre profil partagé.
 - Un profil partagé à `~/.config/apothem/profile.yaml` (créez-en un avec
   `apothem profile init` s'il n'existe pas encore).
 - La CLI `apothem` sur votre `PATH`. Si vous avez installé l'arborescence source
-  autonome, préfixez chaque commande par `PYTHONPATH="$HOME/.apothem/src"`
-  et exécutez `python -m apothem` à la place d'`apothem` — ou utilisez
-  `npx @ahmed-g-gad/apothem`.
+  autonome et que son dossier n'est pas encore sur `PATH`, lancez le shim par son
+  chemin complet (`~/.local/bin/apothem` par défaut) ou copiez la commande que
+  l'installateur a affichée — ou utilisez `npx @ahmed-g-gad/apothem`.
 
 ## Étapes
 

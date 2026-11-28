@@ -2,7 +2,7 @@
 title: "Trae"
 description: "Apothem-Harness-Adapter für Trae (GA)."
 machineTranslated: true
-sourceHash: "97ae18e3fc9b0b70"
+sourceHash: "1c892ed70350c956"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -49,7 +49,8 @@ Diese Ordner werden gemeinsam genutzt. Sie gehören nicht exklusiv zum Projekt:
   Projekt die Installation gehört. Es ändert nicht, wohin die Skills gehen.
 - Die Installation fügt Ihrem Repository keine Skill- oder Regeldatei hinzu. Das
   Projekt erhält die Regeldatei und die Subagenten-Dateien in `.trae/agents/`
-  sowie den Datenordner `.apothem/`, den jede Projektinstallation anlegt.
+  sowie den Datenordner, den jede Projektinstallation anlegt, standardmäßig
+  `.apothem/`.
 - Die Home-Ordner werden zuerst geschrieben. Schlägt das fehl, etwa weil ein
   Ordner im Pfad ein Link ist, der aus Ihrem Home-Verzeichnis herausführt (einem
   Link, der darin bleibt, wird gefolgt), oder nicht beschreibbar ist, bricht die
@@ -217,8 +218,18 @@ zurückbleibender Ordner wird entfernt. Jeder Ordner wird unter
 ## Konformitäts-Gate
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Führen Sie ihn in Ihrem Projektordner aus. Verwenden Sie unter Windows `python`
+statt `python3` und den vollständigen Pfad, da Windows PowerShell und cmd `~`
+nicht expandieren:
+`$HOME\.apothem\src\apothem\conformity\gate.py` in PowerShell oder
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` in cmd. Der Pfad ist
+der Ort, an dem der Installer die Engine ablegt, und `-E -s` hält Ihren
+`PYTHONPATH` und Ihre Benutzer-site-packages vom Gate fern;
+[Konformitäts-Gate](/docs/conformity-gate) erklärt beides sowie die anderen
+Installationsarten.
 
 ## Fehlerbehebung
 

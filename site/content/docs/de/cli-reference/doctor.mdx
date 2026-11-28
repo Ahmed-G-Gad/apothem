@@ -2,7 +2,7 @@
 title: "doctor"
 description: "CLI-Referenz für den Befehl apothem doctor."
 machineTranslated: true
-sourceHash: "9336c060509b05e7"
+sourceHash: "78a7cea770c98762"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,20 +28,178 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   `not_installed` gemeldet und gilt nicht als Fehlschlag, sodass ein Rechner mit
   einem intakten Harness die Prüfung besteht. Harnesses mit
   Projektgeltungsbereich werden geprüft, wenn `--project` ihre Wurzel benennt;
-  ohne diese Option werden sie als `needs_project` gemeldet.
+  ohne diese Option werden sie als `needs_project` gemeldet. Eine Datei mit
+  Markerzeilen, die Apothem nicht von Ihrem Text unterscheiden kann, zählt als
+  Installation, solange das Installations-Ledger nicht gelesen werden kann,
+  sodass ein solcher Harness geprüft statt als `not_installed` gemeldet wird.
+  Doctor nennt ein Ledger, das es nicht lesen kann, in einer
+  `ledger.unreadable`-Prüfung, wo es dieses Ledger liest, um die Hooks des
+  Harness zu starten (siehe **Hook-Laufzeit** unten): für einen Harness, der
+  die Verifizierung besteht, und für einen, dessen fehlgeschlagene Prüfung
+  Dateien mit Apothem-Markern nennt (`harness.stray_begin`). Ihre Korrektur
+  sagt, ein beschädigtes Ledger beiseitezulegen und `update` auszuführen, oder,
+  für ein Ledger, das doctor nicht öffnen kann (weil etwa ein anderes Programm
+  es geöffnet hält), diese Datei lesbar zu machen. Ein Harness, dessen
+  Verifizierung aus einem anderen Grund fehlschlägt, erhält die Prüfung
+  `harness.verify_failed` und keine Hook-Prüfung, also auch keine
+  `ledger.unreadable`-Prüfung.
 - **Verifizierung.** Jeder installierte Harness muss dieselbe Prüfung bestehen
-  wie [`verify`](/docs/cli-reference/verify).
-- **Hook-Laufzeit.** Für jeden verifizierten Harness liest doctor die Dateien,
-  die seine letzte Installation geschrieben hat, findet die Hook-Befehle, die
-  Apothem dort registriert hat, und startet jeden Interpreter und jedes
-  Hook-Skript einmal mit einer wirkungslosen Nutzlast (die registrierten
-  Argumente plus `--help`, `{}` auf stdin, ein temporäres Arbeitsverzeichnis und
-  entferntes `PYTHONPATH`). Es wird nichts geschrieben. Ein fehlender
-  Interpreter, ein fehlendes Skript oder ein Absturz beim Import lässt die
-  Prüfung fehlschlagen.
+  wie [`verify`](/docs/cli-reference/verify). Enthält eine Datei einen
+  Apothem-BEGIN-Marker ohne END-Marker, ist die fehlgeschlagene Prüfung
+  `harness.stray_begin`, und ihre Korrektur nennt jede solche Datei und die
+  Zeile des Markers, gibt nummerierte Schritte, die diese Zeile und jede andere
+  BEGIN-Markerzeile außer der, die den Block von Apothem öffnet, ändern (ein
+  Wort, das in jeden Kommentar eingefügt wird), und sagt, den END-Marker nicht
+  stattdessen wieder hinzuzufügen, was zwei Apothem-Blöcke hinterließe, sobald
+  eine Installation oder Aktualisierung den Block von Apothem getrennt davon
+  geschrieben hat: Eine Aktualisierung allein behebt es nicht
+  (siehe
+  [Fehlerbehebung](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
+  Eine Datei, die zwei oder mehr vollständige Blöcke zwischen den Markern von
+  Apothem enthält oder deren Markerpaare Apothem nicht von Ihrem Text
+  unterscheiden kann, etwa sein Block innerhalb eines Ihrer Codeblöcke, besteht
+  dieselbe Prüfung nicht: Ihre Meldung sagt, dass die Datei
+  "Apothem markers to fix by hand" enthält, und ihre Korrektur nennt jeden
+  Block mit seinen Zeilen (siehe
+  [Eine Datei enthält zwei Blöcke zwischen den Markern von Apothem](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers))
+  oder jedes Markerpaar, was seine Zeilen lauten und wie es zu beheben ist,
+  zusammen mit jedem BEGIN-Marker, der kein Markerpaar beginnt (siehe
+  [Apothem kann seinen Block nicht von Ihrem Text unterscheiden](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+  Für eine OpenClaw-Regeldatei sagt die Korrektur, wie der Hinweis von verify,
+  dass die nächste Aktualisierung den Block von Apothem schreibt, wenn die
+  Datei dann in das Limit pro Datei von OpenClaw passt, auf das alter
+  Apothem-Text, den Sie behalten, angerechnet wird.
+- **Hook-Laufzeit.** Für jeden verifizierten Harness und für jeden, bei dem ein
+  solcher Marker die Prüfung scheitern lässt, liest doctor die Dateien, die die
+  geprüfte Installation geschrieben hat: die Installation im eigenen Ordner
+  des Harness (ein `CODEX_HOME`, das dort gesetzt ist, wo doctor läuft, ist
+  dieser Ordner) oder, für einen Harness mit Projektgeltungsbereich, im Ordner
+  von `--project`. Eine Installation in einem anderen Ordner, etwa ein
+  `CODEX_HOME`, auf das doctor nicht verweist, oder ein Projekt, das Sie
+  inzwischen gelöscht haben, wird nicht an seiner Stelle verwendet. doctor
+  findet die Hook-Befehle, die Apothem in den JSON-Dateien darunter registriert
+  hat, und startet jeden Interpreter und jedes Hook-Skript einmal mit einer
+  wirkungslosen Nutzlast (die registrierten Argumente plus `--help`, `{}` auf
+  stdin, ein temporäres Arbeitsverzeichnis und entferntes `PYTHONPATH`). Es
+  wird nichts geschrieben. Ein fehlender Interpreter, ein fehlendes Skript oder
+  ein Absturz beim Import lässt die Prüfung fehlschlagen. Hat ein Hook für jedes
+  System eine eigene Befehlszeile, startet doctor die, die das Werkzeug auf
+  diesem Rechner ausführt: eine `powershell`- oder `commandWindows`-Zeile unter
+  Windows und eine `bash`-Zeile unter macOS und Linux, für ein Werkzeug, das
+  diesen Schlüssel liest. Bei einem Werkzeug, das nur `command` liest, wird
+  dessen `command`-Zeile gestartet. Doctor liest nur die Schlüssel, die das
+  Werkzeug selbst liest, und eine `args`-Liste nur für ein Werkzeug, das seinen
+  Befehl mit einer solchen ausführt, sodass eine Zeile oder Liste unter einem
+  anderen Schlüssel weder gestartet noch gezählt wird. Doctor startet das
+  Programm selbst, ohne Shell, und lässt daher unter Windows das `&` weg, mit
+  dem eine für PowerShell geschriebene Zeile beginnt. Ein außerhalb einer
+  JSON-Datei registrierter Hook wird nicht gestartet und nicht in `N started`
+  gezählt. Der Installationsdatensatz wird unter jeder Schreibweise dieses
+  Ordners gefunden, etwa mit anderer Groß- und Kleinschreibung unter Windows.
+  Hat das Installations-Ledger keinen Datensatz für diesen Ordner, wird die
+  Prüfung nicht ausgeführt: Der Bericht zeigt `not checked`, seine letzte Zeile
+  nennt statt `All checks passed` die Harnesses, deren Hook-Befehle nicht
+  geprüft wurden (bei einem Harness, der auch andere gestartet hat, die
+  bestanden haben, heißt es "some hook commands"), und die JSON-Ausgabe enthält
+  eine `hook.unchecked`-Prüfung.
+- **Hook-Dateien im Projekt.** Jeder, der in ein Projekt committen kann, kann
+  dessen Dateien ändern; deshalb startet doctor für einen Harness mit
+  Projektgeltungsbereich einen Hook-Befehl nur, wenn alles, was er ausführt,
+  bekannt ist. Es liest den Installationsdatensatz des Projekts, das
+  `--project` nennt, nimmt Hook-Befehle nur von den Stellen, an denen das
+  Werkzeug sie liest (höchstens 100 aus einer Datei; darüber hinaus nennt eine
+  `hook.unchecked`-Zeile die Datei, und der Rest wird nicht gestartet), und
+  startet einen Befehl nur, wenn sein Interpreter derjenige ist, den diese
+  Installation aufgezeichnet hat (es sei denn, er liegt im Projekt, wo andere
+  ihn ändern können), oder das Python, unter dem Apothem selbst läuft, die
+  Optionen vor dem Skript keinen Code ausführen (etwa `-E` und `-s`), das
+  Skript das Hook-Skript ist, das diese Installation geschrieben hat, in einem
+  Ordner, dessen Dateien noch den von der Installation aufgezeichneten
+  SHA-256-Prüfsummen entsprechen und der keine andere Python-Datei und keinen
+  Link enthält, und die Argumente danach diejenigen sind, die Apothem
+  schreibt. Doctor startet dann diese bekannten Pfade statt des gelesenen
+  Texts und schlägt keinen anderen Pfad nach, den ein Hook-Befehl nennt. Ein
+  aufgezeichneter Interpreter oder ein Hook-Skript, das fehlt, lässt die
+  Prüfung fehlschlagen, ohne dass etwas gestartet wird; für ein fehlendes
+  Hook-Skript führt die Korrektur `update` aus, um die Skripte
+  wiederherzustellen. Doctor startet keinen anderen Hook-Befehl des Projekts
+  und meldet jeden mit dem Grund als `hook.unchecked` (info, kein Fehlschlag,
+  in der Klartextausgabe mit `!` markiert). Dasselbe gilt für einen Befehl,
+  dessen bekannte Pfade doctor nicht nachschlagen kann, etwa einen in einem
+  Ordner, den Sie nicht öffnen können. Ein aufgezeichneter Interpreter im
+  Projekt wird nicht gestartet, da andere ihn ändern können, es sei denn,
+  doctor selbst läuft unter ihm: Die Korrektur führt `update` aus einem Ordner
+  außerhalb des Projekts aus, mit einem Apothem, das unter einem Python
+  außerhalb des Projekts läuft und stattdessen dieses Python aufzeichnet. Ein
+  in die eigene Umgebung des Projekts installiertes Apothem kann das nicht;
+  verwenden Sie eines, das außerhalb davon installiert ist. Ist die virtuelle
+  Umgebung des Projekts aktiv, deaktivieren Sie sie zuerst: Solange sie aktiv
+  ist, steht ihr Python an erster Stelle in Ihrem `PATH`, und der npx-Befehl
+  liefe unter ihm und zeichnete es erneut auf. Um das Python zu wählen, unter
+  dem der npx-Befehl läuft, setzen Sie `APOTHEM_PYTHON` auf seinen Pfad. Ein
+  Pfad, der kein funktionierendes Python 3.10 oder neuer ist, wird ohne
+  Meldung übersprungen und stattdessen `PATH` durchsucht; führen Sie doctor
+  daher erneut aus, um zu prüfen, dass die Zeile verschwunden ist. Die
+  Aktualisierung läuft von außerhalb des Projekts, weil `python -m apothem`,
+  im Projektordner ausgeführt, statt Apothem einen dort committeten Ordner
+  namens `apothem` starten würde. Von einem früheren Release installierte
+  Hooks, die keinen Interpreter oder keine Prüfsummen aufgezeichnet haben,
+  bleiben ungeprüft, bis Sie `update` mit denselben Optionen ausführen, mit
+  denen Sie installiert haben.
+- **Hook-Dateien, die die Prüfung nicht liest.** Die Hook-Prüfung liest keine
+  Hook-Datei, die größer als 4 MB ist, und nichts außer einer regulären Datei
+  (etwa keine Pipe und kein Gerät). Jede solche Datei erhält eine
+  `hook.unchecked`-Zeile, die sie nennt, ob sie nur Hooks enthält oder eine
+  Einstellungsdatei ist, in die die Hooks eingefügt werden, und ob sie in
+  einem Projekt oder unter Ihrem Home-Ordner liegt. Eine Aktualisierung lässt
+  eine zu große oder nicht reguläre Datei unverändert, daher sagt ihre
+  Korrektur, die Datei unter 4 MB zu verkleinern oder durch eine reguläre
+  Datei zu ersetzen und doctor dann erneut auszuführen. Eine Datei, aus der
+  das Werkzeug keinen Hook ausführt, erhält keine Zeile: die
+  Einstellungsdatei eines Werkzeugs, dessen Hooks Apothem nur in seinem
+  Unterstützungsordner hält, oder eine Kopie unter `.apothem/support`.
+  Eine Datei unter Ihrem Home-Ordner wird über einen Link gelesen, da sie
+  Ihnen gehört. In einem Projekt liest die Prüfung keine Hook-Datei, die sie
+  über einen Link erreicht, etwa einen Einstellungsordner, der durch einen
+  Link auf einen Ordner außerhalb des Projekts ersetzt wurde. Jede solche
+  Datei erhält eine `hook.unchecked`-Zeile, ob sie nur Hooks enthält oder eine
+  Einstellungsdatei ist, in die die Hooks eingefügt werden. Die Zeile nennt
+  die Datei und den Link, der die Datei selbst oder einer ihrer Ordner sein
+  kann. Die Korrektur sagt, zu prüfen, wohin der Link führt: Ersetzen Sie
+  einen Link, den Sie angelegt haben, durch eine echte Kopie des Ordners oder
+  der Datei, zu der er führt, und prüfen Sie die Hook-Befehle darin, oder
+  entfernen Sie einen Link, den Sie nicht angelegt haben, und führen Sie den
+  `update`-Befehl aus, mit dem die Korrektur endet. In beiden Fällen wird nur
+  der Link selbst entfernt, nicht der Ordner oder die Datei, zu der er führt.
+  Ein Hook-Befehl, dessen Hook-Skript über einen Link erreicht wird, wird
+  nicht gestartet; seine Zeile nennt das Skript und den Link, der das Skript
+  selbst oder einer seiner Ordner sein kann, und seine Korrektur ist dieselbe,
+  nur dass es keine Hook-Befehle zu prüfen gibt. Ein Hook-Skript, das die
+  Installation außerhalb des Projekts aufgezeichnet hat, wird ebenfalls nicht
+  gestartet, und seine Zeile sagt das. Ein Link oder eine Python-Datei, die
+  die Installation nicht geschrieben hat, im Ordner des Hook-Skripts lässt den
+  Befehl ebenfalls ungestartet. Eine Aktualisierung behält beides bei, daher
+  sagt die Korrektur, den Eintrag zu entfernen, den die Zeile nennt (bei
+  einem Link nur den Link selbst; verschieben Sie Ihre eigenen Skripte
+  anderswohin), und doctor dann erneut auszuführen. Hat der Link den Platz
+  eines Ordners eingenommen, den die Installation geschrieben hat, meldet der
+  nächste Lauf diesen Ordner als fehlend, und `update` stellt ihn wieder her.
+  Ein Projektordner, den die Prüfung nicht öffnen kann, erhält ebenfalls eine
+  Zeile, und ihre Korrektur sagt, Ihrem Konto die Berechtigung zum Öffnen zu
+  geben. Unter Windows, wo sich eine Datei nicht unter Ablehnung eines Links
+  öffnen lässt, erfolgt die Link-Prüfung unmittelbar vor dem Öffnen der Datei.
+  Ein Hook-Skript, das größer als 4 MB ist, gilt als seit der Installation
+  geändert, da keines, das Apothem schreibt, so groß ist.
 
-Jede fehlgeschlagene Prüfung nennt eine Korrektur. Beendet sich mit 0, wenn
-keine Prüfung fehlschlägt, andernfalls mit 1.
+Jede fehlgeschlagene Prüfung nennt eine Korrektur. Eine Korrektur, die
+`update` ausführt, endet mit dem Befehl nach einem Doppelpunkt. Für einen
+Harness mit Projektgeltungsbereich nennt der Befehl `--project` mit dem für die
+Shell in Anführungszeichen gesetzten Ordner, so wie
+[`uninstall`](/docs/cli-reference/uninstall) seine Schritte in
+Anführungszeichen setzt. Können diese Anführungszeichen den Ordner nicht
+tragen, gibt die Korrektur `--project` in Worten an und endet mit dem Ordner,
+wie er ist. Beendet sich mit 0, wenn keine Prüfung fehlschlägt, andernfalls
+mit 1.
 
 ## JSON-Ausgabe
 
@@ -54,11 +212,13 @@ sowie `profile_error`, wenn das Profil ungültig ist) und fügt hinzu:
 - `project` — die aufgelöste `--project`-Wurzel oder `null`.
 - `harnesses[].status` — `ok`, `not_installed`, `needs_project`,
   `verify_failed`, `hook_failed` oder `error`; dazu `verified` und `hooks`
-  (`{"probed": N, "failed": [...]}` oder `null`, wenn kein
-  Installationsdatensatz existiert).
+  (`{"probed": N, "failed": [...]}` oder `null`, wenn der geprüfte Ordner
+  keinen Installationsdatensatz hat, das Installations-Ledger nicht gelesen
+  werden kann oder doctor die Prüfung der Hook-Befehle nicht abschließen
+  konnte; eine `hook.unchecked`-Prüfung sagt, warum).
 - `checks` — ein Datensatz pro Prüfung: `code` (zum Beispiel
-  `harness.verify_failed`, `hook.start_failed`, `ledger.unreadable` oder ein
-  `profile.*`-Code), `status` (`pass`, `fail` oder `info`), `harness`,
+  `harness.verify_failed`, `harness.stray_begin`, `hook.start_failed`,
+  `hook.unchecked`, `ledger.unreadable` oder ein `profile.*`-Code), `status` (`pass`, `fail` oder `info`), `harness`,
   `message` und `fix`.
 
 ```json
@@ -106,7 +266,7 @@ aus, das sich für die Weiterleitung per Pipe an andere Werkzeuge eignet.
 | Code | Bedeutung |
 |---|---|
 | 0 | Alle Prüfungen bestanden (auch wenn noch kein Harness installiert ist) |
-| 1 | Ein installierter Harness besteht die Verifizierung nicht, ein registrierter Hook-Befehl kann nicht starten, ein Adapter konnte nicht geladen oder sondiert werden, oder ein vorhandenes Profil hat die Schemavalidierung nicht bestanden |
+| 1 | Ein installierter Harness besteht die Verifizierung nicht, ein registrierter Hook-Befehl kann nicht starten, ein Installations-Ledger kann nicht gelesen werden, ein Adapter konnte nicht geladen oder sondiert werden, oder ein vorhandenes Profil hat die Schemavalidierung nicht bestanden |
 | 64 | Verwendungsfehler: eine unbekannte Option oder ein unbekannter Befehl oder ein fehlender oder ungültiger Optionswert. Unter `--json` ist der Fehler ein JSON-Umschlag mit dem Code `cli.usage`. |
 
 ## Siehe auch

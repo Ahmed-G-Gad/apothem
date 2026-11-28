@@ -2,9 +2,23 @@
 title: "Aktualisieren"
 description: "Apothem und Harness-Adapter aktualisieren."
 machineTranslated: true
-sourceHash: "04ad375058d55ffd"
+sourceHash: "9a8965434be8f7a4"
 ---
 {/* SPDX-License-Identifier: MIT */}
+
+<Callout title="Update von einem früheren Release? Sichern Sie zuerst Ihre Backups">
+  In früheren Releases (das Changelog nennt sie) hat jede Installation und jedes
+  Update einige Ordner entfernt, die Ihre eigenen Dateien enthalten, etwa
+  Slash-Befehle und Hook-Skripte von Claude Code, nachdem es sie nach
+  `~/.apothem/backups/` kopiert hatte. Die meisten dieser Releases behalten pro
+  Harness nur die neuesten 10 Backup-Sätze, sodass jeder weitere Lauf eines
+  davon den ältesten Satz löschen kann, der vielleicht Ihre einzige Kopie
+  enthält. Bevor Sie Apothem erneut ausführen, kopieren Sie
+  `~/.apothem/backups/` an einen anderen Ort. Das
+  [Changelog](/docs/changelog#data-loss-in-earlier-releases-recover-your-files)
+  führt jeden betroffenen Ordner auf und beschreibt, wie Sie Ihre Dateien
+  zurückkopieren.
+</Callout>
 
 ## Das Claude Code-Plugin aktualisieren
 
@@ -18,6 +32,29 @@ Menü innerhalb von Claude Code:
 Öffnen Sie `/plugin`, wählen Sie **apothem** aus und wählen Sie die Aktualisierungsaktion, wenn eine neuere
 Plugin-Version aufgeführt ist.
 
+## Die VS Code-Erweiterung aktualisieren
+
+Die Erweiterung führt die Engine-Version aus, mit der sie ausgeliefert wurde.
+Ihr Standard-Runner ist `npx @ahmed-g-gad/apothem@<extension version>`, sodass
+Sie eine neue Engine nur erhalten, wenn sich die Erweiterung selbst
+aktualisiert.
+
+VS Code sucht selbstständig nach Erweiterungsupdates und installiert sie, wie
+die Dokumentation zum
+[automatischen Update von Erweiterungen](https://code.visualstudio.com/docs/configure/extensions/extension-marketplace#_extension-auto-update)
+beschreibt. Standardmäßig wartet es 12 Stunden, nachdem ein Update
+veröffentlicht wurde. Um es sofort zu installieren, wählen Sie in der Ansicht
+Extensions die Schaltfläche **Update** der Erweiterung. Wenn Sie das
+automatische Update ausgeschaltet haben, führen Sie den Befehl
+**Show Extension Updates** aus und wählen **Update**, oder führen Sie
+**Update All Extensions** aus.
+
+VS Code schaltet das automatische Update für eine Erweiterung aus, die aus
+einer `.vsix`-Datei installiert wurde. Wenn Sie `apothem.vsix` installiert
+haben, installieren Sie die `apothem.vsix`, die dem neueren
+[GitHub Release](https://github.com/ahmed-g-gad/apothem/releases) beiliegt,
+auf dieselbe Weise.
+
 ## npx führt immer das aktuelle Release aus
 
 `npx @ahmed-g-gad/apothem` löst bei jeder Ausführung das aktuell veröffentlichte Paket
@@ -30,8 +67,11 @@ npx @ahmed-g-gad/apothem@latest --version
 
 ## Eine installerbasierte Einrichtung aktualisieren
 
-Führen Sie den Installer erneut aus — er ist idempotent und checkt in einem vorhandenen Baum das Release-Tag aus —
-oder führen Sie das dedizierte Update-Skript aus:
+Führen Sie den Installer erneut aus — er ist idempotent: Er führt in einem
+vorhandenen Git-Klon einen Fetch aus, prüft das neue Release-Tag und checkt den
+Klon erst danach aus, und er aktualisiert eine Installation aus einem
+Release-Archiv — oder führen Sie das dedizierte Update-Skript aus, das mit einem
+Git-Klon arbeitet:
 
 ```bash title="macOS · Linux · WSL2 · BSD"
 bash scripts/installer/update.sh
@@ -41,7 +81,74 @@ bash scripts/installer/update.sh
 pwsh -NoProfile -File scripts/installer/update.ps1
 ```
 
-Das Update-Skript checkt den Quellbaum unter `APOTHEM_HOME` (Standard `~/.apothem`) erneut auf `APOTHEM_REF` aus. Ist `APOTHEM_REF` ungesetzt, wird das neueste signierte Release-Tag `vMAJOR.MINOR.PATCH` aufgelöst; ein Tag-Wert fixiert `APOTHEM_REF`, und `main` wählt den beweglichen Branch nur dann, wenn zusätzlich `APOTHEM_ALLOW_UNVERIFIED=1` gesetzt ist. Ohne diese Überschreibung checkt das Update die Ref aus und bricht dann ab, bevor es erneut materialisiert, weil ein Branch kein signiertes Release-Tag ist. Vor dem erneuten Materialisieren prüft es die Signatur des Tags mit `git verify-tag`; ein unsigniertes oder manipuliertes Tag bricht den Vorgang ab, sofern nicht `APOTHEM_ALLOW_UNVERIFIED=1` den Abbruch zu einer Warnung herabstuft. Ein signiertes Tag, dessen öffentlicher Schlüssel des Maintainers im lokalen Schlüsselbund fehlt, bricht mit einer Anleitung zum Schlüsselimport ab, die auf den Fingerprint verweist, der in [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) veröffentlicht ist. Danach materialisiert es den durch `APOTHEM_HARNESS` benannten Harness neu, indem es `apothem update` aus dem aktualisierten Baum ausführt (Standardwerte für den Harness gemäß der Tabelle [Installer-Umgebungsvariablen](/docs/how-to/installer-environment-variables)). Es setzt eine vorherige Installation voraus: Existiert unter `APOTHEM_HOME` kein Baum und ist `APOTHEM_SOURCE` nicht gesetzt, beendet es sich mit einer Meldung, die Sie zunächst auf den Installer verweist.
+Das Update-Skript bewegt den Quellbaum unter `APOTHEM_HOME` (Standard `~/.apothem`) auf `APOTHEM_REF` — ungesetzt löst es das neueste signierte Release-Tag `vMAJOR.MINOR.PATCH` auf, ein Tag-Wert fixiert es, und `main` wählt den beweglichen Branch nur dann, wenn zusätzlich `APOTHEM_ALLOW_UNVERIFIED=1` gesetzt ist. Ohne diese Überschreibung bricht das Update ab, bevor es etwas auscheckt oder erneut materialisiert, weil ein Branch kein signiertes Release-Tag ist. Es holt die Ref zuerst per Fetch und prüft die Signatur des Tags mit `git verify-tag` vor dem Checkout, sodass eine fehlgeschlagene Prüfung den Klon auf der Version belässt, auf der er war. Die Signatur muss mit dem in SECURITY.md veröffentlichten Schlüssel des Maintainers erstellt sein, und das signierte Tag muss das für das Release benannte sein; ein unsigniertes oder manipuliertes Tag oder eines, das mit einem anderen Schlüssel signiert ist, bricht den Vorgang ab, sofern nicht `APOTHEM_ALLOW_UNVERIFIED=1` den Abbruch zu einer Warnung herabstuft (diese Variable umgeht nicht die Prüfung, dass das signierte Tag das Release-Tag ist). Weil diese Variable ein unsigniertes Tag oder eines, das mit einem anderen Schlüssel signiert ist, durchlässt, schützt die Prüfung nur Tags, die die Signatur des Maintainer-Schlüssels tragen. Mit einer Ref, die kein Release ist, etwa `main`, folgt der Klon der Kopie dieses Branches auf origin. Der Checkout verwirft nie lokale Änderungen: Ein Klon mit Änderungen an verfolgten Dateien hält das Update an, und Sie committen oder stashen sie und führen es erneut aus. Vor dem Fetch hält das Update außerdem an, wenn Dateien als assume-unchanged oder skip-worktree markiert sind (git würde ihre Änderungen nicht sehen), wenn der Arbeitsbaum des Klons nicht `APOTHEM_HOME` ist, wenn der Klon ein Submodul enthält, wenn `.git/info/attributes` einen Filter- oder Diff-Treiber nennt (`filter=` oder `diff=`), wenn sie oder eine Konfigurationsdatei keine gewöhnliche Datei ist, wenn der Klon Objekte aus einem anderen Repository entleiht (`objects/info/alternates`), oder wenn die Datei
+`.git/config` oder `.git/config.worktree` des Klons eine andere Einstellung enthält als die, die `git clone` und `git init` dort für einen vollständigen Klon schreiben, Branch-Einstellungen (`remote` und `pushremote` eines Branches müssen `origin` sein), `user.name`, `user.email`, `maintenance.auto`, `maintenance.strategy`, `pull.rebase` und `pull.ff`. Ein partieller Klon, erstellt mit `--filter`, hält dort ebenfalls an. Die Meldung nennt die Einstellung und die Datei, in der sie steht, und
+[Fehlerbehebung](/docs/install/troubleshooting#the-installer-stops-the-existing-clone-is-set-up-in-a-way-the-update-would-trust)
+führt die akzeptierten Einstellungen auf. Es hält außerdem vor dem Fetch an bei einer `.gitattributes`-Datei im Arbeitsbaum, die git nicht verfolgt, die sich von der committeten Kopie unterscheidet oder deren committete Kopie git nicht lesen kann oder einen Filter- oder Diff-Treiber nennt (die Kopie im Arbeitsbaum wird ebenfalls gelesen), bei einem Git-Repository im Klon, das git nicht verfolgt, außerhalb der eigenen Datenordner der Engine wie `backups` (git würde die `.gitattributes`-Dateien darin lesen), und bei Dateien unter `src` (in beliebiger Groß- und Kleinschreibung), die git nicht verfolgt, da die Engine sie laden könnte. Nach dem Checkout entfernt es die Python-Cache-Ordner (`__pycache__`) unter `src`, bevor die Engine aus dem Klon läuft. Die Git-Hooks des Klons laufen während des Updates nie, und ein Klon eines anderen Projekts als Apothem wird überhaupt nicht aktualisiert. Das Update setzt für seinen Lauf `GIT_NO_REPLACE_OBJECTS=1`, `GIT_NO_LAZY_FETCH=1`, `GIT_ALLOW_PROTOCOL` und `GIT_ATTR_NOSYSTEM=1`, und git liest keine Attributdatei außerhalb des Klons (siehe die
+[Installer-Umgebungsvariablen](/docs/how-to/installer-environment-variables#the-installer-variables)).
+Jeder Lauf hält für seine gesamte Dauer eine Sperre, `<APOTHEM_HOME>.lock`, sodass eine zweite Installation, Aktualisierung oder Deinstallation auf demselben `APOTHEM_HOME` anhält; siehe
+[Fehlerbehebung](/docs/install/troubleshooting#the-installer-stops-another-run-holds-the-lock),
+wenn eine Sperre zurückbleibt. Ein signiertes Tag, dessen öffentlicher Schlüssel des Maintainers im lokalen Schlüsselbund fehlt, bricht mit einer Anleitung zum Schlüsselimport ab, die auf den Fingerprint verweist, der in [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) veröffentlicht ist. Danach materialisiert es den durch `APOTHEM_HARNESS` benannten Harness neu, indem es `apothem update` aus dem aktualisierten Baum ausführt (Standardwerte für den Harness gemäß der Tabelle [Installer-Umgebungsvariablen](/docs/how-to/installer-environment-variables)). Es setzt eine vorherige Installation voraus: Existiert unter `APOTHEM_HOME` kein Baum und ist `APOTHEM_SOURCE` nicht gesetzt, beendet es sich mit einer Meldung, die Sie zunächst auf den Installer verweist.
+
+Das Update-Skript arbeitet nur mit einem Git-Klon. Eine Installation mit cosign
+oder mit `APOTHEM_VERIFY=checksum` legt stattdessen das Release-Archiv ab,
+daher hält das Update-Skript an und fordert Sie auf, den Installer mit cosign
+und `gpg` auf dem `PATH` erneut auszuführen. Dieser erneute Lauf setzt das
+neue Release ein und behält jede Datei, die er nicht ausliefert, einschließlich
+der Backups und Installationsprotokolle der Engine. Ohne cosign führen Sie den
+Installer erneut mit `--yes` (`-Yes` unter Windows) aus: Er stellt die
+Archivinstallation auf einen Git-Klon um, der gegen den Schlüssel des
+Maintainers geprüft wird, und behält alles, was nicht zum Quellbaum gehört,
+einschließlich der Backups, Protokolle, Pläne und des Gedächtnisses.
+`APOTHEM_VERIFY=checksum` aktualisiert das Archiv ebenfalls an Ort und Stelle
+und benötigt `APOTHEM_ALLOW_UNVERIFIED=1`. Der Prüfsummenmodus verifiziert das
+Release nicht. SHA256SUMS stammt aus demselben Release wie das Archiv, daher
+zeigt eine Übereinstimmung nur, dass der Download nicht beschädigt ist; wer die
+Dateien des Release ändern kann, kann beide ändern.
+
+### Wenn die Engine eine Datei unverändert lässt
+
+Die Engine kann eine Datei, die Apothems Block enthält (etwa `CLAUDE.md` oder
+`AGENTS.md`), wegen ihrer Apothem-Markerzeilen unverändert lassen: zum
+Beispiel, wenn die Datei zwei ganze Blöcke zwischen Apothems Markern enthält.
+Sie schreibt dann alles andere, gibt eine Warnung aus, die die Datei nennt und
+sagt, wie sie zu beheben ist, und endet als partiell mit Exit-Code `2`. Die
+Engine endet auch als partiell, wenn sie anhält, nachdem sie etwas geschrieben
+hat: zum Beispiel, wenn ein Tool fehlschlägt, nachdem ein früheres in einem
+Lauf mit `APOTHEM_HARNESS=all` seine Dateien geschrieben hat. Ihr Fehler sagt,
+was fehlgeschlagen ist, und jedes Tool, das davor fertig wurde, hat über dem
+Fehler eine eigene Zeile. Der Installer und das Update-Skript geben dann eine
+weitere Zeile aus:
+
+```text
+! The engine ended as partial (exit code 2): its messages above name the files it left as they are, or the error that stopped it. Fix what they name, then run 'apothem update --harness claude-code' again.
+```
+
+Sie beenden den Lauf wie nach einem vollständigen Erfolg: Der Installer führt
+weiterhin verify aus, legt den Befehl `apothem` ab und gibt sein
+abschließendes Banner aus, und das Update-Skript gibt weiterhin
+"Update complete." als letzte Zeile aus. Jedes Skript endet dann mit Exit-Code
+`2`. Ein über eine Pipe gestarteter PowerShell-Lauf (`irm ... | iex`) setzt
+stattdessen `$LASTEXITCODE` auf `2`, sodass Ihre PowerShell-Sitzung geöffnet
+bleibt. Ein einmaliges `pwsh -Command "irm ... | iex"` (oder
+`powershell -c`) meldet einen partiellen Lauf nur über `$LASTEXITCODE`, daher
+endet der Prozess selbst mit `0`. Wenn ein CI-Job oder ein Skript den Code
+benötigt, beenden Sie den Befehl mit `; exit $LASTEXITCODE`, oder führen Sie
+das Skript über seinen Pfad mit `-File` aus. Setzen Sie diesen Befehl aus
+PowerShell, bash oder einer anderen POSIX-Shell in einfache Anführungszeichen.
+In doppelten Anführungszeichen setzt die aufrufende Shell ihr eigenes
+`$LASTEXITCODE` ein, bevor der neue Prozess startet (eine POSIX-Shell setzt
+eine leere Zeichenkette ein), sodass der Prozess nicht mit dem Code des Laufs
+endet. Aus cmd.exe sind doppelte Anführungszeichen in Ordnung. Ein Probelauf
+des Installers (`--dry-run`, oder `-DryRun` unter Windows) schreibt nichts,
+daher beendet die Engine ihn nicht als partiell. Beheben Sie, was die Meldungen
+der Engine nennen. Bei einer Datei behalten Sie Ihren eigenen Text (siehe
+[Eine Datei enthält zwei Blöcke zwischen Apothems Markern](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)
+und
+[Apothem kann seinen Block nicht von Ihrem Text unterscheiden](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)),
+und führen Sie dann `apothem update --harness <name>` oder das Update-Skript
+erneut aus, für jedes Tool, das der Lauf unfertig gelassen hat. Jeder andere
+Exit-Code ungleich null der Engine hält das Skript dort an.
 
 ## Harness-Ausgabe neu materialisieren
 

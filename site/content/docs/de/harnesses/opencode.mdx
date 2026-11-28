@@ -2,7 +2,7 @@
 title: "OpenCode"
 description: "Apothem-Harness-Adapter für OpenCode (Beta)."
 machineTranslated: true
-sourceHash: "d7cbf6354ea54e5b"
+sourceHash: "52003fe2932f10e5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,6 +33,10 @@ Helferdefinitionen als OpenCode-Subhelfer.
 ~/.config/opencode/.apothem/support/{rules,templates,hooks}/
 ```
 
+Die Installation legt außerdem den Apothem-Datenordner an, standardmäßig
+`~/.config/opencode/.apothem/`, mit `contexts/`, `learning/`, `memory/` und
+`plans/` darin.
+
 Dies sind die Standardpfade. Ist `XDG_CONFIG_HOME` auf den absoluten Pfad eines
 Verzeichnisses gesetzt, schreibt der Adapter stattdessen in
 `$XDG_CONFIG_HOME/opencode/`, das Verzeichnis, das sowohl OpenCode 1 als auch
@@ -43,6 +47,51 @@ Verzeichnis, das sie nennt, zusätzlich zum Standardverzeichnis, OpenCode 2 lies
 es dagegen anstelle des Standardverzeichnisses. Nennt sie ein anderes
 Verzeichnis, warnt die Installation daher, dass OpenCode 2 diese Installation
 nicht lädt.
+
+Ein `~/.config`, das ein Link in Ihr Home-Verzeichnis ist, wie Dotfile-Manager
+es anlegen, wird verfolgt. Unter Windows zählt eine Junction als Link. Führt
+dieser Link aus Ihrem Home-Verzeichnis heraus, bricht die Installation mit
+`target path crosses a symlink` ab, bevor sie eine Datei schreibt. Bei einem
+ersten Lauf, noch ohne Profil, bricht sie einen Schritt früher ab, bevor das
+Startprofil geschrieben wird, mit
+`Apothem could not create the starter profile`. Um das Profil außerhalb Ihres
+Home-Verzeichnisses zu halten, legen Sie es dort mit
+`apothem profile init --profile PATH` an und übergeben der Installation
+dasselbe `--profile PATH`; die Installation braucht dann weiterhin
+`XDG_CONFIG_HOME`, wie unten beschrieben. Ein `XDG_CONFIG_HOME`, das innerhalb
+Ihres Home-Verzeichnisses geschrieben ist und aus dem ein Link herausführt, etwa
+ein mit einem anderen Laufwerk verknüpftes `~/xdg`, stoppt die Installation, die
+Deinstallation und auch `apothem rollback`. Ein Link auf einem Pfad, den die
+Installation innerhalb von `~/.config/opencode/` schreibt, stoppt sie ebenfalls,
+mit `target path crosses a link` oder mit
+`target escapes the allowed materialization root`, wenn dieser Link aus
+`~/.config` herausführt.
+
+Um über einen `~/.config`-Link zu installieren, der aus Ihrem Home-Verzeichnis
+herausführt, setzen Sie `XDG_CONFIG_HOME` auf den Ordner, zu dem der Link führt,
+geschrieben als eigener Pfad dieses Ordners, außerhalb Ihres
+Home-Verzeichnisses. Es zählt nur der Pfad, wie Sie ihn schreiben: Einem Pfad
+außerhalb Ihres Home-Verzeichnisses wird gefolgt, wohin seine Links auch führen.
+Die Installation schreibt dann dorthin, und die `instructions`-Einträge, die
+eine frühere Installation in `~/.config/opencode` geschrieben hat, werden
+ersetzt, sodass die Konfiguration jede Datei einmal auflistet. Eine
+Deinstallation mit derselben Einstellung entfernt auch diese frühere
+Installation, und zwar auch dann, wenn zuvor nichts mit dieser Einstellung
+installiert wurde: Deren `opencode.json` wird, sobald nur noch die Einträge von
+Apothem darin standen, in das Backup-Stammverzeichnis von Apothem
+(`~/.apothem/backups/`) kopiert, bevor sie entfernt wird, und die leeren Ordner,
+die diese Installation angelegt hat, werden ebenfalls entfernt. Nennt
+`XDG_CONFIG_HOME` `~/.config` in einer anderen Schreibweise innerhalb Ihres
+Home-Verzeichnisses (`$HOME/.config` über einen Link, eine andere
+Groß-/Kleinschreibung oder einen Kurznamen), verwendet die Installation
+weiterhin `~/.config/opencode`, sodass es eine Installation bleibt.
+
+`XDG_CONFIG_HOME` muss nicht aus Ihrem Shell-Profil stammen. Auch die `.envrc`
+eines Projekts oder ein Skript, das Sie mit source einlesen, kann es setzen.
+Nennt es einen Ordner außerhalb Ihres Home-Verzeichnisses, ändern Installation,
+Update, Deinstallation und `apothem rollback` Dateien in diesem Ordner, weil es
+diesen Ordner nennt. Prüfen Sie `XDG_CONFIG_HOME`, bevor Sie Apothem in einem
+Projektordner ausführen, der es setzt.
 
 ## Zuordnung von Profil zu nativer Konfiguration
 
@@ -76,25 +125,83 @@ eigenen OpenCode-Konfiguration überschreiben, daher folgt ein Helfer Ihren
 Wenn das gemeinsame Profil MCP-Server auflistet, schreibt die Installation sie
 in den `mcp`-Block der `opencode.json`. OpenCode ersetzt `{env:NAME}`, nicht
 `${NAME}`; deshalb wird jedes `${NAME}` in den Umgebungsvariablen, den Headern
-oder der URL eines Servers als `{env:NAME}` geschrieben. Befehlsargumente werden
-wie geschrieben kopiert: Eine Referenz darin wird dem Server oder einer Shell,
-die er ausführt, zum Auflösen überlassen. Ein `$NAME` im Wert einer
-Umgebungsvariablen oder eines Headers und jede `${...}`-Form, die unverändert
-bleibt, auch in einem Befehlsargument, werden wie geschrieben kopiert, und die
-Installation warnt,
-dass OpenCode sie nicht auflöst. Die Warnung nennt, wo die Referenz steht, etwa
+oder der URL eines Servers als `{env:NAME}` geschrieben, außer dem unten
+beschriebenen durchreichenden Umgebungseintrag. Befehlsargumente werden wie
+geschrieben kopiert: Eine Referenz darin wird dem Server oder einer Shell, die
+er ausführt, zum Auflösen überlassen. Die Installation warnt vor zwei Arten von
+`$`-Referenzen, die OpenCode nicht auflöst und die der Server dann wie
+geschrieben erhält: ein `$NAME` im Wert einer Umgebungsvariablen oder eines
+Headers und jede andere `${...}`-Form, einschließlich eines einfachen `${NAME}`
+in einem Befehlsargument. Die Warnung nennt, wo die Referenz steht, etwa
 `environment.TOKEN`, und gibt den Wert niemals aus.
+
+Die Installation lässt einen Umgebungseintrag weg, der eine Variable nur unter
+ihrem eigenen Namen weiterreicht, etwa `GITHUB_TOKEN: ${GITHUB_TOKEN}`, und
+schreibt kein `environment` für einen Server, dem danach keiner bleibt.
+OpenCode 1 und OpenCode 2 starten einen lokalen Server mit der eigenen Umgebung
+von OpenCode und legen das `environment` des Servers darüber, sodass der Server
+weiterhin das `GITHUB_TOKEN` erhält, mit dem OpenCode läuft. Den Eintrag
+wegzulassen unterscheidet sich davon, ihn als `{env:GITHUB_TOKEN}` zu
+schreiben, in folgenden Punkten:
+
+- Ist die Variable nicht gesetzt, sieht der Server sie als nicht gesetzt. Als
+  `{env:GITHUB_TOKEN}` geschrieben, wäre sie auf eine leere Zeichenkette gesetzt.
+- OpenCode 1 setzt einige Variablen selbst, nachdem es seine Konfiguration
+  gelesen hat: `AWS_BEARER_TOKEN_BEDROCK` und `AICORE_SERVICE_KEY` aus einer
+  gespeicherten Anbieter-Anmeldung sowie `OPENCODE_CONSOLE_TOKEN`. OpenCode 2
+  setzt `AICORE_SERVICE_KEY` aus der Einstellung `serviceKey` des Anbieters, der
+  sie verwendet, sobald es diesen Anbieter zum ersten Mal verwendet. Der Server
+  erhält den Wert, den eine solche Variable beim Start des Servers hat; als
+  `{env:NAME}` geschrieben, enthielte sie den Wert vom Zeitpunkt, als die
+  Konfiguration gelesen wurde, was oft eine leere Zeichenkette ist.
+- OpenCode 1 füllt `{env:NAME}` außerdem aus einer Organisationsanmeldung, die
+  mit `opencode auth login <url>` erfolgt ist, und liest das Token dieser
+  Anmeldung vor seiner eigenen Umgebung, legt das Token aber nicht in seiner
+  Umgebung ab. Setzt nur die Anmeldung eine Variable, erhält der Server sie
+  nicht; setzen beide sie, erhält der Server den Wert aus der Umgebung. Als
+  `{env:NAME}` geschrieben, erhielte er in beiden Fällen den der Anmeldung.
+- Eine Anwendung, die auf dem OpenCode SDK aufbaut, kann einen
+  Workspace-Anbieter registrieren, der einen Server in einer Sandbox ausführt;
+  die `opencode`-CLI und die Desktop-App registrieren keinen. Laut dem
+  Quellcode von OpenCode erhält ein solcher Server die Umgebung der Sandbox,
+  nicht die, in der OpenCode läuft, sodass eine Variable, die nur dort gesetzt
+  ist, wo OpenCode läuft, ihn nicht erreicht.
+- Unter Windows, wo Variablennamen die Groß-/Kleinschreibung ignorieren, erhält
+  der Server die Variable in der Schreibweise, in der die Umgebung von OpenCode
+  den Namen enthält, wenn diese vom Schlüssel des Eintrags abweicht, etwa
+  `Github_Token` für `GITHUB_TOKEN`; als `{env:GITHUB_TOKEN}` geschrieben, würde
+  der Eintrag sie als `GITHUB_TOKEN` weitergeben. Ein Programm, das Namen mit
+  ihrer Groß-/Kleinschreibung liest, etwa eine Git-Bash- oder Cygwin-Shell,
+  findet sie dann möglicherweise nicht.
+- Als `{env:NAME}` geschrieben, würde in einem Wert, der selbst
+  `{file:path}`-Text enthält, der Inhalt dieser Datei an dessen Stelle gesetzt,
+  und ein `BUN_BE_BUN`-Eintrag bei einem Server, dessen Befehl `opencode` ist,
+  würde die `1` ersetzen, die OpenCode dort setzt. Weggelassen erreicht der Wert
+  den Server unverändert, und die `1` von OpenCode bleibt.
+
+Braucht ein Server, was der Eintrag ihm gegeben hat, führen Sie diesen Server
+erneut unter `harnesses.opencode.mcp_servers.<name>` auf, mit dem Wert als
+`{env:NAME}` geschrieben, was die Installation unverändert kopiert. Das bringt
+das unten beschriebene Risiko für OpenCode 1 zurück.
+
+Ein Eintrag, der eine Variable umbenennt (`TOKEN: ${FS_TOKEN}`), eine Referenz
+innerhalb eines längeren Werts, jede Referenz in Headern und URLs sowie ein in
+einer Überschreibung geschriebenes `{env:NAME}` werden weiterhin als
+`{env:NAME}` geschrieben, und der nächste Absatz gilt für sie.
 
 OpenCode setzt den Wert von `{env:NAME}` ohne Maskierung in den
 Konfigurationstext ein, den es liest; OpenCode 2 maskiert ihn nur, wenn dieser
 Text sonst nicht geparst werden könnte. Ein Wert mit einem Backslash (etwa einem
 Windows-Pfad), einem doppelten Anführungszeichen oder einem Steuerzeichen kann
-daher OpenCode 1 daran hindern, die Datei zu lesen, und in beiden Versionen
-gelangt ein `\t` oder `\n` darin als Steuerzeichen zum Server. Die Installation
-prüft jede solche Variable, wenn sie läuft, und warnt vor einer, die diese
-Zeichen enthält. Setzen Sie diesen Wert stattdessen als `{file:path}` unter
-`harnesses.opencode.mcp_servers.<name>`, damit die anderen Tools die Referenz
-`${NAME}` behalten.
+daher OpenCode 1 daran hindern, die Datei zu lesen, und die Fehlermeldung von
+OpenCode 1 gibt dann den Konfigurationstext mit jedem eingesetzten Wert aus,
+Geheimnisse eingeschlossen. In beiden Versionen gelangt ein `\t` oder `\n` in
+einem solchen Wert als Steuerzeichen zum Server. Die Installation prüft jede
+solche Variable, wenn sie läuft, und warnt vor einer, die diese Zeichen enthält.
+Führen Sie den ganzen Server erneut unter
+`harnesses.opencode.mcp_servers.<name>` auf, da eine Überschreibung den ganzen
+Server ersetzt, und schreiben Sie den Wert dort als `{file:path}`; die anderen
+Tools behalten die Referenz `${NAME}`.
 
 OpenCode führt jede Datei, die die `instructions`-Liste nennt, in jeder Sitzung
 zusammen ([OpenCode-Regeln](https://opencode.ai/docs/rules/)). Die Liste nennt
@@ -113,6 +220,151 @@ installiert, und der Index nennt jede Regel und die Situation, die sie erfordert
 Eine Regel, ein Skill oder ein Command, die bzw. der eine Regel, ein Template
 oder einen Hook-Prompt zitiert, liest sie bzw. es von dort. Commands, Skills und
 Helferdefinitionen nutzen native Discovery-Speicherorte.
+
+OpenCode 1 liest `config.json`, `opencode.json` und danach `opencode.jsonc` aus
+seinem Konfigurationsverzeichnis, und eine Liste in einer späteren Datei ersetzt
+die Liste in einer früheren. Das gilt in jedem Release von OpenCode 1, dessen
+Quellcode geprüft wurde, vom ersten bis zum neuesten. Eine `instructions`-Liste
+in einer `opencode.jsonc` neben der `opencode.json`, die Apothem schreibt,
+hindert OpenCode 1 daher, selbst wenn sie leer ist, daran, das Profildokument
+und die Regeln zu laden. `apothem install`, `apothem update` und
+`apothem verify` geben in diesem Fall einen Hinweis aus, der die Datei nennt;
+verify gibt ihn nur aus, solange `opencode.json` einen Eintrag auflistet, den
+die Installation geschrieben hat, und der Hinweis lässt die Prüfung nicht
+scheitern. Enthält die Liste in `opencode.jsonc` bereits jeden Eintrag, den
+Apothem schreibt, lädt OpenCode 1 sie, aber aus einer Kopie, die Installationen
+und Updates nicht auffrischen, und der Hinweis sagt das. Enthält sie nur einige
+davon, nennt der Hinweis, wie viele sie enthält und dass die anderen OpenCode 1
+nicht erreichen. OpenCode 2 vereinigt die `instructions`-Listen aller Dateien,
+die es liest, daher betrifft der Hinweis nur OpenCode 1.
+
+Abgesehen von den unten beschriebenen Dateien, die OpenCode 1 stoppen, gibt es
+keinen Hinweis für eine `opencode.jsonc` ohne `instructions`-Liste oder für
+einen symbolischen Link auf `opencode.json`. Es gibt keinen Hinweis, solange
+`OPENCODE_CONFIG_DIR` dieses Verzeichnis nennt, weil aktuelle Releases von
+OpenCode 1 dann beide Dateien dort ein zweites Mal lesen und ihre Listen
+vereinigen (das erste Release von OpenCode 1 las sie nicht erneut). Es gibt auch
+keinen, solange `OPENCODE_CONFIG` diese `opencode.json` nennt, weil OpenCode 1
+diese Datei dann nach den anderen erneut liest und ihre Liste hinzufügt. Um die
+Liste in OpenCode 1 zu laden, entfernen Sie den Schlüssel `instructions` aus
+`opencode.jsonc` oder verschieben seine Einträge in die Liste in
+`opencode.json`, wo Installationen und Updates die Einträge behalten, die sie
+nicht geschrieben haben.
+
+OpenCode 1 liest `config.json`, `opencode.json` und `opencode.jsonc` als JSONC:
+JSON mit Kommentaren und nachgestellten Kommas, und nichts weiter. In jeder
+Datei ersetzt es zuerst jedes `{env:NAME}` durch den Wert dieser Variablen und
+jedes `{file:path}` durch den Text dieser Datei. Es bricht mit einem Fehler ab
+und lädt nichts von seiner Konfiguration, sodass auch das Profildokument und die
+Regeln es nicht erreichen, wenn eine dieser Dateien:
+
+- sich nicht parsen lässt, sobald diese Werte eingesetzt sind. JSON5-Syntax wie
+  Schlüssel ohne Anführungszeichen oder einfache Anführungszeichen, `NaN`, ein
+  nie geschlossener Kommentar und eine Datei, die nur Leerzeichen oder nur
+  Kommentare enthält, zählen alle dazu. Ebenso eine Datei, die nur aus einem
+  einzigen `{env:NAME}` oder `{file:path}` besteht, das nichts einsetzt.
+  OpenCode 1 setzt einen `{env:NAME}`-Wert unverändert ein, sodass ein Wert mit
+  einem Backslash, etwa einem Windows-Pfad, einem doppelten Anführungszeichen
+  oder einem Steuerzeichen eine sonst gültige Datei beschädigen kann; der
+  Hinweis sagt das und sagt auch, wenn die Datei eine oberste Ebene oder einen
+  `instructions`-Wert hat, den OpenCode 1 ablehnt, sobald der Wert korrigiert
+  ist. Apothem selbst schreibt für jedes `${NAME}` in den Umgebungsvariablen,
+  den Headern oder der URL eines MCP-Servers in Ihrem Profil ein `{env:NAME}`
+  in `opencode.json`, und ein Update schreibt es zurück, wenn Sie es aus der
+  Datei entfernen; für eine solche Referenz nennt der Hinweis daher den Server
+  und seine Behebung: Führen Sie diesen Server erneut unter
+  `harnesses.opencode.mcp_servers.<name>` auf, mit dem Wert in einer Datei
+  gespeichert und als `{file:path}` geschrieben, das sie nennt.
+- eine oberste Ebene hat, die kein Objekt ist, oder einen `instructions`-Wert,
+  der keine Liste von Text ist.
+- ein `{file:path}` enthält, das eine Datei nennt, die OpenCode 1 nicht lesen
+  kann, selbst innerhalb eines `/* */`-Kommentars. Ein `{file:path}` in einer
+  Zeile, die mit `//` beginnt, bleibt unverändert. Ein Socket kann nicht gelesen
+  werden. Unter Linux und macOS verwendet OpenCode 1 einen absoluten Pfad genau
+  so, wie er geschrieben ist, und behält ein nachgestelltes `/` bei einem
+  `~/`-Pfad, sodass ein Pfad zu einer Datei, der mit nachgestelltem `/` oder
+  bei einem absoluten Pfad mit nachgestelltem `/.` geschrieben ist, nicht
+  gelesen werden kann.
+- ein Ordner ist oder eine Datei, die OpenCode 1 aus einem anderen als den unten
+  beschriebenen Gründen nicht lesen kann, etwa ein symbolischer Link, der auf
+  sich selbst zurückführt.
+
+`apothem install`, `apothem update` und `apothem verify` geben einen Hinweis
+aus, der jede solche Datei nennt, und der Hinweis bleibt auch bestehen, solange
+`OPENCODE_CONFIG_DIR` oder `OPENCODE_CONFIG` gesetzt ist, weil OpenCode 1 die
+Datei weiterhin liest. Zwei dieser Namen, die über einen symbolischen Link zu
+einer Datei führen, erhalten gemeinsam einen Hinweis; Namen in einer Schleife
+symbolischer Links führen zu keiner Datei, daher erhält jeder seinen eigenen
+Hinweis. Die Prüfung betrachtet nur die oberste Ebene und den
+`instructions`-Wert, nicht jede Einstellung, die OpenCode liest, und sie liest
+keine Datei, die keine reguläre Datei ist, etwa eine Named Pipe oder ein Gerät,
+und keine sehr große. Eine Konfigurationsdatei dieser Art erhält keinen Hinweis.
+Ein `{file:path}`, das eine sehr große Datei nennt, das nach den ersten 16 MiB
+folgt, die die `{env:NAME}`-Werte und `{file:path}`-Dateien der Datei einsetzen
+(gezählt als eingesetzter, maskierter Text, sodass ein Steuerzeichen als sechs
+Zeichen zählt), oder das unter Windows an einer Wurzel ohne Laufwerksbuchstaben
+beginnt (OpenCode 1 liest es auf dem Laufwerk des Ordners, in dem es gestartet
+wurde), wird als leerer Text geprüft, solange es innerhalb eines
+Zeichenkettenwerts steht, wo sein Text das Ergebnis nicht ändern kann, sodass
+der Rest der Datei weiterhin geprüft wird. Ebenso, unter Windows, eines, das
+etwas anderes als eine Datei oder einen Ordner nennt, etwa das Gerät `NUL`, oder
+einen Pfad mit einem Teil, der auf einen Punkt oder ein Leerzeichen endet, den
+Windows meist ohne diesen Punkt oder dieses Leerzeichen liest, OpenCode 1 aber
+möglicherweise nicht; sein Hinweis fügt hinzu, dass OpenCode 1, falls es diese
+Datei nicht lesen kann, zuerst an dieser Referenz abbricht. In einem Schlüssel,
+außerhalb von Anführungszeichen, innerhalb einer Escape-Sequenz wie `\u00` oder
+nach einem nie geschlossenen `/*`-Kommentar entscheidet sein Text über das
+Ergebnis, und die Datei erhält keinen Hinweis, es sei denn, ein anderes
+`{file:path}` darin nennt eine Datei, die OpenCode 1 nicht lesen kann.
+`{env:NAME}`-Werte, die mehr als 16 MiB einsetzen, lassen die Datei ebenfalls
+ohne Hinweis, und ebenso `{file:path}`-Token, die mehr als 1.000 verschiedene
+Pfade nennen. Ein `{file:path}`, das das Nullgerät `/dev/null` nennt, wird
+überall, wo es steht, als leerer Text gelesen, wie bei OpenCode 1. Eines, das
+unter Linux und macOS eine Named Pipe oder ein anderes Gerät nennt, lässt die
+Datei ohne Hinweis, da OpenCode 1 möglicherweise endlos darauf wartet. Ein
+Hinweis nennt eine `{env:NAME}`-Referenz, nie ihren Wert, und zeigt ein
+`{file:path}` mit maskierten Steuerzeichen und auf 200 Zeichen gekürzt. Verify
+gibt diese Hinweise aus, solange `opencode.json` einen Eintrag auflistet, den
+die Installation geschrieben hat; der Hinweis für `opencode.json` selbst wird
+außerdem ausgegeben, solange das Profildokument den Apothem-Block enthält, da
+eine solche Datei möglicherweise nichts auflistet, was Apothem lesen kann.
+Können install oder update `opencode.json` nicht einmal als JSON5 parsen,
+brechen sie statt mit dem Hinweis mit einem `config.unparseable`-Fehler ab, der
+sie nennt; verify, das die Prüfung dann scheitern lässt, gibt den Hinweis aus.
+
+OpenCode 2 liest keine `config.json`. Es überspringt eine `opencode.json` oder
+`opencode.jsonc`, die es nicht parsen kann oder deren oberste Ebene kein Objekt
+ist, sodass es `opencode.json` weiterhin lädt, wenn nur `opencode.jsonc` defekt
+ist. Es maskiert `{env:NAME}`-Werte, wenn eine Datei mit ihnen in unveränderter
+Form nicht geparst werden könnte, setzt leeren Text für ein `{file:path}` ein,
+das es nicht lesen kann, ignoriert einen `instructions`-Wert, der keine Liste
+ist, einen einzelnen Textwert eingeschlossen, und verwirft die Elemente einer
+Liste, die kein Text sind, sodass nichts davon es daran hindert, die Datei zu
+laden. Ein Hinweis sagt, was OpenCode 2 mit seiner Datei tut, wenn das bekannt
+ist.
+
+Apothem ersetzt `{env:NAME}` durch den Wert in seiner eigenen Umgebung, daher
+stimmt der Hinweis, wenn Apothem mit den Umgebungsvariablen läuft, die OpenCode
+sieht. OpenCode 1 übernimmt Werte für `{env:NAME}` außerdem von den Anbietern,
+bei denen Sie sich mit `opencode auth` angemeldet haben und die Apothem nicht
+sehen kann; ein Token außerhalb von Anführungszeichen, das einen solchen Wert
+enthält, kann daher einen Parse-Hinweis erhalten, dem OpenCode 1 nicht zustimmt.
+
+In aktuellen Releases von OpenCode 1 wird eine Datei ganz ohne Bytes oder nur
+mit einer Byte-Order-Mark als leere Konfiguration gelesen und erhält keinen
+Hinweis. Unter Linux und macOS überspringen aktuelle Releases von OpenCode 1
+eine Datei, die sie nicht lesen dürfen (`Permission denied`), sodass sie dort
+keinen Hinweis erhält; ein Lesevorgang, den das System mit
+`Operation not permitted` verweigert, stoppt sie und erhält einen Hinweis. Unter
+Windows brechen sie bei einer Datei ab, die sie nicht lesen dürfen, sodass diese
+einen Hinweis erhält. Frühere Releases von OpenCode 1 brechen dabei auf jedem
+System ab, Apothem weist darauf aber nur unter Windows hin.
+
+Jede Installation und Aktualisierung löscht jede Datei in
+`~/.config/opencode/apothem/rules/`, die Apothem nicht dort abgelegt hat,
+nachdem sie sie in einem Backup-Satz unter `~/.apothem/backups/` gesichert hat.
+Diese Sicherung wird gelöscht, sobald 10 neuere Backup-Sätze des Harness
+existieren; bewahren Sie Ihre eigenen Dateien daher an einem anderen Ort auf.
 
 Das Profildokument `~/.config/opencode/apothem/rules/00-apothem-profile.md`
 trägt Ihre Identität und Ihre Präferenzen aus dem gemeinsamen Profil und endet
@@ -196,14 +448,28 @@ YAML-Datei des gemeinsamen Profils und die Apothem-Engine bleiben unberührt.
 Eine Installation, die ein früheres Release in `~/.config/opencode/` vorgenommen
 hat, während `XDG_CONFIG_HOME` ein anderes Verzeichnis nannte, bleibt dort
 bestehen, und OpenCode hat sie nie gelesen. Die nächste Installation weist
-darauf hin; um sie zu entfernen, führen Sie die Deinstallation bei nicht
-gesetztem `XDG_CONFIG_HOME` aus.
+darauf hin, solange ihre Dateien dort liegen; um sie zu entfernen, führen Sie die
+Deinstallation bei nicht gesetztem `XDG_CONFIG_HOME` aus. Ist `~/.config`
+inzwischen ein Link geworden, der aus Ihrem Home-Verzeichnis herausführt, wird
+diese Deinstallation mit `target path crosses a link` verweigert, und der
+Hinweis nennt stattdessen den Ordner, zu dem der Link führt: Führen Sie die
+Deinstallation mit `XDG_CONFIG_HOME` auf diesen Ordner gesetzt aus.
 
 ## Konformitäts-Gate
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Führen Sie ihn in Ihrem Projektordner aus. Verwenden Sie unter Windows `python`
+statt `python3` und den vollständigen Pfad, da Windows PowerShell und cmd `~`
+nicht expandieren:
+`$HOME\.apothem\src\apothem\conformity\gate.py` in PowerShell oder
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` in cmd. Der Pfad ist
+der Ort, an dem der Installer die Engine ablegt, und `-E -s` hält Ihren
+`PYTHONPATH` und Ihre Benutzer-site-packages vom Gate fern;
+[Konformitäts-Gate](/docs/conformity-gate) erklärt beides sowie die anderen
+Installationsarten.
 
 ## Fehlerbehebung
 
@@ -212,6 +478,13 @@ python -m apothem.conformity.gate --all .
 | Konfigurationsdatei nicht gefunden | Führen Sie `apothem install --harness opencode` erneut aus |
 | Verifizierung fehlgeschlagen | Führen Sie `apothem update --harness opencode` aus und verifizieren Sie dann erneut |
 | Unerwarteter Konfigurationsinhalt | Prüfen Sie `~/.config/apothem/profile.yaml` oder `--profile PATH` und führen Sie dann `apothem update --harness opencode` erneut aus |
+| Ein Hinweis besagt, dass OpenCode 1 die `instructions`-Liste in `opencode.jsonc` liest | Entfernen Sie den Schlüssel `instructions` aus `opencode.jsonc` im Konfigurationsverzeichnis oder verschieben Sie seine Einträge in die Liste in `opencode.json` |
+| Ein Hinweis besagt, dass OpenCode 1 eine Datei nicht parsen kann | Korrigieren Sie diese Datei im Konfigurationsverzeichnis, sodass sie JSON ist, ergänzt nur um Kommentare und nachgestellte Kommas (setzen Sie jeden Schlüssel in Anführungszeichen, verwenden Sie doppelte Anführungszeichen, schließen Sie jeden `/*`-Kommentar), oder entfernen Sie sie |
+| Ein Hinweis besagt, dass OpenCode 1 eine Datei nicht parsen kann, sobald es ihre `{env:NAME}`-Werte einsetzt | Ändern Sie die Variable so, dass ihr Wert keinen Backslash, kein doppeltes Anführungszeichen und kein Steuerzeichen enthält (schreiben Sie unter Windows einen Pfad mit Schrägstrichen), oder entfernen Sie dieses `{env:NAME}`. Sagt der Hinweis, dass Apothem diese Referenz für einen MCP-Server in Ihrem Profil schreibt, schreibt ein Update sie zurück, wenn Sie sie entfernen; ändern Sie daher die Variable oder führen Sie, um sie unverändert zu lassen, diesen Server erneut unter `harnesses.opencode.mcp_servers.<name>` auf, mit dem Wert in einer Datei gespeichert und als `{file:path}` geschrieben, das sie nennt. Nennt der Hinweis ein zweites Problem, beheben Sie auch dieses |
+| Ein Hinweis besagt, dass OpenCode 1 auf der obersten Ebene einer Datei ein Objekt braucht oder einen `instructions`-Wert, der eine Liste von Text ist | Machen Sie die Datei zu einem einzigen JSON-Objekt und `instructions` zu einer Liste von Text wie `["notes.md"]`, oder entfernen Sie diesen Schlüssel |
+| Ein Hinweis besagt, dass OpenCode 1 die Datei, die ein `{file:path}` nennt, nicht lesen kann | Legen Sie diese Datei an, korrigieren Sie den Pfad oder entfernen Sie das `{file:path}` |
+| Ein Hinweis besagt, dass eine Datei ein Ordner ist | Verschieben Sie diesen Ordner im Konfigurationsverzeichnis oder benennen Sie ihn um |
+| Ein Hinweis besagt, dass OpenCode 1 eine Datei nicht lesen kann | Erlauben Sie Ihrem Benutzerkonto, die Datei zu lesen, ersetzen Sie einen symbolischen Link, der auf sich selbst zurückführt, oder entfernen Sie die Datei |
 
 ## Konfigurationsschalter
 

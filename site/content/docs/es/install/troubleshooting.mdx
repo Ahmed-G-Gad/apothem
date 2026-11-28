@@ -2,7 +2,7 @@
 title: "Resolución de problemas"
 description: "Soluciones para los fallos de instalación habituales de Apothem y los problemas en tiempo de ejecución en las rutas del plugin, npx y el instalador."
 machineTranslated: true
-sourceHash: "218cead5defe61ff"
+sourceHash: "35f716910f462ed6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -46,17 +46,13 @@ sistema operativo— instala tú mismo los paquetes indicados (por ejemplo
 
 El instalador coloca el árbol de código fuente en `~/.apothem` y escribe un shim
 `apothem` en `~/.local/bin` por defecto (POSIX) o en
-`%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows). No modifica tu `PATH`. Si
-`apothem` no se encuentra, ese directorio no está en `PATH`: añádelo, o usa la
-forma con `PYTHONPATH` que aparece más abajo hasta que lo hagas. Ejecuta el motor
-mediante la invocación que el instalador imprime al terminar:
-
-```bash
-PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
-```
-
-o usa la forma npx (`npx @ahmed-g-gad/apothem <command>`), que no necesita
-ninguna entrada en `PATH`.
+`%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows); `APOTHEM_BIN_DIR` cambia la
+carpeta. No modifica tu `PATH`. Si `apothem` no se encuentra, ese directorio no
+está en `PATH`: añádelo, o ejecuta el shim por su ruta completa. El instalador
+imprime esa ruta al terminar. Cuando no escribió ningún shim, imprime un comando
+que inicia el motor manteniendo la carpeta actual fuera de `sys.path`; copia ese
+comando del mensaje final. La forma npx (`npx @ahmed-g-gad/apothem <command>`)
+no necesita ninguna entrada en `PATH`.
 
 ### `/plugin marketplace add` falla
 
@@ -96,7 +92,10 @@ npx @ahmed-g-gad/apothem@latest --version
 
 ### El instalador se detiene: la clave pública del mantenedor no está en el llavero local
 
-El instalador verifica la etiqueta de lanzamiento firmada y se detiene cuando la clave de firma no está en tu llavero. Impórtala una vez, comprueba que la huella digital es `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163` y luego vuelve a ejecutar el instalador:
+Toda instalación por red verifica la etiqueta de lanzamiento firmada, con o sin cosign,
+y se detiene cuando la clave de firma no está en tu llavero. Impórtala una vez, comprueba que la huella digital es
+`5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163` y luego vuelve a ejecutar
+el instalador:
 
 ```bash title="macOS · Linux · WSL2 · BSD — import the key once"
 curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
@@ -107,7 +106,532 @@ gpg --fingerprint 70396FED9C634163
 & "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
 ```
 
-En Windows, importa a través del `bash` de Git, como se muestra: `git verify-tag` lee el llavero del `gpg` que incluye Git for Windows. Un equipo sin `gpg` puede instalar con `APOTHEM_VERIFY=checksum`, que comprueba el resumen (digest) del archivo de lanzamiento en lugar de la firma de la etiqueta.
+En Windows, importa a través del `bash` de Git, como se muestra: `git verify-tag` lee el
+llavero del `gpg` que incluye Git for Windows. Instalar
+[cosign](https://docs.sigstore.dev/cosign/system_config/installation/) no
+sustituye la importación de la clave: con cosign en `PATH`, el instalador
+comprueba el archivo de lanzamiento firmado además de la etiqueta. Un equipo sin
+`gpg` puede instalar con `APOTHEM_VERIFY=checksum` y `APOTHEM_ALLOW_UNVERIFIED=1`,
+pero ese modo no verifica el lanzamiento (consulta
+[El instalador se detiene: el modo checksum necesita una segunda variable](#the-installer-stops-checksum-mode-needs-a-second-variable)).
+
+### El instalador se detiene: no se encuentra gpg
+
+Instala GnuPG o, en Windows, Git for Windows, que incluye el `gpg` que ejecuta
+`git verify-tag`. Después importa la clave del mantenedor como se muestra arriba
+y vuelve a ejecutar el instalador.
+
+### El instalador se detiene: la etiqueta no está firmada con la clave del mantenedor
+
+El mensaje dice "Tag ... is signed by the key ..." y nombra la clave que la
+firmó. La firma de la etiqueta es válida, pero esa clave no es la que publica
+[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#maintainer-signing-key).
+Las etiquetas de lanzamiento de Apothem se firman solo con esa clave, así que
+trátalo como una posible manipulación: no instales e infórmalo por los canales
+de SECURITY.md. Es esperable que un fork firmado con su propia clave se detenga aquí.
+
+### El instalador se detiene: cosign no pudo confirmar la firma del lanzamiento
+
+Lee primero el texto `cosign said:` al final del mensaje.
+
+- Un error de red, de proxy o de raíz de confianza significa que cosign no pudo
+  alcanzar Sigstore. Vuelve a intentarlo cuando tengas conexión, actualiza cosign
+  o instala con `APOTHEM_VERIFY=signature`, que comprueba la etiqueta de
+  lanzamiento solo contra la clave del mantenedor.
+- Es esperable que un fork definido mediante `APOTHEM_REPO` se detenga aquí: el
+  instalador acepta solo el flujo de lanzamiento propio de Apothem.
+- "expected GitHub Workflow SHA not found in certificate" significa que el
+  certificado que verificó cosign se emitió para una ejecución sobre un commit
+  distinto del que señala la etiqueta firmada, así que no vincula `SHA256SUMS` a
+  ese commit. No instales; infórmalo por los canales de
+  [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
+- Una discrepancia de identidad o de firma en los lanzamientos propios de Apothem
+  significa que `SHA256SUMS` no fue firmado por el flujo de lanzamiento de
+  Apothem para esta etiqueta. No instales; infórmalo por los canales de
+  [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
+
+Si, en cambio, el instalador dice que no pudo descargar el paquete de firma
+(bundle), comprueba tu conexión; si el lanzamiento no publica ningún bundle,
+instálalo con `APOTHEM_VERIFY=signature`.
+
+### El instalador se detiene: la etiqueta firmada no es la etiqueta del lanzamiento
+
+El mensaje dice "the signed tag object is not the vX.Y.Z release tag". La
+etiqueta lleva la firma de la clave del mantenedor, pero el objeto firmado
+nombra otra etiqueta, así que una etiqueta firmada de otro lanzamiento se
+redirigió a este nombre. Trátalo como una posible manipulación: no instales e
+infórmalo por los canales de
+[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
+`APOTHEM_ALLOW_UNVERIFIED=1` no omite esta comprobación, pero esa variable deja
+pasar una etiqueta sin firmar, o firmada con otra clave, así que la comprobación
+protege solo las etiquetas que llevan la firma de la clave del mantenedor.
+
+### El instalador se detiene: el modo checksum necesita una segunda variable [#the-installer-stops-checksum-mode-needs-a-second-variable]
+
+El modo checksum no verifica el lanzamiento. SHA256SUMS procede del mismo
+lanzamiento que el archivo, así que una coincidencia solo muestra que la descarga
+no está dañada; quien pueda cambiar los archivos del lanzamiento puede cambiar
+ambos. Por eso `APOTHEM_VERIFY=checksum` se ejecuta solo cuando también está
+definida `APOTHEM_ALLOW_UNVERIFIED=1`. Define ambas si lo aceptas, o instala
+`gpg` (y cosign) y ejecuta sin `APOTHEM_VERIFY=checksum`.
+
+### El instalador se detiene: la carpeta de APOTHEM_HOME no es una instalación de Apothem
+
+El instalador no reemplaza una carpeta que contiene algo distinto de una
+instalación de Apothem. Apártala, apunta `APOTHEM_HOME` a otra carpeta o vuelve a
+ejecutar con `--yes` (`-Yes` en PowerShell). Con `--yes`, el instalador mueve la
+carpeta entera, sin cambios, a una carpeta nueva,
+`<APOTHEM_HOME>.before-apothem-<time>`, junto a ella (conserva su propio nombre
+dentro), indica dónde e instala desde cero. Un clon de git de otro proyecto
+cuenta como una carpeta de ese tipo. Si ya existen tanto
+`<APOTHEM_HOME>.before-apothem-<time>` como el mismo nombre con el ID de proceso
+del instalador añadido, el instalador se detiene con "Could not move the
+existing ... aside; nothing was changed" antes de mover nada; cambia el nombre de
+una de ellas o elimínala y vuelve a ejecutar.
+
+### El instalador se detiene: APOTHEM_HOME es un enlace simbólico
+
+El mensaje dice "is a symbolic link" (en Windows, un enlace simbólico o una
+unión). Reemplazar la carpeta reemplazaría el enlace y no la carpeta a la que
+lleva, así que el instalador se niega. Define `APOTHEM_HOME` como la carpeta a la
+que lleva el enlace y vuelve a ejecutar. Un clon de git existente detrás de un
+enlace se sigue actualizando en su lugar.
+
+### El instalador se detiene: el clon de git contiene trabajo local
+
+Reemplazar un clon de git por un archivo de lanzamiento necesita `--yes`, y el
+instalador se niega incluso así mientras el clon contenga trabajo local que se
+perdería: cambios en archivos con seguimiento, stashes, commits que no están en
+un remoto o archivos sin seguimiento en el árbol de código del clon. Haz commit
+y push de ese trabajo, o muévelo a otro sitio, y vuelve a ejecutar. La
+comprobación también se ejecuta con `--dry-run`. Cuando el clon no tiene ese
+trabajo, `--yes` lo reemplaza y conserva el árbol propio del clon en
+`<APOTHEM_HOME>.before-apothem-<time>/<name>`, donde `<name>` es la última parte
+de `APOTHEM_HOME`; el instalador imprime esa ruta, y tú borras la carpeta cuando
+ya no la necesites.
+
+### El instalador se detiene: el clon existente está configurado de una forma en la que la actualización confiaría
+
+Antes de hacer fetch en un clon existente, el instalador (y el script de
+actualización) comprueba cómo está configurado el clon. `--dry-run` también hace
+estas comprobaciones. "has changes to tracked files" aparece también cuando hay
+archivos marcados como assume-unchanged o skip-worktree, lo que oculta sus
+cambios a git: ejecuta `git update-index --no-assume-unchanged <file>` o
+`git update-index --no-skip-worktree <file>` y luego haz commit o stash del
+cambio. "is not the work tree of its git clone" significa que git no encuentra
+ningún árbol de trabajo en `APOTHEM_HOME`, como cuando la configuración de git
+del clon pone `core.bare` a `true`: ponlo a `false` para que el clon se extraiga
+en `APOTHEM_HOME`. Un ajuste `core.worktree`, que enviaría la extracción a otra
+carpeta, se notifica como un ajuste que una actualización en su lugar no acepta
+(ver abajo).
+
+"own git config sets `<key>`, which an update in place does not accept in a
+clone's own config" nombra un ajuste en el `.git/config` del clon, o en
+`.git/config.worktree` cuando el clon tiene uno. Una actualización en su lugar
+acepta allí solo estos ajustes (la sección y la clave se comparan sin distinguir
+mayúsculas):
+
+- los ajustes que `git clone` y `git init` escriben para un clon completo:
+  `core.repositoryformatversion`, `core.filemode`, `core.bare`,
+  `core.logallrefupdates`, `core.symlinks`, `core.ignorecase`,
+  `core.precomposeunicode`, `core.longpaths`, `extensions.objectformat`,
+  `extensions.refstorage` (solo con el valor `files` o `reftable`),
+  `extensions.worktreeconfig`, `remote.origin.url`, `remote.origin.fetch` y
+  `remote.origin.tagopt`;
+- los ajustes de rama, `branch.<name>.<key>`, que añaden git y los editores,
+  salvo que `branch.<name>.remote` y `branch.<name>.pushremote` deben ser
+  exactamente `origin`;
+- `user.name`, `user.email`, `maintenance.auto`, `maintenance.strategy`,
+  `pull.rebase` y `pull.ff`.
+
+Cualquier otro ajuste detiene la actualización, porque podría hacer que git
+ejecute un programa, lea ajustes, hooks, atributos u objetos de otro lugar, o se
+conecte a otro sitio. Un clon hecho con `--mirror`, `--sparse`,
+`--recurse-submodules` o con un remoto que no se llame `origin` también se detiene
+aquí, y lo mismo ocurre con un clon parcial, hecho con `--filter`: el mensaje
+nombra `remote.origin.promisor`, porque git obtendría por su cuenta los objetos
+que faltan desde el remoto mientras lee el clon. Vuelve a clonar sin `--filter`.
+Elimina el ajuste del archivo que nombra el mensaje, por ejemplo
+`git config --file ~/.apothem/.git/config --unset-all <key>`, y vuelve a ejecutar.
+`--unset-all` también elimina un ajuste que aparece más de una vez. Para el
+`remote` o el `pushremote` de una rama, ponlo en cambio a `origin`, por ejemplo
+`git config --file ~/.apothem/.git/config branch.main.remote origin`. "own git
+attributes name a filter or diff driver" nombra `.git/info/attributes`: elimina
+el ajuste `filter=` o `diff=`. git ejecuta un filtro mientras lee archivos, y
+`git diff` ejecuta la conversión de texto de un controlador de diff (`textconv`),
+así que un controlador que defina tu configuración de git o la del sistema se
+ejecutaría sobre los archivos del clon.
+
+"which is not a plain file" nombra `.git/info/attributes`, `.git/config` o
+`.git/config.worktree` cuando es una carpeta, una tubería con nombre u otro
+archivo especial o, en Windows, un enlace. git podría leer de un archivo así un
+texto distinto del que lee la comprobación. Sustitúyelo por un archivo normal, o
+elimínalo, y vuelve a ejecutar.
+
+"has a setting whose name holds a line break" significa que un nombre de sección
+en el archivo que nombra el mensaje contiene un retorno de carro. git nunca
+escribe uno, y un lector podría tomar ese nombre por dos ajustes. Abre el archivo
+en un editor de texto, elimina esa sección y vuelve a ejecutar.
+
+"borrows objects from another repository" significa que el clon tiene un archivo
+`objects/info/alternates` u `objects/info/http-alternates`, como lo tiene un clon
+hecho con `--reference` o `--shared`. git leería entonces objetos de ese otro
+repositorio, bajo ajustes que el instalador no comprueba. Ejecuta
+`git -C ~/.apothem repack -a -d` para copiar los objetos al clon, elimina el
+archivo que nombra el mensaje y vuelve a ejecutar.
+
+"keeps submodule repositories in ..." y "holds a submodule at ..." significan que
+el clon tiene un submódulo, guardado en la carpeta que nombra el primer mensaje o
+registrado en su índice en la ruta que nombra el segundo. Un árbol de
+lanzamiento no tiene ninguno, y git se ejecutaría dentro del submódulo, cuyos
+propios ajustes el instalador no comprueba. Elimina el submódulo y esa carpeta
+del clon, o aparta el clon, y vuelve a ejecutar. Reemplazar el clon con `--yes`
+también hace esta comprobación, antes de que `git status` busque trabajo local.
+Los hooks de git del clon nunca se ejecutan durante una actualización.
+
+### El instalador se detiene: un archivo .gitattributes del clon no tiene seguimiento, ha cambiado o nombra un controlador
+
+git aplica los archivos `.gitattributes` del árbol de trabajo mientras compara y
+extrae archivos, y un archivo así puede hacer que git ejecute un programa. Antes
+de cualquiera de esos comandos, el instalador y el script de actualización se
+detienen ante un archivo `.gitattributes` que no sea el del commit, en cualquier
+carpeta del clon y con cualquier combinación de mayúsculas en su nombre, y ante
+un repositorio de git dentro del clon que git no sigue, ya que git leería
+también los archivos `.gitattributes` que contenga. `--dry-run` y `--yes`
+también hacen esta comprobación. No lee las carpetas de datos propias del motor
+(`backups`, `state`, `plans`, `memory`, `contexts`, `learning` y `providers`),
+donde ningún lanzamiento escribe, salvo que el clon siga archivos allí.
+
+- "has a .gitattributes file that git does not track, at ..." nombra un archivo
+  que git no sigue, incluidos los archivos ignorados y los de carpetas sin
+  seguimiento. Elimínalo y vuelve a ejecutar.
+- "has a changed .gitattributes file at ..." nombra un archivo con seguimiento
+  cuyo contenido difiere de la copia del commit, cuyo cambio está preparado
+  (staged), o que es un enlace o una carpeta. Si hiciste tú el cambio, restaura
+  la copia del commit, por ejemplo con
+  `git -C ~/.apothem checkout HEAD -- <path>`, y vuelve a ejecutar.
+- "has a .gitattributes file at ... that names a filter or diff driver
+  (filter= or diff=)" nombra un archivo con seguimiento cuya copia del commit, o
+  la copia del árbol de trabajo, nombra uno fuera de un comentario, incluida una
+  macro (línea `[attr]`) que nombre uno. git ejecutaría ese controlador, que
+  puede definir tu configuración de git o la del sistema, mientras lee el clon.
+  Elimina el ajuste, haz commit de ese cambio y vuelve a ejecutar. Una macro que
+  solo define tu archivo de atributos o el del sistema no cuenta: durante la
+  ejecución git no lee ningún archivo de atributos fuera del clon, así que esa
+  macro no nombra allí ningún controlador.
+- "has a .gitattributes file at ... whose committed copy git could not read"
+  significa que la copia en la carpeta de git del clon falta o está dañada, o
+  sus bytes no coinciden con su ID, algo que git no comprueba al leerlos. El
+  instalador no puede entonces comprobar lo que dice el archivo, mientras que git
+  seguiría aplicando la copia del árbol de trabajo. Ejecuta
+  `git -C ~/.apothem fsck` para ver qué está dañado, repara el clon o apártalo e
+  instala desde cero, y vuelve a ejecutar.
+- "Could not run git to read the committed .gitattributes files in ..." procede
+  solo de `install.ps1` y `update.ps1`. En tu sesión de PowerShell, `git` es una
+  función o un script, por ejemplo un envoltorio en tu perfil, y no hay ningún
+  programa git en `PATH` con el que el instalador pueda leer los archivos. Añade
+  la carpeta de git a `PATH`, de modo que `Get-Command git -CommandType Application`
+  lo encuentre, y vuelve a ejecutar.
+- "holds a git repository that git does not track, at ..." nombra una carpeta con
+  un `.git` propio. git no lista nada dentro de una carpeta así, de modo que un
+  archivo `.gitattributes` allí pasa desapercibido, y aun así git lo aplica a los
+  archivos que una actualización escribe allí. Un árbol de lanzamiento no tiene
+  ninguna. Saca la carpeta del clon y vuelve a ejecutar.
+
+Si no creaste tú el archivo ni el cambio, otra persona podría escribir en el
+clon: apártalo, instala desde cero y asegúrate de que `APOTHEM_HOME` sea una
+carpeta en la que solo tú puedas escribir.
+
+### El instalador se detiene: archivos en src que git no sigue
+
+El mensaje dice "has files under src that git does not track, and the engine
+could load them:" y enumera cada uno (los 20 primeros y después cuántos más hay).
+El motor se ejecuta desde la carpeta `src` del clon, así que un archivo de más
+allí podría ejecutarse como parte de él. Los archivos ignorados cuentan, y
+también un archivo `.pyc` junto a los fuentes. Una carpeta llamada `Src` o `SRC`
+cuenta como `src`, ya que Windows y macOS la encuentran con ese nombre.
+Un `pip install` editable del clon escribe `src/apothem.egg-info`, y un gestor de
+archivos puede escribir `.DS_Store` o `desktop.ini`. Saca los archivos de
+`~/.apothem/src` y vuelve a ejecutar; no se cambió nada. La comprobación se
+ejecuta antes del fetch, en una actualización en su lugar y en una ejecución de
+prueba. Las carpetas de caché de Python (`__pycache__`) no cuentan: tras la
+extracción, y antes de que el motor se ejecute por primera vez desde el clon, la
+actualización elimina todas las carpetas `__pycache__` bajo `src`, para que no se
+cargue ningún bytecode en caché anterior a la actualización.
+
+"Could not remove the Python cache folders (__pycache__) under ..." significa que
+esa eliminación falló, por ejemplo porque un archivo de una de ellas pertenece a
+otro usuario o, en Windows, está abierto en otro programa. El clon ya está
+extraído en el nuevo lanzamiento. Elimina tú esas carpetas y vuelve a ejecutar.
+
+### El instalador se detiene: otra ejecución tiene el bloqueo
+
+Cada ejecución de los scripts de instalación, actualización y desinstalación
+mantiene un bloqueo junto a `APOTHEM_HOME` (`<APOTHEM_HOME>.lock`, es decir,
+`~/.apothem.lock` por defecto) mientras se ejecuta; los comandos
+`apothem install`, `apothem update` y `apothem uninstall` no lo toman. El mensaje
+"Another Apothem install, update or uninstall is running on ..." significa que
+una segunda ejecución lo encontró ocupado. Espera a que termine la otra ejecución
+y vuelve a ejecutar. Si no hay ninguna en curso, elimina el bloqueo que nombra
+el mensaje y vuelve a ejecutar.
+
+- "was left by an Apothem run that did not finish (process N is no longer
+  running)" y "exists but names no running process" significan que una ejecución
+  se interrumpió antes de poder liberar el bloqueo. Comprueba que no haya ninguna
+  instalación, actualización ni desinstalación de Apothem en curso, elimina el
+  bloqueo y vuelve a ejecutar. El instalador nunca lo elimina por ti. En POSIX el
+  bloqueo es una carpeta (`rm -rf ~/.apothem.lock`); en Windows PowerShell es un
+  archivo que Windows borra cuando termina su ejecución.
+- "is the lock file of an Apothem PowerShell run" procede de un script POSIX bajo
+  Git Bash, MSYS2, Cygwin o WSL que encontró el archivo que mantiene una ejecución
+  de PowerShell. Windows elimina ese archivo cuando termina la ejecución y no deja
+  que nadie lo elimine mientras la ejecución está activa. Espera a que termine esa
+  ejecución. Si no hay ninguna instalación, actualización ni desinstalación de
+  Apothem en curso, elimina el archivo y vuelve a ejecutar. En otros sistemas el
+  mensaje dice "is a file where the Apothem lock folder belongs": elimina el
+  archivo si no hay ninguna ejecución activa y vuelve a ejecutar.
+- "was made by an Apothem run in another environment" significa que la carpeta
+  de bloqueo nombra un proceso de otro entorno, como WSL cuando la ejecución está
+  bajo Git Bash, Git Bash cuando está bajo WSL o MSYS2, u otro contenedor. Ese
+  proceso no se puede comprobar desde aquí. Espera a que termine esa ejecución;
+  elimina el bloqueo solo si no hay ninguna instalación, actualización ni
+  desinstalación de Apothem en curso en ningún sitio.
+- Los scripts POSIX cuentan como en ejecución un proceso que pertenece a otro
+  usuario, como una ejecución con `sudo`, así que su bloqueo figura como ocupado.
+  PowerShell no puede comprobar el ID de proceso de una carpeta de bloqueo creada
+  por los scripts POSIX (por ejemplo bajo Git Bash), así que también notifica ese
+  bloqueo como ocupado.
+- Cuando `APOTHEM_HOME` es un enlace simbólico (o, en Windows, una unión), los
+  scripts POSIX y los de PowerShell toman el bloqueo junto a la carpeta a la que
+  lleva el enlace, así que una ejecución a través del enlace y una ejecución a
+  través de esa carpeta se detienen mutuamente; el mensaje nombra ese bloqueo.
+- "Could not create the lock ... Check that you can write to ..." significa que
+  no puedes escribir en la carpeta que nombra el mensaje: la que contiene
+  `APOTHEM_HOME` o, cuando `APOTHEM_HOME` es un enlace, la que contiene la
+  carpeta a la que lleva. Toda ejecución
+  necesita escribir allí, incluidas una actualización en su lugar, una
+  desinstalación y una ejecución de prueba.
+
+### El instalador se detiene: una ejecución anterior dejó carpetas junto a APOTHEM_HOME
+
+El mensaje dice "An earlier run was stopped part-way and left these
+folders beside ..." y enumera cada carpeta con lo que contiene. Ctrl+C y una
+señal de terminación se capturan y la ejecución limpia lo suyo; una terminación
+forzada o un corte de corriente durante un intercambio no, y pueden dejar:
+
+- `.apothem-old.<name>.*`: la instalación anterior que se estaba reemplazando, en
+  su carpeta `home`. Cuando esa carpeta `home` contiene un clon de git y
+  `APOTHEM_HOME` está en su sitio (como lo está una vez que la nueva instalación
+  ha entrado), la línea dice en cambio que contiene el árbol del clon, que esa
+  ejecución estaba conservando: muévelo a una carpeta tuya si aún lo necesitas.
+  Cuando la carpeta `home` no contiene ninguna instalación de Apothem y
+  `APOTHEM_HOME` está en su sitio, la línea lo dice: apareció una carpeta allí
+  mientras la ejecución movía la instalación anterior, la ejecución volvió a
+  colocar la instalación y dejó esa carpeta como estaba. Comprueba qué contiene
+  antes de eliminarla.
+- `.apothem-extract.<name>.*` o `.apothem-clone.<name>.*`: el nuevo código fuente
+  que se estaba instalando. Cuando la ejecución ya había movido entradas de
+  `APOTHEM_HOME` a ella, la línea nombra cada una: datos del motor como
+  `backups` y `state`, y cualquier otro archivo o carpeta que hubiera allí.
+- `<APOTHEM_HOME>.before-apothem-<time>`: se enumera solo cuando falta el propio
+  `APOTHEM_HOME`. Contiene el contenido anterior de `APOTHEM_HOME`, en una carpeta
+  con el nombre de la última parte de `APOTHEM_HOME`, o directamente dentro de
+  ella si la carpeta la creó un instalador anterior; la línea dice cuál.
+
+`<name>` es la última parte de `APOTHEM_HOME` (`.apothem` por defecto), así que
+las carpetas de otro `APOTHEM_HOME` en la misma carpeta superior, que una
+ejecución sobre ese directorio puede estar usando, no se enumeran. En Windows y
+macOS, un `<name>` que solo difiere en mayúsculas cuenta como de este directorio,
+porque allí `APP` y `app` nombran por defecto la misma carpeta. La regla sigue al
+sistema operativo, no al sistema de archivos: bajo WSL, incluso en una unidad de
+Windows, los nombres que difieren en mayúsculas son directorios distintos,
+mientras que en un volumen de macOS que distingue mayúsculas o en una carpeta de
+Windows que también las distingue siguen contando como uno, así que otro
+directorio allí cuyo nombre solo difiere en mayúsculas también se enumera. Una carpeta cuyo nombre no tiene parte `<name>` la creó
+un instalador anterior que no registraba el directorio; se enumera con una nota
+que indica que puede pertenecer a cualquier directorio de Apothem de esa carpeta,
+y su línea dice que las entradas se movieron desde el directorio para el que se
+creó. En una carpeta así creada por una instalación con clon, la línea nombra
+solo los datos del motor que encuentra, así que mira dentro por si hay algo más.
+Solo cuentan las carpetas: un archivo o un enlace con ese nombre no se enumera.
+Una carpeta que el instalador no puede leer se enumera como "could not be
+read".
+
+No se cambió nada y no se borra nada. Si falta `APOTHEM_HOME`, mueve primero la
+instalación anterior de vuelta a él. Después mueve cada entrada que la lista
+indica como movida a un nuevo código fuente de vuelta al directorio del que
+procede (en una carpeta con la nota, comprueba primero cuál es ese directorio),
+elimina las carpetas enumeradas y vuelve a ejecutar. La comprobación se ejecuta en
+una instalación descargada, incluida una ejecución de prueba; no se ejecuta en una
+instalación desde tu propio checkout, ni en una actualización ni en una
+desinstalación.
+
+### El instalador se detiene: otro usuario es dueño del clon
+
+El mensaje dice "is owned by someone else, so git refuses to work in it
+(git reports "dubious ownership")". git no lee un clon cuyo dueño es otro
+usuario. Ejecuta el instalador como el usuario dueño de `APOTHEM_HOME`, toma
+posesión de la carpeta o apunta `APOTHEM_HOME` a una carpeta tuya, y vuelve a
+ejecutar. El instalador no añade la carpeta a la lista `safe.directory` de git.
+Cualquier otro fallo de ese primer comando de git dice "git could not read
+the clone at ..." seguido de la primera línea de explicación del propio git.
+
+### El instalador avisa: otros usuarios pueden cambiar APOTHEM_HOME
+
+Los scripts de instalación y actualización, incluidas las ejecuciones de prueba,
+avisan cuando usuarios distintos de ti pueden escribir en `APOTHEM_HOME` o en la
+carpeta que lo contiene, o son dueños de alguna de ellas, ya que entonces pueden
+cambiar el código que el comando `apothem` ejecuta en tu nombre; las ejecuciones
+que omiten la comprobación se enumeran abajo. La ejecución continúa; el aviso
+nombra la carpeta, quién puede escribir en ella o es su dueño, y la solución. El
+aviso empieza con uno de estos textos:
+
+- "Other users can change the code Apothem runs as you", cuando pueden escribir
+  en `APOTHEM_HOME`, o cuando `APOTHEM_HOME` o la carpeta que lo contiene
+  pertenece a otra persona (el mensaje dice entonces quién es dueño de qué carpeta).
+  Cuando `APOTHEM_HOME` es un enlace, el mensaje nombra la carpeta a la que lleva.
+- "Other users can replace ...", cuando pueden escribir en la carpeta que contiene
+  `APOTHEM_HOME` (o el enlace a él), y por tanto cambiarle el nombre o eliminarlo.
+- "A new ... would let", cuando `APOTHEM_HOME` aún no existe y una carpeta nueva
+  allí quedaría abierta a otros.
+
+Una instalación desde un checkout local no se comprueba, tanto si
+`APOTHEM_SOURCE` la nombra como si ejecutas el propio
+`scripts/installer/install.sh` o `install.ps1` de esa copia. Los scripts de
+actualización omiten la comprobación solo cuando `APOTHEM_SOURCE` está definida.
+Si el aviso nombra un grupo que compartes a propósito con personas de tu
+confianza para cambiar el código, puedes ignorarlo.
+
+La comprobación lee los permisos de `APOTHEM_HOME` y de la carpeta que lo
+contiene, no los de cada archivo de dentro.
+
+En Linux y macOS, el aviso nombra "all users" o "the group" según lo que
+encontró en los bits de permiso de la carpeta, y cada usuario o grupo al que una
+lista de acceso (ACL) deja escribir, que lee con `getfacl` donde está instalado.
+Con una lista de acceso, los bits de grupo que muestra `ls` son la máscara de la
+lista, así que, donde `getfacl` enumera la entrada propia del grupo (`group::`),
+esa entrada decide si se nombra el grupo; sin `getfacl`, el grupo nombrado puede
+ser uno al que la máscara deja escribir pero su propia entrada no. El aviso nunca
+te nombra a ti, al usuario root ni a un grupo con tu propio nombre de usuario (tu
+propio grupo). Un nombre que `getfacl` escribe con secuencias de escape, como el
+`CORP\alice` de una cuenta de dominio, cuenta como el nombre que representa. Para
+corregirlo, ejecuta el comando que da el mensaje (en Linux también quita el
+acceso de escritura a cada usuario y grupo que nombra la lista de acceso):
+
+```bash
+chmod go-w "$HOME/.apothem"
+```
+
+Los archivos creados con los mismos ajustes también pueden tener permiso de
+escritura: `chmod -R go-w` sobre la carpeta corrige también esos. Si otros
+necesitan escribir en la carpeta que contiene `APOTHEM_HOME`, como ocurre con
+`/tmp`, activa su bit sticky con `chmod +t` para que no puedan cambiar el nombre
+ni eliminar lo que pones allí, o mueve `APOTHEM_HOME`. En una instalación nueva,
+el aviso informa de tu umask: ejecuta `umask 022` y vuelve a ejecutar el
+instalador. En WSL, mantén `APOTHEM_HOME` en tu directorio personal de Linux, no
+bajo `/mnt/c`, donde todos los archivos parecen escribibles por todos los usuarios.
+
+Cuando el mensaje dice que un usuario "owns" la carpeta, ese usuario puede
+cambiarla digan lo que digan sus permisos, y solo root puede hacerte su dueño.
+Una carpeta cuyo dueño es root está bien. Mueve `APOTHEM_HOME` a una carpeta tuya.
+
+En Windows, el aviso nombra cada cuenta o grupo al que una entrada de permisos
+deja cambiar la carpeta, tal como lo nombra la pestaña Seguridad de la carpeta:
+Users, Authenticated Users, Everyone, INTERACTIVE (todos los que inician sesión en
+el equipo o por Escritorio remoto, que pueden cambiar lo que se crea en
+`C:\Users\Public`), Guests, o un grupo que creó tu organización u otro programa.
+Nunca te nombra a ti, a tu propia sesión, a SYSTEM, Administrators,
+TrustedInstaller, CREATOR OWNER ni OWNER RIGHTS; los dos últimos representan a
+quien crea o es dueño de un elemento, y un dueño que sea otra persona recibe un
+mensaje propio. Cuando la carpeta pertenece a otra cuenta, el mensaje lo dice y
+te pide que muevas `APOTHEM_HOME` a tu carpeta de usuario. Cuando el mensaje
+añade "access that folders made at the root of a drive inherit from
+the drive's default permissions", la carpeta está en la raíz de una unidad, como
+`C:\apothem`: Windows deja que todo usuario que inicie sesión añada y cambie
+carpetas creadas allí. La solución más sencilla es mover `APOTHEM_HOME` a tu
+carpeta de usuario (`%USERPROFILE%`), como lo está el `~\.apothem` por defecto.
+Para dejar la carpeta donde está, desactiva la herencia, date control total y
+luego elimina los grupos que nombra el aviso. Para una carpeta en la raíz de una
+unidad, eso es Authenticated Users en Windows 10 y 11 y Users en Windows Server;
+los comandos siguientes eliminan ambos:
+
+```powershell
+icacls "C:\apothem" /inheritance:d
+icacls "C:\apothem" /grant:r "${env:USERNAME}:(OI)(CI)F"
+icacls "C:\apothem" /remove:g *S-1-5-11 *S-1-5-32-545 *S-1-1-0 *S-1-5-4
+```
+
+Date acceso antes de eliminar los grupos: la entrada que eliminas puede ser tu
+única forma de escribir en la carpeta. Los nombres `*S-...` son los
+identificadores de seguridad de los grupos (Authenticated Users, Users, Everyone
+e INTERACTIVE), que funcionan en cualquier idioma de Windows. Elimina cualquier
+otro nombre que dé el aviso en una línea `icacls` propia, entre comillas: un
+nombre que `icacls` no encuentra detiene toda la línea, que entonces no elimina
+nada y aun así imprime "Successfully
+processed 0 files". Un nombre formado por `S-` y números es el identificador de
+seguridad de una cuenta que Windows no puede resolver, como una cuenta eliminada
+u otra sesión: pon `*` delante y, si `icacls` sigue sin eliminar nada, elimínalo
+en Propiedades > Seguridad > Opciones avanzadas de la carpeta. También puedes
+hacer allí todos los cambios. Cuando el aviso trata de la carpeta que contiene
+`APOTHEM_HOME`, haz el cambio allí, o mueve `APOTHEM_HOME`. Un enlace o una unión
+en `APOTHEM_HOME` toma sus permisos de esa carpeta, así que otros que puedan
+cambiar la carpeta pueden borrar el enlace y crear el suyo.
+
+`install.sh` y `update.sh` no hacen la comprobación bajo Git Bash, MSYS2 o Cygwin,
+donde los bits de permiso se derivan de los permisos de Windows, así que allí no
+dan ningún aviso. En Windows, ejecuta `install.ps1` o `update.ps1`, que leen los
+permisos de Windows, para que se compruebe la carpeta.
+
+### El instalador se detiene: no se pudo actualizar el clon existente
+
+El instalador hace fetch en un clon existente y comprueba la nueva etiqueta antes
+de extraerla en el clon, así que una comprobación fallida deja el clon como
+estaba. Otros dos mensajes detienen la actualización antes de la extracción.
+"Could not fetch" suele significar que una etiqueta local difiere de la de origin:
+bórrala con `git -C ~/.apothem tag -d <tag>` y vuelve a ejecutar. "has changes to tracked files.
+Commit or stash them, then re-run." significa que el clon tiene cambios sin commit
+en archivos que git sigue: haz commit o stash de ellos y vuelve a ejecutar. La
+comprobación ignora los ajustes de fin de línea (`eol` y `text`) de tu archivo de
+atributos de git o el del sistema, así que un clon que nunca cambiaste puede
+notificarse así: ejecuta `git -C ~/.apothem status` una vez y vuelve a ejecutar.
+Una ejecución de prueba no comprueba los cambios sin commit corrientes, ya que no
+hace fetch en el clon, pero se detiene con el mismo mensaje cuando hay archivos
+marcados como assume-unchanged o skip-worktree (consulta la sección anterior sobre
+la configuración del clon). "Could not check out" significa que la extracción
+seguiría sobrescribiendo cambios locales. El instalador nunca descarta cambios
+locales. Para una referencia que no es de lanzamiento, como `main`, un clon
+existente sigue la copia de esa rama en origin.
+
+### El instalador o el script de actualización terminan con el código de salida 2
+
+El motor terminó como parcial. O bien dejó tal cual un archivo que contiene el
+bloque de Apothem por sus líneas de marcador de Apothem y escribió el resto, o se
+detuvo después de haber escrito algo, por ejemplo cuando una herramienta falló
+tras otra anterior en una ejecución con `APOTHEM_HARNESS=all`. Sus mensajes
+nombran el archivo o muestran el error que lo detuvo, y el script añade una línea
+que empieza por "The engine ended as partial (exit code 2)." El instalador sigue
+ejecutando verify, coloca el comando `apothem` e imprime su mensaje final, y el
+script de actualización sigue imprimiendo su última línea. Una ejecución de
+PowerShell canalizada (`irm ... | iex`) deja `$LASTEXITCODE` en `2` y tu sesión
+abierta. Un
+`pwsh -Command "irm ... | iex"` de una sola vez (o `powershell -c`) notifica una
+ejecución parcial solo mediante `$LASTEXITCODE` y sale con `0`: para obtener el
+código de salida `2` del proceso, termina el comando con `; exit $LASTEXITCODE`,
+o ejecuta el script por su ruta con `-File`. Desde PowerShell, bash u otro shell
+POSIX, pon ese comando entre comillas simples. Entre comillas dobles, el shell que
+llama sustituye su propio `$LASTEXITCODE` antes de que empiece el nuevo proceso
+(un shell POSIX pone una cadena vacía), así que el proceso no sale con el código
+de la ejecución. Desde cmd.exe, las comillas dobles sirven. Una ejecución de
+prueba no escribe nada, así que no termina como parcial.
+Corrige lo que nombran los mensajes. Para un archivo, conserva tu propio texto
+(consulta
+[Un archivo contiene dos bloques entre los marcadores de Apothem](#a-file-holds-two-blocks-between-apothems-markers)
+y
+[Apothem no puede distinguir su bloque de tu texto](#apothem-cannot-tell-its-block-from-your-text)),
+y después vuelve a ejecutar `apothem update --harness <name>` para cada
+herramienta que la ejecución dejó sin terminar.
+[Cuando el motor deja un archivo tal cual](/docs/install/updating#when-the-engine-leaves-a-file-as-it-is)
+describe la ejecución completa.
 
 ### irm / iex bloqueado en Windows
 
@@ -117,6 +641,58 @@ Si la política de ejecución de PowerShell bloquea el instalador:
 Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
+
+### El instalador ignoró el checkout de mi carpeta actual
+
+Es intencionado. Un comando canalizado de una línea (`curl ... | sh`,
+`irm ... | iex`) nunca usa un árbol local, y nunca busca en la carpeta actual ni
+en sus carpetas superiores: descarga y verifica el lanzamiento. Para instalar
+desde un checkout, ejecuta el propio `scripts/installer/install.sh` (o
+`install.ps1`) de ese checkout por su ruta, desde cualquier carpeta (por ejemplo
+`sh ~/src/apothem/scripts/installer/install.sh`), o define `APOTHEM_SOURCE` con
+la copia. Da al script una ruta con parte de carpeta:
+`sh scripts/installer/install.sh` o `sh ./scripts/installer/install.sh`
+funciona, pero `sh install.sh` sin parte de carpeta no cuenta como ejecutar desde
+un checkout, así que el instalador imprime "Not using a checkout: to install from one,
+run this script as ./install.sh or by its full path, or set APOTHEM_SOURCE." y
+descarga y verifica el lanzamiento en su lugar. Un script iniciado mediante
+`sh -c` tampoco se trata como un checkout, en los shells que marcan las
+ejecuciones con `-c`. dash no las marca, así que bajo dash
+`sh -c "<script>" ./install.sh` iniciado desde una carpeta llamada
+`scripts/installer` dentro de un árbol de código usa ese árbol: inicia texto de
+script de esa forma solo desde una carpeta de confianza. Del mismo modo, una
+copia de `install.sh` que guardes en la carpeta `scripts/installer` de otro árbol
+de código y ejecutes allí por su ruta se convierte en el instalador propio de ese
+árbol y lo instala. Guarda un script descargado en una carpeta vacía.
+`install.sh` sigue un enlace simbólico hasta su archivo real y usa la copia de
+trabajo que lo contiene. `install.ps1` hace lo contrario: rechaza una copia de
+trabajo a la que llega mediante un enlace simbólico o una unión, imprime una nota
+de una línea y toma la ruta descargada y verificada. Ejecútalo desde la carpeta
+real o define `APOTHEM_SOURCE`. Los instaladores, el comando `apothem`, el
+lanzador de npm y los hooks también mantienen la carpeta actual fuera de la ruta
+de búsqueda de módulos de Python, así que un archivo llamado `click.py` en la
+carpeta en la que trabajas no les afecta. Un comando `python -m apothem` que
+escribas tú no lo hace: `-m` lee primero los módulos de la carpeta actual, así que
+ejecútalo solo desde una carpeta de confianza.
+
+### Un comando `apothem` antiguo sigue mirando mi carpeta actual
+
+Los lanzamientos anteriores escribían un shim del comando `apothem` que iniciaba
+Python de una forma que dejaba que la carpeta actual ocultara los módulos del
+motor. Actualizar no reescribe ese shim. Vuelve a ejecutar el instalador
+(`install.sh` o `install.ps1`) para reemplazarlo. Los desinstaladores eliminan
+tanto el shim antiguo como el nuevo.
+
+### Git Bash: se ignoran mis entradas `/c/...` de PYTHONPATH
+
+Bajo Git Bash, los instaladores suelen ejecutar un Python de Windows, y un Python
+de Windows lee `PYTHONPATH` como rutas de Windows separadas por `;`. Los scripts
+sh y el shim `apothem` que escriben conservan solo las rutas de unidad y de red de
+tu `PYTHONPATH` para ese Python, así que una entrada de estilo POSIX como
+`/c/Users/me/lib` se descarta. Escribe la entrada como ruta de unidad,
+`C:\Users\me\lib` o `C:/Users/me/lib`, y separa las entradas con `;`. Un Python
+POSIX, como el `python3` propio de Cygwin o de MSYS2, lee rutas separadas por `:`
+que empiezan por `/`, y los scripts las conservan para él.
 
 ## Problemas en tiempo de ejecución
 
@@ -128,13 +704,485 @@ Ejecuta apothem doctor para leer su tabla Harness Status, que tiene una fila por
 
 Vuelve a ejecutar apothem install para volver a materializar el adaptador. Si el
 problema persiste, consulta la página específica del adaptador en
-[Adaptadores de entorno](/docs/harnesses).
+[Adaptadores de entorno](/docs/harnesses). Si la instalación avisó de un marcador
+BEGIN sin END, o la fila fallida nombra un archivo que contiene uno, volver a
+ejecutarla no sirve; consulta
+[Un archivo tiene un marcador BEGIN de Apothem sin marcador END](#a-file-has-an-apothem-begin-marker-with-no-end-marker).
+Si el aviso o la fila dice que un archivo contiene dos o más bloques completos
+entre los marcadores de Apothem, consulta
+[Un archivo contiene dos bloques entre los marcadores de Apothem](#a-file-holds-two-blocks-between-apothems-markers).
+Si dice que Apothem no puede saber si las líneas de marcador de un archivo marcan
+su bloque o texto tuyo, consulta
+[Apothem no puede distinguir su bloque de tu texto](#apothem-cannot-tell-its-block-from-your-text).
+
+### Un archivo tiene un marcador BEGIN de Apothem sin marcador END [#a-file-has-an-apothem-begin-marker-with-no-end-marker]
+
+Apothem guarda su propio texto en un bloque que va desde un marcador
+`<!-- BEGIN APOTHEM MANAGED BLOCK -->` hasta el siguiente marcador
+`<!-- END APOTHEM MANAGED BLOCK -->`. Si el marcador END ha desaparecido (una
+edición a mano o una fusión que eliminó la línea), o un marcador BEGIN tuyo está
+fuera de un bloque completo, nada indica dónde termina el texto de Apothem y
+empieza el tuyo. Por eso Apothem nunca corta el texto que sigue a ese marcador:
+
+- `apothem install` y `apothem update` lo conservan tal cual, escriben el bloque
+  de Apothem aparte y muestran un aviso que nombra el archivo y la línea del
+  marcador, con un paso numerado que cambia esa línea (ver abajo). El aviso
+  también dice que no vuelvas a añadir el marcador END en su lugar: con el bloque
+  de Apothem escrito aparte, el archivo contendría entonces dos bloques de
+  Apothem, que la instalación y la actualización dejan tal cual. Una ejecución de
+  prueba lee el archivo antes de escribir nada, así que, cuando el archivo aún no
+  contiene ningún bloque completo, su aviso dice que, si vuelves a añadir el
+  marcador END en su lugar, no puede haber ninguna línea tuya entre los dos
+  marcadores, ya que la siguiente ejecución reemplaza o quita todas las líneas
+  entre ellos, y que no lo vuelvas a añadir en absoluto una vez que una
+  instalación o actualización haya escrito el bloque de Apothem aparte del
+  marcador. Hasta entonces, volver a ponerlo justo debajo del antiguo texto de
+  Apothem, encima de tus propias líneas, deja un bloque completo, que la
+  siguiente actualización reescribe.
+- `apothem uninstall` quita el bloque completo de Apothem, deja el resto tal
+  cual y nombra el archivo y la línea del marcador, con el mismo paso numerado:
+  una instalación conserva el marcador tal cual, y la herramienta sigue leyendo
+  el texto que hay debajo.
+- `apothem verify` y `apothem doctor` fallan y nombran el archivo y la línea del
+  marcador, con el mismo paso numerado, hasta que se cambie el marcador suelto;
+  para un archivo que escribe la instalación actual,
+  `apothem status --profile` también muestra deriva hasta entonces. Volver a
+  ejecutar `apothem install` no lo resuelve. Solo cuentan los archivos en los que
+  Apothem guarda un bloque para ese entorno, así que un marcador en un archivo
+  tuyo no los hace fallar.
+
+Mientras un registro de instalación enumere un archivo que no contiene ningún
+bloque completo pero sí un par de marcadores en código, como un ejemplo de
+marcador que citas en un bloque de código, la instalación, la actualización y la
+desinstalación dejan todo ese archivo tal cual: el par puede ser el bloque de
+Apothem dentro de un bloque de código tuyo. Su aviso, como la nota de `apothem verify`,
+nombra primero ese marcador BEGIN y después cada par, y la desinstalación queda
+sin terminar (consulta
+[Apothem no puede distinguir su bloque de tu texto](#apothem-cannot-tell-its-block-from-your-text)).
+Sin registro de instalación, un par que citas en código es texto tuyo, y la
+instalación y la actualización escriben el bloque de Apothem aparte del marcador
+suelto. Un marcador END que citas solo en código más abajo, sin ningún par de
+marcadores después, es distinto: cierra ese marcador BEGIN, así que una
+actualización reemplaza las líneas entre ambos como bloque de Apothem, y una
+desinstalación las elimina.
+
+Apothem lee un marcador solo como una línea propia fuera de código, como lo haría
+un visor de Markdown, así que un marcador que citas en una frase, en un bloque de
+código delimitado o en código sangrado cuatro columnas más allá de su elemento
+de lista (o del margen) tras una línea en blanco no se toma por uno, ni tampoco
+un marcador BEGIN y uno END que citas en dos bloques de código separados. Una
+valla de código que dejas abierta hasta el final del archivo se lee como texto,
+haya las que haya, salvo que un marcador BEGIN fuera de código por encima tenga
+su marcador END en código y otro par de marcadores los siga. Los marcadores
+dentro de un bloque HTML o de una cita, o tras un elemento de lista cuyo texto
+continúa en el margen izquierdo, todavía pueden leerse de forma distinta a como
+los lee un visor de Markdown.
+
+Todos los números de línea que dan estos avisos cuentan las líneas como Apothem
+lee el archivo: una línea termina en CRLF, en LF o en un CR suelto. En un archivo
+guardado con finales CR, o con un CR suelto dentro de una línea, cuenta las
+líneas de la misma forma antes de cambiar las líneas que nombra un aviso.
+
+Para corregirlo, sigue el paso numerado del aviso, por ejemplo
+"Fix A, if lines 77 to 148 are Apothem's block: A1. Change line 3: add a word
+inside its comment." La línea 3 es el marcador BEGIN suelto: el que no tiene
+marcador END antes del siguiente marcador BEGIN, o no tiene ninguno. Añade una
+palabra justo antes de su `-->` de cierre, como en
+`<!-- BEGIN APOTHEM MANAGED BLOCK (example) -->`, y la línea deja de leerse como
+marcador. Eso no añade ni quita ninguna línea, así que nada más del archivo se
+lee distinto, y la línea BEGIN que abre el bloque actual de Apothem queda tal
+cual. La corrección también cambia todas las demás líneas de marcador BEGIN del
+archivo, incluida una que cites en un bloque de código, un paso por cada una,
+desde el final del archivo hacia arriba (consulta
+[Seguir una corrección numerada](#follow-a-numbered-fix)): un marcador BEGIN
+citado que quede tal cual podría emparejarse con un marcador END de debajo una
+vez que la desinstalación quite el bloque de Apothem. Cuando la disposición del
+archivo no muestra que el bloque de Apothem siga completo una vez cambiadas esas
+líneas (porque lo contiene un bloque de código tuyo que ninguna línea cierra, por
+ejemplo), la corrección cambia todas las líneas de marcador BEGIN del archivo,
+también la del bloque, por ejemplo "Fix A: A1. Below
+line 6, add a line of 3 backticks. A2. Change line 3: add a word inside its
+comment. A3. Change line 2: add a word inside its comment. Apothem then reads
+none of these lines as its markers, and the next update writes its block at
+the end of the file." Cuando el archivo termina dentro de un bloque de código
+que ninguna línea cierra, como aquí, la corrección añade primero la línea de
+cierre de ese bloque de código debajo de la última línea, para que el bloque que
+la siguiente actualización escriba allí no sea código. El antiguo texto de
+Apothem debajo de una línea de marcador que cambias, que repite las reglas de
+Apothem, queda entonces para que lo borres a mano. No vuelvas a añadir el
+marcador END en lugar de cambiar la línea del marcador: una vez que una
+instalación o actualización ha escrito el bloque de Apothem aparte de él, el
+archivo contendría entonces dos bloques de Apothem (consulta
+[Un archivo contiene dos bloques entre los marcadores de Apothem](#a-file-holds-two-blocks-between-apothems-markers)).
+Una vez que cambias la línea del marcador, un marcador END debajo de ella no se
+empareja con nada. Después ejecuta `apothem update`, que vuelve a escribir el
+bloque de Apothem si el archivo ya no contiene uno, y vuelve a ejecutar
+`apothem verify`. Un marcador BEGIN cuyo marcador END está en código, con otro
+par de marcadores después, recibe un aviso distinto; consulta
+[Apothem no puede distinguir su bloque de tu texto](#apothem-cannot-tell-its-block-from-your-text).
+
+### Un archivo contiene dos bloques entre los marcadores de Apothem [#a-file-holds-two-blocks-between-apothems-markers]
+
+Apothem escribe un bloque por archivo. Aun así, un archivo puede acabar con dos
+bloques completos: un bloque antiguo cuyo marcador END volviste a poner después
+de que una actualización escribiera un bloque nuevo debajo, un par de marcadores
+tuyo fuera de código (un ejemplo que citas, por ejemplo), o un bloque que pegaste
+una segunda vez. Apothem no puede saber entonces cuál es el suyo:
+
+- `apothem install` y `apothem update` dejan el archivo tal cual y muestran un
+  aviso que nombra cada bloque por sus líneas, por ejemplo "holds 2 whole
+  blocks between Apothem's markers (lines 1 to 32, and lines 36 to 67)". La
+  ejecución termina como parcial: en lugar de su línea `✓` imprime una línea `✗`
+  que nombra el archivo, su `status` de `--format json` es `"partial"` y sale
+  con el código `2`, hasta que corrijas el archivo. En una ejecución de prueba,
+  el aviso dice que Apothem "would leave the file as it is".
+- `apothem verify`, con o sin `--profile`, y `apothem doctor` fallan y nombran
+  el archivo con cada bloque (la comprobación de doctor es `harness.stray_begin`,
+  y su mensaje dice que el archivo contiene "Apothem markers to fix by hand")
+  hasta que corrijas el archivo; para un archivo que escribe la instalación
+  actual, `apothem status --profile` también muestra deriva hasta entonces.
+- `apothem uninstall` quita los bloques que son copias exactas entre sí (un
+  bloque pegado dos veces, por ejemplo). Cuando quedaría un bloque distinto, deja
+  el archivo tal cual, muestra el mismo aviso, que termina con "then run
+  the uninstall again", y queda sin terminar (código de salida `2`) hasta que lo
+  corrijas (consulta
+  [Una desinstalación que no terminó](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish)).
+  Sin registro de instalación, deja también tal cual el `CLAUDE.md` de Claude Code
+  o un documento de perfil que contenga dos bloques, y su aviso nombra cada
+  bloque de la misma forma. Ese aviso dice que ejecutes `apothem update` y luego
+  `apothem uninstall` de nuevo, tras la corrección, y no detiene la
+  desinstalación. La desinstalación nombra entonces las líneas de marcador tuyas
+  que haya alrededor del bloque de Apothem antes de quitar el bloque.
+
+El aviso da entonces una corrección numerada para cada bloque, para el caso de
+que sea el bloque de Apothem, por ejemplo "Fix A, if lines 1 to 32 are Apothem's
+block: A1. Change line 36: add a word inside its comment. Lines 1 to 32 are
+then the one block in the file." (consulta
+[Seguir una corrección numerada](#follow-a-numbered-fix)). Una corrección cambia
+la línea de marcador BEGIN de cada uno de los demás bloques; un marcador END sin
+marcador BEGIN encima no se empareja con nada. Un bloque cuyo caso no muestra la
+disposición del archivo (uno debajo de un bloque que contiene un bloque de
+código, por ejemplo) no recibe corrección propia, y una corrección más, "in any
+other case", cambia entonces todas las líneas de marcador BEGIN del archivo.
+Abre el archivo nombrado en las líneas que da el aviso:
+
+1. Elige la corrección del bloque que contiene las reglas de Apothem. En un
+   archivo que empieza con el frontmatter de Apothem, es el bloque justo debajo
+   de él: una desinstalación quita ese frontmatter solo junto con el bloque justo
+   debajo.
+2. Haz los pasos de esa corrección en el orden dado. Cada paso cambia una línea
+   de marcador BEGIN en su sitio, así que el texto de debajo se queda: un par de
+   marcadores tuyo conserva tu ejemplo, y el texto de un bloque de Apothem más
+   antiguo o pegado, hasta su línea de marcador END, queda entonces para que lo
+   borres a mano. Cada corrección vale tanto para la siguiente actualización como
+   para una desinstalación. No borres el bloque de Apothem para conservar un par
+   tuyo: la siguiente desinstalación quitaría entonces tu par como el único bloque
+   que queda. Tampoco muevas un par tuyo a un bloque de código: una vez que el
+   propio bloque de Apothem ya no está completo (si se perdió su marcador END,
+   por ejemplo), un par de marcadores en código impide que la instalación y la
+   actualización escriban el bloque de Apothem mientras un registro de
+   instalación enumere el archivo (consulta
+   [Apothem no puede distinguir su bloque de tu texto](#apothem-cannot-tell-its-block-from-your-text)).
+3. Ejecuta `apothem update` y luego `apothem verify` de nuevo. Tras una
+   desinstalación que no terminó, ejecuta en cambio `apothem uninstall` de nuevo.
+
+Un marcador BEGIN encima del bloque de Apothem y un marcador END debajo de él
+forman un segundo bloque que solo aparece una vez quitado el bloque de Apothem.
+El aviso de la desinstalación nombra entonces el bloque de Apothem y esas dos
+líneas de marcador, por ejemplo "once the block
+from line 5 to line 36 is out, the BEGIN marker at line 2 and the END marker at
+line 39 make another", y dice "Do not delete the block from line 5 to line
+36": la siguiente ejecución leería entonces las líneas 2 a 39 como el bloque de
+Apothem, y reemplazaría o quitaría lo que hay entre ellas. En su lugar, su única corrección
+cambia esa línea de marcador BEGIN, conservando tu propio texto, por
+ejemplo "Fix A, if lines 5 to 36 are
+Apothem's block: A1. Change line 2: add a word inside its comment. Lines 5 to
+36 are then the one block in the file."; después vuelve a ejecutar la
+desinstalación. El marcador END de debajo no se empareja entonces con nada, así
+que puede quedarse, como un ejemplo que citas en un bloque de código, por
+ejemplo. No pongas ambas líneas en un mismo bloque de código: contendría también
+el bloque de Apothem. Si ese marcador BEGIN es lo que queda de un bloque de
+Apothem más antiguo, el antiguo texto de Apothem debajo de él queda entonces para
+que lo borres a mano. Un `apothem update` tampoco corrige un archivo así, y
+`apothem verify` falla hasta que lo corrijas.
+
+### Apothem no puede distinguir su bloque de tu texto [#apothem-cannot-tell-its-block-from-your-text]
+
+El aviso nombra el archivo y dice "Apothem cannot tell whether the marker
+lines in this file mark its block or text of yours". Lo ves cuando una valla de
+código encima del bloque de Apothem quedó abierta y una valla que añadiste más
+abajo la cerró: el bloque queda entonces dentro de tu bloque de código. Un visor
+de Markdown muestra esas líneas como código, y las mismas líneas podrían ser un
+par de marcadores que citas como ejemplo, así que Apothem no puede saber si son
+su bloque o tu texto. Lo mismo ocurre con un par en código sangrado o sangrado
+bajo un párrafo, y con un marcador BEGIN fuera de código cuyo marcador END está
+en código mientras otro par de marcadores lo sigue: cualquiera de los dos pares
+podría ser el bloque de Apothem. Una línea de cierre dentro del propio bloque de
+Apothem también puede cerrar un bloque de código tuyo que quedó abierto encima
+de él (ver abajo).
+
+El aviso nombra cada par de marcadores del archivo por las líneas de sus dos
+marcadores y dice dónde se leen, por ejemplo "The BEGIN marker at line 6 and the END
+marker at line 38 sit inside a code block that opens at line 3." También nombra
+cada marcador BEGIN fuera de código que no inicia ningún par de marcadores, por
+ejemplo "The
+BEGIN marker at line 1 starts no marker pair: its END marker is gone, or the
+marker is yours." Después vienen las correcciones numeradas, en los avisos de
+`apothem install`, `apothem update` y `apothem uninstall`, la nota de
+`apothem verify` y la corrección que imprime `apothem doctor`, por ejemplo "Fix A:
+A1. Change line 6: add a word inside its comment. Apothem then reads none of
+these lines as its markers, and the next update writes its block at the end of
+the file." Un par cuyas dos líneas de marcador se leen fuera de código (uno tras
+un marcador BEGIN cuyo marcador END está en código) recibe una corrección propia,
+para el caso de que sea el bloque de Apothem, donde la disposición del archivo
+muestra que entonces se lee como el único bloque completo; la última corrección,
+"in any other case" cuando la preceden otras, cambia todas las líneas de marcador
+BEGIN del archivo. Consulta
+[Seguir una corrección numerada](#follow-a-numbered-fix) para saber cómo leerlas.
+
+Mientras un registro de instalación enumere el archivo (hasta que termine una
+desinstalación; un registro de instalación que no se puede leer cuenta como uno;
+también cuenta un registro hecho bajo otra forma de escribir la carpeta, como tu
+directorio personal alcanzado a través de un enlace, igual que para la
+desinstalación, cuando la forma bajo la que ejecutas tiene todavía una instalación
+propia en su sitio y la herramienta escribe las
+[carpetas compartidas de tu directorio personal](/docs/cli-reference/install#folders-in-your-home-directory)),
+`apothem install` y `apothem update` no cambian nada en él y muestran ese aviso;
+en una ejecución de prueba dice que Apothem "would leave the file as it is". Para
+un marcador BEGIN fuera de código cuyo marcador END está en código con otro par
+de marcadores después, lo hacen con o sin registro. Cada una de esas ejecuciones
+termina como parcial: en lugar de su línea `✓` imprime una línea `✗` que nombra
+el archivo, su `status` de `--format json` es `"partial"` y sale con el código
+`2`. El aviso lo dice: "Until you fix these marker lines as this text says, install
+and update leave this file as it is and end as partial (exit code 2)." El aviso
+de una ejecución que escribió el archivo, y que por tanto termina con éxito,
+empieza esa frase con "From the next run on, until you fix these marker lines".
+Eso dura mientras las líneas de marcador sigan como están, incluido un ejemplo
+de marcador tuyo en un bloque de código: un par así puede ser el bloque de
+Apothem dentro de un bloque de código tuyo, así que el aviso añade que tu ejemplo
+retiene el archivo de la misma forma hasta que cambies su línea de marcador
+BEGIN, por ejemplo añadiendo una palabra dentro de su comentario, como en
+`<!-- BEGIN APOTHEM MANAGED BLOCK (example) -->`. Para un par cuyas líneas de
+marcador se leen como parte del párrafo de encima, llama al par "a marker example
+of yours that reads as part of a paragraph". Nada más lo termina: la
+desinstalación tampoco termina mientras el par esté ahí. Un marcador BEGIN fuera
+de código que no inicia ningún par no cambia eso, incluso cuando todos los pares
+de marcadores del archivo están citados en código debajo de él: el marcador puede
+ser lo que queda del bloque de Apothem tras perderse su marcador END, pero un par
+en código puede ser el bloque de Apothem dentro de un bloque de código tuyo. El
+aviso nombra primero ese marcador BEGIN, y cada corrección lo cambia. La
+nota de `apothem verify` y la corrección que imprime `apothem doctor` dan la
+misma frase sobre terminar como parcial solo donde la instalación y la
+actualización dejarían el archivo tal cual: sin registro de instalación, un par
+de marcadores que citas en código no retiene el archivo (ver
+abajo), salvo que el par contenga exactamente el bloque que escribe la
+instalación. La nota y la corrección no comprueban ese bloque, así que para un par
+así omiten esa frase; la siguiente actualización deja el archivo tal cual,
+termina como parcial y lo dice.
+
+Apothem cierra un bloque de código que una regla de tu perfil abre y nunca
+cierra, al final del bloque que escribe, de modo que el marcador END de ese
+bloque nunca queda en código. Un bloque que un lanzamiento anterior escribió a
+partir de una regla así no tiene línea de cierre. Con un par de marcadores tuyo
+después, la instalación y la actualización dejan el archivo tal cual. Ninguna
+corrección conserva ese bloque más antiguo: una línea tuya debajo de él cierra el
+bloque de código que abrió su regla y, una vez que la siguiente actualización
+reemplazara el bloque, esa línea abriría un bloque de código sobre tu texto. La
+corrección para el caso de que el par que lo sigue sea el bloque de Apothem
+cambia la línea de marcador BEGIN del bloque más antiguo, por ejemplo "Fix A, if lines 8 to 10 are Apothem's block: A1.
+Change line 1: add a word inside its comment.", y la última corrección cambia
+todas las líneas de marcador BEGIN; el texto del bloque más antiguo queda entonces
+para que lo borres a mano.
+
+Esa línea de cierre, o la línea de cierre de un bloque de código que escribe una
+regla de tu perfil, también puede cerrar un bloque de código tuyo que se abre
+encima del bloque de Apothem y nunca se cierra, al final de tus notas, por
+ejemplo. El bloque se lee entonces como código desde su marcador BEGIN. La
+instalación o actualización que lo escribió muestra el aviso de inmediato, sin
+decir que dejó el archivo tal cual, por ejemplo "The
+BEGIN marker at line 6 sits inside a code block that opens at line 3, and the
+END marker at line 44 is outside code." Su corrección cambia esa línea de
+marcador BEGIN, como en "Fix A: A1. Change line 6: add a word inside its comment.":
+la siguiente actualización escribe el bloque de Apothem al final del archivo,
+debajo de la línea que cierra tu bloque de código, y el bloque antiguo queda para
+que lo borres a mano. Una ejecución de prueba lee el archivo antes de
+escribir nada, así que no muestra que el bloque se leería como código una vez
+escrito. Borrar el bloque en su lugar no sirve: la siguiente actualización lo
+vuelve a escribir debajo del mismo bloque de código abierto. Una actualización
+que escribe su bloque debajo de un bloque más antiguo que perdió su marcador END,
+donde una regla dejó abierto un bloque de código, recibe el mismo aviso; también
+nombra ese marcador BEGIN más antiguo, y cada corrección lo cambia.
+
+Hasta que corrijas el archivo, `apothem verify` falla y `apothem doctor` lo
+notifica (como `harness.stray_begin`); para un archivo que escribe la instalación
+actual, `apothem status --profile` también muestra deriva. Sin registro de
+instalación, verify y doctor no comprueban `CLAUDE.md` ni el documento de perfil:
+solo el registro muestra que la instalación escribió esos archivos. El verify de
+OpenClaw sigue comprobando el archivo de reglas de cada espacio de trabajo que
+encuentra, y falla sin nombrar el archivo.
+
+Con un registro de instalación, `apothem uninstall` deja el archivo tal cual,
+elimina el resto de la instalación y queda sin terminar (código de salida `2`,
+incluida una segunda ejecución) hasta que corrijas el archivo: el registro de
+instalación se queda, así que una instalación posterior sigue dejando el archivo
+tal cual, y la siguiente desinstalación lo vuelve a nombrar. Su aviso da
+correcciones numeradas de la misma forma y termina con "Then run the
+uninstall again.", por ejemplo "Fix A: A1. Change line 6: add a word inside
+its comment. Apothem then finds no block of its own in this file." Cualquier par
+de marcadores que quede en un archivo así mantiene la desinstalación sin
+terminar, incluido uno tuyo, así que cada corrección cambia la línea de marcador
+BEGIN de cada par que no llama bloque de Apothem. Su línea
+`✗ <harness> uninstall did not finish:` continúa con "1 file(s) hold marker
+lines Apothem cannot tell from your text, so Apothem left them as they are; fix
+the marker lines each warning names, keeping your own text, then run apothem
+uninstall again". Sin registro de instalación, solo un marcador BEGIN fuera de
+código cuyo marcador END está en código, con otro par de marcadores después,
+recibe el aviso, y la desinstalación queda sin terminar (código de salida `2`)
+por él y por las rutas que ningún registro muestra (consulta
+[Una desinstalación que no terminó](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish)).
+
+Haz todos los pasos de la corrección que elijas. Si borras solo el bloque de
+Apothem y dejas un marcador BEGIN tuyo encima de un marcador END que citas en
+código, sin ningún par de marcadores después, esos dos marcadores se leen como el
+bloque de Apothem: la desinstalación que vuelves a ejecutar quita las líneas entre
+ellos, y una instalación o actualización posterior las reemplaza.
+
+Sin registro de instalación, un par de marcadores que citas en código es texto
+tuyo: la instalación añade su bloque después de él (en un archivo de reglas que
+Apothem escribe con frontmatter, ese frontmatter y el bloque van en cambio al
+principio), salvo que el par contenga exactamente el bloque que escribe la
+instalación, y entonces deja el archivo tal cual y muestra el aviso. Así que, si
+el registro de instalación ha desaparecido (se borró el libro mayor de instalaciones, por ejemplo),
+borra a mano el bloque de Apothem de tu bloque de código: una instalación
+posterior lo trata como texto tuyo.
+
+Para corregirlo, abre el archivo nombrado en las líneas que da el aviso. Decide
+qué caso es cierto: si las líneas que nombra una corrección son el bloque de
+Apothem, con las reglas de Apothem entre los marcadores, o un ejemplo tuyo. Haz
+los pasos de esa corrección, en el orden dado, y ningún otro paso (consulta
+[Seguir una corrección numerada](#follow-a-numbered-fix)). Después ejecuta
+`apothem update` y luego `apothem verify` de nuevo. Tras una desinstalación que
+no terminó, ejecuta en cambio `apothem uninstall` de nuevo.
+
+### Seguir una corrección numerada [#follow-a-numbered-fix]
+
+Los avisos para un archivo cuyas líneas de marcador Apothem no puede ubicar, para
+un archivo con dos o más bloques completos, para un marcador BEGIN sin marcador
+END y para el bloque de Apothem que deja una desinstalación sin registro de
+instalación dan cada corrección como pasos numerados bajo una etiqueta que nombra
+su caso, por ejemplo "Fix A,
+if lines 6 to 38 are Apothem's block:", o "Fix A:" para una corrección que vale
+sean cuales sean las líneas de Apothem. Los pasos de la corrección A son "A1.",
+"A2." y así sucesivamente, los de la corrección B "B1.", "B2.", en un solo
+párrafo, y la corrección termina con lo que hace entonces la siguiente ejecución.
+Haz los pasos de una sola corrección.
+
+Todo número de línea de un paso es el número de la línea en el archivo tal como
+está cuando se muestra el aviso, contado como Apothem cuenta las líneas (consulta
+[Un archivo tiene un marcador BEGIN de Apothem sin marcador END](#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
+Los pasos van desde el final del archivo hacia arriba, en el orden dado. Cada paso
+es uno de estos, palabra por palabra, y termina con un punto:
+
+| Paso | Qué hacer |
+| --- | --- |
+| `Change line N: add a word inside its comment.` | Añade una palabra a la línea N justo antes de su `-->` de cierre, como en `<!-- BEGIN APOTHEM MANAGED BLOCK (example) -->`. La línea queda donde está y deja de leerse como marcador. |
+| `Below line N, add a line of 3 backticks.` | Añade una línea nueva justo debajo de la línea N, la última del archivo, que contenga esa cantidad de caracteres de acento grave, o de tilde para `tildes`, y nada más. Con `, indented 2 spaces` antes del punto, pon esa cantidad de espacios delante; sin ello, empieza la línea en el margen izquierdo. |
+
+Cada paso `Change line` cambia una línea de marcador BEGIN en su sitio. Todo
+bloque de Apothem, par de marcadores y marcador suelto empieza en un marcador
+BEGIN, y un marcador END se empareja solo con el marcador BEGIN justo encima de
+él, así que un marcador END sin marcador BEGIN encima no marca nada, y uno que
+citas sigue siendo texto tuyo tal cual. Una línea cambiada sigue siendo un
+comentario HTML en una línea propia: ninguna línea se mueve, y un visor de
+Markdown lee todas las demás líneas como antes.
+
+Una corrección que conserva un bloque cambia todas las demás líneas de marcador
+BEGIN del archivo. El aviso la da solo donde la disposición del archivo muestra
+que el bloque se lee entonces como el único bloque completo: ningún bloque de
+código tuyo que llegue hasta el final del archivo lo contiene, y ninguna línea
+desde la primera línea cambiada hasta el bloque cambia cómo se lee su marcador
+BEGIN. Termina con "The next update then
+replaces Apothem's block", "Lines 1 to 32 are then the one block in the
+file" o, para una desinstalación, "The uninstall run again then takes Apothem's
+block out". Una corrección que no conserva ningún bloque cambia todas las líneas
+de marcador BEGIN del archivo y termina con "Apothem then reads none of these lines as its markers, and the
+next update writes its block at the end of the file" o, para una desinstalación,
+"Apothem then finds no block of its own in this file". En cualquier caso, el
+antiguo texto de Apothem debajo de una línea que cambias, con su línea de
+marcador END, queda entonces para que lo borres a mano.
+
+Un bloque de código tuyo que ninguna línea cierra llega hasta el final del
+archivo en un visor de Markdown, pero Apothem lee su línea de apertura como
+texto. Un bloque de código en las reglas de tu perfil lo cerraría, y el marcador
+BEGIN del bloque de Apothem se leería entonces como código. Por eso, cuando tu
+archivo termina dentro de un bloque de código así, una corrección que no deja
+ningún bloque de Apothem en el archivo añade primero la línea de cierre de ese
+bloque de código debajo de la última línea, como en "A1. Below line 7, add a line of 3
+backticks.": la siguiente instalación o actualización añade su bloque al final
+del archivo, después de ella. Ninguna corrección conserva un bloque que contenga
+un bloque de código así.
+
+Apothem lee una valla de código dentro de un bloque HTML, como un comentario que
+se abre con `<!--` y termina en una línea posterior, igual que cualquier otra
+valla de código, y una línea del texto de un elemento de lista que continúa en el
+margen izquierdo termina ese elemento para Apothem. Un visor de Markdown no hace
+ninguna de las dos cosas. Cuando una línea por encima del bloque de código en el
+que termina tu archivo puede iniciar un bloque HTML (cuenta cualquier línea que
+empiece por una etiqueta, salvo un enlace entre corchetes angulares, una etiqueta
+en una línea justo debajo de una línea de texto plano, y HTML en un bloque de
+código), o el texto de un elemento de lista continúa en el margen izquierdo por
+encima de él y le sigue una línea sangrada, esa línea de cierre podría en cambio
+iniciar un bloque de código en un visor. Esa corrección no da entonces pasos
+numerados: dice "Apothem cannot give
+numbered steps for this fix" y nombra la línea que abre el bloque de código.
+Edita el archivo a mano para que esa línea no abra ningún bloque de código, o
+para que el bloque de código se cierre donde tu visor muestra que termina; el
+siguiente aviso para el archivo da entonces pasos numerados.
 
 ### Los hooks no se disparan en Claude Code
 
 Confirma que Apothem está conectado comprobando que ~/.claude/settings.json
 contiene las entradas de los hooks. Si al archivo le faltan los hooks, vuelve a
 ejecutar apothem install.
+
+### OpenCode no carga las reglas de Apothem
+
+`apothem install`, `apothem update` y `apothem verify` imprimen una nota cuando
+un archivo tuyo en la carpeta de configuración de OpenCode impide que OpenCode 1
+cargue la lista `instructions` que Apothem escribe en `opencode.json`:
+
+- Un `opencode.jsonc` con su propia lista `instructions`, aunque esté vacía,
+  reemplaza la lista de Apothem. Elimina esa clave, o mueve sus entradas a la
+  lista de `opencode.json`, donde las instalaciones conservan las entradas que no
+  escribieron.
+- Un `config.json`, `opencode.json` u `opencode.jsonc` allí que OpenCode 1 no
+  puede leer ni analizar impide que OpenCode 1 cargue cualquier parte de su
+  configuración. Lo mismo ocurre con uno cuyo nivel superior no es un objeto,
+  cuyo valor `instructions` no es una lista de texto, o cuyo `{file:path}` nombra
+  un archivo que OpenCode 1 no puede leer, y con una carpeta con uno de esos
+  nombres. Corrige el archivo para que sea un único objeto JSON con solo
+  comentarios y comas finales añadidos, con `instructions` como lista de texto, o
+  sácalo de la carpeta. Cuando la nota dice que el archivo se rompe una vez que
+  OpenCode 1 sustituye sus valores `{env:NAME}`, cambia esa variable para que su
+  valor no contenga ninguna barra invertida, comilla doble ni carácter de
+  control, por ejemplo una ruta de Windows escrita con barras normales. Cuando la
+  nota dice que Apothem escribe ese `{env:NAME}` para un servidor MCP de tu
+  perfil, una actualización vuelve a escribir una referencia eliminada del
+  archivo, así que cambia la variable o, para conservarla tal cual, vuelve a
+  declarar ese servidor bajo `harnesses.opencode.mcp_servers.<name>` con el valor
+  guardado en un archivo y escrito como un `{file:path}` que lo nombre. Cuando la
+  nota nombra un segundo problema del archivo, corrígelo también. Cuando dice que
+  Apothem no puede saber si OpenCode 1 puede leer el archivo que nombra un
+  `{file:path}`, asegúrate de que ese archivo también se pueda leer.
+
+Estas notas tratan de OpenCode 1. OpenCode 2 lee ambas listas y no lee ningún
+`config.json`. Omite un archivo que no puede analizar o cuyo nivel superior no es
+un objeto, lo que para `opencode.json` significa que también se pierde las
+reglas; una nota dice qué hace OpenCode 2 con su archivo cuando se sabe. Las notas
+no cambian ningún archivo ni ningún código de salida. Cuando la instalación o la
+actualización no pueden analizar `opencode.json` en absoluto, se detienen en su
+lugar con un error `config.unparseable`. Consulta
+[OpenCode](/docs/harnesses/opencode) para los detalles.
 
 ## Cómo obtener ayuda
 

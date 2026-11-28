@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "Adaptador de entorno de Apothem para Kimi Code (GA)."
 machineTranslated: true
-sourceHash: "88671d55a3315922"
+sourceHash: "0ae31afd4f1fbbbd"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -28,8 +28,8 @@ de soporte propiedad de Apothem en `<project>/.kimi-code/.apothem/support/`.
 Muchas herramientas de programación además de Kimi Code leen un `AGENTS.md` de
 proyecto, así que el bloque se escribe como orientación para todo el proyecto
 que no nombra a ninguna herramienta concreta como su lector. Algunas de esas
-herramientas lo cargan solo en algunos proyectos, por ejemplo solo cuando el
-proyecto no tiene un archivo de instrucciones propio, y la nota de instalación
+herramientas lo cargan solo en algunos proyectos, versiones o ajustes, por
+ejemplo solo cuando el proyecto no tiene un archivo de instrucciones propio, y la nota de instalación
 nombra cada una de esas herramientas con su condición (el
 [registro de entornos](/docs/reference/harness-registry#shared-roots) las lista).
 
@@ -43,9 +43,11 @@ no redacta ninguna entrada.
 
 **Archivos escritos:** `<project>/AGENTS.md` (bloque gestionado), las skills y los
 comandos (como skills) bajo `<project>/.kimi-code/skills/`, un
-`<project>/.kimi-code/agents/<name>.md` por cada ayudante de Apothem, y las
+`<project>/.kimi-code/agents/<name>.md` por cada ayudante de Apothem, las
 cohortes de hooks, reglas y plantillas bajo
-`<project>/.kimi-code/.apothem/support/`.
+`<project>/.kimi-code/.apothem/support/`, y la carpeta de datos que crea toda
+instalación de proyecto, `<project>/.apothem/` de forma predeterminada
+(`contexts/`, `learning/`, `memory/`, `plans/`).
 
 ## Subagentes
 
@@ -224,7 +226,9 @@ está presente una sola vez. Una actualización sobre una instalación de antes 
 que los ayudantes se trasladaran a `.kimi-code/agents/` elimina de la misma forma
 el antiguo directorio `<project>/.kimi-code/.apothem/support/agents/`. Antes, se
 guarda una copia con marca de tiempo de cada directorio eliminado bajo
-`~/.apothem/backups/`.
+`~/.apothem/backups/`. Cualquier archivo tuyo en esos dos directorios antiguos
+se elimina con ellos; su respaldo se elimina una vez que existen 10 conjuntos de
+respaldo más recientes del entorno, así que guarda tus archivos en otro lugar.
 
 ## Desinstalación
 
@@ -249,8 +253,17 @@ afectados.
 ## Puerta de conformidad
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Ejecútalo desde la carpeta de tu proyecto. En Windows, usa `python` en lugar de
+`python3` y la ruta completa, ya que Windows PowerShell y cmd no expanden `~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` en PowerShell, o
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` en cmd. La ruta es
+donde el instalador coloca el motor, y `-E -s` mantiene tu `PYTHONPATH` y tus
+site-packages de usuario fuera de la puerta;
+[Puerta de conformidad](/docs/conformity-gate) explica ambas cosas y las demás
+instalaciones.
 
 ## Solución de problemas
 

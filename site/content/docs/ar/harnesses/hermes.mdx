@@ -2,11 +2,11 @@
 title: "Hermes"
 description: "محوّل إطار عمل Apothem لـ Hermes (معاينة)."
 machineTranslated: true
-sourceHash: "2031f90de3f936a5"
+sourceHash: "6b5e4589566e8d9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-- **المورّد:** <bdi>Hermes</bdi>
+- **المورّد:** <bdi>Nous Research</bdi>
 - **اسم التثبيت:** <bdi>`hermes`</bdi>
 - **الحالة:** معاينة
 - **الإعداد الأصلي:** <bdi>`~/.hermes/config.yaml`</bdi>
@@ -22,7 +22,24 @@ apothem install --harness hermes
 
 **الملفات المكتوبة:** <bdi>`~/.hermes/config.yaml`</bdi>، ووثيقة الملف التعريفي
 <bdi>`~/.hermes/apothem/rules/00-apothem-profile.md`</bdi>، وملفات الدعم تحت
-<bdi>`~/.hermes/.apothem/support/`</bdi>
+<bdi>`~/.hermes/.apothem/support/`</bdi>. وينشئ التثبيت أيضًا مجلّد بيانات <bdi>Apothem</bdi>،
+وهو <bdi>`~/.hermes/.apothem/`</bdi> افتراضيًا، وفيه <bdi>`contexts/`</bdi>، و<bdi>`learning/`</bdi>،
+و<bdi>`memory/`</bdi>، و<bdi>`plans/`</bdi>.
+
+يحذف كل تثبيت وتحديث كل ملف في <bdi>`~/.hermes/apothem/rules/`</bdi> لم يضعه
+<bdi>Apothem</bdi> هناك، بعد حفظه في مجموعة نسخ احتياطية تحت
+<bdi>`~/.apothem/backups/`</bdi>. وتُحذَف تلك النسخة الاحتياطية بمجرّد وجود 10 مجموعات نسخ
+احتياطية أحدث لإطار العمل، لذا احتفظ بملفاتك في مكان آخر.
+
+وقد كانت إصدارات سابقة (يسمّيها [سجلّ التغييرات](/docs/changelog)) تُزيل أيضًا
+<bdi>`~/.hermes/cli-config.yaml`</bdi> و<bdi>`~/.hermes/profile.yaml`</bdi> في كل تثبيت
+وتحديث، بعد نسخهما إلى
+مجموعة نسخ احتياطية تحت <bdi>`~/.apothem/backups/<timestamp>/hermes/`</bdi>. ويترك الإصدار
+الحالي الملفين كليهما كما هما. ولاستعادتهما، انسخ <bdi>`~/.apothem/backups/`</bdi>
+إلى مكان آخر قبل أن تشغّل <bdi>Apothem</bdi> مرة أخرى، ثم انسخ الملفين من تلك
+النسخة يدويًا إلى <bdi>`~/.hermes/`</bdi>. ويضمّ
+[سجلّ التغييرات](/docs/changelog#data-loss-in-earlier-releases-recover-your-files)
+خطوات الاستعادة الكاملة.
 
 تنتهي وثيقة الملف التعريفي بقسم ملفات دعم <bdi>Apothem</bdi> الذي يُسمّي الدليل المطلق
 الواقع تحت <bdi>`~/.hermes/.apothem/support/`</bdi> الذي تُحَلّ نسبةً إليه كل إحالة
@@ -76,9 +93,9 @@ apothem install --harness hermes
 يأتي أخيرًا. ولا تذكر وثائق <bdi>Hermes</bdi> التي رُوجِعت أيّ نسخة يُحمِّلها <bdi>Hermes</bdi> حين
 يحوي موقعان مهارةً بالاسم نفسه؛ ويقرأ <bdi>Apothem</bdi> الترتيب على أن المواقع الأسبق
 تفوز، لذا توقّع أن المهارة التي تحمل الاسم نفسه وتحتفظ بها في موقع أسبق
-تسبق نسخة <bdi>Apothem</bdi>. ولا يكتب <bdi>Apothem</bdi> إلا في
-<bdi>`config.yaml`</bdi> وتحت <bdi>`~/.hermes/.apothem/support/`</bdi>، ولا يكتب أبدًا في تلك المواقع
-الأسبق، لذا لا يستبدل التثبيت والتحديث وإلغاء التثبيت مهارةً تحتفظ بها
+تسبق نسخة <bdi>Apothem</bdi>. ولا يكتب تثبيت <bdi>Hermes</bdi> أبدًا في تلك المواقع
+الأسبق: فداخل <bdi>`~/.hermes/`</bdi> لا يكتب إلا <bdi>`config.yaml`</bdi>، و<bdi>`apothem/rules/`</bdi>،
+و<bdi>`.apothem/`</bdi>، لذا لا يستبدل التثبيت والتحديث وإلغاء التثبيت مهارةً تحتفظ بها
 هناك.
 
 يحتفظ <bdi>`apothem update`</bdi> بالمفاتيح التي تضيفها إلى <bdi>`config.yaml`</bdi>، بما فيها
@@ -162,8 +179,17 @@ apothem uninstall --harness hermes
 ## بوابة المطابقة
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+شغّله من مجلّد مشروعك. وعلى <bdi>Windows</bdi>، استخدم <bdi>`python`</bdi> بدلًا من
+<bdi>`python3`</bdi> واستخدم المسار الكامل، لأن <bdi>Windows PowerShell</bdi> و<bdi>cmd</bdi> لا يوسّعان
+<bdi>`~`</bdi>:
+<bdi>`$HOME\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>PowerShell</bdi>، أو
+<bdi>`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>cmd</bdi>. والمسار هو
+الموضع الذي يضع فيه المُثبِّت المحرّك، ويُبقي <bdi>`-E -s`</bdi> متغيّر <bdi>`PYTHONPATH`</bdi> وحزم
+<bdi>site-packages</bdi> الخاصة بالمستخدم خارج البوابة؛ ويشرح [بوابة المطابقة](/docs/conformity-gate)
+كليهما والتثبيتات الأخرى.
 
 ## استكشاف الأخطاء وإصلاحها
 

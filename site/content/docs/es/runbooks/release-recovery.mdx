@@ -2,7 +2,7 @@
 title: "Runbook de recuperación de lanzamientos"
 description: "Procedimientos de recuperación, etapa por etapa, para un lanzamiento que falla a mitad de camino bajo el modelo de lanzamiento aditivo, sin reescribir el historial publicado."
 machineTranslated: true
-sourceHash: "91a31722fb721a3e"
+sourceHash: "d3bcc2874d9e87b5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -49,8 +49,12 @@ git tag -v vX.Y.Z           # signature check
 Qué hacer depende de si se publicó algo a partir de la etiqueta:
 
 - **Todavía no se publicó nada** (el flujo de trabajo de lanzamiento falló antes
-  de su trabajo de publicación, y `publish-npm.yml` no publicó): elimina la
-  etiqueta y vuelve a etiquetar el mismo commit con `-a -s`.
+  de su trabajo de publicación, `publish-npm.yml` no publicó y `publish-vscode.yml`
+  no publicó en Visual Studio Marketplace): elimina la etiqueta y vuelve a
+  etiquetar el mismo commit con `-a -s`. Cuando la falla necesita primero una
+  corrección en `main`, como un aumento de versión del plugin omitido, etiqueta
+  en su lugar el nuevo commit de lanzamiento (consulta la tabla de fallas del
+  runbook del ciclo de lanzamiento).
 
   ```bash
   git push --delete origin vX.Y.Z
@@ -59,11 +63,12 @@ Qué hacer depende de si se publicó algo a partir de la etiqueta:
   git push origin vX.Y.Z
   ```
 
-- **Se publicó algo** (un GitHub Release con recursos, o la versión de npm):
+- **Se publicó algo** (un GitHub Release con recursos, la versión de npm o la versión de Marketplace):
   nunca muevas, elimines ni reutilices la etiqueta. Corrige hacia adelante con
   `vX.Y.(Z+1)`.
 
-Un nombre de etiqueta nunca se reutiliza para un commit distinto.
+Una vez que se publicó algo a partir de una etiqueta, su nombre nunca se
+reutiliza para un commit distinto.
 
 ## 3. Recuperación de publicadores
 

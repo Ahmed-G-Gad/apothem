@@ -2,7 +2,7 @@
 title: "Vergleich"
 description: "Wie Sie Apothem gegenüber handgepflegter Harness-Konfiguration und anderen Konfigurationsansätzen bewerten, mit einer Funktionsmatrix und Seiten je Harness."
 machineTranslated: true
-sourceHash: "3f105749820c670d"
+sourceHash: "e3a64866567c64ec"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -39,12 +39,12 @@ Pipelines, eine Audit-Festung und ein reversibler, verifizierter Lebenszyklus.
 | ---------- | :-----: | :----------------------------------: | :------: | :---: |
 | Eine Quelle für die nativen Schemata vieler Werkzeuge | Ja — siebzehn Harness-Adapter | Nein — Kopie, Symlink oder Template, keine Übersetzung | Ja — 60 Werkzeuge plus die Standards AGENTS.md und Agent Skills | Teilweise — Regeln werden in die Anweisungsdatei jedes Werkzeugs verkettet; MCP, Skills und Subagenten werden in nativer Form geschrieben |
 | Synchronisierte Einheit | Regeln, Skills, Subagenten, Slash-Befehle, Hooks, Output-Styles, Statuslines, Templates, Konformitäts-Validatoren, Schemas, harness-spezifische Anweisungs-Templates und das Settings-Template für Claude Code | beliebige Dateien | Regeln, Ignore, MCP, Befehle, Subagenten, Skills, Hooks, Berechtigungen, Checks (Anweisungen für Code-Review-Checks) | Regeln, MCP, Skills, Subagenten |
-| Governance-Korpus (Verhaltensregeln und ein mechanisches Konformitäts-Gate) | Ja — `python -m apothem.conformity.gate` | Nein | Nein — seine Funktion `checks` synchronisiert Code-Review-Checks in die Werkzeuge; kein Konformitäts-Gate über den Regeln | Nein |
+| Governance-Korpus (Verhaltensregeln und ein mechanisches Konformitäts-Gate) | Ja — das Skript `conformity/gate.py` | Nein | Nein — seine Funktion `checks` synchronisiert Code-Review-Checks in die Werkzeuge; kein Konformitäts-Gate über den Regeln | Nein |
 | Deterministische Planungs- und Recherche-Pipelines | Ja — von `/plan-spec` bis `/plan-execute`, `/research` mit dreizehn Stufen | Nein | Nein | Nein |
 | Audit-Festung, die erkennt und behebt | Ja — Durchlauf mit elf Befehlen, `/fortress`-Re-Audit-Schleife | Nein | Nein | Nein |
 | Dauerhaftes Gedächtnis über Sitzungen hinweg | Ja — Speicher `memory/records.json` im Apothem-Datenverzeichnis, bei der Installation angelegt | Nicht verglichen | In seiner README nicht angegeben | In seiner README nicht angegeben |
 | Lieferketten-gehärtete Releases | Ja — SBOM, Sigstore, SLSA, Scorecard-Ziel | Nicht verglichen | In seiner README nicht angegeben | In seiner README nicht angegeben |
-| Reversibler, verifizierter Lebenszyklus | Ja — Sicherung, `apothem verify --json`, Deinstallation ohne verwaiste Dateien | chezmoi: `chezmoi verify` prüft jedes Ziel; Stow: nur Symlinks | In seiner README nicht angegeben | `.bak`-Sicherungen und `ruler revert`; kein Verify-Befehl in seiner README |
+| Reversibler, verifizierter Lebenszyklus | Ja — Sicherung, `apothem verify --json`, eine Deinstallation, die nur die Dateien von Apothem entfernt und meldet, was sie zurücklassen musste | chezmoi: `chezmoi verify` prüft jedes Ziel; Stow: nur Symlinks | In seiner README nicht angegeben | `.bak`-Sicherungen und `ruler revert`; kein Verify-Befehl in seiner README |
 
 Wo ein vergleichbares Projekt stärker ist, wird es benannt: **rulesync** erreicht mehr als dreimal so viele Werkzeuge und synchronisiert MCP, Ignore-Dateien, Berechtigungen und Review-Checks, was das Apothem-Manifest nicht synchronisiert. **ruler** erreicht fast doppelt so viele Werkzeuge und hat einen eigenen Revert-Befehl. Apothem tauscht die reine Werkzeuganzahl gegen die Governance-, Audit- und Lebenszyklus-Disziplin, die rund um die Synchronisierung ausgeliefert wird — ein Konformitäts-Gate, deterministische Planungs- und Recherche-Pipelines, eine Audit-Festung mit elf Befehlen, dauerhaftes Gedächtnis und einen reversiblen, verifizierten Lebenszyklus —, die keines der beiden Sync-Werkzeuge mitbringt.
 

@@ -2,7 +2,7 @@
 title: "Kiro"
 description: "Apothem-Harness-Adapter für Kiro (GA)."
 machineTranslated: true
-sourceHash: "91ec41080bf29036"
+sourceHash: "8edb56102e3e27a7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -183,6 +183,10 @@ Projektpfad anstelle der beiden Pfade:
 "/path/to/python" -E -s "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
 ```
 
+`-E -s` sorgt dafür, dass Python `PYTHONPATH` und die anderen
+`PYTHON*`-Variablen ignoriert und Ihre Site-Packages des Benutzers überspringt,
+sodass keine Datei im Projekt in den Hook geladen werden kann.
+
 `--contract kiro` lässt den Dispatcher den Kontext als reinen Text ausgeben, was
 Kiro für `SessionStart` dem Kontext hinzufügt. Kiro dokumentiert keine Shell für
 Befehlsaktionen unter Windows. Der Befehl ist für sh und cmd.exe geschrieben, mit
@@ -252,6 +256,15 @@ verfasste Grundlagendateien (`product.md`, `tech.md`, `structure.md`).
 Kiro-Specs (`.kiro/specs/`) gehören dem Operator; Apothem schreibt sie nicht. Es
 schreibt eine Hook-Datei, `.kiro/hooks/apothem.json`, und keine andere Datei in
 `.kiro/hooks/`.
+
+Kiro liest außerdem die Datei `AGENTS.md` im Workspace-Stammverzeichnis, und die
+[Kimi Code](/docs/harnesses/kimi-code)-Installation schreibt einen Apothem-Block
+in die `AGENTS.md` des Projekts, sodass dieser Block in einem Projekt mit beiden
+Installationen auch Kiro erreicht. Enthält die Datei den Block bereits, gibt die
+Installation von `kiro` einen Hinweis aus, der die Datei und die Installation
+nennt, die ihn geschrieben hat. Die
+[Harness-Registry](/docs/reference/harness-registry#shared-roots) listet die
+anderen Werkzeuge auf, die die Datei laden.
 
 Kiro dokumentiert `~/.kiro/skills/` für globale Skills und erwähnt
 `~/.agents/skills/` nicht, daher schreibt die Installation den Kiro-Ordner und
@@ -338,8 +351,18 @@ Ordner wird unter `~/.apothem/backups/` gesichert, bevor er entfernt wird.
 ## Konformitäts-Gate
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Führen Sie ihn aus Ihrem Projektordner aus. Unter Windows verwenden Sie `python`
+statt `python3` und den vollständigen Pfad, da Windows PowerShell und cmd `~`
+nicht expandieren:
+`$HOME\.apothem\src\apothem\conformity\gate.py` in PowerShell oder
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` in cmd. Der Pfad ist der
+Ort, an den der Installer die Engine legt, und `-E -s` hält Ihren `PYTHONPATH`
+und die Site-Packages des Benutzers aus dem Gate heraus;
+[Konformitäts-Gate](/docs/conformity-gate) erklärt beides und die anderen
+Installationen.
 
 ## Fehlerbehebung
 

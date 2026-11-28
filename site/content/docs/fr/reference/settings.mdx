@@ -1,14 +1,13 @@
 ---
 title: "Paramètres"
-description: "Configuration de l'environnement Claude Code dans settings.json : permissions des outils, câblage des hooks, variables d'environnement et modèles de ligne d'état."
+description: "Configuration de l'environnement Claude Code dans settings.json : permissions des outils et câblage des hooks."
 machineTranslated: true
-sourceHash: "986e09594ded6bad"
+sourceHash: "ece5596a2a8b8bc1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-`settings.json` porte la configuration de l'environnement Claude Code : câblage
-des hooks, permissions des outils, variables d'environnement et réglages de la
-ligne d'état.
+`settings.json` porte la configuration de l'environnement Claude Code qu'Apothem fusionne
+dans votre fichier : permissions des outils et câblage des hooks.
 
 La référence canonique complète se trouve dans
 [settings-reference.md](/docs/reference/settings-reference). Cette page résume le contrat
@@ -18,10 +17,14 @@ et renvoie à la référence détaillée.
 
 | Section | Objet |
 |---------|---------|
+| `$schema` | URL du schéma que les éditeurs utilisent pour vérifier le fichier |
 | `permissions` | Listes blanches et listes noires d'outils par matcher |
 | `hooks` | Table des commandes de hook indexée par événement (le câblage canonique) |
-| `env` | Variables d'environnement par session |
-| `statusLine` | Modèle de ligne d'état que l'hôte affiche |
+
+Le modèle d'Apothem ne définit aucune autre clé, de sorte que des clés comme `env` et `statusLine`
+restent les vôtres. Le moteur de rendu de la ligne d'état est copié dans `~/.claude/statuslines/`
+mais n'est pas câblé ; la [page Claude Code](/docs/harnesses/claude-code) montre
+l'entrée `statusLine` à ajouter vous-même.
 
 ## Invariant du modèle unique
 

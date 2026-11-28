@@ -2,7 +2,7 @@
 title: "quickstart"
 description: "Referencia de la CLI para el comando guiado de primera ejecución apothem quickstart."
 machineTranslated: true
-sourceHash: "951e6d6877611c54"
+sourceHash: "a461df3fe9749c28"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -38,7 +38,7 @@ admitidos y es siempre una elección explícita.
 - **Perfil** — si la ruta de perfil resuelta no tiene archivo, `quickstart` ofrece crear un perfil inicial (lo crea automáticamente con `--yes`, en una shell no interactiva o con `--format json`) y nombra los campos de identidad de marcador de posición que hay que personalizar.
 - **Vista previa + confirmación** — con `--harness all`, los destinos se listan bajo dos encabezados (raíz del proyecto frente a tu directorio personal), y una ejecución interactiva confirma antes de escribir fuera del proyecto. Un único entorno indicado por nombre se instala sin vista previa ni solicitud. `--yes`, una shell no interactiva y `--format json` continúan sin preguntar. Rechazar la vista previa de `--harness all` aborta antes de las escrituras de instalación; un perfil inicial creado en el paso 1 se conserva.
 - **Instalación** — las capacidades que un entorno no admite de forma nativa se resumen en una nota agrupada por entorno (pasa `--verbose` para ver el detalle por capacidad); el conjunto completo siempre está en el arreglo warnings de `--format json`.
-- **Siguiente paso** — la salida de la terminal nombra los comandos siguientes (`apothem verify …`, `apothem doctor`).
+- **Siguiente paso** — la salida de la terminal nombra los comandos siguientes (`apothem verify …`, `apothem doctor`). Una carpeta de `--project` se cita para la shell, igual que la cita [`doctor`](/docs/cli-reference/doctor). Cuando las comillas no pueden contenerla, la salida imprime el comando hasta `--project` y nombra la carpeta con palabras a continuación, y la entrada `recommended_next` del JSON dice `Run apothem verify --harness … with --project set to <folder>`, que no es un comando para ejecutar tal cual.
 
 ## Opciones
 
@@ -68,11 +68,23 @@ admitidos y es siempre una elección explícita.
   "steps": [
     {"step": "profile", "outcome": "created", "path": "…", "placeholder_identity": ["name", "email", "github"]},
     {"step": "install", "status": "success", "harness": "all", "files_written": ["…"], "warnings": [], "results": []},
-    {"step": "recommend", "next": ["apothem verify --harness all --project .", "apothem doctor"]}
+    {"step": "recommend", "next": ["apothem verify --harness all --project \".\"", "apothem doctor"]}
   ],
-  "recommended_next": ["apothem verify --harness all --project .", "apothem doctor"]
+  "recommended_next": ["apothem verify --harness all --project \".\"", "apothem doctor"]
 }
 ```
+
+Cuando el paso de instalación deja un archivo tal como está por sus líneas de
+marcador de Apothem (consulta [`install`](/docs/cli-reference/install#capability-notes)),
+ambos valores de `status` son `"partial"` y el código de salida es `2`. En el
+modo plain, la ejecución imprime la línea `✗` de la instalación y luego los
+siguientes pasos recomendados. Como `apothem verify` falla para ese archivo
+hasta que lo corrijas, el primer paso pasa a ser corregir cada archivo que la
+instalación dejó tal como está, según indica su advertencia, y ejecutar
+`apothem update` para las mismas herramientas (`Fix the files it left:` en el
+modo plain, y la primera entrada de `recommended_next` en JSON, `Fix each file the install
+left as it is, as its warning says, then run apothem update --harness …`), en
+lugar de `apothem verify`.
 
 ## Ejemplos
 
@@ -89,7 +101,7 @@ apothem quickstart --harness claude-code --json
 |---|---|
 | 0 | Ejecución guiada completada |
 | 1 | Error previsto de validación, de perfil, de entorno, de proyecto o de adaptador |
-| 2 | Materialización parcial del lote después de al menos una escritura |
+| 2 | Parcial: un lote se detuvo después de al menos una escritura, o la instalación dejó tal como está, por sus líneas de marcador de Apothem, un archivo en el que Apothem mantiene su bloque |
 | 64 | Error de uso: una opción o un comando desconocidos, o un valor de opción ausente o no válido. Con `--json`, el error es un sobre JSON con el código `cli.usage`. |
 
 ## Véase también

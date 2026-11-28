@@ -2,7 +2,7 @@
 title: "CodeBuddy"
 description: "Apothem-Harness-Adapter für Tencent CodeBuddy (GA)."
 machineTranslated: true
-sourceHash: "fbf19289d20e8ab7"
+sourceHash: "325f29aff29de35e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -178,6 +178,10 @@ beiden Pfade:
 "/path/to/python" -E -s "/path/to/project/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart
 ```
 
+`-E -s` lässt Python `PYTHONPATH` und die anderen `PYTHON*`-Variablen ignorieren
+und Ihre Benutzer-site-packages überspringen, sodass keine Datei im Projekt in den
+Hook geladen werden kann.
+
 `--contract codebuddy` ändert an der Ausgabe nichts: CodeBuddy liest denselben
 Umschlag wie Claude Code. CodeBuddy führt Hook-Befehle über Ihre Shell aus, unter
 Windows über Git Bash (es unterstützt weder cmd.exe noch PowerShell), daher
@@ -215,13 +219,15 @@ CodeBuddy-eigene Einstellung `disableAllHooks`, um jeden Hook zu deaktivieren.
 ## Zuordnung von Profil zu nativer Konfiguration
 
 Der Adapter liest das gemeinsame Profil von Apothem und rendert bei jedem Lauf
-von `apothem install` oder `apothem update` die Projekt-Regeldatei. CodeBuddy
+von `apothem install` oder `apothem update` die Projekt-Regeldatei. CodeBuddy Code
 liest gemäß der
-[CodeBuddy-Dokumentation zu Rules](https://www.codebuddy.ai/docs/ide/Rules)
-jede `*.md`-Datei unter `.codebuddy/rules/` als Markdown mit optionalem
-YAML-Frontmatter (`alwaysApply`, `paths`, `enabled`); die Datei von Apothem
-trägt `alwaysApply: true`, sodass die Governance-Oberfläche bei jeder
-Interaktion gilt. Das Frontmatter ist der erste Inhalt der Datei, und der von
+[CodeBuddy-Dokumentation zum Gedächtnis](https://www.codebuddy.ai/docs/cli/memory#modular-rules-with-codebuddy-rules)
+jede `*.md`-Datei unter `.codebuddy/rules/`, einschließlich Unterordnern, als
+Markdown mit optionalem YAML-Frontmatter (`alwaysApply`, `paths`, `enabled`);
+die Datei von Apothem trägt `alwaysApply: true`, sodass CodeBuddy Code sie in
+jede Sitzung lädt, die es im Stammordner des Projekts startet. Es liest
+Projektregeln nur aus dem Ordner, in dem es startet, und liest eine Regeldatei,
+die eine Installation hinzufügt oder ändert, erst nach einem Neustart. Das Frontmatter ist der erste Inhalt der Datei, und der von
 Apothem verwaltete Block folgt darauf; Text, den Sie nach dem Block hinzufügen,
 bleibt bei jeder Synchronisierung erhalten. Das gemeinsame Profil ist die
 Quelle der Wahrheit; projektlokale Änderungen an der generierten Datei werden
@@ -233,7 +239,12 @@ Inhalt ersetzt.
 Die Regel-Oberfläche von CodeBuddy gilt auf Projektebene unter
 `.codebuddy/rules/`. Der Adapter schreibt eine eigene Datei `apothem-rules.md`,
 die neben allen Regeldateien besteht, die der Operator im selben Verzeichnis
-verfasst. Die Projektgedächtnis-Datei `CODEBUDDY.md`, die committete
+verfasst. Die
+[Rules-Seite](https://www.codebuddy.ai/docs/ide/User-guide/Rules#project-rules)
+der CodeBuddy IDE beschreibt einen Ordner pro Regel, der jeweils eine Datei
+`RULE.mdc` enthält, statt einer einfachen `.md`-Datei wie der von Apothem. Die
+Seite sagt nicht, ob die IDE auch eine einfache `.md`-Datei lädt, und Apothem
+hat nicht bestätigt, dass sie das tut. Die Projektgedächtnis-Datei `CODEBUDDY.md`, die committete
 `.codebuddy/settings.json` und die projektbezogene `.mcp.json` (MCP-Server)
 gehören dem Operator; Apothem schreibt sie nicht. CodeBuddy dokumentiert
 außerdem Slash-Commands; der Adapter schreibt keine und verweist stattdessen
@@ -323,8 +334,18 @@ Ordner wird unter `~/.apothem/backups/` gesichert, bevor er entfernt wird.
 ## Konformitäts-Gate
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Führen Sie ihn in Ihrem Projektordner aus. Verwenden Sie unter Windows `python`
+statt `python3` und den vollständigen Pfad, da Windows PowerShell und cmd `~`
+nicht expandieren:
+`$HOME\.apothem\src\apothem\conformity\gate.py` in PowerShell oder
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` in cmd. Der Pfad ist
+der Ort, an dem der Installer die Engine ablegt, und `-E -s` hält Ihren
+`PYTHONPATH` und Ihre Benutzer-site-packages vom Gate fern;
+[Konformitäts-Gate](/docs/conformity-gate) erklärt beides sowie die anderen
+Installationsarten.
 
 ## Fehlerbehebung
 

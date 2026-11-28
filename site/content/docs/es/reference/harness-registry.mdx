@@ -2,7 +2,7 @@
 title: "Registro de entornos"
 description: "Referencia técnica del registro de los adaptadores de entorno integrados de Apothem."
 machineTranslated: true
-sourceHash: "242f7f2bf421b85e"
+sourceHash: "2f51bca3eb9467c5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,7 +17,7 @@ registro, hasta el `capabilities.yml` de cada adaptador y hasta el
 
 | Entorno | Nombre de instalación | Alcance | Formato | Destinos | MCP | Anclaje de convención |
 | --- | --- | --- | --- | --- | --- | --- |
-| Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md`; `~/.gemini/antigravity-cli/plugins/apothem/` | discovery-pending | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
+| Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md`; `~/.gemini/config/plugins/apothem/` | discovery-pending | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
 | Claude Code | `claude-code` | user | json | `~/.claude/settings.json`; `~/.claude/CLAUDE.md`; `agents`, `rules`, `skills`, `statuslines`, `output-styles` nativos; `~/.claude/.apothem/support/` | discovery-pending | `src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md` |
 | CodeBuddy | `codebuddy` | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md`; `<project>/.codebuddy/agents/`; `<project>/.codebuddy/settings.local.json`; `<project>/.apothem/support/hooks/`; `~/.codebuddy/skills/`; `~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` |
 | Codex | `codex` | user | markdown | `~/.codex/AGENTS.md`; `hooks.json`; `hooks/`; `agents/*.toml`; `~/.agents/skills/`; `~/.config/apothem/` | discovery-pending | `src/apothem/harnesses/codex/STANDARD-CONVENTION-PIN.md` |
@@ -28,7 +28,7 @@ registro, hasta el `capabilities.yml` de cada adaptador y hasta el
 | Hermes | `hermes` | user | yaml | `~/.hermes/config.yaml`; `~/.hermes/.apothem/support/` | native | `src/apothem/harnesses/hermes/STANDARD-CONVENTION-PIN.md` |
 | Kimi Code | `kimi-code` | project | markdown | `<project>/AGENTS.md`; `<project>/.kimi-code/skills/`; `<project>/.kimi-code/agents/`; `<project>/.kimi-code/.apothem/support/` | discovery-pending | `src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md` |
 | Kiro | `kiro` | project | markdown | `<project>/.kiro/steering/apothem-rules.md`; `<project>/.kiro/agents/`; `<project>/.kiro/hooks/apothem.json`; `<project>/.apothem/support/kiro/hooks/`; `~/.kiro/skills/`; `~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md` |
-| Open-Claw | `open-claw` | user | json | `~/.openclaw/openclaw.json`; `~/.openclaw/.apothem/support/` | unsupported | `src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md` |
+| Open-Claw | `open-claw` | user | json | `~/.openclaw/openclaw.json`; `~/.openclaw/.apothem/support/`; `<workspace>/apothem/AGENTS.md` (lo carga el hook `bootstrap-extra-files`; no está en la lista de destinos del registro, así que la tabla generada más abajo lo omite) | unsupported | `src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md` |
 | OpenCode | `opencode` | user | json | `~/.config/opencode/opencode.json`; `commands`, `skills`, `agents` nativos; `~/.config/opencode/.apothem/support/` | native | `src/apothem/harnesses/opencode/STANDARD-CONVENTION-PIN.md` |
 | Qwen Code | `qwen-code` | user | json | `~/.qwen/settings.json`; `~/.qwen/QWEN.md`; `commands`, `skills`, `agents` nativos; `~/.qwen/.apothem/support/` | native | `src/apothem/harnesses/qwen_code/STANDARD-CONVENTION-PIN.md` |
 | Trae | `trae` | project | markdown | `<project>/.trae/rules/apothem-rules.md`; `<project>/.trae/agents/`; `~/.trae/skills/`; `~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/trae/STANDARD-CONVENTION-PIN.md` |
@@ -115,7 +115,7 @@ o un coinstalador pone el contenido de Apothem delante de cada lector.
 | `~/.claude/agents/` | Claude Code | ninguno | Cursor |
 | `~/.codex/agents/` | Codex | ninguno | Cursor |
 | `~/.claude/CLAUDE.md` | Claude Code | ninguno | OpenCode, Windsurf |
-| `<project>/AGENTS.md` | Kimi Code | ninguno | Antigravity, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
+| `<project>/AGENTS.md` | Kimi Code | ninguno | Antigravity, Claude Code, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
 | `<project>/GEMINI.md` | Gemini CLI | ninguno | Antigravity, GitHub Copilot, Zed |
 | `~/.gemini/GEMINI.md` | Antigravity | ninguno | Gemini CLI |
 | `<project>/.github/copilot-instructions.md` | GitHub Copilot | ninguno | Zed |
@@ -143,7 +143,21 @@ carga `~/.claude/CLAUDE.md`. `Codex` toma el primero de `AGENTS.override.md` y
 `AGENTS.md` en cada carpeta, así que carga `<project>/AGENTS.md` solo cuando el
 proyecto no tiene un `AGENTS.override.md` junto a él. `CodeBuddy` usa
 `<project>/AGENTS.md` como memoria del proyecto solo cuando el proyecto no tiene
-`CODEBUDDY.md`. `Zed` carga solo el primer archivo de instrucciones del proyecto
+`CODEBUDDY.md`. `Claude Code` lee `AGENTS.md` en las versiones que nombra su
+[página de memoria](https://code.claude.com/docs/en/memory#agents-md), y la
+nota de instalación indica la primera. Con su ajuste predeterminado **Project
+instructions**, carga cada `AGENTS.md` y `.claude/AGENTS.md` de la carpeta de
+trabajo y de las carpetas superiores cuando se inicia una sesión, pero solo
+cuando ninguna de esas carpetas contiene un `CLAUDE.md`, `.claude/CLAUDE.md` o
+`CLAUDE.local.md`. Carga el `AGENTS.md` de una carpeta situada por debajo de la
+carpeta de trabajo, como un proyecto abierto desde una carpeta superior, cuando
+su herramienta Read abre un archivo allí y esa carpeta tampoco tiene ninguno de
+esos tres archivos. `~/.claude/CLAUDE.md` no cuenta, así que el bloque de
+Apothem que hay allí se sigue cargando junto con `<project>/AGENTS.md`. El
+ajuste `claude-md-and-agents-md` carga ambos tipos de archivo, y `claude-md` y
+`managed-only` no cargan ningún `AGENTS.md`. Algunas sesiones no leen ningún
+`AGENTS.md` con ningún ajuste; la página de memoria las enumera. `Zed` carga
+solo el primer archivo de instrucciones del proyecto
 de su lista: `.rules`, `.cursorrules`, `.windsurfrules`, `.clinerules`,
 `.github/copilot-instructions.md`, `AGENT.md`, `AGENTS.md`, `CLAUDE.md` y luego
 `GEMINI.md`. Por eso carga `<project>/.github/copilot-instructions.md`,
@@ -217,8 +231,59 @@ El registro se mantiene sincronizado mediante estas comprobaciones:
 | --- | --- |
 | `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | Confirma que cada adaptador tiene un anclaje de convención de 90 días de antigüedad como máximo, que cita al menos una URL del proveedor y que no tiene ningún destino de descubrimiento vencido. La CI lo ejecuta en cada pull request, cada semana y antes de un lanzamiento. |
 | `python scripts/dev/check_vendor_urls.py` | Descarga cada URL de proveedor que citan los anclajes y las plantillas de los entornos, y falla ante una página movida o inexistente, incluido un nombre de host que ya no se resuelve o un certificado que no supera la verificación; un tiempo de espera agotado, una conexión rechazada o restablecida, o un error de servidor 5xx se informa como inaccesible y no lo hace fallar. Un nombre de host que se resuelve solo en una dirección ficticia que ningún servidor puede tener, y que los servidores de nombres de un proveedor pueden devolver para la región desde la que se ejecuta la comprobación, no recibe ninguna solicitud: se informa como no enrutable, no hace fallar la comprobación y sus páginas necesitan una comprobación manual. El monitor semanal de convenciones lo ejecuta, avisa de cada host de ese tipo en cada ejecución y lista sus páginas en la incidencia que abre. |
-| `python -m apothem.conformity.gate --all .` | Ejecuta las comprobaciones de conformidad de la documentación y de la implementación. |
+| `python scripts/dev/check_vendor_releases.py` | Pregunta a cada canal de publicación de `scripts/dev/vendor-release-channels.json` por su versión actual: el dist-tag de un paquete npm, la última versión publicada de un repositorio de GitHub (o, para un canal con un patrón de etiqueta, su versión estable más reciente con una etiqueta que coincida entre las 100 más recientes) o un proyecto de PyPI. Para una dirección de instalador, pregunta adónde redirige esa dirección. Compara la respuesta con lo que se revisó por última vez. Una nueva versión mayor, una versión publicada que supera un disparador que nombra el archivo, una dirección de instalador que redirige a otro sitio, o un paquete, dist-tag, versión publicada o dirección que ya no existe lo hacen fallar, igual que un patrón de etiqueta con el que no coincide ninguna versión estable entre las 100 más recientes. Una versión menor o de parche más reciente se informa y no lo hace fallar, salvo que el nivel `watch` del canal nombre ese nivel. Un registro que no responde, o cuya respuesta se corta a medias, se informa como inaccesible y tampoco lo hace fallar. Cada intento de una solicitud dispone de 30 segundos en total, y tras 20 minutos la comprobación no pregunta a ningún canal más, de modo que siempre escribe su informe. Antes de cualquier solicitud, comprueba que cada carpeta de entorno tiene una entrada y que la frase de evidencia de cada canal está en su anclaje, y sale con 1 cuando no es así; el informe y la incidencia indican entonces qué está mal. El monitor semanal de convenciones lo ejecuta con un token de solo lectura, enumera cada canal en el resumen de la ejecución y abre una incidencia cuando falla. `--list` imprime los canales sin preguntar a ningún registro. |
+| `python3 -E -s src/apothem/conformity/gate.py --all .` | Ejecuta las comprobaciones de conformidad de la documentación y de la implementación. |
 | `python -m pytest` | Ejercita las pruebas de fixtures del registro y las pruebas de contrato de los adaptadores. |
+
+## Canales de publicación
+
+`scripts/dev/vendor-release-channels.json` tiene una entrada por cada carpeta de
+entorno. Un entorno vigilado enumera sus canales de publicación. Cada canal
+registra la última versión revisada, con la fecha. Esa es la versión que nombra
+su anclaje o, cuando el anclaje no nombra ninguna, la versión que servía el
+registro cuando se registró el canal. Un registro también puede contener solo
+una versión mayor. Cada canal cita la frase del anclaje que lo nombra. El primer
+número de una versión es su versión mayor, incluido el 0, así que una línea 0.x
+que pasa de 0.26 a 0.27 informa de una versión menor más reciente y no falla.
+Un canal con versiones de calendario, como los números año.mes.versión de
+OpenClaw, informa de cada versión más reciente sin fallar y no admite un nivel
+`watch`. Codex, Gemini CLI, Hermes, Qwen Code y GLM están en líneas 0.x, así que
+una nueva versión de cualquiera de ellos se enumera en el resumen de la
+ejecución y no abre ninguna incidencia hasta que llega a 1.0, salvo que su canal
+defina un nivel `watch`.
+
+OpenCode tiene cuatro canales. `opencode-ai` lleva OpenCode 1, y
+`@opencode/cli` lleva OpenCode 2. Las versiones publicadas en GitHub de
+`anomalyco/opencode` muestran una nueva línea mayor sea cual sea el paquete npm
+con el que se distribuya. El cuarto canal pregunta a `opencode.ai/install`
+adónde redirige. El 2026-11-03 redirigía al script de instalación de
+OpenCode 1. Ese script instala la versión que nombra el dist-tag `latest` de
+`opencode-ai` cuando es una versión de OpenCode 1, y nunca instala OpenCode 2.
+La decisión sobre OpenCode del 2026-11-03 pasa a escribir los formatos propios
+de OpenCode 2 donde se ejecute OpenCode 2 cuando aparezca cualquiera de dos
+señales: OpenCode 2 anuncia una fecha para retirar su traducción de los
+formatos de OpenCode 1, o `opencode.ai/install` u `opencode-ai` pasan a
+OpenCode 2. La comprobación vigila la segunda señal. El canal `opencode-ai` y el
+canal del instalador llevan cada uno un disparador: la comprobación falla cuando
+la versión `latest` de `opencode-ai` supera la versión mayor 1, o cuando
+`opencode.ai/install` deja de redirigir al script de OpenCode 1. Un cambio
+dentro de ese script no cambia la redirección, así que la comprobación no lo ve.
+Ningún registro responde a la primera señal, así que sigue siendo una
+comprobación manual, prevista para el 2027-02-01 con la próxima revisión del
+anclaje de OpenCode.
+
+Antigravity, Cursor, Kiro, Trae y Windsurf no se vigilan. Cada uno es una
+aplicación de escritorio, o una herramienta de línea de comandos que se instala
+con un script, y su anclaje no nombra ningún canal de publicación que un script
+pueda consultar sin credenciales. El archivo da el motivo de cada uno.
+
+Después de volver a comprobar un anclaje frente a una nueva versión o un nuevo
+destino de redirección, actualiza los campos `reviewed`, `reviewed_on` y
+`reviewed_from` de ese canal. Un disparador en un canal de versiones hace
+fallar la comprobación cada semana hasta que lo elimines o lo cambies. Un
+disparador en una dirección de instalador deja de fallar en cuanto `reviewed`
+registra el nuevo destino, así que registra ese destino solo después de
+completar la acción del disparador.
 
 ## Referencia generada de adaptadores de entorno
 

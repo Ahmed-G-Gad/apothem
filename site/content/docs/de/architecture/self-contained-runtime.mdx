@@ -2,7 +2,7 @@
 title: "Eigenständige Laufzeit"
 description: "Wie Apothems Engine aus jedem Checkout läuft — gevendorte Abhängigkeiten, das Aufrufmodell PYTHONPATH=src und der Bootstrap des Plugin-Baums."
 machineTranslated: true
-sourceHash: "df04c51efc417e4a"
+sourceHash: "dc1f19f84eb15409"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -56,17 +56,22 @@ stattdessen zwei Aufrufoberflächen:
 
 | Oberfläche | Aufruf | Kontext |
 | ------- | ---------- | ------- |
-| Engine-CLI | `python -m apothem <command>` | Ein Quellbaum mit `src/` auf dem `PYTHONPATH` (Checkout, npx-Cache, Plugin-Baum) |
+| Engine-CLI | `apothem <command>`; aus einem Checkout `PYTHONPATH=src python -m apothem <command>` | Der `apothem`-Shim der Installer und der npm-Starter führen das Paket aus seinem Quellbaum aus und halten dabei den aktuellen Ordner aus dem `sys.path` heraus; die `-m`-Form ist für einen Checkout gedacht, dem Sie vertrauen |
 | Hook-Laufzeit | `<resolved CPython> -E -s "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Die Materialisierung für Claude Code: die Kopie im gemeinsamen Baum `.apothem/support/` der Harness-Wurzel, per absolutem Pfad |
 
-- `python -m apothem` führt `src/apothem/__main__.py` aus, das
-  `src/apothem/_vendor` in den `sys.path` aufnimmt, prüft, dass `click` und
-  `rich` importierbar sind, und dann `apothem.cli:main` aufruft — die
-  Click-Befehlsgruppe.
+- Der Einstiegspunkt der Engine, `src/apothem/__main__.py`, nimmt
+  `src/apothem/_vendor` in den `sys.path` auf, prüft, dass `click` und
+  `rich` importierbar sind, und ruft dann `apothem.cli:main` auf — die
+  Click-Befehlsgruppe. `python -m apothem` führt ihn direkt aus. Die
+  `apothem`-Shims und der npm-Starter führen ihn über `runpy` aus einem
+  `-c`-Programm aus, das zuerst den aktuellen Ordner aus dem `sys.path`
+  entfernt.
 - Hook-Einträge in der materialisierten `settings.json` / `hooks.json` rufen
   den Dispatcher (und, für Claude Code, das Konformitäts-Gate unter
   `<harness-root>/.apothem/support/conformity/gate.py`) per absolutem
-  Skriptpfad auf. Beide sind eigenständige stdlib-Skripte, die ihren eigenen
+  Skriptpfad auf und starten Python mit `-E -s`, sodass weder eine
+  `PYTHON*`-Variable noch die site-packages des Benutzers den Hook erreichen.
+  Beide sind eigenständige stdlib-Skripte, die ihren eigenen
   `sys.path` bootstrappen, und die Schema-Fixtures des Gates liegen neben ihm
   unter `<harness-root>/.apothem/support/schemas/`, sodass Hooks **ohne
   importierbares `apothem`-Paket auf dem Host** laufen. Die Templates tragen ein
@@ -76,19 +81,27 @@ stattdessen zwei Aufrufoberflächen:
   `python -m apothem.hooks.dispatch` und
   `python -m apothem.conformity.gate` denselben Code für die Entwicklung aus.
 
-Das Paketverzeichnis wird importierbar, indem das `src/`-Verzeichnis des
-Checkouts dem `PYTHONPATH` vorangestellt wird:
+In einem Checkout wird das Paketverzeichnis importierbar, indem das
+`src/`-Verzeichnis des Checkouts dem `PYTHONPATH` vorangestellt wird:
 
 ```bash
 PYTHONPATH=src python -m apothem <command>    # from the checkout root
 ```
 
-Wenn der Starter `apothem` nicht im PATH liegt, gibt `install.sh` bei Abschluss
-diese Form aus, mit dem vendored-Verzeichnis vor `src/` und dem CPython, den es
-aufgelöst hat, an Stelle von `python`. `install.ps1` gibt dieselben zwei
-Einstellungen in PowerShell-Form aus: eine Zuweisung an `$env:PYTHONPATH`, die
-das vendored-Verzeichnis und das Verzeichnis `src/` mit `;` verbindet, danach
-`& '<CPython>' -m apothem <command>`.
+`-m` liest Module zuerst aus dem aktuellen Ordner, führen Sie diese Form daher
+nur aus der Checkout-Wurzel oder einem anderen Ordner aus, dem Sie vertrauen.
+
+Die Installer geben nie einen `-m`-Befehl aus. Liegt der Befehl `apothem` bei
+Abschluss nicht im `PATH`, geben `install.sh` und `install.ps1` den vollständigen
+Pfad des `apothem`-Shims aus, den sie abgelegt haben. Konnte kein Shim abgelegt
+werden, geben sie stattdessen einen eigenständigen Befehl aus. `install.sh` gibt
+`PYTHONSAFEPATH=1 PYTHONPATH='<vendor>:<src>' '<CPython>' -c '<program>'` aus,
+gefolgt vom Befehl. `install.ps1` gibt einen PowerShell-Block aus, der
+`PYTHONSAFEPATH` und `PYTHONPATH` (das gevendorte und das `src/`-Verzeichnis,
+mit `;` verbunden) für einen Lauf von `& '<CPython>' -c "<program>"` setzt und
+beide danach zurücksetzt. Das Programm entfernt den aktuellen Ordner aus dem
+`sys.path` und führt das Paket `apothem` aus; `PYTHONSAFEPATH=1` verhindert, dass
+Python 3.11 und neuer diesen Ordner überhaupt erst hinzufügt.
 
 ## Bootstrap des Plugin-Baums
 
@@ -139,6 +152,6 @@ anwendet.
 
 ## Empfohlener nächster Schritt
 
-**Führen Sie `python -m apothem --help` aus**, mit dem `src/`-Verzeichnis des
-Checkouts auf dem `PYTHONPATH`, um zu bestätigen, dass der Pfad der
+**Führen Sie `PYTHONPATH=src python -m apothem --help` aus**, und zwar aus der
+Wurzel eines Apothem-Checkouts, um zu bestätigen, dass der Pfad der
 eigenständigen CLI auf Ihrem Host aufgelöst wird.

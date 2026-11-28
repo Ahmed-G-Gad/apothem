@@ -2,7 +2,7 @@
 title: "قاعدة مخصّصة"
 description: "تأليف قاعدة دائمة مخصّصة لمشروعك."
 machineTranslated: true
-sourceHash: "0b22ce8bce931d04"
+sourceHash: "69efcab14f844e72"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,14 +34,14 @@ When in doubt, err on the side of more hyphens.
 
 ## التحقّق من أن القاعدة سليمة البنية
 
-شغّل مدقّق <bdi>frontmatter</bdi> على ملف القاعدة الذي كتبته للتوّ. استخدم الأمر الأول من نسخة <bdi>Apothem</bdi> مسحوبة من المستودع، حيث يجعل <bdi>`PYTHONPATH=src`</bdi> الحزمةَ قابلةً للاستيراد. واستخدم الأمر الثاني بعد التثبيت عبر السكربت، حيث يعيش المصدر تحت <bdi>`$HOME/.apothem/src`</bdi>:
+شغّل مدقّق <bdi>frontmatter</bdi> على ملف القاعدة الذي كتبته للتوّ. استخدم الأمر الأول من جذر نسخة <bdi>Apothem</bdi> مسحوبة من المستودع، حيث يجعل <bdi>`PYTHONPATH=src`</bdi> الحزمةَ قابلةً للاستيراد (يقرأ <bdi>`python -m`</bdi> الوحدات من المجلد الحالي أولًا، لذا استخدم مجلدًا تثق به). واستخدم الأمر الثاني بعد التثبيت عبر السكربت، حيث يعيش المصدر تحت <bdi>`$HOME/.apothem/src`</bdi> وتعمل البوابة عبر مسار السكربت الخاصّ بها مع <bdi>`-E -s`</bdi>، فلا يصل إليها <bdi>`PYTHONPATH`</bdi> ولا حِزَم <bdi>site-packages</bdi> الخاصّة بمستخدمك:
 
 ```bash
 # From an Apothem checkout
 PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
 
 # After a script install
-PYTHONPATH="$HOME/.apothem/src" python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
+python3 -E -s "$HOME/.apothem/src/apothem/conformity/gate.py" --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
 ```
 
 تُبلغ القاعدة السليمة البنية عن اجتياز نظيف:

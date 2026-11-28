@@ -2,9 +2,22 @@
 title: "Actualización"
 description: "Actualiza Apothem y los adaptadores de entorno."
 machineTranslated: true
-sourceHash: "04ad375058d55ffd"
+sourceHash: "9a8965434be8f7a4"
 ---
 {/* SPDX-License-Identifier: MIT */}
+
+<Callout title="¿Actualizas desde una versión anterior? Guarda primero tus copias de seguridad">
+  En versiones anteriores (el registro de cambios las nombra), cada instalación
+  y actualización eliminaba algunas carpetas que contienen tus propios archivos,
+  como los slash commands y los scripts de hook de Claude Code, después de
+  copiarlos en `~/.apothem/backups/`. La mayoría de esas versiones conservan
+  solo los 10 conjuntos de copias de seguridad más recientes por entorno, así
+  que cada nueva ejecución de una de ellas puede borrar el conjunto más
+  antiguo, que puede contener tu única copia. Antes de volver a ejecutar
+  Apothem, copia `~/.apothem/backups/` en otro lugar. El
+  [registro de cambios](/docs/changelog#data-loss-in-earlier-releases-recover-your-files)
+  enumera cada carpeta afectada y cómo recuperar tus archivos.
+</Callout>
 
 ## Actualiza el plugin de Claude Code
 
@@ -18,6 +31,26 @@ dentro de Claude Code:
 Abre `/plugin`, selecciona **apothem** y elige la acción de actualización cuando aparezca
 listada una versión más reciente del plugin.
 
+## Actualiza la extensión de VS Code
+
+La extensión ejecuta la versión del motor con la que se distribuyó. Su
+ejecutor predeterminado es `npx @ahmed-g-gad/apothem@<extension version>`, así
+que solo obtienes un motor nuevo cuando se actualiza la propia extensión.
+
+VS Code busca actualizaciones de extensiones y las instala por su cuenta, como
+describe su documentación sobre la
+[actualización automática de extensiones](https://code.visualstudio.com/docs/configure/extensions/extension-marketplace#_extension-auto-update).
+De forma predeterminada, espera 12 horas después de que se publique una
+actualización. Para instalarla en el acto, selecciona el botón **Update** de la
+extensión en la vista Extensions. Si desactivaste la actualización automática,
+ejecuta el comando **Show Extension Updates** y selecciona **Update**, o
+ejecuta **Update All Extensions**.
+
+VS Code desactiva la actualización automática para una extensión instalada
+desde un archivo `.vsix`. Si instalaste `apothem.vsix`, instala de la misma
+forma el `apothem.vsix` adjunto a la
+[GitHub Release](https://github.com/ahmed-g-gad/apothem/releases) más reciente.
+
 ## npx siempre ejecuta la versión actual
 
 `npx @ahmed-g-gad/apothem` resuelve el paquete publicado actual en cada
@@ -30,8 +63,11 @@ npx @ahmed-g-gad/apothem@latest --version
 
 ## Actualiza una instalación basada en el instalador
 
-Vuelve a ejecutar el instalador —es idempotente y hace checkout de la etiqueta de lanzamiento en un árbol existente—
-o ejecuta el script de actualización dedicado:
+Vuelve a ejecutar el instalador —es idempotente: hace fetch de un clon de git
+existente, comprueba la nueva etiqueta de lanzamiento y solo entonces hace
+checkout del clon, y actualiza una instalación desde el archivo de la versión—
+o ejecuta el script de actualización dedicado, que funciona sobre un clon de
+git:
 
 ```bash title="macOS · Linux · WSL2 · BSD"
 bash scripts/installer/update.sh
@@ -41,7 +77,131 @@ bash scripts/installer/update.sh
 pwsh -NoProfile -File scripts/installer/update.ps1
 ```
 
-El script de actualización vuelve a hacer checkout del árbol de código fuente en `APOTHEM_HOME` (por defecto `~/.apothem`) a `APOTHEM_REF`: sin definir, resuelve la última etiqueta de lanzamiento firmada `vMAJOR.MINOR.PATCH`; un valor de etiqueta la fija, y `main` selecciona la rama móvil solo cuando también se define `APOTHEM_ALLOW_UNVERIFIED=1`. Sin esa anulación, la actualización hace checkout de la referencia y después aborta antes de volver a materializar, porque una rama no es una etiqueta de lanzamiento firmada. Verifica la firma de la etiqueta con `git verify-tag` antes de volver a materializar; una etiqueta sin firmar o manipulada aborta, salvo que `APOTHEM_ALLOW_UNVERIFIED=1` degrade el aborto a una advertencia. Una etiqueta firmada cuya clave pública del mantenedor no está en el llavero local aborta con una guía para importar la clave, que apunta a la huella digital publicada en [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md). Después vuelve a materializar el entorno nombrado por `APOTHEM_HARNESS` ejecutando `apothem update` desde el árbol actualizado (los valores predeterminados del entorno están en la tabla de [variables de entorno del instalador](/docs/how-to/installer-environment-variables)). Requiere una instalación previa: cuando no existe ningún árbol en `APOTHEM_HOME` y `APOTHEM_SOURCE` no está definido, termina con un mensaje que te dirige primero al instalador.
+El script de actualización mueve el árbol de código fuente en `APOTHEM_HOME`
+(por defecto `~/.apothem`) a `APOTHEM_REF`: sin definir, resuelve la última
+etiqueta de lanzamiento firmada `vMAJOR.MINOR.PATCH`; un valor de etiqueta la
+fija, y `main` selecciona la rama móvil solo cuando también se define
+`APOTHEM_ALLOW_UNVERIFIED=1`. Sin esa anulación, la actualización aborta antes
+de hacer checkout de nada o de volver a materializar, porque una rama no es una
+etiqueta de lanzamiento firmada. Primero hace fetch de la referencia y verifica
+la firma de la etiqueta con `git verify-tag` antes del checkout, así que una
+comprobación fallida deja el clon en la versión en la que estaba. La firma debe
+estar hecha con la clave del mantenedor publicada en SECURITY.md, y la etiqueta
+firmada debe ser la que lleva el nombre de la versión; una etiqueta sin firmar
+o manipulada, o una firmada con cualquier otra clave, aborta salvo que
+`APOTHEM_ALLOW_UNVERIFIED=1` degrade el aborto a una advertencia (esa variable
+no omite la comprobación de que la etiqueta firmada es la etiqueta de la
+versión). Como esa variable deja pasar una etiqueta sin firmar, o una firmada
+con otra clave, la comprobación protege solo las etiquetas que llevan la firma
+de la clave del mantenedor. Con una referencia que no es de lanzamiento, como
+`main`, el clon sigue la copia de esa rama en origin. El checkout nunca descarta
+cambios locales: un clon con cambios en archivos con seguimiento detiene la
+actualización, y tú los confirmas o los guardas con stash y vuelves a
+ejecutarla. Antes del fetch, la actualización también se detiene cuando hay
+archivos marcados como assume-unchanged o skip-worktree (git no vería sus
+cambios), cuando el árbol de trabajo del clon no es `APOTHEM_HOME`, cuando el
+clon contiene un submódulo, cuando `.git/info/attributes` nombra un filtro o un
+controlador de diff (`filter=` o `diff=`), cuando ese archivo o un archivo de
+configuración no es un archivo normal, cuando el clon toma objetos prestados de
+otro repositorio (`objects/info/alternates`), o cuando el `.git/config` o el
+`.git/config.worktree` del clon contiene un ajuste distinto de los que
+`git clone` y `git init` escriben allí para un clon completo, los ajustes de
+rama (el `remote` y el `pushremote` de una rama deben ser `origin`),
+`user.name`, `user.email`, `maintenance.auto`, `maintenance.strategy`,
+`pull.rebase` y `pull.ff`. Un clon parcial, hecho con `--filter`, también se
+detiene ahí. El mensaje nombra el ajuste y el archivo en el que está, y
+[Solución de problemas](/docs/install/troubleshooting#the-installer-stops-the-existing-clone-is-set-up-in-a-way-the-update-would-trust)
+enumera los ajustes aceptados. También se detiene, antes del fetch, ante un
+archivo `.gitattributes` del árbol de trabajo que git no sigue, que difiere de
+la copia confirmada, o cuya copia confirmada git no puede leer o nombra un
+filtro o un controlador de diff (también se lee la copia del árbol de trabajo);
+ante un repositorio git dentro del clon que git no sigue, fuera de las carpetas
+de datos propias del motor como `backups` (git leería los archivos
+`.gitattributes` que contiene); y ante archivos bajo `src` (escrito con
+cualquier combinación de mayúsculas y minúsculas) que git no sigue, ya que el
+motor podría cargarlos. Después del checkout, elimina las carpetas de caché de
+Python (`__pycache__`) bajo `src` antes de que el motor se ejecute desde el
+clon. Los hooks de git del clon nunca se ejecutan durante la actualización, y
+un clon de un proyecto que no sea Apothem no se actualiza en absoluto. La
+actualización define `GIT_NO_REPLACE_OBJECTS=1`, `GIT_NO_LAZY_FETCH=1`,
+`GIT_ALLOW_PROTOCOL` y `GIT_ATTR_NOSYSTEM=1` para su ejecución, y git no lee
+ningún archivo de atributos fuera del clon (consulta las
+[variables de entorno del instalador](/docs/how-to/installer-environment-variables#the-installer-variables)).
+Cada ejecución mantiene un bloqueo, `<APOTHEM_HOME>.lock`, durante toda su
+duración, así que una segunda instalación, actualización o desinstalación sobre
+el mismo `APOTHEM_HOME` se detiene; consulta
+[Solución de problemas](/docs/install/troubleshooting#the-installer-stops-another-run-holds-the-lock)
+cuando quede un bloqueo abandonado. Una etiqueta firmada cuya clave pública del
+mantenedor no está en el llavero local aborta con una guía para importar la
+clave, que apunta a la huella digital publicada en
+[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
+Después vuelve a materializar el entorno nombrado por `APOTHEM_HARNESS`
+ejecutando `apothem update` desde el árbol actualizado (los valores
+predeterminados del entorno están en la tabla de
+[variables de entorno del instalador](/docs/how-to/installer-environment-variables)).
+Requiere una instalación previa: cuando no existe ningún árbol en
+`APOTHEM_HOME` y `APOTHEM_SOURCE` no está definido, termina con un mensaje que
+te dirige primero al instalador.
+
+El script de actualización solo funciona sobre un clon de git. Una instalación
+hecha con cosign, o con `APOTHEM_VERIFY=checksum`, coloca en su lugar el
+archivo de la versión, así que el script de actualización se detiene y te
+indica que vuelvas a ejecutar el instalador con cosign y `gpg` en el `PATH`.
+Esa nueva ejecución pone la nueva versión en su lugar y conserva cada archivo
+que no distribuye, incluidas las copias de seguridad y los registros de
+instalación del motor. Sin cosign, vuelve a ejecutar el instalador con `--yes`
+(`-Yes` en Windows): convierte la instalación desde el archivo en un clon de
+git comprobado con la clave del mantenedor, y conserva todo lo que no forma
+parte del árbol de código fuente, incluidas las copias de seguridad, los
+registros, los planes y la memoria. `APOTHEM_VERIFY=checksum` también actualiza
+el archivo en su lugar y necesita `APOTHEM_ALLOW_UNVERIFIED=1`. El modo
+checksum no verifica la versión. SHA256SUMS procede de la misma versión que el
+archivo, así que una coincidencia solo muestra que la descarga no está dañada;
+quien pueda cambiar los archivos de la versión puede cambiar ambos.
+
+### Cuando el motor deja un archivo como está
+
+El motor puede dejar como está un archivo que contiene el bloque de Apothem
+(`CLAUDE.md` o `AGENTS.md`, por ejemplo) por sus líneas de marcador de Apothem:
+por ejemplo, cuando el archivo contiene dos bloques completos entre los
+marcadores de Apothem. Entonces escribe todo lo demás, imprime una advertencia
+que nombra el archivo e indica cómo corregirlo, y termina como parcial con el
+código de salida `2`. El motor también termina como parcial cuando se detiene
+después de haber escrito algo: por ejemplo, cuando una herramienta falla
+después de que otra anterior escribiera sus archivos en una ejecución con
+`APOTHEM_HARNESS=all`. Su error indica qué falló, y cada herramienta que
+terminó antes tiene su propia línea encima del error. El instalador y el script
+de actualización imprimen entonces una línea más:
+
+```text
+! The engine ended as partial (exit code 2): its messages above name the files it left as they are, or the error that stopped it. Fix what they name, then run 'apothem update --harness claude-code' again.
+```
+
+Terminan la ejecución como tras un éxito completo: el instalador sigue
+ejecutando verify, coloca el comando `apothem` e imprime su banner de cierre, y
+el script de actualización sigue imprimiendo "Update complete." como última
+línea. Después, cada script termina con el código de salida `2`. Una ejecución
+de PowerShell por tubería (`irm ... | iex`) deja, en cambio, `$LASTEXITCODE`
+en `2`, de modo que tu sesión de PowerShell sigue abierta. Un
+`pwsh -Command "irm ... | iex"` de una sola vez (o `powershell -c`) informa de
+una ejecución parcial solo a través de `$LASTEXITCODE`, así que el propio
+proceso sale con `0`. Cuando un trabajo de CI o un script necesite el código,
+termina el comando con `; exit $LASTEXITCODE`, o ejecuta el script por su ruta
+con `-File`. Desde PowerShell, bash u otra shell POSIX, pon ese comando entre
+comillas simples. Entre comillas dobles, la shell que llama inserta su propio
+`$LASTEXITCODE` antes de que se inicie el nuevo proceso (una shell POSIX
+inserta una cadena vacía), así que el proceso no sale con el código de la
+ejecución. Desde cmd.exe, las comillas dobles sirven. Una ejecución de prueba
+del instalador (`--dry-run`, o `-DryRun` en Windows) no escribe nada, así que
+el motor no la termina como parcial. Corrige lo que nombran los mensajes del
+motor. Para un archivo, conserva tu propio texto (consulta
+[Un archivo contiene dos bloques entre los marcadores de Apothem](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)
+y
+[Apothem no puede distinguir su bloque de tu texto](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)),
+y luego ejecuta de nuevo `apothem update --harness <name>`, o el script de
+actualización, para cada herramienta que la ejecución dejó sin terminar.
+Cualquier otro código de salida distinto de cero del motor detiene el script
+ahí.
 
 ## Re-materializa la salida del entorno
 

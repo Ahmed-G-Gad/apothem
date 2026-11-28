@@ -2,7 +2,7 @@
 title: "migrate-workspace"
 description: "Referencia de la CLI para el comando apothem migrate-workspace."
 machineTranslated: true
-sourceHash: "282a9458bb23c4b0"
+sourceHash: "815adead2049cfc3"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,7 +35,7 @@ migrado no tiene ningún efecto.
 
 | Opción | Descripción |
 |---|---|
-| `--project PATH` | Raíz del proyecto para los adaptadores con alcance de proyecto que materializan en un árbol de proyecto en lugar de en un directorio de configuración con alcance de usuario. |
+| `--project PATH` | Carpeta cuyo diseño heredado se migra. Sin ella, se usa el directorio de trabajo actual. |
 | `--dry-run` | Detecta la estructura heredada e informa qué se migraría, sin escribir. |
 | `--quiet`, `-q` | Suprime la salida informativa; solo se emiten errores. |
 | `--verbose`, `-v` | Emite salida de diagnóstico adicional. |
@@ -102,5 +102,5 @@ apothem migrate-workspace --dry-run --json
 ## Véase también
 
 - [apothem install](/docs/cli-reference/install) — materializa un entorno a partir del perfil compartido
-- [apothem status](/docs/cli-reference/status) — informa el estado de instalación, de verificación y de desviación
+- [apothem status](/docs/cli-reference/status) — informa el estado de instalación, de verificación y de deriva
 - [Disciplina de planes](/docs/reference/plans-discipline) — la estructura compartida `.apothem/plans/`

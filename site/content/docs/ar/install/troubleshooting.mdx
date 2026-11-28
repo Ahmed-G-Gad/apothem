@@ -2,7 +2,7 @@
 title: "استكشاف الأخطاء وإصلاحها"
 description: "حلول لإخفاقات تثبيت Apothem الشائعة ومشكلات زمن التشغيل عبر مسارات الإضافة وnpx والمُثبِّت."
 machineTranslated: true
-sourceHash: "218cead5defe61ff"
+sourceHash: "35f716910f462ed6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -48,18 +48,13 @@ sourceHash: "218cead5defe61ff"
 
 يضع المُثبِّت شجرة المصدر في <bdi>`~/.apothem`</bdi>، ويكتب غلافًا باسم
 <bdi>`apothem`</bdi> في <bdi>`~/.local/bin`</bdi> افتراضيًا (<bdi>POSIX</bdi>)، أو
-في <bdi>`%LOCALAPPDATA%\Microsoft\WindowsApps`</bdi> (<bdi>Windows</bdi>). ولا
-يعدّل <bdi>`PATH`</bdi> لديك. وإذا لم يُعثَر على <bdi>`apothem`</bdi>، فذلك الدليل
-ليس على <bdi>`PATH`</bdi>؛ أضِفه، أو استخدم صيغة <bdi>`PYTHONPATH`</bdi> الواردة
-أدناه حتى تفعل ذلك. شغّل المحرّك عبر صيغة الاستدعاء التي يطبعها المُثبِّت عند
-الاكتمال:
-
-```bash
-PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
-```
-
-أو استخدم صيغة <bdi>npx</bdi> (<bdi>`npx @ahmed-g-gad/apothem <command>`</bdi>)،
-التي لا تحتاج إلى إدخال في <bdi>`PATH`</bdi>.
+في <bdi>`%LOCALAPPDATA%\Microsoft\WindowsApps`</bdi> (<bdi>Windows</bdi>)؛ ويغيّر
+<bdi>`APOTHEM_BIN_DIR`</bdi> ذلك المجلّد. ولا يعدّل <bdi>`PATH`</bdi> لديك. وإذا لم
+يُعثَر على <bdi>`apothem`</bdi>، فذلك الدليل ليس على <bdi>`PATH`</bdi>؛ أضِفه، أو
+شغّل الغلاف بمساره الكامل. ويطبع المُثبِّت ذلك المسار عند الاكتمال. وحين لا يكتب
+غلافًا، يطبع أمرًا يشغّل المحرّك مع إبقاء المجلّد الحالي خارج <bdi>`sys.path`</bdi>؛
+انسخ ذلك الأمر من اللافتة. ولا تحتاج صيغة <bdi>npx</bdi>
+(<bdi>`npx @ahmed-g-gad/apothem <command>`</bdi>) إلى إدخال في <bdi>`PATH`</bdi>.
 
 ### فشل <bdi>`/plugin marketplace add`</bdi>
 
@@ -97,7 +92,7 @@ npx @ahmed-g-gad/apothem@latest --version
 
 ### يتوقّف المُثبِّت: المفتاح العام للمشرف غير موجود في حلقة المفاتيح المحلية
 
-يتحقّق المُثبِّت من وسم الإصدار الموقَّع، ويتوقّف حين لا يكون مفتاح التوقيع في حلقة المفاتيح لديك. استورِده مرةً واحدة، وتحقّق من أن البصمة هي <bdi>`5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`</bdi>، ثم أعِد تشغيل المُثبِّت:
+يتحقّق كل تثبيت شبكي من وسم الإصدار الموقَّع، مع <bdi>cosign</bdi> أو بدونه، ويتوقّف حين لا يكون مفتاح التوقيع في حلقة المفاتيح لديك. استورِده مرةً واحدة، وتحقّق من أن البصمة هي <bdi>`5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`</bdi>، ثم أعِد تشغيل المُثبِّت:
 
 ```bash title="macOS · Linux · WSL2 · BSD — import the key once"
 curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
@@ -108,7 +103,492 @@ gpg --fingerprint 70396FED9C634163
 & "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
 ```
 
-على <bdi>Windows</bdi>، استورِد عبر <bdi>`bash`</bdi> الخاص بـ<bdi>Git</bdi> كما هو مبيّن: يقرأ <bdi>`git verify-tag`</bdi> حلقة مفاتيح <bdi>`gpg`</bdi> الذي يأتي مع <bdi>Git for Windows</bdi>. ويمكن لمضيف لا يملك <bdi>`gpg`</bdi> أن يثبّت باستخدام <bdi>`APOTHEM_VERIFY=checksum`</bdi>، الذي يتحقّق من بصمة أرشيف الإصدار بدلًا من توقيع الوسم.
+على <bdi>Windows</bdi>، استورِد عبر <bdi>`bash`</bdi> الخاص بـ<bdi>Git</bdi> كما هو مبيّن: يقرأ <bdi>`git verify-tag`</bdi> حلقة مفاتيح <bdi>`gpg`</bdi> الذي يأتي مع <bdi>Git for Windows</bdi>. ولا يُغني تثبيت
+[<bdi>cosign</bdi>](https://docs.sigstore.dev/cosign/system_config/installation/) عن
+استيراد المفتاح: فمع وجود <bdi>cosign</bdi> على <bdi>`PATH`</bdi>، يفحص المُثبِّت
+أرشيف الإصدار الموقَّع إضافةً إلى الوسم. ويمكن لمضيف لا يملك <bdi>`gpg`</bdi> أن
+يثبّت باستخدام <bdi>`APOTHEM_VERIFY=checksum`</bdi> و<bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi>،
+لكن هذا الوضع لا يتحقّق من الإصدار (راجع
+[يتوقّف المُثبِّت: وضع المجموع الاختباري يحتاج إلى متغيّر ثانٍ](#the-installer-stops-checksum-mode-needs-a-second-variable)).
+
+### يتوقّف المُثبِّت: لم يُعثَر على <bdi>gpg</bdi>
+
+ثبّت <bdi>GnuPG</bdi>، أو على <bdi>Windows</bdi> ثبّت <bdi>Git for Windows</bdi>، الذي
+يأتي مع <bdi>`gpg`</bdi> الذي يشغّله <bdi>`git verify-tag`</bdi>. ثم استورِد مفتاح
+المشرف كما هو مبيّن أعلاه وأعِد تشغيل المُثبِّت.
+
+### يتوقّف المُثبِّت: الوسم غير موقَّع بمفتاح المشرف
+
+تقول الرسالة <bdi>"Tag ... is signed by the key ..."</bdi> وتسمّي المفتاح الذي
+وقّعه. توقيع الوسم صالح، لكن ذلك المفتاح ليس المفتاح الذي تنشره
+[<bdi>SECURITY.md</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#maintainer-signing-key).
+لا تُوقَّع وسوم إصدارات <bdi>Apothem</bdi> إلا بذلك المفتاح، لذا تعامل مع هذا بوصفه
+عبثًا محتملًا: لا تثبّت، وأبلِغ عنه عبر القنوات المذكورة في <bdi>SECURITY.md</bdi>.
+ومن المتوقّع أن يتوقّف هنا فرعٌ مُشتقّ (<bdi>fork</bdi>) موقَّع بمفتاحه الخاص.
+
+### يتوقّف المُثبِّت: تعذّر على <bdi>cosign</bdi> تأكيد توقيع الإصدار
+
+اقرأ أولًا نصّ <bdi>`cosign said:`</bdi> في نهاية الرسالة.
+
+- يعني خطأ الشبكة أو الوكيل أو الجذر الموثوق أن <bdi>cosign</bdi> لم يستطع الوصول
+  إلى <bdi>Sigstore</bdi>. أعِد المحاولة حين تكون متصلًا، أو حدّث <bdi>cosign</bdi>،
+  أو ثبّت باستخدام <bdi>`APOTHEM_VERIFY=signature`</bdi>، الذي يفحص وسم الإصدار مقابل
+  مفتاح المشرف وحده.
+- من المتوقّع أن يتوقّف هنا فرعٌ مُشتقّ مضبوط عبر <bdi>`APOTHEM_REPO`</bdi>: فالمُثبِّت
+  لا يقبل إلا سير عمل الإصدار الخاص بـ<bdi>Apothem</bdi>.
+- تعني <bdi>"expected GitHub Workflow SHA not found in certificate"</bdi> أن الشهادة
+  التي تحقّق منها <bdi>cosign</bdi> صدرت لتشغيل على إيداع (<bdi>commit</bdi>) غير الذي
+  يشير إليه الوسم الموقَّع، لذا فهي لا تربط <bdi>`SHA256SUMS`</bdi> بذلك الإيداع. لا
+  تثبّت؛ وأبلِغ عنه عبر القنوات المذكورة في
+  [<bdi>SECURITY.md</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
+- يعني عدم تطابق الهوية أو التوقيع في إصدارات <bdi>Apothem</bdi> نفسها أن
+  <bdi>`SHA256SUMS`</bdi> لم يوقّعه سير عمل الإصدار الخاص بـ<bdi>Apothem</bdi> لهذا
+  الوسم. لا تثبّت؛ وأبلِغ عنه عبر القنوات المذكورة في
+  [<bdi>SECURITY.md</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
+
+وحين يقول المُثبِّت بدلًا من ذلك إنه تعذّر عليه تنزيل الحزمة (<bdi>bundle</bdi>)، فافحص
+اتصالك؛ وإذا كان الإصدار لا ينشر حزمة، فثبّته باستخدام
+<bdi>`APOTHEM_VERIFY=signature`</bdi>.
+
+### يتوقّف المُثبِّت: الوسم الموقَّع ليس وسم الإصدار
+
+تقول الرسالة <bdi>"the signed tag object is not the vX.Y.Z release tag"</bdi>. يحمل
+الوسم توقيع مفتاح المشرف، لكن الكائن الذي وُقِّع يسمّي وسمًا آخر، أي إن وسمًا
+موقَّعًا لإصدار مختلف أُعيد توجيهه إلى هذا الاسم. تعامل مع هذا بوصفه عبثًا محتملًا: لا
+تثبّت، وأبلِغ عنه عبر القنوات المذكورة في
+[<bdi>SECURITY.md</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
+لا يتجاوز <bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi> هذا الفحص، لكن ذلك المتغيّر يُمرِّر
+وسمًا غير موقَّع، أو وسمًا موقَّعًا بمفتاح آخر، لذا لا يحمي الفحص إلا الوسوم التي تحمل
+توقيع مفتاح المشرف.
+
+### يتوقّف المُثبِّت: وضع المجموع الاختباري يحتاج إلى متغيّر ثانٍ [#the-installer-stops-checksum-mode-needs-a-second-variable]
+
+لا يتحقّق وضع المجموع الاختباري من الإصدار. فملف <bdi>SHA256SUMS</bdi> يأتي من الإصدار
+نفسه الذي يأتي منه الأرشيف، لذا لا يُظهِر التطابق إلا أن التنزيل غير تالف؛ ومن يستطيع
+تغيير ملفات الإصدار يستطيع تغيير كليهما. ولهذا السبب لا يعمل
+<bdi>`APOTHEM_VERIFY=checksum`</bdi> إلا حين يكون <bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi>
+مضبوطًا أيضًا. اضبط الاثنين إن كنت تقبل ذلك، أو ثبّت <bdi>`gpg`</bdi> (و<bdi>cosign</bdi>)
+وشغّل من دون <bdi>`APOTHEM_VERIFY=checksum`</bdi>.
+
+### يتوقّف المُثبِّت: المجلّد في <bdi>APOTHEM_HOME</bdi> ليس تثبيتًا لـ<bdi>Apothem</bdi>
+
+لا يستبدل المُثبِّت مجلّدًا يحوي شيئًا غير تثبيت لـ<bdi>Apothem</bdi>. انقله جانبًا،
+أو وجّه <bdi>`APOTHEM_HOME`</bdi> إلى مجلّد آخر، أو أعِد التشغيل مع <bdi>`--yes`</bdi>
+(<bdi>`-Yes`</bdi> على <bdi>PowerShell</bdi>). ومع <bdi>`--yes`</bdi>، ينقل المُثبِّت
+المجلّد بأكمله، دون تغيير، إلى مجلّد جديد بجانبه،
+<bdi>`<APOTHEM_HOME>.before-apothem-<time>`</bdi> (ويحتفظ المجلّد باسمه داخله)، ويذكر
+مكانه، ثم يثبّت من جديد. ويُعَدّ مستنسخ <bdi>git</bdi> لمشروع آخر مجلّدًا من هذا
+النوع. وإذا كان كلٌّ من <bdi>`<APOTHEM_HOME>.before-apothem-<time>`</bdi> والاسم نفسه
+مضافًا إليه مُعرِّف عملية المُثبِّت موجودَيْن بالفعل، يتوقّف المُثبِّت برسالة
+<bdi>"Could not move the existing ... aside; nothing was changed"</bdi> قبل أن يُنقَل
+أي شيء؛ أعِد تسمية أحدهما أو أزِله ثم أعِد التشغيل.
+
+### يتوقّف المُثبِّت: <bdi>APOTHEM_HOME</bdi> رابط رمزي
+
+تقول الرسالة <bdi>"is a symbolic link"</bdi> (على <bdi>Windows</bdi>، رابط رمزي أو وصلة
+<bdi>junction</bdi>). فاستبدال المجلّد سيستبدل الرابط لا المجلّد الذي يقود إليه، لذا
+يرفض المُثبِّت. اضبط <bdi>`APOTHEM_HOME`</bdi> على المجلّد الذي يقود إليه الرابط، ثم
+أعِد التشغيل. أما مستنسخ <bdi>git</bdi> قائم خلف رابط فلا يزال يُحدَّث في مكانه.
+
+### يتوقّف المُثبِّت: مستنسخ <bdi>git</bdi> يحوي عملًا محليًا
+
+يحتاج استبدال مستنسخ <bdi>git</bdi> بأرشيف إصدار إلى <bdi>`--yes`</bdi>، ويرفض المُثبِّت
+حتى عندئذٍ ما دام المستنسخ يحوي عملًا محليًا سيضيع: تغييرات على ملفات متتبَّعة، أو
+مخبّآت (<bdi>stash</bdi>)، أو إيداعات ليست على مستودع بعيد، أو ملفات غير متتبَّعة في
+شجرة مصدر المستنسخ. أودِع ذلك العمل وادفعه، أو انقله إلى مكان آخر، ثم أعِد التشغيل.
+ويعمل الفحص أيضًا مع <bdi>`--dry-run`</bdi>. وحين لا يحوي المستنسخ عملًا من هذا النوع،
+يستبدله <bdi>`--yes`</bdi> ويحتفظ بشجرة المستنسخ نفسه في
+<bdi>`<APOTHEM_HOME>.before-apothem-<time>/<name>`</bdi>، حيث <bdi>`<name>`</bdi> هو
+الجزء الأخير من <bdi>`APOTHEM_HOME`</bdi>؛ ويطبع المُثبِّت ذلك المسار، وتحذف أنت المجلّد
+متى لم تعد تحتاج إليه.
+
+### يتوقّف المُثبِّت: المستنسخ القائم مُعَدّ بطريقة سيثق بها التحديث
+
+قبل أن يجلب إلى مستنسخ قائم، يفحص المُثبِّت (ونص التحديث) كيفية إعداد المستنسخ.
+ويُجري <bdi>`--dry-run`</bdi> هذه الفحوص أيضًا. وتظهر <bdi>"has changes to tracked
+files"</bdi> أيضًا حين تُعلَّم ملفات بـ <bdi>assume-unchanged</bdi> أو
+<bdi>skip-worktree</bdi>، ما يُخفي تغييراتها عن <bdi>git</bdi>: شغّل
+<bdi>`git update-index --no-assume-unchanged <file>`</bdi> أو
+<bdi>`git update-index --no-skip-worktree <file>`</bdi>، ثم أودِع التغيير أو خبّئه.
+وتعني <bdi>"is not the work tree of its git clone"</bdi> أن <bdi>git</bdi> لا يجد شجرة
+عمل في <bdi>`APOTHEM_HOME`</bdi>، كما يحدث حين يضبط إعداد <bdi>git</bdi> الخاص بالمستنسخ
+<bdi>`core.bare`</bdi> على <bdi>`true`</bdi>: اضبطه على <bdi>`false`</bdi> ليُسحَب
+المستنسخ إلى <bdi>`APOTHEM_HOME`</bdi>. أما إعداد <bdi>`core.worktree`</bdi>، الذي
+يُرسِل السحب إلى مجلّد آخر، فيُبلَغ عنه بوصفه إعدادًا لا يقبله التحديث في المكان (أدناه).
+
+تسمّي <bdi>"own git config sets `<key>`, which an update in place does not accept in a
+clone's own config"</bdi> إعدادًا في <bdi>`.git/config`</bdi> الخاص بالمستنسخ، أو في
+<bdi>`.git/config.worktree`</bdi> حين يكون للمستنسخ واحد. ولا يقبل التحديث في المكان
+هناك إلا هذه الإعدادات (يُقارَن القسم والمفتاح دون اعتبار لحالة الأحرف):
+
+- الإعدادات التي يكتبها <bdi>`git clone`</bdi> و<bdi>`git init`</bdi> لمستنسخ كامل:
+  <bdi>`core.repositoryformatversion`</bdi> و<bdi>`core.filemode`</bdi> و<bdi>`core.bare`</bdi>
+  و<bdi>`core.logallrefupdates`</bdi> و<bdi>`core.symlinks`</bdi> و<bdi>`core.ignorecase`</bdi>
+  و<bdi>`core.precomposeunicode`</bdi> و<bdi>`core.longpaths`</bdi> و<bdi>`extensions.objectformat`</bdi>
+  و<bdi>`extensions.refstorage`</bdi> (بالقيمة <bdi>`files`</bdi> أو <bdi>`reftable`</bdi> فقط)
+  و<bdi>`extensions.worktreeconfig`</bdi> و<bdi>`remote.origin.url`</bdi> و<bdi>`remote.origin.fetch`</bdi>
+  و<bdi>`remote.origin.tagopt`</bdi>؛
+- إعدادات الفروع، <bdi>`branch.<name>.<key>`</bdi>، التي يضيفها <bdi>git</bdi> والمحرّرات،
+  عدا أن <bdi>`branch.<name>.remote`</bdi> و<bdi>`branch.<name>.pushremote`</bdi> يجب أن
+  يكونا <bdi>`origin`</bdi> تمامًا؛
+- <bdi>`user.name`</bdi> و<bdi>`user.email`</bdi> و<bdi>`maintenance.auto`</bdi> و<bdi>`maintenance.strategy`</bdi>
+  و<bdi>`pull.rebase`</bdi> و<bdi>`pull.ff`</bdi>.
+
+ويوقف أيُّ إعداد آخر التحديثَ، لأنه قد يجعل <bdi>git</bdi> يشغّل برنامجًا، أو يقرأ
+إعدادات أو خطّافات أو سمات أو كائنات من مكان آخر، أو يتصل بمكان آخر. ويتوقّف هنا أيضًا
+مستنسخ صُنِع بـ <bdi>`--mirror`</bdi> أو <bdi>`--sparse`</bdi> أو
+<bdi>`--recurse-submodules`</bdi> أو بمستودع بعيد لا يُسمّى <bdi>`origin`</bdi>، وكذلك
+مستنسخ جزئي صُنِع بـ <bdi>`--filter`</bdi>: تسمّي الرسالة
+<bdi>`remote.origin.promisor`</bdi>، لأن <bdi>git</bdi> سيجلب الكائنات الناقصة من المستودع
+البعيد من تلقاء نفسه أثناء قراءته المستنسخ. استنسِخ مجدّدًا من دون <bdi>`--filter`</bdi>.
+أزِل الإعداد من الملف الذي تسمّيه الرسالة، مثلًا
+<bdi>`git config --file ~/.apothem/.git/config --unset-all <key>`</bdi>، ثم أعِد التشغيل.
+ويزيل <bdi>`--unset-all`</bdi> أيضًا إعدادًا موجودًا أكثر من مرة. أما <bdi>`remote`</bdi> أو
+<bdi>`pushremote`</bdi> الخاص بفرع، فاضبطه على <bdi>`origin`</bdi> بدلًا من ذلك، مثلًا
+<bdi>`git config --file ~/.apothem/.git/config branch.main.remote origin`</bdi>. وتسمّي
+<bdi>"own git attributes name a filter or diff driver"</bdi> الملف
+<bdi>`.git/info/attributes`</bdi>: أزِل إعداد <bdi>`filter=`</bdi> أو <bdi>`diff=`</bdi>.
+فـ<bdi>git</bdi> يشغّل المرشِّح أثناء قراءته الملفات، ويشغّل <bdi>`git diff`</bdi> تحويل
+النص الخاص بمُشغِّل الفرق (<bdi>`textconv`</bdi>)، لذا فإن مُشغِّلًا يعرّفه إعداد
+<bdi>git</bdi> الخاص بك أو الخاص بالنظام سيعمل على ملفات المستنسخ.
+
+تسمّي <bdi>"which is not a plain file"</bdi> الملف <bdi>`.git/info/attributes`</bdi> أو
+<bdi>`.git/config`</bdi> أو <bdi>`.git/config.worktree`</bdi> حين يكون مجلّدًا أو أنبوبًا
+مُسمّى أو ملفًا خاصًا آخر، أو رابطًا على <bdi>Windows</bdi>. فقد يقرأ <bdi>git</bdi> من
+مثل هذا الملف نصًّا غير الذي يقرؤه الفحص. استبدله بملف عادي، أو أزِله، ثم أعِد التشغيل.
+
+تعني <bdi>"has a setting whose name holds a line break"</bdi> أن اسم قسم في الملف الذي
+تسمّيه الرسالة يحوي محرف رجوع العربة (<bdi>carriage return</bdi>). لا يكتب
+<bdi>git</bdi> مثل هذا المحرف أبدًا، وقد يقرأ قارئٌ ذلك الاسم على أنه إعدادان. افتح
+الملف في محرّر نصوص، وأزِل ذلك القسم، ثم أعِد التشغيل.
+
+تعني <bdi>"borrows objects from another repository"</bdi> أن للمستنسخ ملف
+<bdi>`objects/info/alternates`</bdi> أو <bdi>`objects/info/http-alternates`</bdi>، كما هو
+حال مستنسخ صُنِع بـ <bdi>`--reference`</bdi> أو <bdi>`--shared`</bdi>. وعندئذٍ سيقرأ
+<bdi>git</bdi> الكائنات من ذلك المستودع الآخر، تحت إعدادات لا يفحصها المُثبِّت. شغّل
+<bdi>`git -C ~/.apothem repack -a -d`</bdi> لنسخ الكائنات إلى المستنسخ، وأزِل الملف الذي
+تسمّيه الرسالة، ثم أعِد التشغيل.
+
+تعني <bdi>"keeps submodule repositories in ..."</bdi> و<bdi>"holds a submodule at ..."</bdi>
+أن للمستنسخ وحدة فرعية (<bdi>submodule</bdi>)، محفوظة في المجلّد الذي تسمّيه الرسالة
+الأولى أو مُسجَّلة في فهرسه عند المسار الذي تسمّيه الثانية. لا تحوي شجرة الإصدار أيًّا
+منها، وسيعمل <bdi>git</bdi> داخل الوحدة الفرعية، التي لا يفحص المُثبِّت إعداداتها
+الخاصة. أزِل الوحدة الفرعية وذلك المجلّد من المستنسخ، أو انقل المستنسخ جانبًا، ثم أعِد
+التشغيل. ويُجري استبدال المستنسخ بـ <bdi>`--yes`</bdi> هذا الفحص أيضًا، قبل أن يبحث
+<bdi>`git status`</bdi> عن عمل محلي. ولا تعمل خطّافات <bdi>git</bdi> الخاصة بالمستنسخ
+أبدًا أثناء التحديث.
+
+### يتوقّف المُثبِّت: ملف <bdi>.gitattributes</bdi> في المستنسخ غير متتبَّع أو مُغيَّر أو يسمّي مُشغِّلًا
+
+يطبّق <bdi>git</bdi> ملفات <bdi>`.gitattributes`</bdi> الموجودة في شجرة العمل أثناء
+مقارنة الملفات وسحبها، وقد يجعل مثل هذا الملف <bdi>git</bdi> يشغّل برنامجًا. وقبل أيٍّ من
+تلك الأوامر، يتوقّف المُثبِّت ونص التحديث عند ملف <bdi>`.gitattributes`</bdi> ليس هو
+الملف المُودَع، في أي مجلّد من المستنسخ وبأي مزيج من الأحرف الكبيرة في اسمه، وعند
+مستودع <bdi>git</bdi> داخل المستنسخ لا يتتبّعه <bdi>git</bdi>، لأن <bdi>git</bdi> سيقرأ
+ملفات <bdi>`.gitattributes`</bdi> الموجودة فيه أيضًا. ويُجري <bdi>`--dry-run`</bdi>
+و<bdi>`--yes`</bdi> هذا الفحص أيضًا. ولا يقرأ الفحص مجلّدات بيانات المحرّك نفسه
+(<bdi>`backups`</bdi> و<bdi>`state`</bdi> و<bdi>`plans`</bdi> و<bdi>`memory`</bdi>
+و<bdi>`contexts`</bdi> و<bdi>`learning`</bdi> و<bdi>`providers`</bdi>)، حيث لا يكتب أي
+إصدار، إلا إذا كان المستنسخ يتتبّع ملفات هناك.
+
+- تسمّي <bdi>"has a .gitattributes file that git does not track, at ..."</bdi> ملفًا لا
+  يتتبّعه <bdi>git</bdi>، بما في ذلك الملفات المُتجاهَلة والملفات في المجلّدات غير
+  المتتبَّعة. أزِله، ثم أعِد التشغيل.
+- تسمّي <bdi>"has a changed .gitattributes file at ..."</bdi> ملفًا متتبَّعًا يختلف
+  محتواه عن النسخة المُودَعة، أو تغييره مُجهَّز في منطقة التجهيز (<bdi>staged</bdi>)، أو
+  هو رابط أو مجلّد. إن كنت أنت من أجرى التغيير، فأعِد النسخة المُودَعة، مثلًا باستخدام
+  <bdi>`git -C ~/.apothem checkout HEAD -- <path>`</bdi>، ثم أعِد التشغيل.
+- تسمّي <bdi>"has a .gitattributes file at ... that names a filter or diff driver
+  (filter= or diff=)"</bdi> ملفًا متتبَّعًا تسمّي نسخته المُودَعة، أو نسخته في شجرة العمل،
+  مُشغِّلًا خارج تعليق، بما في ذلك ماكرو (سطر <bdi>`[attr]`</bdi>) يسمّي مُشغِّلًا.
+  سيشغّل <bdi>git</bdi> ذلك المُشغِّل، الذي قد يعرّفه إعداد <bdi>git</bdi> الخاص بك أو
+  الخاص بالنظام، أثناء قراءته المستنسخ. أزِل الإعداد، وأودِع ذلك التغيير، ثم أعِد التشغيل.
+  أما ماكرو لا يعرّفه إلا ملف السمات الخاص بك أو الخاص بالنظام فلا يُحتسَب: فأثناء التشغيل
+  لا يقرأ <bdi>git</bdi> أي ملف سمات خارج المستنسخ، لذا لا يسمّي مثل هذا الماكرو أي
+  مُشغِّل هناك.
+- تعني <bdi>"has a .gitattributes file at ... whose committed copy git could not read"</bdi>
+  أن النسخة الموجودة في مجلّد <bdi>git</bdi> الخاص بالمستنسخ مفقودة أو تالفة، أو أن بايتاتها
+  لا تطابق مُعرِّفها، وهو ما لا يفحصه <bdi>git</bdi> أثناء قراءتها. وعندئذٍ لا يستطيع
+  المُثبِّت فحص ما يقوله الملف، بينما سيظل <bdi>git</bdi> يطبّق النسخة الموجودة في شجرة
+  العمل. شغّل <bdi>`git -C ~/.apothem fsck`</bdi> لترى ما التالف، وأصلِح المستنسخ أو انقله
+  جانبًا وثبّت من جديد، ثم أعِد التشغيل.
+- تأتي <bdi>"Could not run git to read the committed .gitattributes files in ..."</bdi> من
+  <bdi>`install.ps1`</bdi> و<bdi>`update.ps1`</bdi> فقط. ففي جلسة <bdi>PowerShell</bdi> لديك
+  يكون <bdi>`git`</bdi> دالةً أو نصًّا برمجيًا، مثل غلاف في ملفك الشخصي، ولا يوجد برنامج
+  <bdi>git</bdi> على <bdi>`PATH`</bdi> يقرأ به المُثبِّت الملفات. أضِف مجلّد <bdi>git</bdi>
+  إلى <bdi>`PATH`</bdi>، بحيث يجده <bdi>`Get-Command git -CommandType Application`</bdi>،
+  ثم أعِد التشغيل.
+- تسمّي <bdi>"holds a git repository that git does not track, at ..."</bdi> مجلّدًا له
+  <bdi>`.git`</bdi> خاص به. لا يسرد <bdi>git</bdi> شيئًا داخل مثل هذا المجلّد، لذا يمرّ
+  ملف <bdi>`.gitattributes`</bdi> هناك دون أن يُرى، ومع ذلك يطبّقه <bdi>git</bdi> على
+  الملفات التي يكتبها التحديث هناك. لا تحوي شجرة الإصدار أيًّا منها. انقل المجلّد خارج
+  المستنسخ، ثم أعِد التشغيل.
+
+إن لم تكن أنت من صنع الملف أو التغيير، فقد يستطيع شخص آخر الكتابة في المستنسخ: انقله
+جانبًا، وثبّت من جديد، وتأكّد من أن <bdi>`APOTHEM_HOME`</bdi> مجلّد لا يستطيع الكتابة فيه
+أحد سواك.
+
+### يتوقّف المُثبِّت: ملفات تحت <bdi>src</bdi> لا يتتبّعها <bdi>git</bdi>
+
+تقول الرسالة <bdi>"has files under src that git does not track, and the engine
+could load them:"</bdi> وتسرد كلًّا منها (أول 20، ثم عدد الباقي). يعمل المحرّك من مجلّد
+<bdi>`src`</bdi> الخاص بالمستنسخ، لذا قد يعمل ملف إضافي هناك بوصفه جزءًا منه. وتُحتسَب
+الملفات المُتجاهَلة، وكذلك ملف <bdi>`.pyc`</bdi> بجانب المصادر.
+ويُحتسَب مجلّد باسم <bdi>`Src`</bdi> أو <bdi>`SRC`</bdi> على أنه <bdi>`src`</bdi>، لأن
+<bdi>Windows</bdi> و<bdi>macOS</bdi> يجدانه بذلك الاسم.
+ويكتب تثبيت <bdi>`pip install`</bdi> قابل للتحرير للمستنسخ <bdi>`src/apothem.egg-info`</bdi>،
+وقد يكتب مدير الملفات <bdi>`.DS_Store`</bdi> أو <bdi>`desktop.ini`</bdi>. انقل الملفات خارج
+<bdi>`~/.apothem/src`</bdi>، ثم أعِد التشغيل؛ لم يتغيّر شيء. يعمل الفحص قبل الجلب، في
+التحديث في المكان وفي التشغيل التجريبي. ولا تُحتسَب مجلّدات ذاكرة <bdi>Python</bdi>
+المؤقتة (<bdi>`__pycache__`</bdi>): فبعد السحب، وقبل أن يعمل المحرّك لأول مرة من
+المستنسخ، يزيل التحديث كل مجلّد <bdi>`__pycache__`</bdi> تحت <bdi>`src`</bdi>، فلا تُحمَّل
+أي شيفرة بايت مُخزَّنة من قبل التحديث.
+
+تعني <bdi>"Could not remove the Python cache folders (__pycache__) under ..."</bdi> أن تلك
+الإزالة فشلت، مثلًا لأن ملفًا في أحدها يخصّ مستخدمًا آخر أو، على <bdi>Windows</bdi>، مفتوح
+في برنامج آخر. وقد سُحِب المستنسخ بالفعل إلى الإصدار الجديد. أزِل تلك المجلّدات بنفسك،
+ثم أعِد التشغيل.
+
+### يتوقّف المُثبِّت: تشغيل آخر يمسك القفل
+
+يمسك كل تشغيل لنصوص التثبيت والتحديث وإلغاء التثبيت قفلًا بجانب
+<bdi>`APOTHEM_HOME`</bdi> (<bdi>`<APOTHEM_HOME>.lock`</bdi>، أي <bdi>`~/.apothem.lock`</bdi>
+افتراضيًا) أثناء عمله؛ ولا تأخذه الأوامر <bdi>`apothem install`</bdi> و<bdi>`apothem update`</bdi>
+و<bdi>`apothem uninstall`</bdi>. وتعني الرسالة <bdi>"Another Apothem install, update or
+uninstall is running on ..."</bdi> أن تشغيلًا ثانيًا وجده ممسوكًا. انتظر حتى ينتهي التشغيل
+الآخر، ثم أعِد التشغيل. وإن لم يكن أي تشغيل يعمل، فأزِل القفل الذي تسمّيه الرسالة، ثم
+أعِد التشغيل.
+
+- تعني <bdi>"was left by an Apothem run that did not finish (process N is no longer
+  running)"</bdi> و<bdi>"exists but names no running process"</bdi> أن تشغيلًا قُتِل قبل أن
+  يتمكّن من تحرير القفل. تأكّد من عدم وجود تثبيت أو تحديث أو إلغاء تثبيت لـ<bdi>Apothem</bdi>
+  قيد العمل، وأزِل القفل، وأعِد التشغيل. لا يزيله المُثبِّت نيابةً عنك أبدًا. على
+  <bdi>POSIX</bdi> يكون القفل مجلّدًا (<bdi>`rm -rf ~/.apothem.lock`</bdi>)؛ وعلى
+  <bdi>Windows PowerShell</bdi> يكون ملفًا يحذفه <bdi>Windows</bdi> حين ينتهي تشغيله.
+- تأتي <bdi>"is the lock file of an Apothem PowerShell run"</bdi> من نص <bdi>POSIX</bdi>
+  تحت <bdi>Git Bash</bdi> أو <bdi>MSYS2</bdi> أو <bdi>Cygwin</bdi> أو <bdi>WSL</bdi> وجد
+  الملف الذي يمسكه تشغيل <bdi>PowerShell</bdi>. يزيل <bdi>Windows</bdi> ذلك الملف حين ينتهي
+  التشغيل ولا يسمح لأحد بإزالته ما دام التشغيل نشطًا. انتظر حتى ينتهي ذلك التشغيل. وإن لم
+  يكن أي تثبيت أو تحديث أو إلغاء تثبيت لـ<bdi>Apothem</bdi> قيد العمل، فأزِل الملف، ثم أعِد
+  التشغيل. وعلى الأنظمة الأخرى تقول الرسالة <bdi>"is a file where the Apothem lock folder
+  belongs"</bdi>: أزِل الملف إن لم يكن أي تشغيل نشطًا، ثم أعِد التشغيل.
+- تعني <bdi>"was made by an Apothem run in another environment"</bdi> أن مجلّد القفل يسمّي
+  عملية في بيئة أخرى، مثل <bdi>WSL</bdi> حين يكون التشغيل تحت <bdi>Git Bash</bdi>، أو
+  <bdi>Git Bash</bdi> حين يكون تحت <bdi>WSL</bdi> أو <bdi>MSYS2</bdi>، أو حاوية أخرى. لا يمكن
+  فحص تلك العملية من هنا. انتظر حتى ينتهي ذلك التشغيل؛ ولا تُزِل القفل إلا إذا لم يكن أي
+  تثبيت أو تحديث أو إلغاء تثبيت لـ<bdi>Apothem</bdi> قيد العمل في أي مكان.
+- تَعُدّ نصوص <bdi>POSIX</bdi> العمليةَ التي تخصّ مستخدمًا آخر، مثل تشغيل تحت
+  <bdi>`sudo`</bdi>، عمليةً قيد العمل، فيُقرأ قفلها على أنه ممسوك. ولا يستطيع
+  <bdi>PowerShell</bdi> فحص مُعرِّف العملية لمجلّد قفل صنعته نصوص <bdi>POSIX</bdi> (مثلًا
+  تحت <bdi>Git Bash</bdi>)، لذا يُبلِغ عن ذلك القفل أيضًا على أنه ممسوك.
+- حين يكون <bdi>`APOTHEM_HOME`</bdi> رابطًا رمزيًا (أو وصلة <bdi>junction</bdi> على
+  <bdi>Windows</bdi>)، تأخذ نصوص <bdi>POSIX</bdi> و<bdi>PowerShell</bdi> القفلَ بجانب المجلّد
+  الذي يقود إليه الرابط، فيوقف تشغيلٌ عبر الرابط وتشغيلٌ عبر ذلك المجلّد أحدهما الآخر؛
+  وتسمّي الرسالة ذلك القفل.
+- تعني <bdi>"Could not create the lock ... Check that you can write to ..."</bdi> أنك لا
+  تستطيع الكتابة في المجلّد الذي تسمّيه الرسالة: المجلّد الذي يحوي <bdi>`APOTHEM_HOME`</bdi>
+  أو، حين يكون <bdi>`APOTHEM_HOME`</bdi> رابطًا، المجلّد الذي يحوي المجلّد الذي يقود إليه.
+  كل تشغيل يحتاج إلى الكتابة هناك، بما في ذلك التحديث في المكان وإلغاء التثبيت والتشغيل
+  التجريبي.
+
+### يتوقّف المُثبِّت: ترك تشغيل سابق مجلّدات بجانب <bdi>APOTHEM_HOME</bdi>
+
+تقول الرسالة <bdi>"An earlier run was stopped part-way and left these
+folders beside ..."</bdi> وتسرد كل مجلّد مع ما يحويه. يُلتقَط <bdi>Ctrl+C</bdi> وإشارة
+الإنهاء ويُنظِّف التشغيل بعدهما؛ أما القتل القسري أو انقطاع الطاقة أثناء التبديل فلا
+يُلتقَطان، وقد يتركان:
+
+- <bdi>`.apothem-old.<name>.*`</bdi>: التثبيت السابق الذي كان يُستبدَل، في مجلّده
+  <bdi>`home`</bdi>. وحين يحوي مجلّد <bdi>`home`</bdi> ذلك مستنسخ <bdi>git</bdi> ويكون
+  <bdi>`APOTHEM_HOME`</bdi> في مكانه (كما يكون بعد أن ينتقل التثبيت الجديد إليه)، يقول السطر
+  بدلًا من ذلك إنه يحوي شجرة المستنسخ، التي كان ذلك التشغيل يحتفظ بها: انقلها إلى مجلّد
+  خاص بك إن كنت لا تزال تحتاج إليها. وحين لا يحوي مجلّد <bdi>`home`</bdi> تثبيتًا
+  لـ<bdi>Apothem</bdi> ويكون <bdi>`APOTHEM_HOME`</bdi> في مكانه، يقول السطر ذلك: ظهر مجلّد
+  هناك بينما كان التشغيل ينقل التثبيت السابق، فأعاد التشغيل التثبيت وترك ذلك المجلّد
+  وشأنه. افحص ما يحويه قبل أن تزيله.
+- <bdi>`.apothem-extract.<name>.*`</bdi> أو <bdi>`.apothem-clone.<name>.*`</bdi>: المصدر
+  الجديد الذي كان يُثبَّت. وحين يكون التشغيل قد نقل إليه بالفعل مُدخلات من
+  <bdi>`APOTHEM_HOME`</bdi>، يسمّي السطر كلًّا منها: بيانات المحرّك مثل <bdi>`backups`</bdi>
+  و<bdi>`state`</bdi>، وأي ملف أو مجلّد آخر كان هناك.
+- <bdi>`<APOTHEM_HOME>.before-apothem-<time>`</bdi>: لا يُسرَد إلا حين يكون
+  <bdi>`APOTHEM_HOME`</bdi> نفسه مفقودًا. يحوي المحتويات السابقة لـ<bdi>`APOTHEM_HOME`</bdi>،
+  في مجلّد مُسمّى باسم الجزء الأخير من <bdi>`APOTHEM_HOME`</bdi>، أو مباشرةً داخله لمجلّد
+  صنعه مُثبِّت سابق؛ ويقول السطر أيّهما.
+
+<bdi>`<name>`</bdi> هو الجزء الأخير من <bdi>`APOTHEM_HOME`</bdi> (<bdi>`.apothem`</bdi>
+افتراضيًا)، لذا لا تُسرَد مجلّدات <bdi>`APOTHEM_HOME`</bdi> آخر في المجلّد الأب نفسه، التي
+قد يستخدمها تشغيلٌ على ذلك المجلّد الرئيسي. وعلى <bdi>Windows</bdi> و<bdi>macOS</bdi> يُحتسَب
+<bdi>`<name>`</bdi> لا يختلف إلا في الأحرف الكبيرة على أنه لهذا المجلّد الرئيسي، لأن
+<bdi>`APP`</bdi> و<bdi>`app`</bdi> يسمّيان المجلّد نفسه هناك افتراضيًا. وتتبع القاعدة نظام
+التشغيل، لا نظام الملفات: فتحت <bdi>WSL</bdi>، حتى على محرّك أقراص <bdi>Windows</bdi>، تكون
+الأسماء التي تختلف في الأحرف الكبيرة مجلّدات رئيسية مختلفة، بينما على وحدة تخزين
+<bdi>macOS</bdi> حسّاسة لحالة الأحرف أو مجلّد <bdi>Windows</bdi> حسّاس لها تظل تُحتسَب
+مجلّدًا واحدًا، لذا يُسرَد هناك أيضًا مجلّد رئيسي آخر لا يختلف اسمه إلا في الأحرف الكبيرة.
+والمجلّد الذي لا يحوي اسمه جزء <bdi>`<name>`</bdi> صنعه مُثبِّت سابق لم يكن يُسجِّل المجلّد
+الرئيسي؛ ويُسرَد مع ملاحظة أنه قد يخصّ أي مجلّد رئيسي لـ<bdi>Apothem</bdi> في ذلك المجلّد،
+ويقول سطره إن المُدخلات نُقِلت من المجلّد الرئيسي الذي صُنِع له. ولمثل هذا المجلّد الذي
+صنعه تثبيت عبر الاستنساخ، لا يسمّي السطر إلا بيانات المحرّك التي يجدها، لذا انظر داخله
+بحثًا عن أي شيء آخر. لا تُحتسَب إلا المجلّدات: فالملف أو الرابط الذي يحمل مثل هذا الاسم لا
+يُسرَد. أما المجلّد الذي لا يستطيع المُثبِّت قراءته فيُسرَد على أنه <bdi>"could not be
+read"</bdi>.
+
+لم يتغيّر شيء ولا يُحذَف شيء. إذا كان <bdi>`APOTHEM_HOME`</bdi> مفقودًا، فأعِد التثبيت
+السابق إليه أولًا. ثم أعِد كل مُدخل تسمّيه القائمة على أنه نُقِل إلى مصدر جديد إلى المجلّد
+الرئيسي الذي جاء منه (وتحقّق أولًا من أي مجلّد رئيسي في حالة المجلّد الذي يحمل الملاحظة)،
+وأزِل المجلّدات المسرودة، وأعِد التشغيل. يعمل الفحص لتثبيت مجلوب، بما في ذلك التشغيل
+التجريبي؛ ولا يعمل لتثبيت من نسختك المسحوبة الخاصة، ولا لتحديث أو إلغاء تثبيت.
+
+### يتوقّف المُثبِّت: مستخدم آخر يملك المستنسخ
+
+تقول الرسالة <bdi>"is owned by someone else, so git refuses to work in it
+(git reports "dubious ownership")"</bdi>. لا يقرأ <bdi>git</bdi> مستنسخًا يملكه مستخدم آخر.
+شغّل المُثبِّت بوصفك المستخدم الذي يملك <bdi>`APOTHEM_HOME`</bdi>، أو تملَّك المجلّد، أو
+وجّه <bdi>`APOTHEM_HOME`</bdi> إلى مجلّد تملكه، ثم أعِد التشغيل. لا يضيف المُثبِّت المجلّد
+إلى قائمة <bdi>`safe.directory`</bdi> الخاصة بـ<bdi>git</bdi>. وأي إخفاق آخر لأمر
+<bdi>git</bdi> الأول ذلك يقول <bdi>"git could not read the clone at ..."</bdi> متبوعًا بأول
+سطر شرح من <bdi>git</bdi> نفسه.
+
+### يحذّر المُثبِّت: يستطيع مستخدمون آخرون تغيير <bdi>APOTHEM_HOME</bdi>
+
+تحذّر نصوص التثبيت والتحديث، بما في ذلك التشغيلات التجريبية، حين يستطيع مستخدمون غيرك
+الكتابة في <bdi>`APOTHEM_HOME`</bdi> أو في المجلّد الذي يحويه، أو يملكون أيًّا منهما، لأنهم
+يستطيعون عندئذٍ تغيير الشيفرة التي يشغّلها أمر <bdi>`apothem`</bdi> باسمك؛ والتشغيلات التي
+تتخطّى الفحص مسرودة أدناه. يستمرّ التشغيل؛ ويسمّي التحذير المجلّد، ومن يستطيع الكتابة فيه
+أو يملكه، والإصلاح. ويبدأ التحذير بواحدة من:
+
+- <bdi>"Other users can change the code Apothem runs as you"</bdi>، حين يستطيعون الكتابة
+  في <bdi>`APOTHEM_HOME`</bdi>، أو حين يخصّ <bdi>`APOTHEM_HOME`</bdi> أو المجلّد الذي يحويه
+  شخصًا آخر (وتقول الرسالة عندئذٍ من يملك أيَّ مجلّد).
+  وحين يكون <bdi>`APOTHEM_HOME`</bdi> رابطًا، تسمّي الرسالة المجلّد الذي يقود إليه.
+- <bdi>"Other users can replace ..."</bdi>، حين يستطيعون الكتابة في المجلّد الذي يحوي
+  <bdi>`APOTHEM_HOME`</bdi> (أو يحوي الرابط إليه)، ومن ثم إعادة تسميته أو إزالته.
+- <bdi>"A new ... would let"</bdi>، حين لا يكون <bdi>`APOTHEM_HOME`</bdi> موجودًا بعد
+  ويكون مجلّد جديد هناك مفتوحًا للآخرين.
+
+لا يُفحَص التثبيت من نسخة مسحوبة محلية، سواء سمّاها <bdi>`APOTHEM_SOURCE`</bdi> أو شغّلت
+<bdi>`scripts/installer/install.sh`</bdi> أو <bdi>`install.ps1`</bdi> الخاص بتلك النسخة.
+ولا تتخطّى نصوص التحديث الفحص إلا حين يكون <bdi>`APOTHEM_SOURCE`</bdi> مضبوطًا. وإذا سمّى
+التحذير مجموعةً تشاركها عن قصد مع أشخاص تثق بهم لتغيير الشيفرة، فيمكنك تجاهله.
+
+يقرأ الفحص أذونات <bdi>`APOTHEM_HOME`</bdi> والمجلّد الذي يحويه، لا أذونات كل ملف داخله.
+
+على <bdi>Linux</bdi> و<bdi>macOS</bdi>، يسمّي التحذير <bdi>"all users"</bdi> أو
+<bdi>"the group"</bdi> بحسب ما وجده في بتات أذونات المجلّد، وكل مستخدم أو مجموعة تسمح لها
+قائمة وصول (<bdi>ACL</bdi>) بالكتابة، ويقرؤها باستخدام <bdi>`getfacl`</bdi> حيث يكون مثبّتًا.
+ومع قائمة وصول، تكون بتات المجموعة التي يُظهِرها <bdi>`ls`</bdi> هي قناع القائمة، لذا حيث
+يسرد <bdi>`getfacl`</bdi> مُدخل المجموعة الخاص (<bdi>`group::`</bdi>)، فذلك المُدخل هو الذي
+يقرّر ما إذا كانت المجموعة تُسمّى؛ ومن دون <bdi>`getfacl`</bdi>، قد تكون المجموعة المُسمّاة
+مجموعةً يسمح لها القناع بالكتابة بينما لا يسمح لها مُدخلها الخاص. لا يسمّيك التحذير أبدًا،
+ولا المستخدم <bdi>root</bdi>، ولا مجموعة تحمل اسم المستخدم الخاص بك (مجموعتك الخاصة).
+والاسم الذي يكتبه <bdi>`getfacl`</bdi> مع محارف هروب، مثل <bdi>`CORP\alice`</bdi> لحساب
+نطاق، يُحتسَب على أنه الاسم الذي يمثّله. ولإصلاحه، شغّل الأمر الذي تعطيه الرسالة (على
+<bdi>Linux</bdi> يسحب أيضًا صلاحية الكتابة من كل مستخدم ومجموعة تسمّيهما قائمة الوصول):
+
+```bash
+chmod go-w "$HOME/.apothem"
+```
+
+وقد تكون الملفات المصنوعة تحت الإعدادات نفسها قابلة للكتابة أيضًا: يُصلِح
+<bdi>`chmod -R go-w`</bdi> على المجلّد تلك الملفات كذلك. وإذا احتاج آخرون إلى الكتابة في
+المجلّد الذي يحوي <bdi>`APOTHEM_HOME`</bdi>، كما في <bdi>`/tmp`</bdi>، فاضبط البت اللاصق
+(<bdi>sticky bit</bdi>) الخاص به بـ <bdi>`chmod +t`</bdi> كي لا يستطيعوا إعادة تسمية ما
+تضعه هناك أو إزالته، أو انقل <bdi>`APOTHEM_HOME`</bdi>. وفي التثبيت الجديد، يُبلِغ التحذير
+عن قيمة <bdi>umask</bdi> لديك: شغّل <bdi>`umask 022`</bdi> وأعِد تشغيل المُثبِّت. وعلى
+<bdi>WSL</bdi>، أبقِ <bdi>`APOTHEM_HOME`</bdi> في دليلك المنزلي على <bdi>Linux</bdi>، لا
+تحت <bdi>`/mnt/c`</bdi>، حيث يبدو كل ملف قابلًا للكتابة من جميع المستخدمين.
+
+حين تقول الرسالة إن مستخدمًا <bdi>"owns"</bdi> المجلّد، فذلك المستخدم يستطيع تغييره أيًّا
+كانت أذوناته، ولا يستطيع أن يجعلك مالكه إلا <bdi>root</bdi>. والمجلّد الذي يملكه
+<bdi>root</bdi> لا بأس به. انقل <bdi>`APOTHEM_HOME`</bdi> إلى مجلّد تملكه.
+
+على <bdi>Windows</bdi>، يسمّي التحذير كل حساب أو مجموعة يسمح لها مُدخل إذن بتغيير المجلّد،
+كما يسمّيها تبويب الأمان (<bdi>Security</bdi>) في المجلّد: <bdi>Users</bdi>، أو
+<bdi>Authenticated Users</bdi>، أو <bdi>Everyone</bdi>، أو <bdi>INTERACTIVE</bdi> (كل من
+سجّل الدخول على الحاسوب أو عبر <bdi>Remote Desktop</bdi>، وهؤلاء يستطيعون تغيير ما يُصنَع
+في <bdi>`C:\Users\Public`</bdi>)، أو <bdi>Guests</bdi>، أو مجموعة صنعتها مؤسستك أو برنامج
+آخر. لا يسمّيك أبدًا، ولا جلسة تسجيل الدخول الخاصة بك، ولا <bdi>SYSTEM</bdi> ولا
+<bdi>Administrators</bdi> ولا <bdi>TrustedInstaller</bdi> ولا <bdi>CREATOR OWNER</bdi> ولا
+<bdi>OWNER RIGHTS</bdi>؛ والأخيران يمثّلان من يصنع العنصر أو يملكه، والمالك الذي هو شخص آخر
+تصله رسالة خاصة به. وحين يخصّ المجلّد حسابًا آخر، تقول الرسالة ذلك وتطلب منك نقل
+<bdi>`APOTHEM_HOME`</bdi> إلى مجلّد المستخدم الخاص بك. وحين تضيف الرسالة <bdi>"access that
+folders made at the root of a drive inherit from the drive's default permissions"</bdi>،
+يكون المجلّد في جذر محرّك أقراص، مثل <bdi>`C:\apothem`</bdi>: إذ يسمح <bdi>Windows</bdi> لكل
+مستخدم يسجّل الدخول بإضافة المجلّدات المصنوعة هناك وتغييرها. وأبسط إصلاح هو نقل
+<bdi>`APOTHEM_HOME`</bdi> إلى مجلّد المستخدم الخاص بك (<bdi>`%USERPROFILE%`</bdi>)، كما هو حال
+<bdi>`~\.apothem`</bdi> الافتراضي. وللإبقاء على المجلّد في مكانه، أوقِف الوراثة، وامنح نفسك
+تحكّمًا كاملًا، ثم أزِل المجموعات التي يسمّيها التحذير. ولمجلّد في جذر محرّك أقراص، تلك هي
+<bdi>Authenticated Users</bdi> على <bdi>Windows 10</bdi> و<bdi>11</bdi> و<bdi>Users</bdi>
+على <bdi>Windows Server</bdi>؛ وتزيل الأوامر أدناه كلتيهما:
+
+```powershell
+icacls "C:\apothem" /inheritance:d
+icacls "C:\apothem" /grant:r "${env:USERNAME}:(OI)(CI)F"
+icacls "C:\apothem" /remove:g *S-1-5-11 *S-1-5-32-545 *S-1-1-0 *S-1-5-4
+```
+
+امنح نفسك الوصول قبل أن تزيل المجموعات: فقد يكون المُدخل الذي تزيله طريقك الوحيد للكتابة
+في المجلّد. والأسماء <bdi>`*S-...`</bdi> هي مُعرِّفات الأمان للمجموعات (<bdi>Authenticated
+Users</bdi> و<bdi>Users</bdi> و<bdi>Everyone</bdi> و<bdi>INTERACTIVE</bdi>)، وهي تعمل بكل
+لغات <bdi>Windows</bdi>. أزِل أي اسم آخر يعطيه التحذير في سطر <bdi>`icacls`</bdi> خاص به،
+بين علامتَي اقتباس: فالاسم الذي لا يستطيع <bdi>`icacls`</bdi> إيجاده يوقف السطر كله، الذي
+لا يزيل حينها شيئًا ومع ذلك يطبع <bdi>"Successfully processed 0 files"</bdi>. والاسم المكوّن
+من <bdi>`S-`</bdi> وأرقام هو مُعرِّف الأمان لحساب لا يستطيع <bdi>Windows</bdi> البحث عنه،
+مثل حساب محذوف أو جلسة تسجيل دخول أخرى: ضع <bdi>`*`</bdi> قبله، وإن ظل <bdi>`icacls`</bdi>
+لا يزيل شيئًا، فأزِله من <bdi>Properties > Security > Advanced</bdi> للمجلّد. ويمكنك إجراء
+كل تغيير هناك أيضًا. وحين يتعلّق التحذير بالمجلّد الذي يحوي <bdi>`APOTHEM_HOME`</bdi>، فأجرِ
+التغيير هناك، أو انقل <bdi>`APOTHEM_HOME`</bdi>. يأخذ الرابط أو الوصلة في
+<bdi>`APOTHEM_HOME`</bdi> أذوناته من ذلك المجلّد، لذا يستطيع من يقدرون على تغيير المجلّد
+حذف الرابط وصنع رابطهم الخاص.
+
+لا يفحص <bdi>`install.sh`</bdi> و<bdi>`update.sh`</bdi> تحت <bdi>Git Bash</bdi> أو
+<bdi>MSYS2</bdi> أو <bdi>Cygwin</bdi>، حيث تُختلَق بتات الأذونات من أذونات <bdi>Windows</bdi>،
+لذا لا يعطيان أي تحذير هناك. وعلى <bdi>Windows</bdi>، شغّل <bdi>`install.ps1`</bdi> أو
+<bdi>`update.ps1`</bdi>، اللذين يقرآن أذونات <bdi>Windows</bdi>، ليُفحَص المجلّد.
+
+### يتوقّف المُثبِّت: تعذّر تحديث المستنسخ القائم
+
+يجلب المُثبِّت إلى مستنسخ قائم ويفحص الوسم الجديد قبل أن يسحب المستنسخ، لذا يترك الفحص
+الفاشل المستنسخ كما كان. وتوقف رسالتان أخريان التحديثَ قبل السحب. تعني <bdi>"Could not
+fetch"</bdi> عادةً أن وسمًا محليًا يختلف عن الوسم الموجود على <bdi>origin</bdi>: احذفه
+باستخدام <bdi>`git -C ~/.apothem tag -d <tag>`</bdi> وأعِد التشغيل. وتعني <bdi>"has changes
+to tracked files. Commit or stash them, then re-run."</bdi> أن في المستنسخ تغييرات غير مُودَعة
+على ملفات يتتبّعها <bdi>git</bdi>: أودِعها أو خبّئها، ثم أعِد التشغيل. ويتجاهل الفحص
+إعدادات نهايات الأسطر (<bdi>`eol`</bdi> و<bdi>`text`</bdi>) في ملف سمات <bdi>git</bdi> الخاص
+بك أو الخاص بالنظام، لذا قد يُبلَغ بهذه الطريقة عن مستنسخ لم تغيّره قط: شغّل
+<bdi>`git -C ~/.apothem status`</bdi> مرةً واحدة، ثم أعِد التشغيل. لا يفحص التشغيل التجريبي
+التغييرات العادية غير المُودَعة، لأنه لا يجلب إلى المستنسخ، لكنه يتوقّف بالرسالة نفسها حين
+تُعلَّم ملفات بـ <bdi>assume-unchanged</bdi> أو <bdi>skip-worktree</bdi> (راجع قسم إعداد
+المستنسخ أعلاه). وتعني <bdi>"Could not check out"</bdi> أن السحب سيظل يكتب فوق تغييرات
+محلية. لا يتخلّص المُثبِّت من التغييرات المحلية أبدًا. ولمرجع ليس إصدارًا مثل
+<bdi>`main`</bdi>، يتبع المستنسخ القائم نسخة <bdi>origin</bdi> من ذلك الفرع.
+
+### ينتهي المُثبِّت أو نص التحديث برمز الخروج 2
+
+انتهى المحرّك جزئيًا. فإما أنه ترك ملفًا يحوي كتلة <bdi>Apothem</bdi> كما هو بسبب أسطر
+علامات <bdi>Apothem</bdi> فيه، وكتب الباقي، أو أنه توقّف بعد أن كتب شيئًا، مثلًا حين تفشل
+أداة بعد أخرى سابقة في تشغيل <bdi>`APOTHEM_HARNESS=all`</bdi>. تسمّي رسائله الملف، أو تُظهِر
+الخطأ الذي أوقفه، ويضيف النص سطرًا واحدًا يبدأ بـ <bdi>"The engine ended as partial (exit
+code 2)."</bdi> ويظل المُثبِّت يشغّل الفحص (<bdi>verify</bdi>)، ويضع أمر <bdi>`apothem`</bdi>
+ويطبع لافتته، ويظل نص التحديث يطبع سطره الأخير. ويترك تشغيل <bdi>PowerShell</bdi> عبر أنبوب
+(<bdi>`irm ... | iex`</bdi>) القيمة <bdi>`$LASTEXITCODE`</bdi> عند <bdi>`2`</bdi> وجلستك
+مفتوحة. أما الأمر أحادي المرة
+<bdi>`pwsh -Command "irm ... | iex"`</bdi> (أو <bdi>`powershell -c`</bdi>) فلا يُبلِغ عن
+التشغيل الجزئي إلا عبر <bdi>`$LASTEXITCODE`</bdi> ويخرج بـ <bdi>`0`</bdi>: وللحصول على رمز
+الخروج <bdi>`2`</bdi> من العملية، اختم الأمر بـ <bdi>`; exit $LASTEXITCODE`</bdi>، أو شغّل
+النص بمساره مع <bdi>`-File`</bdi>. ومن <bdi>PowerShell</bdi> أو <bdi>bash</bdi> أو صدفة
+<bdi>POSIX</bdi> أخرى، ضع ذلك الأمر بين علامتَي اقتباس مفردتين. ففي علامتَي الاقتباس
+المزدوجتين تضع الصدفة المستدعية قيمة <bdi>`$LASTEXITCODE`</bdi> الخاصة بها قبل أن تبدأ
+العملية الجديدة (وتضع صدفة <bdi>POSIX</bdi> سلسلة فارغة)، فلا تخرج العملية برمز التشغيل.
+ومن <bdi>cmd.exe</bdi>، لا بأس بعلامتَي الاقتباس المزدوجتين. لا يكتب التشغيل التجريبي شيئًا،
+لذا لا ينتهي جزئيًا.
+أصلِح ما تسمّيه الرسائل. وبالنسبة للملف، احتفظ بنصّك الخاص (راجع
+[يحوي ملفٌ كتلتين بين علامات <bdi>Apothem</bdi>](#a-file-holds-two-blocks-between-apothems-markers)
+و
+[لا يستطيع <bdi>Apothem</bdi> التمييز بين كتلته ونصّك](#apothem-cannot-tell-its-block-from-your-text))،
+ثم شغّل <bdi>`apothem update --harness <name>`</bdi> مجدّدًا لكل أداة تركها التشغيل غير
+مكتملة.
+ويصف قسم [حين يترك المحرّك ملفًا كما هو](/docs/install/updating#when-the-engine-leaves-a-file-as-it-is)
+التشغيل بأكمله.
 
 ### حجب <bdi>irm / iex</bdi> على <bdi>Windows</bdi>
 
@@ -119,6 +599,54 @@ Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
+### تجاهل المُثبِّت النسخة المسحوبة في مجلّدي الحالي
+
+هذا مقصود. فالأمر أحادي السطر عبر أنبوب (<bdi>`curl ... | sh`</bdi>،
+<bdi>`irm ... | iex`</bdi>) لا يستخدم أبدًا شجرة محلية، ولا يبحث أبدًا في المجلّد الحالي أو
+مجلّداته الأب: بل يجلب الإصدار ويتحقّق منه. وللتثبيت من نسخة مسحوبة، شغّل
+<bdi>`scripts/installer/install.sh`</bdi> (أو <bdi>`install.ps1`</bdi>) الخاص بتلك النسخة
+بمساره، من أي مجلّد (مثلًا <bdi>`sh ~/src/apothem/scripts/installer/install.sh`</bdi>)، أو
+اضبط <bdi>`APOTHEM_SOURCE`</bdi> على النسخة المسحوبة. أعطِ النص مسارًا فيه جزء مجلّد:
+<bdi>`sh scripts/installer/install.sh`</bdi> أو <bdi>`sh ./scripts/installer/install.sh`</bdi>
+يعمل، لكن <bdi>`sh install.sh`</bdi> من دون جزء مجلّد لا يُعَدّ تشغيلًا من نسخة مسحوبة، لذا
+يطبع المُثبِّت <bdi>"Not using a checkout: to install from one, run this script as
+./install.sh or by its full path, or set APOTHEM_SOURCE."</bdi> ويجلب الإصدار ويتحقّق منه
+بدلًا من ذلك. ولا يُعامَل النص الذي يُبدأ عبر <bdi>`sh -c`</bdi> على أنه نسخة مسحوبة كذلك،
+في الصدفات التي تُعلِّم تشغيلات <bdi>`-c`</bdi>. لا تُعلِّمها <bdi>dash</bdi>، لذا تحت
+<bdi>dash</bdi> فإن <bdi>`sh -c "<script>" ./install.sh`</bdi> المُبدوء من مجلّد باسم
+<bdi>`scripts/installer`</bdi> داخل شجرة مصدر يستخدم تلك الشجرة: لا تبدأ نصًّا برمجيًا بهذه
+الطريقة إلا من مجلّد تثق به. وبالطريقة نفسها، فإن نسخة من <bdi>`install.sh`</bdi> تحفظها في
+مجلّد <bdi>`scripts/installer`</bdi> لشجرة مصدر أخرى وتشغّلها هناك بمسارها تصبح المُثبِّت
+الخاص بتلك الشجرة وتثبّتها. احفظ النص المُنزَّل في مجلّد فارغ. يتبع <bdi>`install.sh`</bdi>
+الرابط الرمزي إلى ملفه الحقيقي ويستخدم النسخة المسحوبة التي تحويه. ويفعل
+<bdi>`install.ps1`</bdi> العكس: يرفض نسخة مسحوبة يصل إليها عبر رابط رمزي أو وصلة
+<bdi>junction</bdi>، ويطبع ملاحظة من سطر واحد، ويسلك المسار المجلوب والمُتحقَّق منه. شغّله من
+المجلّد الحقيقي، أو اضبط <bdi>`APOTHEM_SOURCE`</bdi>. كما تُبقي المُثبِّتات وأمر
+<bdi>`apothem`</bdi> ومُشغِّل <bdi>npm</bdi> والخطّافات المجلّدَ الحالي خارج مسار بحث وحدات
+<bdi>Python</bdi>، لذا لا يؤثّر فيها ملف باسم <bdi>`click.py`</bdi> في المجلّد الذي تعمل فيه.
+أما أمر <bdi>`python -m apothem`</bdi> الذي تكتبه بنفسك فلا يفعل ذلك: إذ يقرأ <bdi>`-m`</bdi>
+الوحدات من المجلّد الحالي أولًا، لذا لا تشغّله إلا من مجلّد تثق به.
+
+### أمر <bdi>`apothem`</bdi> قديم لا يزال ينظر في مجلّدي الحالي
+
+كتبت الإصدارات السابقة غلاف أمر <bdi>`apothem`</bdi> يبدأ <bdi>Python</bdi> بطريقة تسمح
+للمجلّد الحالي بحجب وحدات المحرّك. ولا يعيد التحديث كتابة ذلك الغلاف. شغّل المُثبِّت
+(<bdi>`install.sh`</bdi> أو <bdi>`install.ps1`</bdi>) مجدّدًا لاستبداله. وتزيل أدوات إلغاء
+التثبيت الغلافين القديم والجديد كليهما.
+
+### <bdi>Git Bash</bdi>: تُتجاهَل مُدخلات <bdi>PYTHONPATH</bdi> بصيغة <bdi>`/c/...`</bdi>
+
+تحت <bdi>Git Bash</bdi> تشغّل المُثبِّتات عادةً <bdi>Python</bdi> لـ<bdi>Windows</bdi>،
+ويقرأ <bdi>Python</bdi> لـ<bdi>Windows</bdi> المتغيّر <bdi>`PYTHONPATH`</bdi> على أنه مسارات
+<bdi>Windows</bdi> مفصولة بـ <bdi>`;`</bdi>. وتُبقي نصوص <bdi>sh</bdi> وغلاف
+<bdi>`apothem`</bdi> الذي تكتبه على مسارات محرّكات الأقراص والشبكة فقط من
+<bdi>`PYTHONPATH`</bdi> لديك لذلك الـ<bdi>Python</bdi>، لذا يُسقَط مُدخل بنمط <bdi>POSIX</bdi>
+مثل <bdi>`/c/Users/me/lib`</bdi>. اكتب المُدخل بوصفه مسار محرّك أقراص،
+<bdi>`C:\Users\me\lib`</bdi> أو <bdi>`C:/Users/me/lib`</bdi>، وافصل المُدخلات بـ
+<bdi>`;`</bdi>. أما <bdi>Python</bdi> لـ<bdi>POSIX</bdi>، مثل <bdi>`python3`</bdi> الخاص بـ
+<bdi>Cygwin</bdi> أو <bdi>MSYS2</bdi>، فيقرأ مسارات مفصولة بـ <bdi>`:`</bdi> تبدأ بـ
+<bdi>`/`</bdi>، وتُبقي النصوص تلك المسارات له.
+
 ## مشكلات زمن التشغيل
 
 ### لا يجد <bdi>apothem install</bdi> أي أُطُر عمل
@@ -128,13 +656,405 @@ irm https://apothem.ahmedgad.com/install.ps1 | iex
 ### يُبلِغ <bdi>apothem verify</bdi> عن محوّل فاشل
 
 أعِد تشغيل <bdi>apothem install</bdi> لإعادة تجسيد المحوّل. وإذا استمرّت المشكلة،
-فراجع الصفحة الخاصة بالمحوّل ضمن [محوّلات أُطُر العمل](/docs/harnesses).
+فراجع الصفحة الخاصة بالمحوّل ضمن [محوّلات أُطُر العمل](/docs/harnesses). وإذا حذّر
+التثبيت من علامة <bdi>BEGIN</bdi> بلا <bdi>END</bdi>، أو سمّى الصف الفاشل ملفًا يحوي
+واحدة، فلن تفيد إعادة تشغيله؛ راجع
+[يحوي ملفٌ علامة <bdi>BEGIN</bdi> لـ<bdi>Apothem</bdi> بلا علامة <bdi>END</bdi>](#a-file-has-an-apothem-begin-marker-with-no-end-marker).
+وإذا قال التحذير أو الصف إن ملفًا يحوي كتلتين كاملتين أو أكثر بين علامات
+<bdi>Apothem</bdi>، فراجع
+[يحوي ملفٌ كتلتين بين علامات <bdi>Apothem</bdi>](#a-file-holds-two-blocks-between-apothems-markers).
+وإذا قال إن <bdi>Apothem</bdi> لا يستطيع أن يعرف ما إذا كانت أسطر العلامات في ملف تُعلِّم
+كتلته أم نصًّا لك، فراجع
+[لا يستطيع <bdi>Apothem</bdi> التمييز بين كتلته ونصّك](#apothem-cannot-tell-its-block-from-your-text).
+
+### يحوي ملفٌ علامة <bdi>BEGIN</bdi> لـ<bdi>Apothem</bdi> بلا علامة <bdi>END</bdi> [#a-file-has-an-apothem-begin-marker-with-no-end-marker]
+
+يحتفظ <bdi>Apothem</bdi> بنصّه الخاص في كتلة تمتدّ من علامة
+<bdi>`<!-- BEGIN APOTHEM MANAGED BLOCK -->`</bdi> إلى علامة
+<bdi>`<!-- END APOTHEM MANAGED BLOCK -->`</bdi> التالية. فإذا اختفت علامة <bdi>END</bdi>
+(بتحرير يدوي أو دمج أسقط السطر)، أو وقعت علامة <bdi>BEGIN</bdi> خاصة بك خارج كتلة كاملة،
+فلا شيء يُظهِر أين ينتهي نص <bdi>Apothem</bdi> ويبدأ نصّك. لذا لا يقتطع <bdi>Apothem</bdi>
+أبدًا النصّ الذي يلي تلك العلامة:
+
+- يُبقيه <bdi>`apothem install`</bdi> و<bdi>`apothem update`</bdi> كما هو، ويكتبان كتلة
+  <bdi>Apothem</bdi> بمعزل عنه، ويطبعان تحذيرًا يسمّي الملف وسطر العلامة، مع خطوة مُرقَّمة
+  تغيّر ذلك السطر (راجع أدناه). ويقول التحذير أيضًا ألّا تعيد إضافة علامة <bdi>END</bdi>
+  بدلًا من ذلك: فمع كتابة كتلة <bdi>Apothem</bdi> بمعزل عنه، سيحوي الملف عندئذٍ كتلتين
+  لـ<bdi>Apothem</bdi>، يتركهما التثبيت والتحديث كما هما. يقرأ التشغيل التجريبي الملف قبل
+  كتابة أي شيء، لذا حين لا يحوي الملف كتلة كاملة بعد، يقول تحذيره إنه إن أعدت إضافة علامة
+  <bdi>END</bdi> بدلًا من ذلك، فلا يجوز أن يقع أي سطر لك بين العلامتين، لأن التشغيل التالي
+  يستبدل كل سطر بينهما أو يُخرجه، ويقول ألّا تعيد إضافتها مطلقًا بعد أن يكتب تثبيت أو تحديث
+  كتلة <bdi>Apothem</bdi> بمعزل عن العلامة. وحتى ذلك الحين، فإن إعادتها مباشرةً تحت نص
+  <bdi>Apothem</bdi> القديم، فوق أسطرك الخاصة، تترك كتلة كاملة واحدة، يعيد التحديث التالي
+  كتابتها.
+- يُخرِج <bdi>`apothem uninstall`</bdi> كتلة <bdi>Apothem</bdi> الكاملة، ويترك الباقي كما
+  هو، ويسمّي الملف وسطر العلامة، مع الخطوة المُرقَّمة نفسها: فالتثبيت يُبقي العلامة كما هي،
+  وتظل الأداة تقرأ النص الذي تحتها.
+- يفشل <bdi>`apothem verify`</bdi> و<bdi>`apothem doctor`</bdi> ويسمّيان الملف وسطر
+  العلامة، مع الخطوة المُرقَّمة نفسها، حتى تُغيَّر العلامة الشاردة؛ ولملف يكتبه التثبيت
+  الحالي، يُظهِر <bdi>`apothem status --profile`</bdi> انجرافًا حتى ذلك الحين أيضًا. ولا
+  يُزيله تشغيل <bdi>`apothem install`</bdi> مجدّدًا. ولا تُحتسَب إلا الملفات التي يحتفظ فيها
+  <bdi>Apothem</bdi> بكتلة لإطار العمل ذلك، لذا لا تُفشِلهما علامة في ملف خاص بك.
+
+ما دام سجلّ تثبيت يسرد ملفًا لا يحوي كتلة كاملة بل زوج علامات داخل شيفرة، مثل مثال
+علامات تقتبسه في كتلة شيفرة، يترك التثبيت والتحديث وإلغاء التثبيت ذلك الملف كله كما هو:
+فقد يكون الزوج كتلة <bdi>Apothem</bdi> داخل كتلة شيفرة خاصة بك. ويسمّي تحذيرها، مثل ملاحظة
+<bdi>`apothem verify`</bdi>، علامة <bdi>BEGIN</bdi> تلك أولًا، ثم كل زوج، ويظل إلغاء التثبيت
+غير مكتمل (راجع
+[لا يستطيع <bdi>Apothem</bdi> التمييز بين كتلته ونصّك](#apothem-cannot-tell-its-block-from-your-text)).
+ومن دون سجلّ تثبيت، يكون الزوج الذي تقتبسه في شيفرة نصًّا لك، ويكتب التثبيت والتحديث كتلة
+<bdi>Apothem</bdi> بمعزل عن العلامة الشاردة. أما علامة <bdi>END</bdi> تقتبسها وحدها في شيفرة
+أبعد في الأسفل، بلا زوج علامات بعدها، فأمرها مختلف: فهي تُغلق علامة <bdi>BEGIN</bdi> تلك،
+لذا يستبدل التحديث الأسطر بينهما بوصفها كتلة <bdi>Apothem</bdi>، ويزيلها إلغاء التثبيت.
+
+لا يقرأ <bdi>Apothem</bdi> العلامة إلا سطرًا مستقلًا خارج الشيفرة، كما يفعل عارض
+<bdi>Markdown</bdi>، لذا فالعلامة التي تقتبسها في جملة، أو في كتلة شيفرة مُسيَّجة، أو في
+شيفرة مُزاحة أربعة أعمدة بعد عنصر قائمتها (أو الهامش) بعد سطر فارغ لا تُعَدّ علامة، وكذلك
+علامتا <bdi>BEGIN</bdi> و<bdi>END</bdi> تقتبسهما في كتلتَي شيفرة منفصلتين. ويُقرأ سياج
+الشيفرة الذي تتركه مفتوحًا حتى نهاية الملف على أنه نص، مهما كان عدد هذه الأسوار، ما لم تكن
+فوقه علامة <bdi>BEGIN</bdi> خارج الشيفرة علامةُ <bdi>END</bdi> الخاصة بها في شيفرة ويتبعهما
+زوج علامات آخر. وقد تظل العلامات داخل كتلة <bdi>HTML</bdi> أو اقتباس كتلي، أو بعد عنصر
+قائمة يستمرّ نصّه عند الهامش الأيسر، تُقرأ قراءةً مختلفة عن قراءة عارض <bdi>Markdown</bdi>.
+
+كل رقم سطر تعطيه هذه التحذيرات يَعُدّ الأسطر كما يقرأ <bdi>Apothem</bdi> الملف: ينتهي السطر
+عند <bdi>CRLF</bdi>، أو عند <bdi>LF</bdi>، أو عند <bdi>CR</bdi> منفرد. ففي ملف محفوظ بنهايات
+<bdi>CR</bdi>، أو فيه <bdi>CR</bdi> شارد واحد داخل سطر، عُدّ الأسطر بالطريقة نفسها قبل أن تغيّر
+الأسطر التي يسمّيها التحذير.
+
+لإصلاحه، اتبع الخطوة المُرقَّمة في التحذير، مثلًا
+<bdi>"Fix A, if lines 77 to 148 are Apothem's block: A1. Change line 3: add a word
+inside its comment."</bdi> السطر 3 هو علامة <bdi>BEGIN</bdi> الشاردة: التي لا تليها علامة
+<bdi>END</bdi> قبل علامة <bdi>BEGIN</bdi> التالية، أو لا تليها علامة <bdi>END</bdi> على الإطلاق. أضِف
+كلمةً قبل <bdi>`-->`</bdi> الختامي مباشرةً، كما في
+<bdi>`<!-- BEGIN APOTHEM MANAGED BLOCK (example) -->`</bdi>، فلا يعود السطر يُقرأ علامةً. ولا
+يضيف ذلك أي سطر ولا يزيله، فلا يُقرأ شيء آخر في الملف بشكل مختلف، ويبقى سطر <bdi>BEGIN</bdi>
+الذي يفتح كتلة <bdi>Apothem</bdi> الحالية كما هو. ويغيّر الإصلاح أيضًا كل سطر علامة
+<bdi>BEGIN</bdi> آخر في الملف، بما في ذلك علامة تقتبسها في كتلة شيفرة، خطوةً لكل منها، من
+أسفل الملف صعودًا (راجع
+[اتّباع إصلاح مُرقَّم](#follow-a-numbered-fix)): فعلامة <bdi>BEGIN</bdi> مقتبسة تُترَك كما هي
+قد تقترن بعلامة <bdi>END</bdi> تحتها بعد أن يُخرِج إلغاء التثبيت كتلة <bdi>Apothem</bdi>.
+وحين لا يُظهِر تخطيط الملف أن كتلة <bdi>Apothem</bdi> تبقى كاملة بعد تغيير تلك الأسطر (كأن
+تحويها كتلة شيفرة خاصة بك لا يُغلقها أي سطر)، يغيّر الإصلاح كل سطر علامة <bdi>BEGIN</bdi> في
+الملف، بما في ذلك سطر الكتلة، مثلًا <bdi>"Fix A: A1. Below
+line 6, add a line of 3 backticks. A2. Change line 3: add a word inside its
+comment. A3. Change line 2: add a word inside its comment. Apothem then reads
+none of these lines as its markers, and the next update writes its block at
+the end of the file."</bdi> وحين ينتهي الملف داخل كتلة شيفرة لا يُغلقها أي سطر، كما هنا،
+يضيف الإصلاح أولًا سطر إغلاق كتلة الشيفرة تلك تحت السطر الأخير، كي لا تكون الكتلة التي
+يكتبها التحديث التالي هناك شيفرة. ويصبح نص <bdi>Apothem</bdi> القديم تحت سطر علامة تغيّره،
+والذي يكرّر قواعد <bdi>Apothem</bdi>، نصًّا لك تحذفه يدويًا. لا تُعِد إضافة علامة
+<bdi>END</bdi> بدلًا من تغيير سطر العلامة: فبعد أن يكتب تثبيت أو تحديث كتلة
+<bdi>Apothem</bdi> بمعزل عنه، سيحوي الملف عندئذٍ كتلتين لـ<bdi>Apothem</bdi> (راجع
+[يحوي ملفٌ كتلتين بين علامات <bdi>Apothem</bdi>](#a-file-holds-two-blocks-between-apothems-markers)).
+وبعد أن تغيّر سطر العلامة، لا تقترن علامة <bdi>END</bdi> تحته بشيء.
+ثم شغّل <bdi>`apothem update`</bdi>، الذي يعيد كتابة كتلة <bdi>Apothem</bdi> إن لم يعد الملف
+يحوي واحدة، وشغّل <bdi>`apothem verify`</bdi> مجدّدًا. وعلامة <bdi>BEGIN</bdi> تقع علامة
+<bdi>END</bdi> الخاصة بها في شيفرة، ويليهما زوج علامات آخر، تتلقّى تحذيرًا مختلفًا؛ راجع
+[لا يستطيع <bdi>Apothem</bdi> التمييز بين كتلته ونصّك](#apothem-cannot-tell-its-block-from-your-text).
+
+### يحوي ملفٌ كتلتين بين علامات <bdi>Apothem</bdi> [#a-file-holds-two-blocks-between-apothems-markers]
+
+يكتب <bdi>Apothem</bdi> كتلة واحدة لكل ملف. ومع ذلك قد ينتهي الأمر بملف يحوي كتلتين
+كاملتين: كتلة قديمة أعدت علامة <bdi>END</bdi> الخاصة بها بعد أن كتب تحديثٌ كتلةً جديدة
+تحتها، أو زوج علامات خاص بك خارج الشيفرة (مثال تقتبسه مثلًا)، أو كتلة لصقتها مرةً ثانية.
+وعندئذٍ لا يستطيع <bdi>Apothem</bdi> أن يعرف أيّهما كتلته:
+
+- يترك <bdi>`apothem install`</bdi> و<bdi>`apothem update`</bdi> الملف كما هو ويطبعان
+  تحذيرًا يسمّي كل كتلة بأسطرها، مثلًا <bdi>"holds 2 whole
+  blocks between Apothem's markers (lines 1 to 32, and lines 36 to 67)"</bdi>. وينتهي
+  التشغيل جزئيًا: فبدلًا من سطر <bdi>`✓`</bdi> يطبع سطر <bdi>`✗`</bdi> يسمّي الملف، وتكون
+  قيمة <bdi>`status`</bdi> في <bdi>`--format json`</bdi> هي <bdi>`"partial"`</bdi>، ويخرج
+  بالرمز <bdi>`2`</bdi>، حتى تُصلِح الملف. وفي التشغيل التجريبي يقول التحذير إن
+  <bdi>Apothem</bdi> <bdi>"would leave the file as it is"</bdi>.
+- يفشل <bdi>`apothem verify`</bdi>، مع <bdi>`--profile`</bdi> أو بدونه، و<bdi>`apothem doctor`</bdi>
+  ويسمّيان الملف مع كل كتلة (فحص <bdi>doctor</bdi> هو <bdi>`harness.stray_begin`</bdi>،
+  وتقول رسالته إن الملف يحوي <bdi>"Apothem markers to fix by hand"</bdi>) حتى تُصلِح الملف؛
+  ولملف يكتبه التثبيت الحالي، يُظهِر <bdi>`apothem status --profile`</bdi> انجرافًا حتى ذلك
+  الحين أيضًا.
+- يُخرِج <bdi>`apothem uninstall`</bdi> الكتل التي هي نسخ مطابقة بعضها لبعض (كتلة لُصِقت
+  مرتين مثلًا). وحين تبقى كتلة مختلفة، يترك الملف كما هو، ويطبع التحذير نفسه، الذي ينتهي
+  بـ <bdi>"then run the uninstall again"</bdi>، ويظل غير مكتمل (رمز الخروج <bdi>`2`</bdi>)
+  حتى تُصلِحه (راجع
+  [إلغاء تثبيت لم يكتمل](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish)).
+  ومن دون سجلّ تثبيت، يترك أيضًا ملف <bdi>`CLAUDE.md`</bdi> الخاص بـ<bdi>Claude Code</bdi> أو
+  مستند ملف تعريفي يحوي كتلتين كما هو، ويسمّي تحذيره كل كتلة بالطريقة نفسها. ويقول ذلك
+  التحذير أن تشغّل <bdi>`apothem update`</bdi>، ثم <bdi>`apothem uninstall`</bdi> مجدّدًا، بعد
+  الإصلاح، ولا يوقف إلغاء التثبيت. ثم يسمّي تشغيل إلغاء التثبيت أي أسطر علامات خاصة بك حول
+  كتلة <bdi>Apothem</bdi> قبل أن يُخرِج الكتلة.
+
+ثم يعطي التحذير إصلاحًا مُرقَّمًا واحدًا لكل كتلة، للحالة التي تكون فيها كتلة
+<bdi>Apothem</bdi>، مثلًا <bdi>"Fix A, if lines 1 to 32 are Apothem's
+block: A1. Change line 36: add a word inside its comment. Lines 1 to 32 are
+then the one block in the file."</bdi> (راجع
+[اتّباع إصلاح مُرقَّم](#follow-a-numbered-fix)). يغيّر الإصلاح سطر علامة <bdi>BEGIN</bdi>
+لكل كتلة أخرى؛ وعلامة <bdi>END</bdi> لا تعلوها علامة <bdi>BEGIN</bdi> لا تقترن بشيء. والكتلة
+التي لا يُظهِر تخطيط الملف حالتها (كتلة تحت كتلة تحوي كتلة شيفرة مثلًا) لا تتلقّى إصلاحًا
+خاصًا بها، ويغيّر عندئذٍ إصلاح إضافي واحد، <bdi>"in any other case"</bdi>، كل سطر علامة
+<bdi>BEGIN</bdi> في الملف. افتح الملف المُسمّى عند الأسطر التي يعطيها التحذير:
+
+1. اختر الإصلاح الخاص بالكتلة التي تحوي قواعد <bdi>Apothem</bdi>. وفي ملف يبدأ بالبيانات
+   الأمامية (<bdi>frontmatter</bdi>) الخاصة بـ<bdi>Apothem</bdi>، تلك هي الكتلة التي تليها
+   مباشرةً: فإلغاء التثبيت لا يُخرِج تلك البيانات الأمامية إلا مع الكتلة التي تليها مباشرةً.
+2. نفّذ خطوات ذلك الإصلاح بالترتيب المُعطى. تغيّر كل خطوة سطر علامة <bdi>BEGIN</bdi> في
+   مكانه، فيبقى النص الذي تحته: يحتفظ زوج علامات خاص بك بمثالك، ويصبح نص كتلة
+   <bdi>Apothem</bdi> أقدم أو ملصوقة، حتى سطر علامة <bdi>END</bdi> الخاص بها، نصًّا لك تحذفه
+   يدويًا. يصلح كل إصلاح للتحديث التالي كما يصلح لإلغاء التثبيت. لا تحذف كتلة
+   <bdi>Apothem</bdi> للإبقاء على زوج خاص بك: فإلغاء التثبيت التالي سيُخرِج عندئذٍ زوجك بوصفه
+   الكتلة الوحيدة المتبقّية. ولا تنقل زوجًا خاصًا بك إلى كتلة شيفرة كذلك: فبمجرد ألّا تعود
+   كتلة <bdi>Apothem</bdi> نفسها كاملة (كأن تفقد علامة <bdi>END</bdi> الخاصة بها)، يمنع زوج
+   علامات في شيفرة التثبيت والتحديث من كتابة كتلة <bdi>Apothem</bdi> ما دام سجلّ تثبيت يسرد
+   الملف (راجع
+   [لا يستطيع <bdi>Apothem</bdi> التمييز بين كتلته ونصّك](#apothem-cannot-tell-its-block-from-your-text)).
+3. شغّل <bdi>`apothem update`</bdi>، ثم <bdi>`apothem verify`</bdi> مجدّدًا. وبعد إلغاء تثبيت
+   لم يكتمل، شغّل <bdi>`apothem uninstall`</bdi> مجدّدًا بدلًا من ذلك.
+
+علامة <bdi>BEGIN</bdi> فوق كتلة <bdi>Apothem</bdi> وعلامة <bdi>END</bdi> تحتها تصنعان كتلة
+ثانية لا تظهر إلا بعد خروج كتلة <bdi>Apothem</bdi>. ويسمّي تحذير إلغاء التثبيت عندئذٍ كتلة
+<bdi>Apothem</bdi> وسطرَي العلامتين هذين، مثلًا <bdi>"once the block
+from line 5 to line 36 is out, the BEGIN marker at line 2 and the END marker at
+line 39 make another"</bdi>، ويقول <bdi>"Do not delete the block from line 5 to line
+36"</bdi>: إذ سيقرأ التشغيل التالي عندئذٍ الأسطر من 2 إلى 39 على أنها كتلة <bdi>Apothem</bdi>،
+ويستبدل ما بينها أو يُخرِجه. ويغيّر إصلاحه الوحيد سطر علامة <bdi>BEGIN</bdi> ذاك بدلًا من ذلك،
+محتفظًا بنصّك الخاص، مثلًا <bdi>"Fix A, if lines 5 to 36 are
+Apothem's block: A1. Change line 2: add a word inside its comment. Lines 5 to
+36 are then the one block in the file."</bdi>؛ ثم شغّل إلغاء التثبيت مجدّدًا. لا تقترن علامة
+<bdi>END</bdi> التي تحتها عندئذٍ بشيء، لذا يمكن أن تبقى، بوصفها مثالًا تقتبسه في كتلة شيفرة
+مثلًا. لا تضع السطرين كليهما في كتلة شيفرة واحدة: فستحوي كتلة <bdi>Apothem</bdi> أيضًا. وإذا
+كانت علامة <bdi>BEGIN</bdi> تلك ما تبقّى من كتلة <bdi>Apothem</bdi> أقدم، فيصبح نص
+<bdi>Apothem</bdi> القديم تحتها نصًّا لك تحذفه يدويًا. ولا يُصلِح <bdi>`apothem update`</bdi>
+مثل هذا الملف كذلك، ويفشل <bdi>`apothem verify`</bdi> حتى تُصلِحه.
+
+### لا يستطيع <bdi>Apothem</bdi> التمييز بين كتلته ونصّك [#apothem-cannot-tell-its-block-from-your-text]
+
+يسمّي التحذير الملف ويقول <bdi>"Apothem cannot tell whether the marker
+lines in this file mark its block or text of yours"</bdi>. تراه حين يُترَك سياج شيفرة فوق كتلة
+<bdi>Apothem</bdi> مفتوحًا ويُغلقه سياج أضفته أبعد في الأسفل: فتقع الكتلة عندئذٍ داخل كتلة
+الشيفرة الخاصة بك. يعرض عارض <bdi>Markdown</bdi> تلك الأسطر شيفرةً، وقد تكون الأسطر نفسها
+زوج علامات تقتبسه مثالًا، لذا لا يستطيع <bdi>Apothem</bdi> أن يعرف ما إذا كانت كتلته أم نصّك.
+والأمر نفسه ينطبق على زوج في شيفرة مُزاحة أو مُزاح تحت فقرة، وعلى علامة <bdi>BEGIN</bdi> خارج
+الشيفرة تقع علامة <bdi>END</bdi> الخاصة بها في شيفرة بينما يليهما زوج علامات آخر: فقد يكون أيٌّ
+من الزوجين كتلة <bdi>Apothem</bdi>. وقد يُغلق سطر إغلاق داخل كتلة <bdi>Apothem</bdi> نفسها
+أيضًا كتلة شيفرة خاصة بك تُركت مفتوحة فوقها (راجع أدناه).
+
+يسمّي التحذير كل زوج علامات في الملف بأسطر علامتيه ويقول أين تُقرآن، مثلًا <bdi>"The BEGIN
+marker at line 6 and the END marker at line 38 sit inside a code block that opens at line 3."</bdi>
+ويسمّي أيضًا كل علامة <bdi>BEGIN</bdi> خارج الشيفرة لا تبدأ زوج علامات، مثلًا <bdi>"The
+BEGIN marker at line 1 starts no marker pair: its END marker is gone, or the
+marker is yours."</bdi> ثم تأتي الإصلاحات المُرقَّمة، في تحذيرات
+<bdi>`apothem install`</bdi> و<bdi>`apothem update`</bdi> و<bdi>`apothem uninstall`</bdi>،
+وفي ملاحظة <bdi>`apothem verify`</bdi> والإصلاح الذي يطبعه <bdi>`apothem doctor`</bdi>، مثلًا
+<bdi>"Fix A:
+A1. Change line 6: add a word inside its comment. Apothem then reads none of
+these lines as its markers, and the next update writes its block at the end of
+the file."</bdi> والزوج الذي يُقرأ سطرا علامتيه كلاهما خارج الشيفرة (واحد بعد علامة
+<bdi>BEGIN</bdi> تقع علامة <bdi>END</bdi> الخاصة بها في شيفرة) يتلقّى إصلاحًا خاصًا به، للحالة
+التي يكون فيها كتلة <bdi>Apothem</bdi>، حيث يُظهِر تخطيط الملف أنه يُقرأ عندئذٍ الكتلة الكاملة
+الوحيدة؛ ويغيّر الإصلاح الأخير، <bdi>"in any other case"</bdi> حين تسبقه إصلاحات أخرى، كل سطر
+علامة <bdi>BEGIN</bdi> في الملف. راجع
+[اتّباع إصلاح مُرقَّم](#follow-a-numbered-fix) لمعرفة كيفية قراءتها.
+
+ما دام سجلّ تثبيت يسرد الملف (حتى يكتمل إلغاء التثبيت؛ ويُحتسَب دفتر تثبيت تتعذّر قراءته
+سجلًّا؛ ويُحتسَب أيضًا سجلّ صُنِع تحت تهجئة أخرى للمجلّد، مثل دليلك المنزلي حين يُوصَل إليه
+عبر رابط، كما يُحتسَب لإلغاء التثبيت، حين يكون للتهجئة التي تعمل تحتها تثبيت خاص بها لا يزال
+قائمًا وتكتب الأداة
+[المجلّدات المشتركة في دليلك المنزلي](/docs/cli-reference/install#folders-in-your-home-directory))،
+لا يغيّر <bdi>`apothem install`</bdi> و<bdi>`apothem update`</bdi> شيئًا فيه ويطبعان ذلك
+التحذير؛ وفي التشغيل التجريبي يقول إن <bdi>Apothem</bdi> <bdi>"would leave the file as it
+is"</bdi>. ولعلامة <bdi>BEGIN</bdi> خارج الشيفرة تقع علامة <bdi>END</bdi> الخاصة بها في شيفرة
+ويليهما زوج علامات آخر، يفعلان ذلك مع سجلّ أو بدونه. وينتهي كل تشغيل من هذا النوع جزئيًا:
+فبدلًا من سطر <bdi>`✓`</bdi> يطبع سطر <bdi>`✗`</bdi> يسمّي الملف، وتكون قيمة
+<bdi>`status`</bdi> في <bdi>`--format json`</bdi> هي <bdi>`"partial"`</bdi>، ويخرج بالرمز
+<bdi>`2`</bdi>. ويقول التحذير ذلك: <bdi>"Until you fix these marker lines as this text says, install
+and update leave this file as it is and end as partial (exit code 2)."</bdi> أما تحذير تشغيل
+كتب الملف، ومن ثم ينتهي بنجاح، فيبدأ تلك الجملة بـ <bdi>"From the next run on, until you fix
+these marker lines"</bdi>. ويدوم ذلك ما دامت أسطر العلامات كما هي، بما في ذلك مثال علامات
+خاص بك في كتلة شيفرة: فقد يكون مثل هذا الزوج كتلة <bdi>Apothem</bdi> داخل كتلة شيفرة خاصة
+بك، لذا يضيف التحذير أن مثالك يعيق الملف بالطريقة نفسها حتى تغيّر سطر علامة <bdi>BEGIN</bdi>
+الخاص به، مثلًا بإضافة كلمة داخل تعليقه، كما في
+<bdi>`<!-- BEGIN APOTHEM MANAGED BLOCK (example) -->`</bdi>. ولزوج يُقرأ سطرا علامتيه جزءًا من
+الفقرة التي فوقهما، يسمّي الزوج <bdi>"a marker example
+of yours that reads as part of a paragraph"</bdi>. ولا شيء آخر ينهي ذلك: فإلغاء التثبيت لا
+يكتمل ما دام الزوج هناك أيضًا. وعلامة <bdi>BEGIN</bdi> خارج الشيفرة لا تبدأ زوجًا لا تغيّر
+ذلك، حتى حين يكون كل زوج علامات في الملف مقتبسًا في شيفرة تحتها: فقد تكون العلامة ما تبقّى من
+كتلة <bdi>Apothem</bdi> بعد فقدان علامة <bdi>END</bdi> الخاصة بها، لكن زوجًا في شيفرة قد يكون
+كتلة <bdi>Apothem</bdi> داخل كتلة شيفرة خاصة بك. يسمّي التحذير مثل علامة <bdi>BEGIN</bdi> هذه
+أولًا، ويغيّرها كل إصلاح. وتعطي ملاحظة
+<bdi>`apothem verify`</bdi> والإصلاح الذي يطبعه <bdi>`apothem doctor`</bdi> الجملة نفسها عن
+الانتهاء جزئيًا فقط حيث سيترك التثبيت والتحديث الملف كما هو: فمن دون سجلّ تثبيت، لا يعيق زوج
+علامات تقتبسه في شيفرة الملفَ (راجع
+أدناه)، إلا إذا كان الزوج يحوي بالضبط الكتلة التي يكتبها التثبيت. ولا تفحص الملاحظة والإصلاح
+وجود تلك الكتلة، لذا تُسقِطان تلك الجملة لمثل هذا الزوج؛ ويترك التحديث التالي الملف كما هو،
+وينتهي جزئيًا ويقول ذلك.
+
+يُغلق <bdi>Apothem</bdi> كتلة الشيفرة التي تفتحها قاعدة في ملفك التعريفي ولا تُغلقها أبدًا، في
+نهاية الكتلة التي يكتبها، لذا لا تقع علامة <bdi>END</bdi> لتلك الكتلة في شيفرة أبدًا. أما
+الكتلة التي كتبها إصدار سابق من مثل هذه القاعدة فليس لها سطر إغلاق. ومع زوج علامات خاص بك
+بعدها، يترك التثبيت والتحديث الملف كما هو. ولا يُبقي أي إصلاح على تلك الكتلة الأقدم: فسطرٌ
+خاص بك تحتها يُغلق كتلة الشيفرة التي فتحتها قاعدتها، وبعد أن يستبدل التحديث التالي الكتلة،
+سيفتح ذلك السطر كتلة شيفرة فوق نصّك. ويغيّر الإصلاح الخاص بالحالة التي يكون فيها الزوج الذي
+بعدها كتلة <bdi>Apothem</bdi> سطر علامة <bdi>BEGIN</bdi> للكتلة الأقدم، مثلًا <bdi>"Fix A, if
+lines 8 to 10 are Apothem's block: A1.
+Change line 1: add a word inside its comment."</bdi>، ويغيّر الإصلاح الأخير كل سطر علامة
+<bdi>BEGIN</bdi>؛ ويصبح نص الكتلة الأقدم عندئذٍ نصًّا لك تحذفه يدويًا.
+
+وقد يُغلق سطر الإغلاق ذلك، أو سطر إغلاق كتلة شيفرة تكتبها قاعدة في ملفك التعريفي، أيضًا كتلة
+شيفرة خاصة بك تُفتَح فوق كتلة <bdi>Apothem</bdi> ولا تُغلَق أبدًا، في نهاية ملاحظاتك مثلًا.
+وعندئذٍ تُقرأ الكتلة شيفرةً من علامة <bdi>BEGIN</bdi> الخاصة بها فصاعدًا. ويطبع التثبيت أو
+التحديث الذي كتبها التحذير فورًا، دون أن يقول إنه ترك الملف كما هو، مثلًا <bdi>"The
+BEGIN marker at line 6 sits inside a code block that opens at line 3, and the
+END marker at line 44 is outside code."</bdi> ويغيّر إصلاحه سطر علامة <bdi>BEGIN</bdi> ذاك، كما
+في <bdi>"Fix A: A1. Change line 6: add a word inside its comment."</bdi>: فيكتب التحديث التالي
+كتلة <bdi>Apothem</bdi> في نهاية الملف، تحت السطر الذي يُغلق كتلة الشيفرة الخاصة بك، وتصبح
+الكتلة القديمة نصًّا لك تحذفه يدويًا. يقرأ التشغيل التجريبي الملف قبل
+كتابة أي شيء، لذا لا يُظهِر أن الكتلة ستُقرأ شيفرةً بعد كتابتها. ولا يفيد حذف الكتلة بدلًا من
+ذلك: فالتحديث التالي يكتبها مجدّدًا تحت كتلة الشيفرة المفتوحة نفسها. والتحديث الذي يكتب كتلته
+تحت كتلة أقدم فقدت علامة <bdi>END</bdi> الخاصة بها، حيث تركت قاعدةٌ كتلة شيفرة مفتوحة، يتلقّى
+التحذير نفسه؛ ويسمّي أيضًا علامة <bdi>BEGIN</bdi> الأقدم تلك، ويغيّرها كل إصلاح.
+
+حتى تُصلِح الملف، يفشل <bdi>`apothem verify`</bdi> ويُبلِغ عنه <bdi>`apothem doctor`</bdi>
+(بوصفه <bdi>`harness.stray_begin`</bdi>)؛ ولملف يكتبه التثبيت الحالي، يُظهِر
+<bdi>`apothem status --profile`</bdi> انجرافًا أيضًا. ومن دون سجلّ تثبيت، لا يفحص
+<bdi>verify</bdi> و<bdi>doctor</bdi> الملف <bdi>`CLAUDE.md`</bdi> ولا مستند الملف التعريفي: فالسجلّ
+وحده يُظهِر أن التثبيت كتب تلك الملفات. ويظل فحص <bdi>verify</bdi> الخاص بـ<bdi>OpenClaw</bdi>
+يفحص ملف القواعد في كل مساحة عمل يجدها، ويفشل دون أن يسمّي الملف.
+
+مع سجلّ تثبيت، يترك <bdi>`apothem uninstall`</bdi> الملف كما هو، ويزيل بقية التثبيت، ويظل غير
+مكتمل (رمز الخروج <bdi>`2`</bdi>، بما في ذلك في تشغيل ثانٍ) حتى تُصلِح الملف: فيبقى سجلّ
+التثبيت، لذا يظل تثبيت لاحق يترك الملف كما هو، ويسمّيه إلغاء التثبيت التالي مجدّدًا. ويعطي
+تحذيره إصلاحات مُرقَّمة بالطريقة نفسها وينتهي بـ <bdi>"Then run the
+uninstall again."</bdi>، مثلًا <bdi>"Fix A: A1. Change line 6: add a word inside
+its comment. Apothem then finds no block of its own in this file."</bdi> وأي زوج علامات يبقى في
+مثل هذا الملف يُبقي إلغاء التثبيت غير مكتمل، بما في ذلك زوج خاص بك، لذا يغيّر كل إصلاح سطر علامة
+<bdi>BEGIN</bdi> لكل زوج لا يعدّه كتلة <bdi>Apothem</bdi>. ويستمرّ سطره
+<bdi>`✗ <harness> uninstall did not finish:`</bdi> بـ <bdi>"1 file(s) hold marker
+lines Apothem cannot tell from your text, so Apothem left them as they are; fix
+the marker lines each warning names, keeping your own text, then run apothem
+uninstall again"</bdi>. ومن دون سجلّ تثبيت، لا تتلقّى التحذير إلا علامة <bdi>BEGIN</bdi> خارج
+الشيفرة تقع علامة <bdi>END</bdi> الخاصة بها في شيفرة، ويليهما زوج علامات آخر، ويظل إلغاء
+التثبيت غير مكتمل (رمز الخروج <bdi>`2`</bdi>) بسببها وبسبب المسارات التي لا يُظهِرها أي سجلّ
+(راجع
+[إلغاء تثبيت لم يكتمل](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish)).
+
+نفّذ كل خطوة من الإصلاح الذي تختاره. فإن حذفت كتلة <bdi>Apothem</bdi> فقط وتركت علامة
+<bdi>BEGIN</bdi> خاصة بك فوق علامة <bdi>END</bdi> تقتبسها في شيفرة، بلا زوج علامات بعدهما،
+فستُقرأ هاتان العلامتان كتلةً لـ<bdi>Apothem</bdi>: فيُخرِج إلغاء التثبيت الذي تشغّله مجدّدًا
+الأسطر بينهما، ويستبدلها تثبيت أو تحديث لاحق.
+
+من دون سجلّ تثبيت، يكون زوج العلامات الذي تقتبسه في شيفرة نصًّا لك: يضيف التثبيت كتلته بعده
+(وفي ملف قواعد يكتبه <bdi>Apothem</bdi> مع بيانات أمامية، تذهب تلك البيانات الأمامية والكتلة إلى
+الأعلى بدلًا من ذلك)، إلا إذا كان الزوج يحوي بالضبط الكتلة التي يكتبها التثبيت، فعندئذٍ يترك
+الملف كما هو ويطبع التحذير. لذا إذا اختفى سجلّ التثبيت (حُذِف الدفتر مثلًا)، فاحذف كتلة
+<bdi>Apothem</bdi> من كتلة الشيفرة الخاصة بك يدويًا: فالتثبيت اللاحق يعاملها على أنها نصّك.
+
+لإصلاحه، افتح الملف المُسمّى عند الأسطر التي يعطيها التحذير. قرّر أي حالة صحيحة: هل الأسطر
+التي يسمّيها الإصلاح كتلة <bdi>Apothem</bdi>، مع قواعد <bdi>Apothem</bdi> بين العلامات، أم
+مثال خاص بك. نفّذ خطوات ذلك الإصلاح، بالترتيب المُعطى، ولا خطوة غيرها (راجع
+[اتّباع إصلاح مُرقَّم](#follow-a-numbered-fix)). ثم شغّل <bdi>`apothem update`</bdi>، ثم
+<bdi>`apothem verify`</bdi> مجدّدًا. وبعد إلغاء تثبيت لم يكتمل، شغّل
+<bdi>`apothem uninstall`</bdi> مجدّدًا بدلًا من ذلك.
+
+### اتّباع إصلاح مُرقَّم [#follow-a-numbered-fix]
+
+تعطي التحذيرات الخاصة بملف لا يستطيع <bdi>Apothem</bdi> تحديد موضع أسطر علاماته، وبملف فيه
+كتلتان كاملتان أو أكثر، وبعلامة <bdi>BEGIN</bdi> بلا علامة <bdi>END</bdi>، وبكتلة
+<bdi>Apothem</bdi> التي يتركها إلغاء تثبيت بلا سجلّ تثبيت، كلَّ إصلاح على هيئة خطوات مُرقَّمة
+تحت تسمية تسمّي حالته، مثلًا <bdi>"Fix A,
+if lines 6 to 38 are Apothem's block:"</bdi>، أو <bdi>"Fix A:"</bdi> لإصلاح يصلح أيًّا كانت
+الأسطر التي هي كتلة <bdi>Apothem</bdi>. خطوات الإصلاح <bdi>A</bdi> هي <bdi>"A1."</bdi>
+و<bdi>"A2."</bdi> وهكذا، وخطوات الإصلاح <bdi>B</bdi> هي <bdi>"B1."</bdi> و<bdi>"B2."</bdi>، في
+فقرة واحدة، وينتهي الإصلاح بما يفعله التشغيل التالي عندئذٍ. نفّذ خطوات إصلاح واحد فقط.
+
+كل رقم سطر في خطوة هو رقم السطر في الملف كما هو حين يُطبَع التحذير، معدودًا كما يَعُدّ
+<bdi>Apothem</bdi> الأسطر (راجع
+[يحوي ملفٌ علامة <bdi>BEGIN</bdi> لـ<bdi>Apothem</bdi> بلا علامة <bdi>END</bdi>](#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
+تسير الخطوات من أسفل الملف صعودًا، بالترتيب المُعطى. وكل خطوة واحدة مما يلي، حرفيًا، وتنتهي
+بنقطة:
+
+| الخطوة | ما يجب فعله |
+| --- | --- |
+| `Change line N: add a word inside its comment.` | أضِف كلمةً إلى السطر <bdi>N</bdi> قبل <bdi>`-->`</bdi> الختامي مباشرةً، كما في <bdi>`<!-- BEGIN APOTHEM MANAGED BLOCK (example) -->`</bdi>. يبقى السطر في مكانه ولا يعود يُقرأ علامةً. |
+| `Below line N, add a line of 3 backticks.` | أضِف سطرًا جديدًا تحت السطر <bdi>N</bdi> مباشرةً، وهو السطر الأخير في الملف، يحوي ذلك العدد من علامات الاقتباس المائلة (<bdi>backtick</bdi>)، أو محارف التلدة لـ <bdi>`tildes`</bdi>، ولا شيء غيرها. ومع <bdi>`, indented 2 spaces`</bdi> قبل النقطة، ضع ذلك العدد من المسافات قبلها؛ ومن دونها، ابدأ السطر عند الهامش الأيسر. |
+
+تغيّر كل خطوة <bdi>`Change line`</bdi> سطر علامة <bdi>BEGIN</bdi> في مكانه. تبدأ كل كتلة
+لـ<bdi>Apothem</bdi> وكل زوج علامات وكل علامة شاردة عند علامة <bdi>BEGIN</bdi>، ولا تقترن علامة
+<bdi>END</bdi> إلا بعلامة <bdi>BEGIN</bdi> التي فوقها مباشرةً، لذا فعلامة <bdi>END</bdi> لا تعلوها
+علامة <bdi>BEGIN</bdi> لا تُعلِّم شيئًا، والتي تقتبسها تبقى نصّك كما هو. ويظل السطر المُغيَّر
+تعليق <bdi>HTML</bdi> في سطر مستقل: لا يتحرّك أي سطر، ويقرأ عارض <bdi>Markdown</bdi> كل سطر آخر
+كما كان.
+
+الإصلاح الذي يُبقي على كتلة يغيّر كل سطر علامة <bdi>BEGIN</bdi> آخر في الملف. ولا يعطيه التحذير
+إلا حيث يُظهِر تخطيط الملف أن الكتلة تُقرأ عندئذٍ الكتلة الكاملة الوحيدة: لا تحويها كتلة شيفرة
+خاصة بك تمتدّ حتى نهاية الملف، ولا يغيّر أي سطر من أول سطر مُغيَّر نزولًا إلى الكتلة طريقة قراءة
+علامة <bdi>BEGIN</bdi> الخاصة بها. وينتهي بـ <bdi>"The next update then
+replaces Apothem's block"</bdi>، أو <bdi>"Lines 1 to 32 are then the one block in the
+file"</bdi>، أو، لإلغاء التثبيت، <bdi>"The uninstall run again then takes Apothem's
+block out"</bdi>. والإصلاح الذي لا يُبقي على أي كتلة يغيّر كل سطر علامة <bdi>BEGIN</bdi> في الملف
+وينتهي بـ <bdi>"Apothem then reads none of these lines as its markers, and the
+next update writes its block at the end of the file"</bdi>، أو، لإلغاء التثبيت،
+<bdi>"Apothem then finds no block of its own in this file"</bdi>. وفي كلتا الحالتين، يصبح أي نص
+قديم لـ<bdi>Apothem</bdi> تحت سطر تغيّره، مع سطر علامة <bdi>END</bdi> الخاص به، نصًّا لك تحذفه
+يدويًا.
+
+كتلة الشيفرة الخاصة بك التي لا يُغلقها أي سطر تمتدّ حتى نهاية الملف في عارض
+<bdi>Markdown</bdi>، لكن <bdi>Apothem</bdi> يقرأ سطر افتتاحها نصًّا. وقد تُغلقها كتلة شيفرة في
+قواعد ملفك التعريفي، فتُقرأ علامة <bdi>BEGIN</bdi> لكتلة <bdi>Apothem</bdi> عندئذٍ شيفرةً. لذا
+حين ينتهي ملفك داخل مثل كتلة الشيفرة هذه، فإن الإصلاح الذي لا يترك أي كتلة لـ<bdi>Apothem</bdi>
+في الملف يضيف أولًا سطر إغلاق كتلة الشيفرة تلك تحت السطر الأخير، كما في <bdi>"A1. Below line 7,
+add a line of 3 backticks."</bdi>: فيضيف التثبيت أو التحديث التالي كتلته في نهاية الملف، بعده.
+ولا يُبقي أي إصلاح على كتلة تحويها مثل كتلة الشيفرة هذه.
+
+يقرأ <bdi>Apothem</bdi> سياج الشيفرة داخل كتلة <bdi>HTML</bdi>، مثل تعليق يُفتَح بـ
+<bdi>`<!--`</bdi> وينتهي في سطر لاحق، كما يقرأ أي سياج شيفرة آخر، وينهي سطرٌ من نص عنصر قائمة
+يستمرّ عند الهامش الأيسر ذلك العنصرَ عند <bdi>Apothem</bdi>. ولا يفعل عارض <bdi>Markdown</bdi>
+أيًّا من الأمرين. وحين قد يبدأ سطرٌ فوق كتلة الشيفرة التي ينتهي فيها ملفك كتلة <bdi>HTML</bdi>
+(يُحتسَب أي سطر يبدأ بوسم، عدا رابط بين قوسين زاويين، ووسم في سطر يلي مباشرةً سطرًا من نص عادي،
+و<bdi>HTML</bdi> في كتلة شيفرة)، أو يستمرّ نص عنصر قائمة عند الهامش الأيسر فوقها ويليه سطر
+مُزاح، فقد يبدأ سطر الإغلاق ذلك كتلة شيفرة في العارض بدلًا من ذلك. وعندئذٍ لا يعطي ذلك الإصلاح
+خطوات مُرقَّمة: بل يقول <bdi>"Apothem cannot give
+numbered steps for this fix"</bdi> ويسمّي السطر الذي يفتح كتلة الشيفرة.
+حرّر الملف يدويًا بحيث لا يفتح ذلك السطر أي كتلة شيفرة، أو بحيث تُغلَق كتلة الشيفرة حيث يُظهِر
+عارضك أنها تنتهي؛ فيعطي التحذير التالي للملف عندئذٍ خطوات مُرقَّمة.
 
 ### الخطّافات لا تُطلَق في <bdi>Claude Code</bdi>
 
 تأكّد من أنّ <bdi>Apothem</bdi> موصول عبر فحص <bdi>~/.claude/settings.json</bdi>
 بحثًا عن إدخالات الخطّاف. وإذا كان الملف يفتقر إلى الخطّافات، فشغّل
 <bdi>apothem install</bdi> مجدّدًا.
+
+### لا يحمّل <bdi>OpenCode</bdi> قواعد <bdi>Apothem</bdi>
+
+يطبع <bdi>`apothem install`</bdi> و<bdi>`apothem update`</bdi> و<bdi>`apothem verify`</bdi>
+ملاحظةً حين يمنع ملفٌ خاص بك في مجلّد إعدادات <bdi>OpenCode</bdi> الإصدارَ <bdi>OpenCode 1</bdi>
+من تحميل قائمة <bdi>`instructions`</bdi> التي يكتبها <bdi>Apothem</bdi> في
+<bdi>`opencode.json`</bdi>:
+
+- ملف <bdi>`opencode.jsonc`</bdi> يحوي قائمة <bdi>`instructions`</bdi> خاصة به، ولو كانت فارغة،
+  يستبدل قائمة <bdi>Apothem</bdi>. أزِل ذلك المفتاح، أو انقل مُدخلاته إلى القائمة في
+  <bdi>`opencode.json`</bdi>، حيث تُبقي التثبيتات على المُدخلات التي لم تكتبها.
+- ملف <bdi>`config.json`</bdi> أو <bdi>`opencode.json`</bdi> أو <bdi>`opencode.jsonc`</bdi> هناك
+  لا يستطيع <bdi>OpenCode 1</bdi> قراءته أو تحليله يمنع <bdi>OpenCode 1</bdi> من تحميل أيٍّ من
+  إعداداته. وكذلك الملف الذي لا يكون مستواه الأعلى كائنًا، أو لا تكون قيمة
+  <bdi>`instructions`</bdi> فيه قائمة نصوص، أو يسمّي <bdi>`{file:path}`</bdi> فيه ملفًا لا يستطيع
+  <bdi>OpenCode 1</bdi> قراءته، والمجلّد الذي يحمل أحد تلك الأسماء. صحّح الملف ليكون كائن
+  <bdi>JSON</bdi> واحدًا لا يُضاف إليه إلا التعليقات والفواصل اللاحقة، مع <bdi>`instructions`</bdi>
+  قائمةَ نصوص، أو انقله خارج المجلّد. وحين تقول الملاحظة إن الملف ينكسر بعد أن يضع
+  <bdi>OpenCode 1</bdi> قيم <bdi>`{env:NAME}`</bdi> الخاصة به، فغيّر ذلك المتغيّر بحيث لا تحوي
+  قيمته شرطة مائلة عكسية أو علامة اقتباس مزدوجة أو محرف تحكّم، مثلًا مسار <bdi>Windows</bdi>
+  مكتوبًا بشرطات مائلة أمامية. وحين تقول الملاحظة إن <bdi>Apothem</bdi> يكتب ذلك
+  <bdi>`{env:NAME}`</bdi> لخادم <bdi>MCP</bdi> في ملفك التعريفي، فإن التحديث يعيد كتابة مرجع
+  أُزيل من الملف، لذا غيّر المتغيّر أو، للإبقاء عليه كما هو، أعِد تعريف ذلك الخادم تحت
+  <bdi>`harnesses.opencode.mcp_servers.<name>`</bdi> مع حفظ القيمة في ملف وكتابتها بصيغة
+  <bdi>`{file:path}`</bdi> تسمّيه. وحين تسمّي الملاحظة مشكلة ثانية في الملف، فأصلِحها أيضًا.
+  وحين تقول إن <bdi>Apothem</bdi> لا يستطيع أن يعرف ما إذا كان <bdi>OpenCode 1</bdi> يستطيع قراءة
+  الملف الذي يسمّيه <bdi>`{file:path}`</bdi>، فتأكّد من أن ذلك الملف قابل للقراءة أيضًا.
+
+تخصّ هذه الملاحظات <bdi>OpenCode 1</bdi>. أما <bdi>OpenCode 2</bdi> فيقرأ القائمتين كلتيهما ولا
+يقرأ أي <bdi>`config.json`</bdi>. ويتخطّى ملفًا لا يستطيع تحليله أو لا يكون مستواه الأعلى كائنًا،
+وهو ما يعني بالنسبة لـ<bdi>`opencode.json`</bdi> أنه يفوّت القواعد أيضًا؛ وتقول ملاحظةٌ ما يفعله
+<bdi>OpenCode 2</bdi> بملفه حين يكون ذلك معروفًا. ولا تغيّر الملاحظات أي ملف ولا أي رمز خروج.
+وحين لا يستطيع التثبيت أو التحديث تحليل <bdi>`opencode.json`</bdi> إطلاقًا، يتوقّفان بخطأ
+<bdi>`config.unparseable`</bdi> بدلًا من ذلك. راجع
+[<bdi>OpenCode</bdi>](/docs/harnesses/opencode) للتفاصيل.
 
 ## الحصول على المساعدة
 

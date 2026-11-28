@@ -2,7 +2,7 @@
 title: "update"
 description: "Referencia de la CLI para el comando apothem update."
 machineTranslated: true
-sourceHash: "0f47915f4f7819de"
+sourceHash: "7e96f7b81b7e328d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,15 +21,94 @@ apothem update --harness NAME|all [--profile PATH] [--dry-run]
 `update` vuelve a materializar la salida del entorno a partir del perfil
 compartido actual. Usa la misma validación del perfil, la misma selección con
 `--harness all`, la misma comprobación del alcance de proyecto, el mismo
-comportamiento de ejecución en seco y el mismo sobre JSON que `install`.
+comportamiento de ejecución en seco y el mismo sobre JSON que `install`, e
+imprime los mismos avisos, incluida la nota `instruction_override` cuando un
+archivo tuyo impide que una herramienta cargue lo que escribe Apothem (consulta
+[`install`](/docs/cli-reference/install)). Igual que `install`, registra la
+carpeta de `--project` resuelta y traslada a ella una instalación registrada
+con otra forma de escribir esa carpeta. También advierte sobre un archivo que
+contiene un marcador BEGIN sin marcador END después de él: el texto que sigue a
+ese marcador se conserva tal cual, y el bloque de Apothem se escribe aparte de
+él, así que la advertencia nombra la línea del marcador, da un paso numerado que
+cambia esa línea e indica no volver a añadir el marcador END en su lugar, lo
+que dejaría entonces dos bloques de Apothem
+(consulta
+[Solución de problemas](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
+Un archivo que contiene dos o más bloques completos entre los marcadores de
+Apothem se deja tal cual, con una advertencia que nombra cada bloque por sus líneas
+(consulta
+[Un archivo contiene dos bloques entre los marcadores de Apothem](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)).
+Un archivo en el que Apothem no puede distinguir su bloque de tu texto, como su
+bloque dentro de un bloque de código tuyo, se deja tal cual mientras un
+registro de instalación lo liste (un registro de instalaciones que no se puede
+leer cuenta como tal; también cuenta un registro hecho con otra forma de
+escribir la carpeta, como tu directorio personal al que se llega a través de un
+enlace, igual que para la desinstalación, cuando la forma con la que ejecutas
+tiene todavía una instalación propia y la herramienta escribe las
+[carpetas compartidas de tu directorio personal](/docs/cli-reference/install#folders-in-your-home-directory)),
+con una advertencia que nombra cada par de marcadores que contiene y cómo corregirlo
+(consulta
+[Apothem no puede distinguir su bloque de tu texto](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+Eso se mantiene también junto a un marcador BEGIN que no inicia ningún par de
+marcadores, como lo que queda del bloque de Apothem después de que se perdiera
+su marcador END: la advertencia nombra primero ese marcador BEGIN, y cada corrección
+numerada de la advertencia lo cambia. Sin registro de instalación, un par de marcadores
+que citas en código es texto tuyo, y la actualización añade su bloque después
+de él, con o sin ese marcador BEGIN, salvo que el par contenga exactamente el
+bloque que escribe la actualización: entonces deja el archivo tal cual, con la
+advertencia. Un archivo en el que un marcador BEGIN fuera del código tiene su
+marcador END dentro del código, con otro par de marcadores después de ellos, se
+deja tal cual con la advertencia, haya registro o no. Una regla de tu perfil que abre
+un bloque de código y nunca lo cierra no provoca eso para el bloque que escribe
+la actualización: la actualización cierra ese bloque de código al final del
+bloque. Un bloque que una versión anterior escribió a partir de una regla así
+no tiene esa línea de cierre, así que puede provocarlo. Un bloque de código
+tuyo que se abre por encima del bloque de Apothem y nunca se cierra es un caso
+distinto: una línea de cierre del bloque lo cierra, de modo que el bloque se
+lee como código, y la actualización que escribe un bloque así advierte de
+inmediato y nombra el bloque de código que hay que cerrar por encima del
+marcador BEGIN. Una ejecución en seco lee el archivo antes de escribir nada,
+así que no muestra que el bloque se leería como código una vez escrito. En una
+ejecución en seco, la advertencia para un archivo que se deja tal cual dice que
+Apothem "would leave the file as it is".
+
+Una actualización que deja un archivo tal cual por sus líneas de marcador (dos
+o más bloques completos, o pares de marcadores que Apothem no puede situar)
+termina como parcial, igual que una instalación: la herramienta no obtiene de
+ese archivo ningún bloque de Apothem actual, así que en lugar de la línea `✓`
+imprime en la salida de error estándar una línea `✗` que nombra el archivo, el
+`status` del sobre de `--format json` es `"partial"` y la advertencia de ese archivo
+lleva `"detail": {"left_as_is": "1"}`, y el código de salida es `2`. Cada
+actualización termina así hasta que corrijas las líneas de marcador que nombra
+la advertencia; un ejemplo de marcador tuyo en un bloque de código también retiene un
+archivo así, hasta que cambies su línea de marcador BEGIN. Sin `--quiet`, una
+actualización así con `--harness all` termina con una línea de resumen que
+empieza por `!` en lugar de `✓` y cuenta los archivos que se dejan tal cual:
+`! Updated <n> harnesses (<m> files written); <k> file(s) left as they are, named above.`
+Una ejecución en seco sigue terminando con `status` `"dry_run"` y código de
+salida `0`.
+
+En cada carpeta en la que escribe Apothem (una carpeta de skills, los archivos
+de soporte bajo `.apothem/support/`), `update` compara cada entrada que
+escribe. Una entrada de archivo se reescribe cuando difiere. Una entrada de
+carpeta (una skill, la carpeta de skill de un comando, o una carpeta dentro de
+los archivos de soporte como `hooks/lib/`) se sustituye entera cuando algo de
+su contenido difiere de lo que esta versión escribe allí: la actualización la
+respalda primero bajo `~/.apothem/backups/`, de modo que un archivo que
+añadiste dentro de ella, o un archivo de Apothem que editaste, desaparece de
+ella después. Copia ese archivo desde el conjunto de respaldo, o sácalo de ahí
+antes de actualizar. Un archivo tuyo situado directamente en una carpeta en la
+que escribe Apothem (`.apothem/support/hooks/mine.py`, por ejemplo) y tus
+propias carpetas junto a las de Apothem no se tocan.
 
 Para los adaptadores de alcance de proyecto que escriben skills en tu directorio
 personal (consulta
 [`install`](/docs/cli-reference/install#folders-in-your-home-directory)),
 `update` también actualiza esas carpetas e imprime la misma `Note:` que las
 nombra. Un adaptador instalado antes de que escribiera skills las recibe en su
-siguiente actualización. Una carpeta de skill que Apothem no escribió se omite
-con una advertencia, igual que con [`install`](/docs/cli-reference/install#folders-in-your-home-directory).
+siguiente actualización. Una carpeta de skill que Apothem no escribió, o que no
+puede demostrar que escribió, se omite con una advertencia que da la
+corrección, igual que con [`install`](/docs/cli-reference/install#folders-in-your-home-directory).
 Una instalación que antes escribió la carpeta de skills compartida se reescribe
 en la forma que comparten todas las instalaciones en su siguiente actualización;
 cada carpeta modificada se respalda primero.
@@ -71,7 +150,9 @@ El alias en forma continua `apothem updating` (también aceptado como
 }
 ```
 
-`--dry-run` devuelve `status: "dry_run"` y `files_written: []`.
+`--dry-run` devuelve `status: "dry_run"` y `files_written: []`. Una
+actualización que dejó un archivo tal cual por sus líneas de marcador de
+Apothem devuelve `status: "partial"` y sale con el código `2`.
 
 ## Ejemplos
 
@@ -89,7 +170,7 @@ apothem updating --harness claude-code   # lowercase variant
 |---|---|
 | 0 | Adaptador actualizado correctamente o ejecución en seco planificada sin problemas |
 | 1 | Error previsto de validación, de perfil, de entorno, de proyecto o de adaptador |
-| 2 | Materialización parcial del lote después de al menos una escritura |
+| 2 | Parcial: un lote se detuvo después de al menos una escritura, o la actualización dejó tal cual un archivo en el que Apothem guarda su bloque por sus líneas de marcador de Apothem; `status` es `"partial"` |
 | 64 | Error de uso: una opción o un comando desconocidos, o un valor de opción ausente o no válido. Con `--json`, el error es un sobre JSON con el código `cli.usage`. |
 
 ## Véase también

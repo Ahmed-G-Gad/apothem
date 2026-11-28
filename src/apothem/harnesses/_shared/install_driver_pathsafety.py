@@ -8,7 +8,8 @@ import contextlib
 import os
 import shutil
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextvars import ContextVar
 from pathlib import Path, PosixPath, WindowsPath
 from typing import NamedTuple
 
@@ -33,9 +34,44 @@ def _is_relative_to(path: Path, root: Path) -> bool:
     return True
 
 
+#: The resolutions made in the :func:`_validate_target_path` call running in
+#: this context, by type and spelling; None outside such a call.
+_resolutions: ContextVar[dict[tuple[type[Path], str], Path] | None] = ContextVar(
+    "_resolutions", default=None
+)
+
+
 def _normalized(path: Path) -> Path:
-    """Return an absolute normalized path without requiring existence."""
-    return path.expanduser().resolve(strict=False)
+    """Return an absolute normalized path without requiring existence.
+
+    Within one :func:`_validate_target_path` call a path is resolved once,
+    and a path a resolve returned is taken as its own resolution: the check
+    asks about the same folders many times, and on Windows each resolve opens
+    a handle. Nothing is kept from one call to the next, so a link made or
+    removed between two writes is still seen.
+    """
+    memo = _resolutions.get()
+    if memo is None:
+        return path.expanduser().resolve(strict=False)
+    key = (type(path), os.fspath(path))
+    found = memo.get(key)
+    if found is None:
+        found = memo[key] = path.expanduser().resolve(strict=False)
+        memo.setdefault((type(found), os.fspath(found)), found)
+    return found
+
+
+@contextlib.contextmanager
+def _one_check() -> Iterator[None]:
+    """Share resolutions until the outermost check ends (see :func:`_normalized`)."""
+    if _resolutions.get() is not None:
+        yield
+        return
+    token = _resolutions.set({})
+    try:
+        yield
+    finally:
+        _resolutions.reset(token)
 
 
 #: The ``lstat`` the case probe reads, kept apart so a test can replace it
@@ -536,6 +572,7 @@ def _link_leading_out(target: Path, root: Path) -> Path | None:
     return None
 
 
+@_one_check()
 def _validate_target_path(
     target: Path,
     *,

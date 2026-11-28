@@ -2,7 +2,7 @@
 title: "Escribir reglas"
 description: "Crea, delimita el alcance y mantén las reglas de comportamiento de Apothem."
 machineTranslated: true
-sourceHash: "bc1f3351f9a5fd2c"
+sourceHash: "a7a12b4db14fbfe9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -75,12 +75,19 @@ en la segunda línea; un entorno de ámbito de usuario no.
 ## Validación de reglas
 
 Ejecuta el validador de frontmatter contra el archivo de regla que escribiste.
-Desde un checkout de Apothem, `PYTHONPATH=src` hace que el paquete se pueda
-importar; tras una instalación por script, usa `PYTHONPATH="$HOME/.apothem/src"`
-en su lugar.
+Desde la raíz de un checkout de Apothem, `PYTHONPATH=src` hace que el paquete se
+pueda importar (`python -m` lee primero los módulos de la carpeta actual, así que
+usa una carpeta de confianza):
 
 ```bash
 PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep src/apothem/rules/<rule>.md
+```
+
+Tras una instalación por script, ejecuta la puerta por la ruta de su script con
+`-E -s` ([Puerta de conformidad](/docs/conformity-gate) explica por qué):
+
+```bash
+python3 -E -s "$HOME/.apothem/src/apothem/conformity/gate.py" --check frontmatter-grep <rule>.md
 ```
 
 Una comprobación por escritura como `frontmatter-grep` recibe el archivo que debe

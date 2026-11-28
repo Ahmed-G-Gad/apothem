@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "محوّل إطار عمل Apothem لـ Windsurf (إصدار عام)."
 machineTranslated: true
-sourceHash: "26f3db9f3fdef394"
+sourceHash: "6ddfbde9bafb1d18"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -180,6 +180,10 @@ subagent entries in src/apothem/harnesses/windsurf/STANDARD-CONVENTION-PIN.md. *
 ```text
 "/path/to/python" -E -s "/path/to/project/.apothem/support/windsurf/hooks/dispatch.py" --contract devin SessionStart
 ```
+
+يجعل <bdi>`-E -s`</bdi> <bdi>Python</bdi> تتجاهل <bdi>`PYTHONPATH`</bdi> ومتغيّرات <bdi>`PYTHON*`</bdi> الأخرى
+وتتخطّى حزم <bdi>site-packages</bdi> الخاصة بمستخدمك، فلا يمكن لأي ملف في المشروع أن يُحمَّل
+داخل الخطّاف.
 
 يربط <bdi>`--contract devin`</bdi> أسماء أدوات <bdi>Devin</bdi> المكتوبة بأحرف صغيرة (<bdi>`exec`</bdi>،
 و<bdi>`write`</bdi>، و<bdi>`edit`</bdi>، و<bdi>`read`</bdi>، و<bdi>`grep`</bdi>، و<bdi>`glob`</bdi>) بالأسماء التي
@@ -372,8 +376,17 @@ apothem uninstall --harness windsurf --project /path/to/project
 ## بوابة المطابقة
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+شغّله من مجلّد مشروعك. وعلى <bdi>Windows</bdi>، استخدم <bdi>`python`</bdi> بدلًا من
+<bdi>`python3`</bdi> والمسار الكامل، لأن <bdi>Windows PowerShell</bdi> و<bdi>cmd</bdi> لا يوسّعان
+<bdi>`~`</bdi>:
+<bdi>`$HOME\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>PowerShell</bdi>، أو
+<bdi>`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>cmd</bdi>. هذا المسار هو
+الموضع الذي يضع فيه المُثبِّت المحرّك، ويُبقي <bdi>`-E -s`</bdi> متغيّر <bdi>`PYTHONPATH`</bdi> لديك وحِزَم
+<bdi>site-packages</bdi> الخاصّة بالمستخدم خارج البوابة؛ وتشرح صفحة [بوابة المطابقة](/docs/conformity-gate)
+كليهما وطرق التثبيت الأخرى.
 
 ## استكشاف الأخطاء وإصلاحها
 

@@ -2,11 +2,11 @@
 title: "Hermes"
 description: "Adaptador de entorno de Apothem para Hermes (vista previa)."
 machineTranslated: true
-sourceHash: "2031f90de3f936a5"
+sourceHash: "6b5e4589566e8d9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-- **Proveedor:** Hermes
+- **Proveedor:** Nous Research
 - **Nombre de instalación:** `hermes`
 - **Estado:** Vista previa
 - **Configuración nativa:** `~/.hermes/config.yaml`
@@ -23,7 +23,25 @@ raíz del entorno.
 
 **Archivos escritos:** `~/.hermes/config.yaml`, el documento de perfil
 `~/.hermes/apothem/rules/00-apothem-profile.md` y archivos de soporte bajo
-`~/.hermes/.apothem/support/`
+`~/.hermes/.apothem/support/`. La instalación también crea la carpeta de datos
+de Apothem, `~/.hermes/.apothem/` de forma predeterminada, con `contexts/`,
+`learning/`, `memory/` y `plans/` dentro.
+
+Cada instalación y actualización elimina todo archivo de
+`~/.hermes/apothem/rules/` que Apothem no haya colocado allí, tras guardarlo en
+un conjunto de respaldo bajo `~/.apothem/backups/`. Ese respaldo se elimina una
+vez que existen 10 conjuntos de respaldo más recientes del entorno, así que
+guarda tus propios archivos en otro lugar.
+
+Las versiones anteriores (el [registro de cambios](/docs/changelog) las nombra)
+también eliminaban `~/.hermes/cli-config.yaml` y `~/.hermes/profile.yaml` en
+cada instalación y actualización, tras copiarlos en un conjunto de respaldo bajo
+`~/.apothem/backups/<timestamp>/hermes/`. La versión actual deja ambos archivos
+intactos. Para recuperarlos, copia `~/.apothem/backups/` en otro lugar antes de
+volver a ejecutar Apothem y luego copia a mano los archivos desde esa copia de
+vuelta en `~/.hermes/`. El
+[registro de cambios](/docs/changelog#data-loss-in-earlier-releases-recover-your-files)
+tiene los pasos completos de recuperación.
 
 El documento de perfil termina con una sección de archivos de soporte de
 Apothem que nombra el directorio absoluto bajo `~/.hermes/.apothem/support/`
@@ -83,10 +101,10 @@ documentación de Hermes revisada no indica qué copia carga Hermes cuando dos
 ubicaciones contienen una skill del mismo nombre; Apothem interpreta el orden
 como que ganan las ubicaciones anteriores, así que cabe esperar que una skill del
 mismo nombre que conserves en una ubicación anterior tenga precedencia sobre la
-copia de Apothem. Apothem solo escribe en `config.yaml` y bajo
-`~/.hermes/.apothem/support/`, nunca en esas ubicaciones anteriores, así que la
-instalación, la actualización y la desinstalación no reemplazan una skill que
-conserves allí.
+copia de Apothem. La instalación de Hermes nunca escribe en esas ubicaciones
+anteriores: dentro de `~/.hermes/` solo escribe `config.yaml`, `apothem/rules/`
+y `.apothem/`, así que la instalación, la actualización y la desinstalación no
+reemplazan una skill que conserves allí.
 
 `apothem update` conserva las claves que agregues a `config.yaml`, incluidas
 `skills.config` y tus propias entradas de `skills.external_dirs`. El adaptador
@@ -174,8 +192,17 @@ queda en su lugar, y el resto de tus ajustes de `auxiliary` siempre se conserva.
 ## Puerta de conformidad
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Ejecútalo desde la carpeta de tu proyecto. En Windows, usa `python` en lugar de
+`python3` y la ruta completa, ya que Windows PowerShell y cmd no expanden `~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` en PowerShell, o
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` en cmd. La ruta es
+donde el instalador coloca el motor, y `-E -s` mantiene tu `PYTHONPATH` y tus
+site-packages de usuario fuera de la puerta;
+[Puerta de conformidad](/docs/conformity-gate) explica ambas cosas y las demás
+instalaciones.
 
 ## Solución de problemas
 

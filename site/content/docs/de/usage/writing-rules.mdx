@@ -2,7 +2,7 @@
 title: "Regeln schreiben"
 description: "Apothem-Verhaltensregeln verfassen, deren Geltungsbereich festlegen und pflegen."
 machineTranslated: true
-sourceHash: "bc1f3351f9a5fd2c"
+sourceHash: "a7a12b4db14fbfe9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -75,11 +75,19 @@ Zeile; ein benutzerbezogener Harness nicht.
 ## Regelvalidierung
 
 Führe den Frontmatter-Validator gegen die Regeldatei aus, die du geschrieben hast.
-Aus einem Apothem-Checkout macht `PYTHONPATH=src` das Paket importierbar; nach
-einer Skript-Installation verwende stattdessen `PYTHONPATH="$HOME/.apothem/src"`.
+Im Stammverzeichnis eines Apothem-Checkouts macht `PYTHONPATH=src` das Paket
+importierbar (`python -m` liest Module zuerst aus dem aktuellen Ordner, verwende
+also einen Ordner, dem du vertraust):
 
 ```bash
 PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep src/apothem/rules/<rule>.md
+```
+
+Nach einer Skript-Installation führst du das Gate über seinen Skriptpfad mit `-E -s`
+aus ([Konformitäts-Gate](/docs/conformity-gate) erklärt, warum):
+
+```bash
+python3 -E -s "$HOME/.apothem/src/apothem/conformity/gate.py" --check frontmatter-grep <rule>.md
 ```
 
 Eine Prüfung pro Schreibvorgang wie `frontmatter-grep` nimmt die zu prüfende Datei

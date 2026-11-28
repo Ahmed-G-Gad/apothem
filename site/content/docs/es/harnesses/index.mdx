@@ -2,7 +2,7 @@
 title: "Adaptadores de entorno"
 description: "Adaptadores de entorno de Apothem — un perfil compartido, diecisiete destinos compatibles."
 machineTranslated: true
-sourceHash: "f4177d0bff3cb602"
+sourceHash: "48a032b0eced79dc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -64,8 +64,12 @@ apothem doctor
 
 ## Cómo funcionan los adaptadores
 
-Cada adaptador implementa el protocolo `HarnessAdapter` registrado mediante
-los entry-points de setuptools. Durante la instalación, la CLI carga y valida el perfil
+Cada adaptador implementa el protocolo `HarnessAdapter` y figura en el registro
+estático de entornos (`src/apothem/lib/harness_registry.py`), a partir del cual la
+CLI resuelve los adaptadores. Los entry points `apothem.harnesses` de
+`pyproject.toml` listan los mismos adaptadores, y una prueba mantiene iguales
+ambas listas, pero la CLI no lee entry points, así que otro paquete no puede
+añadir un adaptador declarando uno. Durante la instalación, la CLI carga y valida el perfil
 YAML compartido, resuelve el adaptador a través del registro, valida el
 plan de materialización y escribe la configuración nativa de la plataforma en la ubicación
 nativa de usuario o de proyecto del entorno. Durante la actualización, vuelve a derivar a partir del estado actual
@@ -76,7 +80,7 @@ profile.yaml + packaged cohorts
     identity / preferences / rules
     commands / skills / delegated definitions / hooks / templates
          |
-         +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/antigravity-cli/plugins/apothem/
+         +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/config/plugins/apothem/
          +-- claude-code    --> ~/.claude/ native folders + ~/.claude/.apothem/support/
          +-- codex          --> ~/.codex/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- cursor         --> <project>/.cursor/rules/*.mdc + <project>/.cursor/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
