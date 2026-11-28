@@ -1,15 +1,16 @@
 ---
 title: "Apothem v1.6.0 — recover lost files, safer uninstall"
-description: "Apothem v1.6.0 stops removing folders that hold your own files, shows how to recover them from backups, makes uninstall remove only what Apothem wrote, tightens the installer's release checks, and makes the conformity gate safe and fast to run on a project you did not make."
+description: "Apothem v1.6.0 stops removing folders that hold your own files, shows how to recover them from backups, makes uninstall remove only what Apothem wrote, tightens the installer's release checks, and makes the conformity gate safer and faster to run on a project you did not make."
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Apothem v1.6.0, released on 2026-11-28, fixes a data-loss bug, makes
 uninstall and update leave your files alone apart from the cases listed under
 *Safer uninstall and update*, and checks each release more strictly before it
-installs. It also makes the conformity gate safe and fast to run on a project
-you did not make, rebuilds the `ui-design` skill, and fixes the documentation
-sidebar in every language. Read the first section before you upgrade.
+installs. It also makes the conformity gate safer and faster to run on a
+project you did not make, rebuilds the `ui-design` skill, and fixes the
+documentation sidebar in every language. Read the first section before you
+upgrade.
 
 ## What this release fixes
 
@@ -189,8 +190,9 @@ with the same warning.
   longer runs when you run `apothem doctor`. It reports any other command
   as `hook.unchecked`. Hooks installed by an earlier release stay unchecked
   until you run `apothem update`. With `--project`, it reads at most 100
-  commands from one hook file, and it skips a hook file larger than 4 MB or
-  reached through a link, naming it as `hook.unchecked`.
+  commands from one hook file. It skips a hook file larger than 4 MB, one
+  that is not a regular file, or one reached through a link, and names it as
+  `hook.unchecked` when the tool runs hooks from it.
 - **The installers keep the engine's data.** Replacing an install at
   `APOTHEM_HOME` with `--yes` used to delete the whole folder, with the rollback backups,
   install records, plans and memory. The installer now checks the new release
@@ -263,13 +265,15 @@ points somewhere else. The gate now handles them as follows:
 
 - **It reads files one level at a time.** Every project file a check reads is
   opened folder by folder from the project folder, never through a symbolic
-  link or a Windows junction, and a read never waits on a named pipe. A file
-  swapped for a link while the gate runs is not read through. Each report
-  lists the links and special files it left out under `skipped_links`.
+  link or a Windows junction, and a read never waits on a named pipe. A fixed
+  file that is a link, such as a linked `CLAUDE.md`, is read only when the
+  link names a regular file inside the project. A file swapped for a link
+  while the gate runs is not read through. Each report lists the links and
+  special files it left out under `skipped_links`.
 - **It refuses to run git on a linked `.git`.** Before a check runs `git`, it
   looks at the `.git` entry of the project and of each folder above it that
-  git searches. If any of them is a link, the check does not run `git` and
-  fails with a message that names the link.
+  git searches. If any of them is a link, the check does not run `git`, and
+  its report names the link.
 - **`--all-perwrite` reads only regular text files inside the project,** up to
   64 MiB each, and counts every path it skips, by reason.
 - **A stalled check no longer holds up the run.** Each check has 10 minutes.
@@ -377,8 +381,9 @@ command.
 - **Links in a translated page keep you in your language.** A link to another
   docs page opens its translated copy, at the matching section, when your
   language has one.
-- **Every translation is current.** The translated pages in all eleven
-  languages were refreshed to match the current English text.
+- **Every translated page matches the current English text.** The translated
+  pages in all eleven languages were refreshed. A page a language has not
+  translated, such as this post, still opens in English.
 
 ## For contributors
 
