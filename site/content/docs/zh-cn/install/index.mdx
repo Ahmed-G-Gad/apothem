@@ -2,7 +2,7 @@
 title: "安装"
 description: "Apothem 安装概览——八条安装渠道，每条都附有其前置条件、一条可直接复制的命令和一个验证步骤：Claude Code 插件、npm 垫片、一键安装器、VS Code 系扩展、三个命令行引导扩展，以及直接引擎。"
 machineTranslated: true
-sourceHash: "1d9aa6524933a4c5"
+sourceHash: "cc205e0eab36c099"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -77,11 +77,11 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 
 ## 3. 一键安装器
 
-**前置条件：** `PATH` 上的系统 Python 3.10+（安装器会提出为你添加 `click` / `rich` 前置依赖）；网络安装需要 `git` 与 `gpg`，它会克隆源码并验证其已签名的发布标签（Git for Windows 同时提供这两者）。
+**前置条件：** `PATH` 上的系统 Python 3.10+（安装器会提出为你添加 `click` / `rich` 前置依赖）。网络安装需要：`git`，用于查找最新的发布；以及 `gpg`，用于检查已签名的发布标签（Git for Windows 同时提供这两者）。[cosign](https://docs.sigstore.dev/cosign/system_config/installation/) 是可选的：有了它，安装器还会检查已签名的发布归档。
 
-安装脚本会在一次运行中完成以下全部步骤：解析最新的已签名发布标签，验证其签名，将该标签处的 Apothem 源代码树放置到 `~/.apothem`，在不存在配置档案时创建起始配置档案，物化你的第一个工具，并验证结果。起始配置档案带有占位的身份字段：编辑它，然后运行 `apothem update --harness <name>` 以应用你自己的身份字段。重新运行是幂等的：已有的目录树会被重新检出到解析出的标签，工具也会被重新物化。锁定标签且经过验证的安装是默认且推荐的路径。
+安装脚本会在一次运行中完成以下全部步骤：解析最新的发布，检查它（参见[信任模型](#信任模型)），将 Apothem 源代码树放置到 `~/.apothem`，在不存在配置档案时创建起始配置档案，物化你的第一个工具，并验证结果。起始配置档案带有占位的身份字段：编辑它，然后运行 `apothem update --harness <name>` 以应用你自己的身份字段。重新运行是幂等的：git 克隆会先被拉取，其新标签会先接受检查，之后克隆才会被检出到解析出的标签；发布归档安装会被原地更新；工具也会被重新物化。当引擎以部分完成结束（退出码 `2`）时，安装器会打印一行警告，仍然执行验证、放置 `apothem` 命令并打印其横幅，然后以退出码 `2` 结束。当引擎因某个文件带有 Apothem 标记行而保持该文件原样，或在已经写入某些内容之后停止时，引擎即以部分完成结束（参见[引擎保持文件原样时](/docs/install/updating#when-the-engine-leaves-a-file-as-it-is)）。经过验证的安装是默认且推荐的路径。
 
-请先导入一次维护者签名密钥。当该密钥不在你的密钥环中时，安装器会停止。请核对指纹是否为 `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`，即 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#maintainer-signing-key) 中公布的值。在 Windows 上，`git verify-tag` 读取的是随 Git for Windows 一同提供的 `gpg` 的密钥环，因此导入需通过 Git 自带的 `bash` 执行：
+请先导入一次维护者签名密钥。每次网络安装都会据此检查发布标签（无论是否有 cosign），并在该密钥不在你的密钥环中时停止。请核对指纹是否为 `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`，即 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#maintainer-signing-key) 中公布的值。在 Windows 上，`git verify-tag` 读取的是随 Git for Windows 一同提供的 `gpg` 的密钥环，因此导入需通过 Git 自带的 `bash` 执行：
 
 ```bash title="macOS · Linux · WSL2 · BSD — import the key once"
 curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
@@ -107,9 +107,38 @@ APOTHEM_HARNESS=claude-code sh scripts/installer/install.sh                     
 $env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/install.ps1   # Windows
 ```
 
+通过管道运行的单行命令绝不会使用本地目录树：`curl ... | sh` 和 `irm ... | iex` 会忽略你运行它们时所在的文件夹及其上级文件夹，并拉取和验证发布。只有当你按路径运行检出目录自带的 `scripts/installer/install.sh`（或 `install.ps1`）时（可从任意文件夹运行，例如 `sh ~/src/apothem/scripts/installer/install.sh`），或当 `APOTHEM_SOURCE` 指向该目录树时，安装器才会使用本地目录树。安装器、更新器和卸载器、`apothem` 垫片、npm 启动器、钩子以及合规闸门的验证器进程，都会把当前文件夹排除在 Python 的模块搜索路径之外。你自己输入的 `python -m apothem` 命令则不会：`-m` 会首先从当前文件夹读取模块。
+
+任何启动器（安装器、更新器、卸载器、POSIX 和 Windows 的 `apothem` 垫片，以及 npm 启动器）都不会把你自己 `PYTHONPATH` 中的空条目和相对条目传递给引擎。保留的条目必须是完整路径：在 Windows 上是诸如 `C:\lib` 的驱动器路径或网络路径，在其他系统上是以 `/` 开头的路径。根相对的 `\lib` 或驱动器相对的 `C:lib` 会被丢弃。sh 脚本会询问它们所运行的 Python 读取哪种形式，它们写入的 `apothem` 垫片也会保留该形式。Windows Python（Git Bash 下常见的那种）以 Windows 形式获得引擎路径，以 `;` 连接，并且只保留你 `PYTHONPATH` 中的驱动器路径和网络路径。POSIX Python（包括 Cygwin 和 MSYS2 自带的 `python3`）获得以 `:` 连接的 POSIX 路径，并且只保留以 `/` 开头的条目。安装器中不作用于克隆的 `git` 命令不会读取当前文件夹中的仓库。
+
 ### 信任模型
 
-未设置 `APOTHEM_REF` 时，安装器会解析最高的 `vMAJOR.MINOR.PATCH` 发布标签并检出*该标签*——绝不会检出会持续变动的 `main` 分支。在物化任何配置之前，会用 `git verify-tag` 验证所获取标签的签名；未签名、被篡改或无法验证的标签会在写入任何内容之前中止安装。若某个已签名标签的维护者公钥尚不在本地密钥环中，安装器会中止并改为给出密钥导入指引：按上文所示导入该密钥，将其指纹与 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) 中公布的值进行核对，然后重新运行。用 `APOTHEM_REF` 锁定某个特定的发布：
+未设置 `APOTHEM_REF` 时，安装器会解析最高的 `vMAJOR.MINOR.PATCH` 发布并安装<em>该发布</em>——绝不会安装会持续变动的 `main` 分支。它会在物化任何配置之前检查该发布，检查方式取决于 `cosign` 是否在你的 `PATH` 上：
+
+- <strong>有 cosign 时</strong>，两项检查都必须通过。首先，发布标签必须带有来自维护者密钥的有效签名（检查方式同下一项），并且已签名的标签必须是以该发布命名的那个标签：为其他发布签名、却被重新指向此名称的标签会被拒绝。然后，安装器下载该发布的平台归档、其 `SHA256SUMS` 文件以及 `SHA256SUMS.cosign.bundle`。cosign 必须确认是 Apothem 的发布工作流为该确切标签签署了 `SHA256SUMS`，并通过其 `--certificate-github-workflow-sha` 检查确认：它所验证的证书，是颁发给在已签名标签所指向的提交上进行的一次运行的。安装器本身不读取该证书。随后，归档的 SHA-256 必须与所列出的摘要一致。该工作流会为任何被推送的标签运行，因此仅凭它的签名并不足够；标签签名表明是维护者发布了该提交。
+- <strong>没有 cosign 时</strong>，或当 `APOTHEM_HOME` 已经是一个 git 克隆时，安装器会克隆或更新仓库，并仅用 `git verify-tag` 检查标签。签名必须有效，<em>并且</em>由 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) 中公布的维护者密钥签署，且已签名的标签必须是以该发布命名的那个标签。由任何其他密钥签名的标签都会被拒绝，即使你的密钥环信任该密钥。已签名的 git 标签通过 SHA-1 ID 指明其提交；有 cosign 时，安装器还会检查归档的 SHA-256。已有克隆会先被拉取，其新标签会在克隆被检出<em>之前</em>接受检查。检查失败会让克隆保持原样；若克隆中已跟踪的文件有改动，更新会停止，并提示你提交或贮藏（stash）这些改动，而不会丢失它们。对于诸如 `main` 的非发布引用，已有克隆会跟随 origin 上该分支的副本。
+
+安装器会忽略重定向 git 的 git 环境变量（`GIT_DIR`、`GIT_WORK_TREE` 及类似变量），以及将 git 指向另一个配置文件的变量（`GIT_CONFIG`、`GIT_CONFIG_GLOBAL` 和 `GIT_CONFIG_SYSTEM`）或让它从另一个目录树读取属性的变量（`GIT_ATTR_SOURCE`；你自己配置中的 `attr.tree` 会在每条作用于克隆的 git 命令上被清空），并在 `APOTHEM_REPO` 以 `-` 开头时停止。`GIT_CONFIG_NOSYSTEM` 保持你的设置；它只会阻止 git 读取系统配置。git 仍会读取你自己的全局配置，并且除非你设置了 `GIT_CONFIG_NOSYSTEM`，还会从它一贯查找的位置读取系统配置；`git`、`gpg` 和 `cosign` 是你的 `PATH` 所找到的那些程序：安装器按找到的样子信任它们。在整个运行期间，安装器会设置 `GIT_NO_REPLACE_OBJECTS=1`，使 git 绝不通过 replace 引用替换对象；设置 `GIT_NO_LAZY_FETCH=1`，使 git 绝不自行从远程拉取缺失的对象；将 `GIT_ALLOW_PROTOCOL` 设为 file、git、http、https 和 ssh 传输方式，使你环境中的值无法扩大该列表；并设置 `GIT_ATTR_NOSYSTEM=1`。由于 `core.attributesFile` 在每条作用于克隆的 git 命令上都被清空，git 便不会读取克隆之外的任何属性文件，因此你的属性文件中定义的宏无法在克隆中指定过滤器。PowerShell 脚本会在运行结束时恢复这四个变量。安装器只读取一次发布标签，记录它所指向的提交，验证该标签，按 ID 检出该提交，并要求 `HEAD` 正是该提交，因此检查之后被移动的标签不会改变任何东西。在 Windows PowerShell 5.1 和 7 上，重定向到非 https 地址的下载会被拒绝，与 POSIX 安装器的 `curl` 行为一致。
+
+`APOTHEM_HOME` 必须是只有你能写入的文件夹，因为任何能写入它的人都能更改 `apothem` 命令所运行的代码。在 Windows 上，按 Windows 的默认权限，在驱动器根目录创建的文件夹（例如 `C:\apothem`）可被登录该计算机的每个用户更改。默认的 `~/.apothem` 位于你自己的用户文件夹中。在情况并非如此时，或在该文件夹或容纳它的文件夹属于他人时，每次拉取式的安装、更新和试运行都会发出警告但不停止，警告会指明该文件夹、谁能写入或拥有它，以及修复方法；从本地检出安装，以及设置了 `APOTHEM_SOURCE` 的更新，会跳过此检查。在 Windows 上，该警告来自 `install.ps1` 和 `update.ps1`：`install.sh` 和 `update.sh` 在 Git Bash、MSYS2 或 Cygwin 下不做此检查（参见[故障排查](/docs/install/troubleshooting#the-installer-warns-other-users-can-change-apothem_home)）。
+
+检查失败会在写入任何配置之前、在安装器替换 `APOTHEM_HOME` 之前中止安装。若某个已签名标签的维护者公钥尚不在本地密钥环中，安装器会中止并改为给出密钥导入指引：按上文所示导入该密钥，将其指纹与 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) 中公布的值进行核对，然后重新运行。
+
+有 cosign 时重新运行，会更新先前的发布归档安装。新的源码会先在 `~/.apothem` 旁边的一个文件夹中接受检查并解包，然后再换入。`~/.apothem` 中不属于源代码树的一切都会延续到新安装中：引擎的回滚备份（`backups/`）、安装台账（`state/`）、计划、记忆及其其他数据。如果某一步失败，或你用 Ctrl+C 或终止信号停止运行，先前的安装会被原样放回；如果连这一步也失败，消息会指明先前的文件所在位置。交换期间的强制终止或断电无法被捕获：它可能会在 `~/.apothem` 旁边留下文件夹，下一次拉取式安装会报告它们（见下文）。当安装器替换 `~/.apothem` 时，适用以下规则：
+
+- 没有 `--yes` 时，git 克隆不会被发布归档替换。克隆未跟踪的文件会移入新安装，而克隆自身的目录树（其历史和源码）会以其原名（`.apothem`）移入一个新文件夹 `~/.apothem.before-apothem-<time>`；安装器会告诉你位置，当你不再需要它时将其删除。即使带有 `--yes`，只要克隆中还有它会丢失的本地工作，安装器也会拒绝：改动、贮藏（stash）、未推送的提交，或其源代码树中未跟踪的文件。请提交并推送这些工作，或将其移到别处，然后重新运行。此检查在 `--dry-run` 时也会运行。`.git` 文件（链接的工作树）算作克隆，`.git` 文件夹也一样。
+- 任何非 Apothem 的 git 克隆，都会像任何不含 Apothem 安装的文件夹一样处理（见下文），绝不会作为克隆被更新或替换。
+- 只有当 git 能看到已有克隆中的每一处改动、并且克隆自身的设置在更新期间不会运行任何代码时，该克隆才会被原地更新。在拉取之前，出现以下情况时安装器会停止：有文件被标记为 assume-unchanged 或 skip-worktree；git 在 `APOTHEM_HOME` 中找不到工作树（例如克隆的配置将 `core.bare` 设为 `true` 时）；克隆包含子模块（记录在其索引中，或保存在 `.git/modules` 中）；`.git/info/attributes` 指定了过滤器或 diff 驱动（`filter=` 或 `diff=`）；它或某个配置文件不是普通文件；或者克隆从另一个仓库借用对象（`objects/info/alternates`）。克隆自身的 `.git/config` 或 `.git/config.worktree` 中，凡不属于以下各项的设置也会使它停止：`git clone` 和 `git init` 为完整克隆写入其中的设置、分支设置（分支的 `remote` 和 `pushremote` 必须为 `origin`）、`user.name`、`user.email`、`maintenance.auto`、`maintenance.strategy`、`pull.rebase` 和 `pull.ff`；因此用 `--filter` 创建的部分克隆也会停止；[故障排查](/docs/install/troubleshooting#the-installer-stops-the-existing-clone-is-set-up-in-a-way-the-update-would-trust)列出了这些设置。消息会指明该设置及其所在文件。设置、属性和对象检查会在任何读取克隆索引或对象的 git 命令之前运行，并且在 `--yes` 即将替换该克隆时，也会连同子模块检查一起运行。在任何应用工作树中 `.gitattributes` 文件的 git 命令之前，若某个这样的文件未被 git 跟踪、与已提交的副本不同，或其已提交副本 git 无法读取或指定了过滤器或 diff 驱动（工作树中的副本也会被读取），安装器会停止；若克隆中有 git 未跟踪的 git 仓库（git 也会读取其中的 `.gitattributes` 文件），安装器同样会停止。引擎自身的数据文件夹（例如 `backups`，任何发布都不会写入其中）不会因此被读取。在拉取之前，若 `src`（任意大小写拼写）下有 git 未跟踪的文件，它会停止，因为引擎可能会加载它们。检出之后，它会在引擎从克隆运行之前删除 `src` 下的 Python 缓存文件夹（`__pycache__`）。更新期间绝不会运行克隆的 git 钩子，并且每条作用于克隆的 git 命令运行时都无分页器、无自动维护、关闭其文件系统监视器、只允许 file、git、http、https 和 ssh 传输方式（因此克隆配置中的地址无法让 git 运行诸如 `ext::` 的辅助程序），且不递归子模块；`git diff` 和 `git status` 会跳过子模块。由其他用户拥有的克隆会使运行停止并附上说明（参见故障排查）。
+- 只包含引擎自身数据（`backups`、`state`、`plans`、`memory`、`contexts`、`learning`、`providers`）的文件夹，无需 `--yes` 即会被更新，且这些数据会被保留。
+- 不包含 Apothem 安装的文件夹，没有 `--yes` 时不会被触碰。带有 `--yes` 时，安装器会把整个文件夹原样移入一个新文件夹 `~/.apothem.before-apothem-<time>`（其内部保留原名），告诉你位置，然后全新安装。
+- 位于 `APOTHEM_HOME` 的符号链接（在 Windows 上为符号链接或联接点）会被拒绝，因为替换它只会替换链接本身，而不是它所指向的文件夹。请将 `APOTHEM_HOME` 指向该文件夹并重新运行。例外是已有的 git 克隆，它会被原地更新。
+- 在 Linux 和 macOS 上，需要延续的文件或文件夹若名称中含有空格或其他特殊字符，安装会停止。请先将其移出 `APOTHEM_HOME`。
+
+<strong>一次只允许一个运行，以及被中止的运行。</strong>安装、更新和卸载脚本的每次运行，都会在整个运行期间于 `APOTHEM_HOME` 旁边持有一把锁（默认为 `~/.apothem.lock`），并在运行以成功、失败、Ctrl+C 或终止信号结束时释放它。`apothem` 命令本身不会获取这把锁。第二个运行会停止，并显示 "Another Apothem install, update or uninstall is running"。在 POSIX 上，这把锁是一个保存该运行进程 ID 的文件夹。被终止的运行留下的锁会被报告，并附上删除方法，且绝不会被接管；在另一环境中创建的锁（例如同一台机器上的 WSL 和 Git Bash）会被报告为一把无法从当前环境检查其进程的锁。在 Windows PowerShell 上，这把锁是一个文件，Windows 会在进程结束时关闭并删除它。当 `APOTHEM_HOME` 是一个链接时，每个脚本都会在它所指向的文件夹旁边获取锁。试运行也会获取锁，除非容纳 `APOTHEM_HOME` 的文件夹尚不存在。因此，每次运行（包括原地更新、卸载和试运行）都需要对容纳 `APOTHEM_HOME` 的文件夹有写权限；没有写权限时，运行会在做出任何更改之前停止。
+
+交换期间的强制终止或断电，可能会把先前的安装或 `APOTHEM_HOME` 的其他条目留在其旁边的 `.apothem-old.<name>.*`、`.apothem-extract.<name>.*` 或 `.apothem-clone.<name>.*` 中（其中 `<name>` 是 `APOTHEM_HOME` 的最后一段），或留在 `APOTHEM_HOME.before-apothem-<time>` 文件夹中。针对该 `APOTHEM_HOME` 的下一次拉取式安装（包括试运行）会在做出任何更改之前停止，指明每个文件夹以及移入其中的条目，并说明如何将它们移回。对于较早的安装器创建的文件夹（它不会说明自己属于哪个主目录），该行可能只会指明引擎数据：请查看其内部。它不会删除任何内容。参见[故障排查](/docs/install/troubleshooting#the-installer-stops-an-earlier-run-left-folders-beside-apothem_home)。
+
+`--dry-run`（在 Windows 上为 `-DryRun`）会在一个临时文件夹中拉取并检查发布，并保持 `~/.apothem` 不变。它执行与真实运行相同的检查，但对已有克隆有一个例外：它会检查克隆自身的设置（如上所列），但不会向克隆中拉取，因此不会检查其已跟踪文件的改动，而真实更新会在拉取之后进行这项检查。用 `APOTHEM_REF` 锁定某个特定的发布：
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/install.sh)"
@@ -117,15 +146,20 @@ APOTHEM_REF=vMAJOR.MINOR.PATCH sh -c "$(curl -fsSL https://apothem.ahmedgad.com/
 
 将 `vMAJOR.MINOR.PATCH` 替换为[发布页面](https://github.com/ahmed-g-gad/apothem/releases)上的某个标签。最早的发布标签是一个轻量标签，本身没有签名，因此即使其提交已签名，标签检查也会在它上面中止；此后的每个发布标签都是经过签名的附注标签。[SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) 的发布签名部分列出了每个标签及其验证方法。
 
-显式覆盖项会放宽默认行为。`APOTHEM_ALLOW_UNVERIFIED=1` 会把验证失败降级为警告并继续，适用于物理隔离网络或本地使用场景，或用于安装早于标签签名的发布版本。`APOTHEM_REF=main` 只有在同时设置 `APOTHEM_ALLOW_UNVERIFIED=1` 时，才会在不验证的情况下检出会持续变动的分支。仅设置 `APOTHEM_REF=main` 时，安装器会把 `main` 拉取到 `APOTHEM_HOME`，然后在物化任何配置之前中止，因为分支不是已签名的发布标签。通过 `APOTHEM_SOURCE` 使用本地检出时不会拉取任何内容，并会跳过验证。
+显式覆盖项会放宽默认行为。`APOTHEM_ALLOW_UNVERIFIED=1` 会把克隆路径上失败的标签检查降级为警告并继续，适用于物理隔离网络或本地使用场景，或用于安装早于标签签名的发布版本。它绝不会放宽 cosign 路径，因此在装有 cosign 的主机上，请同时设置 `APOTHEM_VERIFY=signature`。它也绝不会放宽“已签名的标签必须是以该发布命名的那个标签”这项检查。由于该覆盖项会放行未签名的标签或由其他密钥签名的标签，这项检查只保护带有维护者密钥签名的标签。`APOTHEM_REF=main` 只有在同时设置 `APOTHEM_ALLOW_UNVERIFIED=1` 时，才会在不验证的情况下检出会持续变动的分支。仅设置 `APOTHEM_REF=main` 时，安装器会把 `main` 拉取到一个暂存文件夹中（当 `APOTHEM_HOME` 是已有克隆时，则拉取到该克隆中），然后在检出任何内容、替换 `APOTHEM_HOME` 或物化任何配置之前中止，因为分支不是已签名的发布标签。通过 `APOTHEM_SOURCE` 使用本地检出时不会拉取任何内容，并会跳过验证。
 
-`APOTHEM_VERIFY=checksum` 是为尚未持有维护者公钥的主机提供的折中路径：安装器不进行克隆，而是下载该发布的平台归档及其 `SHA256SUMS`，在解压任何内容之前若摘要不匹配即中止，并发出警告：摘要匹配只能证明该归档是发布所列出的那一个，而不能证明是谁发布了它。
+设置 `APOTHEM_VERIFY` 可以自行选择检查方式。默认值为 `auto`：
 
-随后引擎直接从放置好的目录树中运行。除 `click` 和 `rich` 之外的每个第三方依赖都 vendored 在源代码树内，并且入口点会自行将该 vendor 目录放到 `sys.path` 上：
+| 值 | 安装器检查的内容 |
+| --- | --- |
+| `auto`（默认） | 当 `cosign` 在 `PATH` 上且 `APOTHEM_HOME` 不是 git 克隆时为 `release`，否则为 `signature` |
+| `release` | 发布标签来自维护者密钥的签名，以及已签名的标签是以该发布命名的那个标签；然后是 cosign 的检查，确认发布工作流在标签所指提交上的一次运行中签署了 `SHA256SUMS`；最后是归档的 SHA-256。缺少 cosign 或 `gpg` 时停止 |
+| `signature` | 发布标签的 GPG 签名（必须来自维护者密钥），以及已签名的标签是以该发布命名的那个标签 |
+| `checksum` | 仅对照 `SHA256SUMS` 检查归档的 SHA-256。需要 `APOTHEM_ALLOW_UNVERIFIED=1`，并会在下载前发出警告。校验和模式不会验证发布。SHA256SUMS 与归档来自同一个发布，因此匹配只能表明下载未损坏；任何能够更改该发布文件的人都能同时更改两者。仅在既没有 cosign 也没有 `gpg` 的主机上、并且只有在你接受这一点时才使用它 |
 
-```bash
-PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
-```
+每种归档模式都会在摘要不匹配时、在解压任何内容之前中止。早期发布将该捆绑文件命名为 `SHA256SUMS.sig`，当 `SHA256SUMS.cosign.bundle` 不存在时，安装器会读取该名称。
+
+随后引擎直接从放置好的目录树中运行。除 `click` 和 `rich` 之外的每个第三方依赖都 vendored 在源代码树内，并且入口点会自行将该 vendor 目录放到 `sys.path` 上。安装器会打印它所写入的 `apothem` 垫片的完整路径。当它没有写入垫片时，它会打印一条启动引擎并将当前文件夹排除在 `sys.path` 之外的命令；请从横幅中复制该命令。
 
 两个脚本读取相同的配置环境变量（`APOTHEM_HOME`、`APOTHEM_REPO`、`APOTHEM_REF`、`APOTHEM_ALLOW_UNVERIFIED`、`APOTHEM_VERIFY`、`APOTHEM_RELEASE_BASE`、`APOTHEM_SOURCE`、`APOTHEM_HARNESS`、`APOTHEM_PROFILE`、`APOTHEM_SKIP_VERIFY`、`APOTHEM_AUTO_INSTALL_DEPS`、`APOTHEM_BIN_DIR`）；完整表格见[安装器环境变量](/docs/how-to/installer-environment-variables)，`python -m` 调用模型的工作方式见[自包含运行时](/docs/architecture/self-contained-runtime)。
 
@@ -136,8 +170,8 @@ PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
 ```bash title="Verify"
 apothem verify --harness claude-code
 
-# or, before the shim is on PATH, from the bundled source:
-PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
+# or, before the shim is on PATH, by the shim's full path:
+~/.local/bin/apothem verify --harness claude-code
 ```
 
 ## 4. VS Code 系扩展
@@ -233,6 +267,8 @@ cd apothem
 PYTHONPATH=src python -m apothem install --harness claude-code
 ```
 
+`python -m` 会把当前文件夹放在 Python 模块搜索路径的最前面，因此那里的某个文件（例如 `click.py`）或名为 `apothem` 的文件夹，会代替真正的模块运行。请从检出目录的根目录，或从你信任的其他文件夹运行这些命令。已安装的 `apothem` 命令不会读取当前文件夹。
+
 与 npm 垫片一样，在没有配置档案的机器上，第一次 `install` 会在 `~/.config/apothem/profile.yaml` 创建起始配置档案并继续执行。
 
 **验证：**
@@ -246,14 +282,14 @@ PYTHONPATH=src python -m apothem verify --harness claude-code
 上面每条渠道都指明了自己的验证命令。两种通用形式是：
 
 ```bash title="Installer path"
-PYTHONPATH="$HOME/.apothem/src" python -m apothem verify --harness claude-code
+apothem verify --harness claude-code
 ```
 
 ```bash title="npx path"
 npx @ahmed-g-gad/apothem verify --harness claude-code
 ```
 
-将工具名称替换为你所安装的适配器；所有受支持的名称见[工具列表](/docs/harnesses)。要一次检查每个已安装的适配器（其验证及其钩子命令），请在你上面所用的同一种形式中，将 `verify --harness NAME` 换成 `doctor` 来运行：`apothem doctor`、`PYTHONPATH="$HOME/.apothem/src" python -m apothem doctor` 或 `npx @ahmed-g-gad/apothem doctor`。对于插件路径，在 Claude Code 内运行 `/plugin` 并确认 **apothem** 显示为已安装。
+将工具名称替换为你所安装的适配器；所有受支持的名称见[工具列表](/docs/harnesses)。要一次检查每个已安装的适配器（其验证及其钩子命令），请在你上面所用的同一种形式中，将 `verify --harness NAME` 换成 `doctor` 来运行：`apothem doctor`（当其所在文件夹不在 `PATH` 上时，改用垫片的完整路径或安装器打印的命令）或 `npx @ahmed-g-gad/apothem doctor`。对于插件路径，在 Claude Code 内运行 `/plugin` 并确认 **apothem** 显示为已安装。
 
 ## 前置条件一览
 
@@ -261,7 +297,7 @@ npx @ahmed-g-gad/apothem verify --harness claude-code
 - **`click` 和 `rich` 可导入**（在该解释器下）——这是引擎没有 vendor 的两个面向终端的依赖。安装器会检查这两者，指出任何缺失项，并提出为你安装——经你确认后安装，或通过 `--yes`（在 PowerShell 上为 `-Yes`）或 `APOTHEM_AUTO_INSTALL_DEPS=1` 自动安装。在其他每条渠道上，缺失的包会使引擎以一个错误停止（退出码 1），该错误会针对它找到的解释器给出确切的命令，并附带 Apothem 经过测试的版本约束（`<interpreter> -m pip install "click==…" "rich>=…"`）；使用 `--json` 时，同一错误会以代码为 `runtime.dependency_missing` 的 JSON 信封形式返回。
 - **Node.js 18 或更高版本**——仅限运行 `npx` 的路径：npm 垫片（2）、VS Code 系扩展（4）以及命令行引导（5–7）。
 - **生命周期已终止的运行时。** Python 3.10 于 2026-10-01 到达上游生命周期终止，Node.js 18 和 20 分别于 2025-04-30 和 2026-04-30 到达。Apothem 仍将它们作为其声明的下限予以支持，并在 CI 中逐一测试，但它们不再获得上游安全修复，因此请优先选用 Python 3.11 或更新版本以及 Node.js 22 或更新版本。[运行时下限策略](/docs/governance/release-engineering-policy#runtime-floors)说明了下限如何提高。
-- **Git**——仅安装器路径需要，且仅用于网络形式（脚本会克隆源码；本地检出无需克隆）。
+- **Git 和 GnuPG**——仅安装器路径需要，且仅用于网络形式（脚本用它们查找最新的发布并检查其已签名的标签，在没有 cosign 时还会克隆源码；本地检出两者都不需要）。
 - **Claude Code**——仅插件路径需要。**VS Code** 以及每个命令行引导各自的宿主工具，仅在其各自的渠道（4–7）中需要。
 
 ## 后续指南

@@ -2,7 +2,7 @@
 title: "CodeBuddy"
 description: "Адаптер окружения Apothem для Tencent CodeBuddy (GA)."
 machineTranslated: true
-sourceHash: "fbf19289d20e8ab7"
+sourceHash: "325f29aff29de35e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -174,6 +174,10 @@ Apothem зарегистрирует защиту на событии CodeBuddy,
 "/path/to/python" -E -s "/path/to/project/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart
 ```
 
+`-E -s` заставляет Python игнорировать `PYTHONPATH` и другие переменные
+`PYTHON*` и пропускать пользовательские site-packages, поэтому никакой файл из
+проекта не может загрузиться в хук.
+
 `--contract codebuddy` не влияет на вывод: CodeBuddy читает тот же конверт, что
 и Claude Code. CodeBuddy запускает команды хуков через вашу оболочку, а в
 Windows — через Git Bash (CodeBuddy не поддерживает ни cmd.exe, ни PowerShell), поэтому
@@ -208,12 +212,14 @@ Apothem (`.apothem/support/hooks/dispatch.py` с `--contract codebuddy`, под 
 ## Сопоставление профиля с нативной конфигурацией
 
 Адаптер читает общий профиль Apothem и рендерит файл правил проекта при каждом
-запуске `apothem install` или `apothem update`. CodeBuddy читает каждый файл
-`*.md` в `.codebuddy/rules/` как Markdown с необязательным YAML-фронтматтером
-(`alwaysApply`, `paths`, `enabled`) согласно
-[документации CodeBuddy по правилам](https://www.codebuddy.ai/docs/ide/Rules);
-файл Apothem содержит `alwaysApply: true`, поэтому поверхность управления
-применяется при каждом взаимодействии. Фронтматтер — это первое содержимое
+запуске `apothem install` или `apothem update`. CodeBuddy Code читает каждый
+файл `*.md` в `.codebuddy/rules/`, включая подпапки, как Markdown с
+необязательным YAML-фронтматтером (`alwaysApply`, `paths`, `enabled`) согласно
+[документации CodeBuddy по памяти](https://www.codebuddy.ai/docs/cli/memory#modular-rules-with-codebuddy-rules);
+файл Apothem содержит `alwaysApply: true`, поэтому CodeBuddy Code загружает его
+в каждый сеанс, который запускается в корневой папке проекта. Он читает правила
+проекта только из папки, в которой запускается, а файл правил, который установка
+добавляет или изменяет, читает только после перезапуска. Фронтматтер — это первое содержимое
 файла, а за ним следует блок, управляемый Apothem; текст, который вы добавляете
 после блока, сохраняется при каждой синхронизации. Общий профиль является
 источником истины; для локальных правок сгенерированного файла в проекте
@@ -224,7 +230,11 @@ Apothem (`.apothem/support/hooks/dispatch.py` с `--contract codebuddy`, под 
 
 Поверхность правил CodeBuddy ограничена областью проекта в `.codebuddy/rules/`.
 Адаптер записывает выделенный файл `apothem-rules.md`, который сосуществует с
-любыми файлами правил, созданными оператором в том же каталоге. Файл памяти
+любыми файлами правил, созданными оператором в том же каталоге.
+[Страница Rules](https://www.codebuddy.ai/docs/ide/User-guide/Rules#project-rules)
+IDE CodeBuddy описывает по одной папке на правило, в каждой из которых лежит файл
+`RULE.mdc`, а не простой файл `.md`, как у Apothem. На странице не сказано,
+загружает ли IDE также простой файл `.md`, и Apothem этого не подтвердил. Файл памяти
 проекта `CODEBUDDY.md`, фиксируемый в репозитории `.codebuddy/settings.json` и
 файл проекта `.mcp.json` (серверы MCP) принадлежат оператору; Apothem их не
 записывает. CodeBuddy также документирует слэш-команды; адаптер их не
@@ -315,8 +325,17 @@ apothem uninstall --harness codebuddy --project /path/to/project
 ## Шлюз соответствия
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Запускайте его из папки проекта. В Windows используйте `python` вместо
+`python3` и полный путь, поскольку Windows PowerShell и cmd не раскрывают
+`~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` в PowerShell или
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` в cmd. Это путь, куда
+установщик помещает движок, а `-E -s` не пускает в шлюз ваш `PYTHONPATH` и
+пользовательские site-packages; [Шлюз соответствия](/docs/conformity-gate)
+объясняет и то и другое, а также другие способы установки.
 
 ## Устранение неполадок
 

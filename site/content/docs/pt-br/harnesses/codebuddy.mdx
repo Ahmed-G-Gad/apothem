@@ -2,7 +2,7 @@
 title: "CodeBuddy"
 description: "Adaptador de harness do Apothem para o Tencent CodeBuddy (GA)."
 machineTranslated: true
-sourceHash: "fbf19289d20e8ab7"
+sourceHash: "325f29aff29de35e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -164,6 +164,10 @@ dois caminhos:
 "/path/to/python" -E -s "/path/to/project/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart
 ```
 
+`-E -s` faz o Python ignorar o `PYTHONPATH` e as outras variáveis `PYTHON*`
+e pular os site-packages do usuário, de modo que nenhum arquivo do projeto pode
+ser carregado no hook.
+
 `--contract codebuddy` não altera a saída: o CodeBuddy lê o mesmo
 envelope que o Claude Code lê. O CodeBuddy executa os comandos de hook pelo seu shell, e
 pelo Git Bash no Windows (ele não suporta nem o cmd.exe nem o PowerShell), então os
@@ -197,12 +201,15 @@ CodeBuddy para silenciar os hooks do Apothem, ou defina a configuração
 ## Mapeamento do perfil para a configuração nativa
 
 O adaptador lê o perfil compartilhado do Apothem e renderiza o arquivo de regras
-do projeto a cada execução de `apothem install` ou `apothem update`. O CodeBuddy
-lê cada arquivo `*.md` sob `.codebuddy/rules/` como Markdown com frontmatter
-YAML opcional (`alwaysApply`, `paths`, `enabled`), conforme a
-[documentação de regras do CodeBuddy](https://www.codebuddy.ai/docs/ide/Rules);
-o arquivo do Apothem carrega `alwaysApply: true` para que a superfície de
-governança se aplique a cada interação. O frontmatter é o primeiro conteúdo do
+do projeto a cada execução de `apothem install` ou `apothem update`. O CodeBuddy Code
+lê cada arquivo `*.md` sob `.codebuddy/rules/`, subpastas incluídas, como
+Markdown com frontmatter YAML opcional (`alwaysApply`, `paths`, `enabled`),
+conforme a
+[documentação de memória do CodeBuddy](https://www.codebuddy.ai/docs/cli/memory#modular-rules-with-codebuddy-rules);
+o arquivo do Apothem carrega `alwaysApply: true`, então o CodeBuddy Code o carrega
+em cada sessão que inicia na pasta raiz do projeto. Ele lê as regras do projeto
+apenas da pasta em que inicia, e só lê um arquivo de regras que uma instalação
+adiciona ou altera depois de reiniciar. O frontmatter é o primeiro conteúdo do
 arquivo e o bloco gerenciado pelo Apothem vem depois dele; o texto que você
 adiciona após o bloco é mantido a cada sincronização. O perfil compartilhado é a
 fonte da verdade; as edições locais do projeto no arquivo gerado recebem backup
@@ -213,7 +220,11 @@ antes que a próxima sincronização substitua o conteúdo gerenciado pelo Apoth
 A superfície de regras do CodeBuddy tem escopo de projeto sob
 `.codebuddy/rules/`. O adaptador grava um arquivo dedicado `apothem-rules.md`
 que coexiste com quaisquer arquivos de regras que o operador crie no mesmo
-diretório. O arquivo de memória de projeto `CODEBUDDY.md`, o
+diretório. A [página de Rules](https://www.codebuddy.ai/docs/ide/User-guide/Rules#project-rules)
+da IDE do CodeBuddy descreve uma pasta por regra, cada uma com um arquivo
+`RULE.mdc`, em vez de um arquivo `.md` simples como o do Apothem. A página não
+diz se a IDE também carrega um arquivo `.md` simples, e o Apothem não confirmou
+que carrega. O arquivo de memória de projeto `CODEBUDDY.md`, o
 `.codebuddy/settings.json` incluído no commit e o `.mcp.json` do projeto (servidores MCP) são de
 propriedade do operador; o Apothem não os grava. O CodeBuddy também documenta
 comandos slash; o adaptador não grava nenhum e, em vez disso, referencia as
@@ -305,8 +316,17 @@ pasta recebe backup em `~/.apothem/backups/` antes de ser removida.
 ## Conformity gate
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Execute-o na pasta do seu projeto. No Windows, use `python` no lugar de
+`python3` e o caminho completo, pois o Windows PowerShell e o cmd não expandem
+`~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` no PowerShell, ou
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` no cmd. O caminho é
+onde o instalador coloca o engine, e `-E -s` mantém seu `PYTHONPATH` e os
+site-packages do usuário fora do gate; [Conformity gate](/docs/conformity-gate)
+explica os dois e as outras instalações.
 
 ## Solução de problemas
 

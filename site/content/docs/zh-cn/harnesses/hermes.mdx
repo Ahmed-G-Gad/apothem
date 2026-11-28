@@ -2,11 +2,11 @@
 title: "Hermes"
 description: "适用于 Hermes（预览版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "2031f90de3f936a5"
+sourceHash: "6b5e4589566e8d9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-- **厂商：** Hermes
+- **厂商：** Nous Research
 - **安装名称：** `hermes`
 - **状态：** 预览版
 - **原生配置：** `~/.hermes/config.yaml`
@@ -19,7 +19,11 @@ apothem install --harness hermes
 
 适配器将共享配置档案转换为 Hermes Agent 的用户全局配置文件，并在工具根目录下安装 Apothem 支持集合。
 
-**写入的文件：** `~/.hermes/config.yaml`、配置档案文档 `~/.hermes/apothem/rules/00-apothem-profile.md`，以及 `~/.hermes/.apothem/support/` 下的支持文件
+**写入的文件：** `~/.hermes/config.yaml`、配置档案文档 `~/.hermes/apothem/rules/00-apothem-profile.md`，以及 `~/.hermes/.apothem/support/` 下的支持文件。安装还会创建 Apothem 数据文件夹（默认为 `~/.hermes/.apothem/`），其中包含 `contexts/`、`learning/`、`memory/` 和 `plans/`。
+
+每次安装和更新都会删除 `~/.hermes/apothem/rules/` 中并非由 Apothem 放入的每个文件，删除前会先把它保存到 `~/.apothem/backups/` 下的一个备份组中。一旦该工具存在 10 个更新的备份组，该备份就会被删除，因此请把你自己的文件保存在别处。
+
+较早的版本（[更新日志](/docs/changelog)列出了这些版本）还会在每次安装和更新时，先把 `~/.hermes/cli-config.yaml` 和 `~/.hermes/profile.yaml` 复制到 `~/.apothem/backups/<timestamp>/hermes/` 下的一个备份组中，然后将其移除。当前版本不会触碰这两个文件。要找回它们，请在再次运行 Apothem 之前把 `~/.apothem/backups/` 复制到别处，然后从该副本中手动把这些文件复制回 `~/.hermes/`。[更新日志](/docs/changelog#data-loss-in-earlier-releases-recover-your-files)给出了完整的恢复步骤。
 
 配置档案文档以一个 Apothem 支持文件小节结尾，该小节写明每种仓库风格的引用（`rules/<name>.md`、`templates/...`、`hooks/...`）所解析到的、位于 `~/.hermes/.apothem/support/` 下的绝对目录。
 
@@ -44,7 +48,7 @@ Hermes 会从它启动所在的文件夹向上查找 `.hermes.md` 和 `HERMES.md
 
 Apothem 为 [Kimi Code](/docs/harnesses/kimi-code) 安装时会写入第一个文件，[为另一个编辑器安装](/docs/harnesses/cursor)时会写入第二个文件。使用 `--project` 运行的 Hermes 安装会指出这样的文件以及写入它的那次安装。
 
-**名称冲突。** Hermes 为技能记载了以下优先顺序：项目的技能（`<project>/.hermes/skills/` 和 `<project>/.agents/skills/`），然后是 `~/.hermes/skills/`，然后是 `skills.create_dir`，然后是 `skills.external_dirs` 下列出的文件夹。Apothem 目录是一个 `external_dirs` 条目，因此它排在最后。所查阅的 Hermes 文档没有说明当两个位置存放着同名技能时 Hermes 会加载哪一份副本；Apothem 将该顺序理解为更早的位置胜出，因此可以预期你保存在更早位置中的同名技能会优先于 Apothem 副本。Apothem 只写入 `config.yaml` 以及 `~/.hermes/.apothem/support/` 之下，绝不写入那些更早的位置，因此安装、更新和卸载都不会替换你保存在那里的技能。
+**名称冲突。** Hermes 为技能记载了以下优先顺序：项目的技能（`<project>/.hermes/skills/` 和 `<project>/.agents/skills/`），然后是 `~/.hermes/skills/`，然后是 `skills.create_dir`，然后是 `skills.external_dirs` 下列出的文件夹。Apothem 目录是一个 `external_dirs` 条目，因此它排在最后。所查阅的 Hermes 文档没有说明当两个位置存放着同名技能时 Hermes 会加载哪一份副本；Apothem 将该顺序理解为更早的位置胜出，因此可以预期你保存在更早位置中的同名技能会优先于 Apothem 副本。Hermes 安装绝不写入那些更早的位置：在 `~/.hermes/` 内，它只写入 `config.yaml`、`apothem/rules/` 和 `.apothem/`，因此安装、更新和卸载都不会替换你保存在那里的技能。
 
 `apothem update` 会保留你添加到 `config.yaml` 中的键，包括 `skills.config` 以及你自己的 `skills.external_dirs` 条目。适配器将配置档案的 MCP 清单写在顶层 `mcp_servers` 键下，Hermes 从该处读取 MCP 服务器。较早的 Apothem 发布将其写在 `auxiliary.mcp` 下，而 Hermes 会将该处读取为用于 MCP 工具分派的辅助模型；当该区块仍与此类发布会根据你当前的共享配置档案写入的内容相符时，`apothem update` 和 `apothem uninstall` 都会将其移除（该区块在何种情况下会保留，参见[卸载](#卸载)）。（Hermes 的行为依据其用户指南中关于[技能](https://hermes-agent.nousresearch.com/docs/user-guide/features/skills)（于 2026-10-24 查阅）和 [MCP](https://github.com/NousResearch/hermes-agent/blob/main/website/docs/user-guide/features/mcp.md)（于 2026-10-02 查阅）的页面。）
 
@@ -93,8 +97,10 @@ apothem uninstall --harness hermes
 ## 合规闸门
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+请在你的项目文件夹中运行它。在 Windows 上，请用 `python` 代替 `python3`，并使用完整路径，因为 Windows PowerShell 和 cmd 不会展开 `~`：PowerShell 中为 `$HOME\.apothem\src\apothem\conformity\gate.py`，cmd 中为 `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`。该路径是安装程序放置引擎的位置，`-E -s` 让你的 `PYTHONPATH` 和用户 site-packages 不会进入闸门；[合规闸门](/docs/conformity-gate)解释了这两点以及其他安装方式。
 
 ## 故障排查
 

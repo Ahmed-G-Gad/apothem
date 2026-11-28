@@ -2,7 +2,7 @@
 title: "verify"
 description: "apothem verify 命令的 CLI 参考。"
 machineTranslated: true
-sourceHash: "9147e25d2829a90c"
+sourceHash: "7e26b019bbe8ca71"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -16,9 +16,11 @@ apothem verify --harness NAME|all [--profile PATH] [--project PATH]
                 [--format plain|json] [--json] [--no-color]
 ```
 
-调用每个所选适配器的 `verify()` 实现。只有当所有所选适配器都报告其受管目标存在且有效时，才以 0 退出。未提供 `--profile` 时，该检查是**结构性**的——每个受管目标都必须存在且有效。提供 `--profile` 时，该检查还额外要求**配置档案保真度**，因此一个存在但已漂移的安装无法通过验证；它回答的是“被忠实安装的是否正是这份配置档案？”，而不只是“它是否存在？”。
+调用每个所选适配器的 `verify()` 实现。只有当所有所选适配器都报告其受管目标存在且有效时，才以 0 退出。未提供 `--profile` 时，该检查是<strong>结构性</strong>的——每个受管目标都必须存在且有效。提供 `--profile` 时，该检查还额外要求<strong>配置档案保真度</strong>，因此一个存在但已漂移的安装无法通过验证；它回答的是“被忠实安装的是否正是这份配置档案？”，而不只是“它是否存在？”。行尾不计入比较，因此以 CRLF 或 CR 行尾保存的文件同样可以通过。无论哪种情况，一个由 Apothem 存放受管块的文件，只要它含有一个不开启任何完整块的 BEGIN 标记（例如其 END 标记已丢失的那个，参见[故障排除](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)）、在 Apothem 的标记之间含有两个或更多完整块（参见[文件在 Apothem 的标记之间含有两个块](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)），或不含完整块却含有 Apothem 无法与你的文本区分的标记对（例如它的块位于你的某个代码块之内，参见 [Apothem 无法区分其块与你的文本](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)），验证就会失败。更新会保留这样的标记，或保持这样的文件原样，因此运行 `apothem update` 并不能消除该失败。受检查的文件是该工具的安装向其中写入块的文件，以及自上次完成的卸载以来其安装记录所列出的文件，包括安装已不再使用的 OpenClaw 工作区中的规则文件。你自己文件中的标记（例如某个项目的笔记文件）不会使验证失败。在没有安装记录时，不会检查 `CLAUDE.md` 和配置档案文档：只有记录才能表明它们是由安装写入的。当它找到的某个工作区中的规则文件不含完整块、或含有一个不开启任何块的 BEGIN 标记时，OpenClaw 的验证仍会失败，但不指出该文件。失败的行会指出每个这样的文件，并说明需要修复什么：对于游离标记，给出其所在的行，以及修改该行和除开启 Apothem 块的那一行之外的其他每个 BEGIN 标记行（包括你在代码中引用的 BEGIN 标记）的编号步骤，每个文件单独给出（该说明还指出不要改为补回 END 标记，因为一旦安装或更新已将 Apothem 的块与之分开写入，那样会留下两个 Apothem 块）；对于完整块，按行号指出每个块；或者，对于 Apothem 无法与你的文本区分的标记对，给出每对标记所在的行、它们被读作什么以及如何修复，并附上每个不开启任何标记对的 BEGIN 标记。对于 OpenClaw 规则文件——更新只在其符合 OpenClaw 的单文件大小上限时才会写入——该说明会指出：如果届时文件符合该上限，下一次更新就会写入 Apothem 的块，而你保留的旧 Apothem 文本也计入该上限（参见 [Open-Claw](/docs/harnesses/open-claw#rules-in-each-workspace)）。在纯文本模式下，该行之后会跟一条 `Note:` 行，此时该行会省略预期路径；JSON 行则会增加一个包含 `files` 和 `message` 的 `stray_begin` 对象。
 
-对于将技能写入你主目录的适配器，验证还会检查它所期望的每个技能文件夹都存在且带有一个 `SKILL.md`，无论是哪次安装写入的，因此在一台只安装了共享某个文件夹的工具之一的机器上也能通过验证。当某个文件夹缺失时，以及当一个与某个 Apothem 技能同名的文件夹属于并非由 Apothem 写入的内容时，验证会失败。失败的行会说明是哪种情况：在纯文本模式下，其后会跟一条 `Note:` 行；在 JSON 行中，一个 `user_level` 对象会列出 `missing` 和 `unlisted` 路径以及一个 `message`。运行 [`install`](/docs/cli-reference/install) 以恢复缺失的文件夹；将外来的文件夹重命名或移走，然后运行 [`update`](/docs/cli-reference/update)。
+对于将技能写入你主目录的适配器，验证还会检查它所期望的每个技能文件夹都存在且带有一个 `SKILL.md`，无论是哪次安装写入的，因此在一台只安装了共享某个文件夹的工具之一的机器上也能通过验证。当某个文件夹缺失时，以及当一个与某个 Apothem 技能同名的文件夹属于并非由 Apothem 写入的内容时，验证会失败。失败的行会说明是哪种情况：在纯文本模式下，其后会跟一条 `Note:` 行；在 JSON 行中，一个 `user_level` 对象会列出 `missing`、`unlisted` 和 `unproven` 路径以及一个 `message`。运行 [`install`](/docs/cli-reference/install) 以恢复缺失的文件夹；将外来的文件夹重命名或移走，然后运行 [`update`](/docs/cli-reference/update)。`unproven` 文件夹是 Apothem 无法证明由其写入的文件夹。列出它的那些安装所在的文件夹已不存在、不含 Apothem 文件或无法读取，或者它们已不再列出它；并且它所含的文件与它们记录的文件并不完全一致（参见 [`install`](/docs/cli-reference/install)）。这个文件夹是你创建或编辑过的，或者是较早的版本写入却未记录其文件的。该说明会逐一指出它们，并给出安装警告中的两条后续路径。要保留它，就让它留在原处。要使用 Apothem 的版本，就把它移出技能文件夹，然后为该工具运行 `update`；对于项目作用域工具，该说明会写出 `--project`，并按 doctor 的方式为 shell 加上引号，或用文字描述。已经含有本版本所写内容的文件夹永远不会被指出，因为安装会保留它。验证只会为已安装的工具查找 unproven 和 unlisted 文件夹，因此 `verify --harness all` 只会在已安装的工具下指出它们。
+
+无论是否通过验证，一行之后都可能跟着一条说明。当 Apothem 写入的内容已就位，但你的某个文件使工具无法加载它时，会有一条 `Note:` 行指出该文件，并且 JSON 信封的 `warnings` 会增加一个带有 `"operation": "instruction_override"` 的条目（在 [`install`](/docs/cli-reference/install) 下有说明）。其中一种这样的文件，是与[一个受支持的工具](/docs/harnesses/codex#compatibility-notes)从其主文件夹加载的 `AGENTS.md` 并列、且含有文本的 `AGENTS.override.md`。其他的则是 [OpenCode 1](/docs/harnesses/opencode#compatibility-notes) 从其配置文件夹加载的文件：一个带有自己 `instructions` 列表的 `opencode.jsonc`，以及一个 OpenCode 1 根本无法加载的 `config.json`、`opencode.json` 或 `opencode.jsonc`。该说明不会使检查失败。当 Apothem 块不在那个 `AGENTS.md` 中，或 `opencode.json` 没有列出任何由安装写入的条目时，不会有说明；针对 OpenCode 1 无法加载的 `opencode.json` 的说明，只需要安装写入的配置档案文档含有 Apothem 块。
 
 `--harness all` 扫查会遵循配置档案的 `exclude_harnesses`——即 `install`/`update` 批处理所应用的相同排除项——因此验证绝不会将一个被有意排除的工具报告为缺失。提供 `--profile` 时，排除项来自它，否则来自默认配置档案；默认配置档案不可读或不存在时，会降级为完整的注册表。
 

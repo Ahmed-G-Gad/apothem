@@ -2,7 +2,7 @@
 title: "Архитектура исполнителей"
 description: "Как Apothem проецирует единую группу возможностей делегированных исполнителей на семнадцать окружений программирования с расходящимися поверхностями хуков и форматами правил."
 machineTranslated: true
-sourceHash: "f7b510f076abbabd"
+sourceHash: "be0f8df513fb3c8f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -40,7 +40,7 @@ PreToolUse, которую подключает адаптер (если окр�
 | hermes | Только вспомогательный материал | `config.yaml` плюс внешний каталог навыков | Класс II-B | `config.yaml` |
 | kimi-code | Только вспомогательный материал | `AGENTS.md` плюс вспомогательные правила в `.kimi-code/.apothem/support/` | Класс I | нет |
 | kiro | Нативный SessionStart в `.kiro/hooks/apothem.json`; без хука событий инструментов (вендор игнорирует их вывод) | Управляющий файл `.kiro/steering/apothem-rules.md` | Класс I | нет |
-| open-claw | Только вспомогательный материал | `openclaw.json` плюс дополнительный каталог навыков | Класс II-B | `openclaw.json` |
+| open-claw | Только вспомогательный материал | `openclaw.json` плюс дополнительный каталог навыков и файл правил рабочей области `apothem/AGENTS.md`, загружаемый хуком `bootstrap-extra-files` | Класс II-B | `openclaw.json` |
 | opencode | Только вспомогательный материал | JSON, отрендеренный из профиля, плюс нативные команды, навыки и исполнители | Класс II-B | `opencode.json` |
 | qwen-code | Нативные PreToolUse / Stop / SessionStart | `QWEN.md` плюс нативные команды, навыки и исполнители | Класс II-B | `settings.json` / `QWEN.md` |
 | trae | Нет | Файл проектных правил `.trae/rules/apothem-rules.md` | Класс I | нет |
@@ -58,7 +58,7 @@ PreToolUse, которую подключает адаптер (если окр�
   преобразует исполнителей в TOML, оборачивает командные промпты как навыки Codex и
   оставляет `config.toml` во владении оператора.
 - **antigravity** сохраняет `~/.gemini/GEMINI.md` как глобальный якорь контекста и
-  устанавливает плагин Apothem в `~/.gemini/antigravity-cli/plugins/apothem/`. Файлы
+  устанавливает плагин Apothem в `~/.gemini/config/plugins/apothem/`. Файлы
   хуков сохраняются как вспомогательный материал, пока адаптер не начнёт сам вести
   преобразование схемы хуков Antigravity.
 - **cursor** активирует правила через один файл `.mdc`, который несёт фронтматтер MDC
@@ -141,7 +141,7 @@ CLI против окружения:
 | Ось | Диапазон, наблюдаемый среди семнадцати окружений |
 |------|---------------------------------------------|
 | Поверхность хуков | Нативные многособытийные (claude-code, codex, qwen-code) → нативные на событиях, которые вендор доставляет модели (codebuddy: SessionStart и PostToolUse; cursor: sessionStart; github-copilot: sessionStart и postToolUse; kiro: SessionStart; windsurf: SessionStart и PostToolUse) → только вспомогательный материал хуков (antigravity, gemini-cli, hermes, kimi-code, open-claw, opencode) → адаптер не регистрирует хук (glm, trae, zed) |
-| Формат активации правил | Плоский `.md` (claude-code) → правила плагина (antigravity) → рабочая область `.mdc` (cursor) → правила каталога (codebuddy, trae, windsurf) → управляющий файл (kiro) → плоский файл в корне проекта (zed) → единый встроенный файл (codex, gemini-cli, github-copilot, kimi-code) → вспомогательный материал, на который ссылается конфигурация (hermes, open-claw, opencode, qwen-code) → конфигурация провайдера бэкенда (glm) |
+| Формат активации правил | Плоский `.md` (claude-code) → правила плагина (antigravity) → рабочая область `.mdc` (cursor) → правила каталога (codebuddy, trae, windsurf) → управляющий файл (kiro) → плоский файл в корне проекта (zed) → единый встроенный файл (codex, gemini-cli, github-copilot, kimi-code) → файл правил рабочей области, загружаемый хуком (open-claw) → вспомогательный материал, на который ссылается конфигурация (hermes, opencode, qwen-code) → конфигурация провайдера бэкенда (glm) |
 | Класс адаптера | Класс I — прямое распространение → Класс II-A — прямое распространение + настройки вендора → Класс II-B — единая поверхность, рендеримая из профиля |
 
 

@@ -2,7 +2,7 @@
 title: "Fluxos de trabalho principais"
 description: "Os quatro fluxos de trabalho principais do Apothem — perfil, regras, planos e o conformity gate."
 machineTranslated: true
-sourceHash: "a53e8d62d7df7ef4"
+sourceHash: "2c2b69afe24907e5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -72,16 +72,22 @@ completo.
 
 ## Conformity gate
 
-A partir de um checkout do Apothem, execute:
+A partir de um checkout do Apothem, execute-o na raiz do checkout (`python -m` lê
+módulos primeiro da pasta atual, então use uma pasta em que você confia):
 
 ```bash
 PYTHONPATH=src python -m apothem.conformity.gate --all .
 ```
 
-Após uma instalação por script, execute:
+Após uma instalação por script, execute o gate pelo caminho do script com `-E -s`,
+a partir do projeto que você quer verificar. No Windows, use `python` no lugar de
+`python3`, e `$HOME\.apothem\...` no PowerShell ou
+`%USERPROFILE%\.apothem\...` no cmd no lugar de `~/.apothem/...`, pois o
+Windows PowerShell e o cmd não expandem `~`;
+[Conformity gate](/docs/conformity-gate) explica as flags:
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python3 -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
 
 Executa todas as verificações mecânicas de conformidade e relata aprovado/falho

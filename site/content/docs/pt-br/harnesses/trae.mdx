@@ -2,7 +2,7 @@
 title: "Trae"
 description: "Adaptador de harness do Apothem para o Trae (GA)."
 machineTranslated: true
-sourceHash: "97ae18e3fc9b0b70"
+sourceHash: "1c892ed70350c956"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -49,7 +49,7 @@ Essas pastas são compartilhadas. Elas não são privadas do projeto:
   instalação pertence. Ele não muda para onde vão as skills.
 - A instalação não adiciona nenhum arquivo de skill ou de regra ao seu repositório. O projeto
   recebe o arquivo de regras e os arquivos de subagente em `.trae/agents/`, além da
-  pasta de dados `.apothem/` que toda instalação de projeto cria.
+  pasta de dados que toda instalação de projeto cria, `.apothem/` por padrão.
 - As pastas do diretório pessoal são gravadas primeiro. Se isso falhar, por exemplo porque uma
   pasta no caminho é um link que sai do seu diretório pessoal (um link que
   permanece dentro dele é seguido) ou não pode ser gravada, a instalação para
@@ -204,8 +204,17 @@ pasta recebe backup em `~/.apothem/backups/` antes de ser removida.
 ## Conformity gate
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Execute-o na pasta do seu projeto. No Windows, use `python` no lugar de
+`python3` e o caminho completo, pois o Windows PowerShell e o cmd não expandem
+`~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` no PowerShell, ou
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` no cmd. O caminho é
+onde o instalador coloca o engine, e `-E -s` mantém seu `PYTHONPATH` e os
+site-packages do usuário fora do gate; [Conformity gate](/docs/conformity-gate)
+explica os dois e as outras instalações.
 
 ## Solução de problemas
 

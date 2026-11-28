@@ -2,7 +2,7 @@
 title: "Qwen Code"
 description: "适用于 Qwen Code（测试版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "f5b172839bc072f8"
+sourceHash: "60c859a693851061"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -31,7 +31,11 @@ apothem install --harness qwen-code
 ~/.qwen/.apothem/support/{rules,templates,hooks}/
 ```
 
+安装还会创建 Apothem 数据文件夹，默认为 `~/.qwen/.apothem/`，其中包含 `contexts/`、`learning/`、`memory/` 和 `plans/`。
+
 文件 `~/.qwen/apothem/rules/00-apothem-profile.md` 是配置档案文档。它携带共享配置档案中你的身份和偏好。
+
+每次安装和更新都会删除 `~/.qwen/apothem/rules/` 中所有并非由 Apothem 放入的文件，删除前会把它们保存到 `~/.apothem/backups/` 下的备份集中。一旦该工具存在 10 个更新的备份集，这份备份就会被删除，因此请把你自己的文件放在别处。
 
 ## 配置档案到原生配置的映射
 
@@ -78,8 +82,10 @@ apothem uninstall --harness qwen-code
 ## 合规闸门
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+请在你的项目文件夹中运行它。在 Windows 上，请用 `python` 代替 `python3`，并使用完整路径，因为 Windows PowerShell 和 cmd 不会展开 `~`：PowerShell 中为 `$HOME\.apothem\src\apothem\conformity\gate.py`，cmd 中为 `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`。该路径是安装程序放置引擎的位置，`-E -s` 让你的 `PYTHONPATH` 和用户 site-packages 不会进入闸门；[合规闸门](/docs/conformity-gate)解释了这两点以及其他安装方式。
 
 ## 故障排查
 

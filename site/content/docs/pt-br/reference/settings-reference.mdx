@@ -2,7 +2,7 @@
 title: "Documentação do settings.json"
 description: "Configure a execução de hooks do Claude Code, permissões, eventos, tempos limite, runtime Python, validação e precedência de configurações em camadas para o ecossistema Apothem."
 machineTranslated: true
-sourceHash: "f83dad93ea1dbe9c"
+sourceHash: "a7175abd0e0c77ac"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -38,7 +38,9 @@ Todo hook configurado usa o formato de comando em forma exec do Claude Code. O t
 porta de conformidade (`~/.claude/.apothem/support/conformity/gate.py`, com seus fixtures de schema
 ao lado dele em `~/.claude/.apothem/support/schemas/`) são scripts autônomos da biblioteca
 padrão — nenhum pacote `apothem` importável é necessário no host, e um único
-modelo serve a cada plataforma.
+modelo serve a cada plataforma. `-E -s` faz o Python ignorar o `PYTHONPATH` e
+as outras variáveis `PYTHON*` e pular os site-packages do usuário, de modo que
+nada no projeto que o assistente abriu é carregado em um hook.
 
 ## Esquema de configuração de hooks
 

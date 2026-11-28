@@ -2,7 +2,7 @@
 title: "GLM (Z.ai)"
 description: "Адаптер окружения Apothem для GLM (Z.ai) как настраиваемого бэкенда моделей."
 machineTranslated: true
-sourceHash: "026e29a055db8a67"
+sourceHash: "fcd06518f021542b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,7 +33,9 @@ apothem install --harness glm --project /path/to/project
 Адаптер записывает один файл провайдера в области проекта, фиксирующий
 конечные точки бэкенда GLM и заполнители, настраиваемые оператором.
 
-**Записываемые файлы:** `<project>/.apothem/providers/glm.toml`
+**Записываемые файлы:** `<project>/.apothem/providers/glm.toml`, а также
+папка данных, которую создаёт каждая установка в проект, по умолчанию `.apothem/`
+(`contexts/`, `learning/`, `memory/`, `plans/`).
 
 ## Сопоставление профиля с нативной конфигурацией
 
@@ -75,8 +77,10 @@ Apothem не фиксирует ни одно из этих значений и 
 ## Заметки о совместимости
 
 Бэкенд GLM не предоставляет поверхности для правил, команд, навыков или хуков,
-поэтому адаптер записывает только файл провайдера бэкенда и ничего больше.
-Apothem не проверял, предоставляет ли такие поверхности ZCode. Ваш ключ Z.ai и
+поэтому адаптер записывает файл провайдера бэкенда и ничего из перечисленного.
+Apothem не проверял, предоставляет ли такие поверхности ZCode. Как и любая
+установка в проект, установка GLM также создаёт папку данных Apothem, по
+умолчанию `<project>/.apothem/`. Ваш ключ Z.ai и
 выбор идентификаторов моделей остаются во владении оператора. Соглашения поверхности
 поставщика, на которые опирается адаптер, зафиксированы в
 `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md` в виде снимка
@@ -130,8 +134,17 @@ apothem uninstall --harness glm --project /path/to/project
 ## Шлюз соответствия
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Запускайте его из папки проекта. В Windows используйте `python` вместо
+`python3` и полный путь, поскольку Windows PowerShell и cmd не раскрывают
+`~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` в PowerShell или
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` в cmd. Это путь, куда
+установщик помещает движок, а `-E -s` не пускает в шлюз ваш `PYTHONPATH` и
+пользовательские site-packages; [Шлюз соответствия](/docs/conformity-gate)
+объясняет и то и другое, а также другие способы установки.
 
 ## Устранение неполадок
 

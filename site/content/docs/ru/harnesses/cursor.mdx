@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "Адаптер окружения Apothem для Cursor (GA)."
 machineTranslated: true
-sourceHash: "817b5e32ce317949"
+sourceHash: "0aa24ff454d74139"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -196,6 +196,10 @@ apothem.conformity.gate`, никогда не принимается за хук
 "/path/to/python" -E -s "/path/to/project/.apothem/support/cursor/hooks/dispatch.py" --contract cursor sessionStart
 ```
 
+`-E -s` заставляет Python игнорировать `PYTHONPATH` и другие переменные
+`PYTHON*` и пропускать пользовательские site-packages, поэтому никакой файл из
+проекта не может загрузиться в хук.
+
 На хосте Windows команда начинается с `& `, оператора вызова PowerShell, потому
 что настольное приложение Cursor запускает команды хуков через PowerShell, где
 строка, начинающаяся с пути программы в кавычках, не является вызовом. `sh`
@@ -257,7 +261,8 @@ section of src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md. */}
 
 ## Заметки о совместимости
 
-Cursor 0.45+ поддерживает инструкции на уровне проекта через `.cursor/rules/`.
+Cursor читает инструкции на уровне проекта из `.cursor/rules/` согласно
+[документации Cursor по правилам](https://cursor.com/docs/rules).
 Адаптер по умолчанию записывает в каталог `.cursor/rules/` в области проекта;
 в Cursor нет документированного файлового пути для глобальных
 пользовательских правил, которым мог бы управлять этот адаптер.
@@ -364,8 +369,17 @@ apothem uninstall --harness cursor --project /path/to/project
 ## Шлюз соответствия
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Запускайте его из папки проекта. В Windows используйте `python` вместо
+`python3` и полный путь, поскольку Windows PowerShell и cmd не раскрывают
+`~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` в PowerShell или
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` в cmd. Это путь, куда
+установщик помещает движок, а `-E -s` не пускает в шлюз ваш `PYTHONPATH` и
+пользовательские site-packages; [Шлюз соответствия](/docs/conformity-gate)
+объясняет и то и другое, а также другие способы установки.
 
 ## Устранение неполадок
 

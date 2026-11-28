@@ -1,12 +1,12 @@
 ---
 title: "设置"
-description: "settings.json 中的 Claude Code 工具配置，涵盖工具权限、钩子接线、环境变量和状态行模板。"
+description: "settings.json 中的 Claude Code 工具配置，涵盖工具权限和钩子接线。"
 machineTranslated: true
-sourceHash: "986e09594ded6bad"
+sourceHash: "ece5596a2a8b8bc1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-`settings.json` 承载 Claude Code 的工具配置：钩子接线、工具权限、环境变量和状态行设置。
+`settings.json` 承载 Apothem 合并到你的文件中的 Claude Code 工具配置：工具权限和钩子接线。
 
 完整的规范参考位于 [settings-reference.md](/docs/reference/settings-reference)。本页概述该契约，并指向更深入的参考。
 
@@ -14,10 +14,11 @@ sourceHash: "986e09594ded6bad"
 
 | 节 | 用途 |
 |---------|---------|
+| `$schema` | 编辑器用来检查该文件的模式 URL |
 | `permissions` | 按匹配器划分的工具白名单与黑名单 |
 | `hooks` | 以事件为键的钩子命令表（规范接线） |
-| `env` | 每会话环境变量 |
-| `statusLine` | 宿主渲染的状态行模板 |
+
+Apothem 的模板不设置其他任何键，因此 `env` 和 `statusLine` 等键仍归你所有。状态行渲染器会被复制到 `~/.claude/statuslines/`，但不会接线；[Claude Code 页面](/docs/harnesses/claude-code)给出了需要你自行添加的 `statusLine` 条目。
 
 ## 单模板不变式
 

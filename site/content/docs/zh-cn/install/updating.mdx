@@ -2,9 +2,13 @@
 title: "更新"
 description: "更新 Apothem 与各工具适配器。"
 machineTranslated: true
-sourceHash: "04ad375058d55ffd"
+sourceHash: "9a8965434be8f7a4"
 ---
 {/* SPDX-License-Identifier: MIT */}
+
+<Callout title="从较早的版本更新？请先保存你的备份">
+  在较早的版本中（更新日志列出了它们），每次安装和更新都会在将某些存放你自己文件的文件夹（例如 Claude Code 斜杠命令和钩子脚本）复制到 `~/.apothem/backups/` 之后将其移除。这些版本中的大多数为每个工具只保留最新的 10 组备份，因此其中任何一个版本的每次后续运行都可能删除最旧的一组，而那可能是你唯一的副本。在再次运行 Apothem 之前，请将 `~/.apothem/backups/` 复制到其他位置。[更新日志](/docs/changelog#data-loss-in-earlier-releases-recover-your-files)列出了每个受影响的文件夹，以及如何将你的文件复制回来。
+</Callout>
 
 ## 更新 Claude Code 插件
 
@@ -16,6 +20,14 @@ sourceHash: "04ad375058d55ffd"
 
 打开 `/plugin`，选择 **apothem**，当列出更新版本的插件时选择更新操作。
 
+## 更新 VS Code 扩展
+
+该扩展运行其随附的引擎版本。它的默认运行器是 `npx @ahmed-g-gad/apothem@<extension version>`，因此只有当扩展本身更新时，你才会获得新的引擎。
+
+VS Code 会自行检查并安装扩展更新，正如其[扩展自动更新](https://code.visualstudio.com/docs/configure/extensions/extension-marketplace#_extension-auto-update)文档所述。默认情况下，它会在更新发布后等待 12 小时。若要立即安装，请在“扩展”视图中选择该扩展的 <strong>Update</strong> 按钮。如果你关闭了自动更新，请运行 <strong>Show Extension Updates</strong> 命令并选择 <strong>Update</strong>，或者运行 <strong>Update All Extensions</strong>。
+
+对于从 `.vsix` 文件安装的扩展，VS Code 会关闭自动更新。如果你安装的是 `apothem.vsix`，请以同样的方式安装附加在更新的 [GitHub Release](https://github.com/ahmed-g-gad/apothem/releases) 上的 `apothem.vsix`。
+
 ## npx 始终运行当前发布版本
 
 `npx @ahmed-g-gad/apothem` 在每次运行时都会解析当前已发布的软件包，因此无需手动更新。当 npx 缓存过期、提供旧版副本时，请显式锁定 dist-tag：
@@ -26,7 +38,7 @@ npx @ahmed-g-gad/apothem@latest --version
 
 ## 更新基于安装脚本的部署
 
-重新运行安装脚本——它具有幂等性，会在已有的代码树中检出发布标签——或者运行专用的更新脚本：
+重新运行安装脚本——它具有幂等性：它会获取已有的 git 克隆，检查新的发布标签，然后才检出该克隆，并且它会更新发布归档安装——或者运行专用的更新脚本，它适用于 git 克隆：
 
 ```bash title="macOS · Linux · WSL2 · BSD"
 bash scripts/installer/update.sh
@@ -36,7 +48,19 @@ bash scripts/installer/update.sh
 pwsh -NoProfile -File scripts/installer/update.ps1
 ```
 
-更新脚本会将 `APOTHEM_HOME`（默认为 `~/.apothem`）处的源码树重新检出到 `APOTHEM_REF`。未设置时，它会解析最新的已签名 `vMAJOR.MINOR.PATCH` 发布标签；设置为某个标签值时则固定到该标签；只有同时设置了 `APOTHEM_ALLOW_UNVERIFIED=1` 时，`main` 才会选择会持续变动的分支。若没有该覆盖项，更新会先检出该引用，然后在重新物化之前中止，因为分支不是已签名的发布标签。在重新物化之前，它会用 `git verify-tag` 验证标签签名；未签名或被篡改的标签会导致中止，除非 `APOTHEM_ALLOW_UNVERIFIED=1` 将中止降级为警告。如果签名标签的维护者公钥不在本地密钥环中，更新会中止，并给出导入密钥的指引，指向 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) 中公布的指纹。随后，它会在刷新后的源码树中运行 `apothem update`，重新物化由 `APOTHEM_HARNESS` 指定的工具（默认工具见[安装程序环境变量](/docs/how-to/installer-environment-variables)表）。该操作要求事先已完成安装：当 `APOTHEM_HOME` 处不存在源码树且未设置 `APOTHEM_SOURCE` 时，它会退出并提示你先运行安装程序。
+更新脚本会将 `APOTHEM_HOME`（默认为 `~/.apothem`）处的源码树移到 `APOTHEM_REF`。未设置时，它会解析最新的已签名 `vMAJOR.MINOR.PATCH` 发布标签；设置为某个标签值时则固定到该标签；只有同时设置了 `APOTHEM_ALLOW_UNVERIFIED=1` 时，`main` 才会选择会持续变动的分支。若没有该覆盖项，更新会在检出任何内容或重新物化之前中止，因为分支不是已签名的发布标签。它会先获取该引用，并在检出之前用 `git verify-tag` 验证标签签名，因此检查失败时克隆会停留在原来的版本。签名必须由 SECURITY.md 中公布的维护者密钥生成，并且已签名的标签必须是为该发布命名的标签；未签名或被篡改的标签，或由任何其他密钥签名的标签，都会导致中止，除非 `APOTHEM_ALLOW_UNVERIFIED=1` 将中止降级为警告（该变量不会绕过“已签名的标签就是发布标签”这一检查）。由于该变量会放行未签名的标签或由其他密钥签名的标签，该检查只保护带有维护者密钥签名的标签。对于诸如 `main` 的非发布引用，克隆会跟随 origin 上该分支的副本。检出绝不会丢弃本地更改：对已跟踪文件有更改的克隆会使更新停止，你需要提交或贮藏（stash）这些更改后重新运行。在获取之前，出现以下情况时更新也会停止：有文件被标记为 assume-unchanged 或 skip-worktree（git 将看不到它们的更改）；克隆的工作树不是 `APOTHEM_HOME`；克隆中含有子模块；`.git/info/attributes` 指定了过滤器或 diff 驱动（`filter=` 或 `diff=`）；它或某个配置文件不是普通文件；克隆从另一个仓库借用对象（`objects/info/alternates`）；或者克隆的 `.git/config` 或 `.git/config.worktree` 含有以下设置之外的设置：`git clone` 和 `git init` 为完整克隆写入的设置、分支设置（分支的 `remote` 和 `pushremote` 必须是 `origin`）、`user.name`、`user.email`、`maintenance.auto`、`maintenance.strategy`、`pull.rebase` 和 `pull.ff`。用 `--filter` 创建的部分克隆也会在此停止。消息会指出该设置及其所在的文件，[故障排查](/docs/install/troubleshooting#the-installer-stops-the-existing-clone-is-set-up-in-a-way-the-update-would-trust)列出了被接受的设置。在获取之前，它还会在以下情况下停止：工作树中的某个 `.gitattributes` 文件未被 git 跟踪、与已提交的副本不同，或其已提交副本 git 无法读取或指定了过滤器或 diff 驱动（工作树中的副本也会被读取）；克隆中有 git 未跟踪的 git 仓库，且位于引擎自身的数据文件夹（例如 `backups`）之外（git 会读取其中的 `.gitattributes` 文件）；以及 `src`（任意大小写拼写）下有 git 未跟踪的文件，因为引擎可能会加载它们。检出之后，它会在引擎从克隆运行之前删除 `src` 下的 Python 缓存文件夹（`__pycache__`）。更新期间从不运行克隆的 git 钩子，而 Apothem 之外其他项目的克隆完全不会被更新。更新会为其运行设置 `GIT_NO_REPLACE_OBJECTS=1`、`GIT_NO_LAZY_FETCH=1`、`GIT_ALLOW_PROTOCOL` 和 `GIT_ATTR_NOSYSTEM=1`，并且 git 不会读取克隆之外的任何属性文件（参见[安装程序环境变量](/docs/how-to/installer-environment-variables#the-installer-variables)）。每次运行在其整个过程中都持有一个锁 `<APOTHEM_HOME>.lock`，因此对同一 `APOTHEM_HOME` 的第二次安装、更新或卸载会停止；锁被遗留时，参见[故障排查](/docs/install/troubleshooting#the-installer-stops-another-run-holds-the-lock)。如果签名标签的维护者公钥不在本地密钥环中，更新会中止，并给出导入密钥的指引，指向 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) 中公布的指纹。随后，它会在刷新后的源码树中运行 `apothem update`，重新物化由 `APOTHEM_HARNESS` 指定的工具（默认工具见[安装程序环境变量](/docs/how-to/installer-environment-variables)表）。该操作要求事先已完成安装：当 `APOTHEM_HOME` 处不存在源码树且未设置 `APOTHEM_SOURCE` 时，它会退出并提示你先运行安装程序。
+
+更新脚本只适用于 git 克隆。使用 cosign 或 `APOTHEM_VERIFY=checksum` 进行的安装放置的是发布归档，因此更新脚本会停止，并提示你在 `PATH` 上有 cosign 和 `gpg` 的情况下重新运行安装程序。该重新运行会换入新的发布，并保留它不随附的每个文件，包括引擎的备份和安装台账。没有 cosign 时，请使用 `--yes`（在 Windows 上为 `-Yes`）重新运行安装程序：它会将归档安装切换为经维护者密钥检查的 git 克隆，并保留不属于源码树的一切，包括备份、台账、计划和记忆。`APOTHEM_VERIFY=checksum` 也会原地更新归档，并且需要 `APOTHEM_ALLOW_UNVERIFIED=1`。校验和模式不会验证该发布。SHA256SUMS 与归档来自同一个发布，因此匹配只表明下载没有损坏；任何能更改该发布文件的人都可以同时更改两者。
+
+### 当引擎保持某个文件原样时
+
+引擎可能会因为某个包含 Apothem 块的文件（例如 `CLAUDE.md` 或 `AGENTS.md`）的 Apothem 标记行而保持该文件原样：例如，当该文件在 Apothem 的标记之间包含两个完整的块时。随后它会写入其他所有内容，打印一条指出该文件并说明如何修复的警告，并以部分完成结束，退出码为 `2`。引擎在已写入某些内容之后停止时，也会以部分完成结束：例如，在一次 `APOTHEM_HARNESS=all` 运行中，较早的工具已写入其文件之后，某个工具失败。它的错误会说明失败的内容，并且在它之前完成的每个工具在该错误上方都有自己的一行。随后安装程序和更新脚本会再打印一行：
+
+```text
+! The engine ended as partial (exit code 2): its messages above name the files it left as they are, or the error that stopped it. Fix what they name, then run 'apothem update --harness claude-code' again.
+```
+
+它们会像完全成功一样完成运行：安装程序仍会运行验证、放置 `apothem` 命令并打印其结束横幅，更新脚本仍会将 "Update complete." 作为最后一行打印。随后每个脚本都以退出码 `2` 结束。通过管道运行的 PowerShell（`irm ... | iex`）则会将 `$LASTEXITCODE` 保留为 `2`，因此你的 PowerShell 会话会保持打开。一次性的 `pwsh -Command "irm ... | iex"`（或 `powershell -c`）只通过 `$LASTEXITCODE` 报告部分完成的运行，因此进程本身以 `0` 退出。当 CI 作业或脚本需要该退出码时，请以 `; exit $LASTEXITCODE` 结束该命令，或者用 `-File` 按路径运行脚本。从 PowerShell、bash 或其他 POSIX shell 调用时，请将该命令放在单引号中。在双引号中，调用方 shell 会在新进程启动之前代入它自己的 `$LASTEXITCODE`（POSIX shell 会代入空字符串），因此进程不会以该运行的退出码退出。从 cmd.exe 调用时，双引号没有问题。安装程序试运行（`--dry-run`，在 Windows 上为 `-DryRun`）不写入任何内容，因此引擎不会将其作为部分完成结束。修复引擎消息所指出的问题。对于文件，请保留你自己的文本（参见[某个文件在 Apothem 的标记之间包含两个块](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)和[Apothem 无法将其块与你的文本区分开](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)），然后针对该运行未完成的每个工具，再次运行 `apothem update --harness <name>` 或更新脚本。引擎返回的任何其他非零退出码都会使脚本在该处停止。
 
 ## 重新生成工具输出
 

@@ -2,7 +2,7 @@
 title: "Написание правил"
 description: "Создавайте, задавайте область действия и поддерживайте поведенческие правила Apothem."
 machineTranslated: true
-sourceHash: "bc1f3351f9a5fd2c"
+sourceHash: "a7a12b4db14fbfe9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -75,12 +75,19 @@ apothem update --harness cursor --project /path/to/project
 
 ## Валидация правил
 
-Запустите валидатор frontmatter для написанного вами файла правила. В чекауте
-Apothem `PYTHONPATH=src` делает пакет импортируемым; после установки через скрипт
-используйте вместо него `PYTHONPATH="$HOME/.apothem/src"`.
+Запустите валидатор frontmatter для написанного вами файла правила. Из корня
+чекаута Apothem `PYTHONPATH=src` делает пакет импортируемым (`python -m` сначала
+читает модули из текущей папки, поэтому используйте папку, которой доверяете):
 
 ```bash
 PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep src/apothem/rules/<rule>.md
+```
+
+После установки через скрипт запускайте шлюз по пути к его скрипту с `-E -s`
+([Шлюз соответствия](/docs/conformity-gate) объясняет почему):
+
+```bash
+python3 -E -s "$HOME/.apothem/src/apothem/conformity/gate.py" --check frontmatter-grep <rule>.md
 ```
 
 Проверка per-write, такая как `frontmatter-grep`, принимает проверяемый файл или

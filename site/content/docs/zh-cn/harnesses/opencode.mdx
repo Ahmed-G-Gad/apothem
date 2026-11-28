@@ -2,7 +2,7 @@
 title: "OpenCode"
 description: "适用于 OpenCode（测试版）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "d7cbf6354ea54e5b"
+sourceHash: "52003fe2932f10e5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,18 @@ apothem install --harness opencode
 ~/.config/opencode/.apothem/support/{rules,templates,hooks}/
 ```
 
+安装还会创建 Apothem 数据文件夹，默认为 `~/.config/opencode/.apothem/`，其中包含 `contexts/`、`learning/`、`memory/` 和 `plans/`。
+
 以上是默认路径。当 `XDG_CONFIG_HOME` 设置为某个文件夹的绝对路径时，适配器会改为写入 `$XDG_CONFIG_HOME/opencode/`，这是 OpenCode 1 和 OpenCode 2 都会读取的文件夹。相对路径的值或文件系统根目录不会被使用，安装会指出这一点。`OPENCODE_CONFIG_DIR` 不会被遵循：OpenCode 1 会在读取默认文件夹的同时读取该文件夹，而 OpenCode 2 则改读该文件夹，不再读取默认文件夹，因此当该变量指向另一个文件夹时，安装会警告 OpenCode 2 不会加载此安装。
+
+像 dotfile 管理器那样把 `~/.config` 做成指向你主目录内部的链接时，该链接会被跟随。在 Windows 上，联接点 也算作链接。当该链接指向你的主目录之外时，安装会在写入任何文件之前以 `target path crosses
+a symlink` 停止。首次运行且尚无配置档案时，它会更早一步停止，在写入初始配置档案之前，报出 `Apothem
+could not create the starter profile`。若要把配置档案放在主目录之外，请用 `apothem profile init --profile PATH` 在那里创建它，并向安装传入同一个 `--profile PATH`；此时安装仍然需要 `XDG_CONFIG_HOME`，如下文所述。如果 `XDG_CONFIG_HOME` 写成主目录内部的路径，但有链接把它引出主目录（例如 `~/xdg` 链接到另一个驱动器），安装、卸载和 `apothem rollback` 也会停止。安装在 `~/.config/opencode/` 内写入的路径上若有链接，安装同样会停止，报出 `target path crosses a link`；当该链接指向 `~/.config` 之外时，则报出 `target escapes the
+allowed materialization root`。
+
+若要通过一个离开主目录的 `~/.config` 链接进行安装，请把 `XDG_CONFIG_HOME` 设置为该链接所指向的文件夹，并按该文件夹自身的路径书写，即位于主目录之外的路径。只有你书写的路径本身才算数：主目录之外的路径无论其链接指向何处都会被跟随。安装随后写入那里，并替换之前在 `~/.config/opencode` 中的安装所写入的 `instructions` 条目，因此配置中每个文件只列出一次。使用相同设置运行卸载时，也会移除那次较早的安装，即使之前从未以该设置安装过也是如此：其 `opencode.json` 在只剩 Apothem 的条目时，会先复制到 Apothem 备份根目录（`~/.apothem/backups/`）再被移除，该安装创建的空文件夹也会一并移除。当 `XDG_CONFIG_HOME` 以主目录内的另一种写法指向 `~/.config`（经由链接的 `$HOME/.config`、不同的大小写或短名称）时，安装会继续使用 `~/.config/opencode`，因此仍是同一个安装。
+
+`XDG_CONFIG_HOME` 不一定来自你的 shell 配置文件。项目的 `.envrc` 或你 source 的脚本也可以设置它。当它指向主目录之外的文件夹时，install、update、uninstall 和 `apothem rollback` 都会更改该文件夹中的文件，因为它指向的就是该文件夹。在设置了 `XDG_CONFIG_HOME` 的项目文件夹中运行 Apothem 之前，请先检查它。
 
 ## 配置档案到原生配置的映射
 
@@ -42,11 +53,46 @@ apothem install --harness opencode
 
 辅助器定义只包含 `deny` 规则，用于辅助器不得使用的工具。OpenCode 默认允许每一个工具，并会在读取 `.env` 或 `.env.*` 文件之前询问。辅助器中的 `allow` 规则会关闭这一询问，并会覆盖你自己的 OpenCode 配置中更严格的规则，因此辅助器遵循你的 `permission` 设置。
 
-当共享配置档案列出 MCP 服务器时，安装会将它们写入 `opencode.json` 的 `mcp` 块。OpenCode 会替换 `{env:NAME}`，而不会替换 `${NAME}`，因此服务器的环境变量、请求头或 URL 中的每个 `${NAME}` 引用都会被写成 `{env:NAME}`。命令参数按原样复制：其中的引用留给服务器或它运行的 shell 去展开。环境变量或请求头值中的 `$NAME`，以及任何按原样保留的 `${...}` 形式（包括命令参数中的），都会按原样复制，并且安装会警告 OpenCode 不会展开它们。该警告会指出引用所在的位置，例如 `environment.TOKEN`，并且绝不打印该值。
+当共享配置档案列出 MCP 服务器时，安装会将它们写入 `opencode.json` 的 `mcp` 块。OpenCode 会替换 `{env:NAME}`，而不会替换 `${NAME}`，因此服务器的环境变量、请求头或 URL 中的每个 `${NAME}` 引用都会被写成 `{env:NAME}`，下文所述的直通环境条目除外。命令参数按原样复制：其中的引用留给服务器或它运行的 shell 去展开。安装会对 OpenCode 不展开的两类 `$` 引用发出警告，服务器随后会按原样收到它们：环境变量或请求头值中的 `$NAME`，以及任何其他 `${...}` 形式（包括命令参数中的普通 `${NAME}`）。该警告会指出引用所在的位置，例如 `environment.TOKEN`，并且绝不打印该值。
 
-OpenCode 会将 `{env:NAME}` 的值不经转义地插入它所读取的配置文本；只有当该文本否则无法解析时，OpenCode 2 才会对其转义。因此，包含反斜杠（例如 Windows 路径）、双引号或控制字符的值可能导致 OpenCode 1 无法读取该文件，并且在两个版本中，值中的 `\t` 或 `\n` 都会作为控制字符到达服务器。安装会在运行时检查每个这样的变量，并对包含这些字符的变量发出警告。请改为在 `harnesses.opencode.mcp_servers.<name>` 下将该值设置为 `{file:path}`，这样其他工具就能保留 `${NAME}` 引用。
+对于只是把某个变量以其自身名称传递下去的环境条目（例如 `GITHUB_TOKEN: ${GITHUB_TOKEN}`），安装会将其省略，并且对于因此不再有任何条目的服务器，不写入 `environment`。OpenCode 1 和 OpenCode 2 都以 OpenCode 自身的环境启动本地服务器，并在其上叠加服务器的 `environment`，因此服务器仍会收到 OpenCode 运行时所带的 `GITHUB_TOKEN`。省略该条目与把它写成 `{env:GITHUB_TOKEN}` 有以下不同：
+
+- 当该变量未设置时，服务器看到的是未设置。若写成 `{env:GITHUB_TOKEN}`，它会被设置为空字符串。
+- OpenCode 1 会在读取配置之后自行设置一些变量：根据它保存的提供方登录设置 `AWS_BEARER_TOKEN_BEDROCK` 和 `AICORE_SERVICE_KEY`，以及 `OPENCODE_CONSOLE_TOKEN`。OpenCode 2 会在首次使用某个提供方时，根据该提供方的 `serviceKey` 设置来设置 `AICORE_SERVICE_KEY`。服务器得到的是此类变量在服务器启动时的值；若写成 `{env:NAME}`，它保存的将是读取配置时的值，而那往往是空字符串。
+- OpenCode 1 还会根据用 `opencode auth login <url>` 进行的组织登录来填充 `{env:NAME}`，并且先于自身环境读取该登录的令牌，但不会把该令牌放入自身环境。当只有该登录设置了某个变量时，服务器得不到它；当两者都设置了它时，服务器得到的是环境中的值。若写成 `{env:NAME}`，两种情况下它得到的都是登录中的值。
+- 基于 OpenCode SDK 构建的应用程序可以注册一个在沙箱中运行服务器的工作区提供方；`opencode` CLI 和桌面应用不注册任何此类提供方。根据 OpenCode 的源代码，这样的服务器得到的是沙箱的环境，而不是 OpenCode 运行所在的环境，因此只在 OpenCode 运行之处设置的变量无法到达它。
+- 在变量名不区分大小写的 Windows 上，当 OpenCode 的环境以不同于条目键的大小写保存该名称时（例如对于 `GITHUB_TOKEN` 保存为 `Github_Token`），服务器会以那种大小写得到它；若写成 `{env:GITHUB_TOKEN}`，该条目会以 `GITHUB_TOKEN` 传递它。区分大小写读取名称的程序（例如 Git Bash 或 Cygwin shell）可能因此找不到它。
+- 若写成 `{env:NAME}`，本身包含 `{file:path}` 文本的值会被替换为该文件的内容，而在命令为 `opencode` 的服务器上，`BUN_BE_BUN` 条目会替换 OpenCode 在那里设置的 `1`。省略时，值会原样到达服务器，OpenCode 的 `1` 也会保留。
+
+当某个服务器需要该条目所提供的内容时，请在 `harnesses.opencode.mcp_servers.<name>` 下重新声明该服务器，并将值写成 `{env:NAME}`，安装会原样复制它。这会带回下文所述的 OpenCode 1 风险。
+
+重命名变量的条目（`TOKEN: ${FS_TOKEN}`）、较长值中的引用、所有请求头和 URL 引用，以及在覆盖项中写成的 `{env:NAME}`，仍会被写成 `{env:NAME}`，下一段适用于它们。
+
+OpenCode 会将 `{env:NAME}` 的值不经转义地插入它所读取的配置文本；只有当该文本否则无法解析时，OpenCode 2 才会对其转义。因此，包含反斜杠（例如 Windows 路径）、双引号或控制字符的值可能导致 OpenCode 1 无法读取该文件，而此时 OpenCode 1 的错误信息会打印出填入了每个值的配置文本，其中包括机密信息。在两个版本中，此类值中的 `\t` 或 `\n` 都会作为控制字符到达服务器。安装会在运行时检查每个这样的变量，并对包含这些字符的变量发出警告。请在 `harnesses.opencode.mcp_servers.<name>` 下重新声明整个服务器（因为覆盖项会替换整个服务器），并在那里将该值写成 `{file:path}`；其他工具则保留 `${NAME}` 引用。
 
 OpenCode 会将 `instructions` 列表指明的每个文件合并到每个会话中（[OpenCode 规则](https://opencode.ai/docs/rules/)）。因此，该列表首先指明你的配置档案文档，然后只列出 `alwaysApply` 为 `true` 的规则，每条规则一个明确的路径，默认为 `~/.config/opencode/.apothem/support/rules/<name>.md`。OpenCode 会将开头的 `~/` 展开为你的主目录；当配置文件夹位于主目录之外时，路径为绝对路径，而支持树始终位于配置文件夹之下。这些规则是 `agnostic-posture`、`authority-inquiry`、`context-management`、`session-closure`，以及规则索引 `apothem-rule-index`。OpenCode 不按路径限定任何规则，因此其他每条规则都按需读取。它们仍作为参考材料安装在 `~/.config/opencode/.apothem/support/` 下，而该索引指明每条规则以及需要用到它的情形。引用某条规则、模板或钩子提示词的规则、技能或命令会从那里读取它。命令、技能和辅助器定义使用原生发现位置。
+
+OpenCode 1 会从其配置文件夹依次读取 `config.json`、`opencode.json`，然后是 `opencode.jsonc`，后读文件中的列表会替换先读文件中的列表。在其源代码被核查过的每一个 OpenCode 1 发布中（从第一个到最新的），情况都是如此。因此，与 Apothem 写入的 `opencode.json` 并列的 `opencode.jsonc` 中若有 `instructions` 列表，即使是空列表，也会使 OpenCode 1 无法加载配置档案文档和规则。发生这种情况时，`apothem
+install`、`apothem update` 和 `apothem verify` 会打印一条指出该文件的提示；verify 只在 `opencode.json` 列出了安装所写入的条目时才打印它，并且该提示不会使检查失败。当 `opencode.jsonc` 中的列表已经包含 Apothem 写入的每个条目时，OpenCode 1 会加载它们，但来自一份安装和更新都不会刷新的副本，提示会说明这一点。当它只包含其中一部分时，提示会说明它包含多少个，以及其余的无法到达 OpenCode 1。OpenCode 2 会合并它所读取的每个文件中的 `instructions` 列表，因此该提示只针对 OpenCode 1。
+
+除了下文所述会让 OpenCode 1 停止的文件之外，没有 `instructions` 列表的 `opencode.jsonc`，或指向 `opencode.json` 的符号链接，都不会产生提示。当 `OPENCODE_CONFIG_DIR` 指向此文件夹时也没有提示，因为当前的 OpenCode 1 发布此时会再读取一次该文件夹中的两个文件并合并它们的列表（第一个 OpenCode 1 发布不会再次读取它们）。当 `OPENCODE_CONFIG` 指向此 `opencode.json` 时同样没有提示，因为 OpenCode 1 此时会在其他文件之后再次读取该文件并合并其列表。若要让 OpenCode 1 加载该列表，请从 `opencode.jsonc` 中移除 `instructions` 键，或把其中的条目移到 `opencode.json` 的列表中，安装和更新会保留那里并非由它们写入的条目。
+
+OpenCode 1 将 `config.json`、`opencode.json` 和 `opencode.jsonc` 作为 JSONC 读取：即带注释和尾随逗号的 JSON，仅此而已。在每个文件中，它会先把每个 `{env:NAME}` 替换为该变量的值，把每个 `{file:path}` 替换为该文件的文本。当其中某个文件出现以下情况时，它会报错停止，不加载任何配置，因此配置档案文档和规则也无法到达它：
+
+- 填入这些值之后无法解析。JSON5 语法（例如未加引号的键或单引号）、`NaN`、从未闭合的注释，以及只含空白或只含注释的文件，都算在内。只由一个不填入任何内容的 `{env:NAME}` 或 `{file:path}` 构成的文件也算。OpenCode 1 会按原样填入 `{env:NAME}` 的值，因此包含反斜杠（例如 Windows 路径）、双引号或控制字符的值，可能会破坏一个本来有效的文件；相应的提示会说明这一点，并在值被修正后 OpenCode 1 仍会拒绝该文件的顶层或 `instructions` 值时一并说明。对于你配置档案中 MCP 服务器的环境变量、请求头或 URL 里的每个 `${NAME}`，Apothem 自身会向 `opencode.json` 写入一个 `{env:NAME}`，而当你把它从文件中删除时，更新会把它写回，因此对于这样的引用，提示会指出该服务器及其修复方法：在 `harnesses.opencode.mcp_servers.<name>` 下重新声明该服务器，把值保存在一个文件中，并写成指向该文件的 `{file:path}`。
+- 顶层不是对象，或 `instructions` 值不是文本列表。
+- 含有一个指向 OpenCode 1 无法读取的文件的 `{file:path}`，即使它位于 `/* */` 注释中。以 `//` 开头的行上的 `{file:path}` 会保持原样。套接字无法读取。在 Linux 和 macOS 上，OpenCode 1 完全按书写形式使用绝对路径，并保留 `~/` 路径末尾的 `/`，因此以末尾 `/` 书写的文件路径，或以末尾 `/.` 书写的绝对路径，都无法读取。
+- 是一个文件夹，或是一个 OpenCode 1 因下文所述原因之外的原因无法读取的文件，例如指回自身的符号链接。
+
+`apothem install`、`apothem update` 和 `apothem verify` 会打印一条指出每个此类文件的提示，即使设置了 `OPENCODE_CONFIG_DIR` 或 `OPENCODE_CONFIG`，该提示也会保留，因为 OpenCode 1 仍会读取该文件。其中两个名称若通过符号链接指向同一个文件，两者共用一条提示；处于符号链接循环中的名称不指向任何文件，因此各自得到一条提示。该检查只查看顶层和 `instructions` 值，而不是 OpenCode 读取的每一项设置，并且不会读取非普通文件（例如命名管道或设备），也不会读取非常大的文件。这类配置文件不会得到提示。一个 `{file:path}` 如果指向非常大的文件，或位于该文件的 `{env:NAME}` 值和 `{file:path}` 文件所填入的前 16 MiB 之后（按填入并转义后的文本计算，因此一个控制字符算作六个字符），或在 Windows 上以不带驱动器号的根开头（OpenCode 1 会在其启动时所在文件夹的驱动器上读取它），那么当它位于字符串值内部时，会被当作空文本检查，因为在那里它的文本无法改变结果，所以文件的其余部分仍会被检查。在 Windows 上，指向文件或文件夹之外任何东西（例如 `NUL` 设备）的引用，或路径中某一部分以点或空格结尾（Windows 通常会去掉该点或空格来读取，但 OpenCode 1 可能不会）的引用，也是如此；其提示会补充说明，如果 OpenCode 1 无法读取该文件，它会先在该引用处停止。在键中、引号之外、诸如 `\u00` 的转义序列之中，或在从未闭合的 `/*` 注释之后，它的文本会决定结果，此时该文件不会得到提示，除非其中另一个 `{file:path}` 指向 OpenCode 1 无法读取的文件。填入超过 16 MiB 的 `{env:NAME}` 值同样使文件得不到提示，指向超过 1,000 个不同路径的 `{file:path}` 标记也是如此。指向空设备 `/dev/null` 的 `{file:path}` 无论位于何处都读作空文本，与 OpenCode 1 的行为一致。在 Linux 和 macOS 上，指向命名管道或其他设备的引用会使文件得不到提示，因为 OpenCode 1 可能会一直等待它。提示会指出 `{env:NAME}` 引用，但绝不显示其值，并且显示 `{file:path}` 时会转义其控制字符并截断到 200 个字符。verify 会在 `opencode.json` 列出安装所写入的条目时打印这些提示；关于 `opencode.json` 本身的提示还会在配置档案文档包含 Apothem 块时打印，因为这样的文件可能没有列出任何 Apothem 能读取的内容。当 install 或 update 即使按 JSON5 也无法解析 `opencode.json` 时，它们会以指出该文件的 `config.unparseable` 错误停止，而不是打印提示；verify 此时会使检查失败，并打印该提示。
+
+OpenCode 2 不读取 `config.json`。它会跳过无法解析或顶层不是对象的 `opencode.json` 或 `opencode.jsonc`，因此当只有 `opencode.jsonc` 损坏时，它仍会加载 `opencode.json`。当文件按原样填入 `{env:NAME}` 值后无法解析时，它会转义这些值；对于无法读取的 `{file:path}`，它填入空文本；它会忽略不是列表的 `instructions` 值（包括单个文本值），并丢弃列表中不是文本的项，因此这些情况都不会阻止它加载该文件。在已知的情况下，提示会说明 OpenCode 2 如何处理其文件。
+
+Apothem 会用其自身环境中的值替换 `{env:NAME}`，因此当 Apothem 以 OpenCode 所见的环境变量运行时，提示是准确的。OpenCode 1 还会从你用 `opencode auth` 登录的提供方那里获取 `{env:NAME}` 的值，而 Apothem 看不到这些值，因此引号之外包含此类值的标记，可能会得到一条 OpenCode 1 并不认同的解析提示。
+
+在当前的 OpenCode 1 发布中，完全没有字节或只含字节顺序标记的文件会被读作空配置，不会得到提示。在 Linux 和 macOS 上，当前的 OpenCode 1 发布会跳过它们无权读取的文件（`Permission denied`），因此在那里该文件不会得到提示；系统以 `Operation not permitted` 拒绝的读取会使它们停止，并得到提示。在 Windows 上，它们会因无权读取的文件而停止，因此该文件会得到提示。较早的 OpenCode 1 发布在所有系统上都会因此停止，但 Apothem 只在 Windows 上对此给出提示。
+
+每次安装和更新都会删除 `~/.config/opencode/apothem/rules/` 中所有并非由 Apothem 放入的文件，删除前会将其保存到 `~/.apothem/backups/` 下的一个备份集中。一旦该工具已有 10 个更新的备份集，该备份就会被删除，因此请把你自己的文件放在别处。
 
 配置档案文档 `~/.config/opencode/apothem/rules/00-apothem-profile.md` 携带共享配置档案中你的身份和偏好，并以一个 Apothem 支持文件小节结尾，该小节写明每条仓库式引用（`rules/<name>.md`、`templates/...`、`hooks/...`）所解析到的、位于 `~/.config/opencode/.apothem/support/` 下的绝对目录。它是第一个 `instructions` 条目，因此 OpenCode 会在每个会话中加载它。
 
@@ -81,13 +127,15 @@ apothem uninstall --harness opencode
 
 移除适配器添加到 `~/.config/opencode/opencode.json` 的条目（你自己的键、MCP 服务器和 `instructions` 条目会保留；只有当该文件由 Apothem 创建且其中没有你的任何内容时，才会删除该文件）。由安装写入、被你转换为 OpenCode 2 的 `mcp.servers` 形态且未作更改的 MCP 服务器也会被整体移除；`mcp.servers` 下的其他服务器会保留。你自己放在 `mcp.servers` 下、且与安装写入的某个服务器相符的服务器，在你移除了安装的 `mcp` 条目之后，将无法与转换后的副本区分，并会随之被移除；该文件会先被备份。从配置档案文档 `~/.config/opencode/apothem/rules/00-apothem-profile.md` 中移除 Apothem 块，并保留其中的其他任何文本；只有当该文件中不再剩下其他内容时，才会删除该文件。同时移除 `~/.config/opencode/commands/`、`~/.config/opencode/skills/`、`~/.config/opencode/agents/` 和 `~/.config/opencode/.apothem/support/` 中的 Apothem 文件；这些文件夹中的其他文件会保留。每个文件在被更改或移除之前，都会先备份到 `~/.apothem/backups/` 下。共享配置档案 YAML 和 Apothem 引擎不受影响。
 
-由较早发布的版本在 `XDG_CONFIG_HOME` 指向另一个文件夹时于 `~/.config/opencode/` 中完成的安装会留在那里，OpenCode 从未读取过它。下一次安装会指出这一点；若要移除它，请在未设置 `XDG_CONFIG_HOME` 的情况下运行卸载。
+由较早发布的版本在 `XDG_CONFIG_HOME` 指向另一个文件夹时于 `~/.config/opencode/` 中完成的安装会留在那里，OpenCode 从未读取过它。只要其文件仍在，下一次安装就会指出这一点；若要移除它，请在未设置 `XDG_CONFIG_HOME` 的情况下运行卸载。如果 `~/.config` 此后变成了指向主目录之外的链接，该卸载会以 `target path crosses a link` 被拒绝，而提示会改为指出该链接所指向的文件夹：请在将 `XDG_CONFIG_HOME` 设置为该文件夹的情况下运行卸载。
 
 ## 合规闸门
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+请在你的项目文件夹中运行它。在 Windows 上，请用 `python` 代替 `python3`，并使用完整路径，因为 Windows PowerShell 和 cmd 不会展开 `~`：PowerShell 中为 `$HOME\.apothem\src\apothem\conformity\gate.py`，cmd 中为 `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`。该路径是安装程序放置引擎的位置，`-E -s` 让你的 `PYTHONPATH` 和用户 site-packages 不会进入闸门；[合规闸门](/docs/conformity-gate)解释了这两点以及其他安装方式。
 
 ## 故障排查
 
@@ -96,6 +144,13 @@ python -m apothem.conformity.gate --all .
 | 找不到配置文件 | 重新运行 `apothem install --harness opencode` |
 | 验证失败 | 运行 `apothem update --harness opencode`，然后再次验证 |
 | 意外的配置内容 | 检查 `~/.config/apothem/profile.yaml` 或 `--profile PATH`，然后重新运行 `apothem update --harness opencode` |
+| 提示称 OpenCode 1 读取了 `opencode.jsonc` 中的 `instructions` 列表 | 从配置文件夹中的 `opencode.jsonc` 移除 `instructions` 键，或把其中的条目移到 `opencode.json` 的列表中 |
+| 提示称 OpenCode 1 无法解析某个文件 | 修正配置文件夹中的该文件，使其成为只额外带有注释和尾随逗号的 JSON（给每个键加引号、使用双引号、闭合每个 `/*` 注释），或将其移除 |
+| 提示称 OpenCode 1 在填入 `{env:NAME}` 值后无法解析某个文件 | 修改该变量，使其值不含反斜杠、双引号或控制字符（在 Windows 上，用正斜杠书写路径），或移除该 `{env:NAME}`。当提示称该引用是 Apothem 为你配置档案中的某个 MCP 服务器写入的时，你删除它后更新会把它写回，因此请修改该变量；若要保持变量不变，请在 `harnesses.opencode.mcp_servers.<name>` 下重新声明该服务器，把值保存在一个文件中，并写成指向该文件的 `{file:path}`。当提示还指出第二个问题时，也一并修复 |
+| 提示称 OpenCode 1 需要文件顶层为对象，或 `instructions` 值为文本列表 | 让该文件成为一个 JSON 对象，并让 `instructions` 成为文本列表（例如 `["notes.md"]`），或移除该键 |
+| 提示称 OpenCode 1 无法读取某个 `{file:path}` 所指向的文件 | 创建该文件、修正路径，或移除该 `{file:path}` |
+| 提示称某个文件是文件夹 | 在配置文件夹中移动或重命名该文件夹 |
+| 提示称 OpenCode 1 无法读取某个文件 | 让你的用户帐户可以读取该文件、替换指回自身的符号链接，或移除该文件 |
 
 ## 配置开关
 

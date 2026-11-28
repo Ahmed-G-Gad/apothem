@@ -2,7 +2,7 @@
 title: "quickstart"
 description: "Referência da CLI para o comando guiado de primeira execução apothem quickstart."
 machineTranslated: true
-sourceHash: "951e6d6877611c54"
+sourceHash: "a461df3fe9749c28"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -38,7 +38,7 @@ explícita.
 - **Perfil** — se o caminho de perfil resolvido não tiver arquivo, o `quickstart` oferece criar um perfil inicial (cria automaticamente com `--yes`, em um shell não interativo ou com `--format json`) e nomeia os campos de identidade com marcadores de posição a personalizar.
 - **Prévia + confirmação** — para `--harness all`, os destinos são listados sob dois títulos (raiz do projeto e seu diretório pessoal), e uma execução interativa pede confirmação antes de gravar fora do projeto. Um único harness nomeado é instalado sem prévia nem prompt. `--yes`, um shell não interativo e `--format json` prosseguem sem perguntar. Recusar a prévia de `--harness all` aborta a operação antes das gravações da instalação; um perfil inicial criado na etapa 1 é mantido.
 - **Instalação** — as capacidades que um harness não suporta nativamente são resumidas em uma única nota agrupada por harness (passe `--verbose` para ver o detalhe por capacidade); o conjunto completo está sempre no array de warnings de `--format json`.
-- **Próximo passo** — a saída do terminal nomeia os comandos seguintes (`apothem verify …`, `apothem doctor`).
+- **Próximo passo** — a saída do terminal nomeia os comandos seguintes (`apothem verify …`, `apothem doctor`). Uma pasta de `--project` é colocada entre aspas para o shell, como [`doctor`](/docs/cli-reference/doctor) a coloca. Quando as aspas não conseguem carregá-la, a saída imprime o comando até `--project` e nomeia a pasta em palavras depois dele, e a entrada `recommended_next` em JSON diz `Run apothem verify --harness … with --project set to <folder>`, que não é um comando para executar como está.
 
 ## Opções
 
@@ -68,11 +68,22 @@ explícita.
   "steps": [
     {"step": "profile", "outcome": "created", "path": "…", "placeholder_identity": ["name", "email", "github"]},
     {"step": "install", "status": "success", "harness": "all", "files_written": ["…"], "warnings": [], "results": []},
-    {"step": "recommend", "next": ["apothem verify --harness all --project .", "apothem doctor"]}
+    {"step": "recommend", "next": ["apothem verify --harness all --project \".\"", "apothem doctor"]}
   ],
-  "recommended_next": ["apothem verify --harness all --project .", "apothem doctor"]
+  "recommended_next": ["apothem verify --harness all --project \".\"", "apothem doctor"]
 }
 ```
+
+Quando a etapa de instalação deixa um arquivo como está por causa das suas linhas
+de marcador do Apothem (consulte [`install`](/docs/cli-reference/install#capability-notes)),
+os dois valores de `status` são `"partial"` e o código de saída é `2`. No modo
+simples, a execução imprime a linha `✗` da instalação e depois os próximos passos
+recomendados. Como `apothem verify` falha para esse arquivo até que você o corrija,
+o primeiro passo passa a ser corrigir cada arquivo que a instalação deixou como
+está, conforme diz o aviso dele, e executar `apothem update` para as mesmas
+ferramentas (`Fix the files it left:` no modo simples, e a primeira entrada de
+`recommended_next` em JSON, `Fix each file the install left as it is, as its
+warning says, then run apothem update --harness …`), no lugar de `apothem verify`.
 
 ## Exemplos
 
@@ -89,7 +100,7 @@ apothem quickstart --harness claude-code --json
 |---|---|
 | 0 | Execução guiada concluída |
 | 1 | Erro esperado de validação, de perfil, de harness, de projeto ou de adaptador |
-| 2 | Materialização parcial do lote após pelo menos uma gravação |
+| 2 | Parcial: um lote parou após pelo menos uma gravação, ou a instalação deixou como está, por causa das suas linhas de marcador do Apothem, um arquivo em que o Apothem mantém o bloco dele |
 | 64 | Erro de uso: uma opção ou um comando desconhecido, ou um valor de opção ausente ou inválido. Com `--json`, o erro é um envelope JSON com o código `cli.usage`. |
 
 ## Veja também

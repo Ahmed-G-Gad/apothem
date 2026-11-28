@@ -2,7 +2,7 @@
 title: "Gemini CLI"
 description: "Адаптер окружения Apothem для Gemini CLI (GA)."
 machineTranslated: true
-sourceHash: "231513ffdb2dcb22"
+sourceHash: "4b2afa3f4a237f9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,6 +34,10 @@ GEMINI.md
 .gemini/skills/
 .gemini/.apothem/support/
 ```
+
+Проект также получает папку данных, которую создаёт каждая установка в проект,
+по умолчанию `.apothem/`, с `contexts/`, `learning/`, `memory/` и `plans/`
+внутри.
 
 ## Сопоставление профиля с нативной конфигурацией
 
@@ -78,6 +82,15 @@ Apothem записывает здесь разрешение только для
 использующих глобальный профиль Gemini. Адаптер Gemini CLI записывает только в
 проект, переданный через `--project`.
 
+Gemini CLI также загружает два места в вашем домашнем каталоге, в которые пишут
+другие установки Apothem: `~/.agents/skills/`, часть его уровня пользовательских
+навыков, куда несколько установок записывают навыки Apothem
+([реестр окружений](/docs/reference/harness-registry#shared-roots) перечисляет
+их), и `~/.gemini/GEMINI.md`, куда установка
+[Antigravity](/docs/harnesses/antigravity) записывает блок Apothem.
+Если любое из этих мест уже содержит содержимое Apothem, установка `gemini-cli`
+выводит примечание, называющее его и установку, которая его записала.
+
 ## Проверка
 
 ```bash
@@ -118,11 +131,30 @@ apothem uninstall --harness gemini-cli --project /path/to/project
 `~/.apothem/backups/`; резервный файл в проекте не остаётся. YAML общего
 профиля и движок Apothem не затрагиваются.
 
+Более ранние выпуски ([журнал изменений](/docs/changelog) их называет) также
+удаляли собственный `skills/AGENTS.md` проекта (в корне проекта, а не в `.gemini/`)
+при каждой установке и обновлении, предварительно
+скопировав его в набор резервных копий в `~/.apothem/backups/<timestamp>/gemini_cli/`.
+Текущий выпуск этот файл не трогает. Чтобы вернуть его, скопируйте
+`~/.apothem/backups/` в другое место до следующего запуска Apothem, а затем
+вручную скопируйте файл из этой копии обратно в проект.
+[Журнал изменений](/docs/changelog#data-loss-in-earlier-releases-recover-your-files)
+содержит полные шаги восстановления.
+
 ## Шлюз соответствия
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Запускайте его из папки проекта. В Windows используйте `python` вместо
+`python3` и полный путь, поскольку Windows PowerShell и cmd не раскрывают
+`~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` в PowerShell или
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` в cmd. Это путь, куда
+установщик помещает движок, а `-E -s` не пускает в шлюз ваш `PYTHONPATH` и
+пользовательские site-packages; [Шлюз соответствия](/docs/conformity-gate)
+объясняет и то и другое, а также другие способы установки.
 
 ## Устранение неполадок
 

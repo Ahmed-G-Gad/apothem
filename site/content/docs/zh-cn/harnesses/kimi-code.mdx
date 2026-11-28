@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "适用于 Kimi Code（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "88671d55a3315922"
+sourceHash: "0ae31afd4f1fbbbd"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,11 +17,11 @@ sourceHash: "88671d55a3315922"
 apothem install --harness kimi-code --project /path/to/project
 ```
 
-适配器将共享的 Apothem 治理表面以一个由哨兵标记分隔的受管块写入项目根目录的 `AGENTS.md`（哨兵标记之外由操作者编写的文字会被保留）。它将技能以及包装为技能的命令安装到 Kimi Code 的原生项目技能目录 `<project>/.kimi-code/skills/` 中，并将 Apothem 的辅助器作为 Kimi Code 子代理安装到 `<project>/.kimi-code/agents/` 中（参见[子代理](#子代理)）。其他集合保存在位于 `<project>/.kimi-code/.apothem/support/` 的 Apothem 自有支持树下。除 Kimi Code 之外，还有许多编码工具会读取项目的 `AGENTS.md`，因此该块被写成面向整个项目的指导，不把任何单一工具指定为其读取者。其中一些工具只在部分项目中加载它，例如只在项目没有它们自己的指令文件时加载，安装说明会指出每个这样的工具并附上其条件（[工具注册表](/docs/reference/harness-registry#shared-roots)列出了它们）。
+适配器将共享的 Apothem 治理表面以一个由哨兵标记分隔的受管块写入项目根目录的 `AGENTS.md`（哨兵标记之外由操作者编写的文字会被保留）。它将技能以及包装为技能的命令安装到 Kimi Code 的原生项目技能目录 `<project>/.kimi-code/skills/` 中，并将 Apothem 的辅助器作为 Kimi Code 子代理安装到 `<project>/.kimi-code/agents/` 中（参见[子代理](#子代理)）。其他集合保存在位于 `<project>/.kimi-code/.apothem/support/` 的 Apothem 自有支持树下。除 Kimi Code 之外，还有许多编码工具会读取项目的 `AGENTS.md`，因此该块被写成面向整个项目的指导，不把任何单一工具指定为其读取者。其中一些工具只在部分项目、版本或设置下加载它，例如只在项目没有它们自己的指令文件时加载，安装说明会指出每个这样的工具并附上其条件（[工具注册表](/docs/reference/harness-registry#shared-roots)列出了它们）。
 
 Kimi Code 遵循通用的 AGENTS.md 约定读取项目根目录的 `AGENTS.md` 指令文件，项目配置位于 `<project>/.kimi-code/` 下。Kimi Code 从工作目录向上搜索，将最近的包含 `.git` 的目录视为项目根目录，因此请将仓库根目录作为 `--project` 传入。`<project>/.kimi-code/mcp.json` 表面归操作者所有；Apothem 会指明它，但不编写任何条目。
 
-**写入的文件：** `<project>/AGENTS.md`（受管块），`<project>/.kimi-code/skills/` 下的技能和命令（作为技能），每个 Apothem 辅助器对应一个 `<project>/.kimi-code/agents/<name>.md`，以及 `<project>/.kimi-code/.apothem/support/` 下的钩子、规则和模板集合。
+**写入的文件：** `<project>/AGENTS.md`（受管块），`<project>/.kimi-code/skills/` 下的技能和命令（作为技能），每个 Apothem 辅助器对应一个 `<project>/.kimi-code/agents/<name>.md`，`<project>/.kimi-code/.apothem/support/` 下的钩子、规则和模板集合，以及每次项目安装都会创建的数据文件夹，默认为 `<project>/.apothem/`（`contexts/`、`learning/`、`memory/`、`plans/`）。
 
 ## 子代理
 
@@ -92,7 +92,7 @@ verify 命令确认：
 apothem update --harness kimi-code --project /path/to/project
 ```
 
-根据当前的共享配置档案状态，重新派生项目根目录 `AGENTS.md` 的受管块、技能、子代理文件和支持集合。在技能迁移到 `.kimi-code/skills/` 之前进行的安装上运行更新，会移除旧的 `<project>/.kimi-code/.apothem/support/skills/` 目录，从而使每个技能只存在一份。在辅助器迁移到 `.kimi-code/agents/` 之前进行的安装上运行更新，会以同样的方式移除旧的 `<project>/.kimi-code/.apothem/support/agents/` 目录。每个被移除的目录都会先在 `~/.apothem/backups/` 下保存一份带时间戳的副本。
+根据当前的共享配置档案状态，重新派生项目根目录 `AGENTS.md` 的受管块、技能、子代理文件和支持集合。在技能迁移到 `.kimi-code/skills/` 之前进行的安装上运行更新，会移除旧的 `<project>/.kimi-code/.apothem/support/skills/` 目录，从而使每个技能只存在一份。在辅助器迁移到 `.kimi-code/agents/` 之前进行的安装上运行更新，会以同样的方式移除旧的 `<project>/.kimi-code/.apothem/support/agents/` 目录。每个被移除的目录都会先在 `~/.apothem/backups/` 下保存一份带时间戳的副本。你自己放在这两个旧目录中的任何文件都会随之被移除；一旦该工具存在 10 个更新的备份集，它的备份就会被删除，因此请把你的文件放在别处。
 
 ## 卸载
 
@@ -105,8 +105,10 @@ apothem uninstall --harness kimi-code --project /path/to/project
 ## 合规闸门
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+请在你的项目文件夹中运行它。在 Windows 上，请用 `python` 代替 `python3`，并使用完整路径，因为 Windows PowerShell 和 cmd 不会展开 `~`：PowerShell 中为 `$HOME\.apothem\src\apothem\conformity\gate.py`，cmd 中为 `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`。该路径是安装程序放置引擎的位置，`-E -s` 让你的 `PYTHONPATH` 和用户 site-packages 不会进入闸门；[合规闸门](/docs/conformity-gate)解释了这两点以及其他安装方式。
 
 ## 故障排查
 

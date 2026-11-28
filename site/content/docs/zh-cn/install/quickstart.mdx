@@ -2,7 +2,7 @@
 title: "快速开始"
 description: "安装 Apothem、编写配置档案、物化你的第一个工具并验证它——一份可复制粘贴的导览，附预期输出。"
 machineTranslated: true
-sourceHash: "7a414de2fdc9eea3"
+sourceHash: "549fab5f56f4cf9e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,7 +18,7 @@ sourceHash: "7a414de2fdc9eea3"
 
 ## 1. 安装 Apothem
 
-Apothem 以自包含运行时的形式发布——引擎携带 vendored 依赖，直接从其源码树运行。一条命令即可获取源码、放置引擎并物化你的第一个工具。它会先验证已签名的发布版本，因此请在首次安装前导入一次维护者签名密钥，并核对指纹是否为 `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`：
+Apothem 以自包含运行时的形式发布——引擎携带 vendored 依赖，直接从其源码树运行。一条命令即可获取源码、放置引擎并物化你的第一个工具。它会先验证已签名的发布：它会对照维护者密钥检查已签名的发布标签；若已安装 [cosign](https://docs.sigstore.dev/cosign/system_config/installation/)，它还会检查已签名的发布归档。检查失败会在 `~/.apothem` 发生任何变化之前停止安装；如果那里是一个已跟踪文件有改动的 git 克隆，更新会停止，直到你提交或贮藏（stash）这些改动。请在首次安装前导入一次维护者签名密钥，并核对指纹是否为 `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`：
 
 ```bash title="macOS · Linux · WSL2 · BSD — import the key once"
 curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
@@ -39,7 +39,7 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
-安装器要求系统中有 Python 3.10+，网络形式还需要 `git` 与 `gpg`。它会检查前置条件，并将引擎放置在 `~/.apothem` 下。当缺少 `click` 或 `rich` 时，它会在你确认后安装该软件包，或者在传入 `--yes`（PowerShell 上为 `-Yes`）或设置 `APOTHEM_AUTO_INSTALL_DEPS=1` 时直接安装；否则会停止，并给出需要运行的 pip 命令（参见[前置条件一览](/docs/install#prerequisites-at-a-glance)）。完成时它会打印一份后续步骤横幅；在 POSIX 上，当垫片所在的目录已在 `PATH` 中时，横幅如下所示：
+安装器要求系统中有 Python 3.10+，网络形式还需要 `git` 与 `gpg`（以及可选的 cosign）。它会检查前置条件，并将引擎放置在 `~/.apothem` 下。当缺少 `click` 或 `rich` 时，它会在你确认后安装该软件包，或者在传入 `--yes`（PowerShell 上为 `-Yes`）或设置 `APOTHEM_AUTO_INSTALL_DEPS=1` 时直接安装；否则会停止，并给出需要运行的 pip 命令（参见[前置条件一览](/docs/install#prerequisites-at-a-glance)）。完成时它会打印一份后续步骤横幅；在 POSIX 上，当垫片所在的目录已在 `PATH` 中时，横幅如下所示：
 
 ```text
 Installation complete.
@@ -52,11 +52,11 @@ Recommended first step — the guided setup (profile -> preview -> install):
 ```
 
 <Callout title="没有配置档案时的首次运行">
-  如果你还没有配置档案，安装器会将示例配置档案复制到 `~/.config/apothem/profile.yaml` 并继续执行：它会在同一次运行中物化你的第一个工具并验证它。示例中的身份字段是占位值，因此安装会打印一条提示。在第 2 步中将配置档案改成你自己的，然后按照第 5 步的做法，用 `apothem update --harness <name>` 应用它。
+  如果你还没有配置档案，安装器会将示例配置档案（源码树中的 `src/apothem/schemas/profile.example.yaml`）复制到 `~/.config/apothem/profile.yaml` 并继续执行：它会在同一次运行中物化你的第一个工具并验证它。该示例是一份样例，而不是空白的配置档案。其身份字段是占位值，因此安装会打印一条提示；它还包含三条示例规则、两个示例 MCP 服务器（位于 `https://mcp.example.invalid/docs` 的 `docs`，以及一个用 `npx` 启动的 `filesystem` 服务器）、`harnesses:` 下的按工具覆盖项，以及一份将 `antigravity` 和 `open-claw` 排除在 `--harness all` 之外的列表。从配置档案获取 MCP 服务器的工具（例如 OpenCode 或 Qwen Code）会在其自身配置中得到这两个示例服务器。在第 2 步中将配置档案改成你自己的，删除你不需要的内容，然后按照第 5 步的做法，用 `apothem update --harness <name>` 应用它。
 </Callout>
 
 <Callout title="apothem 命令">
-  安装器会将一个 `apothem` 垫片写入 `$HOME/.local/bin`（POSIX）或 `%LOCALAPPDATA%\Microsoft\WindowsApps`（Windows），并且绝不会修改你的 `PATH`。一旦该目录已加入 `PATH`，你就可以直接以 `apothem <command>` 的形式运行引擎。如果它尚未加入 `PATH`，横幅会打印一个自包含的回退方式——`PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>`——它无需垫片；请将你的横幅所打印的确切前缀加在每条命令之前。
+  安装器会将一个 `apothem` 垫片写入 `$HOME/.local/bin`（POSIX）或 `%LOCALAPPDATA%\Microsoft\WindowsApps`（Windows），并且绝不会修改你的 `PATH`。一旦该目录已加入 `PATH`，你就可以直接以 `apothem <command>` 的形式运行引擎。如果它尚未加入 `PATH`，横幅会打印垫片的完整路径（默认为 `~/.local/bin/apothem`）；若未放置垫片，则打印一条启动引擎并将当前文件夹排除在 `sys.path` 之外的命令；请在每条命令中用横幅所打印的内容代替 `apothem`。
 </Callout>
 
 [安装指南](/docs/install)介绍了其他安装路径——Claude Code 插件（先运行 `/plugin marketplace add ahmed-g-gad/apothem`，再运行 `/plugin install apothem@apothem`）；VS Code 系扩展以及其他工具原生扩展；以及按需运行的 npx 形式（`npx @ahmed-g-gad/apothem <command>`）——同时还介绍了各项环境变量选项。
@@ -70,7 +70,7 @@ apothem profile init
 apothem profile show --json
 ```
 
-该脚手架使用虚构的占位身份数据，在你安装任何工具输出之前编辑它是安全的。`show --json` 会将其读回并报告经过校验的配置档案，所有默认值均已填入，首项为 `schema_version`。该命令将其打印在一行上；此处为展开后的形式：
+该脚手架使用虚构的占位身份数据，在你安装任何工具输出之前编辑它是安全的。`show --json` 会将其读回并报告经过校验的配置档案，所有默认值均已填入，首项为 `schema_version`。对于 `profile init` 写入的脚手架，它会将下面的文档打印在一行上；此处为展开后的形式。如果你保留了第 1 步中安装器复制的示例配置档案，输出显示的则是示例中的值，包括其示例规则、MCP 服务器和按工具覆盖项。
 
 ```json
 {

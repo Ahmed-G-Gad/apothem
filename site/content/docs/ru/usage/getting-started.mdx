@@ -2,7 +2,7 @@
 title: "Основные рабочие процессы"
 description: "Четыре основных рабочих процесса Apothem — профиль, правила, планы и шлюз соответствия."
 machineTranslated: true
-sourceHash: "a53e8d62d7df7ef4"
+sourceHash: "2c2b69afe24907e5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -70,16 +70,22 @@ apothem verify --harness claude-code
 
 ## Шлюз соответствия
 
-Из чекаута Apothem выполните:
+Из чекаута Apothem запускайте его из корня чекаута (`python -m` сначала читает
+модули из текущей папки, поэтому используйте папку, которой доверяете):
 
 ```bash
 PYTHONPATH=src python -m apothem.conformity.gate --all .
 ```
 
-После установки через скрипт выполните:
+После установки через скрипт запускайте шлюз по пути к его скрипту с `-E -s` из
+проекта, который хотите проверить. В Windows используйте `python` вместо
+`python3`, а также `$HOME\.apothem\...` в PowerShell или
+`%USERPROFILE%\.apothem\...` в cmd вместо `~/.apothem/...`, поскольку
+Windows PowerShell и cmd не раскрывают `~`;
+[Шлюз соответствия](/docs/conformity-gate) объясняет флаги:
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python3 -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
 
 Выполняет все механические проверки соответствия и сообщает о прохождении/сбое по

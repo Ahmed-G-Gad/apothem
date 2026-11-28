@@ -2,7 +2,7 @@
 title: "Реестр окружений"
 description: "Технический справочник по реестру встроенных адаптеров окружений Apothem."
 machineTranslated: true
-sourceHash: "242f7f2bf421b85e"
+sourceHash: "2f51bca3eb9467c5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,7 +17,7 @@ sourceHash: "242f7f2bf421b85e"
 
 | Окружение | Имя установки | Область | Формат | Цели | MCP | Закрепление соглашения |
 | --- | --- | --- | --- | --- | --- | --- |
-| Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md`; `~/.gemini/antigravity-cli/plugins/apothem/` | discovery-pending | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
+| Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md`; `~/.gemini/config/plugins/apothem/` | discovery-pending | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
 | Claude Code | `claude-code` | user | json | `~/.claude/settings.json`; `~/.claude/CLAUDE.md`; нативные `agents`, `rules`, `skills`, `statuslines`, `output-styles`; `~/.claude/.apothem/support/` | discovery-pending | `src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md` |
 | CodeBuddy | `codebuddy` | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md`; `<project>/.codebuddy/agents/`; `<project>/.codebuddy/settings.local.json`; `<project>/.apothem/support/hooks/`; `~/.codebuddy/skills/`; `~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` |
 | Codex | `codex` | user | markdown | `~/.codex/AGENTS.md`; `hooks.json`; `hooks/`; `agents/*.toml`; `~/.agents/skills/`; `~/.config/apothem/` | discovery-pending | `src/apothem/harnesses/codex/STANDARD-CONVENTION-PIN.md` |
@@ -28,7 +28,7 @@ sourceHash: "242f7f2bf421b85e"
 | Hermes | `hermes` | user | yaml | `~/.hermes/config.yaml`; `~/.hermes/.apothem/support/` | native | `src/apothem/harnesses/hermes/STANDARD-CONVENTION-PIN.md` |
 | Kimi Code | `kimi-code` | project | markdown | `<project>/AGENTS.md`; `<project>/.kimi-code/skills/`; `<project>/.kimi-code/agents/`; `<project>/.kimi-code/.apothem/support/` | discovery-pending | `src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md` |
 | Kiro | `kiro` | project | markdown | `<project>/.kiro/steering/apothem-rules.md`; `<project>/.kiro/agents/`; `<project>/.kiro/hooks/apothem.json`; `<project>/.apothem/support/kiro/hooks/`; `~/.kiro/skills/`; `~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md` |
-| Open-Claw | `open-claw` | user | json | `~/.openclaw/openclaw.json`; `~/.openclaw/.apothem/support/` | unsupported | `src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md` |
+| Open-Claw | `open-claw` | user | json | `~/.openclaw/openclaw.json`; `~/.openclaw/.apothem/support/`; `<workspace>/apothem/AGENTS.md` (загружается хуком `bootstrap-extra-files`; его нет в списке целей реестра, поэтому сгенерированная таблица ниже его не включает) | unsupported | `src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md` |
 | OpenCode | `opencode` | user | json | `~/.config/opencode/opencode.json`; нативные `commands`, `skills`, `agents`; `~/.config/opencode/.apothem/support/` | native | `src/apothem/harnesses/opencode/STANDARD-CONVENTION-PIN.md` |
 | Qwen Code | `qwen-code` | user | json | `~/.qwen/settings.json`; `~/.qwen/QWEN.md`; нативные `commands`, `skills`, `agents`; `~/.qwen/.apothem/support/` | native | `src/apothem/harnesses/qwen_code/STANDARD-CONVENTION-PIN.md` |
 | Trae | `trae` | project | markdown | `<project>/.trae/rules/apothem-rules.md`; `<project>/.trae/agents/`; `~/.trae/skills/`; `~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/trae/STANDARD-CONVENTION-PIN.md` |
@@ -115,7 +115,7 @@ sourceHash: "242f7f2bf421b85e"
 | `~/.claude/agents/` | Claude Code | нет | Cursor |
 | `~/.codex/agents/` | Codex | нет | Cursor |
 | `~/.claude/CLAUDE.md` | Claude Code | нет | OpenCode, Windsurf |
-| `<project>/AGENTS.md` | Kimi Code | нет | Antigravity, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
+| `<project>/AGENTS.md` | Kimi Code | нет | Antigravity, Claude Code, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
 | `<project>/GEMINI.md` | Gemini CLI | нет | Antigravity, GitHub Copilot, Zed |
 | `~/.gemini/GEMINI.md` | Antigravity | нет | Gemini CLI |
 | `<project>/.github/copilot-instructions.md` | GitHub Copilot | нет | Zed |
@@ -143,7 +143,21 @@ sourceHash: "242f7f2bf421b85e"
 `Codex` берёт первый из `AGENTS.override.md` и `AGENTS.md` в каждой папке,
 поэтому загружает `<project>/AGENTS.md` только тогда, когда рядом с этим файлом
 нет `AGENTS.override.md`. `CodeBuddy` использует `<project>/AGENTS.md` как память
-проекта только тогда, когда в проекте нет `CODEBUDDY.md`. `Zed` загружает только
+проекта только тогда, когда в проекте нет `CODEBUDDY.md`. `Claude Code` читает
+`AGENTS.md` в релизах, которые называет его
+[страница о памяти](https://code.claude.com/docs/en/memory#agents-md), а
+примечание об установке указывает первый из них. При настройке по умолчанию
+**Project instructions** он загружает каждый `AGENTS.md` и `.claude/AGENTS.md`
+в рабочей папке и в папках над ней при запуске сеанса, но только тогда, когда
+ни в одной из этих папок нет `CLAUDE.md`, `.claude/CLAUDE.md` или
+`CLAUDE.local.md`. Он загружает `AGENTS.md` папки ниже рабочей папки, например
+проекта, открытого из родительской папки, когда его инструмент Read открывает
+там файл и в этой папке тоже нет ни одного из этих трёх файлов.
+`~/.claude/CLAUDE.md` не учитывается, поэтому блок Apothem в нём продолжает
+загружаться вместе с `<project>/AGENTS.md`. Настройка `claude-md-and-agents-md`
+загружает оба вида файлов, а `claude-md` и `managed-only` не загружают
+`AGENTS.md`. Некоторые сеансы не читают `AGENTS.md` ни при какой настройке;
+страница о памяти перечисляет их. `Zed` загружает только
 первый файл инструкций проекта из своего списка: `.rules`, `.cursorrules`,
 `.windsurfrules`, `.clinerules`, `.github/copilot-instructions.md`, `AGENT.md`,
 `AGENTS.md`, `CLAUDE.md`, затем `GEMINI.md`. Поэтому он загружает
@@ -215,8 +229,57 @@ Anthropic Claude, а не для агента, которого запускае
 | --- | --- |
 | `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | Подтверждает, что у каждого адаптера есть закрепление соглашения возрастом не более 90 дней, которое ссылается как минимум на один URL вендора и не имеет просроченной цели обнаружения. CI запускает эту проверку на каждом pull request, еженедельно и перед релизом. |
 | `python scripts/dev/check_vendor_urls.py` | Загружает каждый URL вендора, на который ссылаются закрепления и шаблоны окружений, и завершается неудачей на перемещённой или несуществующей странице, включая имя хоста, которое больше не разрешается, или сертификат, не прошедший проверку; тайм-аут, отклонённое или сброшенное соединение либо ошибка сервера 5xx регистрируются как недоступность и не приводят к неудаче. Имя хоста, которое разрешается только в адрес-заполнитель, которого не может быть ни у одного сервера (такой адрес могут вернуть серверы имён вендора для региона, из которого выполняется проверка), запроса не получает: оно регистрируется как немаршрутизируемое, не приводит проверку к неудаче, а его страницы нужно проверять вручную. Его запускает еженедельный монитор соглашений, который при каждом запуске выдаёт предупреждение о каждом таком хосте и перечисляет страницы таких хостов в issue, которое создаёт. |
-| `python -m apothem.conformity.gate --all .` | Запускает проверки соответствия документации и реализации. |
+| `python scripts/dev/check_vendor_releases.py` | Запрашивает у каждого канала релизов в `scripts/dev/vendor-release-channels.json` его текущую версию: dist-тег пакета npm, последний релиз репозитория GitHub (или, для канала с шаблоном тега, его самый новый стабильный релиз с подходящим тегом среди 100 самых новых) или проект PyPI. Для адреса инсталлятора она запрашивает, куда перенаправляет адрес. Она сравнивает ответ с тем, что было проверено последним. Новая мажорная версия, релиз, вышедший за триггер, названный в файле, адрес инсталлятора, перенаправляющий куда-то ещё, или пакет, dist-тег, релиз или адрес, которых больше нет, приводят к её неудаче, как и шаблон тега, которому не соответствует ни один стабильный релиз среди 100 самых новых. Более новая минорная или патч-версия выводится в отчёте и не приводит к неудаче, если только уровень `watch` канала не называет этот уровень. Реестр, который не отвечает или ответ которого обрывается на полпути, выводится в отчёте как недоступный и тоже не приводит к неудаче. Каждая попытка запроса имеет в общей сложности 30 секунд, а через 20 минут проверка больше не опрашивает каналы, поэтому она всегда записывает свой отчёт. Перед любым запросом она проверяет, что у каждой папки окружения есть запись и что фраза-свидетельство каждого канала есть в его закреплении, и завершается с кодом 1, если это не так; отчёт и issue тогда говорят, что не так. Еженедельный монитор соглашений запускает её с токеном только для чтения, перечисляет каждый канал в сводке запуска и создаёт issue, когда она не проходит. `--list` выводит каналы, не обращаясь ни к одному реестру. |
+| `python3 -E -s src/apothem/conformity/gate.py --all .` | Запускает проверки соответствия документации и реализации. |
 | `python -m pytest` | Прогоняет фикстурные тесты реестра и контрактные тесты адаптеров. |
+
+## Каналы релизов
+
+`scripts/dev/vendor-release-channels.json` содержит одну запись для каждой
+папки окружения. Отслеживаемое окружение перечисляет свои каналы релизов.
+Каждый канал записывает последнюю проверенную версию с датой. Это версия,
+которую называет его закрепление, или, если закрепление не называет никакой,
+версия, которую реестр отдавал, когда канал был записан. Запись также может
+содержать только мажорную версию. Каждый канал цитирует фразу закрепления,
+которая его называет. Первое число версии — её мажорная версия, включая 0,
+поэтому линия 0.x, переходящая с 0.26 на 0.27, сообщает о более новой
+минорной версии и не приводит к неудаче. Канал с календарными версиями,
+например с номерами год.месяц.релиз у OpenClaw, сообщает о каждом более новом
+релизе без неудачи и не принимает уровень `watch`. Codex, Gemini CLI, Hermes,
+Qwen Code и GLM находятся на линиях 0.x, поэтому новая версия одного из них
+перечисляется в сводке запуска и не создаёт issue, пока не достигнет 1.0, если
+только его канал не задаёт уровень `watch`.
+
+У OpenCode четыре канала. `opencode-ai` несёт OpenCode 1, а `@opencode/cli`
+несёт OpenCode 2. Релизы GitHub для `anomalyco/opencode` показывают новую
+мажорную линию, каким бы пакетом npm она ни поставлялась. Четвёртый канал
+запрашивает, куда перенаправляет `opencode.ai/install`. 2026-11-03 он
+перенаправлял на скрипт инсталлятора OpenCode 1. Этот скрипт устанавливает
+версию, которую называет dist-тег `latest` пакета `opencode-ai`, когда это
+версия OpenCode 1, и никогда не устанавливает OpenCode 2. Решение по OpenCode
+от 2026-11-03 переходит к записи собственных форматов OpenCode 2 там, где
+работает OpenCode 2, когда появляется любой из двух сигналов: OpenCode 2
+объявляет дату удаления своего перевода форматов OpenCode 1 или
+`opencode.ai/install` либо `opencode-ai` переходит на OpenCode 2. Проверка
+следит за вторым сигналом. Канал `opencode-ai` и канал инсталлятора несут по
+триггеру: проверка не проходит, когда версия `latest` пакета `opencode-ai`
+выходит за мажорную версию 1 или когда `opencode.ai/install` перестаёт
+перенаправлять на скрипт OpenCode 1. Изменение внутри этого скрипта не меняет
+перенаправление, поэтому проверка его не видит. Ни один реестр не отвечает на
+первый сигнал, поэтому он остаётся ручной проверкой со сроком до 2027-02-01
+вместе со следующим пересмотром закрепления OpenCode.
+
+Antigravity, Cursor, Kiro, Trae и Windsurf не отслеживаются. Каждое из них —
+настольное приложение или инструмент командной строки, устанавливаемый
+скриптом, и его закрепление не называет канала релизов, который скрипт может
+запросить без учётных данных. Файл указывает причину для каждого.
+
+После того как вы перепроверите закрепление по новому релизу или новой цели
+перенаправления, обновите поля `reviewed`, `reviewed_on` и `reviewed_from`
+этого канала. Триггер на канале версий не даёт проверке пройти каждую неделю,
+пока вы не удалите или не измените его. Триггер на адресе инсталлятора
+прекращает срабатывать, как только `reviewed` записывает новую цель, поэтому
+записывайте эту цель только после того, как действие триггера выполнено.
 
 ## Сгенерированный справочник адаптеров окружений
 

@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "适用于 GitHub Copilot（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "b1b8b4918d7d754d"
+sourceHash: "040eeddf99d35ec6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -110,6 +110,8 @@ Apothem 不在 Copilot 上注册 `preToolUse` 守卫。对于 `preToolUse`，Cop
 "/path/to/python" -E -s "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
 ```
 
+`-E -s` 让 Python 忽略 `PYTHONPATH` 和其他 `PYTHON*` 变量，并跳过你的用户 site-packages，因此项目中的任何文件都无法加载到钩子中。
+
 `--contract copilot` 让分发器读取 Copilot 的 camelCase 输入并打印 `{"additionalContext": ...}`，这正是 Copilot 为这两个事件读取的内容。
 
 **谨慎提交，以及云端智能体。** `.github/hooks/` 是你仓库的一部分，并且 Copilot 的云端编码服务会读取它。这些命令写明了 Apothem 运行时找到的解释器以及项目的绝对路径，而脚本位于 `.apothem/` 中，项目的 `.gitignore` 片段会忽略该文件夹。在其他任何机器上，以及在云端服务中（它只运行 `bash` 命令），该命令都找不到可运行的东西。Copilot 会记录该失败，运行继续进行，因为失败的 `sessionStart` 或 `postToolUse` 钩子不会造成阻止。将 `.github/hooks/apothem.json` 添加到 `.gitignore`，或者只为共享相同布局的团队提交它。安装不会编辑 `.gitignore`，并会将此作为一条说明打印出来。
@@ -131,6 +133,15 @@ VS Code 较旧的 Local 钩子契约（带有 `command`、`windows`、`linux` �
 ## 兼容性说明
 
 GitHub Copilot 没有暴露可供此适配器管理的、基于文件的用户全局指令路径。Apothem 以有文档记载的项目级指令文件为目标，并将 IDE 级的用户设置留给操作者所有。它写入一个钩子文件 `.github/hooks/apothem.json`，不写入 `.github/hooks/` 中的其他任何文件。
+
+Copilot 还会加载其他 Apothem 安装向其中写入区块的两个项目文件：[Kimi Code](/docs/harnesses/kimi-code) 安装写入的 `AGENTS.md` 文件，以及[另一个命令行工具的安装](/docs/harnesses/gemini-cli)写入的上下文文件：
+
+```text
+<project>/AGENTS.md
+<project>/GEMINI.md
+```
+
+因此在有这些安装的项目中，它们的 Apothem 区块也会到达 Copilot。当其中任一文件已经包含 Apothem 区块时，安装 `github-copilot` 会打印一条说明，指出该文件以及写入它的安装。[工具注册表](/docs/reference/harness-registry#shared-roots)列出了加载每个文件的其他工具。
 
 在 Apothem 仓库内，`.github/copilot-instructions.md` 是该仓库各助手指令表面中的一个声音。在该仓库的检出中，合规闸门的多表面一致性检查会比较 `AGENTS.md`、`CLAUDE.md` 和 `.github/copilot-instructions.md` 中的共享主张。它会报告这三个文件之一所遗漏的共享主张，以及与 `AGENTS.md` 所作主张相矛盾的文件。该检查不会读取 Apothem 写入你项目中的指令文件。该闸门默认是建议性的：它报告发现项并以 `0` 退出。
 
@@ -172,14 +183,18 @@ apothem uninstall --harness github-copilot --project /path/to/project
 ## 合规闸门
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
 
-`--all` 运行涵盖独立的校验器。它不会运行“兼容性说明”一节中所述的多表面一致性检查。若要在检出目录中按名称运行该检查：
+请在你的项目文件夹中运行它。在 Windows 上，请用 `python` 代替 `python3`，并使用完整路径，因为 Windows PowerShell 和 cmd 不会展开 `~`：PowerShell 中为 `$HOME\.apothem\src\apothem\conformity\gate.py`，cmd 中为 `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`。该路径是安装程序放置引擎的位置，`-E -s` 让你的 `PYTHONPATH` 和用户 site-packages 不会进入闸门；[合规闸门](/docs/conformity-gate)解释了这两点以及其他安装方式。
+
+`--all` 运行涵盖独立的校验器。它不会运行“兼容性说明”一节中所述的多表面一致性检查。若要按名称运行该检查，请在 Apothem 仓库检出的根目录中运行该检出自带的闸门：
 
 ```bash
-python -m apothem.conformity.gate --check multi-surface-coherence-grep AGENTS.md
+python3 -E -s src/apothem/conformity/gate.py --check multi-surface-coherence-grep AGENTS.md
 ```
+
+`~/.apothem` 下的已安装副本会在它自身旁边查找要比较的文件，因此针对检出运行时，它会跳过该检查并报告通过。
 
 ## 故障排查
 

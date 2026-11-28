@@ -2,7 +2,7 @@
 title: "Абстракция адаптера окружения"
 description: "Протокол HarnessAdapter — как адаптеры Apothem транслируют общий профиль."
 machineTranslated: true
-sourceHash: "da20d21cbe60d343"
+sourceHash: "20a51a9c0e55e94a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -99,6 +99,8 @@ flowchart TD
 from pathlib import Path
 from typing import Protocol
 
+from apothem.harnesses._shared.install_driver_types import MaterializationRun
+
 class HarnessAdapter(Protocol):
     name: str
     output_path: Path
@@ -109,7 +111,7 @@ class HarnessAdapter(Protocol):
     def update(self, profile: dict[str, object]) -> object:
         ...
 
-    def uninstall(self) -> None:
+    def uninstall(self) -> MaterializationRun | None:
         ...
 
     def is_installed(self) -> bool:
@@ -118,6 +120,10 @@ class HarnessAdapter(Protocol):
     def verify(self) -> bool:
         ...
 ```
+
+Поставляемые адаптеры возвращают `MaterializationRun` из `uninstall`, а CLI
+сообщает его предупреждения и ошибки; адаптер, которому нечего сообщить, может
+вернуть `None`.
 
 Адаптеры области проекта могут дополнительно принимать `project: Path | None` в
 методах жизненного цикла и предоставлять `resolve_output_path(project)`. CLI

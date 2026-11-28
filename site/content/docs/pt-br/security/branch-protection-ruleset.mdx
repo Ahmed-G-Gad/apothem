@@ -2,7 +2,7 @@
 title: "Proteção de branches"
 description: "Proteção de branch do Apothem na main: a regra de proteção ativa, suas verificações de status obrigatórias e as verificações com adição pendente."
 machineTranslated: true
-sourceHash: "7d54aae6581f03ec"
+sourceHash: "ba617c87452fda60"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,7 +22,7 @@ Esta página registra exatamente as configurações ativas, conforme lidas pela 
 | **Exigir que as verificações de status passem** | `required_status_checks` | ✅ | Os 12 contextos listados em [Verificações de status obrigatórias](#verificações-de-status-obrigatórias) devem passar. |
 | **Exigir que as branches estejam atualizadas antes do merge** | `required_status_checks.strict` | ❌ | Um pull request pode ser mesclado quando suas verificações obrigatórias passaram contra um `main` mais antigo. Os fluxos de trabalho executados em um push para `main` testam então o resultado mesclado. |
 | **Exigir a resolução de conversas antes do merge** | `required_conversation_resolution` | ✅ | Threads de revisão em aberto bloqueiam o merge. |
-| **Exigir commits assinados** | `required_signatures` | ❌ | Os commits de lançamento são assinados localmente. A imposição aguarda até que a documentação de integração de contribuidores descreva a configuração de assinatura SSH ou GPG. |
+| **Exigir commits assinados** | `required_signatures` | ❌ | Os commits de lançamento chegam à `main` como merges squash que o GitHub assina com a própria chave; a assinatura do mantenedor está na tag de lançamento. A imposição aguarda até que a documentação de integração de contribuidores descreva a configuração de assinatura SSH ou GPG. |
 | **Exigir histórico linear** | `required_linear_history` | ✅ | Mantém o histórico público de `main` em uma única linha. |
 | **Bloquear a branch** | `lock_branch` | ❌ | `main` aceita merges. |
 | **Não permitir contornar as configurações acima** | `enforce_admins` | ❌ | As configurações acima não se aplicam a um administrador do repositório. Um administrador pode fazer merge sem as verificações obrigatórias ou fazer push diretamente para `main`. |
@@ -58,9 +58,11 @@ Require Signed-off-by
 
 | Contexto | Fluxo de trabalho e job | Como ele reporta em todo pull request |
 |---|---|---|
-| `quality / <os> / py<ver>` (10) | `ci.yml`, job `quality` | `ci.yml` é executado quando um pull request toca um caminho de código ou de configuração. `ci-docs-stub.yml` reporta os mesmos contextos em um pull request somente de documentação. |
+| `quality / <os> / py<ver>` (10) | `ci.yml`, job `quality` para `ubuntu-latest`; job `quality-windows` para `windows-latest` | `ci.yml` é executado quando um pull request toca um caminho de código ou de configuração. `ci-docs-stub.yml` reporta os mesmos contextos em um pull request somente de documentação. |
 | `coverage` | `ci.yml`, job `coverage` | Igual a `quality`. |
 | `Require Signed-off-by` | `dco.yml`, job `dco` | Seu gatilho de pull request não tem filtro `paths`, então ele é executado em todo pull request para `main`. |
+
+No Windows, o job `quality` executa os testes de cada versão do Python em duas metades, como as células `quality / windows-latest / py<ver> / shard 1 of 2` e `shard 2 of 2`. Essas células não são obrigatórias. O job `quality-windows` reporta os contextos obrigatórios `quality / windows-latest / py<ver>`, e cada um só passa quando todas as células `quality` passaram, então uma falha em qualquer célula deixa vermelhos todos os cinco contextos do Windows.
 
 A célula de pré-lançamento `quality / ubuntu-latest / py3.15` é executada em `ci.yml` com `continue-on-error` e não é obrigatória. Qualquer outro fluxo de trabalho, incluindo CodeQL, Scorecard e pip-audit, pode reportar status, mas seu resultado não condiciona o merge, a menos que seu contexto seja adicionado a esta lista.
 

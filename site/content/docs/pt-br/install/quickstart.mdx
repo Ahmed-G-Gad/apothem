@@ -2,7 +2,7 @@
 title: "Início rápido"
 description: "Instale o Apothem, escreva um perfil, materialize seu primeiro harness e verifique-o — um roteiro de copiar e colar com a saída esperada."
 machineTranslated: true
-sourceHash: "7a414de2fdc9eea3"
+sourceHash: "549fab5f56f4cf9e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,7 +30,7 @@ suportados.
 
 ## 1. Instalar o Apothem
 
-O Apothem é distribuído como um runtime autocontido — o motor é executado diretamente a partir da sua árvore de código-fonte, com as dependências incorporadas. Um único comando baixa o código-fonte, posiciona o motor e materializa seu primeiro harness. Como ele verifica primeiro o lançamento assinado, importe a chave de assinatura do mantenedor uma vez, antes da primeira instalação, e confira se a impressão digital é `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`:
+O Apothem é distribuído como um runtime autocontido — o motor é executado diretamente a partir da sua árvore de código-fonte, com as dependências incorporadas. Um único comando baixa o código-fonte, posiciona o motor e materializa seu primeiro harness. Ele verifica primeiro o lançamento assinado: confere a tag de lançamento assinada com a chave do mantenedor e, com o [cosign](https://docs.sigstore.dev/cosign/system_config/installation/) instalado, também verifica o arquivo de lançamento assinado. Uma verificação que falha interrompe a instalação antes que `~/.apothem` seja alterado, e um clone git ali com alterações em arquivos rastreados interrompe a atualização até que você faça commit ou stash delas. Importe a chave de assinatura do mantenedor uma vez, antes da primeira instalação, e confira se a impressão digital é `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`:
 
 ```bash title="macOS · Linux · WSL2 · BSD — import the key once"
 curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
@@ -51,7 +51,7 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
-O instalador exige um Python 3.10+ do sistema, além de `git` e `gpg` para a forma via rede. Ele verifica os pré-requisitos e posiciona o motor em `~/.apothem`. Quando `click` ou `rich` está ausente, ele instala o pacote com a sua confirmação, com `--yes` (`-Yes` no PowerShell) ou com `APOTHEM_AUTO_INSTALL_DEPS=1`, e, caso contrário, para e informa o comando pip a executar (consulte [Pré-requisitos de relance](/docs/install#prerequisites-at-a-glance)). Ao concluir, ele imprime um banner de próximos passos; em POSIX, quando o diretório do shim já está no `PATH`, o banner tem esta aparência:
+O instalador exige um Python 3.10+ do sistema, além de `git` e `gpg` (e, opcionalmente, o cosign) para a forma via rede. Ele verifica os pré-requisitos e posiciona o motor em `~/.apothem`. Quando `click` ou `rich` está ausente, ele instala o pacote com a sua confirmação, com `--yes` (`-Yes` no PowerShell) ou com `APOTHEM_AUTO_INSTALL_DEPS=1`, e, caso contrário, para e informa o comando pip a executar (consulte [Pré-requisitos de relance](/docs/install#prerequisites-at-a-glance)). Ao concluir, ele imprime um banner de próximos passos; em POSIX, quando o diretório do shim já está no `PATH`, o banner tem esta aparência:
 
 ```text
 Installation complete.
@@ -64,23 +64,30 @@ Recommended first step — the guided setup (profile -> preview -> install):
 ```
 
 <Callout title="Primeira execução sem um perfil">
-  Se você ainda não tem um perfil, o instalador copia o perfil de exemplo para
+  Se você ainda não tem um perfil, o instalador copia o perfil de exemplo
+  (`src/apothem/schemas/profile.example.yaml` na árvore de código-fonte) para
   `~/.config/apothem/profile.yaml` e segue adiante: ele materializa seu primeiro
-  harness e o verifica na mesma execução. Os campos de identidade do exemplo são
-  marcadores de posição, então a instalação imprime um aviso. Torne o perfil seu
-  na Etapa 2 e depois aplique-o com `apothem update --harness <name>`, como na
-  Etapa 5.
+  harness e o verifica na mesma execução. O exemplo é uma amostra, não um perfil
+  em branco. Seus campos de identidade são marcadores de posição, então a
+  instalação imprime um aviso, e ele também traz três regras de exemplo, dois
+  servidores MCP de exemplo (`docs` em `https://mcp.example.invalid/docs` e um
+  servidor `filesystem` iniciado com `npx`), substituições por harness em
+  `harnesses:` e uma lista que deixa `antigravity` e `open-claw` de fora de
+  `--harness all`. Um harness que recebe servidores MCP do perfil, como o
+  OpenCode ou o Qwen Code, recebe os dois servidores de exemplo na sua própria
+  configuração. Torne o perfil seu na Etapa 2, removendo o que você não quiser,
+  e depois aplique-o com `apothem update --harness <name>`, como na Etapa 5.
 </Callout>
 
 <Callout title="O comando apothem">
   O instalador grava um shim `apothem` em `$HOME/.local/bin` (POSIX) ou em
   `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) e nunca altera o seu `PATH`.
   Assim que esse diretório estiver no `PATH`, você executa o motor diretamente
-  como `apothem <command>`. Se ele ainda não estiver no `PATH`,
-  o banner imprime uma alternativa autocontida —
-  `PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>` — que não
-  precisa de shim; anteponha a cada comando o prefixo exato que o seu banner
-  imprimiu.
+  como `apothem <command>`. Se ele ainda não estiver no `PATH`, o banner
+  imprime o caminho completo do shim (`~/.local/bin/apothem` por padrão) ou,
+  quando nenhum shim foi colocado, um comando que inicia o motor mantendo a
+  pasta atual fora do `sys.path`; use o que o banner imprimiu no lugar de
+  `apothem` em cada comando.
 </Callout>
 
 O [guia de instalação](/docs/install) cobre as outras rotas de instalação — o
@@ -107,8 +114,11 @@ apothem profile show --json
 O esqueleto usa dados de identidade fictícios, como marcadores de posição, e
 pode ser editado com segurança antes de você instalar qualquer saída de harness.
 `show --json` o lê de volta e relata o perfil validado com todos os padrões
-preenchidos, começando por `schema_version`. O comando o imprime em uma única
-linha; aqui ele aparece expandido:
+preenchidos, começando por `schema_version`. Para o esqueleto que
+`profile init` grava, ele imprime o documento abaixo em uma única linha; aqui
+ele aparece expandido. Se você manteve o perfil de exemplo que o instalador
+copiou na Etapa 1, a saída mostra os valores do exemplo, incluindo suas regras
+de exemplo, servidores MCP e substituições por harness.
 
 ```json
 {

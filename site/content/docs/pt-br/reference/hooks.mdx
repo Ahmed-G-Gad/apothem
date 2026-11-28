@@ -2,7 +2,7 @@
 title: "Hooks"
 description: "Manipuladores de eventos de ferramentas que disparam em SessionStart, PreToolUse, PostToolUse e Stop, carregando contextos de mensagem que impõem o isolamento do git e a disciplina de planos, com um contrato de tempo de execução testado e estado por usuário."
 machineTranslated: true
-sourceHash: "2fe3999ec76b34d3"
+sourceHash: "e510ec34e7c5cded"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -48,6 +48,16 @@ despachante empacotado. Ele guarda em cache o interpretador encontrado em `inter
 nova sondagem. Somente um diretório de estado absoluto e um caminho em cache absoluto são
 respeitados.
 
+Todo comando de hook inicia o Python com `-E -s`, incluindo o bootstrap do plugin e
+a sondagem de interpretador dele. `-E` faz o Python ignorar o `PYTHONPATH` e as
+outras variáveis `PYTHON*`, e `-s` deixa de fora os seus site-packages de usuário.
+Um hook é executado em qualquer pasta que o assistente abriu, e uma entrada vazia
+do `PYTHONPATH` representa essa pasta, então, sem as flags, um `sitecustomize.py`
+ou um `json.py` colocado ali seria executado dentro do hook. Os hooks usam apenas
+a biblioteca padrão e os próprios arquivos. O despachante e o conformity gate
+leem a entrada como UTF-8 por conta própria, porque `-E` também desativa
+`PYTHONUTF8` e `PYTHONIOENCODING`.
+
 Toda superfície registra uma entrada de despachante por evento e matcher, listando
 todas as mensagens que esse matcher avalia: um único processo lê o payload uma vez, executa
 cada proteção e responde com um único envelope, de modo que um Write inicia um único despachante
@@ -58,7 +68,9 @@ precisam de shell. O despachante é um script autônomo da biblioteca padrão: e
 inicializa seu próprio `sys.path`, de modo que nenhum pacote `apothem` importável
 é necessário no host. A partir de um checkout do código-fonte, a forma de módulo
 `python -m apothem.hooks.dispatch <event>` (com
-`PYTHONPATH=src`) executa o mesmo código para desenvolvimento. O despachante carrega
+`PYTHONPATH=src`, executado a partir da raiz do checkout: `-m` lê módulos primeiro
+da pasta atual) executa o mesmo código para desenvolvimento. Os comandos que os
+adaptadores gravam executam o script pelo caminho com `-E -s`. O despachante carrega
 `hooks/lib/resolve_root.py` para a resolução da raiz do ecossistema e delega para
 `hooks/emit_hook_context.py` e `hooks/session_start_bootstrap.py`.
 

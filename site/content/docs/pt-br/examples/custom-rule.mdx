@@ -2,7 +2,7 @@
 title: "Regra personalizada"
 description: "Criar uma regra permanente personalizada para o seu projeto."
 machineTranslated: true
-sourceHash: "0b22ce8bce931d04"
+sourceHash: "69efcab14f844e72"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,14 +35,14 @@ Salve isto em `rules/kebab-filenames.md` dentro da raiz de instalação do seu h
 
 ## Verifique se a regra está bem formada
 
-Execute o validador de frontmatter sobre o arquivo de regra que você acabou de escrever. Use o primeiro comando a partir de um checkout do Apothem, em que `PYTHONPATH=src` torna o pacote importável. Use o segundo após uma instalação por script, em que o código-fonte fica em `$HOME/.apothem/src`:
+Execute o validador de frontmatter sobre o arquivo de regra que você acabou de escrever. Use o primeiro comando a partir da raiz de um checkout do Apothem, em que `PYTHONPATH=src` torna o pacote importável (`python -m` lê módulos primeiro da pasta atual, então use uma pasta em que você confia). Use o segundo após uma instalação por script, em que o código-fonte fica em `$HOME/.apothem/src` e o gate é executado pelo caminho do seu script com `-E -s`, de modo que nem o `PYTHONPATH` nem os seus site-packages de usuário o alcançam:
 
 ```bash
 # From an Apothem checkout
 PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
 
 # After a script install
-PYTHONPATH="$HOME/.apothem/src" python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
+python3 -E -s "$HOME/.apothem/src/apothem/conformity/gate.py" --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
 ```
 
 Uma regra bem formada gera uma aprovação limpa:

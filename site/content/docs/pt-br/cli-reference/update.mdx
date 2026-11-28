@@ -2,7 +2,7 @@
 title: "update"
 description: "Referência da CLI para o comando apothem update."
 machineTranslated: true
-sourceHash: "0f47915f4f7819de"
+sourceHash: "7e96f7b81b7e328d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -21,15 +21,87 @@ apothem update --harness NAME|all [--profile PATH] [--dry-run]
 `update` rematerializa a saída do harness a partir do perfil compartilhado
 atual. Ele usa a mesma validação de perfil, a mesma seleção com
 `--harness all`, a mesma verificação de escopo de projeto, o mesmo
-comportamento de simulação e o mesmo envelope JSON que `install`.
+comportamento de simulação e o mesmo envelope JSON que `install`, e imprime os
+mesmos avisos, incluindo a nota `instruction_override` quando um arquivo seu
+impede uma ferramenta de carregar o que o Apothem grava (consulte
+[`install`](/docs/cli-reference/install)). Como `install`, ele registra a pasta
+de `--project` resolvida e move para ela uma instalação registrada sob outra
+grafia dessa pasta. Ele também avisa sobre um arquivo que contém um marcador
+BEGIN sem nenhum marcador END depois dele: o texto após esse marcador é mantido
+como está, e o bloco do Apothem é gravado separado dele, então o aviso nomeia a
+linha do marcador, dá um passo numerado que altera essa linha e diz para não
+adicionar de volta o marcador END no lugar disso, o que deixaria dois blocos do
+Apothem (consulte
+[Resolução de problemas](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
+Um arquivo que contém dois ou mais blocos inteiros entre os marcadores do
+Apothem é deixado como está, com um aviso que nomeia cada bloco pelas suas
+linhas (consulte
+[Um arquivo contém dois blocos entre os marcadores do Apothem](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)).
+Um arquivo em que o Apothem não consegue distinguir o bloco dele do seu texto, como
+o bloco dele dentro de um bloco de código seu, é deixado como está enquanto um
+registro de instalação o listar (um ledger de instalação que não pode ser lido
+conta como um; um registro feito sob outra grafia da pasta, como a sua pasta
+pessoal acessada por um link, também conta, como conta para a desinstalação,
+quando a grafia sob a qual você executa tem uma instalação própria ainda em
+vigor e a ferramenta grava as
+[pastas compartilhadas no seu diretório pessoal](/docs/cli-reference/install#folders-in-your-home-directory)),
+com um aviso que nomeia cada par de marcadores nele e como corrigi-lo (consulte
+[O Apothem não consegue distinguir o bloco dele do seu texto](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+Isso vale também ao lado de um marcador BEGIN que não inicia nenhum par de
+marcadores, como o que resta do bloco do Apothem depois que seu marcador END se
+perdeu: o aviso nomeia esse marcador BEGIN primeiro, e cada correção numerada no
+aviso o altera. Sem registro de instalação, um par de marcadores que você cita
+em código é texto seu, e a atualização adiciona seu bloco depois dele, com ou
+sem esse marcador BEGIN, a menos que o par contenha exatamente o bloco que a
+atualização grava: nesse caso, ela deixa o arquivo como está, com o aviso. Um
+arquivo em que um marcador BEGIN fora de código tem seu marcador END em código,
+com outro par de marcadores depois deles, é deixado como está com o aviso, com
+ou sem registro. Uma regra no seu perfil que abre um bloco de código e nunca o
+fecha não causa isso para o bloco que a atualização grava: a atualização fecha
+esse bloco de código no fim do bloco. Um bloco que uma versão anterior gravou a
+partir de uma regra assim não tem essa linha de fechamento, então pode causar
+isso. Um bloco de código seu que abre acima do bloco do Apothem e nunca fecha é
+um caso diferente: uma linha de fechamento no bloco o fecha, então o bloco é
+lido como código, e a atualização que grava um bloco assim avisa imediatamente
+e nomeia o bloco de código a fechar acima do marcador BEGIN. Uma simulação lê o
+arquivo antes de qualquer gravação, então não mostra que o bloco seria lido como
+código depois de gravado. Em uma simulação, o aviso para um arquivo deixado como
+está diz que o Apothem "would leave the file as it is".
+
+Uma atualização que deixa um arquivo como está por causa das suas linhas de
+marcador (dois ou mais blocos inteiros, ou pares de marcadores que o Apothem não
+consegue posicionar) termina como parcial, como uma instalação: a ferramenta não
+obtém nenhum bloco atual do Apothem desse arquivo, então, no lugar da linha `✓`,
+ela imprime uma linha `✗` na saída de erro padrão que nomeia o arquivo, o
+`status` do envelope de `--format json` é `"partial"` e o aviso desse arquivo
+traz `"detail": {"left_as_is": "1"}`, e o código de saída é `2`. Toda atualização
+termina assim até você corrigir as linhas de marcador que o aviso nomeia; um
+exemplo de marcador seu em um bloco de código também retém um arquivo assim, até
+você alterar a linha do marcador BEGIN dele. Sem `--quiet`, uma atualização
+assim com `--harness all` termina com uma linha de resumo que começa com `!` no
+lugar de `✓` e conta os arquivos deixados como estão:
+`! Updated <n> harnesses (<m> files written); <k> file(s) left as they are, named above.`
+Uma simulação ainda termina com `status` `"dry_run"` e código de saída `0`.
+
+Em cada pasta em que o Apothem grava (uma pasta de skills, os arquivos de suporte
+em `.apothem/support/`), `update` compara cada entrada que grava. Uma entrada de
+arquivo é regravada quando difere. Uma entrada de pasta (uma skill, a pasta de
+skill de um comando ou uma pasta dentro dos arquivos de suporte, como
+`hooks/lib/`) é substituída por inteiro quando qualquer coisa nela difere do que
+esta versão grava ali: a atualização faz backup dela em `~/.apothem/backups/`
+antes, então um arquivo que você adicionou dentro dela, ou um arquivo do Apothem
+que você editou, deixa de estar nela depois. Copie esse arquivo do conjunto de
+backup, ou mova-o para fora antes de atualizar. Um arquivo seu diretamente em
+uma pasta em que o Apothem grava (`.apothem/support/hooks/mine.py`, por exemplo)
+e as suas próprias pastas ao lado das do Apothem não são tocados.
 
 Para os adaptadores com escopo de projeto que gravam skills no seu diretório
 pessoal (consulte
 [`install`](/docs/cli-reference/install#folders-in-your-home-directory)),
 `update` também atualiza essas pastas e imprime a mesma `Note:` que as nomeia.
 Um adaptador instalado antes de gravar skills as recebe na sua próxima
-atualização. Uma pasta de skill que o Apothem não gravou é ignorada com um
-aviso, como em [`install`](/docs/cli-reference/install#folders-in-your-home-directory).
+atualização. Uma pasta de skill que o Apothem não gravou, ou que não consegue
+provar que gravou, é ignorada com um aviso que dá a correção, como em [`install`](/docs/cli-reference/install#folders-in-your-home-directory).
 Uma instalação que gravou a pasta de skills compartilhada anteriormente é
 reescrita na forma que todas as instalações compartilham na sua próxima
 atualização; cada pasta alterada é salva em backup antes.
@@ -71,7 +143,9 @@ O alias na forma contínua `apothem updating` (também aceito como
 }
 ```
 
-`--dry-run` retorna `status: "dry_run"` e `files_written: []`.
+`--dry-run` retorna `status: "dry_run"` e `files_written: []`. Uma atualização
+que deixou um arquivo como está por causa das suas linhas de marcador do Apothem
+retorna `status: "partial"` e sai com o código `2`.
 
 ## Exemplos
 
@@ -89,7 +163,7 @@ apothem updating --harness claude-code   # lowercase variant
 |---|---|
 | 0 | Adaptador atualizado com sucesso ou execução de simulação planejada sem erros |
 | 1 | Erro esperado de validação, de perfil, de harness, de projeto ou de adaptador |
-| 2 | Materialização parcial do lote após pelo menos uma gravação |
+| 2 | Parcial: um lote parou após pelo menos uma gravação, ou a atualização deixou como está, por causa das suas linhas de marcador do Apothem, um arquivo em que o Apothem mantém o bloco dele; `status` é `"partial"` |
 | 64 | Erro de uso: uma opção ou um comando desconhecido, ou um valor de opção ausente ou inválido. Com `--json`, o erro é um envelope JSON com o código `cli.usage`. |
 
 ## Veja também

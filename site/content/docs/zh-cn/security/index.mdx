@@ -2,7 +2,7 @@
 title: "安全"
 description: "Apothem 的安全态势——OpenSSF Scorecard 目标、漏洞报告、加固表面。"
 machineTranslated: true
-sourceHash: "0b4ba23080c1c9b9"
+sourceHash: "13f553f7cbd0b241"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,14 +13,21 @@ Apothem 的安全态势建立在五大支柱之上：供应链加固、漏洞响
 Apothem 是一个配置物化器。它读取一份共享配置档案，并将工具原生配置文件写入每个工具所读取的目录。这一单一功能界定了它信任什么、不信任什么。
 
 - **Apothem 信任什么。** 你编写的共享配置档案，以及由安装器放置的捆绑源码树。配置档案是你声明的意图；引擎在模式校验通过后将其视为权威输入。
-- **Apothem 不信任什么。** 配置档案的内容只有在校验之后才会到达文件系统：模式校验失败、未知的工具 ID、不安全的项目路径、缺失的清单来源、目标路径穿越以及符号链接穿越，全部会在任何写入之前停止，并返回带有 `files_written: []` 的结构化诊断信息。
+- **Apothem 不信任什么。** 配置档案的内容只有在校验之后才会到达文件系统：模式校验失败、未知的工具 ID、不安全的项目路径、缺失的清单来源、目标路径穿越以及符号链接穿越，全部会在任何写入之前停止，并返回带有 `files_written: []` 的结构化诊断信息。例外是 dotfile 管理器在 `~/.config` 处、或在共享技能、规则或模板文件夹处或其上层创建的链接，只要它们通向你主目录之内的某处，就会被跟随。在 Windows 上，联接点也算作链接。
 - **物化输出绝不携带什么。** 不携带任何机密。配置档案诊断在输出到纯文本、JSON、日志、文档片段或测试之前，会对类似机密的键与形似令牌的值进行脱敏；公开示例使用虚构的占位身份与域名。物化后的配置旨在被提交与共享，其中不携带任何凭据。
 - **通用拒绝底线。** Apothem 物化的 Claude Code `settings.json` 无论任何按工具设置的允许列表如何，都带有一条不可协商的拒绝底线；在其他工具上，同一底线则是物化规则中的策略文本，而非设置级的拒绝列表——涵盖机密路径（`.env*`、`~/.ssh/**`、凭据存储）、破坏性 shell 操作（`rm -rf`、`sudo`、向受保护分支强制推送），以及执行不可信输入。任何允许列表都不会悄然放宽这条底线。
 - **影响范围。** 写入被限定在工具目录与 Apothem 自有的支持子树之内。现有的受管目标在替换前会先备份，共享发现目录则按子项逐一合并，因此无关的、由操作者编写的文件会保留在原位。
 
 ## 运行时安全态势
 
-工具生命周期命令和配置档案写入命令会在写入之前进行校验。配置档案 schema 校验失败、未知的工具 ID、不安全的项目路径、缺失的清单来源、目标路径遍历以及符号链接穿越，都会在文件系统写入之前停止，并返回带有 `files_written: []` 的结构化诊断信息。
+工具生命周期命令和配置档案写入命令会在写入之前进行校验。配置档案 schema 校验失败、未知的工具 ID、不安全的项目路径、缺失的清单来源、目标路径遍历以及符号链接穿越，都会在文件系统写入之前停止，并返回带有 `files_written: []` 的结构化诊断信息。Windows 联接点算作符号链接。例外是位于 `~/.config`、或位于共享技能、规则或模板文件夹处或其上层、且停留在你主目录之内的链接，以及本身就是链接的主文件夹。链接绝不会把对你主目录中某个工具文件夹或对配置档案的写入带出你的主目录，除非你自己指定了主目录之外的文件夹：通过拼写为主目录之外路径的 `XDG_CONFIG_HOME` 或 `CODEX_HOME`，或者对于配置档案，通过同样拼写的 `--profile PATH`。这样拼写的路径会被跟随到其链接所通向的任何地方。项目文件夹遵循其自己的规则，见下文。该链接规则适用于安装、更新、卸载、`apothem rollback` 和 `apothem profile` 命令（包括覆盖现有配置档案的 `profile set` 和 `profile init --force`），也适用于 `install --clean` 写回的配置档案。当 `~/.config` 是一个通向你主目录之外的链接时，`install --clean` 会在备份或移除任何内容之前停止，并且它会将本身就是链接的目标作为链接移除，而不进入其中。因此在 Windows 上，位于某个工具文件夹处或其内部的联接点会使安装停止，即使它通向你主目录之内的某处也是如此；请将它替换为文件夹本身。
+
+你用 `--project` 指定的文件夹会被跟随到它所通向的任何地方，其上层的链接也是如此。当该文件夹本身就是链接（包括 `~/.config`）时，以及当该链接通向你主目录之外时，这同样成立，因为是你指定了该文件夹。项目文件夹内部、位于安装在那里写入的路径上的链接会使安装停止。当该链接通回项目文件夹时，以及当 `--project` 指定的是你的主目录时，这同样成立。同时也在你主目录中写入的工具（例如写入 `~/.config/apothem`）会按上述主目录规则检查这些路径。因此，即使 `--project` 指定的是 `~/.config`，一个通向你主目录之外的 `~/.config` 链接也会使该工具的安装停止。
+
+`XDG_CONFIG_HOME` 和 `CODEX_HOME` 可能来自项目的 `.envrc` 或你 source 的脚本，而不仅仅来自你的 shell 配置文件。当其中任何一个指定了你主目录之外的文件夹时，Apothem 会更改那里的文件，因为那就是它所指定的文件夹。
+
+Apothem 自己的文件夹 `~/.apothem` 不会以这种方式检查。它存放备份、安装台账及其锁文件；当它是一个链接时，每个在那里写入的命令都会跟随它到它所通向的任何地方，而 `apothem backups
+prune` 和自动备份保留会删除该链接另一端的旧备份组。
 
 安装和更新操作通过在替换之前备份现有的受管目标来保留它们。共享发现目录按子项逐一合并，因此无关的、由操作者编写的文件会保留原位。`--dry-run` 执行相同的校验并报告计划中的结果，而不创建任何目录或文件。
 
@@ -29,6 +36,7 @@ Apothem 是一个配置物化器。它读取一份共享配置档案，并将工
 ## 快速链接
 
 - [**OpenSSF Scorecard 态势**](/docs/security/openssf-scorecard-target)——逐项检查证据与已知的平台限制
+- [<strong>OpenSSF 最佳实践徽章</strong>](/docs/security/openssf-best-practices)——对通过级标准的回答，附带证据与尚存的差距
 - [**Webhook 审计**](/docs/security/webhooks-audit)——webhook 密钥卫生证据
 - [**分支保护**](/docs/security/branch-protection-ruleset)——拉取请求要求、必需状态检查，以及对强制推送与删除的阻止
 - [**二进制制品扫描**](/docs/security/binary-artifacts-sweep)——源码树不含二进制文件的证据
@@ -41,10 +49,10 @@ Apothem 是一个配置物化器。它读取一份共享配置档案，并将工
 
 ## 供应链发布证据
 
-每个发布产物都附带：
+每个 GitHub Release 都携带以下证据。每一项所覆盖的文件各不相同：
 
-- **SLSA-3 构建出处溯源**，通过 [`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator) 生成
-- **Sigstore 签名**，通过 [`sigstore/cosign-installer`](https://github.com/sigstore/cosign-installer) 生成
+- <strong>Sigstore 签名</strong>，通过 [`sigstore/cosign-installer`](https://github.com/sigstore/cosign-installer) 生成，覆盖每个分发的文件：sdist、wheel、VS Code 软件包 `apothem.vsix`、SBOM `sbom.cdx.json`、三个平台归档以及 `SHA256SUMS`。每个文件都有自己的 `<file>.cosign.bundle`。出处溯源文件 `provenance.intoto.jsonl` 没有 cosign 签名包；SLSA 生成器在其自己的 DSSE 信封中对它签名。
+- <strong>SLSA-3 构建出处溯源</strong>，通过 [`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator) 生成，位于 `provenance.intoto.jsonl` 中，覆盖四个文件：sdist、wheel、`apothem.vsix` 和 `sbom.cdx.json`。发布工作流还会请求 GitHub 为相同的文件保留其自己的构建出处溯源记录，这是一份独立于该文件的记录；该步骤不会把关发布，因此某个发布可能缺少它。平台归档和 `SHA256SUMS` 没有 SLSA 出处溯源；它们的 cosign 签名和已签名的发布标签覆盖了它们。
 - **CycloneDX SBOM**，覆盖所发布的 wheel 和 sdist，由 `scripts/release/generate_sbom.py` 写入：包括 apothem 包、`apothem/_vendor` 下 vendored 的每个包及其许可证、已声明的运行时依赖要求，以及每个分发包的 SHA-256。SBOM 与分发包一样经过签名，并受构建出处溯源覆盖
 - **npm 出处溯源声明**，通过 `@ahmed-g-gad/apothem` 上的受信任发布 OIDC 生成
 - **GPG 签名的 git 标签**（EDDSA 密钥 `70396FED9C634163`）
@@ -67,7 +75,7 @@ slsa-verifier verify-artifact \
   apothem-X.Y.Z-py3-none-any.whl apothem-X.Y.Z.tar.gz
 ```
 
-`cosign` 会打印 `Verified OK`，`slsa-verifier` 会打印 `PASSED: SLSA verification passed`。对任何其他产物，使用其 `<asset>.cosign.bundle` 重复执行 `cosign` 命令（较早的发布将平台归档和 `SHA256SUMS` 的签名包命名为 `<asset>.sig`）。darwin 和 linux 归档是同一份字节、两个名称，因此 `SHA256SUMS` 会两次列出同一个摘要。在克隆的仓库中，`bash scripts/release/verify-provenance.sh <download-dir>` 会在一次运行中完成全部三项检查，包括 `SHA256SUMS` 清单。
+`cosign` 会打印 `Verified OK`，`slsa-verifier` 会打印 `PASSED: SLSA verification passed`。对任何其他产物，使用其 `<asset>.cosign.bundle` 重复执行 `cosign` 命令（较早的发布将平台归档和 `SHA256SUMS` 的签名包命名为 `<asset>.sig`）。darwin 和 linux 归档是同一份字节、两个名称，因此 `SHA256SUMS` 会两次列出同一个摘要。在克隆的仓库中，`bash scripts/release/verify-provenance.sh --require-all <download-dir>` 会在一次运行中完成这三项检查：`SHA256SUMS` 清单、每个 cosign 签名包，以及 wheel、sdist、`apothem.vsix` 和已签名 SBOM 的 SLSA 出处溯源。当某项检查所需的工具（`cosign`、`slsa-verifier`）或文件（`SHA256SUMS`）缺失时，它会跳过该检查，其最后一行会列出已运行的检查和被跳过的检查。只有 `chain OK (3 of 3 layers verified: ...)` 表示该发布已通过验证；以 `partial check` 开头的行则不表示。使用 `--require-all`（`verify-provenance.ps1` 为 `-RequireAll`）时，部分检查以 1 退出；不使用时，部分检查以 0 退出。
 
 有两个细节决定了验证是否有意义：
 

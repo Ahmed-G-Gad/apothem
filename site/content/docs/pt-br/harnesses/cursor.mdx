@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "Adaptador de harness do Apothem para o Cursor (GA)."
 machineTranslated: true
-sourceHash: "817b5e32ce317949"
+sourceHash: "0aa24ff454d74139"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -187,6 +187,10 @@ dois caminhos:
 "/path/to/python" -E -s "/path/to/project/.apothem/support/cursor/hooks/dispatch.py" --contract cursor sessionStart
 ```
 
+`-E -s` faz o Python ignorar o `PYTHONPATH` e as outras variáveis `PYTHON*`
+e pular os site-packages do usuário, de modo que nenhum arquivo do projeto pode
+ser carregado no hook.
+
 Em um host Windows, o comando começa com `& `, o operador de chamada do PowerShell, porque
 o aplicativo desktop do Cursor executa os comandos de hook pelo PowerShell, onde uma linha que
 começa com um caminho de programa entre aspas não é uma chamada. O `sh` lê um `&` inicial como
@@ -244,7 +248,8 @@ dele; o texto que você adiciona após o bloco é mantido a cada sincronização
 
 ## Notas de compatibilidade
 
-O Cursor 0.45+ suporta instruções em nível de projeto via `.cursor/rules/`. Por
+O Cursor lê instruções em nível de projeto em `.cursor/rules/`, conforme a
+[documentação de regras do Cursor](https://cursor.com/docs/rules). Por
 padrão, o adaptador grava no diretório `.cursor/rules/` com escopo de projeto; o
 Cursor não tem um caminho documentado de regras globais do usuário baseado em
 arquivos para que este adaptador gerencie.
@@ -349,8 +354,17 @@ pasta recebe backup em `~/.apothem/backups/` antes de ser removida.
 ## Conformity gate
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Execute-o na pasta do seu projeto. No Windows, use `python` no lugar de
+`python3` e o caminho completo, pois o Windows PowerShell e o cmd não expandem
+`~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` no PowerShell, ou
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` no cmd. O caminho é
+onde o instalador coloca o engine, e `-E -s` mantém seu `PYTHONPATH` e os
+site-packages do usuário fora do gate; [Conformity gate](/docs/conformity-gate)
+explica os dois e as outras instalações.
 
 ## Solução de problemas
 

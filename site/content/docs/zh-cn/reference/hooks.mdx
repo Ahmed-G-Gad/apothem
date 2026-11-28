@@ -2,7 +2,7 @@
 title: "钩子"
 description: "在 SessionStart、PreToolUse、PostToolUse 和 Stop 上触发的工具事件处理器，加载用于强制执行 git 隔离和计划纪律的消息上下文，并具有经过测试的运行时契约和按用户划分的状态。"
 machineTranslated: true
-sourceHash: "2fe3999ec76b34d3"
+sourceHash: "e510ec34e7c5cded"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -23,7 +23,9 @@ sourceHash: "2fe3999ec76b34d3"
 
 由引擎安装的钩子条目使用安装时解析出的解释器，通过绝对脚本路径调用调度器。模板携带 `${PYTHON_BIN}` 和 `${HARNESS_ROOT}` 令牌，安装程序会在安装时渲染它们。Claude Code 和 Qwen Code 将调度器物化到 `<harness-root>/.apothem/support/hooks/` 下；Codex 则物化到 `<harness-root>/hooks/` 下。Claude Code 条目使用 exec 形式（`command` 加 `args`），因此不需要 shell。Claude Code 插件以 `bash "${CLAUDE_PLUGIN_ROOT}/lib/apothem/hooks/lib/bootstrap.sh" <event> [<message-file> ...]` 的形式运行每个钩子，所用的是 Claude Code 的默认钩子 shell（在 macOS 和 Linux 上为 `sh`，在 Windows 上为 Git Bash）；该引导脚本会找到一个 Python 3.10+ 解释器并运行捆绑的调度器。它会把找到的解释器缓存在钩子状态目录（见下文）下的 `interpreter-path`（对于 `bootstrap.ps1` 为 `interpreter-path-ps1`）中，并在该解释器仍然存在时复用它，因此 PATH 探测只运行一次，而不是在每次工具调用之前都运行；删除该缓存文件即可强制重新探测。只有绝对路径的状态目录和绝对路径的缓存路径才会被采纳。
 
-每个表面为每个事件与匹配器注册一个调度器条目，列出该匹配器评估的每条消息：一个进程只读取一次载荷，运行每个防护，并以一个信封作答，因此一次 Write 只启动一个调度器，而不是每个防护各启动一个。Claude Code 引擎安装还会在 Write 和 Edit 上将合规闸门（`gate.py --hook`）作为单独的条目运行。在未安装 Git for Windows 的 Windows 上，请使用引擎安装（`apothem install --harness claude-code`），其 exec 形式的钩子不需要 shell。调度器是一个独立的标准库脚本：它会自行引导 `sys.path`，因此宿主上无需可导入的 `apothem` 包。在源码检出中，模块形式 `python -m apothem.hooks.dispatch <event>`（配合 `PYTHONPATH=src`）会为开发运行相同的代码。调度器加载 `hooks/lib/resolve_root.py` 以进行生态根目录解析，并委托给 `hooks/emit_hook_context.py` 和 `hooks/session_start_bootstrap.py`。
+每条钩子命令都以 `-E -s` 启动 Python，插件的引导程序及其解释器探测也不例外。`-E` 让 Python 忽略 `PYTHONPATH` 和其他 `PYTHON*` 变量，`-s` 则排除你的用户 site-packages。钩子在助手打开的任意文件夹中运行，而 `PYTHONPATH` 中的空条目代表该文件夹，因此如果没有这些标志，放在那里的 `sitecustomize.py` 或 `json.py` 就会在钩子内部运行。钩子只使用标准库和它们自己的文件。调度器和合规闸门会自行以 UTF-8 读取输入，因为 `-E` 也会关闭 `PYTHONUTF8` 和 `PYTHONIOENCODING`。
+
+每个表面为每个事件与匹配器注册一个调度器条目，列出该匹配器评估的每条消息：一个进程只读取一次载荷，运行每个防护，并以一个信封作答，因此一次 Write 只启动一个调度器，而不是每个防护各启动一个。Claude Code 引擎安装还会在 Write 和 Edit 上将合规闸门（`gate.py --hook`）作为单独的条目运行。在未安装 Git for Windows 的 Windows 上，请使用引擎安装（`apothem install --harness claude-code`），其 exec 形式的钩子不需要 shell。调度器是一个独立的标准库脚本：它会自行引导 `sys.path`，因此宿主上无需可导入的 `apothem` 包。在源码检出中，模块形式 `python -m apothem.hooks.dispatch <event>`（配合 `PYTHONPATH=src`，并从检出根目录运行：`-m` 会先从当前文件夹读取模块）会为开发运行相同的代码。适配器写入的命令以 `-E -s` 按路径运行该脚本。调度器加载 `hooks/lib/resolve_root.py` 以进行生态根目录解析，并委托给 `hooks/emit_hook_context.py` 和 `hooks/session_start_bootstrap.py`。
 
 ## 厂商契约
 

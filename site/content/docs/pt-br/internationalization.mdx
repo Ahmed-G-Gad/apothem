@@ -2,7 +2,7 @@
 title: "Internacionalização (i18n)"
 description: "Como o site de documentação do Apothem declara sua coorte de localidades, emite links de idioma alternativo hreflang e renderiza da direita para a esquerda em doze idiomas."
 machineTranslated: true
-sourceHash: "cf9e0b89b61893f8"
+sourceHash: "eb1fc830d88563ac"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -138,7 +138,49 @@ texto em inglês.
 
 O inglês continua sendo a fonte da verdade; cada página de localidade espelha
 literalmente a estrutura, os links e os exemplos de código de sua contraparte em
-inglês, com uma exceção para os links de seção. Um link para uma seção de outra
-página copia sua âncora (`#...`) da página em inglês; um link para uma seção da
-mesma página constrói sua âncora com base no título traduzido, porque o site
-deriva o id de cada título a partir do texto do título.
+inglês. A única exceção é um link para uma seção da mesma página; veja
+[Links em páginas traduzidas](#links-em-páginas-traduzidas).
+
+## Links em páginas traduzidas
+
+Um link para outra página da documentação é escrito uma vez e é o mesmo em todos os
+idiomas: `/docs/<page>` ou `/docs/<page>#<section-id>`. Em uma página traduzida, o site
+o transforma em um link para a cópia traduzida dessa página quando o idioma tem uma,
+de modo que o leitor que o segue permanece no seu idioma. Um link para uma página que o
+idioma não traduziu abre a página em inglês.
+
+O id de uma seção é gerado a partir do texto do título da sua própria página, então uma
+página traduzida tem ids traduzidos. Daí decorrem duas regras:
+
+- Um link para uma seção de **outra** página leva o id em **inglês**, copiado da
+  página em inglês. O site o associa ao título traduzido na mesma posição, então as
+  duas páginas precisam dos mesmos títulos nos mesmos níveis. Quando não têm, o link
+  abre a página em inglês nessa seção.
+- Um link para uma seção da **mesma** página leva o id que o título traduzido tem
+  nessa página, porque o site não o altera.
+
+`python scripts/dev/check_site_anchor_links.py` verifica as duas regras em todas as
+páginas sem gerar o build do site, e a suíte de testes o executa a cada alteração no
+site. Ele falha quando:
+
+- um link com uma `#section` nomeia um título que a página que ele abre não tem;
+- uma tradução que registra o texto atual em inglês tem títulos diferentes dos da
+  página em inglês, o que quebraria a associação;
+- um elemento explícito como `<a href="/docs/…">` ou `<Card href="/docs/…">`
+  carrega um link da documentação, porque apenas os links Markdown são apontados para a
+  página traduzida;
+- um link é escrito à mão como `/<language>/docs/<page>` para uma página que esse idioma
+  não traduziu, o que é uma duplicata em inglês;
+- um título é um título setext (sublinhado com `===` ou `---`) ou está vazio,
+  porque a verificação não consegue situá-lo entre os títulos da página.
+
+Um título cujo texto a verificação não consegue transformar exatamente em um id recebe um
+id explícito: `## Heading [#custom-id]`. Renomear um título altera o seu id, então um
+link para ele em qualquer página, incluindo as traduções, passa a falhar na verificação:
+atualize os links ou mantenha o id antigo no título renomeado com `[#old-id]`.
+
+O site escolhe a página de destino de um link durante o build, então o job `docs-build`
+também executa `python scripts/dev/check_built_docs_links.py site/dist` no site
+finalizado. Ele falha quando um link em uma página traduzida ainda abre a página em
+inglês, embora o seu idioma tenha uma cópia que o site poderia ter usado, e quando um
+link de seção nomeia um id que a página gerada que ele abre não tem.

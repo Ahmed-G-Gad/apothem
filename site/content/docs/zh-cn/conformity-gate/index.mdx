@@ -2,7 +2,7 @@
 title: "合规闸门"
 description: "Apothem 合规闸门——每个发布的工件都必须通过的十五道预发布闸门关卡（M1-M15）中的机械部分。"
 machineTranslated: true
-sourceHash: "3327d1105c04f8e3"
+sourceHash: "4abccec00243f36d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,15 +30,17 @@ sourceHash: "3327d1105c04f8e3"
 
 ## 严重级别阶梯
 
-闸门没有关键、重要或建议性的分级，也没有两项发现的阈值。不带 `--strict`（或 `APOTHEM_CONFORMITY_STRICT=1`）时，闸门只报告发现项，并以 `0` 退出。带 `--strict` 时，单文件或钩子检查在任一匹配器失败时以 `2` 退出；语料库运行（`--all` 或 `--all-perwrite`）在某个阻断性校验器或匹配器失败时以 `2` 退出；建议性发现项只报告。已安装的 Write/Edit 钩子不传递 `--strict`，因此它只报告发现项，写入会继续进行，除非其环境中设置了 `APOTHEM_CONFORMITY_STRICT=1`。
+闸门没有关键、重要或建议性的分级，也没有两项发现的阈值。不带 `--strict`（或 `APOTHEM_CONFORMITY_STRICT=1`）时，闸门只报告发现项，并以 `0` 退出。带 `--strict` 时，单文件或钩子检查在任一匹配器失败时以 `2` 退出；语料库运行（`--all` 或 `--all-perwrite`）在某个阻断性校验器或匹配器失败时以 `2` 退出；建议性发现项只报告。一次 `--all-perwrite` 运行如果没有读取任何文件、遇到了一个离开项目的索引条目，或遇到了一个它无法读取的文件或一个超出其大小上限的文本文件，就会报告 `passed: false`；当无法读取已跟踪文件的列表时（例如在 git 工作树之外的文件夹中），还会带有一个 `check_error`，因此带 `--strict` 时它同样以 `2` 退出。已安装的 Write/Edit 钩子不传递 `--strict`，因此它只报告发现项，写入会继续进行，除非其环境中设置了 `APOTHEM_CONFORMITY_STRICT=1`。
+
+在 `--all` 和 `--check` 运行中，无法完成的 standalone 校验器同样不算通过。运行 10 分钟后仍未结束的校验器会被停止；其自身的 `git` 命令运行超出时间上限、或在它找到的检出中失败的校验器，会如实报告；这两种结果都带有 `passed: false` 以及一个说明原因的 `check_error`，因此带 `--strict` 时它同样以 `2` 退出。[运行合规闸门](/docs/usage/conformity-gate)列出了这些上限。
 
 ## 校验器
 
 机械部分位于 [`src/apothem/conformity/`](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/conformity)，由 [`src/apothem/conformity/gate.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/gate.py) 编排。每个校验器以下列三种方式之一运行：
 
-- **per-write**：在每次待处理的写入时运行（`--hook`），或用 `--all-perwrite` 对每个已跟踪的文件运行。
+- **per-write**：在每次待处理的写入时运行（`--hook`），或用 `--all-perwrite` 对每个已跟踪的文件运行；后者只读取项目内的常规文件，并统计它跳过的路径（链接、命名管道、设备、离开项目的条目）。
 - **standalone**：用 `--all` 在整个仓库范围内运行，或用 `--check <name>` 逐个运行。
-- **change-set**：针对已暂存的差异，直接以 `python -m apothem.conformity.semver_stability_grep --staged` 运行，不经由闸门。
+- **change-set**：针对已暂存的差异，从检出根目录直接以 `PYTHONPATH=src python -m apothem.conformity.semver_stability_grep --staged` 运行，不经由闸门。
 
 下表由校验器模块生成。
 
@@ -107,30 +109,36 @@ The conformity package ships 54 validators: 22 per-write, 31 standalone and 1 ch
 
 ## 运行闸门
 
-在已安装的工具上，闸门会自动运行：Claude Code 的 `settings.json` 将其接入为一个 `PreToolUse` 钩子，在每次 Write/Edit 之前调用位于 `~/.claude/.apothem/support/conformity/gate.py` 的物化副本。随后闸门只检查其钩子范围内的写入，范围之外的写入会无声通过；该范围列于[运行合规闸门](/docs/usage/conformity-gate)。在源码检出中，模块形式驱动同一套代码；请在下面每条 `python` 命令前加上 `PYTHONPATH=src`。闸门默认是建议性的：它报告发现项并以 `0` 退出。添加 `--strict` 可在出现阻断性发现项时以 `2` 退出。未知的校验器名称以 `3` 退出。
+在已安装的工具上，闸门会自动运行：Claude Code 的 `settings.json` 将其接入为一个 `PreToolUse` 钩子，在每次 Write/Edit 之前调用位于 `~/.claude/.apothem/support/conformity/gate.py` 的物化副本。随后闸门只检查其钩子范围内的写入，范围之外的写入会无声通过；该范围列于[运行合规闸门](/docs/usage/conformity-gate)。
+
+请像下面的示例那样，通过脚本路径并带 `-E -s` 运行闸门，而不是以 `python -m apothem.conformity.gate` 运行。你检查的项目中可能有一个与闸门某个模块同名的文件，而 Python 不能加载它。`-m` 会把当前文件夹放在 Python 模块搜索路径的最前面；以脚本方式启动则会把脚本自身所在的文件夹放在那里。仅此还不够：`PYTHONPATH` 中的空条目或相对条目同样指向当前文件夹。`-E` 使 Python 忽略 `PYTHONPATH` 和其他 `PYTHON*` 变量，`-s` 则排除你的用户 site-packages。闸门不需要这两者中的任何内容。这些标志只会让项目的文件远离闸门自身的 Python 代码；闸门运行的 `git` 在下文说明。通过脚本安装后，脚本位于 `~/.apothem/src/apothem/conformity/gate.py`（在 Windows 上为 `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`，用 `python` 代替 `python3` 运行）；在检出中则是 `src/apothem/conformity/gate.py`。闸门在各自独立的进程中启动每个 standalone 校验器，同样带 `-E -s`，并让当前文件夹不出现在搜索路径中。闸门默认是建议性的：它报告发现项并以 `0` 退出。添加 `--strict` 可在出现阻断性发现项时以 `2` 退出。未知的校验器名称以 `3` 退出。
+
+`--all`、`--all-perwrite`、三个 standalone 校验器以及 `--staged` change-set 检查会在它们检查的项目中运行 `git`。每一个都只从你 `PATH` 中的完整路径条目启动 git，并关闭该仓库 `.git/config` 中所有已知会启动程序的设置，同时阻止获取缺失的对象，因此一个连同其 `.git` 文件夹来自他人的项目，无法通过这些设置让它们启动程序。[运行合规闸门](/docs/usage/conformity-gate)列出了这些设置以及仍然存在的两个局限：git 仍可读取仓库在任何设置或文件中指定的路径（`include.path`、`core.worktree`、`.git` 文件的 `gitdir:` 行等），而且后续的 git 版本可能会新增设置。
 
 ```shell
+gate=~/.apothem/src/apothem/conformity/gate.py   # or src/apothem/conformity/gate.py
+
 # Every standalone validator across the repository:
-python -m apothem.conformity.gate --all .
+python3 -E -s "$gate" --all .
 
 # The same sweep, failing on a blocking finding (the CI form):
-python -m apothem.conformity.gate --all --strict .
+python3 -E -s "$gate" --all --strict .
 
 # Every per-write validator against every tracked file:
-python -m apothem.conformity.gate --all-perwrite .
+python3 -E -s "$gate" --all-perwrite .
 
 # One validator by name (names come from --list):
-python -m apothem.conformity.gate --check naming-grep .
+python3 -E -s "$gate" --check naming-grep .
 
 # List every registered validator as JSON:
-python -m apothem.conformity.gate --list
+python3 -E -s "$gate" --list
 
 # Single-file dispatch (mimics the PreToolUse hook):
 echo '{"tool_input": {"file_path": "path/to/file", "content": "..."}}' \
-    | python -m apothem.conformity.gate --hook
+    | python3 -E -s "$gate" --hook
 ```
 
-`python -m apothem.conformity.gate --help` 会打印用法摘要。完整流程参见[运行合规闸门](/docs/usage/conformity-gate)。
+`python3 -E -s "$gate" --help` 会打印用法摘要。完整流程参见[运行合规闸门](/docs/usage/conformity-gate)。
 
 ## 参考
 

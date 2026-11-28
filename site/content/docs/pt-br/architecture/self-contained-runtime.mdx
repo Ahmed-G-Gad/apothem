@@ -2,7 +2,7 @@
 title: "Runtime autocontido"
 description: "Como o motor do Apothem roda a partir de qualquer checkout — dependências internalizadas, o modelo de invocação PYTHONPATH=src e o bootstrap da árvore do plugin."
 machineTranslated: true
-sourceHash: "df04c51efc417e4a"
+sourceHash: "dc1f19f84eb15409"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -54,16 +54,20 @@ duas superfícies de invocação:
 
 | Superfície | Invocação | Contexto |
 | ------- | ---------- | ------- |
-| CLI do motor | `python -m apothem <command>` | Uma árvore de código-fonte com `src/` em `PYTHONPATH` (checkout, cache do npx, árvore do plugin) |
+| CLI do motor | `apothem <command>`; a partir de um checkout, `PYTHONPATH=src python -m apothem <command>` | O shim `apothem` dos instaladores e o lançador do npm executam o pacote a partir da sua árvore de código-fonte, mantendo a pasta atual fora do `sys.path`; a forma `-m` é para um checkout em que você confia |
 | Runtime de hooks | `<resolved CPython> -E -s "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | A materialização do Claude Code: a cópia sob a árvore compartilhada `.apothem/support/` da raiz do harness, por caminho absoluto |
 
-- `python -m apothem` executa `src/apothem/__main__.py`, que coloca
+- O ponto de entrada do motor, `src/apothem/__main__.py`, coloca
   `src/apothem/_vendor` no `sys.path`, verifica se `click` e `rich` são
   importáveis e então chama `apothem.cli:main` — o grupo de comandos do Click.
+  `python -m apothem` o executa diretamente. Os shims `apothem` e o lançador do
+  npm o executam via `runpy` a partir de um programa `-c` que primeiro remove a
+  pasta atual do `sys.path`.
 - As entradas de hook no `settings.json` / `hooks.json` materializado invocam o
   despachante (e, para o Claude Code, o conformity gate em
   `<harness-root>/.apothem/support/conformity/gate.py`) por caminho absoluto de
-  script. Ambos são scripts autônomos da biblioteca padrão que fazem o bootstrap
+  script, iniciando o Python com `-E -s` para que nenhuma variável `PYTHON*` e
+  nenhum site-packages do usuário cheguem ao hook. Ambos são scripts autônomos da biblioteca padrão que fazem o bootstrap
   do próprio `sys.path`, e os fixtures de schema do gate ficam ao lado dele em
   `<harness-root>/.apothem/support/schemas/`, de modo que os hooks rodam **sem
   nenhum pacote `apothem` importável no host**. Os templates carregam um token
@@ -74,19 +78,27 @@ duas superfícies de invocação:
   `python -m apothem.conformity.gate` executam o mesmo código para
   desenvolvimento.
 
-O diretório do pacote se torna importável ao antepor o diretório `src/` do
-checkout ao `PYTHONPATH`:
+Em um checkout, o diretório do pacote se torna importável ao antepor o diretório
+`src/` do checkout ao `PYTHONPATH`:
 
 ```bash
 PYTHONPATH=src python -m apothem <command>    # from the checkout root
 ```
 
-Quando o lançador `apothem` não está no PATH, o `install.sh` imprime esta forma
-ao concluir, com o diretório de dependências incorporadas antes de `src/` e o
-CPython que ele resolveu no lugar de `python`. O `install.ps1` imprime as mesmas
-duas configurações na forma do PowerShell: uma atribuição a `$env:PYTHONPATH`
-que une os diretórios de dependências incorporadas e `src/` com `;`, seguida de
-`& '<CPython>' -m apothem <command>`.
+`-m` lê módulos primeiro da pasta atual, então execute esta forma apenas a partir
+da raiz do checkout ou de outra pasta em que você confia.
+
+Os instaladores nunca imprimem um comando `-m`. Quando o comando `apothem` não
+está no `PATH` ao concluir, o `install.sh` e o `install.ps1` imprimem o caminho
+completo do shim `apothem` que colocaram. Quando nenhum shim pôde ser colocado,
+eles imprimem um comando autocontido. O `install.sh` imprime
+`PYTHONSAFEPATH=1 PYTHONPATH='<vendor>:<src>' '<CPython>' -c '<program>'`,
+seguido do comando. O `install.ps1` imprime um bloco do PowerShell que define
+`PYTHONSAFEPATH` e `PYTHONPATH` (as pastas de dependências internalizadas e
+`src/` unidas com `;`) para uma execução de `& '<CPython>' -c "<program>"` e
+depois restaura ambas. O programa remove a pasta atual do `sys.path` e executa
+o pacote `apothem`; `PYTHONSAFEPATH=1` impede que o Python 3.11 e posteriores
+adicionem essa pasta desde o início.
 
 ## Bootstrap da árvore do plugin
 
@@ -134,6 +146,6 @@ localizador empacotado `hooks/lib/find-python`, que aplica o mesmo piso.
 
 ## Próximo passo recomendado
 
-**Execute `python -m apothem --help`** com o diretório `src/` do checkout no
-`PYTHONPATH` para confirmar que o caminho da CLI autocontida é resolvido no seu
-host.
+**Execute `PYTHONPATH=src python -m apothem --help`** a partir da raiz de um
+checkout do Apothem para confirmar que o caminho da CLI autocontida é resolvido
+no seu host.

@@ -2,7 +2,7 @@
 title: "Primeiros passos: do zero a um harness funcional"
 description: "Um passo a passo de ponta a ponta, de uma máquina vazia até uma configuração de harness materializada e verificada."
 machineTranslated: true
-sourceHash: "daa3b8225766a994"
+sourceHash: "47bada9b8a6906cd"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -36,8 +36,9 @@ suportado — troque o nome quando chegar à [lista de harnesses](/docs/harnesse
 - As duas bibliotecas de runtime que o motor importa do seu interpretador: `click` e `rich`. O restante da pilha (`pyyaml`, `jsonschema`) vem incorporado à árvore, então apenas essas duas precisam ser importáveis. Se `click` ou `rich` estiver ausente, o instalador para e imprime o comando de instalação. O comando de uma linha envia o script para o bash por um pipe, então ele não pode perguntar; defina `APOTHEM_AUTO_INSTALL_DEPS=1` (por exemplo, `curl -fsSL https://apothem.ahmedgad.com/install.sh | APOTHEM_AUTO_INSTALL_DEPS=1 bash`) ou instale primeiro os dois pacotes.
 
 O Apothem é distribuído como uma árvore de código-fonte empacotada, e não como
-um pacote publicado — não existe uma etapa `pip install`. O instalador clona a
-árvore e executa o motor diretamente a partir dela.
+um pacote publicado — não existe uma etapa `pip install`. O instalador posiciona a
+árvore, a partir de um arquivo de lançamento verificado ou de um clone git, e executa o
+motor diretamente a partir dela.
 
 ## Etapa 1 — Instalar o Apothem
 
@@ -50,8 +51,8 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 O instalador executa estas etapas:
 
 1. **Verificação de pré-requisitos.** O instalador encontra um interpretador Python 3.10+ real e confirma que as duas bibliotecas de runtime (`click` e `rich`) são importáveis. Se uma estiver faltando, ele a nomeia, para e imprime o comando de instalação; defina `APOTHEM_AUTO_INSTALL_DEPS=1` para instalar sem pedir confirmação, já que uma execução por pipe não pode perguntar.
-2. **Posicionamento do código-fonte.** A árvore empacotada é clonada em `~/.apothem` (substitua esse local pela variável de ambiente `APOTHEM_HOME`). Uma nova execução faz checkout da tag de lançamento no clone existente, em vez de duplicá-lo.
-3. **Inicialização do perfil.** Se você ainda não tem um perfil, o instalador copia o perfil de exemplo para `~/.config/apothem/profile.yaml`, instala e verifica o Claude Code a partir dele na mesma execução, e avisa que os campos de identidade são marcadores de posição.
+2. **Posicionamento do código-fonte.** A árvore empacotada é posicionada em `~/.apothem` (substitua esse local pela variável de ambiente `APOTHEM_HOME`): o arquivo de lançamento verificado quando o cosign está instalado; caso contrário, um clone git. O novo código-fonte é verificado antes de substituir qualquer coisa, e uma verificação com falha deixa a sua instalação existente como estava. Uma nova execução atualiza a árvore existente em vez de duplicá-la e mantém os dados que o motor guarda ali, como os seus backups. Um clone git com alterações em arquivos rastreados interrompe a atualização até que você faça commit ou stash delas. Um link simbólico em `~/.apothem` é recusado, a menos que leve a um clone existente, e uma pasta que contém algo diferente de uma instalação do Apothem é deixada intacta, a menos que você passe `--yes`.
+3. **Inicialização do perfil.** Se você ainda não tem um perfil, o instalador copia o perfil de exemplo para `~/.config/apothem/profile.yaml`, instala e verifica o Claude Code a partir dele na mesma execução, e avisa que os campos de identidade são marcadores de posição. O exemplo também contém regras de amostra, dois servidores MCP de amostra e substituições por harness; na Etapa 2 você remove o que não quer.
 
 Você pode orientar a instalação com variáveis de ambiente. As que você
 provavelmente mais usará:
@@ -73,7 +74,7 @@ harness de escopo de projeto, indicando o projeto:
 apothem install --harness cursor --project /path/to/project
 ```
 
-Outras variáveis reconhecidas são `APOTHEM_REPO` e `APOTHEM_REF` (qual remoto clonar e qual ref do git fazer checkout; sem definir, resolve e verifica a tag de lançamento assinada mais recente; defina uma tag para fixá-la, ou `main` para a branch móvel, que também exige `APOTHEM_ALLOW_UNVERIFIED=1`, pois uma branch não é uma tag assinada), `APOTHEM_ALLOW_UNVERIFIED=1` (rebaixa uma falha na verificação da assinatura da tag para um aviso e permite uma ref que não seja tag, como `main`), `APOTHEM_SOURCE` (usa um checkout local existente em vez de clonar) e `APOTHEM_SKIP_VERIFY=1` (pula a verificação pós-instalação, que queremos executar, então deixe-a sem definir).
+Outras variáveis reconhecidas são `APOTHEM_REPO` e `APOTHEM_REF` (qual remoto clonar e qual ref do git fazer checkout; sem definir, resolve e verifica o lançamento mais recente; defina uma tag para fixá-la, ou `main` para a branch móvel, que também exige `APOTHEM_ALLOW_UNVERIFIED=1`, pois uma branch não é uma tag assinada), `APOTHEM_ALLOW_UNVERIFIED=1` (rebaixa uma falha na verificação da assinatura da tag para um aviso, permite uma ref que não seja tag, como `main`, e permite `APOTHEM_VERIFY=checksum`, que não verifica o lançamento), `APOTHEM_SOURCE` (usa um checkout local existente em vez de clonar) e `APOTHEM_SKIP_VERIFY=1` (pula a verificação pós-instalação, que queremos executar, então deixe-a sem definir).
 
 Quando o instalador conclui uma execução completa, ele imprime um banner que
 mostra como invocar o motor. Ele coloca um shim `apothem` no seu `PATH` (POSIX:
@@ -85,17 +86,17 @@ diretamente:
 apothem <command>
 ```
 
-Se não foi possível posicionar o shim — ou se o diretório dele ainda não está
-no `PATH` —, o banner imprime uma alternativa autocontida que não precisa de
-shim:
+Se o diretório dele ainda não está no `PATH`, o banner imprime o caminho completo
+do shim (`~/.local/bin/apothem` por padrão, ou na pasta que `APOTHEM_BIN_DIR` nomeia):
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>
+~/.local/bin/apothem <command>
 ```
 
-O restante deste tutorial escreve `apothem <command>`; se você estiver usando a
-forma alternativa, anteponha o prefixo exato que o banner do instalador
-imprimiu.
+Se não foi possível posicionar o shim, o banner imprime um comando que inicia o
+motor mantendo a pasta atual fora de `sys.path`. O restante deste tutorial
+escreve `apothem <command>`; se você estiver usando uma dessas formas, use no lugar
+o que o banner do instalador imprimiu.
 
 ## Etapa 2 — Tornar o perfil seu
 
@@ -141,6 +142,9 @@ Se a sua execução da Etapa 1 criou o perfil, ela já instalou o Claude Code a 
 ```bash
 apothem update --harness claude-code
 ```
+
+Se o instalador não instalou o Claude Code (por exemplo, você definiu
+`APOTHEM_HARNESS` com outro harness), instale-o agora:
 
 ```bash
 apothem install --harness claude-code

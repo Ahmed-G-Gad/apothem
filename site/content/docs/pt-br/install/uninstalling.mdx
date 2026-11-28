@@ -2,7 +2,7 @@
 title: "Desinstalação"
 description: "Remova o Apothem e limpe as configurações de harness."
 machineTranslated: true
-sourceHash: "60208ca7c4c5f168"
+sourceHash: "e1f5ac4a5447a167"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -78,7 +78,7 @@ canais são os da
 - **Motor direto (canal 8)** — nada a desinstalar; exclua o clone depois que as
   configurações de harness forem removidas.
 - **Backups e estado** — os backups de instalação ficam sob
-  `~/.apothem/backups/` e o livro-razão de instalação sob `~/.apothem/state/`.
+  `~/.apothem/backups/` e o ledger de instalação sob `~/.apothem/state/`.
   Ambos permanecem limitados: após cada instalação, desinstalação e reversão, o
   Apothem mantém os 10 registros de instalação mais recentes por raiz de
   instalação e os 10 conjuntos de backup mais recentes por harness, e nunca
@@ -99,7 +99,7 @@ canais são os da
 - As entradas que você adicionou a um arquivo de configurações compartilhado
   são preservadas: suas próprias regras de permissão, servidores MCP e handlers
   de hook permanecem. A desinstalação remove somente as chaves e as entradas de
-  lista que o livro-razão de instalação registra como do Apothem (consulte
+  lista que o ledger de instalação registra como do Apothem (consulte
   [Configurações](/docs/reference/settings#merging-into-your-own-settings-file)).
 - Os armazenamentos de dados compartilhados sob `.apothem/` na raiz de
   instalação (`memory/`, `contexts/`, `learning/`) permanecem enquanto outro
@@ -120,3 +120,58 @@ Para limpar completamente uma raiz de harness, remova o caminho nativo do
 harness documentado nas [páginas de referência de harnesses](/docs/harnesses)
 depois de confirmar que você fez backup de quaisquer regras, auxiliares ou
 arquivos de perfil personalizados que deseja manter.
+
+## Se a desinstalação informar que não terminou
+
+Uma desinstalação pode parar no meio do caminho e, quando isso acontece, mantém a
+instalação registrada. A mensagem depende do motivo:
+
+- `✗ <harness> uninstall did not finish:` nomeia arquivos do Apothem que ela deixou atrás
+  de um link (um symlink ou junção), arquivos que a instalação de uma versão anterior
+  registrou e que diferem do que esta versão grava, os arquivos de uma instalação sem
+  nenhum registro, arquivos que contêm dois blocos diferentes entre os marcadores do
+  Apothem, arquivos cujas linhas de marcador o Apothem não consegue distinguir do seu
+  texto, ou etapas de remoção que relataram erros. Para um link, os arquivos de uma versão
+  anterior, uma instalação sem registro, ou arquivos com dois blocos ou com essas linhas de
+  marcador, ela também informa o número de caminhos que deixou. Depois de uma
+  desinstalação que parou, as linhas de links, arquivos mantidos e etapas com falha
+  vêm após uma das duas linhas abaixo.
+- `✗ <harness> uninstall stopped after removing files:` significa que uma etapa de remoção
+  interrompeu a desinstalação depois de ter removido alguns arquivos, ou de ter retirado as
+  entradas ou o bloco do Apothem de um arquivo como `openclaw.json`.
+- `✗ <harness> uninstall failed:` significa que uma etapa de remoção interrompeu a
+  desinstalação antes de alterar qualquer coisa, ou que um erro inesperado (uma exceção,
+  como um backup que não pode ser gravado) interrompeu a primeira etapa de uma
+  desinstalação do Open-Claw, do Antigravity ou do Kimi Code, que não informa nada do que fez.
+
+Ela sai com `2` quando removeu ou alterou arquivos, deixou os próprios arquivos do Apothem
+atrás de um link, manteve os arquivos da instalação de uma versão anterior ou de uma
+instalação sem registro, ou deixou um arquivo com dois blocos diferentes entre os
+marcadores do Apothem ou com linhas de marcador que o Apothem não consegue distinguir do
+seu texto, ou quando outro harness foi removido, e com `1` quando parou antes de alterar
+qualquer coisa por qualquer outro motivo. Um erro inesperado nessa primeira etapa sai com
+`1` (`2` quando outro harness foi removido), seja o que for que a etapa tenha alterado.
+Corrija o que a mensagem nomeia e execute novamente o mesmo comando `apothem uninstall`:
+ele remove o que a primeira execução deixou. Para um arquivo com dois blocos, ou um cujas
+linhas de marcador o Apothem não consegue distinguir do seu texto, o aviso traz correções
+numeradas, uma para cada caso: escolha aquela cujo caso é verdadeiro e siga suas etapas na
+ordem dada, antes de executar a desinstalação novamente (veja
+[Seguir uma correção numerada](/docs/install/troubleshooting#follow-a-numbered-fix)).
+Não apague o bloco do Apothem para manter um par de marcadores seu, pois a próxima
+desinstalação retiraria então o seu par. Para a instalação de uma versão anterior ou uma
+instalação sem registro, primeiro copie qualquer arquivo listado que você editou ou
+adicionou e corrija cada arquivo que um aviso nomeia por causa de um marcador do Apothem,
+como esse aviso indica, depois execute `apothem update` e, em seguida, a desinstalação.
+Sem registro, o bloco do Apothem em `CLAUDE.md` ou em um documento de perfil permanece, e
+o aviso dele traz uma correção numerada que apaga as linhas do bloco à mão se você não
+quiser mais o bloco (ou, quando nenhuma correção desse tipo mantém suas linhas como eram
+antes, diz para alterar todas as linhas de marcador do Apothem no arquivo). Quando esse
+arquivo contém dois ou mais blocos inteiros, o aviso nomeia cada um e termina com essa
+atualização e essa desinstalação, e a desinstalação então nomeia quaisquer linhas de
+marcador suas ao redor do bloco do Apothem antes de retirar o bloco. Uma atualização mantém
+um marcador BEGIN sem END e o texto abaixo dele, e não corrige um arquivo que contém
+dois blocos diferentes. A
+[referência de desinstalação](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish)
+descreve cada caso, e sua tabela de
+[códigos de saída](/docs/cli-reference/uninstall#exit-codes) lista o que `1`
+e `2` significam.

@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "Adaptador de harness do Apothem para o Windsurf (GA)."
 machineTranslated: true
-sourceHash: "26f3db9f3fdef394"
+sourceHash: "6ddfbde9bafb1d18"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -179,6 +179,10 @@ dois caminhos:
 ```text
 "/path/to/python" -E -s "/path/to/project/.apothem/support/windsurf/hooks/dispatch.py" --contract devin SessionStart
 ```
+
+`-E -s` faz o Python ignorar o `PYTHONPATH` e as outras variáveis `PYTHON*`
+e pular os site-packages do usuário, de modo que nenhum arquivo do projeto pode
+ser carregado no hook.
 
 `--contract devin` mapeia os nomes de ferramentas em minúsculas do Devin (`exec`, `write`, `edit`,
 `read`, `grep`, `glob`) para os nomes que os manipuladores do Apothem testam, e deixa a
@@ -375,8 +379,17 @@ pasta recebe backup em `~/.apothem/backups/` antes de ser removida.
 ## Conformity gate
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Execute-o na pasta do seu projeto. No Windows, use `python` no lugar de
+`python3` e o caminho completo, pois o Windows PowerShell e o cmd não expandem
+`~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` no PowerShell, ou
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` no cmd. O caminho é
+onde o instalador coloca o engine, e `-E -s` mantém seu `PYTHONPATH` e os
+site-packages do usuário fora do gate; [Conformity gate](/docs/conformity-gate)
+explica os dois e as outras instalações.
 
 ## Solução de problemas
 

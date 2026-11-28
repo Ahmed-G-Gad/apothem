@@ -2,7 +2,7 @@
 title: "settings.json 文档"
 description: "为 Apothem 生态配置 Claude Code 的钩子执行、权限、事件、超时、Python 运行时、校验以及分层设置优先级。"
 machineTranslated: true
-sourceHash: "f83dad93ea1dbe9c"
+sourceHash: "a7175abd0e0c77ac"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -38,7 +38,7 @@ sourceHash: "f83dad93ea1dbe9c"
 合规闸门（`~/.claude/.apothem/support/conformity/gate.py`，其 schema
 fixture 位于其旁的 `~/.claude/.apothem/support/schemas/`）都是独立的标准库
 脚本——主机上无需可导入的 `apothem` 包，且一份
-模板即可服务每个平台。
+模板即可服务每个平台。`-E -s` 让 Python 忽略 `PYTHONPATH` 和其他 `PYTHON*` 变量，并跳过用户的 site-packages，因此助手打开的项目中的任何内容都不会加载到钩子中。
 
 ## 钩子配置 Schema
 

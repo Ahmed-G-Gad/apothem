@@ -2,7 +2,7 @@
 title: "委托架构"
 description: "Apothem 如何将单一的委托能力集合投射到十七个具有不同钩子表面与规则格式的 AI 工具之上。"
 machineTranslated: true
-sourceHash: "f7b510f076abbabd"
+sourceHash: "be0f8df513fb3c8f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -37,7 +37,7 @@ Apothem 读取一份共享配置档案（`~/.config/apothem/profile.yaml`），�
 | hermes | 仅支持材料 | `config.yaml` 加外部技能目录 | II-B 类 | `config.yaml` |
 | kimi-code | 仅支持材料 | `AGENTS.md` 加 `.kimi-code/.apothem/support/` 下的支持规则 | I 类 | 无 |
 | kiro | `.kiro/hooks/apothem.json` 中的原生 SessionStart；无工具事件钩子（厂商会忽略其输出） | `.kiro/steering/apothem-rules.md` 引导文件 | I 类 | 无 |
-| open-claw | 仅支持材料 | `openclaw.json` 加额外技能目录 | II-B 类 | `openclaw.json` |
+| open-claw | 仅支持材料 | `openclaw.json` 加额外技能目录，以及由 `bootstrap-extra-files` 钩子加载的工作区规则文件 `apothem/AGENTS.md` | II-B 类 | `openclaw.json` |
 | opencode | 仅支持材料 | 配置档案渲染的 JSON 加原生命令、技能与委托 | II-B 类 | `opencode.json` |
 | qwen-code | 原生 PreToolUse / Stop / SessionStart | `QWEN.md` 加原生命令、技能与委托 | II-B 类 | `settings.json` / `QWEN.md` |
 | trae | 无 | `.trae/rules/apothem-rules.md` 项目规则文件 | I 类 | 无 |
@@ -49,7 +49,7 @@ Apothem 读取一份共享配置档案（`~/.config/apothem/profile.yaml`），�
 
 - **claude-code** 是原生表面最广的适配器。它承载原生的 PreToolUse、PostToolUse、Stop 与 SessionStart 钩子，并附带厂商设置模板。它向 `CLAUDE.md` 写入一个由哨兵界定的受管块，并保持哨兵之外的操作者散文不变。
 - **codex** 通过 `hooks.json` 安装原生生命周期钩子，将委托转换为 TOML，把命令提示词封装为 Codex 技能，并把 `config.toml` 留给操作者自有。
-- **antigravity** 将 `~/.gemini/GEMINI.md` 保留为全局上下文锚点，并在 `~/.gemini/antigravity-cli/plugins/apothem/` 下安装一个 Apothem 插件。在适配器掌握 Antigravity 钩子模式的翻译之前，钩子文件作为支持材料保留。
+- **antigravity** 将 `~/.gemini/GEMINI.md` 保留为全局上下文锚点，并在 `~/.gemini/config/plugins/apothem/` 下安装一个 Apothem 插件。在适配器掌握 Antigravity 钩子模式的翻译之前，钩子文件作为支持材料保留。
 - **cursor** 通过承载厂商 MDC 前置元数据（`description`、`globs`、`alwaysApply`）的一个 `.mdc` 文件激活规则；适配器不写入单文件 `.cursorrules`。
 - **windsurf** 使用 `.devin/rules/`；适配器不写入单文件 `.windsurfrules`。
 - **hermes** 与 **open-claw** 渲染原生配置文件，并通过每个工具所记录的技能目录设置接入 Apothem 支持技能目录。不受支持的共享集合保留在 Apothem 自有的支持子树下。
@@ -115,7 +115,7 @@ Apothem 依据适配器将共享配置档案翻译为工具原生输出的方式
 | 轴线 | 十七个工具中观察到的范围 |
 |------|---------------------------------------------|
 | 钩子表面 | 原生多事件（claude-code、codex、qwen-code）→ 在厂商向模型投递的事件上原生支持（codebuddy：SessionStart 与 PostToolUse；cursor：sessionStart；github-copilot：sessionStart 与 postToolUse；kiro：SessionStart；windsurf：SessionStart 与 PostToolUse）→ 仅支持钩子材料（antigravity、gemini-cli、hermes、kimi-code、open-claw、opencode）→ 适配器未注册钩子（glm、trae、zed） |
-| 规则激活格式 | 扁平 `.md`（claude-code）→ 插件规则（antigravity）→ `.mdc` 工作区（cursor）→ 目录规则（codebuddy、trae、windsurf）→ 引导文件（kiro）→ 项目根扁平文件（zed）→ 单一嵌入文件（codex、gemini-cli、github-copilot、kimi-code）→ 配置引用的支持材料（hermes、open-claw、opencode、qwen-code）→ 后端提供方配置（glm） |
+| 规则激活格式 | 扁平 `.md`（claude-code）→ 插件规则（antigravity）→ `.mdc` 工作区（cursor）→ 目录规则（codebuddy、trae、windsurf）→ 引导文件（kiro）→ 项目根扁平文件（zed）→ 单一嵌入文件（codex、gemini-cli、github-copilot、kimi-code）→ 由钩子加载的工作区规则文件（open-claw）→ 配置引用的支持材料（hermes、opencode、qwen-code）→ 后端提供方配置（glm） |
 | 适配器类 | I 类原始传播 → II-A 类原始 + 厂商设置 → II-B 类配置档案渲染单表面 |
 
 

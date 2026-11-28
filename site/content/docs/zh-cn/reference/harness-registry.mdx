@@ -2,7 +2,7 @@
 title: "工具注册表"
 description: "内置 Apothem 工具适配器的技术注册表参考。"
 machineTranslated: true
-sourceHash: "242f7f2bf421b85e"
+sourceHash: "2f51bca3eb9467c5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -12,7 +12,7 @@ sourceHash: "242f7f2bf421b85e"
 
 | 工具 | 安装名称 | 作用域 | 格式 | 目标 | MCP | 约定锁定 |
 | --- | --- | --- | --- | --- | --- | --- |
-| Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md`；`~/.gemini/antigravity-cli/plugins/apothem/` | discovery-pending | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
+| Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md`；`~/.gemini/config/plugins/apothem/` | discovery-pending | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
 | Claude Code | `claude-code` | user | json | `~/.claude/settings.json`；`~/.claude/CLAUDE.md`；原生 `agents`、`rules`、`skills`、`statuslines`、`output-styles`；`~/.claude/.apothem/support/` | discovery-pending | `src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md` |
 | CodeBuddy | `codebuddy` | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md`；`<project>/.codebuddy/agents/`；`<project>/.codebuddy/settings.local.json`；`<project>/.apothem/support/hooks/`；`~/.codebuddy/skills/`；`~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` |
 | Codex | `codex` | user | markdown | `~/.codex/AGENTS.md`；`hooks.json`；`hooks/`；`agents/*.toml`；`~/.agents/skills/`；`~/.config/apothem/` | discovery-pending | `src/apothem/harnesses/codex/STANDARD-CONVENTION-PIN.md` |
@@ -23,7 +23,7 @@ sourceHash: "242f7f2bf421b85e"
 | Hermes | `hermes` | user | yaml | `~/.hermes/config.yaml`；`~/.hermes/.apothem/support/` | native | `src/apothem/harnesses/hermes/STANDARD-CONVENTION-PIN.md` |
 | Kimi Code | `kimi-code` | project | markdown | `<project>/AGENTS.md`；`<project>/.kimi-code/skills/`；`<project>/.kimi-code/agents/`；`<project>/.kimi-code/.apothem/support/` | discovery-pending | `src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md` |
 | Kiro | `kiro` | project | markdown | `<project>/.kiro/steering/apothem-rules.md`；`<project>/.kiro/agents/`；`<project>/.kiro/hooks/apothem.json`；`<project>/.apothem/support/kiro/hooks/`；`~/.kiro/skills/`；`~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md` |
-| Open-Claw | `open-claw` | user | json | `~/.openclaw/openclaw.json`；`~/.openclaw/.apothem/support/` | unsupported | `src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md` |
+| Open-Claw | `open-claw` | user | json | `~/.openclaw/openclaw.json`；`~/.openclaw/.apothem/support/`；`<workspace>/apothem/AGENTS.md`（由 `bootstrap-extra-files` 钩子加载；它不在注册表的目标列表中，因此下方生成的表格省略了它） | unsupported | `src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md` |
 | OpenCode | `opencode` | user | json | `~/.config/opencode/opencode.json`；原生 `commands`、`skills`、`agents`；`~/.config/opencode/.apothem/support/` | native | `src/apothem/harnesses/opencode/STANDARD-CONVENTION-PIN.md` |
 | Qwen Code | `qwen-code` | user | json | `~/.qwen/settings.json`；`~/.qwen/QWEN.md`；原生 `commands`、`skills`、`agents`；`~/.qwen/.apothem/support/` | native | `src/apothem/harnesses/qwen_code/STANDARD-CONVENTION-PIN.md` |
 | Trae | `trae` | project | markdown | `<project>/.trae/rules/apothem-rules.md`；`<project>/.trae/agents/`；`~/.trae/skills/`；`~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/trae/STANDARD-CONVENTION-PIN.md` |
@@ -84,7 +84,7 @@ sourceHash: "242f7f2bf421b85e"
 | `~/.claude/agents/` | Claude Code | 无 | Cursor |
 | `~/.codex/agents/` | Codex | 无 | Cursor |
 | `~/.claude/CLAUDE.md` | Claude Code | 无 | OpenCode、Windsurf |
-| `<project>/AGENTS.md` | Kimi Code | 无 | Antigravity、CodeBuddy、Codex、Cursor、GitHub Copilot、Hermes、Kiro、OpenCode、Windsurf、Zed |
+| `<project>/AGENTS.md` | Kimi Code | 无 | Antigravity、Claude Code、CodeBuddy、Codex、Cursor、GitHub Copilot、Hermes、Kiro、OpenCode、Windsurf、Zed |
 | `<project>/GEMINI.md` | Gemini CLI | 无 | Antigravity、GitHub Copilot、Zed |
 | `~/.gemini/GEMINI.md` | Antigravity | 无 | Gemini CLI |
 | `<project>/.github/copilot-instructions.md` | GitHub Copilot | 无 | Zed |
@@ -92,7 +92,7 @@ sourceHash: "242f7f2bf421b85e"
 
 `~/.config/apothem/rules/` 和 `~/.config/apothem/templates/` 存放 Apothem 自身的技能和指令文件所引用的文件。没有其他工具加载它们，因此它们没有读取者，也没有厂商页面。`CodeBuddy`、`Kiro` 和 `Trae` 还会写入各自专属的技能文件夹（`~/.codebuddy/skills/`、`~/.kiro/skills/` 和 `~/.trae/skills/`）；只有对应的工具会加载它，因此它不是共享根目录。
 
-只有当读取者的厂商文档表明会默认加载那个确切路径时，它才会被列出。当读取者只在某些情况下才加载某个路径时，注册表会记录该条件，安装说明会重复它。`Open-Claw` 仅在其默认状态目录下才会索引 `~/.agents/skills/`（当 `OPENCLAW_STATE_DIR` 指向别处时，它会跳过该文件夹）。`OpenCode` 1 仅在其配置文件夹（默认为 `~/.config/opencode/`）中不存在 `AGENTS.md` 时才加载 `~/.claude/CLAUDE.md`，并在设置了 `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` 或 `OPENCODE_DISABLE_CLAUDE_CODE=1` 时跳过它。`OpenCode` 2 读取同样的 `~/.config/opencode/` 配置，但没有 `CLAUDE.md` 回退，因此不会加载 `~/.claude/CLAUDE.md`。`Codex` 在每个文件夹中取 `AGENTS.override.md` 和 `AGENTS.md` 中的第一个，因此 `<project>/AGENTS.md` 只有在项目中它旁边没有 `AGENTS.override.md` 时才会被加载。`CodeBuddy` 仅在项目没有 `CODEBUDDY.md` 时，才会把 `<project>/AGENTS.md` 用作项目记忆。`Zed` 只加载其列表中的第一个项目指令文件：`.rules`、`.cursorrules`、`.windsurfrules`、`.clinerules`、`.github/copilot-instructions.md`、`AGENT.md`、`AGENTS.md`、`CLAUDE.md`，然后是 `GEMINI.md`。因此，`<project>/.github/copilot-instructions.md`、`<project>/AGENTS.md` 和 `<project>/GEMINI.md` 中的每一个，只有在项目没有列表中排在它之前的任何文件时才会被加载。`Zed` 安装会写入 `<project>/.rules`（列表中的第一个文件），因此在安装了它的项目中，`Zed` 不会加载这三者中的任何一个。
+只有当读取者的厂商文档表明会默认加载那个确切路径时，它才会被列出。当读取者只在某些情况下才加载某个路径时，注册表会记录该条件，安装说明会重复它。`Open-Claw` 仅在其默认状态目录下才会索引 `~/.agents/skills/`（当 `OPENCLAW_STATE_DIR` 指向别处时，它会跳过该文件夹）。`OpenCode` 1 仅在其配置文件夹（默认为 `~/.config/opencode/`）中不存在 `AGENTS.md` 时才加载 `~/.claude/CLAUDE.md`，并在设置了 `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT=1` 或 `OPENCODE_DISABLE_CLAUDE_CODE=1` 时跳过它。`OpenCode` 2 读取同样的 `~/.config/opencode/` 配置，但没有 `CLAUDE.md` 回退，因此不会加载 `~/.claude/CLAUDE.md`。`Codex` 在每个文件夹中取 `AGENTS.override.md` 和 `AGENTS.md` 中的第一个，因此 `<project>/AGENTS.md` 只有在项目中它旁边没有 `AGENTS.override.md` 时才会被加载。`CodeBuddy` 仅在项目没有 `CODEBUDDY.md` 时，才会把 `<project>/AGENTS.md` 用作项目记忆。`Claude Code` 在其[记忆页面](https://code.claude.com/docs/en/memory#agents-md)列出的版本中读取 `AGENTS.md`，安装说明给出了其中的第一个版本。在其默认的 <strong>Project instructions</strong> 设置下，它会在会话启动时加载工作文件夹及其上层文件夹中的每个 `AGENTS.md` 和 `.claude/AGENTS.md`，但前提是这些文件夹中都没有 `CLAUDE.md`、`.claude/CLAUDE.md` 或 `CLAUDE.local.md`。当它的 Read 工具打开工作文件夹下层某个文件夹（例如从上层文件夹打开的项目）中的文件，并且该文件夹同样没有这三个文件中的任何一个时，它会加载该文件夹的 `AGENTS.md`。`~/.claude/CLAUDE.md` 不计入，因此其中的 Apothem 区块会与 `<project>/AGENTS.md` 一起继续被加载。`claude-md-and-agents-md` 设置会加载这两类文件，而 `claude-md` 和 `managed-only` 不加载任何 `AGENTS.md`。有些会话在任何设置下都不读取 `AGENTS.md`；记忆页面列出了它们。`Zed` 只加载其列表中的第一个项目指令文件：`.rules`、`.cursorrules`、`.windsurfrules`、`.clinerules`、`.github/copilot-instructions.md`、`AGENT.md`、`AGENTS.md`、`CLAUDE.md`，然后是 `GEMINI.md`。因此，`<project>/.github/copilot-instructions.md`、`<project>/AGENTS.md` 和 `<project>/GEMINI.md` 中的每一个，只有在项目没有列表中排在它之前的任何文件时才会被加载。`Zed` 安装会写入 `<project>/.rules`（列表中的第一个文件），因此在安装了它的项目中，`Zed` 不会加载这三者中的任何一个。
 
 `Hermes` 每个会话只加载一类项目上下文：第一类含有非空文件的上下文，顺序为 `.hermes.md` 或 `HERMES.md`、`AGENTS.md` 链（在每个文件夹中，非空的 `AGENTS.override.md` 会取代其旁边的 `AGENTS.md`）、`CLAUDE.md`，然后是 `Cursor` 规则。因此，`<project>/AGENTS.md` 只有在项目没有 `.hermes.md` 或 `HERMES.md`，且它旁边没有 `AGENTS.override.md` 时才会被加载，而 `<project>/.cursor/rules/apothem-rules.mdc` 只有在项目没有 `.hermes.md`、`HERMES.md`、`AGENTS.override.md`、`AGENTS.md` 或 `CLAUDE.md` 时才会被加载。`Hermes` 会从它启动所在的文件夹向上查找 `.hermes.md` 和 `HERMES.md`，直到仓库根目录，并从仓库根目录向下读取 `AGENTS.md` 链，因此项目上层文件夹中的这类文件也会计入。空文件不计入。空的 `.hermes.md` 还会遮蔽其旁边的 `HERMES.md`，因此即使该 `HERMES.md` 有内容，`Hermes` 也会转而读取 `AGENTS.md` 链。这些条件适用于在项目中启动的会话。在项目上层文件夹中启动的会话，仍可在首次处理项目中的某个文件时加载 `<project>/AGENTS.md`，或其旁边非空的 `AGENTS.override.md`，无论项目中有怎样的 `.hermes.md` 或 `HERMES.md`。`Hermes` 在主目录和少数容器文件夹中会跳过这一点。
 
@@ -112,8 +112,19 @@ sourceHash: "242f7f2bf421b85e"
 | --- | --- |
 | `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | 确认每个适配器都有一份约定锁定，该锁定距今不超过 90 天，至少引用一个厂商 URL，并且没有逾期的发现目标。CI 会在每个拉取请求上、每周以及发布之前运行它。 |
 | `python scripts/dev/check_vendor_urls.py` | 抓取各约定锁定和工具模板所引用的每个厂商 URL，并在遇到已迁移或已失效的页面时失败，包括主机名不再能解析或证书验证失败的情况；超时、连接被拒绝或被重置，或 5xx 服务器错误会被报告为不可达，并且不会导致它失败。如果某个主机名只解析到一个任何服务器都不可能持有的占位地址（厂商的域名服务器可能针对运行该检查的地区返回这样的地址），则不会向它发出请求：它会被报告为不可路由，不会导致检查失败，其页面需要手动检查。每周的约定监视器会运行它，每次运行时都会针对每个这样的主机发出警告，并在它提交的 issue 中列出这些主机的页面。 |
-| `python -m apothem.conformity.gate --all .` | 运行文档与实现的合规检查。 |
+| `python scripts/dev/check_vendor_releases.py` | 向 `scripts/dev/vendor-release-channels.json` 中的每个发布渠道询问其当前版本：npm 软件包的 dist-tag、GitHub 仓库的最新发布（或者，对于带有标签模式的渠道，最新 100 个发布中标签匹配的最新稳定发布），或 PyPI 项目。对于安装程序地址，它会询问该地址重定向到哪里。它将答案与上次审阅的内容进行比较。新的主版本、超过文件所指定触发条件的发布、重定向到别处的安装程序地址，或不再存在的软件包、dist-tag、发布或地址都会使它失败；最新 100 个发布中没有任何稳定发布与之匹配的标签模式也会使它失败。更新的次版本或补丁版本会被报告，但不会使它失败，除非该渠道的 `watch` 级别指定了该级别。没有响应的注册表，或其响应中途中断的注册表，会被报告为不可达，同样不会使它失败。每次请求尝试总共有 30 秒，20 分钟之后检查不再询问其他渠道，因此它总能写出报告。在发出任何请求之前，它会检查每个工具文件夹都有一个条目，并且每个渠道的证据短语都出现在其约定锁定中，若有一项不满足则以 1 退出；报告和 issue 随后会说明问题所在。每周的约定监视器会以只读令牌运行它，在运行摘要中列出每个渠道，并在它失败时提交一个 issue。`--list` 会打印这些渠道而不询问任何注册表。 |
+| `python3 -E -s src/apothem/conformity/gate.py --all .` | 运行文档与实现的合规检查。 |
 | `python -m pytest` | 执行注册表夹具测试与适配器契约测试。 |
+
+## 发布渠道
+
+`scripts/dev/vendor-release-channels.json` 为每个工具文件夹设有一个条目。受监视的工具会列出其发布渠道。每个渠道记录上次审阅的版本及日期。该版本是其约定锁定所指定的版本；在约定锁定未指定版本的情况下，则是记录该渠道时注册表提供的版本。记录也可以只包含主版本。每个渠道都会引用约定锁定中指出它的那个短语。版本的第一个数字是其主版本，包括 0，因此从 0.26 变为 0.27 的 0.x 版本线会报告一个更新的次版本，而不会失败。使用日历版本的渠道（例如 OpenClaw 的 年.月.发布 编号）会报告每一个更新的发布而不失败，并且不接受 `watch` 级别。Codex、Gemini CLI、Hermes、Qwen Code 和 GLM 处于 0.x 版本线上，因此它们之一的新版本会列在运行摘要中，在达到 1.0 之前不会提交 issue，除非其渠道设置了 `watch` 级别。
+
+OpenCode 有四个渠道。`opencode-ai` 承载 OpenCode 1，`@opencode/cli` 承载 OpenCode 2。`anomalyco/opencode` 的 GitHub 发布会显示新的主版本线，无论它以哪个 npm 软件包发布。第四个渠道询问 `opencode.ai/install` 重定向到哪里。2026-11-03 时，它重定向到 OpenCode 1 安装程序脚本。该脚本会安装 `opencode-ai` 的 `latest` dist-tag 所指定的版本（当该版本是 OpenCode 1 版本时），并且从不安装 OpenCode 2。2026-11-03 的 OpenCode 决定会在以下两个信号之一出现时，改为在 OpenCode 2 运行之处写入 OpenCode 2 自己的格式：OpenCode 2 宣布移除其对 OpenCode 1 格式的转换的日期，或者 `opencode.ai/install` 或 `opencode-ai` 转向 OpenCode 2。该检查监视第二个信号。`opencode-ai` 渠道和安装程序渠道各带有一个触发条件：当 `opencode-ai` 的 `latest` 版本超过主版本 1，或者 `opencode.ai/install` 不再重定向到 OpenCode 1 脚本时，检查会失败。该脚本内部的变化不会改变重定向，因此检查看不到它。没有任何注册表能回答第一个信号，因此它仍需手动检查，截止日期为 2027-02-01，与 OpenCode 约定锁定的下一次审阅同时进行。
+
+Antigravity、Cursor、Kiro、Trae 和 Windsurf 不受监视。它们各自是桌面应用，或通过脚本安装的命令行工具，其约定锁定没有指定脚本无需凭据即可查询的发布渠道。该文件给出了每一个的原因。
+
+在你针对新的发布或重定向目标重新检查约定锁定之后，请更新该渠道的 `reviewed`、`reviewed_on` 和 `reviewed_from` 字段。版本渠道上的触发条件每周都会使检查失败，直到你移除或更改它。安装程序地址上的触发条件在 `reviewed` 记录了新目标后就会停止，因此请在完成触发条件对应的操作之后再记录该目标。
 
 ## 生成的工具适配器参考
 

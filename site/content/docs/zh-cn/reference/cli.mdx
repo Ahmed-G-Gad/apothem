@@ -2,7 +2,7 @@
 title: "CLI 概览"
 description: "Apothem CLI 概览——全部子命令与标志。"
 machineTranslated: true
-sourceHash: "23e6a1450707e054"
+sourceHash: "ce86e94ba98910b5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -13,7 +13,9 @@ sourceHash: "23e6a1450707e054"
 | 标志 | 说明 |
 |------|-------------|
 | `--version` | 打印 Apothem 版本并退出 |
-| `--help` | 打印该命令的帮助 |
+| `-h`, `--help` | 打印该命令的帮助 |
+
+下面各节介绍 `install`、`update`、`uninstall`、`verify`、`status`、`profile`、`harnesses` 和 `doctor`。本页末尾生成的表格以及 [CLI 参考](/docs/cli-reference)列出了全部命令，包括 `quickstart`、`diff`、`rollback`、`backups`、`migrate-workspace` 和 `completion`。
 
 ## 子命令
 
@@ -120,7 +122,7 @@ apothem status [--profile PATH] [--project PATH]
 | `--profile PATH` | 用作漂移基线的共享配置档案。无法读取的默认配置档案会使漂移降级为 `unknown`，而不是中止整个扫查。 |
 | `--project PATH` | 项目作用域工具的项目根目录。未提供时，这些工具报告 `needs-project`。 |
 
-每一行都将一个 `installed` 标志与一个 `verified` 标志配对，两者组合成漂移状态：
+每一行都带有一个 `installed` 标志、一个 `verified` 标志和一个漂移状态。`installed` 标志为 false 的行报告 `absent`、`needs-project` 或 `error`；`in-sync`、`drift` 和 `unknown` 只出现在已安装的行上。漂移状态从不取决于 `verified` 标志。对于已安装的工具，它将已安装的配置与配置档案基线进行比较，或说明为什么没有进行比较：
 
 | 状态 | 含义 |
 |-------|---------|
@@ -129,6 +131,7 @@ apothem status [--profile PATH] [--project PATH]
 | `drift` | 已安装，但已不再一致——使用 `apothem update` 进行修复。 |
 | `unknown` | 已安装，但无法读取基线配置档案。 |
 | `needs-project` | 报告某个项目作用域工具时未提供 `--project`，因此无法解析其目标。 |
+| `error` | 检查时适配器失败；`status` 会报告该错误并以 `2` 退出。 |
 
 `installed` 回答的是“Apothem 是否在此处安装过？”，而不是“此工具是否存在于这台机器上？”。它以 Apothem 自己的工件为依据——指令锚点内的受管区块，以及 Apothem 自有的 `.apothem/` 子树下的内容——绝不以工具为自身写入的、归厂商所有的文件为依据。一个配置目录存在但 Apothem 从未触及过的工具会报告 `absent`；一个已被卸载的工具即使其已清空的目录仍然存在，也会报告 `absent`。
 
@@ -174,7 +177,7 @@ apothem harnesses show <name>
 apothem doctor
 ```
 
-打印 Apothem 版本、Python 解释器、平台、解析得到的配置档案路径，以及按工具划分的安装状态表。当任一检查失败时，退出码为 `1`：包括配置档案无效、已安装的工具无法通过验证、已注册的钩子命令无法启动、适配器无法加载或无法探测，或账本不可读。未安装的工具会被报告，但不算失败；提示性说明不会改变退出码。
+打印 Apothem 版本、Python 解释器、平台、解析得到的配置档案路径，以及按工具划分的安装状态表。当任一检查失败时，退出码为 `1`：包括配置档案无效、已安装的工具无法通过验证、已注册的钩子命令无法启动、适配器无法加载或无法探测，或台账不可读。未安装的工具会被报告，但不算失败；提示性说明不会改变退出码。
 
 ## 生成的命令与标志参考
 

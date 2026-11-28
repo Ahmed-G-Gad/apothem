@@ -2,7 +2,7 @@
 title: "计划规范——项目本地的临时工作记忆"
 description: "在 .apothem/plans/ 中管理项目本地的临时工作记忆（旧版 .plans/ 树通过 apothem migrate-workspace 升级），包含 frontmatter 模式、生命周期转换、提升为 ADR，以及通过钩子和校验器进行强制执行。"
 machineTranslated: true
-sourceHash: "175d0e7730335ebd"
+sourceHash: "78ba9223bd5803ab"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -155,7 +155,7 @@ promotes-to: <ADR path or null>
 
 该规范必须在未来的每个会话中存续。以下强制面是强制性的，并编码在已发布的生态系统中：
 
-1. **`AGENTS.md` 与镜像指令面** — 顶层强制行为块，声明：*"计划产物写入 `<project-root>/.apothem/plans/`——唯一的规范计划归属位置（旧版 `<project-root>/.plans/` 树通过 `apothem migrate-workspace` 升级）——绝不写入任何工具配置目录（例如 `~/.codex/` 或 `~/.claude/`），也绝不写入全局位置。此规则不可协商；在每个相关决策上引用项目规范 §3。"* 此块由 `plans-discipline-language` 校验器检测。
+1. **`AGENTS.md` 与镜像指令面** — 顶层强制行为块，声明：*"计划产物写入 `<project-root>/.apothem/plans/`——唯一的规范计划归属位置。旧版 `<project-root>/.plans/` 树已不再是规范位置；操作者通过 `apothem migrate-workspace` 升级现有的旧树。它们绝不写入任何工具配置目录（例如 `~/.codex/` 或 `~/.claude/`），也绝不写入全局位置。此规则不可协商；`site/content/docs/reference/plans-discipline.mdx` 的 §2 完整陈述了它。"* 此块由 `plans-discipline-language` 校验器检测。
 2. **每个工具的仓库内指令文件** — 以适合该工具指令面的措辞镜像同一指令（§4 *计划规范*）；由同一校验器在每个已注册工具面上检测。
 3. **默认输出样式** — 当一个回复会产生计划形态的内容（多步骤策略、分解、设计演练、调试日志）时，该样式将产物路由到项目本地的 `.apothem/plans/` 写入，而非内联打印后丢弃。该样式明确指示：*"若没有可发现的项目根目录，则以一个结构化询问停下，询问操作者在何处规划。"*
 4. **每个委派工作者提示** — 携带一个*输出面*段落，将 `.apothem/plans/` 命名为任何计划产物的目标；并携带一个*反模式*段落，将工具本地计划目录命名为禁止。

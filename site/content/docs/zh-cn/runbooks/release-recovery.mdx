@@ -2,7 +2,7 @@
 title: "发布恢复操作手册"
 description: "在追加式发布模型下，针对执行途中失败的发布逐阶段给出的恢复流程，不改写已发布的历史。"
 machineTranslated: true
-sourceHash: "91a31722fb721a3e"
+sourceHash: "d3bcc2874d9e87b5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,7 +35,7 @@ git tag -v vX.Y.Z           # signature check
 
 如何处理取决于是否已从该标签发布了任何内容：
 
-- **尚未发布任何内容**（发布工作流在其发布作业之前就已失败，且 `publish-npm.yml` 没有发布）：删除该标签，并用 `-a -s` 对同一提交重新打标签。
+- **尚未发布任何内容**（发布工作流在其发布作业之前就已失败，`publish-npm.yml` 没有发布，且 `publish-vscode.yml` 没有发布到 Visual Studio Marketplace）：删除该标签，并用 `-a -s` 对同一提交重新打标签。当失败需要先在 `main` 上修复时（例如漏掉了插件版本号的提升），请改为给新的发布提交打标签（参见发布周期操作手册中的失败表）。
 
   ```bash
   git push --delete origin vX.Y.Z
@@ -44,9 +44,9 @@ git tag -v vX.Y.Z           # signature check
   git push origin vX.Y.Z
   ```
 
-- **已发布任何内容**（带产物的 GitHub Release，或 npm 版本）：绝不移动、删除或复用该标签。用 `vX.Y.(Z+1)` 向前修复。
+- **已发布任何内容**（带产物的 GitHub Release、npm 版本或 Marketplace 版本）：绝不移动、删除或复用该标签。用 `vX.Y.(Z+1)` 向前修复。
 
-标签名绝不会被复用于另一个提交。
+一旦某个标签发布过任何内容，其名称就绝不会被复用于另一个提交。
 
 ## 3. 发布者恢复
 

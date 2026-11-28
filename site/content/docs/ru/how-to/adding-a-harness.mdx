@@ -2,7 +2,7 @@
 title: "Добавить окружение"
 description: "Включите адаптер окружения, чтобы его нативная конфигурация материализовалась из общего профиля."
 machineTranslated: true
-sourceHash: "6daae4aec1547438"
+sourceHash: "d42e0475934c3217"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,8 +14,9 @@ sourceHash: "6daae4aec1547438"
 - Общий профиль по адресу `~/.config/apothem/profile.yaml` (создайте его с помощью
   `apothem profile init`, если он ещё не существует).
 - CLI `apothem` в вашем `PATH`. Если вы установили самодостаточное дерево исходного
-  кода, добавляйте к каждой команде префикс `PYTHONPATH="$HOME/.apothem/src"` и
-  запускайте `python -m apothem` вместо `apothem` — или используйте
+  кода и его папки ещё нет в `PATH`, запускайте shim по полному пути
+  (по умолчанию `~/.local/bin/apothem`) или скопируйте команду, которую вывел
+  установщик, — или используйте
   `npx @ahmed-g-gad/apothem`.
 
 ## Шаги

@@ -2,7 +2,7 @@
 title: "Segurança"
 description: "Postura de segurança do Apothem — meta no OpenSSF Scorecard, reporte de vulnerabilidades, superfícies de endurecimento."
 machineTranslated: true
-sourceHash: "0b4ba23080c1c9b9"
+sourceHash: "13f553f7cbd0b241"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,6 +17,10 @@ não confia.
 
 - **Em que o Apothem confia.** O perfil compartilhado que você redige e a árvore de código-fonte empacotada posta pelo instalador. O perfil é a sua intenção declarada; o motor o trata como entrada autoritativa após a validação de schema.
 - **Em que o Apothem não confia.** O conteúdo do perfil chega ao sistema de arquivos somente após a validação: falhas de schema, IDs de harness desconhecidos, caminhos de projeto inseguros, fontes de manifesto ausentes, travessia de alvo e cruzamentos de links simbólicos param todos antes de qualquer gravação e retornam diagnósticos estruturados com `files_written: []`.
+  As exceções são os links que os gerenciadores de dotfiles criam em `~/.config`, ou em uma
+  pasta compartilhada de skills, regras ou templates ou acima dela, que são seguidos enquanto
+  levam a algum lugar dentro do seu diretório pessoal. No Windows, uma junção conta como
+  link.
 - **O que a saída materializada nunca carrega.** Nenhum segredo. Os diagnósticos do perfil ocultam chaves com aparência de segredo e valores com formato de token antes que cheguem à saída em texto simples, ao JSON, aos logs, aos trechos de documentação ou aos testes, e os exemplos públicos usam identidades e domínios fictícios. A configuração materializada deve ser incluída em commits e compartilhada; ela não carrega credenciais.
 - **O piso de negação universal.** O `settings.json` do Claude Code que o Apothem materializa carrega um piso de negação inegociável, independentemente de qualquer lista de permissões por harness; nos demais harnesses, o mesmo piso é texto de política nas regras materializadas, e não uma lista de negação no nível de configurações — caminhos de segredos (`.env*`, `~/.ssh/**`, armazenamentos de credenciais), operações de shell destrutivas (`rm -rf`, `sudo`, force-pushes para branches protegidas) e execução de entrada não confiável. Nenhuma lista de permissões amplia silenciosamente esse piso.
 - **Raio de impacto.** As gravações ficam limitadas aos diretórios dos harnesses e às subárvores de suporte de propriedade do Apothem. Os alvos gerenciados existentes recebem backup antes da substituição, e os diretórios de descoberta compartilhados são mesclados filho a filho, de modo que arquivos não relacionados criados pelo operador permanecem no lugar.
@@ -27,7 +31,45 @@ Os comandos de ciclo de vida de harness e de gravação de perfil validam antes 
 gravar. Falhas de schema do perfil, IDs de harness desconhecidos, caminhos de
 projeto inseguros, fontes de manifesto ausentes, travessia de alvo e cruzamentos
 de links simbólicos param antes das gravações no sistema de arquivos e retornam
-diagnósticos estruturados com `files_written: []`.
+diagnósticos estruturados com `files_written: []`. Uma junção do Windows conta
+como link simbólico. As exceções são um link em `~/.config`, ou em uma pasta
+compartilhada de skills, regras ou templates ou acima dela, que permanece dentro do seu
+diretório pessoal, e uma pasta pessoal que seja ela mesma um link. Um link nunca leva uma
+gravação na pasta de uma ferramenta no seu diretório pessoal, ou no perfil, para fora do
+seu diretório pessoal, a menos que você mesmo nomeie a pasta fora dele, por meio de
+`XDG_CONFIG_HOME` ou `CODEX_HOME` escritos como um caminho fora do seu diretório pessoal,
+ou por meio de `--profile PATH` escrito da mesma forma, no caso do perfil. Um caminho
+escrito assim é seguido aonde quer que os seus links levem. Uma pasta de projeto segue a
+sua própria regra, abaixo. A regra dos links vale para install, update, uninstall,
+`apothem rollback` e os comandos `apothem profile`, incluindo `profile set` e
+`profile init --force` sobre um perfil existente, e para o perfil que `install --clean`
+grava de volta. `install --clean` para antes de fazer backup ou remover qualquer coisa
+quando `~/.config` é um link que leva para fora do seu diretório pessoal, e remove um
+alvo que seja ele mesmo um link como link, sem entrar nele. No Windows, uma junção na
+pasta de uma ferramenta ou dentro dela, portanto, interrompe a instalação, também quando
+leva a algum lugar dentro do seu diretório pessoal; substitua-a pela própria pasta.
+
+A pasta que você nomeia com `--project` é seguida aonde quer que leve, assim como
+os links acima dela. Isso vale quando a pasta é ela mesma um link,
+`~/.config` entre elas, e quando o link leva para fora do seu diretório pessoal,
+porque você nomeou essa pasta. Um link dentro da pasta do projeto, em um caminho que a
+instalação grava ali, interrompe a instalação. Isso vale também quando o link leva
+de volta para a pasta do projeto, e quando `--project` nomeia o seu diretório pessoal.
+Uma ferramenta que também grava no seu diretório pessoal, como em `~/.config/apothem`,
+verifica esses caminhos pelas regras do diretório pessoal acima. Assim, um link
+`~/.config` que leva para fora do seu diretório pessoal interrompe a instalação dessa
+ferramenta mesmo quando `--project` nomeia `~/.config`.
+
+`XDG_CONFIG_HOME` e `CODEX_HOME` podem vir do `.envrc` de um projeto ou de um
+script que você carrega com source, não apenas do perfil do seu shell. Quando qualquer um
+deles nomeia uma pasta fora do seu diretório pessoal, o Apothem altera arquivos ali,
+porque essa é a pasta que ele nomeia.
+
+A pasta própria do Apothem, `~/.apothem`, não é verificada dessa forma. Ela contém os
+backups, o ledger de instalação e os arquivos de lock deles; quando ela é um link, todo
+comando que grava ali o segue aonde quer que leve, e `apothem backups
+prune` e a retenção automática de backups apagam conjuntos de backup antigos na outra
+ponta desse link.
 
 As operações de instalação e atualização preservam os alvos gerenciados
 existentes fazendo backup deles antes da substituição. Os diretórios de
@@ -44,6 +86,7 @@ identidades e domínios fictícios de exemplo.
 ## Links rápidos
 
 - [**Postura do OpenSSF Scorecard**](/docs/security/openssf-scorecard-target) — evidência por verificação e limites conhecidos da plataforma
+- [**Selo OpenSSF Best Practices**](/docs/security/openssf-best-practices) — respostas aos critérios do nível passing, com evidências e lacunas restantes
 - [**Auditoria de webhooks**](/docs/security/webhooks-audit) — evidência de higiene de segredos de webhook
 - [**Proteção de branch**](/docs/security/branch-protection-ruleset) — exigência de pull request, verificações de status obrigatórias e bloqueios de force-push e de exclusão
 - [**Varredura de artefatos binários**](/docs/security/binary-artifacts-sweep) — evidência de que a árvore de código-fonte não contém arquivos binários
@@ -56,10 +99,23 @@ Use o [Reporte Privado de Vulnerabilidades](https://github.com/ahmed-g-gad/apoth
 
 ## Evidências de lançamento da cadeia de suprimentos
 
-Todo artefato de lançamento é distribuído com:
+Cada GitHub Release traz estas evidências. Os arquivos que cada item cobre
+variam:
 
-- **Procedência de build SLSA-3** via [`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator)
 - **Assinaturas do Sigstore** via [`sigstore/cosign-installer`](https://github.com/sigstore/cosign-installer)
+  para cada arquivo distribuído: o sdist, o wheel, o pacote do VS Code
+  `apothem.vsix`, o SBOM `sbom.cdx.json`, os três arquivos de plataforma e
+  `SHA256SUMS`. Cada um tem o seu próprio `<file>.cosign.bundle`. O arquivo de procedência
+  `provenance.intoto.jsonl` não tem bundle do cosign; o gerador SLSA o assina
+  dentro do seu próprio envelope DSSE.
+- **Procedência de build SLSA-3** via [`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator)
+  em `provenance.intoto.jsonl` para quatro arquivos: o sdist, o wheel,
+  `apothem.vsix` e `sbom.cdx.json`. O fluxo de trabalho de lançamento também pede ao GitHub
+  que mantenha o seu próprio registro de procedência de build dos mesmos arquivos, um
+  registro separado deste arquivo; essa etapa não bloqueia o lançamento, então um lançamento
+  pode não tê-lo. Os
+  arquivos de plataforma e `SHA256SUMS` não têm procedência SLSA; as suas assinaturas do
+  cosign e a tag de lançamento assinada os cobrem.
 - **SBOM CycloneDX** do wheel e do sdist distribuídos, gerado por `scripts/release/generate_sbom.py`: o pacote apothem, cada pacote incorporado em `apothem/_vendor` com sua licença, os requisitos de runtime declarados e o SHA-256 de cada distribuição. O SBOM é assinado e coberto pela procedência de build, assim como as distribuições
 - **Declarações de procedência do npm** via OIDC do Trusted Publishing em `@ahmed-g-gad/apothem`
 - **Tags git assinadas com GPG** (chave EDDSA `70396FED9C634163`)
@@ -90,8 +146,15 @@ seu `<asset>.cosign.bundle` (os lançamentos anteriores nomeiam os bundles dos
 arquivos de plataforma e de `SHA256SUMS` como `<asset>.sig`). Os arquivos darwin
 e linux são os mesmos bytes sob dois nomes, então `SHA256SUMS` lista o mesmo
 digest duas vezes. A partir de um clone,
-`bash scripts/release/verify-provenance.sh <download-dir>` executa as três
-verificações, incluindo o manifesto `SHA256SUMS`, em uma única passagem.
+`bash scripts/release/verify-provenance.sh --require-all <download-dir>`
+executa as três verificações em uma única passagem: o manifesto `SHA256SUMS`, cada bundle
+do cosign e a procedência SLSA do wheel, do sdist, de `apothem.vsix` e do
+SBOM assinado. Ele pula uma verificação cuja ferramenta (`cosign`, `slsa-verifier`) ou
+arquivo (`SHA256SUMS`) esteja ausente, e a sua última linha nomeia as verificações que
+foram executadas e as que ele pulou. Somente `chain OK (3 of 3 layers verified: ...)` significa
+que o lançamento está verificado; uma linha que começa com `partial check` não significa.
+Com `--require-all` (`-RequireAll` para `verify-provenance.ps1`), uma verificação parcial
+sai com 1; sem ele, uma verificação parcial sai com 0.
 
 Dois detalhes decidem se a verificação tem algum valor:
 

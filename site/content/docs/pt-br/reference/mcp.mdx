@@ -2,7 +2,7 @@
 title: "Servidores MCP"
 description: "Configuração de servidores Model Context Protocol — de propriedade do operador e registrados por meio do mecanismo MCP nativo de cada ferramenta; alguns adaptadores projetam o inventário MCP do perfil compartilhado, e os demais não criam entradas de servidor."
 machineTranslated: true
-sourceHash: "1fbc48cd12ad0388"
+sourceHash: "0fdad1bd642d3d81"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -55,9 +55,15 @@ O adaptador do `OpenCode` grava o inventário no bloco `mcp` de `opencode.json`.
 O `OpenCode` faz a substituição de `{env:NAME}` na sua configuração, e não de
 `${NAME}`; por isso, o adaptador grava cada referência `${NAME}` nas variáveis
 de ambiente, nos cabeçalhos ou na URL de um servidor como `{env:NAME}`; uma
-variável não definida se torna uma string vazia. Os argumentos de comando são
-copiados como estão. Um `$NAME` em um valor de ambiente ou de cabeçalho, ou
-outra forma `${...}`, como `${NAME:-default}`, é copiado como está, e
+variável não definida se torna uma string vazia. Uma entrada de ambiente que
+apenas repassa uma variável com o próprio nome, como `GITHUB_TOKEN: ${GITHUB_TOKEN}`,
+é deixada de fora, porque o `OpenCode` inicia o servidor com o próprio ambiente,
+então uma variável não definida continua não definida; a
+[página do OpenCode](/docs/harnesses/opencode) lista os casos em que isso difere.
+Os argumentos de comando são copiados como estão. Um `$NAME` em um valor de
+ambiente ou de cabeçalho, ou qualquer outra forma `${...}`, como
+`${NAME:-default}` ou um `${NAME}` simples em um argumento de comando, é copiado
+como está, e
 `apothem install` avisa que o `OpenCode` não expande essa referência, nomeando
 onde ela está, e não o valor. O `OpenCode` insere um valor `{env:NAME}` no texto
 de configuração que lê, sem escapá-lo (o `OpenCode` 2 o escapa somente quando
@@ -65,8 +71,10 @@ esse texto não seria analisado de outra forma); por isso, um valor com uma barr
 invertida, aspas duplas ou um caractere de controle pode impedir o `OpenCode` 1
 de ler o arquivo, e, nas duas versões, um `\t` ou `\n` nele chega ao servidor
 como um caractere de controle. `apothem install` avisa sobre um valor desse
-tipo; defina-o como `{file:path}` sob `harnesses.opencode.mcp_servers.<name>`,
-para que as outras ferramentas mantenham a referência `${NAME}`.
+tipo; declare novamente esse servidor inteiro sob
+`harnesses.opencode.mcp_servers.<name>`, já que uma substituição troca o servidor
+inteiro, e escreva o valor ali como `{file:path}`; as outras ferramentas mantêm a
+referência `${NAME}`.
 
 ## Dar a um auxiliar acesso a servidores MCP
 

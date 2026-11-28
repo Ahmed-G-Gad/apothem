@@ -2,7 +2,7 @@
 title: "Esquema do perfil compartilhado"
 description: "Esquema do YAML do perfil compartilhado do Apothem."
 machineTranslated: true
-sourceHash: "574a594762c4f468"
+sourceHash: "cdd83bde9f17392d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,13 +32,17 @@ identidade de espaço reservado que se espera que o operador personalize — e a
 valida antes de relatar sucesso:
 
 ```yaml
+# yaml-language-server: $schema=https://apothem.ahmedgad.com/schemas/profile.schema.json
+schema_version: 1
 identity:
-  name: "Example User"
-  email: "dev@example.invalid"
-  github: "example-user"
+  name: Example User
+  email: dev@example.invalid
+  github: example-user
 ```
 
-O comando imprime um lembrete de personalização nomeando esses campos. Se uma
+A primeira linha aponta editores com suporte a YAML para o schema;
+`schema_version: 1` é a versão do schema do perfil. O comando imprime um
+lembrete de personalização nomeando os campos de identidade. Se uma
 identidade ainda em espaço reservado chegar mais tarde a `install` ou `update`,
 esses comandos imprimem uma nota informativa e prosseguem — o Apothem nunca
 fabrica nem bloqueia diante de uma identidade de espaço reservado.
@@ -47,6 +51,7 @@ fabrica nem bloqueia diante de uma identidade de espaço reservado.
 
 | Campo | Obrigatório | Padrão | Notas |
 | --- | --- | --- | --- |
+| `schema_version` | Não | lido como `1` | Versão do schema do perfil; `profile init` escreve `1`. Uma versão mais nova do que a suportada pelo engine é rejeitada. |
 | `identity.name` | Sim | nenhum | Nome de exibição do operador não vazio. |
 | `identity.role` | Não | `senior software engineer` | Texto de função compartilhado. |
 | `identity.email` | Não | omitido | Deve estar em formato de e-mail quando presente. |
@@ -58,8 +63,13 @@ fabrica nem bloqueia diante de uma identidade de espaço reservado.
 | `preferences.test_framework` | Não | omitido | String não vazia quando presente. |
 | `rules` | Não | `[]` | Strings não vazias únicas; quebras de linha normalizam para LF. |
 | `seriousness` | Não | `PERSONAL_USE` | Um de `EXPLORING`, `PERSONAL_USE`, `SHARED`, `PUBLIC_LAUNCH`. |
+| `enforcement.*` | Não | `false` em cada | Alternâncias opcionais: `sprints`, `agent_teams`, `multitasking`, `continuous_execution`, `learning_loop`. |
+| `mcp_servers` | Não | `{}` | Servidores MCP indexados pelo nome do servidor. Cada um define `transport` (`stdio`, `http`, `sse` ou `streamable-http`): um servidor `stdio` precisa de `command`, os outros precisam de `url`. |
+| `agent_mcp_servers` | Não | `{}` | Por auxiliar, indexado pelo nome dele, os servidores MCP que ele pode chamar. Lido pelas instalações do Claude Code e do Gemini CLI. |
 | `harnesses` | Não | `{}` | Substituições por entorno indexadas pelo ID de entorno compatível. |
 | `exclude_harnesses` | Não | `[]` | IDs de entorno compatíveis excluídos de `--harness all`. |
+| `workspace.directory_name` | Não | `.apothem` | Nome da pasta de trabalho compartilhada; um único componente de caminho. |
+| `workspace.scope` | Não | `project-local` | `project-local` (sob a raiz do projeto) ou `user-home` (sob seu diretório pessoal). |
 
 ## Chaves de entorno
 

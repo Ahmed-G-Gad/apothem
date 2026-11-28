@@ -2,7 +2,7 @@
 title: "Escrevendo regras"
 description: "Redija, defina o escopo e mantenha as regras de comportamento do Apothem."
 machineTranslated: true
-sourceHash: "bc1f3351f9a5fd2c"
+sourceHash: "a7a12b4db14fbfe9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -73,12 +73,20 @@ um harness de escopo de usuário não precisa.
 
 ## Validação de regras
 
-Execute o validador de frontmatter contra o arquivo de regra que você escreveu. A partir de um
-checkout do Apothem, `PYTHONPATH=src` torna o pacote importável; depois de uma instalação por script,
-use `PYTHONPATH="$HOME/.apothem/src"` no lugar dele.
+Execute o validador de frontmatter contra o arquivo de regra que você escreveu. A partir da raiz
+de um checkout do Apothem, `PYTHONPATH=src` torna o pacote importável
+(`python -m` lê módulos primeiro da pasta atual, então use uma pasta em que você
+confia):
 
 ```bash
 PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep src/apothem/rules/<rule>.md
+```
+
+Após uma instalação por script, execute o gate pelo caminho do script com `-E -s`
+([Conformity gate](/docs/conformity-gate) explica por quê):
+
+```bash
+python3 -E -s "$HOME/.apothem/src/apothem/conformity/gate.py" --check frontmatter-grep <rule>.md
 ```
 
 Uma verificação por gravação, como `frontmatter-grep`, recebe o arquivo a verificar, ou

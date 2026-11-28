@@ -2,7 +2,7 @@
 title: "OpenSSF Scorecard 态势"
 description: "Apothem 的 OpenSSF Scorecard 目标，以及用于持续提升分数的证据表面。"
 machineTranslated: true
-sourceHash: "2a073782c97e3b02"
+sourceHash: "9f1955ad5cb7c858"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,16 +17,16 @@ Apothem 以 OpenSSF Scorecard 的最高分为目标，同时让公开门面如�
 | **Binary-Artifacts** | [binary-artifacts-sweep.md](/docs/security/binary-artifacts-sweep) | 源码中不跟踪任何可执行二进制文件；生成的分发归档保留在 `dist/` 中。 |
 | **Branch-Protection** | [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) | `main` 在公开发布推广之前即受保护；在新的发布提交落地之后，强制推送与删除均被阻止。 |
 | **CI-Tests** | [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | Pytest 矩阵、ruff、mypy、Trivy、文档构建以及打包冒烟检查。 |
-| **CII-Best-Practices** | OpenSSF Best Practices 注册 | 项目已在 bestpractices.dev 注册为[项目 16427](https://www.bestpractices.dev/en/projects/16427)，自 2026-11-08 起持有 passing 徽章，本项检查据此计分。 |
+| **CII-Best-Practices** | [OpenSSF Best Practices 徽章](/docs/security/openssf-best-practices) | OpenSSF Best Practices 页面回答了全部 67 项 passing 级标准，并为每一项给出证据。项目已在 bestpractices.dev 注册为[项目 16427](https://www.bestpractices.dev/en/projects/16427)，自 2026-11-08 起持有 passing 徽章，本项检查据此计分。 |
 | **Code-Review** | 分支保护 + CODEOWNERS | 除仓库管理员外，所有人向 `main` 提交变更都须经拉取请求；在项目仅有一位维护者期间，分支保护要求 0 个批准评审（参见 [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset)）；在存在经评审的 PR 之前，Scorecard 历史仍然有限。 |
 | **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | 一个新的单人维护者项目无法凭空制造多机构的贡献历史；随着贡献者加入，此项会自然改善。 |
 | **Dangerous-Workflow** | 工作流审计 | 不使用 `pull_request_target`；Actions 按 SHA 固定，并以显式权限限定作用域。 |
-| **Dependency-Update-Tool** | [`.github/dependabot.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/dependabot.yml) | Dependabot 为 GitHub Actions 固定版本、网站、vsce 打包器锁文件、哈希锁定的 CI pip 以及 pre-commit 钩子提出分组的每周更新，并为 channel-smoke 锁文件提出每月更新；Dependabot 安全更新覆盖每一个检测到的清单，但 `scripts/ci/` 中 CI 依赖与工具的完整锁定集合除外：当警报指出某个已锁定的包时，由 `scripts/dev/refresh_ci_locks.py` 重新生成这些集合。`.gitattributes` 将这一个文件保留在 GitHub 源码归档中，以该 action 默认的归档模式运行的扫描会读取这些归档；Scorecard 工作流以 git 模式运行，从克隆中读取该文件。 |
-| **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Hypothesis 属性测试检验解析器与 frontmatter 的不变式；上游 Scorecard 可能不会将 Hypothesis 计为模糊测试集成。 |
+| **Dependency-Update-Tool** | [`.github/dependabot.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/dependabot.yml) | Dependabot 为 GitHub Actions 固定版本、网站、vsce 打包器锁文件、哈希锁定的 CI pip、pre-commit 钩子以及模糊测试构建镜像的摘要提出分组的每周更新，并为 channel-smoke 锁文件提出每月更新；Dependabot 安全更新覆盖每一个检测到的清单，但 `scripts/ci/` 中 CI 依赖与工具的完整锁定集合除外：当警报指出某个已锁定的包时，由 `scripts/dev/refresh_ci_locks.py` 重新生成这些集合。`.gitattributes` 将这一个文件保留在 GitHub 源码归档中，以该 action 默认的归档模式运行的扫描会读取这些归档；Scorecard 工作流以 git 模式运行，从克隆中读取该文件。 |
+| **Fuzzing** | [`tests/fuzz/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/fuzz) + [`.github/workflows/fuzzing.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/fuzzing.yml) | 五个 Atheris 模糊测试目标覆盖那些读取操作者所写文件、或可能因崩溃而受损文件的解析器：JSONC / JSON5 配置读取器（在两者都接受的每个输入上与 `json.loads` 对照检查）、在操作者也可能编辑的钩子文件中合并与移除钩子条目、共享配置档案加载器、安装台账以及 frontmatter 探测。ClusterFuzzLite 在按摘要固定的 OSS-Fuzz Python 镜像中，从 [`.clusterfuzzlite/`](https://github.com/ahmed-g-gad/apothem/tree/main/.clusterfuzzlite) 构建它们。它对每个触及 `src/apothem/` 的拉取请求进行五分钟的模糊测试，发现任何崩溃即判其失败，并且每天进行十五分钟的模糊测试以扩充保存的语料库。Scorecard 会计入 `import atheris` 目标和 ClusterFuzzLite 设置。每次 CI 测试运行还会重放每个目标的种子输入，因此已修复的崩溃在每个操作系统上都保持修复。[`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) 中的 Hypothesis 属性测试仍然保留；Scorecard 不计入它们。 |
 | **License** | [LICENSE](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) | 仓库根目录下的 MIT 许可证。 |
 | **Maintained** | Git 历史 | 当前的发布提交与活跃的工作流节奏显示项目仍在维护；非常新的仓库可能会收到年龄警告。 |
 | **Packaging** | [`.github/workflows/`](https://github.com/ahmed-g-gad/apothem/tree/main/.github/workflows) | 发布、Pages 与 npmjs.com 工作流，产出 sdist、wheel、SBOM、SLSA 出处溯源与 Sigstore 签名。 |
-| **Pinned-Dependencies** | 工作流审计 + 哈希锁定的依赖要求 | Actions 按 SHA 固定；发布工具、CI 的 pip 升级、CI 的项目与测试依赖以及 CI 工具（`ruff`、`bandit`、`pip-audit`、`pip-licenses`、`pre-commit`）均使用 `--require-hashes` 安装。项目、测试与工具的安装读取 `scripts/ci/` 中的九个锁文件；pip 升级与发布工具各自读取自己的锁文件，软件包本身则通过 `--no-deps -e .` 安装。 |
+| **Pinned-Dependencies** | 工作流审计 + 哈希锁定的依赖要求 | Actions 按 SHA 固定，模糊测试构建镜像的基础镜像按摘要固定；发布工具、CI 的 pip 升级、CI 的项目与测试依赖以及 CI 工具（`ruff`、`bandit`、`pip-audit`、`pip-licenses`、`pre-commit`）均使用 `--require-hashes` 安装。项目、测试与工具的安装读取 `scripts/ci/` 中的九个锁文件；pip 升级与发布工具各自读取自己的锁文件，软件包本身则通过 `--no-deps -e .` 安装。 |
 | **SAST** | [`.github/workflows/codeql.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/codeql.yml) | 针对 Python 与 Actions 的 CodeQL `security-extended` 查询。 |
 | **Security-Policy** | [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) | 协调披露策略、受支持版本矩阵与响应时间线。 |
 | **Signed-Releases** | [`.github/workflows/release.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/release.yml) | Sigstore 无密钥签名、SLSA 出处溯源、SBOM、校验和以及发布产物。 |
@@ -39,7 +39,7 @@ Scorecard 按 0-10 分制为每项检查评分，总分为加权平均值。依�
 
 Scorecard 工作流以 `file_mode: git` 运行该 action，所以 Scorecard 读取的是仓库的克隆。源码归档不包含 `.github/`（`export-ignore` 规则，写在 `.gitattributes` 中），因此在该 action 默认的归档模式下，Dangerous-Workflow、Token-Permissions、Pinned-Dependencies 与 Packaging 将看不到这些工作流。
 
-Pinned-Dependencies 有意保持低于 10 分，原因有二。SLSA 生成器通过其发布标签引用，这是 SHA 固定的唯一例外，因为其出处溯源锚定在该标签上。evals 工作流使用 `npm install --global` 安装 Claude Code CLI，版本在每次运行时选定。Scorecard 在工作流中扫描的 Python 安装，要么经过哈希锁定，要么是软件包本身的本地安装，要么安装的是同一次运行中构建的 wheel。
+Pinned-Dependencies 有意保持低于 10 分，原因有二。SLSA 生成器通过其发布标签引用，这是 SHA 固定的唯一例外，因为其出处溯源锚定在该标签上。evals 工作流使用 `npm install --global` 安装 Claude Code CLI，版本在每次运行时选定。Scorecard 在工作流中扫描的 Python 安装，要么经过哈希锁定，要么是软件包本身的本地安装，要么安装的是同一次运行中构建的 wheel。有一处固定不在 Scorecard 读取的范围内：ClusterFuzzLite 的 actions 按提交固定，但它们的 `action.yml` 以标签 `v1` 运行 ClusterFuzzLite 的构建和运行镜像，工作流无法覆盖这一点。
 
 ## 刷新节奏
 

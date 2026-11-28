@@ -2,7 +2,7 @@
 title: "自定义规则"
 description: "为你的项目编写一条自定义常驻规则。"
 machineTranslated: true
-sourceHash: "0b22ce8bce931d04"
+sourceHash: "69efcab14f844e72"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,14 +34,14 @@ When in doubt, err on the side of more hyphens.
 
 ## 验证规则格式正确
 
-针对刚写入的规则文件运行 frontmatter 校验器。在 Apothem 检出目录中使用第一条命令，其中 `PYTHONPATH=src` 使该包可被导入。脚本安装之后源码位于 `$HOME/.apothem/src` 之下，此时请使用第二条命令：
+针对刚写入的规则文件运行 frontmatter 校验器。在 Apothem 检出目录的根目录中使用第一条命令，其中 `PYTHONPATH=src` 使该包可被导入（`python -m` 会先从当前文件夹读取模块，因此请使用你信任的文件夹）。脚本安装之后请使用第二条命令：此时源码位于 `$HOME/.apothem/src` 之下，闸门以 `-E -s` 按其脚本路径运行，因此 `PYTHONPATH` 和你的用户 site-packages 都不会影响它：
 
 ```bash
 # From an Apothem checkout
 PYTHONPATH=src python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
 
 # After a script install
-PYTHONPATH="$HOME/.apothem/src" python -m apothem.conformity.gate --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
+python3 -E -s "$HOME/.apothem/src/apothem/conformity/gate.py" --check frontmatter-grep ~/.claude/rules/kebab-filenames.md
 ```
 
 格式正确的规则会报告干净的通过结果：

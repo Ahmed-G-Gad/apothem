@@ -2,7 +2,7 @@
 title: "Runbook de recuperação de lançamento"
 description: "Procedimentos de recuperação, estágio por estágio, para um lançamento que falha no meio do processo sob o modelo de lançamento aditivo, sem reescrever o histórico publicado."
 machineTranslated: true
-sourceHash: "91a31722fb721a3e"
+sourceHash: "d3bcc2874d9e87b5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -48,8 +48,12 @@ git tag -v vX.Y.Z           # signature check
 O que fazer depende de algo ter sido publicado ou não a partir da tag:
 
 - **Nada publicado ainda** (o fluxo de trabalho de lançamento falhou antes do
-  seu job de publicação, e `publish-npm.yml` não publicou): exclua a tag e
-  marque novamente o mesmo commit com `-a -s`.
+  seu job de publicação, `publish-npm.yml` não publicou e `publish-vscode.yml`
+  não publicou no Visual Studio Marketplace): exclua a tag e marque novamente o
+  mesmo commit com `-a -s`. Quando a falha precisa primeiro de uma correção na
+  `main`, como um aumento de versão do plugin esquecido, marque o novo commit de
+  lançamento em vez disso (consulte a tabela de falhas do runbook do ciclo de
+  lançamento).
 
   ```bash
   git push --delete origin vX.Y.Z
@@ -58,10 +62,11 @@ O que fazer depende de algo ter sido publicado ou não a partir da tag:
   git push origin vX.Y.Z
   ```
 
-- **Algo publicado** (um GitHub Release com ativos, ou a versão do npm): nunca
+- **Algo publicado** (um GitHub Release com ativos, a versão do npm ou a versão do Marketplace): nunca
   mova, exclua ou reutilize a tag. Corrija para frente com `vX.Y.(Z+1)`.
 
-Um nome de tag nunca é reutilizado para um commit diferente.
+Depois que algo foi publicado a partir de uma tag, o nome dela nunca é
+reutilizado para um commit diferente.
 
 ## 3. Recuperação de publicadores
 

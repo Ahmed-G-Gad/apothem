@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "适用于 Claude Code（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "42277b35237235a2"
+sourceHash: "4e5a2944b6820b60"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,9 +17,9 @@ sourceHash: "42277b35237235a2"
 apothem install --harness claude-code
 ```
 
-`claude-code` 适配器将共享的 Apothem 语料安装到 Claude Code 的原生发现树中。Markdown 委托、规则、技能、输出样式与设置安装在各自的原生位置；命令提示词转换为技能，使可复用的工作流通过当前的 Claude Code 技能表面保持可见。状态栏渲染器被复制到 `~/.claude/statuslines/`，但未接入：Claude Code 从 `statusLine` 设置读取其状态栏，而适配器不设置该项。若要启用它，请在 `settings.json` 中添加一个类型为 `"type": "command"` 的 `statusLine` 条目，由该条目运行 `~/.claude/statuslines/render.py`。该片段中的 `commandWindows` 值在 Windows 上运行，并以不加引号的形式指定解释器。当解释器路径包含空格且该卷存在 8.3 短路径时，安装会在该值中写入其 Windows 8.3 短形式。`settings.json` 中的钩子条目保留完整路径。
+`claude-code` 适配器将共享的 Apothem 语料安装到 Claude Code 的原生发现树中。Markdown 委托、规则、技能、输出样式与设置安装在各自的原生位置；命令提示词转换为技能，使可复用的工作流通过当前的 Claude Code 技能表面保持可见。状态栏渲染器被复制到 `~/.claude/statuslines/`，但未接入：Claude Code 从 `statusLine` 设置读取其状态栏，而适配器不设置该项。若要启用它，请在 `settings.json` 中添加一个类型为 `"type": "command"` 的 `statusLine` 条目，由该条目运行 `~/.claude/statuslines/render.py`。该片段中的命令与钩子一样，以 `-E -s` 启动 Python。任何安装或更新都不会更改 `statusLine`，因此如果你复制过较早片段中不带 `-E -s` 的命令，请自行在解释器之后添加 `-E -s`。其 `commandWindows` 值在 Windows 上运行，并以不加引号的形式指定解释器。当解释器路径包含空格且该卷存在 8.3 短路径时，安装会在该值中写入其 Windows 8.3 短形式。`settings.json` 中的钩子条目保留完整路径。
 
-**写入的文件：** `~/.claude/` 下的 `settings.json`、`CLAUDE.md` 中的 Apothem 区块、`agents/`、`rules/`、`skills/`、`statuslines/`、`output-styles/`，以及 `.apothem/support/` 支持子树（`.apothem/support/hooks/`、`.apothem/support/conformity/`、`.apothem/support/schemas/`、`.apothem/support/templates/`）。命令文件被转换为子技能目录。钩子调度器和合规闸门从它们的物化副本运行——`settings.json` 中的钩子条目通过绝对路径调用 `~/.claude/.apothem/support/hooks/dispatch.py` 和 `~/.claude/.apothem/support/conformity/gate.py`，因此主机上不需要任何可导入的 `apothem` 包。
+**写入的文件：** `~/.claude/` 下的 `settings.json`、`CLAUDE.md` 中的 Apothem 区块、`agents/`、`rules/`、`skills/`、`statuslines/`、`output-styles/`，以及 `.apothem/support/` 支持子树（`.apothem/support/hooks/`、`.apothem/support/conformity/`、`.apothem/support/schemas/`、`.apothem/support/templates/`）。安装还会创建 Apothem 数据文件夹（默认为 `~/.claude/.apothem/`），其中包含 `contexts/`、`learning/`、`memory/` 和 `plans/`。命令文件被转换为子技能目录。钩子调度器和合规闸门从它们的物化副本运行——`settings.json` 中的钩子条目通过绝对路径调用 `~/.claude/.apothem/support/hooks/dispatch.py` 和 `~/.claude/.apothem/support/conformity/gate.py`，因此主机上不需要任何可导入的 `apothem` 包。每个条目都以 `-E -s` 启动 Python，因此 `PYTHONPATH`、其他 `PYTHON*` 变量以及你的用户 site-packages 永远不会到达钩子。
 
 `~/.claude/CLAUDE.md` 仍由操作者所有。适配器向其中写入一个由哨兵标记界定的 Apothem 区块，其中包含配置档案投射（身份、偏好、规则、严肃度以及已选择启用的行为）和一个 Apothem 支持文件小节，并逐字保留哨兵标记之外的每一行。支持文件小节写明已安装的规则、技能和智能体中每种仓库风格的引用所解析到的绝对目录：`rules/<name>.md` 位于 `~/.claude/rules/` 下，`templates/...`、`schemas/...`、`hooks/...` 和 `conformity/...` 位于 `~/.claude/.apothem/support/` 下。它还指向规则索引 `~/.claude/rules/apothem-rule-index.md`。Apothem 治理表面的其余部分通过传播的 `rules/` 树和 SessionStart 钩子触达 Claude Code。OpenCode 1 也会在其配置文件夹（默认为 `~/.config/opencode/`）中不存在 `AGENTS.md` 时加载 `~/.claude/CLAUDE.md`（OpenCode 2 没有 `CLAUDE.md` 回退），而 Devin Desktop 默认会导入它，因此该区块不把任何单一工具指定为其读取者。
 
@@ -27,7 +27,17 @@ apothem install --harness claude-code
 
 在每次 `apothem install` 或 `apothem update` 时，适配器按照传播清单将共享的 `apothem` 语料传播到 `~/.claude/` 中。适配器在可能的情况下直接使用原生目录，并将命令提示词转换为技能文件夹。现有的、相匹配的 Apothem 托管子项会在替换之前被备份；无关的、由操作者编写的条目会被保留。`settings.json` 会被合并，因此由操作者编写的键仍可恢复。
 
-由操作者编写的文件只保留在下列文件夹之外。每次安装与更新都会删除 `~/.claude/` 下存在的以下每个文件夹，无论它是否由 Apothem 写入：`src/`、`conformity/`、`schemas/`、`hooks/`、`config/`、`scripts/`、`tools/`、`lib/`、`templates/`、`docs/`、`tests/`、`packaging/`、`mcp/`、`examples/`、`assets/`、`site/`、`public/` 和 `commands/`。它还会删除 `statuslines/__init__.py`，以及 `agents/`、`rules/`、`skills/`、`statuslines/` 和 `output-styles/` 中的 `AGENTS.md` 文件。被删除的文件夹会整体移除，包括你放入其中的文件。你保留在 `commands/` 中的斜杠命令同样会被删除，而 Apothem 会把自己的命令提示作为技能安装在 `skills/` 下。你保留在 `hooks/` 中的钩子脚本会被删除，这会让任何调用它的 `settings.json` 条目指向一个不存在的目标。清理在安装写入其自身文件之前运行。每个被删除的路径都会先复制到 `~/.apothem/backups/`，安装记录会指出该副本。卸载不会还原它。要还原被删除的路径，请针对删除它的那次安装运行 `apothem rollback --harness claude-code --install-id ID`，具体见[回滚参考](/docs/cli-reference/rollback)。单独运行 `apothem rollback` 只会撤销最近一次安装。安装记录及其副本只保留最新的 10 次安装，因此被删除的路径只有在其所属安装仍在保留范围内时才能还原。在你安装之前，`apothem diff --harness claude-code` 会把这些删除列为 `Prune stale files`。
+安装与更新不会触碰你在 `~/.claude/` 下自己的文件，包括 `commands/` 中的斜杠命令和 `hooks/` 中的钩子脚本。较早的版本则在每次安装与更新时整体删除那里的一些文件夹（`commands/`、`hooks/`、`scripts/`、`templates/` 等），连同你放入其中的文件；[更新日志](/docs/changelog)列出了这些版本。参见[恢复较早版本删除的文件](#恢复较早版本删除的文件)。
+
+### 恢复较早版本删除的文件
+
+每个被删除的文件夹都事先复制到了 `~/.apothem/backups/<timestamp>/claude_code/.claude/<folder>/`。当前版本绝不会删除保存此类文件夹的备份组，但较早版本的保留策略可能已经删除了更早的备份组。恢复步骤：
+
+1. 在再次运行 Apothem 之前，把 `~/.apothem/backups/` 复制到别处。
+2. 从该副本中手动把你需要的文件复制回 `~/.claude/`。
+3. 之后运行 `apothem update`。
+
+`apothem rollback --install-id` 会撤销整个较早的安装，包括 `settings.json` 和 `CLAUDE.md`，因此它不是恢复这些文件的方法。
 
 已安装的技能以及 Claude Code 插件中捆绑的技能都携带 `user-invocable`，而不是源语料中的 `userInvocable`，因为 Claude Code 只读取带连字符的键。两个模板容器（`plan-suite`、`research-suite`）将其设为 `false`，因此它们不会出现在 `/` 菜单中。每种输出样式都设置了 `keep-coding-instructions: true`，因此选择其中任意一种都会保留 Claude Code 内置的软件工程指令。
 
@@ -54,7 +64,7 @@ Claude Code 以 `.gitignore` 语义，将这些 glob 与文件相对于工作目
 - `## Bindings` 小节被删除。它是供合规闸门使用的维护者文本，模型从不需要它。
 - Pipeline Contract、Foundational Stanzas、Decision Tree、示例、模式小节以及少数被引用的清单会移入参考文件。标题保留，其下的一行指引会写明文件名以及何时阅读它。Pipeline Contract 和 Foundational Stanzas 的指引还会列出该文件涵盖的内容。
 - 当 `SKILL.md` 仍超过 15,800 字节时，最大的 Workflow 步骤会按从大到小的顺序移入 `references/step-NN-<slug>.md`，直到它符合要求。slug 是去掉 `Step N:` 前缀、并去掉末尾括号中的强制要求或纪律 id 之后的步骤标题。小于 600 字节的步骤保持内联。如果这还不够，Output、Mandates、Critical Rules 和 Instructions 小节会按此顺序移出。
-- 前言之后的一段简短说明会告诉模型这些文件的位置（`${CLAUDE_SKILL_DIR}/references/`），以及在压缩之后它**必须**重新读取约束其当前步骤的那些文件。
+- 前言之后的一段简短说明会告诉模型这些文件的位置（`${CLAUDE_SKILL_DIR}/references/`），以及在压缩之后它<strong>必须</strong>重新读取约束其当前步骤的那些文件。
 
 每个产出的 `SKILL.md`，包括安装追加的 `## Installed Reference Paths` 说明，在安装根目录不超过 140 个字符时，都保持在 17,000 字节或以下。插件提供同样的文件，但不带该说明，而且它的命令都是 `skills/` 下的技能，因此它没有 `commands/` 文件夹；调用方式 `/apothem:<name>` 保持不变。拆分是确定性且可逆的：`SKILL.md` 及其参考文件的文本可以重建去掉 Bindings 之后的源命令。源文件以及面向其他每个工具的输出均保持不变。其他工具也从 `~/.claude/skills/` 读取技能，因此它们看到的是同样的文件；`apothem install` 会列出这些工具。
 
@@ -70,6 +80,10 @@ python scripts/dev/measure_claude_skills.py --check  # exit 1 on a breach
 ## 兼容性说明
 
 命令提示词被转换为技能目录，规则按上文所述进行渲染；技能和输出样式按原样复制，智能体也按原样复制，但配置档案的 `agent_mcp_servers` 键所列出的辅助程序会在其 `tools` 行中为每个指定的服务器增加一个 `mcp__<server>__*` 条目（参见 [MCP 服务器](/docs/reference/mcp#give-a-helper-access-to-mcp-servers)）。安装会校验配置档案格式良好，且 settings.json 中的所有钩子绑定均可解析。适配器不编写任何 MCP 服务器条目：请使用 `claude mcp add` 注册服务器（参见 [MCP 服务器](/docs/reference/mcp)）。
+
+Claude Code 也会读取项目的 `AGENTS.md`，从其[记忆页面](https://code.claude.com/docs/en/memory#agents-md)指出的版本开始。在默认的 **Project instructions** 设置下，仅当工作文件夹或其上级文件夹中没有 `CLAUDE.md`、`.claude/CLAUDE.md` 或 `CLAUDE.local.md` 时，它才会这样做。它会在会话启动时读取那里的 `AGENTS.md` 文件；当其 Read 工具打开工作文件夹下级某个文件夹中的文件、且该文件夹中没有上述三种文件时，它会读取该文件夹的 `AGENTS.md`。`~/.claude/CLAUDE.md` 不计入其中，因此那里的 Apothem 区块会与项目的 `AGENTS.md` 一起继续加载。Kimi Code 安装会向项目的 `AGENTS.md` 写入一个 Apothem 区块，因此在这样的项目中 Claude Code 会加载两个区块；[工具注册表](/docs/reference/harness-registry#shared-roots)列出了该文件的读取者及其条件。
+
+**Project instructions** 是一个用户范围的设置，而不是按项目的设置：在 `/config` 中将其设为 `claude-md` 会让 Claude Code 在每个项目中只使用其 `CLAUDE.md` 文件，而 `claude-md-and-agents-md` 会在任何位置加载这两类文件。有些会话无论设置如何都不读取 `AGENTS.md`：关闭了读取它的内置插件的会话、从无法读取它的版本升级后的部分首次会话，以及在早期版本中，部分运行于 Amazon Bedrock 或关闭了遥测的会话。记忆页面列出了这些情况并指出了相应版本。
 
 `~/.claude/agents/` 是一个由 `Claude Code` 拥有的共享根目录，`~/.claude/skills/` 和 `~/.claude/CLAUDE.md` 也是：其他受支持的工具会加载它们，因此 `Claude Code` 安装写入其中的智能体、技能和 Apothem 区块也会出现在这些工具中，安装会打印一条指出这些工具的说明。[工具注册表](/docs/reference/harness-registry)列出了每个根目录的读取者。
 
@@ -113,8 +127,10 @@ apothem uninstall --harness claude-code
 ## 合规闸门
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+请在你的项目文件夹中运行它。在 Windows 上，请用 `python` 代替 `python3`，并使用完整路径，因为 Windows PowerShell 和 cmd 不会展开 `~`：PowerShell 中为 `$HOME\.apothem\src\apothem\conformity\gate.py`，cmd 中为 `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`。该路径是安装程序放置引擎的位置，`-E -s` 让你的 `PYTHONPATH` 和用户 site-packages 不会进入闸门；[合规闸门](/docs/conformity-gate)解释了这两点以及其他安装方式。
 
 针对仓库运行时，闸门要求每条规则、命令、辅助程序和技能都带有 `## Bindings` 小节。针对已安装的 `~/.claude/` 树运行时，它接受不带该小节的规则或技能副本，因为安装会省去该小节，但仍会检查存在的小节。
 

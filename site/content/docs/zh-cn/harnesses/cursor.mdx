@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "适用于 Cursor（GA）的 Apothem 工具适配器。"
 machineTranslated: true
-sourceHash: "817b5e32ce317949"
+sourceHash: "0aa24ff454d74139"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -108,6 +108,8 @@ apothem.conformity.gate`，绝不会被当作 Apothem 的钩子。当该文件�
 "/path/to/python" -E -s "/path/to/project/.apothem/support/cursor/hooks/dispatch.py" --contract cursor sessionStart
 ```
 
+`-E -s` 让 Python 忽略 `PYTHONPATH` 和其他 `PYTHON*` 变量，并跳过你的用户 site-packages，因此项目中的任何文件都无法加载到钩子中。
+
 在 Windows 主机上，命令以 `& `（PowerShell 的调用运算符）开头，因为 Cursor 的桌面应用通过 PowerShell 运行钩子命令，而在 PowerShell 中，以带引号的程序路径开头的一行并不是一次调用。`sh` 会将开头的 `&` 读作语法错误，因此其他主机都不会得到它。文档指出了 shell，但没有指出引号规则，因此这是 Apothem 对 PowerShell 语法的解读。
 
 `--contract cursor` 读取 Cursor 的 `conversation_id` 和 `workspace_roots`，并且只以 `{"additional_context": ...}` 作答。
@@ -131,7 +133,7 @@ section of src/apothem/harnesses/cursor/STANDARD-CONVENTION-PIN.md. */}
 
 ## 兼容性说明
 
-Cursor 0.45+ 通过 `.cursor/rules/` 支持项目级指令。适配器默认写入项目级的 `.cursor/rules/` 目录；Cursor 没有可供此适配器管理的、有文档记载的基于文件的用户全局规则路径。
+根据 [Cursor 规则文档](https://cursor.com/docs/rules)，Cursor 从 `.cursor/rules/` 读取项目级指令。适配器默认写入项目级的 `.cursor/rules/` 目录；Cursor 没有可供此适配器管理的、有文档记载的基于文件的用户全局规则路径。
 
 [Devin Desktop](/docs/harnesses/windsurf) 也会加载此安装写入的规则文件。Devin Desktop 中的 Devin Local 默认导入 `.cursor/rules/*.mdc`，并让带有 `alwaysApply: true`（该文件的前置元数据就设置了它）的规则在每个会话中保持启用。[另有一个工具](/docs/harnesses/hermes)仅在项目既没有它专属的指令文件，也没有 `AGENTS.override.md`、`AGENTS.md` 或 `CLAUDE.md` 时，才把该文件作为其项目指令的最后回退来加载。因此，安装或卸载 `cursor` 也会改变这些工具所加载的内容，安装会打印一条说明，指出这两个工具并附上该条件（[工具注册表](/docs/reference/harness-registry#shared-roots)列出了它们）。Apothem 区块不会把任何单一工具指定为其读取者，但其中关于 `.cursor/agents/` 和 `.cursor/hooks.json` 的说法描述的是此安装，不适用于它们。若要阻止 Devin 加载它，请在 `~/.config/devin/config.json`（Windows 上为 `%APPDATA%\devin\config.json`）或项目的 `.devin/config.json` 中，在 `"read_config_from"` 下设置 `"cursor": false`；该键也会阻止 Devin 导入 Cursor 的 MCP 服务器。
 
@@ -173,8 +175,10 @@ apothem uninstall --harness cursor --project /path/to/project
 ## 合规闸门
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+请在你的项目文件夹中运行它。在 Windows 上，请用 `python` 代替 `python3`，并使用完整路径，因为 Windows PowerShell 和 cmd 不会展开 `~`：PowerShell 中为 `$HOME\.apothem\src\apothem\conformity\gate.py`，cmd 中为 `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`。该路径是安装程序放置引擎的位置，`-E -s` 让你的 `PYTHONPATH` 和用户 site-packages 不会进入闸门；[合规闸门](/docs/conformity-gate)解释了这两点以及其他安装方式。
 
 ## 故障排查
 

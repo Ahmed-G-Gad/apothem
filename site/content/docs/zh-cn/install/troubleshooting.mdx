@@ -2,7 +2,7 @@
 title: "故障排查"
 description: "针对插件、npx 和安装器各路径下常见的 Apothem 安装失败和运行时问题的解决方案。"
 machineTranslated: true
-sourceHash: "218cead5defe61ff"
+sourceHash: "35f716910f462ed6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,13 +27,7 @@ sourceHash: "218cead5defe61ff"
 
 ### 运行安装器后找不到 `apothem`
 
-安装器将源码树放置在 `~/.apothem`，并默认将一个 `apothem` 垫片写入 `~/.local/bin`（POSIX）或 `%LOCALAPPDATA%\Microsoft\WindowsApps`（Windows）。它不会修改你的 `PATH`。如果找不到 `apothem`，说明该目录不在 `PATH` 上；请将它加入，或在加入之前使用下面的 `PYTHONPATH` 形式。请通过安装器完成时打印的调用方式运行引擎：
-
-```bash
-PYTHONPATH="$HOME/.apothem/src" python -m apothem <command>
-```
-
-或使用 npx 形式（`npx @ahmed-g-gad/apothem <command>`），它无需 `PATH` 条目。
+安装器将源码树放置在 `~/.apothem`，并默认将一个 `apothem` 垫片写入 `~/.local/bin`（POSIX）或 `%LOCALAPPDATA%\Microsoft\WindowsApps`（Windows）；`APOTHEM_BIN_DIR` 可更改该文件夹。它不会修改你的 `PATH`。如果找不到 `apothem`，说明该目录不在 `PATH` 上；请将它加入，或通过完整路径运行该垫片。安装器在完成时会打印该路径。当它没有写入垫片时，它会打印一条启动引擎的命令，该命令让当前文件夹不进入 `sys.path`；请从横幅中复制该命令。npx 形式（`npx @ahmed-g-gad/apothem <command>`）无需 `PATH` 条目。
 
 ### `/plugin marketplace add` 失败
 
@@ -62,7 +56,7 @@ npx @ahmed-g-gad/apothem@latest --version
 
 ### 安装器停止：维护者公钥不在本地密钥环中
 
-安装器会验证已签名的发布标签，当签名密钥不在你的密钥环中时便会停止。请导入一次该密钥，核对指纹是否为 `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`，然后再次运行安装器：
+每次网络安装都会验证已签名的发布标签（无论是否装有 cosign），当签名密钥不在你的密钥环中时便会停止。请导入一次该密钥，核对指纹是否为 `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163`，然后再次运行安装器：
 
 ```bash title="macOS · Linux · WSL2 · BSD — import the key once"
 curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
@@ -73,7 +67,154 @@ gpg --fingerprint 70396FED9C634163
 & "$env:ProgramFiles\Git\bin\bash.exe" -c 'curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import && gpg --fingerprint 70396FED9C634163'
 ```
 
-在 Windows 上，请按上文所示通过 Git 的 `bash` 导入：`git verify-tag` 读取的是随 Git for Windows 一同提供的 `gpg` 的密钥环。若主机没有 `gpg`，可使用 `APOTHEM_VERIFY=checksum` 安装，此时安装器会核对发布归档的摘要，而不是标签签名。
+在 Windows 上，请按上文所示通过 Git 的 `bash` 导入：`git verify-tag` 读取的是随 Git for Windows 一同提供的 `gpg` 的密钥环。安装 [cosign](https://docs.sigstore.dev/cosign/system_config/installation/) 并不能代替导入密钥：当 cosign 位于 `PATH` 上时，安装器除了检查标签之外，还会检查已签名的发布归档。若主机没有 `gpg`，可使用 `APOTHEM_VERIFY=checksum` 和 `APOTHEM_ALLOW_UNVERIFIED=1` 安装，但该模式不会验证发布（参见[安装器停止：校验和模式需要第二个变量](#the-installer-stops-checksum-mode-needs-a-second-variable)）。
+
+### 安装器停止：未找到 gpg
+
+请安装 GnuPG；在 Windows 上则安装 Git for Windows，它附带 `git verify-tag` 所运行的 `gpg`。然后按上文所示导入维护者密钥，并再次运行安装器。
+
+### 安装器停止：标签不是由维护者密钥签名的
+
+消息为 "Tag ... is signed by the key ..."，并指出签署它的密钥。该标签的签名有效，但该密钥并不是 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md#maintainer-signing-key) 所公布的那一个。Apothem 的发布标签只用该密钥签名，因此请将此视为可能的篡改：不要安装，并通过 SECURITY.md 中的渠道报告。用自己的密钥签名的分叉在此处停止是预期行为。
+
+### 安装器停止：cosign 无法确认发布签名
+
+请先阅读消息末尾 `cosign said:` 之后的文字。
+
+- 网络、代理或受信根错误表示 cosign 无法连接到 Sigstore。请在联网时重试、升级 cosign，或使用 `APOTHEM_VERIFY=signature` 安装，该模式只根据维护者密钥检查发布标签。
+- 通过 `APOTHEM_REPO` 设置的分叉在此处停止是预期行为：安装器只接受 Apothem 自己的发布工作流。
+- "expected GitHub Workflow SHA not found in certificate" 表示 cosign 验证的证书是签发给另一个提交上的运行的，而不是已签名标签所指向的提交，因此它无法将 `SHA256SUMS` 与该提交关联起来。不要安装；请通过 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) 中的渠道报告。
+- 在 Apothem 自己的发布上出现身份或签名不匹配，表示 `SHA256SUMS` 不是由 Apothem 的发布工作流为此标签签名的。不要安装；请通过 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) 中的渠道报告。
+
+如果安装器改为提示它无法下载该捆绑包，请检查你的网络连接；如果该发布没有发布捆绑包，请使用 `APOTHEM_VERIFY=signature` 安装。
+
+### 安装器停止：已签名的标签不是发布标签
+
+消息为 "the signed tag object is not the vX.Y.Z release tag"。该标签带有维护者密钥的签名，但被签名的对象指向另一个标签，也就是说，另一个发布的已签名标签被重新指向了这个名称。请将此视为可能的篡改：不要安装，并通过 [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) 中的渠道报告。`APOTHEM_ALLOW_UNVERIFIED=1` 不会绕过此检查，但该变量会放行未签名的标签或由其他密钥签名的标签，因此此检查只保护带有维护者密钥签名的标签。
+
+### 安装器停止：校验和模式需要第二个变量 [#the-installer-stops-checksum-mode-needs-a-second-variable]
+
+校验和模式不会验证发布。SHA256SUMS 与归档来自同一个发布，因此匹配只能说明下载内容没有损坏；任何能够更改该发布文件的人都可以同时更改两者。因此，只有在同时设置了 `APOTHEM_ALLOW_UNVERIFIED=1` 时，`APOTHEM_VERIFY=checksum` 才会运行。如果你接受这一点，请同时设置两者；否则请安装 `gpg`（以及 cosign），并在不使用 `APOTHEM_VERIFY=checksum` 的情况下运行。
+
+### 安装器停止：APOTHEM_HOME 处的文件夹不是 Apothem 安装
+
+安装器不会替换存放着 Apothem 安装以外内容的文件夹。请将它移到别处、让 `APOTHEM_HOME` 指向另一个文件夹，或使用 `--yes`（在 PowerShell 上为 `-Yes`）重新运行。使用 `--yes` 时，安装器会将整个文件夹原封不动地移入其旁边的一个新文件夹 `<APOTHEM_HOME>.before-apothem-<time>`（在其中保留它自己的名称），告诉你位置，然后全新安装。另一个项目的 git 克隆也算作这样的文件夹。如果 `<APOTHEM_HOME>.before-apothem-<time>` 以及加上安装器进程 ID 的同名文件夹都已存在，安装器会在移动任何内容之前以 "Could not move the existing ... aside; nothing was changed" 停止；请重命名或移除其中一个，然后重新运行。
+
+### 安装器停止：APOTHEM_HOME 是符号链接
+
+消息为 "is a symbolic link"（在 Windows 上为符号链接或联接点）。替换该文件夹只会替换链接，而不是它指向的文件夹，因此安装器拒绝执行。请将 `APOTHEM_HOME` 设置为该链接指向的文件夹，然后重新运行。链接背后已有的 git 克隆仍会就地更新。
+
+### 安装器停止：git 克隆中有本地工作
+
+用发布归档替换 git 克隆需要 `--yes`，而且即使使用了它，只要克隆中有会丢失的本地工作，安装器仍会拒绝：对已跟踪文件的更改、贮藏（stash）、不在任何远程上的提交，或克隆源码树中未跟踪的文件。请提交并推送这些工作，或将其移到别处，然后重新运行。该检查在使用 `--dry-run` 时也会运行。当克隆中没有此类工作时，`--yes` 会替换它，并将克隆自己的树保留在 `<APOTHEM_HOME>.before-apothem-<time>/<name>`，其中 `<name>` 是 `APOTHEM_HOME` 的最后一部分；安装器会打印该路径，当你不再需要该文件夹时再将其删除。
+
+### 安装器停止：现有克隆的设置方式会被更新所信任 [#the-installer-stops-the-existing-clone-is-set-up-in-a-way-the-update-would-trust]
+
+在向现有克隆获取内容之前，安装器（以及更新脚本）会检查该克隆的设置方式。`--dry-run` 也会进行这些检查。当文件被标记为 assume-unchanged 或 skip-worktree（这会向 git 隐藏它们的更改）时，也会出现 "has changes to tracked files"：请运行 `git update-index --no-assume-unchanged <file>` 或 `git update-index --no-skip-worktree <file>`，然后提交或贮藏该更改。"is not the work tree of its git clone" 表示 git 在 `APOTHEM_HOME` 中找不到工作树，例如克隆的 git 配置将 `core.bare` 设置为 `true` 时：请将其设置为 `false`，使克隆检出到 `APOTHEM_HOME` 中。`core.worktree` 设置会把检出送到另一个文件夹，它会被报告为就地更新不接受的设置（见下文）。
+
+"own git config sets `<key>`, which an update in place does not accept in a clone's own config" 指出克隆的 `.git/config` 中的某个设置，或者当克隆有 `.git/config.worktree` 时，该文件中的某个设置。就地更新只接受其中的以下设置（节名和键名比较时不区分大小写）：
+
+- `git clone` 和 `git init` 为完整克隆写入的设置：`core.repositoryformatversion`、`core.filemode`、`core.bare`、`core.logallrefupdates`、`core.symlinks`、`core.ignorecase`、`core.precomposeunicode`、`core.longpaths`、`extensions.objectformat`、`extensions.refstorage`（仅限值为 `files` 或 `reftable`）、`extensions.worktreeconfig`、`remote.origin.url`、`remote.origin.fetch` 和 `remote.origin.tagopt`；
+- git 和编辑器添加的分支设置 `branch.<name>.<key>`，但 `branch.<name>.remote` 和 `branch.<name>.pushremote` 必须恰好为 `origin`；
+- `user.name`、`user.email`、`maintenance.auto`、`maintenance.strategy`、`pull.rebase` 和 `pull.ff`。
+
+任何其他设置都会停止更新，因为它可能让 git 运行某个程序、从其他位置读取设置、钩子、属性或对象，或连接到其他地方。使用 `--mirror`、`--sparse`、`--recurse-submodules` 创建的克隆，或远程不叫 `origin` 的克隆，也会在此处停止；使用 `--filter` 创建的部分克隆同样如此：消息会指出 `remote.origin.promisor`，因为 git 在读取克隆时会自行从远程获取缺失的对象。请不使用 `--filter` 重新克隆。从消息所指的文件中移除该设置，例如 `git config --file ~/.apothem/.git/config --unset-all <key>`，然后重新运行。`--unset-all` 也会移除出现多次的设置。对于分支的 `remote` 或 `pushremote`，请改为将其设置为 `origin`，例如 `git config --file ~/.apothem/.git/config branch.main.remote origin`。"own git attributes name a filter or diff driver" 指出 `.git/info/attributes`：请移除其中的 `filter=` 或 `diff=` 设置。git 在读取文件时会运行过滤器，`git diff` 会运行差异驱动的文本转换（`textconv`），因此由你自己或系统的 git 配置定义的驱动会在克隆的文件上运行。
+
+"which is not a plain file" 指出 `.git/info/attributes`、`.git/config` 或 `.git/config.worktree` 是文件夹、命名管道或其他特殊文件，或者在 Windows 上是链接。git 从这样的文件中读到的文本可能与检查读到的不同。请用普通文件替换它，或将其移除，然后重新运行。
+
+"has a setting whose name holds a line break" 表示消息所指文件中的某个节名包含回车符。git 从不写入这样的字符，而读取方可能会把该名称当作两个设置。请在文本编辑器中打开该文件，移除该节，然后重新运行。
+
+"borrows objects from another repository" 表示克隆中有 `objects/info/alternates` 或 `objects/info/http-alternates` 文件，使用 `--reference` 或 `--shared` 创建的克隆就有这样的文件。此时 git 会从另一个仓库读取对象，而该仓库的设置不在安装器的检查范围内。请运行 `git -C ~/.apothem repack -a -d` 将这些对象复制到克隆中，移除消息所指的文件，然后重新运行。
+
+"keeps submodule repositories in ..." 和 "holds a submodule at ..." 表示克隆中有子模块：它保存在第一条消息所指的文件夹中，或按第二条消息所指的路径记录在其索引中。发布树中没有子模块，而 git 会在子模块内运行，子模块自己的设置不在安装器的检查范围内。请从克隆中移除该子模块及该文件夹，或将克隆移到别处，然后重新运行。使用 `--yes` 替换克隆时也会进行此检查，且在 `git status` 查找本地工作之前进行。更新期间从不运行克隆的 git 钩子。
+
+### 安装器停止：克隆中的某个 .gitattributes 文件未被跟踪、已被更改或指定了驱动
+
+git 在比较和检出文件时会应用工作树中的 `.gitattributes` 文件，而这样的文件可能让 git 运行某个程序。在运行任何这类命令之前，安装器和更新脚本会在以下情况下停止：克隆的任意文件夹中有不是已提交版本的 `.gitattributes` 文件（名称中大小写字母任意组合均算），或克隆中有 git 未跟踪的 git 仓库，因为 git 也会读取其中的 `.gitattributes` 文件。`--dry-run` 和 `--yes` 也会进行此检查。它不会读取引擎自己的数据文件夹（`backups`、`state`、`plans`、`memory`、`contexts`、`learning` 和 `providers`），任何发布都不会向其中写入，除非克隆跟踪了其中的文件。
+
+- "has a .gitattributes file that git does not track, at ..." 指出 git 未跟踪的文件，包括被忽略的文件和未跟踪文件夹中的文件。请将其移除，然后重新运行。
+- "has a changed .gitattributes file at ..." 指出一个已跟踪文件，其内容与已提交的副本不同、其更改已暂存，或者它是链接或文件夹。如果是你做的更改，请恢复已提交的副本，例如使用 `git -C ~/.apothem checkout HEAD -- <path>`，然后重新运行。
+- "has a .gitattributes file at ... that names a filter or diff driver (filter= or diff=)" 指出一个已跟踪文件，其已提交副本或工作树中的副本在注释之外指定了这样的驱动，包括指定了驱动的宏（`[attr]` 行）。git 在读取克隆时会运行该驱动，而该驱动可能由你自己或系统的 git 配置定义。请移除该设置、提交该更改，然后重新运行。只在你自己或系统的属性文件中定义的宏不算：运行期间 git 不读取克隆之外的任何属性文件，因此这样的宏在克隆中不指定任何驱动。
+- "has a .gitattributes file at ... whose committed copy git could not read" 表示克隆 git 文件夹中的副本丢失或损坏，或者其字节与其 ID 不符，而 git 读取时不会检查这一点。此时安装器无法检查该文件的内容，而 git 仍会应用工作树中的副本。请运行 `git -C ~/.apothem fsck` 查看哪些内容已损坏，修复克隆或将其移到别处并全新安装，然后重新运行。
+- "Could not run git to read the committed .gitattributes files in ..." 只来自 `install.ps1` 和 `update.ps1`。在你的 PowerShell 会话中，`git` 是一个函数或脚本（例如你配置文件中的包装器），并且 `PATH` 上没有可供安装器读取这些文件的 git 程序。请将 git 所在的文件夹加入 `PATH`，使 `Get-Command git -CommandType Application` 能找到它，然后重新运行。
+- "holds a git repository that git does not track, at ..." 指出一个带有自己 `.git` 的文件夹。git 不会列出这种文件夹中的任何内容，因此其中的 `.gitattributes` 文件不会被发现，但 git 会将它应用到更新写入该处的文件上。发布树中没有这样的文件夹。请将该文件夹移出克隆，然后重新运行。
+
+如果该文件或该更改不是你做的，那么可能有其他人能够写入该克隆：请将其移到别处，全新安装，并确保 `APOTHEM_HOME` 是只有你能写入的文件夹。
+
+### 安装器停止：src 下有 git 未跟踪的文件
+
+消息为 "has files under src that git does not track, and the engine could load them:"，并列出每个文件（前 20 个，然后是剩余的数量）。引擎从克隆的 `src` 文件夹运行，因此其中多出的文件可能作为引擎的一部分运行。被忽略的文件也算，源文件旁的 `.pyc` 文件同样算。名为 `Src` 或 `SRC` 的文件夹算作 `src`，因为 Windows 和 macOS 会以该名称找到它。对克隆执行可编辑的 `pip install` 会写入 `src/apothem.egg-info`，文件管理器可能会写入 `.DS_Store` 或 `desktop.ini`。请将这些文件移出 `~/.apothem/src`，然后重新运行；没有任何内容被更改。该检查在获取之前运行，就地更新和试运行中都会运行。Python 的缓存文件夹（`__pycache__`）不算：在检出之后、引擎首次从克隆运行之前，更新会移除 `src` 下的每个 `__pycache__` 文件夹，因此不会加载更新之前缓存的字节码。
+
+"Could not remove the Python cache folders (__pycache__) under ..." 表示该移除失败，例如其中某个文件夹中的文件属于另一个用户，或者在 Windows 上被另一个程序打开。该克隆已检出到新的发布。请自行移除这些文件夹，然后重新运行。
+
+### 安装器停止：另一个运行持有锁
+
+安装、更新和卸载脚本的每次运行在运行期间都会在 `APOTHEM_HOME` 旁持有一个锁（`<APOTHEM_HOME>.lock`，默认即 `~/.apothem.lock`）；`apothem install`、`apothem update` 和 `apothem uninstall` 命令不获取它。消息 "Another Apothem install, update or uninstall is running on ..." 表示第二个运行发现该锁已被持有。请等待另一个运行结束，然后重新运行。如果没有任何运行在进行，请移除消息所指的锁，然后重新运行。
+
+- "was left by an Apothem run that did not finish (process N is no longer running)" 和 "exists but names no running process" 表示某个运行在释放锁之前被终止。请确认没有正在进行的 Apothem 安装、更新或卸载，移除该锁，然后重新运行。安装器从不替你移除它。在 POSIX 上，该锁是一个文件夹（`rm -rf ~/.apothem.lock`）；在 Windows PowerShell 上，它是一个文件，Windows 会在其运行结束时将其删除。
+- "is the lock file of an Apothem PowerShell run" 来自在 Git Bash、MSYS2、Cygwin 或 WSL 下运行的 POSIX 脚本，它发现了某个 PowerShell 运行持有的文件。Windows 会在该运行结束时移除该文件，并且在运行进行期间不允许任何人移除它。请等待该运行结束。如果没有正在进行的 Apothem 安装、更新或卸载，请移除该文件，然后重新运行。在其他系统上，消息为 "is a file where the Apothem lock folder belongs"：如果没有正在进行的运行，请移除该文件，然后重新运行。
+- "was made by an Apothem run in another environment" 表示该锁文件夹指向另一个环境中的进程，例如在 Git Bash 下运行时的 WSL，在 WSL 或 MSYS2 下运行时的 Git Bash，或另一个容器。无法从此处检查该进程。请等待该运行结束；只有在任何地方都没有正在进行的 Apothem 安装、更新或卸载时，才移除该锁。
+- POSIX 脚本会把属于另一个用户的进程（例如在 `sudo` 下的运行）算作正在运行，因此其锁被视为已持有。PowerShell 无法检查由 POSIX 脚本（例如在 Git Bash 下）创建的锁文件夹的进程 ID，因此它也将该锁报告为已持有。
+- 当 `APOTHEM_HOME` 是符号链接（在 Windows 上也可以是联接点）时，POSIX 和 PowerShell 脚本会在链接所指向的文件夹旁获取锁，因此通过链接的运行和通过该文件夹的运行会互相阻止；消息会指出该锁。
+- "Could not create the lock ... Check that you can write to ..." 表示你无法写入消息所指的文件夹：即存放 `APOTHEM_HOME` 的文件夹，或者当 `APOTHEM_HOME` 是链接时，存放其所指向文件夹的文件夹。每个运行都需要写入该处，包括就地更新、卸载和试运行。
+
+### 安装器停止：之前的运行在 APOTHEM_HOME 旁留下了文件夹
+
+消息为 "An earlier run was stopped part-way and left these folders beside ..."，并列出每个文件夹及其内容。Ctrl+C 和终止信号会被捕获，运行会进行清理；而在交换过程中强制终止或断电则不会被捕获，可能留下：
+
+- `.apothem-old.<name>.*`：正在被替换的较早安装，位于其 `home` 文件夹中。当该 `home` 文件夹存放的是 git 克隆且 `APOTHEM_HOME` 已就位（新安装移入后即如此）时，该行会改为说明它存放的是该运行要保留的克隆树：如果你仍需要它，请将其移到你自己的文件夹中。当该 `home` 文件夹中没有 Apothem 安装且 `APOTHEM_HOME` 已就位时，该行会如此说明：在运行移动较早安装的过程中，那里出现了一个文件夹，运行把安装放回原处并保留了该文件夹不动。移除它之前请先检查其中的内容。
+- `.apothem-extract.<name>.*` 或 `.apothem-clone.<name>.*`：正在安装的新源码。当运行已经将 `APOTHEM_HOME` 中的条目移入其中时，该行会逐一列出：`backups` 和 `state` 等引擎数据，以及原先在那里的任何其他文件或文件夹。
+- `<APOTHEM_HOME>.before-apothem-<time>`：仅当 `APOTHEM_HOME` 本身缺失时才列出。它存放 `APOTHEM_HOME` 先前的内容，位于以 `APOTHEM_HOME` 最后一部分命名的文件夹中；如果是由较早的安装器创建的文件夹，则直接位于其中；该行会说明是哪种情况。
+
+`<name>` 是 `APOTHEM_HOME` 的最后一部分（默认为 `.apothem`），因此同一父文件夹中另一个 `APOTHEM_HOME` 的文件夹（可能正被该 home 上的运行使用）不会被列出。在 Windows 和 macOS 上，仅大小写不同的 `<name>` 算作本 home 的，因为在那里 `APP` 和 `app` 默认指同一个文件夹。该规则取决于操作系统，而不是文件系统：在 WSL 下，即使在 Windows 驱动器上，大小写不同的名称也是不同的 home；而在区分大小写的 macOS 卷或 Windows 文件夹上，它们仍算作同一个，因此那里名称仅大小写不同的另一个 home 也会被列出。名称中没有 `<name>` 部分的文件夹是由未记录 home 的较早安装器创建的；列出时会附注说明它可能属于该文件夹中的任意一个 Apothem home，并且其行会说明条目是从它所为之创建的 home 中移出的。对于由克隆安装创建的此类文件夹，该行只会指出它找到的引擎数据，因此请查看其中是否还有其他内容。只有文件夹才算：同名的文件或链接不会被列出。安装器无法读取的文件夹会被列为 "could not be read"。
+
+没有任何内容被更改，也没有任何内容被删除。如果 `APOTHEM_HOME` 缺失，请先将较早的安装移回该处。然后将列表中标为已移入新源码的每个条目移回其原来的 home（对于带附注的文件夹，请先确认是哪个 home），移除列出的文件夹，然后重新运行。该检查针对通过获取进行的安装运行（包括试运行）；对于从你自己的检出进行的安装，以及更新或卸载，不会运行。
+
+### 安装器停止：克隆归另一个用户所有
+
+消息为 "is owned by someone else, so git refuses to work in it (git reports "dubious ownership")"。git 不会读取归另一个用户所有的克隆。请以拥有 `APOTHEM_HOME` 的用户身份运行安装器、取得该文件夹的所有权，或让 `APOTHEM_HOME` 指向你拥有的文件夹，然后重新运行。安装器不会把该文件夹添加到 git 的 `safe.directory` 列表中。该首条 git 命令的任何其他失败显示为 "git could not read the clone at ..."，后跟 git 自己的第一行说明。
+
+### 安装器发出警告：其他用户可以更改 APOTHEM_HOME [#the-installer-warns-other-users-can-change-apothem_home]
+
+当除你之外的用户可以写入 `APOTHEM_HOME` 或存放它的文件夹，或者拥有其中之一时，安装和更新脚本（包括试运行）会发出警告，因为这些用户随后可以更改 `apothem` 命令以你的身份运行的代码；跳过该检查的运行列在下文。运行会继续；警告会指出该文件夹、谁可以写入或拥有它，以及修复方法。警告以下列之一开头：
+
+- "Other users can change the code Apothem runs as you"：当他们可以写入 `APOTHEM_HOME`，或者 `APOTHEM_HOME` 或存放它的文件夹属于其他人时（此时消息会说明谁拥有哪个文件夹）。当 `APOTHEM_HOME` 是链接时，消息会指出它所指向的文件夹。
+- "Other users can replace ..."：当他们可以写入存放 `APOTHEM_HOME`（或存放指向它的链接）的文件夹，从而可以重命名或移除它时。
+- "A new ... would let"：当 `APOTHEM_HOME` 尚不存在，而在该处新建的文件夹将对其他人开放时。
+
+从本地检出进行的安装不会被检查，无论是由 `APOTHEM_SOURCE` 指定该检出，还是你运行该检出自己的 `scripts/installer/install.sh` 或 `install.ps1`。更新脚本只有在设置了 `APOTHEM_SOURCE` 时才会跳过该检查。如果警告指出的是你有意与你信任其更改代码的人共享的组，可以忽略它。
+
+该检查读取的是 `APOTHEM_HOME` 及存放它的文件夹的权限，而不是其中每个文件的权限。
+
+在 Linux 和 macOS 上，警告会指出它在文件夹权限位中发现的 "all users" 或 "the group"，以及访问控制列表（ACL）允许写入的每个用户或组；它在安装了 `getfacl` 的系统上用它读取该列表。存在访问控制列表时，`ls` 显示的组权限位是该列表的掩码，因此当 `getfacl` 列出了组自己的条目（`group::`）时，由该条目决定是否指出该组；没有 `getfacl` 时，被指出的组可能是掩码允许写入、但其自身条目并不允许写入的组。警告从不指出你、root 用户，或与你的用户名同名的组（你自己的组）。`getfacl` 用转义写出的名称（例如域账户的 `CORP\alice`）按其所代表的名称计算。要修复它，请运行消息给出的命令（在 Linux 上，它还会取消访问控制列表所指出的每个用户和组的写入权限）：
+
+```bash
+chmod go-w "$HOME/.apothem"
+```
+
+在相同设置下创建的文件也可能是可写的：对该文件夹运行 `chmod -R go-w` 可一并修复。如果其他人需要写入存放 `APOTHEM_HOME` 的文件夹（例如 `/tmp`），请用 `chmod +t` 设置其粘滞位，使他们无法重命名或移除你放在那里的内容，或者移动 `APOTHEM_HOME`。对于新安装，警告会报告你的 umask：请运行 `umask 022`，然后再次运行安装器。在 WSL 上，请将 `APOTHEM_HOME` 放在你的 Linux 主目录中，而不要放在 `/mnt/c` 下，那里的每个文件看起来都可被所有用户写入。
+
+当消息说某个用户 "owns" 该文件夹时，无论其权限如何，该用户都可以更改它，而且只有 root 才能让你成为其所有者。由 root 拥有的文件夹没有问题。请将 `APOTHEM_HOME` 移到你拥有的文件夹中。
+
+在 Windows 上，警告会指出权限条目允许更改该文件夹的每个账户或组，名称与该文件夹的"安全"选项卡中显示的一致：Users、Authenticated Users、Everyone、INTERACTIVE（在本机或通过远程桌面登录的所有人，他们可以更改在 `C:\Users\Public` 中创建的内容）、Guests，或由你的组织或其他程序创建的组。它从不指出你、你自己的登录会话、SYSTEM、Administrators、TrustedInstaller、CREATOR OWNER 或 OWNER RIGHTS；后两者代表创建或拥有某项的人，而所有者是其他人时会有专门的消息。当该文件夹属于另一个账户时，消息会如此说明，并要求你将 `APOTHEM_HOME` 移到你的用户文件夹中。当消息补充 "access that folders made at the root of a drive inherit from the drive's default permissions" 时，该文件夹位于驱动器根目录，例如 `C:\apothem`：Windows 允许每个登录的用户在那里添加和更改所创建的文件夹。最简单的修复是将 `APOTHEM_HOME` 移到你的用户文件夹（`%USERPROFILE%`）中，默认的 `~\.apothem` 即是如此。若要保留文件夹原来的位置，请关闭继承、授予你自己完全控制权限，然后移除警告所指出的组。对于驱动器根目录下的文件夹，在 Windows 10 和 11 上是 Authenticated Users，在 Windows Server 上是 Users；下面的命令会同时移除两者：
+
+```powershell
+icacls "C:\apothem" /inheritance:d
+icacls "C:\apothem" /grant:r "${env:USERNAME}:(OI)(CI)F"
+icacls "C:\apothem" /remove:g *S-1-5-11 *S-1-5-32-545 *S-1-1-0 *S-1-5-4
+```
+
+请先给自己授予访问权限，再移除这些组：你移除的条目可能是你写入该文件夹的唯一途径。`*S-...` 名称是这些组（Authenticated Users、Users、Everyone 和 INTERACTIVE）的安全标识符，在任何语言的 Windows 中都适用。警告给出的任何其他名称，请在单独的一行 `icacls` 中加引号移除：`icacls` 找不到的名称会使整行失败，此时该行什么也不会移除，却仍会打印 "Successfully processed 0 files"。由 `S-` 和数字组成的名称是 Windows 无法查找的账户的安全标识符，例如已删除的账户或另一个登录会话：请在它前面加上 `*`，如果 `icacls` 仍然什么也没移除，请在该文件夹的"属性 > 安全 > 高级"中移除它。所有更改也都可以在那里完成。当警告针对的是存放 `APOTHEM_HOME` 的文件夹时，请在该处进行更改，或移动 `APOTHEM_HOME`。位于 `APOTHEM_HOME` 的链接或联接点的权限取自该文件夹，因此能够更改该文件夹的其他人可以删除该链接并创建他们自己的链接。
+
+`install.sh` 和 `update.sh` 在 Git Bash、MSYS2 或 Cygwin 下不进行检查，因为那里的权限位是根据 Windows 权限模拟出来的，所以在那里不会给出警告。在 Windows 上，请运行 `install.ps1` 或 `update.ps1`，它们会读取 Windows 权限，从而检查该文件夹。
+
+### 安装器停止：无法更新现有克隆
+
+安装器会向现有克隆获取内容，并在检出之前检查新标签，因此检查失败时克隆会保持原样。另有两条消息会在检出之前停止更新。"Could not fetch" 通常表示某个本地标签与 origin 上的不同：请用 `git -C ~/.apothem tag -d <tag>` 删除它，然后重新运行。"has changes to tracked files. Commit or stash them, then re-run." 表示克隆中对 git 跟踪的文件有未提交的更改：请提交或贮藏它们，然后重新运行。该检查会忽略你自己或系统的 git 属性文件中的换行符设置（`eol` 和 `text`），因此你从未更改过的克隆也可能被这样报告：请运行一次 `git -C ~/.apothem status`，然后重新运行。试运行不会检查普通的未提交更改，因为它不会向克隆获取内容，但当文件被标记为 assume-unchanged 或 skip-worktree 时，它会以同样的消息停止（参见上文关于克隆设置的部分）。"Could not check out" 表示检出仍会覆盖本地更改。安装器从不丢弃本地更改。对于 `main` 等非发布引用，现有克隆会跟随 origin 上该分支的副本。
+
+### 安装器或更新脚本以退出码 2 结束
+
+引擎以部分完成结束。要么它因为某个存放 Apothem 块的文件中的 Apothem 标记行而将该文件原样保留，并写入了其余内容；要么它在已经写入某些内容之后停止，例如在 `APOTHEM_HARNESS=all` 运行中，某个工具在较早的工具之后失败。它的消息会指出该文件，或显示使其停止的错误，脚本会再添加一行以 "The engine ended as partial (exit code 2)." 开头的内容。安装器仍会运行 verify、放置 `apothem` 命令并打印其横幅，更新脚本仍会打印其最后一行。通过管道运行的 PowerShell（`irm ... | iex`）会将 `$LASTEXITCODE` 置为 `2`，并保持你的会话打开。一次性的 `pwsh -Command "irm ... | iex"`（或 `powershell -c`）只通过 `$LASTEXITCODE` 报告部分完成的运行，并以 `0` 退出：若要让进程返回退出码 `2`，请在命令末尾加上 `; exit $LASTEXITCODE`，或通过 `-File` 按路径运行脚本。从 PowerShell、bash 或其他 POSIX shell 运行时，请将该命令放在单引号中。在双引号中，调用方 shell 会在新进程启动之前代入它自己的 `$LASTEXITCODE`（POSIX shell 代入空字符串），因此进程不会以该运行的退出码退出。从 cmd.exe 运行时，使用双引号即可。试运行不写入任何内容，因此不会以部分完成结束。请修复消息所指出的问题。对于文件，请保留你自己的文本（参见[某个文件在 Apothem 的标记之间包含两个块](#a-file-holds-two-blocks-between-apothems-markers)和[Apothem 无法将其块与你的文本区分开](#apothem-cannot-tell-its-block-from-your-text)），然后对该运行未完成的每个工具再次运行 `apothem update --harness <name>`。[当引擎将文件原样保留时](/docs/install/updating#when-the-engine-leaves-a-file-as-it-is)描述了整个运行过程。
 
 ### Windows 上 irm / iex 被阻止
 
@@ -84,6 +225,18 @@ Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
+### 安装器忽略了我当前文件夹中的检出
+
+这是预期行为。通过管道运行的一行命令（`curl ... | sh`、`irm ... | iex`）从不使用本地树，也从不在当前文件夹或其父文件夹中查找：它会获取并验证发布。若要从检出安装，请从任意文件夹按路径运行该检出自己的 `scripts/installer/install.sh`（或 `install.ps1`）（例如 `sh ~/src/apothem/scripts/installer/install.sh`），或将 `APOTHEM_SOURCE` 设置为该检出。请为脚本提供带文件夹部分的路径：`sh scripts/installer/install.sh` 或 `sh ./scripts/installer/install.sh` 可行，但不带文件夹部分的 `sh install.sh` 不算作从检出运行，因此安装器会打印 "Not using a checkout: to install from one, run this script as ./install.sh or by its full path, or set APOTHEM_SOURCE."，并改为获取并验证发布。在会标记 `-c` 运行的 shell 中，通过 `sh -c` 启动的脚本也不会被视为检出。dash 不会标记它们，因此在 dash 下，从源码树内名为 `scripts/installer` 的文件夹启动的 `sh -c "<script>" ./install.sh` 会使用该树：只在你信任的文件夹中以这种方式启动脚本文本。同理，你保存到另一个源码树的 `scripts/installer` 文件夹中并在那里按路径运行的 `install.sh` 副本，会成为该树自己的安装器并安装该树。请将下载的脚本保存到空文件夹中。`install.sh` 会沿符号链接找到其真实文件，并使用存放该文件的检出。`install.ps1` 的做法相反：它拒绝通过符号链接或联接点到达的检出，打印一行说明，并采用获取并验证的路径。请从真实文件夹运行它，或设置 `APOTHEM_SOURCE`。安装器、`apothem` 命令、npm 启动器和钩子也会让当前文件夹不进入 Python 的模块搜索路径，因此你工作文件夹中名为 `click.py` 的文件对它们没有影响。你自己输入的 `python -m apothem` 命令则不然：`-m` 会首先从当前文件夹读取模块，因此只在你信任的文件夹中运行它。
+
+### 旧的 `apothem` 命令仍会查看我的当前文件夹
+
+较早的发布写入的 `apothem` 命令垫片在启动 Python 时，会让当前文件夹遮蔽引擎的模块。更新不会重写该垫片。请再次运行安装器（`install.sh` 或 `install.ps1`）以替换它。卸载器会同时移除旧垫片和新垫片。
+
+### Git Bash：我的 `/c/...` PYTHONPATH 条目被忽略
+
+在 Git Bash 下，安装器通常运行的是 Windows Python，而 Windows Python 将 `PYTHONPATH` 读作以 `;` 分隔的 Windows 路径。sh 脚本及其写入的 `apothem` 垫片只为该 Python 保留你的 `PYTHONPATH` 中的驱动器路径和网络路径，因此 `/c/Users/me/lib` 这样的 POSIX 风格条目会被丢弃。请将该条目写成驱动器路径 `C:\Users\me\lib` 或 `C:/Users/me/lib`，并用 `;` 分隔各条目。POSIX Python（例如 Cygwin 或 MSYS2 自带的 `python3`）读取以 `:` 分隔、以 `/` 开头的路径，脚本会为它保留这些路径。
+
 ## 运行时问题
 
 ### apothem install 未找到任何工具
@@ -92,11 +245,93 @@ irm https://apothem.ahmedgad.com/install.ps1 | iex
 
 ### apothem verify 报告某个适配器失败
 
-重新运行 apothem install 以重新物化该适配器。如果问题仍然存在，请查看[工具适配器](/docs/harnesses)下针对该适配器的专门页面。
+重新运行 apothem install 以重新物化该适配器。如果问题仍然存在，请查看[工具适配器](/docs/harnesses)下针对该适配器的专门页面。如果安装警告某个 BEGIN 标记没有 END，或失败的行指出的文件中有这样的标记，重新运行并无帮助；请参见[某个文件包含一个没有 END 标记的 Apothem BEGIN 标记](#a-file-has-an-apothem-begin-marker-with-no-end-marker)。如果警告或该行说某个文件在 Apothem 的标记之间包含两个或更多完整的块，请参见[某个文件在 Apothem 的标记之间包含两个块](#a-file-holds-two-blocks-between-apothems-markers)。如果它说 Apothem 无法判断某个文件中的标记行标记的是它的块还是你的文本，请参见[Apothem 无法将其块与你的文本区分开](#apothem-cannot-tell-its-block-from-your-text)。
+
+### 某个文件包含一个没有 END 标记的 Apothem BEGIN 标记 [#a-file-has-an-apothem-begin-marker-with-no-end-marker]
+
+Apothem 将自己的文本保存在一个块中，该块从 `<!-- BEGIN APOTHEM MANAGED BLOCK -->` 标记开始，到下一个 `<!-- END APOTHEM MANAGED BLOCK -->` 标记为止。如果 END 标记不见了（手动编辑或合并丢掉了该行），或者你的某个 BEGIN 标记位于完整的块之外，就没有任何东西能表明 Apothem 的文本在哪里结束、你的文本从哪里开始。因此 Apothem 从不截掉该标记之后的文本：
+
+- `apothem install` 和 `apothem update` 会将其原样保留，在它之外另行写入 Apothem 的块，并打印一条警告，指出该文件和该标记所在的行，并给出一个更改该行的编号步骤（见下文）。该警告还会说明不要改为把 END 标记加回去：由于 Apothem 的块已在它之外另行写入，文件届时会包含两个 Apothem 块，而 install 和 update 会将这样的文件原样保留。试运行会在写入任何内容之前读取文件，因此当文件中尚无完整的块时，其警告会说明：如果你改为把 END 标记加回去，两个标记之间不得有你自己的任何行，因为下一次运行会替换或取出它们之间的每一行；并且一旦某次 install 或 update 已在该标记之外另行写入 Apothem 的块，就完全不要把它加回去。在此之前，把它放回旧的 Apothem 文本正下方、你自己的行上方，即可留下一个完整的块，下一次更新会重写它。
+- `apothem uninstall` 会取出 Apothem 的整个块，其余部分保持原样，并指出该文件和该标记所在的行，附带相同的编号步骤：安装会将该标记原样保留，而工具仍会读取它下面的文本。
+- `apothem verify` 和 `apothem doctor` 会失败，并指出该文件和该标记所在的行，附带相同的编号步骤，直到该游离标记被更改为止；对于当前安装写入的文件，`apothem status --profile` 在此之前也会显示漂移。再次运行 `apothem install` 并不能消除它。只有 Apothem 为该工具保存块的文件才算，因此你自己文件中的标记不会使它们失败。
+
+当安装记录列出的某个文件中没有完整的块，但在代码中有一个标记对（例如你在代码块中引用的标记示例）时，install、update 和 uninstall 会将该文件全部原样保留：该标记对可能是位于你的某个代码块内的 Apothem 块。它们的警告与 `apothem verify` 的说明一样，会先指出该 BEGIN 标记，再指出每个标记对，并且卸载保持未完成（参见[Apothem 无法将其块与你的文本区分开](#apothem-cannot-tell-its-block-from-your-text)）。没有安装记录时，你在代码中引用的标记对是你的文本，install 和 update 会在该游离标记之外另行写入 Apothem 的块。你在更靠下的代码中单独引用、其后没有标记对的 END 标记则不同：它会闭合那个 BEGIN 标记，因此更新会把两者之间的行当作 Apothem 的块进行替换，卸载则会移除它们。
+
+Apothem 只把代码之外独占一行的标记读作标记，就像 Markdown 查看器那样，因此你在句子中、围栏代码块中，或在空行之后比其列表项（或页边）多缩进四列的代码中引用的标记不会被当作标记，你在两个独立代码块中分别引用的 BEGIN 标记和 END 标记也不会。你一直未关闭到文件末尾的代码围栏会被读作文本，无论有多少个，除非其上方代码之外的某个 BEGIN 标记的 END 标记位于代码中，且其后还有另一个标记对。HTML 块或块引用中的标记，或者位于文本延续到左边距的列表项之后的标记，仍可能被读得与 Markdown 查看器不同。
+
+这些警告给出的每个行号都按 Apothem 读取文件的方式计算行：一行在 CRLF、LF 或单独的 CR 处结束。在以 CR 换行保存的文件中，或者某一行内有一个游离 CR 的文件中，请在更改警告所指的行之前按同样的方式数行。
+
+要修复它，请按照警告中的编号步骤操作，例如 "Fix A, if lines 77 to 148 are Apothem's block: A1. Change line 3: add a word inside its comment."。第 3 行是游离的 BEGIN 标记：在下一个 BEGIN 标记之前没有 END 标记，或者根本没有 END 标记。在其结尾的 `-->` 之前加一个词，例如 `<!-- BEGIN APOTHEM MANAGED BLOCK (example) -->`，该行就不再被读作标记。这样做既不增加也不删除任何行，因此文件中其他内容的读法都不会改变，开启 Apothem 当前块的 BEGIN 行也保持原样。该修复还会更改文件中其他每一个 BEGIN 标记行（包括你在代码块中引用的），每行一个步骤，从文件底部往上进行（参见[按编号修复](#follow-a-numbered-fix)）：保持原样的被引用 BEGIN 标记，可能会在卸载取出 Apothem 的块之后与其下方的某个 END 标记配对。当文件的布局无法表明在这些行更改之后 Apothem 的块仍保持完整时（例如它被你的某个没有任何行闭合的代码块包含），该修复会更改文件中的每一个 BEGIN 标记行，包括该块自己的，例如 "Fix A: A1. Below line 6, add a line of 3 backticks. A2. Change line 3: add a word inside its comment. A3. Change line 2: add a word inside its comment. Apothem then reads none of these lines as its markers, and the next update writes its block at the end of the file."。当文件结束于一个没有任何行闭合的代码块中时（如本例），该修复会先在最后一行下方添加该代码块的闭合行，使下一次更新写在那里的块不是代码。你更改的标记行下方的旧 Apothem 文本（重复了 Apothem 的规则）随后由你手动删除。不要改为把 END 标记加回去来代替更改标记行：一旦某次 install 或 update 已在它之外另行写入 Apothem 的块，文件届时会包含两个 Apothem 块（参见[某个文件在 Apothem 的标记之间包含两个块](#a-file-holds-two-blocks-between-apothems-markers)）。更改标记行之后，其下方的 END 标记就不与任何标记配对。然后运行 `apothem update`（如果文件中不再有 Apothem 的块，它会将其写回），并再次运行 `apothem verify`。END 标记位于代码中、其后还有另一个标记对的 BEGIN 标记会得到不同的警告；请参见[Apothem 无法将其块与你的文本区分开](#apothem-cannot-tell-its-block-from-your-text)。
+
+### 某个文件在 Apothem 的标记之间包含两个块 [#a-file-holds-two-blocks-between-apothems-markers]
+
+Apothem 每个文件只写一个块。但文件仍可能最终包含两个完整的块：在某次更新已在其下方写入新块之后，你又把 END 标记加了回去的旧块；你在代码之外的标记对（例如你引用的示例）；或者你第二次粘贴进去的块。此时 Apothem 无法判断哪一个是它自己的：
+
+- `apothem install` 和 `apothem update` 会将该文件原样保留，并打印一条警告，按行号指出每个块，例如 "holds 2 whole blocks between Apothem's markers (lines 1 to 32, and lines 36 to 67)"。该运行以部分完成结束：它会打印一条指出该文件的 `✗` 行来代替其 `✓` 行，其 `--format json` 的 `status` 为 `"partial"`，并以退出码 `2` 退出，直到你修复该文件为止。在试运行中，警告会说 Apothem "would leave the file as it is"。
+- `apothem verify`（无论是否带 `--profile`）和 `apothem doctor` 会失败，并指出该文件及其中的每个块（doctor 的检查为 `harness.stray_begin`，其消息说该文件包含 "Apothem markers to fix by hand"），直到你修复该文件为止；对于当前安装写入的文件，`apothem status --profile` 在此之前也会显示漂移。
+- `apothem uninstall` 会取出彼此完全相同的块（例如粘贴了两次的块）。当会留下不同的块时，它会将该文件原样保留，打印同样的警告（以 "then run the uninstall again" 结尾），并保持未完成（退出码 `2`），直到你修复它为止（参见[未完成的卸载](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish)）。没有安装记录时，它也会将包含两个块的 Claude Code 的 `CLAUDE.md` 或配置档案文档原样保留，其警告以同样方式指出每个块。该警告会说明在修复之后先运行 `apothem update`，再次运行 `apothem uninstall`，并且它不会停止卸载。随后，卸载运行会在取出块之前指出 Apothem 块周围属于你的任何标记行。
+
+接着，警告会为每个块给出一个编号修复，对应该块是 Apothem 块的情况，例如 "Fix A, if lines 1 to 32 are Apothem's block: A1. Change line 36: add a word inside its comment. Lines 1 to 32 are then the one block in the file."（参见[按编号修复](#follow-a-numbered-fix)）。一个修复会更改其他每个块的 BEGIN 标记行；上方没有 BEGIN 标记的 END 标记不与任何标记配对。文件布局无法表明其情况的块（例如位于包含代码块的块下方的块）不会得到自己的修复，此时会再多一个 "in any other case" 修复，更改文件中的每一个 BEGIN 标记行。在警告给出的行处打开所指的文件：
+
+1. 选择针对存放 Apothem 规则的块的修复。在以 Apothem 的前置元数据开头的文件中，就是紧接其下的那个块：卸载只会连同紧接其下的块一起取出该前置元数据。
+2. 按给出的顺序执行该修复的各个步骤。每个步骤都在原处更改一个 BEGIN 标记行，因此其下方的文本保持不变：你的标记对会保留你的示例，而较旧的或粘贴的 Apothem 块的文本（直到其 END 标记行）随后由你手动删除。每个修复对下一次更新和卸载都同样有效。不要为了保留你自己的标记对而删除 Apothem 的块：下一次卸载随后会把你的标记对当作剩下的唯一块取出。也不要把你的标记对移入代码块：一旦 Apothem 自己的块不再完整（例如丢失了其 END 标记），当安装记录列出该文件时，代码中的标记对会阻止 install 和 update 写入 Apothem 的块（参见[Apothem 无法将其块与你的文本区分开](#apothem-cannot-tell-its-block-from-your-text)）。
+3. 运行 `apothem update`，然后再次运行 `apothem verify`。在未完成的卸载之后，请改为再次运行 `apothem uninstall`。
+
+位于 Apothem 块上方的 BEGIN 标记和下方的 END 标记会构成第二个块，它只有在 Apothem 的块被取出后才会显现。此时卸载的警告会指出 Apothem 的块以及这两个标记行，例如 "once the block from line 5 to line 36 is out, the BEGIN marker at line 2 and the END marker at line 39 make another"，并说 "Do not delete the block from line 5 to line 36"：否则下一次运行会把第 2 行到第 39 行读作 Apothem 的块，并替换或取出两者之间的内容。它唯一的修复会改为更改该 BEGIN 标记行，从而保留你自己的文本，例如 "Fix A, if lines 5 to 36 are Apothem's block: A1. Change line 2: add a word inside its comment. Lines 5 to 36 are then the one block in the file."；然后再次运行卸载。下方的 END 标记随后不与任何标记配对，因此可以保留，例如作为你在代码块中引用的示例。不要把这两行放在同一个代码块中：那样它也会包含 Apothem 的块。如果该 BEGIN 标记是较旧的 Apothem 块的残留，其下方的旧 Apothem 文本随后由你手动删除。`apothem update` 同样无法修复这样的文件，`apothem verify` 会一直失败，直到你修复它为止。
+
+### Apothem 无法将其块与你的文本区分开 [#apothem-cannot-tell-its-block-from-your-text]
+
+警告会指出该文件，并说 "Apothem cannot tell whether the marker lines in this file mark its block or text of yours"。当 Apothem 块上方的某个代码围栏未关闭，而你在更下方添加的围栏把它关闭了时，就会看到这条警告：此时该块位于你的代码块内。Markdown 查看器会把这些行显示为代码，而同样的行也可能是你作为示例引用的标记对，因此 Apothem 无法判断它们是它的块还是你的文本。位于缩进代码中或缩进在某个段落之下的标记对，以及 END 标记位于代码中、其后还有另一个标记对的代码之外的 BEGIN 标记，也是如此：其中任何一个标记对都可能是 Apothem 的块。Apothem 自己块内的闭合行也可能关闭你在其上方未关闭的代码块（见下文）。
+
+警告会按两个标记所在的行指出文件中的每个标记对，并说明它们的读法，例如 "The BEGIN marker at line 6 and the END marker at line 38 sit inside a code block that opens at line 3."。它还会指出代码之外不开启任何标记对的每个 BEGIN 标记，例如 "The BEGIN marker at line 1 starts no marker pair: its END marker is gone, or the marker is yours."。然后是编号修复，它们出现在 `apothem install`、`apothem update` 和 `apothem uninstall` 的警告、`apothem verify` 的说明以及 `apothem doctor` 打印的修复中，例如 "Fix A: A1. Change line 6: add a word inside its comment. Apothem then reads none of these lines as its markers, and the next update writes its block at the end of the file."。两个标记行都读作代码之外的标记对（位于 END 标记在代码中的某个 BEGIN 标记之后的那种）会得到自己的修复，对应它是 Apothem 块的情况，前提是文件布局表明它随后会读作唯一的完整块；最后一个修复（前面还有其他修复时为 "in any other case"）会更改文件中的每一个 BEGIN 标记行。关于如何阅读它们，请参见[按编号修复](#follow-a-numbered-fix)。
+
+当安装记录列出该文件时（直到卸载完成为止；无法读取的安装台账也算作一个记录；在文件夹的另一种拼写下（例如通过链接到达的主目录）做出的记录也算，与卸载时一样，前提是你当前运行所用的拼写仍有自己的安装存在，并且该工具会写入[你主目录中的共享文件夹](/docs/cli-reference/install#folders-in-your-home-directory)），`apothem install` 和 `apothem update` 不会更改其中的任何内容，并打印该警告；在试运行中，它说 Apothem "would leave the file as it is"。对于 END 标记位于代码中、其后还有另一个标记对的代码之外的 BEGIN 标记，无论有没有记录，它们都会这样做。每个这样的运行都以部分完成结束：它会打印一条指出该文件的 `✗` 行来代替其 `✓` 行，其 `--format json` 的 `status` 为 `"partial"`，并以退出码 `2` 退出。警告会如此说明："Until you fix these marker lines as this text says, install and update leave this file as it is and end as partial (exit code 2)."。写入了该文件、因而以成功结束的运行，其警告会以 "From the next run on, until you fix these marker lines" 开始这句话。只要这些标记行保持原样，这种情况就会持续，包括你在代码块中的标记示例：这样的标记对可能是位于你的某个代码块内的 Apothem 块，因此警告会补充说明，在你更改其 BEGIN 标记行之前（例如在其注释内加一个词，如 `<!-- BEGIN APOTHEM MANAGED BLOCK (example) -->`），你的示例会以同样方式阻碍该文件。对于标记行读作其上方段落一部分的标记对，它称之为 "a marker example of yours that reads as part of a paragraph"。没有其他办法能结束这种情况：只要该标记对还在，卸载也不会完成。代码之外不开启任何标记对的 BEGIN 标记不会改变这一点，即使文件中的每个标记对都在其下方的代码中被引用：该标记可能是 Apothem 的块丢失 END 标记后的残留，但代码中的标记对也可能是位于你的某个代码块内的 Apothem 块。警告会首先指出这样的 BEGIN 标记，每个修复都会更改它。`apothem verify` 的说明和 `apothem doctor` 打印的修复只在 install 和 update 会将文件原样保留的情况下才给出关于以部分完成结束的同一句话：没有安装记录时，你在代码中引用的标记对不会阻碍该文件（见下文），除非该标记对包含的恰好是安装所写入的块。说明和修复不会检查这一点，因此对于这样的标记对，它们会省略那句话；下一次更新会将文件原样保留、以部分完成结束并如此说明。
+
+当你配置档案中的某条规则打开了一个代码块却从未关闭时，Apothem 会在它所写入的块的末尾关闭该代码块，因此该块的 END 标记从不位于代码中。较早的发布根据这样的规则写入的块没有闭合行。当其后有你的标记对时，install 和 update 会将该文件原样保留。没有任何修复会保留那个较旧的块：其下方你的某一行会关闭其规则打开的代码块，而一旦下一次更新替换了该块，那一行就会在你的文本上方开启一个代码块。针对其后的标记对是 Apothem 块这一情况的修复会更改较旧块的 BEGIN 标记行，例如 "Fix A, if lines 8 to 10 are Apothem's block: A1. Change line 1: add a word inside its comment."，而最后一个修复会更改每一个 BEGIN 标记行；较旧块的文本随后由你手动删除。
+
+该闭合行，或者你配置档案中某条规则写入的代码块的闭合行，也可能关闭你在 Apothem 块上方打开且从未关闭的代码块，例如在你的笔记末尾。此时该块从其 BEGIN 标记开始都被读作代码。写入它的 install 或 update 会立即打印该警告，而不会说它将文件原样保留，例如 "The BEGIN marker at line 6 sits inside a code block that opens at line 3, and the END marker at line 44 is outside code."。它的修复会更改该 BEGIN 标记行，如 "Fix A: A1. Change line 6: add a word inside its comment."：下一次更新会在文件末尾、关闭你代码块的那一行下方写入 Apothem 的块，而旧块由你手动删除。试运行会在写入任何内容之前读取文件，因此它无法表明该块写入后会被读作代码。改为删除该块也无济于事：下一次更新会在同一个未关闭的代码块下方再次写入它。如果某次更新将其块写在一个丢失了 END 标记的较旧块下方，而某条规则在那里留下了未关闭的代码块，也会得到同样的警告；它还会指出那个较旧的 BEGIN 标记，每个修复都会更改它。
+
+在你修复该文件之前，`apothem verify` 会失败，`apothem doctor` 会报告它（作为 `harness.stray_begin`）；对于当前安装写入的文件，`apothem status --profile` 也会显示漂移。没有安装记录时，verify 和 doctor 不会检查 `CLAUDE.md` 或配置档案文档：只有该记录才能表明这些文件是安装写入的。OpenClaw 的 verify 仍会检查它找到的每个工作区中的规则文件，并在失败时不指出该文件。
+
+有安装记录时，`apothem uninstall` 会将该文件原样保留，移除安装的其余部分，并保持未完成（退出码 `2`，第二次运行也是如此），直到你修复该文件为止：安装记录会保留，因此之后的安装仍会将该文件原样保留，下一次卸载会再次指出它。它的警告以同样方式给出编号修复，并以 "Then run the uninstall again." 结尾，例如 "Fix A: A1. Change line 6: add a word inside its comment. Apothem then finds no block of its own in this file."。这样的文件中遗留的任何标记对都会使卸载保持未完成，包括你自己的标记对，因此每个修复都会更改它未称为 Apothem 块的每个标记对的 BEGIN 标记行。它的 `✗ <harness> uninstall did not finish:` 行接着为 "1 file(s) hold marker lines Apothem cannot tell from your text, so Apothem left them as they are; fix the marker lines each warning names, keeping your own text, then run apothem uninstall again"。没有安装记录时，只有 END 标记位于代码中、其后还有另一个标记对的代码之外的 BEGIN 标记才会得到该警告，卸载会因它以及没有记录可表明的路径而保持未完成（退出码 `2`）（参见[未完成的卸载](/docs/cli-reference/uninstall#an-uninstall-that-did-not-finish)）。
+
+请执行你所选修复的每一个步骤。如果你只删除 Apothem 的块，而保留你的某个 BEGIN 标记位于你在代码中引用的某个 END 标记之上，且其后没有标记对，那么这两个标记就会被读作 Apothem 的块：你再次运行的卸载会取出它们之间的行，之后的 install 或 update 会替换它们。
+
+没有安装记录时，你在代码中引用的标记对是你的文本：安装会在其后添加它的块（在 Apothem 带前置元数据写入的规则文件中，该前置元数据和块则放在顶部），除非该标记对包含的恰好是安装所写入的块，此时它会将文件原样保留并打印该警告。因此，如果安装记录不见了（例如台账被删除），请手动从你的代码块中删除 Apothem 的块：之后的安装会把它当作你的文本。
+
+要修复它，请在警告给出的行处打开所指的文件。判断哪种情况属实：修复所指的行是 Apothem 的块（标记之间是 Apothem 的规则），还是你的示例。按给出的顺序执行该修复的步骤，不要执行其他步骤（参见[按编号修复](#follow-a-numbered-fix)）。然后运行 `apothem update`，再次运行 `apothem verify`。在未完成的卸载之后，请改为再次运行 `apothem uninstall`。
+
+### 按编号修复 [#follow-a-numbered-fix]
+
+针对 Apothem 无法定位其标记行的文件、包含两个或更多完整块的文件、没有 END 标记的 BEGIN 标记，以及没有安装记录的卸载所保留的 Apothem 块，警告会以编号步骤给出每个修复，并以指明其情况的标签开头，例如 "Fix A, if lines 6 to 38 are Apothem's block:"，或者对于无论哪些行是 Apothem 的都适用的修复，为 "Fix A:"。修复 A 的步骤为 "A1."、"A2." 等，修复 B 的为 "B1."、"B2."，写在同一段中，修复以下一次运行随后会做什么结尾。只执行一个修复的步骤。
+
+步骤中的每个行号都是打印警告时该行在文件中的行号，按 Apothem 计算行的方式计算（参见[某个文件包含一个没有 END 标记的 Apothem BEGIN 标记](#a-file-has-an-apothem-begin-marker-with-no-end-marker)）。步骤按给出的顺序从文件底部往上进行。每个步骤都是以下之一（逐字如此），并以句点结尾：
+
+| 步骤 | 操作 |
+| --- | --- |
+| `Change line N: add a word inside its comment.` | 在第 N 行结尾的 `-->` 之前加一个词，如 `<!-- BEGIN APOTHEM MANAGED BLOCK (example) -->`。该行保持在原处，不再被读作标记。 |
+| `Below line N, add a line of 3 backticks.` | 在第 N 行（文件的最后一行）正下方添加一个新行，该行只包含相应数量的反引号字符（对于 `tildes` 则为波浪号字符），不含其他内容。如果句点前有 `, indented 2 spaces`，请在这些字符前加上相应数量的空格；否则，该行从左边距开始。 |
+
+每个 `Change line` 步骤都在原处更改一个 BEGIN 标记行。每个 Apothem 块、标记对和游离标记都从一个 BEGIN 标记开始，而 END 标记只与紧接其上方的 BEGIN 标记配对，因此上方没有 BEGIN 标记的 END 标记不标记任何东西，你引用的 END 标记会原样保持为你的文本。更改后的行仍然是独占一行的 HTML 注释：没有任何行移动，Markdown 查看器对其他每一行的读法都与之前相同。
+
+保留某个块的修复会更改文件中其他每一个 BEGIN 标记行。只有当文件布局表明该块随后会读作唯一的完整块时，警告才会给出这样的修复：没有你的、一直延续到文件末尾的代码块包含它，并且从第一个被更改的行往下到该块之间，没有任何行会改变其 BEGIN 标记的读法。它以 "The next update then replaces Apothem's block"、"Lines 1 to 32 are then the one block in the file" 结尾，对于卸载则以 "The uninstall run again then takes Apothem's block out" 结尾。不保留任何块的修复会更改文件中的每一个 BEGIN 标记行，并以 "Apothem then reads none of these lines as its markers, and the next update writes its block at the end of the file" 结尾，对于卸载则以 "Apothem then finds no block of its own in this file" 结尾。无论哪种情况，你更改的行下方的任何旧 Apothem 文本及其 END 标记行，随后都由你手动删除。
+
+你的某个没有任何行闭合的代码块在 Markdown 查看器中会一直延续到文件末尾，但 Apothem 会把它的开启行读作文本。你配置档案规则中的某个代码块会关闭它，此时 Apothem 块的 BEGIN 标记就会被读作代码。因此，当你的文件结束于这样的代码块中时，一个不在文件中留下任何 Apothem 块的修复会先在最后一行下方添加该代码块的闭合行，如 "A1. Below line 7, add a line of 3 backticks."：下一次 install 或 update 会在文件末尾、该行之后添加它的块。没有任何修复会保留被这样的代码块包含的块。
+
+Apothem 对 HTML 块（例如以 `<!--` 开头、在后面某行结束的注释）内的代码围栏的读法，与对其他任何代码围栏相同；对于 Apothem 而言，列表项中延续到左边距的一行文本会结束该列表项。Markdown 查看器则两者都不会这样做。当你文件所结束于的代码块上方有一行可能开启 HTML 块（任何以标签开头的行都算，但尖括号中的链接、紧接在一行纯文本下方的行上的标签，以及代码块中的 HTML 除外），或者其上方有列表项文本延续到左边距、且其后跟着一个缩进行时，该闭合行在查看器中反而可能开启一个代码块。此时该修复不会给出编号步骤：它会说 "Apothem cannot give numbered steps for this fix"，并指出开启该代码块的行。请手动编辑该文件，使该行不开启任何代码块，或者使该代码块在你的查看器显示其结束的位置被关闭；之后针对该文件的警告就会给出编号步骤。
 
 ### Claude Code 中钩子未触发
 
 通过检查 ~/.claude/settings.json 中的钩子条目，确认 Apothem 已接入。如果该文件缺少这些钩子，请再次运行 apothem install。
+
+### OpenCode 不加载 Apothem 规则
+
+当 OpenCode 配置文件夹中你的某个文件使 OpenCode 1 无法加载 Apothem 写入 `opencode.json` 的 `instructions` 列表时，`apothem install`、`apothem update` 和 `apothem verify` 会打印一条说明：
+
+- 带有自己 `instructions` 列表（即使是空列表）的 `opencode.jsonc` 会替换 Apothem 的列表。请移除该键，或将其条目移入 `opencode.json` 中的列表，安装会保留该列表中并非由它写入的条目。
+- 该处 OpenCode 1 无法读取或解析的 `config.json`、`opencode.json` 或 `opencode.jsonc` 会使 OpenCode 1 无法加载其任何配置。顶层不是对象、`instructions` 的值不是文本列表，或者其 `{file:path}` 指向 OpenCode 1 无法读取的文件的文件也是如此，使用这些名称之一的文件夹同样如此。请更正该文件，使它成为一个仅额外带有注释和尾随逗号的 JSON 对象，并且 `instructions` 为文本列表，或将其移出该文件夹。当说明指出该文件在 OpenCode 1 代入其 `{env:NAME}` 值后会损坏时，请更改该变量，使其值不包含反斜杠、双引号或控制字符，例如用正斜杠书写的 Windows 路径。当说明指出 Apothem 为你配置档案中的某个 MCP 服务器写入了该 `{env:NAME}` 时，更新会把从文件中移除的引用写回，因此请更改该变量；或者，若要保持其原样，请在 `harnesses.opencode.mcp_servers.<name>` 下重新声明该服务器，将值保存在一个文件中，并写成指向该文件的 `{file:path}`。当说明指出该文件还有第二个问题时，也请一并修复。当它说 Apothem 无法判断 OpenCode 1 能否读取某个 `{file:path}` 所指的文件时，也请确保该文件可以被读取。
+
+这些说明针对的是 OpenCode 1。OpenCode 2 会读取两个列表，并且不读取 `config.json`。它会跳过无法解析或顶层不是对象的文件，对于 `opencode.json` 而言，这意味着它也会漏掉这些规则；在已知的情况下，说明会指出 OpenCode 2 如何处理其文件。这些说明不更改任何文件，也不更改任何退出码。当 install 或 update 完全无法解析 `opencode.json` 时，它们会改为以 `config.unparseable` 错误停止。详情请参见 [OpenCode](/docs/harnesses/opencode)。
 
 ## 获取帮助
 

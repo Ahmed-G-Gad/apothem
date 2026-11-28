@@ -2,7 +2,7 @@
 title: "分支保护"
 description: "main 上的 Apothem 分支保护：当前生效的保护规则、其必需状态检查，以及待添加的检查。"
 machineTranslated: true
-sourceHash: "7d54aae6581f03ec"
+sourceHash: "ba617c87452fda60"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,7 +22,7 @@ Apothem 的 `main` 分支受一条经典的 GitHub 分支保护规则保护。�
 | **要求状态检查通过** | `required_status_checks` | ✅ | [必需状态检查](#必需状态检查)下列出的 12 个上下文必须通过。 |
 | **要求分支在合并前保持最新** | `required_status_checks.strict` | ❌ | 当拉取请求的必需检查是针对较旧的 `main` 通过的时，它仍可以合并。随后，在推送到 `main` 时运行的工作流会测试合并后的结果。 |
 | **要求在合并前解决对话** | `required_conversation_resolution` | ✅ | 未解决的评审讨论串会阻止合并。 |
-| **要求签名提交** | `required_signatures` | ❌ | 发布提交在本地签名。强制执行要等到贡献者入门文档说明 SSH 或 GPG 签名设置之后。 |
+| **要求签名提交** | `required_signatures` | ❌ | 发布提交以 squash 合并的形式进入 `main`，由 GitHub 用自己的密钥签名；维护者的签名位于发布标签上。强制执行要等到贡献者入门文档说明 SSH 或 GPG 签名设置之后。 |
 | **要求线性历史** | `required_linear_history` | ✅ | 使 `main` 的公开历史保持为一条直线。 |
 | **锁定分支** | `lock_branch` | ❌ | `main` 接受合并。 |
 | **不允许绕过上述设置** | `enforce_admins` | ❌ | 上述设置不约束仓库管理员。管理员可以在没有必需检查的情况下合并，或直接推送到 `main`。 |
@@ -58,9 +58,11 @@ Require Signed-off-by
 
 | 上下文 | 工作流和作业 | 如何在每个拉取请求上报告 |
 |---|---|---|
-| `quality / <os> / py<ver>`（10 个） | `ci.yml`，作业 `quality` | 当拉取请求触及代码或配置路径时，`ci.yml` 会运行。在仅涉及文档的拉取请求上，`ci-docs-stub.yml` 会报告相同的上下文。 |
+| `quality / <os> / py<ver>`（10 个） | `ci.yml`，`ubuntu-latest` 使用作业 `quality`；`windows-latest` 使用作业 `quality-windows` | 当拉取请求触及代码或配置路径时，`ci.yml` 会运行。在仅涉及文档的拉取请求上，`ci-docs-stub.yml` 会报告相同的上下文。 |
 | `coverage` | `ci.yml`，作业 `coverage` | 与 `quality` 相同。 |
 | `Require Signed-off-by` | `dco.yml`，作业 `dco` | 其拉取请求触发器没有 `paths` 过滤器，因此它会在每个指向 `main` 的拉取请求上运行。 |
+
+在 Windows 上，`quality` 作业将每个 Python 版本的测试分成两半运行，即单元 `quality / windows-latest / py<ver> / shard 1 of 2` 和 `shard 2 of 2`。这些单元不是必需的。`quality-windows` 作业报告必需的 `quality / windows-latest / py<ver>` 上下文，每个上下文仅在所有 `quality` 单元都通过时才通过，因此任何一个单元失败都会使全部五个 Windows 上下文变红。
 
 `quality / ubuntu-latest / py3.15` 预发布单元在 `ci.yml` 中以 `continue-on-error` 运行，且不是必需的。任何其他工作流，包括 CodeQL、Scorecard 和 pip-audit，都可以报告状态，但除非其上下文被添加到此列表中，否则其结果不会对合并构成门禁。
 

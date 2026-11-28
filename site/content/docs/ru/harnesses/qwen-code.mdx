@@ -2,7 +2,7 @@
 title: "Qwen Code"
 description: "Адаптер окружения Apothem для Qwen Code (бета)."
 machineTranslated: true
-sourceHash: "f5b172839bc072f8"
+sourceHash: "60c859a693851061"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,8 +34,17 @@ Qwen в формате Markdown, устанавливает навыки как 
 ~/.qwen/.apothem/support/{rules,templates,hooks}/
 ```
 
+Установка также создаёт папку данных Apothem, по умолчанию `~/.qwen/.apothem/`,
+с `contexts/`, `learning/`, `memory/` и `plans/` внутри.
+
 Файл `~/.qwen/apothem/rules/00-apothem-profile.md` — это документ профиля.
 Он содержит вашу идентичность и предпочтения из общего профиля.
+
+Каждая установка и каждое обновление удаляют в `~/.qwen/apothem/rules/` все
+файлы, которые положил туда не Apothem, предварительно сохранив их в наборе
+резервных копий в `~/.apothem/backups/`. Эта резервная копия удаляется, как
+только появляется 10 более новых наборов резервных копий окружения, поэтому
+храните свои файлы в другом месте.
 
 ## Сопоставление профиля с нативной конфигурацией
 
@@ -122,8 +131,17 @@ apothem uninstall --harness qwen-code
 ## Шлюз соответствия
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Запускайте его из папки проекта. В Windows используйте `python` вместо
+`python3` и полный путь, поскольку Windows PowerShell и cmd не раскрывают
+`~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` в PowerShell или
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` в cmd. Это путь, куда
+установщик помещает движок, а `-E -s` не пускает в шлюз ваш `PYTHONPATH` и
+пользовательские site-packages; [Шлюз соответствия](/docs/conformity-gate)
+объясняет и то и другое, а также другие способы установки.
 
 ## Устранение неполадок
 

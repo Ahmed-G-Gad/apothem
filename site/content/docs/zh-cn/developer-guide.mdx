@@ -2,7 +2,7 @@
 title: "为 Apothem 做贡献——开发者指南"
 description: "依照规范 schema、frontmatter 要求与验证流程编写规则、命令、辅助器、技能和钩子，以维护并扩展 Apothem 生态。"
 machineTranslated: true
-sourceHash: "82cbd13f4a28f8cb"
+sourceHash: "a2dea5f7e64b7fbc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -42,7 +42,7 @@ sourceHash: "82cbd13f4a28f8cb"
 
 ## 写入前验证
 
-共享安装驱动在第一次写入之前验证每个源与目标。它会拒绝缺失的清单源、目标路径遍历、位于所选根目录之外的目标路径，以及符号链接穿越。试运行执行相同的验证，并在不创建文件的情况下返回结构化的 `skipped` 或 `unchanged` 结果。
+共享安装驱动在第一次写入之前验证每个源与目标。它会拒绝缺失的清单源、目标路径遍历、位于所选根目录之外的目标路径，以及符号链接穿越；Windows 联接点按符号链接检查。例外是点文件管理器在 `~/.config`、或在共享技能、规则或模板文件夹处及其上方创建的链接，只要它们仍位于主目录之内，就会被跟随。试运行执行相同的验证，并在不创建文件的情况下返回结构化的 `skipped` 或 `unchanged` 结果。
 
 ## 脱敏与示例数据
 
@@ -90,7 +90,7 @@ sourceHash: "82cbd13f4a28f8cb"
 - **命令：** `{name}.md`
 - **辅助器：** `{name}.md`
 - **技能：** 位于文件夹 `src/apothem/skills/{name}/SKILL.md` 中（大小写须精确：`SKILL.md`）
-- **钩子：** 位于文件夹 `src/apothem/hooks/` 中。所有事件处理器都用 Python 编写。Claude Code `settings.json` 模板中的每条钩子命令都使用 exec 形式：`command` 是在安装时解析的解释器占位符 `${PYTHON_BIN}`，`args` 则保存脚本路径及其参数。该模板通过绝对路径运行 `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` 和 `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook`，因此已安装的副本无需可导入的 `apothem` 包。Claude Code 插件则改为在 `src/apothem/hooks/hooks.json` 中注册钩子，这些钩子是通过 `bash` 运行 `hooks/lib/bootstrap.sh` 的 shell 命令；该存根会定位 Python 并运行 `dispatch.py`，因此处理器仍然是 Python。在 `hooks.json` 和 Claude Code `settings.json` 模板中注册新钩子。`dispatch.py` 将 `SessionStart` 路由到 `session_start_bootstrap.main()`，并将其他每个白名单内的事件路由到 `emit_hook_context.main()`。`src/apothem/hooks/` 或 `scripts/` 下唯一允许的 shell 存根是六个定位器与引导文件（`find-python.{ps1,sh}`、`find-pwsh.{ps1,sh}`、`bootstrap.{ps1,sh}`）；任何其他 `.ps1` / `.sh` 文件都无法通过 `scripts/dev/validate_hooks.py` 的卫生检查。
+- **钩子：** 位于文件夹 `src/apothem/hooks/` 中。所有事件处理器都用 Python 编写。Claude Code `settings.json` 模板中的每条钩子命令都使用 exec 形式：`command` 是在安装时解析的解释器占位符 `${PYTHON_BIN}`，`args` 则保存 `-E`、`-s`、脚本路径及其参数。这两个标志使 `PYTHONPATH`、其他 `PYTHON*` 变量以及用户的 site-packages 不进入任何钩子；你添加的任何钩子都要保留它们。该模板通过绝对路径运行 `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` 和 `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook`，因此已安装的副本无需可导入的 `apothem` 包。Claude Code 插件则改为在 `src/apothem/hooks/hooks.json` 中注册钩子，这些钩子是通过 `bash` 运行 `hooks/lib/bootstrap.sh` 的 shell 命令；该存根会定位 Python 并运行 `dispatch.py`，因此处理器仍然是 Python。在 `hooks.json` 和 Claude Code `settings.json` 模板中注册新钩子。`dispatch.py` 将 `SessionStart` 路由到 `session_start_bootstrap.main()`，并将其他每个白名单内的事件路由到 `emit_hook_context.main()`。`src/apothem/hooks/` 或 `scripts/` 下唯一允许的 shell 存根是六个定位器与引导文件（`find-python.{ps1,sh}`、`find-pwsh.{ps1,sh}`、`bootstrap.{ps1,sh}`）；任何其他 `.ps1` / `.sh` 文件都无法通过 `scripts/dev/validate_hooks.py` 的卫生检查。
 
 ### 交叉引用
 
@@ -544,9 +544,51 @@ Or: § Plans Discipline.
 ```bash
 python -m pytest                      # unit, integration, property, conformity, scripts
 python -m pytest tests/property       # Hypothesis properties (profile loader, frontmatter, merge)
+python -m pytest tests/fuzz           # replay each fuzz target's seed inputs (no Atheris needed)
 ```
 
+`tests/fuzz/` 中的模糊测试目标在 CI 中通过 Atheris 运行。要在你自己的机器上（Linux 或 macOS，Python 3.11 或更高版本）对其中一个进行模糊测试，请安装 Atheris，把检出放到路径上，并让目标指向其种子的一份副本：
+
+```bash
+python -m pip install atheris
+export PYTHONPATH="$PWD/src:$PWD/src/apothem/_vendor"
+mkdir -p /tmp/corpus && cp tests/fuzz/seeds/lenient-json/*.txt /tmp/corpus/
+python tests/fuzz/fuzz_lenient_json.py -max_total_time=60 /tmp/corpus
+```
+
+`tests/fuzz/README.md` 列出了这些目标，以及当某个目标发现崩溃时该怎么做。
+
 该套件是封闭的：即使检出位于 `$TMPDIR` 之下，并且 `PATH` 上的 `python` 缺少 CLI 的前置依赖，它也能通过，因为集成测试运行的是正在运行 pytest 的那个解释器，并按最长优先的顺序对嵌套的临时路径和源路径进行标记化。
+
+### 测试绝不写入你的真实主目录
+
+探测脚本或自动化助手绝不能针对你的真实主目录运行 Apothem 的安装器或适配器。请在 `tests/` 下的测试中运行相关行为，那里的 `tests/conftest.py` 会把主目录、安装台账和备份根目录指向临时文件夹。
+
+Apothem 在 pytest 运行期间也会自行拒绝这些写入，因此一个被复制到 `tests/` 之外、在没有 `tests/conftest.py` 的情况下运行的测试文件，无法通过 Apothem 触及真实主目录。当 `PYTEST_CURRENT_TEST` 已设置且不为空（一个测试），或 `PYTEST_VERSION` 保存着正在运行的 pytest 的版本（整个会话，包括收集和会话钩子）时，对该账户的 `~/.apothem`、`~/.config/apothem`、工具注册表在主目录中指定的工具文件夹（`~/.claude`、`~/.qwen`、`~/.config/opencode` 等），或传播清单所更改的、位于这些文件夹之外的文件（较早版本写入的 `~/.antigravity/profile.yaml`）进行的写入、删除、复制、重命名或锁文件操作，都会在任何内容发生改变之前停止，并给出类似这样的错误：
+
+```text
+RealHomeWriteError: Apothem refused to create the lock file
+C:\Users\you\.apothem\state\codex\<id>.install.lock: it is inside or holds
+C:\Users\you\.apothem, a protected path in this account's real home, while a
+pytest test is running (PYTEST_CURRENT_TEST is set:
+test_probe.py::test_install (call)). Nothing in C:\Users\you\.apothem was
+changed. ...
+```
+
+其他任何值的 `PYTEST_VERSION`（例如 shell 或 CI 作业导出的 `8.2` 这样的固定版本）都不算数，空的 `PYTEST_CURRENT_TEST` 也不算。在任何测试之外，错误会以 `PYTEST_VERSION holds
+the version of the pytest imported in this process, <version>, outside any
+test` 代替测试名；它不会声称有 pytest 会话正在运行，因为一个进程可以导入 pytest 而不运行会话。由 shell 或 CI 作业以已安装 pytest 的确切版本导出的 `PYTEST_VERSION` 同样算数，在 pytest 之外也是如此；在尚未导入 pytest 的进程中，错误此时会说 `PYTEST_VERSION holds the installed pytest's
+version, <version>, though no pytest runs in this process`。
+
+项目根目录就是账户主目录本身的项目作用域安装、更新、卸载或回滚，会以同样的方式在写入任何内容之前被拒绝：否则其项目文件会直接落入主目录。位于主目录之内的项目文件夹仍然允许。直接位于主目录中的数据主目录同样会被拒绝，无论配置档案给它起什么名字（带有自己 `directory_name` 的 `workspace.scope: user-home`），在其被创建之前以及其存储被移除之前都是如此。一个作为链接（在 Windows 上为联接点）指向直接位于主目录中的文件夹的数据主目录，会以同样的方式被拒绝；一个直接或经由链接链通向主目录本身、其存储会直接落入主目录的数据主目录也是如此。
+
+受保护文件夹的以下写法都算数：指向它的链接或联接点，以及在测试期间被换成链接的文件夹。在 Windows 上，大小写、短（8.3）名称、`\\?\`、`\\.\` 和 `\??\` 前缀、诸如 `\\localhost\C$` 或 `\\--1.ipv6-literal.net\C$` 的回环管理共享、通过本机自身某个地址或通过映射驱动器访问的共享，以及备用数据流（`.apothem:name`）也都算数，位于这些前缀之一后面的设备路径（`GLOBALROOT\Device\HarddiskVolume2` 或 `Volume{GUID}`）同样如此。在 macOS 上，大小写和 Unicode 规范化同样被忽略，且 `/System/Volumes/Data/<path>` 被视为 `/<path>`。只有这些字符串规则不进行网络连接：共享路径或映射驱动器上的路径会通过询问共享所在的主机来检查。`tests/README.md` 列出了该检查看不到的写法，例如指向受保护文件夹中某个文件的硬链接、主目录的绑定挂载，以及不区分大小写的 Linux 挂载。
+
+CLI 会原样抛出该错误，卸载也是如此。有些步骤会在第一次更改之前检查其路径，因此在那里被拒绝时一切都保持原样。过时清扫会检查每个过时路径。回滚会检查其安装记录指出的每个路径（即使是它会原样保留的路径）、它会移除的数据存储，以及它最后会整理的主目录中的用户级文件夹。回滚和卸载会检查备份根目录和台账，OpenClaw 卸载还会检查 `openclaw.json` 和每个工作区规则文件。被拒绝的卸载只有在它已经更改了受保护文件夹之外的文件时（包括在共享移除之前的某个步骤中，例如原生配置卸载的第一步），才会在台账中记录一次未完成的卸载，从而让这些文件的备份仍被引用。少数内部调用方会有意吸收该错误（例如尽力而为的台账行），因此每次拒绝也都会被记录到日志，并且 `tests/conftest.py` 会让记录了拒绝之后的那个测试失败，即使该测试被标记为 `xfail`。在 pytest 收集某个节点时、于任何测试之外记录的拒绝，会使该节点的收集失败。在任何测试之外记录的其他拒绝——在会话开始时、两次收集报告之间、收集之后、两个测试之间、最后一个测试之后、摘要中或 `pytest_unconfigure` 中——会在会话结束时被报告，并以其发生位置命名，并使本次运行失败；即使某个钩子随后以 `pytest.exit(returncode=0)` 或 `sys.exit(0)`（或者在任何系统上，以一个 POSIX 系统会截断为 0 或 5 的代码，例如 256）结束运行，即使另一个钩子已经以 `sys.exit` 或异常结束了会话收尾，以及即使是并行工作进程（`-n`）记录了它（无论是在它把拒绝交给主进程之前还是之后），都是如此。工作进程一旦持有某次拒绝，就会立即把它写入主进程读取的文件，因此它在崩溃之前、在交接之前被停止之前、或在会话收尾钩子将它停在那里之前所持有的拒绝，仍会使本次运行失败。有三种情况仍只显示在 `stderr` 上，并保持退出码不变：一是在 pytest 于防护之后注册的 `tryfirst` `pytest_unconfigure` 包装器的 `yield` 之后记录的拒绝；二是在以 `config.add_cleanup` 注册的清理中记录的拒绝（以上两种，除非随后有一个通过的 `sys.exit` 结束了运行，或者有一个在它之前结束了会话收尾）；三是工作进程记录了、却既没有交出也没有写入该文件的拒绝，原因是工作进程先结束或被停止了（例如某个会话收尾钩子记录了它，随后使工作进程崩溃），或者该文件无法创建或写入（当工作进程对它的最后一次写入中途失败时，已写入文件的部分会保留，主进程会据此使运行失败，就像那次写入让文件为空时一样，除非写在交接旁边的副本已经让它为空、并且主进程采用了工作进程的输出）。在最后这种情况下，输出只包含工作进程交出的拒绝：它在交接之后发现的、其写入使文件再次为空的拒绝，只显示在工作进程的 `stderr` 上，而如果工作进程在那次写入期间崩溃，则不会显示在任何地方；运行仍会因它交出的拒绝而失败。在运行结束时，主进程会通知每个工作进程退出；5 秒后仍在运行 Python 代码的工作进程会被中断（在 Windows 上，阻塞在 sleep 或其他调用中的不会），10 秒后仍在运行的任何工作进程都会被停止。对于在主进程中经由 `os._exit`（在钩子、清理或 `atexit` 处理程序中）、经由 pytest 在防护之后注册的 `tryfirst` `pytest_cmdline_main` 包装器、或经由在任何会话运行之前就返回的 `pytest_cmdline_main` 钩子结束的运行，防护无法更改其退出码；使用 `os._exit` 时，防护的终端报告也可能丢失，并且在第一种和最后一种情况下，防护尚未报告的拒绝只会显示为其 `stderr` 行。日志按进程保存：被某个 Apothem 子进程吸收的拒绝只会显示为子进程 `stderr` 上的一行，测试不会因此失败。
+
+主目录是操作系统为该账户记录的主目录，而不是 `HOME` 或 `USERPROFILE`。读取、试运行和预览仍然有效；唯一一项会在台账中记录已完成卸载的状态检查属于写入，因此会被静默拒绝并报告。必须有意运行真实安装的测试，会在子进程的环境中不带 `PYTEST_CURRENT_TEST` 和 `PYTEST_VERSION` 的情况下启动 Apothem。
+
+该拒绝不涵盖被 `CODEX_HOME`、`CLAUDE_CONFIG_DIR` 或 `XDG_CONFIG_HOME` 从其默认名称移走的文件夹（无论在主目录之外还是之内；`XDG_CONFIG_HOME=~/xdg` 会把 OpenCode 的文件夹放在 `~/xdg/opencode`）、钩子状态文件夹，也不涵盖非 Python 程序，例如 shell 安装器。该检查在写入之前按路径进行，因此在两者之间被换成链接的文件夹不会被发现。当系统没有该账户主目录的记录时（例如没有 `passwd` 条目的容器用户），账户主目录根本不受保护。位于受保护文件夹之内的检出（例如在 `~/.claude` 之下）在测试期间其 Apothem 写入会被拒绝。该拒绝在 pytest 之外不起作用，也就是当环境中既没有不为空的 `PYTEST_CURRENT_TEST`，`PYTEST_VERSION` 中也没有已安装 pytest 的版本时，这正是上述规则仍然适用的原因。`tests/README.md` 列出了每个缺口。
 
 ### 按包统计的覆盖率
 
@@ -561,14 +603,14 @@ CI 度量三个包，并让每个包遵守各自的下限。它们之中没有�
 该数值是行覆盖率加分支覆盖率，即 coverage.py 在 `branch = true` 时报告的同一百分比；指标产物还会在 `coverage_lines` 下记录仅语句覆盖的数值。每个包的下限是实测的行加分支覆盖值向下取整的结果。覆盖率上升时提高下限；绝不要为了让某项变更通过而降低下限。在本地检查：
 
 ```bash
-python -m pytest --cov=src/apothem --cov-report=json:coverage.json
+python -m pytest --cov=src/apothem --cov-fail-under=0 --cov-report=json:coverage.json
 python scripts/dev/collect_metrics.py --coverage-json coverage.json --check-floors \
   --skip-hooks --skip-coldstart --harness zed
 ```
 
 ### 指标产物
 
-CI 的 `metrics` 作业在每次推送和拉取请求时运行 `scripts/dev/collect_metrics.py`，并上传 `metrics.json`（`schema_version: 1`）。每个为 `null` 的值都在 `nulls` 下附有其原因。
+CI 的 `metrics` 作业在每次推送和拉取请求时、待两个覆盖率分片都通过后，使用它们测得的覆盖率数据运行 `scripts/dev/collect_metrics.py`，并上传 `metrics.json`（`schema_version: 1`）。每个为 `null` 的值都在 `nulls` 下附有其原因。
 
 | 键 | 度量内容 |
 | --- | --- |
@@ -581,13 +623,25 @@ CI 的 `metrics` 作业在每次推送和拉取请求时运行 `scripts/dev/coll
 
 ```text
 antigravity     ~/.gemini/{GEMINI,AGENTS}.md, ~/.gemini/config/{GEMINI,AGENTS}.md,
-                ~/.gemini/config/rules/*.md with trigger: always_on, project
-                GEMINI.md and AGENTS.md. The plugin rules/ folder is not a
-                documented launch surface.
+                ~/.gemini/config/rules/*.md with trigger: always_on, and in the
+                project GEMINI.md, AGENTS.md, .agents/{GEMINI,AGENTS}.md and
+                .agents/rules/*.md with trigger: always_on, plus, for each
+                plugin in ~/.gemini/config/plugins/ with a plugin.json not
+                marked disabled: true, its rules/AGENTS.md (else
+                rules/GEMINI.md) and its rules/*.md with trigger: always_on.
+                A rule file counts only when its first line opens the
+                frontmatter. Each file counted up to 24,000 bytes. @ includes
+                are not expanded, the user's own plugin on/off choice is not
+                read, and the 20,000-token budget across always-on rules is
+                not modeled.
 claude-code     ~/.claude/CLAUDE.md and ~/.claude/rules/**/*.md without paths:
-                frontmatter, plus the project equivalents.
-codebuddy       .codebuddy/rules/**/*.md (project and home) unless
-                alwaysApply: false, plus CODEBUDDY.md.
+                frontmatter, plus the project equivalents and CLAUDE.local.md;
+                the project AGENTS.md and .claude/AGENTS.md only when the
+                project has no CLAUDE.md, .claude/CLAUDE.md or CLAUDE.local.md.
+codebuddy       .codebuddy/rules/**/*.md (project and home) unless enabled:
+                false or alwaysApply: false, ~/.codebuddy/CODEBUDDY.md, the
+                project CODEBUDDY.local.md, and the first of CODEBUDDY.md and
+                .codebuddy/CODEBUDDY.md, else AGENTS.md.
 codex           The first non-empty of ~/.codex/AGENTS.override.md and
                 ~/.codex/AGENTS.md, plus the first of AGENTS.override.md,
                 AGENTS.md and the project_doc_fallback_filenames names that
@@ -596,16 +650,26 @@ codex           The first non-empty of ~/.codex/AGENTS.override.md and
 cursor          .cursor/rules/**/*.mdc with alwaysApply: true, and AGENTS.md.
 gemini-cli      ~/.gemini/GEMINI.md and the project GEMINI.md.
 github-copilot  .github/copilot-instructions.md and the project AGENTS.md.
-hermes          ~/.hermes/SOUL.md, plus the first of these kinds in the project
-                with a non-empty file (Hermes loads one): .hermes.md or
-                HERMES.md (the first of the two that exists is the only
-                candidate), AGENTS.override.md or AGENTS.md, CLAUDE.md, then
-                .cursorrules with .cursor/rules/*.mdc. The support tree and
-                apothem/rules/ are not launch surfaces.
-kimi-code       ~/.kimi-code/AGENTS.md, project AGENTS.md and .kimi-code/AGENTS.md.
+hermes          ~/.hermes/SOUL.md when it holds text, plus the first of these
+                kinds in the project with a non-empty file (Hermes loads one):
+                .hermes.md or HERMES.md (the first of the two that exists is
+                the only candidate), AGENTS.override.md or AGENTS.md,
+                CLAUDE.md, then .cursorrules with .cursor/rules/*.mdc. The
+                support tree and apothem/rules/ are not launch surfaces.
+kimi-code       ~/.kimi-code/AGENTS.md, the first non-empty of
+                ~/.agents/AGENTS.md and ~/.agents/agents.md, and the project
+                .kimi-code/AGENTS.md and AGENTS.md; blank files load nothing.
+                Kimi also reads AGENTS.md in each folder from the git root
+                down; the scratch project has no .git, so only its root is
+                read.
 kiro            .kiro/steering/**/*.md with inclusion: always or no inclusion
                 key, and the project AGENTS.md.
-open-claw       Workspace bootstrap files ~/.openclaw/workspace/*.md.
+open-claw       The non-blank bootstrap files in ~/.openclaw/workspace/, in
+                order: AGENTS.md, SOUL.md, IDENTITY.md, USER.md, BOOTSTRAP.md,
+                MEMORY.md; each up to 20,000 characters (USER.md 4,000),
+                60,000 in all. Approximate: OpenClaw's own trimming,
+                head-and-tail truncation, missing-file markers and per-session
+                filtering are not modeled.
 opencode        ~/.config/opencode/AGENTS.md, the project AGENTS.md, and every
                 file the instructions globs in opencode.json match.
 qwen-code       The context files named by context.fileName in
@@ -646,7 +710,7 @@ python scripts/dev/chaos_pass.py           # Adversarial sweep across configured
 pytest tests                                    # Unit tests for the hook runtime
 ```
 
-**由助手驱动**——用于交叉引用、叙述和约定审计：
+<strong>由助手驱动</strong>——用于交叉引用、叙述和约定审计：
 
 ```bash
 /ecosystem-audit --focus all --fix
