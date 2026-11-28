@@ -17,6 +17,16 @@ audit package added every one of them without touching that package's README.
 Three independent occurrences of one defect class is the point at which the
 check should be mechanical rather than remembered.
 
+A folder with no README of its own is indexed by the README above it:
+``scripts/README.md`` names the files of ``scripts/release/``. Its source
+modules are therefore checked against the nearest README above it; checking
+only the folder a README sits in let a new release script and two test helpers
+go unnamed. When two files that one README indexes share a name (the four
+``page.tsx`` routes under ``site/app/``), the bare name no longer tells them
+apart, so each such file must be named by its path from the README's folder.
+Whether a folder has a README is read from the git-tracked set, like the files
+themselves, so an untracked local README cannot change the result.
+
 What it does NOT check. Whether a described row is *accurate* — only whether a
 shipped file is named at all. Presence is what drifts silently; a wrong
 description tends to be noticed when read. `agents_md_coverage_grep.py` in the
@@ -91,6 +101,36 @@ IGNORED_NAMES = frozenset(
 )
 IGNORED_SUFFIXES = frozenset({".pyc", ".pyo", ".png", ".ico", ".svg", ".woff2"})
 
+# In a folder with no README of its own, only source modules are held to the
+# nearest README above it. Such folders are mostly corpora a README describes
+# as a whole rather than file by file: the documentation pages under
+# site/content/docs/, eval cases, fuzz seeds. A module there is code another
+# file runs or imports, which a reader needs to find by name.
+SOURCE_SUFFIXES = frozenset(
+    {
+        ".py",
+        ".sh",
+        ".ps1",
+        ".psm1",
+        ".bat",
+        ".cmd",
+        ".js",
+        ".mjs",
+        ".cjs",
+        ".jsx",
+        ".ts",
+        ".tsx",
+    }
+)
+
+# Test modules are named by their test area's row, not one by one: a README
+# that listed every test file would restate the folder and drift on the next
+# test. Helper modules beside them (``_shared/``, an oracle module) are not
+# tests, so they still need a name.
+TEST_MODULE = re.compile(
+    r"^(test_.*\.py|.*_test\.py|conftest\.py|.*\.(test|spec)\.[cm]?[jt]sx?)$"
+)
+
 # Some READMEs are published product front pages, not file indexes: they
 # introduce the project to a newcomer or a marketplace visitor. Holding one to
 # the per-folder contract would demand an implementation-file table in copy
@@ -118,16 +158,19 @@ def is_excluded(path: Path) -> bool:
     """Return True when the path sits in a tree the contract does not govern.
 
     Three classes: the excluded trees named above, the generated distribution
-    trees (matched by path prefix), and the conformity fixture corpora under
-    ``tests/conformity/*/pass|fail/``, whose READMEs describe what the corpus
-    proves rather than indexing each fixture file.
+    trees (matched by path prefix), and the conformity fixture corpora: the
+    ``tests/conformity/*/pass|fail/`` folders, whose READMEs describe what the
+    corpus proves rather than indexing each fixture file, and the single-file
+    ``pass.py`` / ``fail.py`` fixtures a validator's test folder carries.
     """
     parts = path.parts
     if any(part in EXCLUDED_PARTS for part in parts):
         return True
     if any(path.is_relative_to(tree) for tree in GENERATED_TREES):
         return True
-    return "conformity" in parts and ("pass" in parts or "fail" in parts)
+    return "conformity" in parts and any(
+        Path(part).stem in ("pass", "fail") for part in parts
+    )
 
 
 def tracked_files(root: Path) -> set[Path]:
@@ -153,6 +196,15 @@ def tracked_files(root: Path) -> set[Path]:
     return {Path(line) for line in result.stdout.splitlines() if line}
 
 
+def is_indexable(name: str) -> bool:
+    """Return True for a file name a README is expected to name."""
+    return (
+        name not in IGNORED_NAMES
+        and Path(name).suffix not in IGNORED_SUFFIXES
+        and not name.startswith(".")
+    )
+
+
 def shipped_files(folder: Path, root: Path, tracked: set[Path]) -> list[Path]:
     """Return the tracked files a reader would expect the README to name."""
     return sorted(
@@ -160,10 +212,86 @@ def shipped_files(folder: Path, root: Path, tracked: set[Path]) -> list[Path]:
         for entry in folder.iterdir()
         if entry.is_file()
         and entry.relative_to(root) in tracked
-        and entry.name not in IGNORED_NAMES
-        and entry.suffix not in IGNORED_SUFFIXES
-        and not entry.name.startswith(".")
+        and is_indexable(entry.name)
     )
+
+
+def nearest_ancestor_readme(folder: Path, tracked: set[Path]) -> Path | None:
+    """Return the tracked README of the nearest folder above ``folder``.
+
+    ``folder`` and the result are relative to the repository root; the walk
+    stops at the root, and the result is ``None`` when no folder on the way
+    carries a tracked README. Presence is read from the tracked set rather than
+    the disk, so an untracked local README cannot make the check skip a folder
+    that CI still checks.
+    """
+    for ancestor in folder.parents:
+        candidate = ancestor / "README.md"
+        if candidate in tracked:
+            return candidate
+    return None
+
+
+def is_subfolder_module(name: str) -> bool:
+    """Return True for a file a README-less folder's governing README must name."""
+    return (
+        is_indexable(name)
+        and Path(name).suffix in SOURCE_SUFFIXES
+        and not TEST_MODULE.match(name)
+    )
+
+
+def subfolder_findings(root: Path, tracked: set[Path]) -> dict[Path, list[str]]:
+    """Return the modules of README-less folders that the governing README never names.
+
+    A folder with no README of its own is indexed by the nearest README above
+    it: ``scripts/README.md`` names the files of ``scripts/release/``, and
+    ``tests/README.md`` those of ``tests/_shared/``. Checking only the folder a
+    README sits in let such a subfolder's new module go unnamed. Only source
+    modules count here (see ``SOURCE_SUFFIXES`` and ``TEST_MODULE``). The
+    result maps each governing README's folder to the unnamed files, written
+    relative to that folder. A front-page README, or one in an excluded tree,
+    governs nothing, so its README-less subfolders are not checked.
+
+    A file whose name another file indexed by the same README also carries
+    must be named by its path from the README's folder (see ``path_named_in``):
+    otherwise ``app/page.tsx`` in the README would vouch for every other
+    ``page.tsx`` below it.
+    """
+    governed: dict[Path, list[Path]] = {}
+    for rel in sorted(tracked):
+        folder = rel.parent
+        if folder == Path() or folder / "README.md" in tracked:
+            continue
+        if (
+            is_excluded(rel)
+            or not is_subfolder_module(rel.name)
+            or not (root / rel).is_file()
+        ):
+            continue
+        readme = nearest_ancestor_readme(folder, tracked)
+        if readme is None or readme in FRONT_PAGE_READMES or is_excluded(readme):
+            continue
+        governed.setdefault(readme, []).append(rel)
+
+    findings: dict[Path, list[str]] = {}
+    for readme, modules in governed.items():
+        text = (root / readme).read_text(encoding="utf-8", errors="replace")
+        own_names = [
+            p.name
+            for p in tracked
+            if p.parent == readme.parent and is_indexable(p.name)
+        ]
+        names = own_names + [rel.name for rel in modules]
+        for rel in modules:
+            relative = rel.relative_to(readme.parent).as_posix()
+            if names.count(rel.name) > 1:
+                named = path_named_in(text, relative)
+            else:
+                named = named_in(text, rel.name)
+            if not named:
+                findings.setdefault(readme.parent, []).append(relative)
+    return findings
 
 
 def named_in(readme_text: str, filename: str) -> bool:
@@ -179,6 +307,28 @@ def named_in(readme_text: str, filename: str) -> bool:
         return True
     stem = Path(filename).stem
     return bool(re.search(rf"`{re.escape(stem)}`", readme_text))
+
+
+# A folder segment a README may write as a placeholder, so one entry such as
+# ``<adapter>/install.py`` or ``*/install.py`` names the same module in every
+# sibling folder that carries it.
+_PLACEHOLDER_SEGMENT = r"(?:<[^<>`/\s]+>|\*)"
+
+
+def path_named_in(readme_text: str, relative: str) -> bool:
+    """Return True when the README names the file by its relative path.
+
+    ``relative`` is the file's path from the README's folder, such as
+    ``app/[lang]/page.tsx``. The path must not continue a longer path to its
+    left, so ``docs/page.tsx`` is not named by ``app/docs/page.tsx``. Any folder
+    segment may be written as a placeholder (``<adapter>`` or ``*``); the file
+    name itself must be literal.
+    """
+    *folders, filename = relative.split("/")
+    segments = [rf"(?:{re.escape(part)}|{_PLACEHOLDER_SEGMENT})" for part in folders]
+    pattern = "/".join([*segments, re.escape(filename)])
+    bounded = rf"(?<![\w./\-\]])(?:\./)?{pattern}(?![\w/-]|\.\w)"
+    return bool(re.search(bounded, readme_text))
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -200,9 +350,9 @@ def main(argv: list[str] | None = None) -> int:
     folders_checked = 0
     tracked = tracked_files(args.root)
 
-    for readme in sorted(args.root.rglob("README.md")):
-        relative = readme.relative_to(args.root)
-        if is_excluded(relative):
+    for relative in sorted(p for p in tracked if p.name == "README.md"):
+        readme = args.root / relative
+        if is_excluded(relative) or not readme.is_file():
             continue
         if relative in FRONT_PAGE_READMES:
             continue
@@ -215,6 +365,10 @@ def main(argv: list[str] | None = None) -> int:
         for entry in files:
             if not named_in(text, entry.name):
                 findings.append((folder.relative_to(args.root), entry.name))
+
+    for folder, names in subfolder_findings(args.root, tracked).items():
+        findings.extend((folder, name) for name in names)
+    findings.sort(key=lambda finding: (finding[0].as_posix(), finding[1]))
 
     if findings:
         current: Path | None = None

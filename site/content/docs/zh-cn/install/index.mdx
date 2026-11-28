@@ -2,7 +2,7 @@
 title: "安装"
 description: "Apothem 安装概览——八条安装渠道，每条都附有其前置条件、一条可直接复制的命令和一个验证步骤：Claude Code 插件、npm 垫片、一键安装器、VS Code 系扩展、三个命令行引导扩展，以及直接引擎。"
 machineTranslated: true
-sourceHash: "cc205e0eab36c099"
+sourceHash: "ffdb3d79274d3b88"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -110,6 +110,26 @@ $env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/in
 通过管道运行的单行命令绝不会使用本地目录树：`curl ... | sh` 和 `irm ... | iex` 会忽略你运行它们时所在的文件夹及其上级文件夹，并拉取和验证发布。只有当你按路径运行检出目录自带的 `scripts/installer/install.sh`（或 `install.ps1`）时（可从任意文件夹运行，例如 `sh ~/src/apothem/scripts/installer/install.sh`），或当 `APOTHEM_SOURCE` 指向该目录树时，安装器才会使用本地目录树。安装器、更新器和卸载器、`apothem` 垫片、npm 启动器、钩子以及合规闸门的验证器进程，都会把当前文件夹排除在 Python 的模块搜索路径之外。你自己输入的 `python -m apothem` 命令则不会：`-m` 会首先从当前文件夹读取模块。
 
 任何启动器（安装器、更新器、卸载器、POSIX 和 Windows 的 `apothem` 垫片，以及 npm 启动器）都不会把你自己 `PYTHONPATH` 中的空条目和相对条目传递给引擎。保留的条目必须是完整路径：在 Windows 上是诸如 `C:\lib` 的驱动器路径或网络路径，在其他系统上是以 `/` 开头的路径。根相对的 `\lib` 或驱动器相对的 `C:lib` 会被丢弃。sh 脚本会询问它们所运行的 Python 读取哪种形式，它们写入的 `apothem` 垫片也会保留该形式。Windows Python（Git Bash 下常见的那种）以 Windows 形式获得引擎路径，以 `;` 连接，并且只保留你 `PYTHONPATH` 中的驱动器路径和网络路径。POSIX Python（包括 Cygwin 和 MSYS2 自带的 `python3`）获得以 `:` 连接的 POSIX 路径，并且只保留以 `/` 开头的条目。安装器中不作用于克隆的 `git` 命令不会读取当前文件夹中的仓库。
+
+### 安装器参数
+
+`install.sh` 接受下列参数，`install.ps1` 以 PowerShell 参数的形式接受相同的开关。`install.bat` 接受前三行的 `install.sh` 写法，并把每一个都传给 `install.ps1`。通过管道运行的单行命令无法传递 PowerShell 参数，因此要使用某个参数，请先下载 `install.ps1`：
+
+```bash title="Pass a flag (POSIX)"
+curl -fsSL https://apothem.ahmedgad.com/install.sh | sh -s -- --dry-run
+```
+
+```powershell title="Pass a flag (Windows PowerShell 5.1 or later)"
+irm https://apothem.ahmedgad.com/install.ps1 -OutFile install.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 -DryRun
+```
+
+| `install.sh` | `install.ps1` | 作用 |
+|---|---|---|
+| `--clean`, `--fresh` | `-Clean`, `-Fresh` | 安装之前，无论你安装哪个工具，都会备份并移除 [`apothem install`](/docs/cli-reference/install#blast-radius-preview) 列出的你主目录中的四个文件夹（其中包括 `~/.claude` 和 `~/.agents`），然后全新安装。安装器把它作为 `apothem install --clean` 传给引擎；引擎在每次移除前询问，把备份保存在 `~/.apothem/backups` 下，并写回你的配置档案。 |
+| `--dry-run` | `-DryRun` | 在临时文件夹中获取并检查发布，显示安装会改变什么，而不做任何改变（参见[信任模型](#信任模型)）。 |
+| `--yes` | `-Yes` | 在 `--clean` 的每次移除之前不再询问。还允许替换 `APOTHEM_HOME` 中[信任模型](#信任模型)列为需要 `--yes` 的内容。还会像 `APOTHEM_AUTO_INSTALL_DEPS=1` 一样，不经询问就用 pip 安装缺少的 Python 前置依赖（`click`、`rich`）。 |
+| `-h`, `--help` | 无 | 打印参数和信任模型，然后退出。 |
 
 ### 信任模型
 

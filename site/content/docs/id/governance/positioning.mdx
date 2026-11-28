@@ -2,7 +2,7 @@
 title: "Positioning"
 description: "Pahami Apothem sebagai tata kelola ratifikasi artefak dengan lima belas mandat, disiplin masukan saluran kanonik, dan arsitektur kreatif identitas kognitif untuk pekerjaan yang digerakkan oleh asisten."
 machineTranslated: true
-sourceHash: "e5b17260b2a78c11"
+sourceHash: "b81b17f4cc8e4c02"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -140,11 +140,11 @@ Registri lima belas mandat adalah permukaan tata kelola sumbu luar yang kanonik.
 
 ### M10 — Pengikatan Dua Arah & Penjalinan Eksekusi Fase
 
-**Cakupan.** Setiap elemen struktural yang substantif membawa ikatan timbal balik ke sejawatnya dalam notasi lima arah yang kanonik: **Drives →** / **Driven by ←** / **Satisfies →** / **Established by ↑** / **Cross-bound with ↔**. Setiap ikatan yang dideklarasikan dalam satu arah memiliki penunjuk balik timbal balik di ujung lainnya; setengah sisi adalah kegagalan struktural, bukan preferensi estetika. Sebuah reciprocity-grep mekanis di `src/apothem/conformity/binding_reciprocity_grep.py` menegakkan invarian itu di gerbang.
+**Cakupan.** Setiap elemen struktural yang substantif membawa ikatan timbal balik ke sejawatnya dalam notasi lima arah yang kanonik: **Drives →** / **Driven by ←** / **Satisfies →** / **Established by ↑** / **Cross-bound with ↔**. Setiap ikatan yang dideklarasikan dalam satu arah memiliki penunjuk balik timbal balik di ujung lainnya; setengah sisi adalah kegagalan struktural, bukan preferensi estetika. Di gerbang, `binding-reciprocity-corpus-grep` (`src/apothem/conformity/binding_reciprocity_corpus_grep.py`) melaporkan setiap kutipan `Cross-bound with ↔` dalam korpus aturan yang tidak dikutip balik, dan pada setiap penulisan `binding-reciprocity-grep` menahan setiap bagian Bindings pada notasi panah yang kanonik.
 
 **Spesifikasi kanonik.** `src/apothem/rules/bidirectional-binding.md`.
 
-**Mengapa ini penting.** Ikatan timbal balik mengubah korpus menjadi graf yang dapat dinavigasi. Baris `Cross-bound with ↔` milik aturan mana pun menunjuk ke setiap sejawat yang mengutipnya, dan setiap sejawat yang dikutip menunjuk balik. Refaktor korpus menjadi mekanis — ganti nama sebuah aturan, reciprocity-grep menandai setiap kutipan usang dalam change-set yang sama.
+**Mengapa ini penting.** Ikatan timbal balik mengubah korpus menjadi graf yang dapat dinavigasi. Baris `Cross-bound with ↔` milik aturan mana pun menunjuk ke setiap sejawat yang mengutipnya, dan setiap sejawat yang dikutip menunjuk balik. Refaktor korpus menjadi mekanis — ganti nama sebuah aturan, dan baris `Cross-bound with ↔` miliknya mencantumkan setiap sejawat yang kutipannya berubah dalam change-set yang sama.
 
 ### M11 — Sprint Agile & Kendali Proses Empiris
 

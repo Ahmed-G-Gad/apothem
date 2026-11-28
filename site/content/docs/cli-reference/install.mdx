@@ -64,8 +64,17 @@ still performs the writes. Declining the home-directory prompt aborts before the
 `--clean`, the clean-slate step runs first under its own per-target confirmation:
 it writes a backup under `~/.apothem/backups` and removes the targets it confirms.
 Those removals and the backup stay in place when the install prompt is declined.
-The targets are the tool folders in your home directory that the prompt lists,
-`~/.agents` and `~/.config/apothem` among them.
+The targets are always the same four folders in your home directory, whichever
+harness `--harness` names:
+
+```text
+~/.claude
+~/.codex
+~/.agents
+~/.config/apothem
+```
+
+No other folder is removed, and the rest of `~/.config` stays.
 A target that is itself a link, a Windows junction included, loses only the
 link, and a link inside a target is removed without being entered. When
 `~/.config` is a link that leads out of your home directory, the clean-slate
@@ -350,7 +359,7 @@ trailing commas, and JSON5 syntax. So:
 | `--harness NAME` | Harness adapter to install, or `all` for the registry-wide set (required). With `all`, harnesses listed in the profile's `exclude_harnesses` are skipped, but a harness named explicitly is installed even when listed. Run `apothem harnesses list` for registered names. |
 | `--profile PATH` | Path to shared profile YAML. Defaults to `~/.config/apothem/profile.yaml`. |
 | `--dry-run` | Preview install without writing files. |
-| `--clean`, `--fresh` | Opt-in clean slate: back up and remove the prior per-harness install state before installing. |
+| `--clean`, `--fresh` | Opt-in clean slate: back up and remove the four folders listed under [Blast-radius preview](#blast-radius-preview) before installing, whichever harness `--harness` names. |
 | `--yes` | Skip per-target confirmation during a clean-slate removal (required for non-interactive `--clean` runs). |
 | `--project PATH` | Project root for project-scope harnesses. |
 | `--quiet`, `-q` | Suppress informational output; only errors are emitted. |

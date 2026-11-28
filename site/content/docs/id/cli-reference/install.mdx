@@ -2,7 +2,7 @@
 title: "install"
 description: "Referensi CLI untuk perintah apothem install."
 machineTranslated: true
-sourceHash: "5ba6f0eafa4b1b6f"
+sourceHash: "d8f52162347218a1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -62,8 +62,17 @@ di bawah konfirmasi per target tersendiri: langkah itu menulis cadangan di bawah
 `~/.apothem/backups` dan menghapus target yang dikonfirmasinya. Penghapusan
 tersebut dan cadangannya tetap berada di tempatnya ketika prompt pemasangan
 ditolak.
-Targetnya adalah folder alat di direktori home Anda yang dicantumkan prompt,
-termasuk `~/.agents` dan `~/.config/apothem`.
+Targetnya selalu empat folder yang sama di direktori home Anda, apa pun harness
+yang disebut `--harness`:
+
+```text
+~/.claude
+~/.codex
+~/.agents
+~/.config/apothem
+```
+
+Tidak ada folder lain yang dihapus, dan bagian lain dari `~/.config` tetap ada.
 Target yang dirinya sendiri berupa tautan, termasuk junction Windows, hanya
 kehilangan tautannya, dan tautan di dalam target dihapus tanpa dimasuki. Ketika
 `~/.config` adalah tautan yang mengarah keluar dari direktori home Anda, langkah
@@ -382,7 +391,7 @@ membuang komentar, koma di akhir, dan sintaks JSON5. Oleh karena itu:
 | `--harness NAME` | Adapter harness yang akan dipasang, atau `all` untuk himpunan selingkup registri (wajib). Dengan `all`, harness yang tercantum dalam `exclude_harnesses` pada profil dilewati, tetapi harness yang disebut secara eksplisit tetap dipasang meskipun tercantum. Jalankan `apothem harnesses list` untuk nama-nama yang terdaftar. |
 | `--profile PATH` | Jalur ke YAML profil bersama. Default-nya `~/.config/apothem/profile.yaml`. |
 | `--dry-run` | Mempratinjau pemasangan tanpa menulis berkas. |
-| `--clean`, `--fresh` | Awal bersih opt-in: mencadangkan dan menghapus keadaan pemasangan per-harness sebelumnya sebelum memasang. |
+| `--clean`, `--fresh` | Awal bersih opt-in: mencadangkan dan menghapus empat folder yang tercantum di [Pratinjau radius-dampak](#pratinjau-radius-dampak) sebelum memasang, apa pun harness yang disebut `--harness`. |
 | `--yes` | Melewati konfirmasi per target selama penghapusan awal bersih (wajib untuk eksekusi `--clean` non-interaktif). |
 | `--project PATH` | Root proyek untuk harness berlingkup-proyek. |
 | `--quiet`, `-q` | Menekan keluaran informatif; hanya galat yang dipancarkan. |
