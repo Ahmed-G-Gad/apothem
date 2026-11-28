@@ -2,7 +2,7 @@
 title: "Codex"
 description: "Codex(베타)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "ca4ad5f675a665ea"
+sourceHash: "3aff73a78f7a248b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -25,7 +25,9 @@ apothem install --harness codex
 `~/.codex/hooks/`, `~/.codex/agents/*.toml`,
 `~/.agents/skills/*/SKILL.md`, 사용자 호출 스킬용
 `~/.agents/skills/*/agents/openai.yaml`, 그리고
-`~/.config/apothem/{rules,templates}/` 아래의 지원 파일.
+`~/.config/apothem/{rules,templates}/` 아래의 지원 파일. 설치는 또한 Apothem
+데이터 폴더(기본값 `~/.codex/.apothem/`)를 만들고 그 안에 `contexts/`,
+`learning/`, `memory/`, `plans/`를 둡니다.
 
 **훅 인터프리터.** 설치는 어떤 파일도 쓰기 전에 CPython 3.10+ 인터프리터를 찾습니다. Windows에서는 `hooks.json`의 각 훅 `commandWindows` 항목이 `py -3` 런처 대신 해당 인터프리터의 절대 경로를 실행합니다. POSIX `command` 항목은 `python3`을 그대로 유지합니다. 인터프리터가 이동하거나 제거된 뒤에는 `apothem update --harness codex`를 다시 실행하세요. CPython 3.10+를 찾지 못하면 설치는 어떤 파일도 쓰기 전에 중단됩니다.
 
@@ -88,11 +90,62 @@ Codex 설치가 없는 머신에도 스킬이 있게 됩니다. `~/.config/apoth
 도구들을 명시하는 안내를 출력합니다.
 `~/.codex/agents/`는 두 번째 공유 루트입니다. 지원되는 다른 도구 하나가 이 폴더를
 호환성 위치로 나열하며(레지스트리가 그 도구를 명시합니다), 그 도구의 문서는
-`Codex` 설치가 그곳에 작성하는 TOML 파일을 읽는지 밝히지 않습니다.
+`Codex` 설치가 그곳에 작성하는 TOML 파일을 읽는지 밝히지 않습니다. `CODEX_HOME`을
+다른 폴더로 설정하면 설치는 에이전트를 대신 그 폴더 아래에 작성하는데, 그 도구의
+문서는 이 폴더를 나열하지 않으므로(`~/.codex/agents/`만 명시합니다) 설치 메모는
+그 폴더를 빼고 출력합니다. 이전 설치가 `~/.codex/agents/`에 Apothem 에이전트를
+남겼다면, 이 설치는 그것을 업데이트하지도 제거하지도 않으므로 메모가 그 사실을
+알립니다.
+
+Apothem은 Codex와 같은 방식으로 `CODEX_HOME`을 읽습니다. 값을 쓰인 그대로
+사용합니다. 앞의 `~`는 확장되지 않으며, 상대 값은 명령을 실행하는 폴더 아래의
+폴더를 가리킵니다. 빈 `CODEX_HOME`은 설정되지 않은 것으로 간주됩니다. Codex는
+`CODEX_HOME`이 존재하지 않는 폴더를 가리키면 오류와 함께 멈춥니다. 설치가 그
+폴더를 만들므로, 설치를 실행한 뒤에는 Codex가 시작됩니다.
+
+`~/.config` 아래의 `CODEX_HOME`은 dotfile 관리자가 만드는 것처럼 `~/.config`가 홈
+디렉터리 안으로 이어지는 링크일 때 작동합니다. Windows에서는 정션도 링크로
+간주됩니다. 홈 디렉터리 밖으로 이어지는 `~/.config` 링크는 `CODEX_HOME`이 어디에
+있든 모든 Codex 설치를 어떤 파일도 쓰기 전에 멈춥니다. 설치는
+`~/.config/apothem/`에 공유 규칙과 템플릿도 작성하기 때문입니다. `CODEX_HOME`을
+링크가 이어지는 폴더로 설정해도 소용없습니다. 대신 링크가 홈 디렉터리 안의
+폴더로 이어지게 하세요. 홈 디렉터리 안의 경로로 쓰였지만 링크가 그 밖으로
+이어지는 `CODEX_HOME`(예: `~/work`가 다른 드라이브에 링크된 `~/work/codex`)은
+링크가 `CODEX_HOME` 위의 어디에 있든 설치, 제거, `apothem rollback`을 멈춥니다.
+홈 디렉터리 밖의 경로로 쓰인 `CODEX_HOME`은 그대로 따라갑니다. 설치가
+`CODEX_HOME` 안에서 작성하는 경로에 링크가 있어도 설치가 멈추며, 이때 `target
+path crosses a link`를 출력하거나, 그 링크가 `CODEX_HOME`을 담은 폴더 밖으로
+이어지면 `target escapes the allowed materialization root`를 출력합니다.
+
+`CODEX_HOME`이 꼭 셸 프로필에서 올 필요는 없습니다. 프로젝트의 `.envrc`나 여러분이
+source하는 스크립트도 이를 설정할 수 있습니다. 이 값이 홈 디렉터리 밖의 폴더를
+가리키면 설치, 업데이트, 제거, `apothem rollback`은 그 폴더의 파일을 변경합니다.
+그것이 이 값이 가리키는 폴더이기 때문입니다. 홈 디렉터리 밖으로 이어지는
+`~/.config` 링크는 여전히 설치를 멈춥니다. 이 값을 설정하는 프로젝트 폴더에서
+Apothem을 실행하기 전에 `CODEX_HOME`을 확인하세요.
 
 Codex는 `~/.codex/rules/`를 `.rules` 실행 정책용으로 예약합니다. Apothem은
 그곳에 Markdown 동작 규칙을 두지 않으며, 이를 `~/.config/apothem/`에 두고
-`AGENTS.md`와 설치된 스킬에서 참조합니다.
+`AGENTS.md`와 설치된 스킬에서 참조합니다. 이전 릴리스([변경 로그](/docs/changelog)에
+명시되어 있습니다)는 설치와 업데이트 때마다 `~/.codex/rules/` 폴더를
+`~/.apothem/backups/<timestamp>/codex/.codex/rules/`에 복사한 뒤, 여러분의
+`.rules` 파일과 함께 폴더 전체를 제거했습니다. 현재 릴리스는 그 사본을 담은 백업
+세트를 절대 삭제하지 않지만, 이전 릴리스의 보존 정책이 오래된 세트를 이미 삭제했을
+수 있습니다. Apothem을 다시 실행하기 전에 `~/.apothem/backups/`를 다른 곳에
+복사하고, `.rules` 파일을 `~/.codex/rules/`로 직접 다시 복사한 다음
+`apothem update`를 실행하세요. `apothem rollback --install-id`는 이전 설치 전체를
+되돌리므로, 이 파일들을 복구하는 방법이 아닙니다.
+
+Codex는 홈 폴더(`~/.codex` 또는 `CODEX_HOME`이 가리키는 폴더)에서 지침 파일 하나를
+로드합니다. `AGENTS.override.md`에 텍스트가 있으면 그 파일을, 그렇지 않을 때에만
+`AGENTS.md`를 로드합니다. Apothem 블록은 `AGENTS.md`에 들어가므로, 그 폴더에
+텍스트가 있는 `AGENTS.override.md`가 있으면 Codex는 블록을 로드하지 않습니다. 단,
+재정의 파일이 `AGENTS.md`를 가리키는 심볼릭 링크이면 예외입니다. 하드 링크나
+사본은 설치가 `AGENTS.md`를 다시 쓰고 나면 별개의 파일이 되므로 메모 대상이
+됩니다. 그런 경우 `apothem install`, `apothem update`, `apothem verify`는 그
+파일을 명시하는 메모를 출력합니다. 빈 `AGENTS.override.md`는 건너뛰므로 메모가
+없습니다. 블록을 로드하려면 재정의 파일을 비우거나 제거하거나, 그 텍스트를
+Apothem 블록 바깥의 `AGENTS.md`로 옮기세요.
 
 ## Codex 플러그인
 
@@ -133,6 +186,11 @@ verify 명령은 다음을 확인합니다.
    `--profile PATH`를 추가하세요.
 3. 어댑터별 검증 루틴이 성공을 보고합니다.
 
+Apothem 블록이 `AGENTS.md`에 있고 텍스트가 있는 `AGENTS.override.md`가 Codex
+홈에 함께 있으면, Codex가 블록 대신 그 파일을 로드하므로 verify는 재정의 파일을
+명시하는 메모도 출력합니다. 이 메모는 검사를 실패시키지 않으며, 블록이 설치되지
+않았으면 verify는 메모를 출력하지 않습니다.
+
 ## 업데이트
 
 ```bash
@@ -170,8 +228,16 @@ Apothem 설치가 여전히 사용하는 파일은 제외합니다(제거는 그
 ## 적합성 게이트
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+프로젝트 폴더에서 실행하세요. Windows에서는 `python3` 대신 `python`과 전체 경로를
+사용하세요. Windows PowerShell과 cmd는 `~`를 확장하지 않기 때문입니다.
+PowerShell에서는 `$HOME\.apothem\src\apothem\conformity\gate.py`, cmd에서는
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`입니다. 이 경로는
+설치 프로그램이 엔진을 두는 곳이며, `-E -s`는 여러분의 `PYTHONPATH`와 사용자
+site-packages가 게이트에 닿지 않게 합니다. [적합성 게이트](/docs/conformity-gate)에서
+둘 다와 다른 설치 방식을 설명합니다.
 
 ## 문제 해결
 

@@ -2,9 +2,20 @@
 title: "التحديث"
 description: "تحديث Apothem ومحوّلات أُطُر العمل."
 machineTranslated: true
-sourceHash: "04ad375058d55ffd"
+sourceHash: "9a8965434be8f7a4"
 ---
 {/* SPDX-License-Identifier: MIT */}
+
+<Callout title="تحدّث من إصدار سابق؟ احفظ نسخك الاحتياطية أولًا">
+  في إصدارات سابقة (يسمّيها سجلّ التغييرات)، كان كل تثبيت وتحديث يُزيل بعض المجلّدات
+  التي تحوي ملفاتك الخاصة، مثل أوامر الشرطة المائلة ونصوص الخطّافات في <bdi>Claude Code</bdi>،
+  بعد نسخها إلى <bdi>`~/.apothem/backups/`</bdi>. ولا يحتفظ معظم تلك الإصدارات إلا بأحدث 10
+  مجموعات من النسخ الاحتياطية لكل إطار عمل، لذا قد يحذف كل تشغيل إضافي لأحدها أقدم مجموعة،
+  وقد تكون فيها نسختك الوحيدة. قبل أن تشغّل <bdi>Apothem</bdi> مجدّدًا، انسخ
+  <bdi>`~/.apothem/backups/`</bdi> إلى مكان آخر. ويسرد
+  [سجلّ التغييرات](/docs/changelog#data-loss-in-earlier-releases-recover-your-files)
+  كل مجلّد متأثّر وكيف تُعيد نسخ ملفاتك.
+</Callout>
 
 ## تحديث مُلحَق <bdi>Claude Code</bdi>
 
@@ -18,6 +29,23 @@ sourceHash: "04ad375058d55ffd"
 افتح <bdi>`/plugin`</bdi>، واختر **<bdi>apothem</bdi>**، ثم اختر إجراء التحديث عندما يُدرَج إصدار
 أحدث من المُلحَق.
 
+## تحديث امتداد <bdi>VS Code</bdi>
+
+يُشغّل الامتداد إصدار المحرّك الذي شُحن معه. ومُشغِّله الافتراضي هو
+<bdi>`npx @ahmed-g-gad/apothem@<extension version>`</bdi>، لذا لا تحصل على محرّك جديد إلا
+حين يتحدّث الامتداد نفسه.
+
+يتحقّق <bdi>VS Code</bdi> من تحديثات الامتدادات ويثبّتها من تلقاء نفسه، كما يصف توثيق
+[التحديث التلقائي للامتدادات](https://code.visualstudio.com/docs/configure/extensions/extension-marketplace#_extension-auto-update)
+الخاص به. وينتظر افتراضيًا 12 ساعة بعد نشر التحديث. ولتثبيته فورًا، اختر زر
+<strong><bdi>Update</bdi></strong> الخاص بالامتداد في عرض الامتدادات (<bdi>Extensions</bdi>). وإن
+كنت قد أوقفت التحديث التلقائي، فشغّل الأمر <strong><bdi>Show Extension Updates</bdi></strong>
+واختر <strong><bdi>Update</bdi></strong>، أو شغّل <strong><bdi>Update All Extensions</bdi></strong>.
+
+يوقف <bdi>VS Code</bdi> التحديث التلقائي للامتداد المُثبَّت من ملف <bdi>`.vsix`</bdi>. فإن
+كنت قد ثبّتَّ <bdi>`apothem.vsix`</bdi>، فثبّت بالطريقة نفسها ملف <bdi>`apothem.vsix`</bdi>
+المرفق بـ [إصدار <bdi>GitHub</bdi>](https://github.com/ahmed-g-gad/apothem/releases) الأحدث.
+
 ## يُشغّل <bdi>npx</bdi> الإصدار الحالي دائمًا
 
 يحلّ <bdi>`npx @ahmed-g-gad/apothem`</bdi> إلى الحزمة المنشورة الحالية في كل
@@ -30,8 +58,10 @@ npx @ahmed-g-gad/apothem@latest --version
 
 ## تحديث إعداد قائم على المُثبِّت
 
-أعِد تشغيل المُثبِّت — فهو متّسق (<bdi>idempotent</bdi>) ويسحب وسم الإصدار في الشجرة الموجودة —
-أو شغّل نص التحديث المخصّص:
+أعِد تشغيل المُثبِّت — فهو متساوي الأثر (<bdi>idempotent</bdi>): يجلب نسخة <bdi>git</bdi> المستنسخة
+الموجودة، ويتحقّق من وسم الإصدار الجديد، وعندئذٍ فقط يسحب النسخة المستنسخة، كما يحدّث التثبيت
+المأخوذ من أرشيف الإصدار — أو شغّل نص التحديث المخصّص، الذي يعمل على نسخة <bdi>git</bdi>
+مستنسخة:
 
 ```bash title="macOS · Linux · WSL2 · BSD"
 bash scripts/installer/update.sh
@@ -41,7 +71,56 @@ bash scripts/installer/update.sh
 pwsh -NoProfile -File scripts/installer/update.ps1
 ```
 
-يعيد نص التحديث سحب شجرة المصدر في <bdi>`APOTHEM_HOME`</bdi> (الافتراضي <bdi>`~/.apothem`</bdi>) إلى <bdi>`APOTHEM_REF`</bdi>؛ فإن لم يُضبَط يحلّ إلى أحدث وسم إصدار موقَّع بصيغة <bdi>`vMAJOR.MINOR.PATCH`</bdi>، وقيمة الوسم تثبّته، ويختار <bdi>`main`</bdi> الفرع المتحرّك فقط عندما يُضبط <bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi> أيضًا. ومن دون هذا التجاوز، يسحب التحديث المرجع ثم يُجهِض قبل إعادة التجسيد، لأن الفرع ليس وسم إصدار موقَّعًا. ويتحقّق من توقيع الوسم بـ <bdi>`git verify-tag`</bdi> قبل إعادة التجسيد؛ فيُجهَض عند وسم غير موقَّع أو مُتلاعَب به، ما لم يُخفِّض <bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi> الإجهاض إلى تحذير. والوسم الموقَّع الذي لا يوجد مفتاح ناشره العام في حلقة المفاتيح المحلية يُجهَض مع إرشادات لاستيراد المفتاح، تشير إلى البصمة المنشورة في [<bdi>SECURITY.md</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md). ثم يُعيد تجسيد إطار العمل المُسمّى بـ <bdi>`APOTHEM_HARNESS`</bdi> بتشغيل <bdi>`apothem update`</bdi> من الشجرة المُحدَّثة (ويأخذ إطار العمل قيمته الافتراضية وفق جدول [متغيّرات بيئة المُثبِّت](/docs/how-to/installer-environment-variables)). ويتطلّب تثبيتًا سابقًا: فعندما لا توجد شجرة في <bdi>`APOTHEM_HOME`</bdi> ولم يُضبَط <bdi>`APOTHEM_SOURCE`</bdi>، يخرج برسالة توجّهك إلى المُثبِّت أولًا.
+ينقل نص التحديث شجرة المصدر في <bdi>`APOTHEM_HOME`</bdi> (الافتراضي <bdi>`~/.apothem`</bdi>) إلى <bdi>`APOTHEM_REF`</bdi>؛ فإن لم يُضبَط يحلّ إلى أحدث وسم إصدار موقَّع بصيغة <bdi>`vMAJOR.MINOR.PATCH`</bdi>، وقيمة الوسم تثبّته، ويختار <bdi>`main`</bdi> الفرع المتحرّك فقط عندما يُضبط <bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi> أيضًا. ومن دون هذا التجاوز، يُجهِض التحديث قبل أن يسحب أي شيء أو يعيد التجسيد، لأن الفرع ليس وسم إصدار موقَّعًا. ويجلب المرجع أولًا ويتحقّق من توقيع الوسم بـ <bdi>`git verify-tag`</bdi> قبل السحب، فيترك الفحص الفاشل النسخة المستنسخة على الإصدار الذي كانت عليه. ويجب أن يكون التوقيع بمفتاح المشرف المنشور في <bdi>SECURITY.md</bdi>، ويجب أن يكون الوسم الموقَّع هو الوسم المُسمّى للإصدار؛ فيُجهَض عند وسم غير موقَّع أو مُتلاعَب به، أو موقَّع بأي مفتاح آخر، ما لم يُخفِّض <bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi> الإجهاض إلى تحذير (ولا يتجاوز ذلك المتغيّر الفحص الذي يتأكّد من أن الوسم الموقَّع هو وسم الإصدار). ولأن ذلك المتغيّر يُمرّر وسمًا غير موقَّع، أو موقَّعًا بمفتاح آخر، فإن الفحص لا يحمي إلا الوسوم التي تحمل توقيع مفتاح المشرف. ومع مرجع ليس إصدارًا مثل <bdi>`main`</bdi>، تتبع النسخة المستنسخة نسخة <bdi>origin</bdi> من ذلك الفرع. ولا يتجاهل السحب التغييرات المحلية أبدًا: فالنسخة المستنسخة التي فيها تغييرات على ملفات متتبَّعة توقف التحديث، فتُثبّتها (<bdi>commit</bdi>) أو تخبّئها (<bdi>stash</bdi>) وتعيد التشغيل. وقبل أن يجلب، يتوقّف التحديث أيضًا حين تكون ملفات مُعلَّمة بـ <bdi>assume-unchanged</bdi> أو <bdi>skip-worktree</bdi> (إذ لن يرى <bdi>git</bdi> تغييراتها)، وحين لا تكون شجرة عمل النسخة المستنسخة هي <bdi>`APOTHEM_HOME`</bdi>، وحين تحوي النسخة المستنسخة وحدة فرعية (<bdi>submodule</bdi>)، وحين يسمّي <bdi>`.git/info/attributes`</bdi> مُرشِّحًا أو مُشغِّل فروق (<bdi>`filter=`</bdi> أو <bdi>`diff=`</bdi>)، وحين لا يكون هو أو ملف إعدادات ملفًا عاديًا، وحين تستعير النسخة المستنسخة كائنات من مستودع آخر (<bdi>`objects/info/alternates`</bdi>)، أو حين يحمل <bdi>`.git/config`</bdi> أو <bdi>`.git/config.worktree`</bdi> الخاص بالنسخة المستنسخة إعدادًا غير الإعدادات التي يكتبها <bdi>`git clone`</bdi> و<bdi>`git init`</bdi> هناك لنسخة مستنسخة كاملة، وإعدادات الفروع (يجب أن يكون <bdi>`remote`</bdi> و<bdi>`pushremote`</bdi> لأي فرع هو <bdi>`origin`</bdi>)، و<bdi>`user.name`</bdi>، و<bdi>`user.email`</bdi>، و<bdi>`maintenance.auto`</bdi>، و<bdi>`maintenance.strategy`</bdi>، و<bdi>`pull.rebase`</bdi>، و<bdi>`pull.ff`</bdi>. وتتوقّف هناك أيضًا النسخة المستنسخة الجزئية، المصنوعة بـ <bdi>`--filter`</bdi>. وتسمّي الرسالة الإعداد والملف الذي هو فيه، ويسرد [استكشاف الأخطاء وإصلاحها](/docs/install/troubleshooting#the-installer-stops-the-existing-clone-is-set-up-in-a-way-the-update-would-trust) الإعدادات المقبولة. ويتوقّف أيضًا، قبل الجلب، عند ملف <bdi>`.gitattributes`</bdi> في شجرة العمل لا يتتبّعه <bdi>git</bdi>، أو يختلف عن النسخة المُثبَّتة، أو لا يستطيع <bdi>git</bdi> قراءة نسخته المُثبَّتة أو تسمّي نسخته المُثبَّتة مُرشِّحًا أو مُشغِّل فروق (وتُقرَأ النسخة الموجودة في شجرة العمل أيضًا)، وعند مستودع <bdi>git</bdi> داخل النسخة المستنسخة لا يتتبّعه <bdi>git</bdi>، خارج مجلّدات بيانات المحرّك نفسه مثل <bdi>`backups`</bdi> (إذ سيقرأ <bdi>git</bdi> ملفات <bdi>`.gitattributes`</bdi> فيه)، وعند ملفات تحت <bdi>`src`</bdi> (بأي حالة أحرف كُتب) لا يتتبّعها <bdi>git</bdi>، لأن المحرّك قد يحمّلها. وبعد السحب، يُزيل مجلّدات ذاكرة <bdi>Python</bdi> المؤقتة (<bdi>`__pycache__`</bdi>) تحت <bdi>`src`</bdi> قبل أن يعمل المحرّك من النسخة المستنسخة. ولا تعمل خطّافات <bdi>git</bdi> الخاصة بالنسخة المستنسخة أبدًا أثناء التحديث، ولا تُحدَّث على الإطلاق نسخةٌ مستنسخة لمشروع غير <bdi>Apothem</bdi>. ويضبط التحديث <bdi>`GIT_NO_REPLACE_OBJECTS=1`</bdi> و<bdi>`GIT_NO_LAZY_FETCH=1`</bdi> و<bdi>`GIT_ALLOW_PROTOCOL`</bdi> و<bdi>`GIT_ATTR_NOSYSTEM=1`</bdi> لتشغيله، ولا يقرأ <bdi>git</bdi> أي ملف سمات خارج النسخة المستنسخة (انظر [متغيّرات بيئة المُثبِّت](/docs/how-to/installer-environment-variables#the-installer-variables)). ويحمل كل تشغيل قفلًا، <bdi>`<APOTHEM_HOME>.lock`</bdi>، طوال مدّته، فيتوقّف تثبيت أو تحديث أو إلغاء تثبيت ثانٍ على <bdi>`APOTHEM_HOME`</bdi> نفسه؛ وانظر [استكشاف الأخطاء وإصلاحها](/docs/install/troubleshooting#the-installer-stops-another-run-holds-the-lock) حين يبقى قفل متروكًا. والوسم الموقَّع الذي لا يوجد المفتاح العام للمشرف في حلقة المفاتيح المحلية يُجهَض مع إرشادات لاستيراد المفتاح، تشير إلى البصمة المنشورة في [<bdi>SECURITY.md</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md). ثم يُعيد تجسيد إطار العمل المُسمّى بـ <bdi>`APOTHEM_HARNESS`</bdi> بتشغيل <bdi>`apothem update`</bdi> من الشجرة المُحدَّثة (ويأخذ إطار العمل قيمته الافتراضية وفق جدول [متغيّرات بيئة المُثبِّت](/docs/how-to/installer-environment-variables)). ويتطلّب تثبيتًا سابقًا: فعندما لا توجد شجرة في <bdi>`APOTHEM_HOME`</bdi> ولم يُضبَط <bdi>`APOTHEM_SOURCE`</bdi>، يخرج برسالة توجّهك إلى المُثبِّت أولًا.
+
+لا يعمل نص التحديث إلا على نسخة <bdi>git</bdi> مستنسخة. أما التثبيت المصنوع بـ <bdi>cosign</bdi>،
+أو بـ <bdi>`APOTHEM_VERIFY=checksum`</bdi>، فيضع أرشيف الإصدار بدلًا من ذلك، لذا يتوقّف نص
+التحديث ويطلب منك إعادة تشغيل المُثبِّت مع وجود <bdi>cosign</bdi> و<bdi>`gpg`</bdi> على
+<bdi>`PATH`</bdi>. وتلك الإعادة تُحلّ الإصدار الجديد محلّ القديم وتُبقي كل ملف لا تشحنه، بما في
+ذلك النسخ الاحتياطية للمحرّك وسجلّات التثبيت. ومن دون <bdi>cosign</bdi>، أعِد تشغيل المُثبِّت
+مع <bdi>`--yes`</bdi> (<bdi>`-Yes`</bdi> على <bdi>Windows</bdi>): فهو يحوّل تثبيت الأرشيف إلى
+نسخة <bdi>git</bdi> مستنسخة مُتحقَّق منها بمفتاح المشرف، ويُبقي كل ما ليس جزءًا من شجرة
+المصدر، بما في ذلك النسخ الاحتياطية والسجلّات والخطط والذاكرة. ويحدّث
+<bdi>`APOTHEM_VERIFY=checksum`</bdi> أيضًا الأرشيف في مكانه ويحتاج إلى
+<bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi>. ولا يتحقّق وضع المجموع الاختباري من الإصدار. إذ يأتي
+<bdi>SHA256SUMS</bdi> من الإصدار نفسه الذي يأتي منه الأرشيف، لذا لا يُظهر التطابق إلا أن
+التنزيل غير تالف؛ ومن يستطيع تغيير ملفات الإصدار يستطيع تغيير كليهما.
+
+### حين يترك المحرّك ملفًا كما هو
+
+قد يترك المحرّك ملفًا يحمل كتلة <bdi>Apothem</bdi> (<bdi>`CLAUDE.md`</bdi> أو
+<bdi>`AGENTS.md`</bdi>، مثلًا) كما هو بسبب أسطر علامات <bdi>Apothem</bdi> فيه: مثلًا، حين
+يحمل الملف كتلتين كاملتين بين علامات <bdi>Apothem</bdi>. فيكتب حينئذٍ كل ما عدا ذلك، ويطبع
+تحذيرًا يسمّي الملف ويقول كيف تُصلحه، وينتهي جزئيًا برمز الخروج <bdi>`2`</bdi>. وينتهي المحرّك
+جزئيًا أيضًا حين يتوقّف بعد أن كتب شيئًا: مثلًا، حين تفشل أداة بعد أن كتبت أداة سابقة ملفاتها
+في تشغيل <bdi>`APOTHEM_HARNESS=all`</bdi>. ويقول خطؤه ما الذي فشل، ولكل أداة انتهت قبله سطرها
+الخاص فوق الخطأ. ثم يطبع المُثبِّت ونص التحديث سطرًا إضافيًا واحدًا:
+
+```text
+! The engine ended as partial (exit code 2): its messages above name the files it left as they are, or the error that stopped it. Fix what they name, then run 'apothem update --harness claude-code' again.
+```
+
+ويُنهيان التشغيل كما بعد نجاح كامل: فلا يزال المُثبِّت يشغّل التحقّق، ويضع أمر
+<bdi>`apothem`</bdi>، ويطبع لافتته الختامية، ولا يزال نص التحديث يطبع
+<bdi>"Update complete."</bdi> سطرًا أخيرًا له. ثم ينتهي كل نص برمز الخروج <bdi>`2`</bdi>. أما
+تشغيل <bdi>PowerShell</bdi> عبر أنبوب (<bdi>`irm ... | iex`</bdi>) فيترك
+<bdi>`$LASTEXITCODE`</bdi> على <bdi>`2`</bdi> بدلًا من ذلك، فتبقى جلسة <bdi>PowerShell</bdi>
+مفتوحة. والتشغيل لمرة واحدة <bdi>`pwsh -Command "irm ... | iex"`</bdi> (أو
+<bdi>`powershell -c`</bdi>) لا يُبلغ عن تشغيل جزئي إلا عبر <bdi>`$LASTEXITCODE`</bdi>، لذا تخرج
+العملية نفسها بالرمز <bdi>`0`</bdi>. وحين تحتاج مهمة <bdi>CI</bdi> أو نص برمجي إلى الرمز، فأنهِ
+الأمر بـ <bdi>`; exit $LASTEXITCODE`</bdi>، أو شغّل النص بمساره مع <bdi>`-File`</bdi>. ومن
+<bdi>PowerShell</bdi> أو <bdi>bash</bdi> أو صدفة <bdi>POSIX</bdi> أخرى، ضع ذلك الأمر بين
+علامتَي اقتباس مفردتين. فبين علامتَي اقتباس مزدوجتين تضع الصدفة المُستدعية قيمة
+<bdi>`$LASTEXITCODE`</bdi> الخاصة بها قبل أن تبدأ العملية الجديدة (وتضع صدفة <bdi>POSIX</bdi>
+سلسلة فارغة)، فلا تخرج العملية برمز التشغيل. ومن <bdi>cmd.exe</bdi>، لا بأس بعلامتَي الاقتباس
+المزدوجتين. والتشغيل التجريبي للمُثبِّت (<bdi>`--dry-run`</bdi>، أو <bdi>`-DryRun`</bdi> على
+<bdi>Windows</bdi>) لا يكتب شيئًا، لذا لا يُنهيه المحرّك جزئيًا. أصلِح ما تسمّيه رسائل
+المحرّك. وفي حالة الملف، احتفظ بنصّك الخاص (انظر
+[يحمل ملف كتلتين بين علامات <bdi>Apothem</bdi>](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)
+و
+[لا يستطيع <bdi>Apothem</bdi> تمييز كتلته من نصّك](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text))،
+ثم شغّل <bdi>`apothem update --harness <name>`</bdi>، أو نص التحديث، مجدّدًا، لكل أداة تركها
+التشغيل غير مكتملة. وأي رمز خروج آخر غير صفري من المحرّك يوقف النص عند ذلك الحدّ.
 
 ## إعادة تجسيد مُخرَج إطار العمل
 

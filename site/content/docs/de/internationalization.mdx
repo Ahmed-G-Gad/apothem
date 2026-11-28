@@ -2,7 +2,7 @@
 title: "Internationalisierung (i18n)"
 description: "Wie die Apothem-Dokumentationsseite ihre Sprachkohorte deklariert, hreflang-Links für alternative Sprachen ausgibt und in zwölf Sprachen von rechts nach links rendert."
 machineTranslated: true
-sourceHash: "cf9e0b89b61893f8"
+sourceHash: "eb1fc830d88563ac"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -138,8 +138,58 @@ englischen Quelle ausgeliefert und als englischer Text gekennzeichnet.
 
 Englisch bleibt die Quelle der Wahrheit; jede übersetzte Seite spiegelt die
 Struktur, die Links und die Codebeispiele ihres englischen Gegenstücks
-wortgetreu, mit einer Ausnahme bei Links auf Abschnitte. Ein Link auf einen
-Abschnitt einer anderen Seite übernimmt seinen Anker (`#...`) von der englischen
-Seite; ein Link auf einen Abschnitt derselben Seite bildet seinen Anker aus der
-übersetzten Überschrift, weil die Website die ID jeder Überschrift aus dem
-Überschriftentext ableitet.
+wortgetreu. Die einzige Ausnahme ist ein Link auf einen Abschnitt derselben
+Seite; siehe [Links auf übersetzten Seiten](#links-on-translated-pages).
+
+## Links auf übersetzten Seiten [#links-on-translated-pages]
+
+Ein Link auf eine andere Dokumentationsseite wird einmal geschrieben und ist in
+jeder Sprache gleich: `/docs/<page>` oder `/docs/<page>#<section-id>`. Auf einer
+übersetzten Seite macht die Website daraus einen Link auf die übersetzte Kopie
+dieser Seite, wenn die Sprache eine hat, sodass ein Leser, der ihm folgt, in
+seiner Sprache bleibt. Ein Link auf eine Seite, die die Sprache nicht übersetzt
+hat, öffnet die englische Seite.
+
+Eine Abschnitts-ID wird aus dem Überschriftentext ihrer eigenen Seite gebildet,
+daher hat eine übersetzte Seite übersetzte IDs. Daraus folgen zwei Regeln:
+
+- Ein Link auf einen Abschnitt einer **anderen** Seite trägt die **englische**
+  ID, kopiert von der englischen Seite. Die Website ordnet sie der übersetzten
+  Überschrift an derselben Position zu, daher brauchen beide Seiten dieselben
+  Überschriften auf denselben Ebenen. Ist das nicht der Fall, öffnet der Link
+  die englische Seite an diesem Abschnitt.
+- Ein Link auf einen Abschnitt **derselben** Seite trägt die ID, die die
+  übersetzte Überschrift auf dieser Seite hat, weil die Website sie nicht
+  ändert.
+
+`python scripts/dev/check_site_anchor_links.py` prüft beide Regeln auf jeder
+Seite, ohne die Website zu bauen, und die Testsuite führt es bei jeder Änderung
+an der Website aus. Es schlägt fehl, wenn:
+
+- ein Link mit einem `#section` eine Überschrift nennt, die die Seite, die er
+  öffnet, nicht hat;
+- eine Übersetzung, die den aktuellen englischen Text verzeichnet, andere
+  Überschriften als die englische Seite hat, was die Zuordnung brechen würde;
+- ein explizites Element wie `<a href="/docs/…">` oder `<Card href="/docs/…">`
+  einen Dokumentationslink trägt, denn nur Markdown-Links werden auf die
+  übersetzte Seite gelenkt;
+- ein Link von Hand als `/<language>/docs/<page>` geschrieben ist, für eine
+  Seite, die diese Sprache nicht übersetzt hat, was ein englisches Duplikat
+  ist;
+- eine Überschrift eine Setext-Überschrift ist (mit `===` oder `---`
+  unterstrichen) oder leer ist, weil die Prüfung sie nicht unter den
+  Überschriften der Seite einordnen kann.
+
+Eine Überschrift, deren Text die Prüfung nicht exakt in eine ID umwandeln kann,
+erhält stattdessen eine explizite ID: `## Heading [#custom-id]`. Das Umbenennen
+einer Überschrift ändert ihre ID, sodass ein Link darauf auf jeder Seite,
+Übersetzungen eingeschlossen, die Prüfung dann nicht besteht: Aktualisieren Sie
+die Links, oder behalten Sie die alte ID an der umbenannten Überschrift mit
+`[#old-id]`.
+
+Die Website wählt die Zielseite eines Links beim Bauen aus, daher führt der Job
+`docs-build` auch `python scripts/dev/check_built_docs_links.py site/dist` auf
+der fertigen Website aus. Es schlägt fehl, wenn ein Link auf einer übersetzten
+Seite noch die englische Seite öffnet, obwohl seine Sprache eine Kopie hat, die
+die Website hätte verwenden können, und wenn ein Abschnittslink eine ID nennt,
+die die gebaute Seite, die er öffnet, nicht hat.

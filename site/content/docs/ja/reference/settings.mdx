@@ -1,12 +1,12 @@
 ---
 title: "設定"
-description: "ツールの権限、フックの配線、環境変数、ステータスラインのテンプレートを扱う、settings.json における Claude Code ハーネスの設定。"
+description: "ツールの権限とフックの配線を扱う、settings.json における Claude Code ハーネスの設定。"
 machineTranslated: true
-sourceHash: "986e09594ded6bad"
+sourceHash: "ece5596a2a8b8bc1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-`settings.json` は、Claude Code ハーネスの設定を保持します: フックの配線、ツールの権限、環境変数、ステータスラインの設定です。
+`settings.json` は、Apothem があなたのファイルにマージする Claude Code ハーネスの設定を保持します: ツールの権限とフックの配線です。
 
 完全な正規リファレンスは [settings-reference.md](/docs/reference/settings-reference) にあります。このページは契約を要約し、より詳しいリファレンスを案内します。
 
@@ -14,10 +14,14 @@ sourceHash: "986e09594ded6bad"
 
 | セクション | 目的 |
 |---------|---------|
+| `$schema` | エディターがファイルのチェックに使うスキーマ URL |
 | `permissions` | マッチャーごとのツールのホワイトリストとブラックリスト |
 | `hooks` | イベントをキーとするフックコマンドの表（正規の配線） |
-| `env` | セッションごとの環境変数 |
-| `statusLine` | ホストがレンダリングするステータスラインのテンプレート |
+
+Apothem のテンプレートはそれ以外のキーを設定しないため、`env` や `statusLine` などのキーは
+あなたのものとして残ります。ステータスラインのレンダラーは `~/.claude/statuslines/` にコピーされますが、
+配線はされません。[Claude Code のページ](/docs/harnesses/claude-code)に、自分で追加する
+`statusLine` エントリーが示されています。
 
 ## 単一テンプレートの不変条件
 

@@ -2,7 +2,7 @@
 title: "quickstart"
 description: "Référence de la CLI pour la commande de première exécution guidée apothem quickstart."
 machineTranslated: true
-sourceHash: "951e6d6877611c54"
+sourceHash: "a461df3fe9749c28"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,7 +19,7 @@ apothem quickstart [--harness NAME|all] [--project PATH] [--profile PATH]
 
 `quickstart` est l'unique point d'entrée guidé pour un nouvel opérateur. En un
 seul flux linéaire, la commande : (1) garantit l'existence d'un profil partagé
-— en créant un profil de démarrage accompagné d'une invitation à le
+— en créant un profil de départ accompagné d'une invitation à le
 personnaliser si aucun n'est trouvé ; (2) prévisualise les fichiers concrets
 que les environnements sélectionnés écriront, regroupés selon la racine du
 projet ou votre répertoire personnel ; (3) demande une confirmation ;
@@ -36,10 +36,10 @@ environnement pris en charge et relève toujours d'un choix explicite.
 ## Comportement
 
 - **Environnement** — sans `--harness`, une exécution interactive liste les noms pris en charge (plus `all`) et en demande un avant toute écriture. Une exécution qui ne peut pas poser la question — `--yes`, `--format json` ou absence de terminal — s'arrête sur une erreur d'utilisation qui nomme l'option `--harness`, et n'écrit rien.
-- **Profil** — si le chemin de profil résolu ne contient aucun fichier, `quickstart` propose de créer un profil de démarrage (création automatique avec `--yes`, dans un shell non interactif ou avec `--format json`) et nomme les champs d'identité provisoires à personnaliser.
-- **Aperçu + confirmation** — pour `--harness all`, les cibles sont listées sous deux en-têtes (racine du projet et répertoire personnel) ; une exécution interactive demande confirmation avant d'écrire en dehors du projet. Un environnement nommé seul est installé sans aperçu ni invite. `--yes`, un shell non interactif et `--format json` poursuivent sans demander de confirmation. Refuser l'aperçu de `--harness all` interrompt l'installation avant toute écriture ; un profil de démarrage créé à l'étape 1 est conservé.
-- **Installation** — les capacités qu'un environnement ne prend pas en charge nativement sont résumées en une note groupée par environnement (passez `--verbose` pour le détail par capacité) ; l'ensemble complet figure toujours dans le tableau des avertissements (`warnings`) de la sortie `--format json`.
-- **Étape suivante** — la sortie du terminal nomme les commandes à lancer ensuite (`apothem verify …`, `apothem doctor`).
+- **Profil** — si le chemin de profil résolu ne contient aucun fichier, `quickstart` propose de créer un profil de départ (création automatique avec `--yes`, dans un shell non interactif ou avec `--format json`) et nomme les champs d'identité provisoires à personnaliser.
+- **Aperçu + confirmation** — pour `--harness all`, les cibles sont listées sous deux en-têtes (racine du projet et répertoire personnel) ; une exécution interactive demande confirmation avant d'écrire en dehors du projet. Un environnement nommé seul est installé sans aperçu ni invite. `--yes`, un shell non interactif et `--format json` poursuivent sans demander de confirmation. Refuser l'aperçu de `--harness all` interrompt l'installation avant toute écriture ; un profil de départ créé à l'étape 1 est conservé.
+- **Installation** — les capacités qu'un environnement ne prend pas en charge nativement sont résumées en une note groupée par environnement (passez `--verbose` pour le détail par capacité) ; l'ensemble complet figure toujours dans le tableau des avertissements de la sortie `--format json`.
+- **Étape suivante** — la sortie du terminal nomme les commandes à lancer ensuite (`apothem verify …`, `apothem doctor`). Un dossier `--project` est mis entre guillemets pour le shell, comme le fait [`doctor`](/docs/cli-reference/doctor). Lorsque les guillemets ne suffisent pas à le transmettre, la sortie affiche la commande jusqu'à `--project` et nomme le dossier en toutes lettres après elle, et l'entrée `recommended_next` du JSON se lit `Run apothem verify --harness … with --project set to <folder>`, qui n'est pas une commande à lancer telle quelle.
 
 ## Options
 
@@ -69,11 +69,24 @@ environnement pris en charge et relève toujours d'un choix explicite.
   "steps": [
     {"step": "profile", "outcome": "created", "path": "…", "placeholder_identity": ["name", "email", "github"]},
     {"step": "install", "status": "success", "harness": "all", "files_written": ["…"], "warnings": [], "results": []},
-    {"step": "recommend", "next": ["apothem verify --harness all --project .", "apothem doctor"]}
+    {"step": "recommend", "next": ["apothem verify --harness all --project \".\"", "apothem doctor"]}
   ],
-  "recommended_next": ["apothem verify --harness all --project .", "apothem doctor"]
+  "recommended_next": ["apothem verify --harness all --project \".\"", "apothem doctor"]
 }
 ```
+
+Lorsque l'étape d'installation laisse un fichier tel quel à cause de ses lignes
+de marqueurs Apothem (voir [`install`](/docs/cli-reference/install#capability-notes)),
+les deux valeurs `status` valent `"partial"` et le code de sortie est `2`. En
+mode texte, l'exécution affiche la ligne `✗` de l'installation, puis les
+étapes suivantes recommandées. Comme `apothem verify` échoue pour ce fichier
+tant que vous ne l'avez pas corrigé, la première étape consiste alors à
+corriger chaque fichier que l'installation a laissé tel quel, comme
+l'indique son avertissement, puis à lancer `apothem update` pour les mêmes
+outils (`Fix the files it left:` en mode texte, et la première entrée de
+`recommended_next` dans le JSON, `Fix each file the install
+left as it is, as its warning says, then run apothem update --harness …`), à
+la place de `apothem verify`.
 
 ## Exemples
 
@@ -90,7 +103,7 @@ apothem quickstart --harness claude-code --json
 |---|---|
 | 0 | Exécution guidée terminée |
 | 1 | Erreur attendue de validation, de profil, d'environnement, de projet ou d'adaptateur |
-| 2 | Matérialisation partielle du lot après au moins une écriture |
+| 2 | Partiel : un lot s'est arrêté après au moins une écriture, ou l'installation a laissé tel quel, à cause de ses lignes de marqueurs Apothem, un fichier dans lequel Apothem conserve son bloc |
 | 64 | Erreur d'utilisation : une option ou une commande inconnue, ou une valeur d'option manquante ou invalide. Sous `--json`, l'erreur est une enveloppe JSON avec le code `cli.usage`. |
 
 ## Voir aussi

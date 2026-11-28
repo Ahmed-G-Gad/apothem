@@ -2,7 +2,7 @@
 title: "Keamanan"
 description: "Postur keamanan Apothem — target OpenSSF Scorecard, pelaporan kerentanan, permukaan pengerasan."
 machineTranslated: true
-sourceHash: "0b4ba23080c1c9b9"
+sourceHash: "13f553f7cbd0b241"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,6 +17,10 @@ yang tidak.
 
 - **Apa yang dipercayai Apothem.** Profil bersama yang Anda tulis dan pohon sumber terbundel yang ditempatkan oleh pemasang. Profil adalah niat yang Anda deklarasikan; mesin memperlakukannya sebagai masukan otoritatif setelah validasi skema.
 - **Apa yang tidak dipercayai Apothem.** Isi profil mencapai sistem berkas hanya setelah validasi: kegagalan skema, ID harness yang tidak dikenal, jalur proyek yang tidak aman, sumber manifest yang hilang, traversal target, dan penyeberangan symlink semuanya berhenti sebelum penulisan apa pun dan mengembalikan diagnostik terstruktur dengan `files_written: []`.
+  Pengecualiannya adalah tautan yang dibuat pengelola dotfile di `~/.config`,
+  atau di atau di atas folder skill, aturan, atau templat bersama, yang diikuti
+  selama tautan itu mengarah ke suatu tempat di dalam direktori home Anda. Di
+  Windows, junction dihitung sebagai tautan.
 - **Apa yang tidak pernah dibawa keluaran termaterialisasi.** Tidak ada rahasia. Diagnostik profil meredaksi kunci yang menyerupai rahasia dan nilai berbentuk token sebelum mencapai keluaran teks polos, JSON, log, cuplikan dokumentasi, atau pengujian, dan contoh publik menggunakan identitas dan domain placeholder palsu. Konfigurasi termaterialisasi dimaksudkan untuk di-commit dan dibagikan; konfigurasi itu tidak membawa kredensial.
 - **Lantai penolakan universal.** `settings.json` Claude Code yang dimaterialisasikan Apothem membawa lantai penolakan yang tidak dapat ditawar, terlepas dari daftar-izin per-harness mana pun; pada harness lain, lantai yang sama berupa teks kebijakan dalam aturan yang dimaterialisasikan, bukan daftar penolakan tingkat-pengaturan — mencakup jalur rahasia (`.env*`, `~/.ssh/**`, penyimpanan kredensial), operasi shell destruktif (`rm -rf`, `sudo`, force-push ke cabang terproteksi), dan eksekusi masukan yang tidak tepercaya. Tidak ada daftar-izin yang diam-diam memperluas lantai ini.
 - **Radius dampak.** Penulisan dibatasi pada direktori harness dan pohon pendukung milik Apothem. Target terkelola yang ada dicadangkan sebelum penggantian dan direktori penemuan bersama digabungkan anak demi anak, sehingga berkas tak terkait yang ditulis operator tetap di tempatnya.
@@ -27,7 +31,50 @@ Perintah siklus hidup harness dan penulisan profil memvalidasi sebelum
 menulis. Kegagalan skema profil, ID harness yang tidak dikenal, jalur proyek
 yang tidak aman, sumber manifest yang hilang, traversal target, dan
 penyeberangan symlink berhenti sebelum penulisan sistem berkas dan
-mengembalikan diagnostik terstruktur dengan `files_written: []`.
+mengembalikan diagnostik terstruktur dengan `files_written: []`. Junction
+Windows dihitung sebagai symlink. Pengecualiannya adalah tautan di `~/.config`,
+atau di atau di atas folder skill, aturan, atau templat bersama, yang tetap
+berada di dalam direktori home Anda, serta folder home yang dirinya sendiri
+adalah tautan. Tautan tidak pernah membawa penulisan ke folder sebuah alat di
+direktori home Anda, atau ke profil, keluar dari direktori home Anda kecuali
+Anda sendiri menyebutkan folder di luarnya, melalui `XDG_CONFIG_HOME` atau
+`CODEX_HOME` yang dieja sebagai jalur di luar direktori home Anda, atau melalui
+`--profile PATH` yang dieja dengan cara yang sama untuk profil. Jalur yang
+dieja seperti itu diikuti ke mana pun tautannya mengarah. Folder proyek
+mengikuti aturannya sendiri, di bawah. Aturan tautan berlaku untuk install,
+update, uninstall, `apothem rollback`, dan perintah `apothem profile`, termasuk
+`profile set` dan `profile init --force` atas profil yang sudah ada, serta untuk
+profil yang ditulis kembali oleh `install --clean`. `install --clean` berhenti
+sebelum mencadangkan atau menghapus apa pun ketika `~/.config` adalah tautan
+yang mengarah keluar dari direktori home Anda, dan ia menghapus target yang
+dirinya sendiri adalah tautan sebagai tautan, tanpa memasukinya. Karena itu, di
+Windows, junction di atau di dalam folder sebuah alat menghentikan pemasangan,
+juga ketika junction itu mengarah ke suatu tempat di dalam direktori home Anda;
+ganti junction itu dengan foldernya sendiri.
+
+Folder yang Anda sebutkan dengan `--project` diikuti ke mana pun ia mengarah,
+begitu pula tautan di atasnya. Hal itu berlaku ketika folder itu sendiri adalah
+tautan, termasuk `~/.config`, dan ketika tautan mengarah keluar dari direktori
+home Anda, karena Anda yang menyebutkan folder itu. Tautan di dalam folder
+proyek, pada jalur yang ditulis pemasangan di sana, menghentikan pemasangan.
+Hal itu juga berlaku ketika tautan mengarah kembali ke dalam folder proyek, dan
+ketika `--project` menyebutkan direktori home Anda. Alat yang juga menulis di
+direktori home Anda, seperti di `~/.config/apothem`, memeriksa jalur tersebut
+dengan aturan home di atas. Jadi tautan `~/.config` yang mengarah keluar dari
+direktori home Anda menghentikan pemasangan alat itu bahkan ketika `--project`
+menyebutkan `~/.config`.
+
+`XDG_CONFIG_HOME` dan `CODEX_HOME` dapat berasal dari `.envrc` sebuah proyek
+atau skrip yang Anda source, tidak hanya dari profil shell Anda. Ketika salah
+satunya menyebutkan folder di luar direktori home Anda, Apothem mengubah berkas
+di sana, karena itulah folder yang disebutkannya.
+
+Folder milik Apothem sendiri, `~/.apothem`, tidak diperiksa dengan cara ini.
+Folder itu menyimpan cadangan, ledger instalasi, dan berkas kuncinya; ketika
+folder itu adalah tautan, setiap perintah yang menulis di sana mengikutinya ke
+mana pun ia mengarah, dan `apothem backups
+prune` serta retensi cadangan otomatis menghapus set cadangan lama di ujung
+lain tautan itu.
 
 Operasi pemasangan dan pembaruan mempertahankan target terkelola yang ada
 dengan mencadangkannya sebelum penggantian. Direktori penemuan bersama
@@ -43,6 +90,7 @@ placeholder palsu.
 ## Tautan cepat
 
 - [**Postur OpenSSF Scorecard**](/docs/security/openssf-scorecard-target) — bukti per pemeriksaan dan batasan platform yang diketahui
+- [**Lencana OpenSSF Best Practices**](/docs/security/openssf-best-practices) — jawaban atas kriteria passing, dengan bukti dan celah yang tersisa
 - [**Audit webhook**](/docs/security/webhooks-audit) — bukti higiene rahasia webhook
 - [**Proteksi branch**](/docs/security/branch-protection-ruleset) — persyaratan pull request, pemeriksaan status yang diwajibkan, serta pemblokiran force-push dan penghapusan
 - [**Sapuan artefak biner**](/docs/security/binary-artifacts-sweep) — bukti bahwa pohon sumber tidak memuat berkas biner
@@ -55,10 +103,23 @@ Gunakan [Pelaporan Kerentanan Privat](https://github.com/ahmed-g-gad/apothem/sec
 
 ## Bukti pendukung rilis rantai pasok
 
-Setiap artefak rilis disertai:
+Setiap GitHub Release membawa bukti ini. Berkas yang dicakupnya berbeda untuk
+setiap butir:
 
-- **Provenance build SLSA-3** melalui [`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator)
 - **Tanda tangan Sigstore** melalui [`sigstore/cosign-installer`](https://github.com/sigstore/cosign-installer)
+  untuk setiap berkas yang didistribusikan: sdist, wheel, paket VS Code
+  `apothem.vsix`, SBOM `sbom.cdx.json`, tiga arsip platform, dan `SHA256SUMS`.
+  Masing-masing memiliki `<file>.cosign.bundle` sendiri. Berkas provenance
+  `provenance.intoto.jsonl` tidak memiliki bundel cosign; generator SLSA
+  menandatanganinya di dalam amplop DSSE miliknya sendiri.
+- **Provenance build SLSA-3** melalui [`slsa-framework/slsa-github-generator`](https://github.com/slsa-framework/slsa-github-generator)
+  di `provenance.intoto.jsonl` untuk empat berkas: sdist, wheel,
+  `apothem.vsix`, dan `sbom.cdx.json`. Alur kerja rilis juga meminta GitHub
+  menyimpan catatan provenance build-nya sendiri untuk berkas yang sama, sebuah
+  catatan yang terpisah dari berkas ini; langkah itu tidak menjadi gerbang
+  rilis, sehingga sebuah rilis dapat tidak memilikinya. Arsip platform dan
+  `SHA256SUMS` tidak memiliki provenance SLSA; tanda tangan cosign-nya dan tag
+  rilis yang ditandatangani mencakup keduanya.
 - **SBOM CycloneDX** dari wheel dan sdist yang dirilis, ditulis oleh `scripts/release/generate_sbom.py`: paket apothem, setiap paket yang di-vendor di bawah `apothem/_vendor` beserta lisensinya, persyaratan runtime yang dideklarasikan, dan SHA-256 setiap distribusi. SBOM ditandatangani dan dicakup oleh provenance build seperti halnya distribusi
 - **Pernyataan provenance npm** melalui OIDC Trusted Publishing pada `@ahmed-g-gad/apothem`
 - **Tag git bertanda tangan GPG** (kunci EDDSA `70396FED9C634163`)
@@ -88,9 +149,17 @@ verification passed`. Ulangi perintah `cosign` untuk aset lain mana pun dengan
 `<asset>.cosign.bundle`-nya (rilis sebelumnya menamai bundel arsip platform dan
 `SHA256SUMS` sebagai `<asset>.sig`). Arsip darwin dan linux adalah byte yang
 sama dengan dua nama, sehingga `SHA256SUMS` mencantumkan satu digest dua kali.
-Dari sebuah klon, `bash scripts/release/verify-provenance.sh <download-dir>`
-menjalankan ketiga pemeriksaan, termasuk manifest `SHA256SUMS`, dalam satu
-pass.
+Dari sebuah klon,
+`bash scripts/release/verify-provenance.sh --require-all <download-dir>`
+menjalankan ketiga pemeriksaan dalam satu pass: manifest `SHA256SUMS`, setiap
+bundel cosign, dan provenance SLSA dari wheel, sdist, `apothem.vsix`, dan SBOM
+yang ditandatangani. Skrip itu melewati pemeriksaan yang alatnya (`cosign`,
+`slsa-verifier`) atau berkasnya (`SHA256SUMS`) tidak ada, dan baris terakhirnya
+menyebutkan pemeriksaan yang dijalankan dan yang dilewati. Hanya
+`chain OK (3 of 3 layers verified: ...)` yang berarti rilis terverifikasi;
+baris yang diawali `partial check` tidak. Dengan `--require-all`
+(`-RequireAll` untuk `verify-provenance.ps1`), pemeriksaan parsial keluar
+dengan 1; tanpanya, pemeriksaan parsial keluar dengan 0.
 
 Dua detail menentukan apakah verifikasi bermakna:
 

@@ -2,7 +2,7 @@
 title: "Kiro"
 description: "Kiro（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "91ec41080bf29036"
+sourceHash: "8edb56102e3e27a7"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -121,6 +121,8 @@ Kiro がコマンドの出力をモデルのコンテキストに追加するの
 "/path/to/python" -E -s "/path/to/project/.apothem/support/kiro/hooks/dispatch.py" --contract kiro SessionStart
 ```
 
+`-E -s` により、Python は `PYTHONPATH` とその他の `PYTHON*` 変数を無視し、ユーザーの site-packages を読み飛ばすため、プロジェクト内のどのファイルもフックに読み込まれることはありません。
+
 `--contract kiro` は、ディスパッチャーにコンテキストをプレーンテキストとして出力させます。これは Kiro が `SessionStart` でコンテキストに追加する形式です。
 Kiro は Windows でのコマンドアクションに使うシェルを文書化していません。
 コマンドは sh と cmd.exe 向けに、引用符で囲んだスラッシュ区切りのインタープリターパスで書かれます。あなたのマシンで Kiro がそれを PowerShell で実行する場合、引用符で囲んだパスの前に呼び出し演算子（`&`）が必要になり、これは手で追加できます。
@@ -160,6 +162,9 @@ Kiro のステアリング面は `.kiro/steering/` 配下のプロジェクト�
 アダプターは `inclusion: always` フロントマターを持つ専用の `apothem-rules.md` ステアリングファイルを書き込み、オペレーターが作成した Kiro の基盤ファイル（`product.md`、`tech.md`、`structure.md`）を決して上書きしません。
 Kiro のスペック（`.kiro/specs/`）はオペレーターの所有です。Apothem はそれらを書き込みません。
 フックファイルは `.kiro/hooks/apothem.json` を 1 つだけ書き込み、`.kiro/hooks/` 内の他のファイルは書き込みません。
+
+Kiro はワークスペースのルートにある `AGENTS.md` ファイルも読み込みます。[Kimi Code](/docs/harnesses/kimi-code) のインストールはプロジェクトの `AGENTS.md` に Apothem のブロックを書き込むため、両方をインストールしたプロジェクトでは、そのブロックが Kiro にも届きます。ファイルにすでにブロックがある場合、`kiro` のインストールは、そのファイルとそれを書き込んだインストールを示す注意を表示します。
+このファイルを読み込むその他のツールは、[ハーネスレジストリ](/docs/reference/harness-registry#shared-roots)に一覧があります。
 
 Kiro はグローバルスキル用に `~/.kiro/skills/` を文書化しており、`~/.agents/skills/` には言及していないため、インストールはツール横断のフォルダーではなく Kiro のフォルダーに書き込みます。
 同じ名前のワークスペーススキルは、グローバルスキルより優先されます。
@@ -216,8 +221,16 @@ apothem uninstall --harness kiro --project /path/to/project
 ## コンフォーミティゲート
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+プロジェクトのフォルダーから実行します。Windows では、`python3` の代わりに `python` を使い、
+フルパスを指定します。Windows PowerShell と cmd は `~` を展開しないためです。
+PowerShell では `$HOME\.apothem\src\apothem\conformity\gate.py`、
+cmd では `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` です。このパスは
+インストーラーがエンジンを置く場所で、`-E -s` はあなたの `PYTHONPATH` とユーザーの
+site-packages をゲートから締め出します。両者とその他のインストールについては
+[コンフォーミティゲート](/docs/conformity-gate)で説明しています。
 
 ## トラブルシューティング
 

@@ -2,7 +2,7 @@
 title: "ハーネスアダプター"
 description: "Apothem のハーネスアダプター — 1 つの共有プロファイル、17 のサポート対象ターゲット。"
 machineTranslated: true
-sourceHash: "f4177d0bff3cb602"
+sourceHash: "48a032b0eced79dc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -64,8 +64,11 @@ apothem doctor
 
 ## アダプターの仕組み
 
-各アダプターは、setuptools のエントリーポイント経由で登録された `HarnessAdapter` プロトコルを
-実装します。インストール時、CLI は共有 YAML プロファイルを読み込んで検証し、レジストリを通じて
+各アダプターは `HarnessAdapter` プロトコルを実装し、CLI がアダプターを解決する静的な
+ハーネスレジストリ(`src/apothem/lib/harness_registry.py`)に登録されています。`pyproject.toml` の
+`apothem.harnesses` エントリーポイントにも同じアダプターが並び、テストが 2 つのリストを
+一致させていますが、CLI はエントリーポイントを読まないため、別のパッケージがエントリー
+ポイントを宣言してアダプターを追加することはできません。インストール時、CLI は共有 YAML プロファイルを読み込んで検証し、レジストリを通じて
 アダプターを解決し、マテリアライズ計画を検証し、プラットフォームネイティブの設定をハーネスの
 ネイティブなユーザーまたはプロジェクトの場所に書き込みます。更新時には、現在のプロファイルの
 状態から再導出します。
@@ -75,7 +78,7 @@ profile.yaml + packaged cohorts
     identity / preferences / rules
     commands / skills / delegated definitions / hooks / templates
          |
-         +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/antigravity-cli/plugins/apothem/
+         +-- antigravity    --> ~/.gemini/GEMINI.md + ~/.gemini/config/plugins/apothem/
          +-- claude-code    --> ~/.claude/ native folders + ~/.claude/.apothem/support/
          +-- codex          --> ~/.codex/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/
          +-- cursor         --> <project>/.cursor/rules/*.mdc + <project>/.cursor/agents/ + ~/.agents/skills/ + ~/.config/apothem/{rules,templates}/

@@ -2,7 +2,7 @@
 title: "Kimi Code"
 description: "Kimi Code(GA)용 Apothem 하니스 어댑터."
 machineTranslated: true
-sourceHash: "88671d55a3315922"
+sourceHash: "0ae31afd4f1fbbbd"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,7 +26,7 @@ apothem install --harness kimi-code --project /path/to/project
 `<project>/.kimi-code/.apothem/support/`에 있는 Apothem 소유 지원 하위 트리
 아래에 남습니다. 프로젝트 `AGENTS.md`는 Kimi Code
 외에도 많은 코딩 도구가 읽으므로, 이 블록은 어느 한 도구도 독자로 지칭하지 않는
-프로젝트 전체 지침으로 작성됩니다. 그 도구 중 일부는 일부 프로젝트에서만 이 파일을
+프로젝트 전체 지침으로 작성됩니다. 그 도구 중 일부는 일부 프로젝트, 버전 또는 설정에서만 이 파일을
 로드하는데, 예를 들어 프로젝트에 해당 도구 자체의 지침 파일이 없을 때에만 로드하며,
 설치 안내는 그러한 도구 각각을 그 조건과 함께
 명시합니다([하니스 레지스트리](/docs/reference/harness-registry#shared-roots)가
@@ -42,7 +42,9 @@ Kimi Code는 범용 AGENTS.md 규약에 따라 프로젝트 루트의 `AGENTS.md
 **작성되는 파일:** `<project>/AGENTS.md`(관리 블록), `<project>/.kimi-code/skills/`
 아래의 스킬과 (스킬로서의) 커맨드, 각 Apothem 도우미에 대한
 `<project>/.kimi-code/agents/<name>.md` 하나, 그리고
-`<project>/.kimi-code/.apothem/support/` 아래의 훅, 규칙, 템플릿 코호트.
+`<project>/.kimi-code/.apothem/support/` 아래의 훅, 규칙, 템플릿 코호트, 그리고
+모든 프로젝트 설치가 만드는 데이터 폴더(기본값 `<project>/.apothem/`; `contexts/`,
+`learning/`, `memory/`, `plans/`).
 
 ## 서브에이전트
 
@@ -202,7 +204,9 @@ apothem update --harness kimi-code --project /path/to/project
 한 번만 존재합니다. 도우미가 `.kimi-code/agents/`로 옮겨지기 전의 설치 위에서
 업데이트하면 같은 방식으로 이전 `<project>/.kimi-code/.apothem/support/agents/`
 디렉터리가 제거됩니다. 제거되는 각 디렉터리의 타임스탬프가 찍힌 사본이 먼저
-`~/.apothem/backups/` 아래에 저장됩니다.
+`~/.apothem/backups/` 아래에 저장됩니다. 이 두 이전 디렉터리에 있는 여러분 자신의 파일도
+함께 삭제되며, 그 백업은 하니스의 더 새로운 백업 세트가 10개 생기면 삭제되므로 자신의
+파일은 다른 곳에 보관하세요.
 
 ## 제거
 
@@ -224,8 +228,16 @@ apothem uninstall --harness kimi-code --project /path/to/project
 ## 적합성 게이트
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+프로젝트 폴더에서 실행하세요. Windows에서는 `python3` 대신 `python`과 전체 경로를
+사용하세요. Windows PowerShell과 cmd는 `~`를 확장하지 않기 때문입니다.
+PowerShell에서는 `$HOME\.apothem\src\apothem\conformity\gate.py`, cmd에서는
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`입니다. 이 경로는
+설치 프로그램이 엔진을 두는 곳이며, `-E -s`는 여러분의 `PYTHONPATH`와 사용자
+site-packages가 게이트에 닿지 않게 합니다. [적합성 게이트](/docs/conformity-gate)에서
+둘 다와 다른 설치 방식을 설명합니다.
 
 ## 문제 해결
 

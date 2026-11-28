@@ -2,7 +2,7 @@
 title: "GLM (Z.ai)"
 description: "設定可能なモデルバックエンドとしての GLM (Z.ai) 向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "026e29a055db8a67"
+sourceHash: "fcd06518f021542b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,7 +27,9 @@ apothem install --harness glm --project /path/to/project
 
 アダプターは、GLM バックエンドのエンドポイントと、オペレーターが設定可能なプレースホルダーを記録した、プロジェクトスコープのプロバイダーファイルを 1 つ書き込みます。
 
-**書き込まれるファイル：** `<project>/.apothem/providers/glm.toml`
+**書き込まれるファイル：** `<project>/.apothem/providers/glm.toml`、および
+プロジェクトへのインストールが毎回作成するデータフォルダー（デフォルトは `.apothem/`。
+`contexts/`、`learning/`、`memory/`、`plans/`）。
 
 ## プロファイルからネイティブ設定へのマッピング
 
@@ -52,8 +54,9 @@ Apothem はこれらの値のどれもピン留めせず、それらの間で選
 
 ## 互換性に関する注意
 
-GLM バックエンドはルール、コマンド、スキル、フックのための面を公開しないため、アダプターはバックエンドのプロバイダーファイルのみを書き込み、それ以外は何も書き込みません。
+GLM バックエンドはルール、コマンド、スキル、フックのための面を公開しないため、アダプターはバックエンドのプロバイダーファイルを書き込み、それらの面には何も書き込みません。
 ZCode がそのような面を公開しているかどうかを、Apothem は確認していません。
+すべてのプロジェクトへのインストールと同様に、GLM のインストールも Apothem のデータフォルダー（デフォルトは `<project>/.apothem/`）を作成します。
 あなたの Z.ai キーとモデル ID の選択は、オペレーターの所有のままです。
 アダプターが依拠するベンダー面の規約は `src/apothem/harnesses/glm/STANDARD-CONVENTION-PIN.md` にピン留めされており、公開中の Z.ai ドキュメントに対してスナップショットが取られています。
 
@@ -97,8 +100,16 @@ apothem uninstall --harness glm --project /path/to/project
 ## コンフォーミティゲート
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+プロジェクトのフォルダーから実行します。Windows では、`python3` の代わりに `python` を使い、
+フルパスを指定します。Windows PowerShell と cmd は `~` を展開しないためです。
+PowerShell では `$HOME\.apothem\src\apothem\conformity\gate.py`、
+cmd では `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` です。このパスは
+インストーラーがエンジンを置く場所で、`-E -s` はあなたの `PYTHONPATH` とユーザーの
+site-packages をゲートから締め出します。両者とその他のインストールについては
+[コンフォーミティゲート](/docs/conformity-gate)で説明しています。
 
 ## トラブルシューティング
 

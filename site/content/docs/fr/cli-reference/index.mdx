@@ -2,7 +2,7 @@
 title: "Référence de la CLI"
 description: "Référence de la CLI Apothem — synopsis, options et codes de sortie de chaque commande de l'interface en ligne de commande apothem."
 machineTranslated: true
-sourceHash: "d05ea2b5171674a9"
+sourceHash: "aa091d12392e27c9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -75,7 +75,7 @@ liste ceux qu'elle peut renvoyer.
 |---|---|
 | 0 | Succès |
 | 1 | Échec attendu : une erreur de validation, de profil, d'environnement, de projet ou d'adaptateur |
-| 2 | Résultat partiel : un lot a écrit ou supprimé quelque chose avant un échec (uniquement les commandes dont la page le liste) |
+| 2 | Résultat partiel : la commande n'a fait qu'une partie de son travail, par exemple une exécution qui a écrit, supprimé ou restauré des fichiers avant un échec, une exécution de `status` ou de `harnesses list` dans laquelle un adaptateur n'a pas pu rendre compte, ou une désinstallation qui a laissé en place certains fichiers d'Apothem (uniquement les commandes dont la page le liste) |
 | 64 | Erreur d'utilisation : une option ou une commande inconnue, une option requise manquante ou une valeur d'option invalide |
 
 Une erreur d'utilisation ne touche jamais au système de fichiers. Sous `--json`

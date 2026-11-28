@@ -2,11 +2,11 @@
 title: "Hermes"
 description: "Hermes（プレビュー）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "2031f90de3f936a5"
+sourceHash: "6b5e4589566e8d9c"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
-- **ベンダー：** Hermes
+- **ベンダー：** Nous Research
 - **インストール名：** `hermes`
 - **ステータス：** プレビュー
 - **ネイティブ設定：** `~/.hermes/config.yaml`
@@ -21,7 +21,17 @@ apothem install --harness hermes
 
 **書き込まれるファイル：** `~/.hermes/config.yaml`、プロファイルドキュメント
 `~/.hermes/apothem/rules/00-apothem-profile.md`、および
-`~/.hermes/.apothem/support/` 配下のサポートファイル
+`~/.hermes/.apothem/support/` 配下のサポートファイル。インストールでは Apothem のデータフォルダー
+（デフォルトは `~/.hermes/.apothem/`）も作成され、その中に `contexts/`、`learning/`、
+`memory/`、`plans/` が置かれます。
+
+インストールと更新のたびに、`~/.hermes/apothem/rules/` 内にある、Apothem が置いたのではないすべてのファイルが、`~/.apothem/backups/` 配下のバックアップセットに保存されたうえで削除されます。
+そのバックアップは、このハーネスのより新しいバックアップセットが 10 個できた時点で削除されるため、あなた自身のファイルは別の場所に保管してください。
+
+以前のリリース（[変更履歴](/docs/changelog)に記載）は、インストールと更新のたびに、`~/.hermes/cli-config.yaml` と `~/.hermes/profile.yaml` も、`~/.apothem/backups/<timestamp>/hermes/` 配下のバックアップセットにコピーしたうえで削除していました。
+現在のリリースはどちらのファイルにも触れません。
+取り戻すには、Apothem を再度実行する前に `~/.apothem/backups/` を別の場所にコピーし、そのコピーからファイルを手で `~/.hermes/` に戻してください。
+復旧の詳しい手順は[変更履歴](/docs/changelog#data-loss-in-earlier-releases-recover-your-files)にあります。
 
 プロファイルドキュメントは、Apothem サポートファイルのセクションで終わります。
 このセクションは、リポジトリ形式の各参照（`rules/<name>.md`、`templates/...`、`hooks/...`）が解決される先の、`~/.hermes/.apothem/support/` 配下の絶対ディレクトリを示します。
@@ -68,7 +78,7 @@ Hermes は、ホームフォルダーと一部のコンテナーフォルダー�
 **名前の衝突。** Hermes はスキルについて次の優先順位を文書化しています：プロジェクトのスキル（`<project>/.hermes/skills/` と `<project>/.agents/skills/`）、次に `~/.hermes/skills/`、次に `skills.create_dir`、次に `skills.external_dirs` 配下に列挙されたフォルダーです。
 Apothem のディレクトリは `external_dirs` のエントリーなので、最後になります。
 確認した Hermes のドキュメントは、2 つの場所に同じ名前のスキルがある場合に Hermes がどちらのコピーを読み込むかを述べていません。Apothem はこの順序を先の場所が勝つものと解釈しているため、先の場所にあなたが置いている同じ名前のスキルが Apothem のコピーより優先されると考えてください。
-Apothem は `config.yaml` と `~/.hermes/.apothem/support/` 配下にのみ書き込み、それより前の場所には決して書き込まないため、インストール、更新、アンインストールが、あなたがそこに置いているスキルを置き換えることはありません。
+Hermes のインストールは、それより前の場所には決して書き込みません。`~/.hermes/` 内で書き込むのは `config.yaml`、`apothem/rules/`、`.apothem/` だけなので、インストール、更新、アンインストールが、あなたがそこに置いているスキルを置き換えることはありません。
 
 `apothem update` は、`skills.config` やあなた自身の `skills.external_dirs` のエントリーを含め、あなたが `config.yaml` に追加したキーを保持します。
 アダプターはプロファイルの MCP インベントリを、Hermes が MCP サーバーを読み取るトップレベルの `mcp_servers` キーの下に書き込みます。
@@ -125,8 +135,16 @@ apothem uninstall --harness hermes
 ## コンフォーミティゲート
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+プロジェクトのフォルダーから実行します。Windows では、`python3` の代わりに `python` を使い、
+フルパスを指定します。Windows PowerShell と cmd は `~` を展開しないためです。
+PowerShell では `$HOME\.apothem\src\apothem\conformity\gate.py`、
+cmd では `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` です。このパスは
+インストーラーがエンジンを置く場所で、`-E -s` はあなたの `PYTHONPATH` とユーザーの
+site-packages をゲートから締め出します。両者とその他のインストールについては
+[コンフォーミティゲート](/docs/conformity-gate)で説明しています。
 
 ## トラブルシューティング
 

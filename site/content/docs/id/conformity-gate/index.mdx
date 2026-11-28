@@ -2,7 +2,7 @@
 title: "Gerbang konformitas"
 description: "Gerbang konformitas Apothem — bagian mekanis dari gerbang pra-emisi lima-belas-bar (M1-M15) yang harus dilalui setiap artefak yang dipancarkan."
 machineTranslated: true
-sourceHash: "3327d1105c04f8e3"
+sourceHash: "4abccec00243f36d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -30,16 +30,18 @@ Gerbang hanya menjalankan validator yang dapat diperiksa mesin. Pertimbangan ber
 
 ## Tangga tingkat keparahan
 
-Gerbang ini tidak memiliki tangga Kritis, Penting, atau Advisori dan tidak memiliki ambang dua-temuan. Tanpa `--strict` (atau `APOTHEM_CONFORMITY_STRICT=1`), gerbang melaporkan temuan dan keluar dengan `0`. Dengan `--strict`, pemeriksaan berkas-tunggal atau hook keluar dengan `2` ketika matcher mana pun gagal, dan eksekusi korpus (`--all` atau `--all-perwrite`) keluar dengan `2` ketika validator atau matcher pemblokir gagal; temuan advisori hanya dilaporkan. Hook Write/Edit yang terpasang tidak menyertakan `--strict`, sehingga ia melaporkan temuan dan penulisan tetap dilanjutkan kecuali `APOTHEM_CONFORMITY_STRICT=1` disetel di lingkungannya.
+Gerbang ini tidak memiliki tangga Kritis, Penting, atau Advisori dan tidak memiliki ambang dua-temuan. Tanpa `--strict` (atau `APOTHEM_CONFORMITY_STRICT=1`), gerbang melaporkan temuan dan keluar dengan `0`. Dengan `--strict`, pemeriksaan berkas-tunggal atau hook keluar dengan `2` ketika matcher mana pun gagal, dan eksekusi korpus (`--all` atau `--all-perwrite`) keluar dengan `2` ketika validator atau matcher pemblokir gagal; temuan advisori hanya dilaporkan. Eksekusi `--all-perwrite` yang tidak membaca berkas apa pun, menemukan entri indeks yang keluar dari proyek, atau menemukan berkas yang tidak dapat dibacanya atau berkas teks yang melebihi batas ukurannya, melaporkan `passed: false`, dengan `check_error` ketika daftar berkas yang dilacak tidak dapat dibaca (misalnya di folder di luar work tree git), sehingga dengan `--strict` eksekusi itu juga keluar dengan `2`. Hook Write/Edit yang terpasang tidak menyertakan `--strict`, sehingga ia melaporkan temuan dan penulisan tetap dilanjutkan kecuali `APOTHEM_CONFORMITY_STRICT=1` disetel di lingkungannya.
+
+Dalam eksekusi `--all` dan `--check`, validator standalone yang tidak dapat selesai juga tidak lolos. Validator yang masih berjalan setelah 10 menit dihentikan, dan validator yang perintah `git`-nya sendiri berjalan melewati batas waktunya, atau gagal di checkout yang ditemukannya, melaporkan hal itu; kedua hasil membawa `passed: false` dan `check_error` yang menyebutkan alasannya, sehingga dengan `--strict` eksekusi itu juga keluar dengan `2`. [Menjalankan gerbang konformitas](/docs/usage/conformity-gate) mencantumkan batas-batasnya.
 
 ## Validator
 
 Bagian mekanis berada di [`src/apothem/conformity/`](https://github.com/ahmed-g-gad/apothem/tree/main/src/apothem/conformity), diorkestrasi oleh [`src/apothem/conformity/gate.py`](https://github.com/ahmed-g-gad/apothem/blob/main/src/apothem/conformity/gate.py).
 Setiap validator berjalan dengan salah satu dari tiga cara:
 
-- **per-write**: pada setiap penulisan yang tertunda (`--hook`), atau pada setiap berkas yang dilacak dengan `--all-perwrite`.
+- **per-write**: pada setiap penulisan yang tertunda (`--hook`), atau pada setiap berkas yang dilacak dengan `--all-perwrite`, yang hanya membaca berkas reguler di dalam proyek dan menghitung jalur yang dilewatinya (tautan, named pipe, perangkat, entri yang keluar dari proyek).
 - **standalone**: di seluruh repositori dengan `--all`, atau satu per satu dengan `--check <name>`.
-- **change-set**: terhadap diff yang di-stage, dijalankan langsung sebagai `python -m apothem.conformity.semver_stability_grep --staged`, bukan melalui gerbang.
+- **change-set**: terhadap diff yang di-stage, dijalankan langsung dari root checkout sebagai `PYTHONPATH=src python -m apothem.conformity.semver_stability_grep --staged`, bukan melalui gerbang.
 
 Tabel di bawah ini dihasilkan dari modul validator.
 
@@ -114,34 +116,67 @@ termaterialisasi di `~/.claude/.apothem/support/conformity/gate.py` sebelum
 setiap Write/Edit. Gerbang kemudian hanya memeriksa penulisan yang berada di
 bawah cakupan hook-nya, dan penulisan di luar cakupan itu lolos secara
 diam-diam; [Menjalankan gerbang konformitas](/docs/usage/conformity-gate)
-mencantumkan cakupannya. Dari checkout sumber, bentuk modul menjalankan kode yang
-sama; awali setiap perintah `python` di bawah ini dengan `PYTHONPATH=src`. Gerbang
-bersifat advisori secara default: gerbang melaporkan temuan dan
-keluar dengan `0`. Tambahkan `--strict` untuk keluar dengan `2` pada temuan yang
-memblokir. Nama validator yang tidak dikenal keluar dengan `3`.
+mencantumkan cakupannya.
+
+Jalankan gerbang melalui jalur skripnya dengan `-E -s`, seperti contoh di bawah
+ini, dan bukan sebagai `python -m apothem.conformity.gate`. Proyek yang Anda
+periksa mungkin memuat berkas yang bernama seperti salah satu modul gerbang, dan
+Python tidak boleh memuatnya. `-m` menaruh folder saat ini di urutan pertama
+jalur pencarian modul Python; menjalankan skrip menaruh folder skrip itu sendiri
+di sana sebagai gantinya. Itu saja belum cukup: entri kosong atau relatif di
+`PYTHONPATH` juga menunjuk folder saat ini. `-E` membuat Python mengabaikan
+`PYTHONPATH` dan variabel `PYTHON*` lainnya, dan `-s` mengecualikan
+site-packages pengguna Anda. Gerbang tidak memerlukan apa pun dari keduanya.
+Flag ini hanya menjauhkan berkas proyek dari kode Python milik gerbang sendiri;
+`git` yang dijalankan gerbang dibahas di bawah. Setelah
+pemasangan melalui skrip, skripnya adalah
+`~/.apothem/src/apothem/conformity/gate.py` (di Windows,
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`, dijalankan dengan
+`python` sebagai pengganti `python3`); di checkout, skripnya adalah
+`src/apothem/conformity/gate.py`. Gerbang memulai setiap validator standalone
+dalam prosesnya sendiri, juga dengan `-E -s` dan dengan folder saat ini dijauhkan
+dari jalur pencarian. Gerbang bersifat advisori secara default: gerbang
+melaporkan temuan dan keluar dengan `0`. Tambahkan `--strict` untuk keluar
+dengan `2` pada temuan yang memblokir. Nama validator yang tidak dikenal keluar
+dengan `3`.
+
+`--all`, `--all-perwrite`, tiga validator standalone, dan pemeriksaan change-set
+`--staged` menjalankan `git` di proyek yang diperiksanya. Masing-masing memulai
+git hanya dari entri jalur lengkap di `PATH` Anda, dengan setiap pengaturan di
+`.git/config` repositori itu yang diketahui memulai program dimatikan dan dengan
+pengambilan objek yang hilang diblokir, sehingga proyek yang datang bersama
+folder `.git` dari orang lain tidak dapat membuatnya memulai program melalui
+pengaturan tersebut.
+[Menjalankan gerbang konformitas](/docs/usage/conformity-gate) mencantumkan
+pengaturan itu dan dua batasan yang masih ada: git tetap dapat membaca jalur yang
+disebutkan repositori di pengaturan atau berkas mana pun (`include.path`,
+`core.worktree`, baris `gitdir:` di berkas `.git`, dan lainnya), dan rilis git
+yang lebih baru dapat menambahkan pengaturan baru.
 
 ```shell
+gate=~/.apothem/src/apothem/conformity/gate.py   # or src/apothem/conformity/gate.py
+
 # Every standalone validator across the repository:
-python -m apothem.conformity.gate --all .
+python3 -E -s "$gate" --all .
 
 # The same sweep, failing on a blocking finding (the CI form):
-python -m apothem.conformity.gate --all --strict .
+python3 -E -s "$gate" --all --strict .
 
 # Every per-write validator against every tracked file:
-python -m apothem.conformity.gate --all-perwrite .
+python3 -E -s "$gate" --all-perwrite .
 
 # One validator by name (names come from --list):
-python -m apothem.conformity.gate --check naming-grep .
+python3 -E -s "$gate" --check naming-grep .
 
 # List every registered validator as JSON:
-python -m apothem.conformity.gate --list
+python3 -E -s "$gate" --list
 
 # Single-file dispatch (mimics the PreToolUse hook):
 echo '{"tool_input": {"file_path": "path/to/file", "content": "..."}}' \
-    | python -m apothem.conformity.gate --hook
+    | python3 -E -s "$gate" --hook
 ```
 
-`python -m apothem.conformity.gate --help` mencetak ringkasan penggunaan.
+`python3 -E -s "$gate" --help` mencetak ringkasan penggunaan.
 Lihat [Menjalankan gerbang konformitas](/docs/usage/conformity-gate) untuk prosedur lengkapnya.
 
 ## Referensi

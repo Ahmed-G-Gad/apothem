@@ -2,7 +2,7 @@
 title: "Schema des gemeinsamen Profils"
 description: "Schema für das YAML des gemeinsamen Apothem-Profils."
 machineTranslated: true
-sourceHash: "574a594762c4f468"
+sourceHash: "cdd83bde9f17392d"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,13 +32,17 @@ Platzhalter-Identitätsfelder, die der Operator personalisieren soll — und
 validiert es, bevor es Erfolg meldet:
 
 ```yaml
+# yaml-language-server: $schema=https://apothem.ahmedgad.com/schemas/profile.schema.json
+schema_version: 1
 identity:
-  name: "Example User"
-  email: "dev@example.invalid"
-  github: "example-user"
+  name: Example User
+  email: dev@example.invalid
+  github: example-user
 ```
 
-Der Befehl gibt einen Personalisierungshinweis aus, der diese Felder benennt.
+Die erste Zeile verweist Editoren mit YAML-Unterstützung auf das Schema;
+`schema_version: 1` ist die Version des Profilschemas. Der Befehl gibt einen
+Personalisierungshinweis aus, der die Identitätsfelder benennt.
 Erreicht eine immer noch als Platzhalter belassene Identität später `install`
 oder `update`, geben diese Befehle einen Hinweis aus und fahren fort — Apothem
 erfindet nie eine Platzhalter-Identität und blockiert auch nicht deswegen.
@@ -47,6 +51,7 @@ erfindet nie eine Platzhalter-Identität und blockiert auch nicht deswegen.
 
 | Feld | Erforderlich | Standard | Hinweise |
 | --- | --- | --- | --- |
+| `schema_version` | Nein | als `1` gelesen | Version des Profilschemas; `profile init` schreibt `1`. Eine Version, die neuer ist, als die Engine unterstützt, wird abgelehnt. |
 | `identity.name` | Ja | keiner | Nicht leerer Anzeigename des Operators. |
 | `identity.role` | Nein | `senior software engineer` | Gemeinsamer Rollentext. |
 | `identity.email` | Nein | weggelassen | Muss, falls vorhanden, im E-Mail-Format sein. |
@@ -58,8 +63,13 @@ erfindet nie eine Platzhalter-Identität und blockiert auch nicht deswegen.
 | `preferences.test_framework` | Nein | weggelassen | Nicht leerer String, falls vorhanden. |
 | `rules` | Nein | `[]` | Eindeutige nicht leere Strings; Zeilenumbrüche werden auf LF normalisiert. |
 | `seriousness` | Nein | `PERSONAL_USE` | Eines von `EXPLORING`, `PERSONAL_USE`, `SHARED`, `PUBLIC_LAUNCH`. |
+| `enforcement.*` | Nein | jeweils `false` | Opt-in-Schalter: `sprints`, `agent_teams`, `multitasking`, `continuous_execution`, `learning_loop`. |
+| `mcp_servers` | Nein | `{}` | MCP-Server, nach Servername indiziert. Jeder setzt `transport` (`stdio`, `http`, `sse` oder `streamable-http`): Ein `stdio`-Server braucht `command`, die anderen brauchen `url`. |
+| `agent_mcp_servers` | Nein | `{}` | Pro Helfer, nach seinem Namen indiziert, die MCP-Server, die er aufrufen darf. Wird von den Installationen für Claude Code und Gemini CLI gelesen. |
 | `harnesses` | Nein | `{}` | Harness-spezifische Überschreibungen, nach unterstützter Harness-ID indiziert. |
 | `exclude_harnesses` | Nein | `[]` | Unterstützte Harness-IDs, die von `--harness all` ausgeschlossen sind. |
+| `workspace.directory_name` | Nein | `.apothem` | Name des gemeinsamen Arbeitsordners; eine Pfadkomponente. |
+| `workspace.scope` | Nein | `project-local` | `project-local` (unter der Projektwurzel) oder `user-home` (unter Ihrem Home-Verzeichnis). |
 
 ## Harness-Schlüssel
 

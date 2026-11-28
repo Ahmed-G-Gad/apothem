@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "Adapter harness Apothem untuk GitHub Copilot (GA)."
 machineTranslated: true
-sourceHash: "b1b8b4918d7d754d"
+sourceHash: "040eeddf99d35ec6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -176,6 +176,10 @@ proyek Anda menggantikan kedua jalur tersebut:
 "/path/to/python" -E -s "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
 ```
 
+`-E -s` membuat Python mengabaikan `PYTHONPATH` dan variabel `PYTHON*` lainnya
+serta melewati site-packages pengguna Anda, sehingga tidak ada berkas di proyek
+yang dapat dimuat ke dalam hook.
+
 `--contract copilot` membuat dispatcher membaca input camelCase Copilot dan
 mencetak `{"additionalContext": ...}`, yang merupakan apa yang dibaca Copilot
 untuk kedua peristiwa ini.
@@ -240,6 +244,23 @@ untuk dikelola oleh adapter ini. Apothem menargetkan berkas instruksi
 berlingkup proyek yang terdokumentasi dan membiarkan pengaturan pengguna
 tingkat IDE tetap menjadi milik operator. Adapter menulis satu berkas hook,
 `.github/hooks/apothem.json`, dan tidak ada berkas lain di `.github/hooks/`.
+
+Copilot juga memuat dua berkas proyek yang menjadi tempat instalasi Apothem lain
+menulis blok: berkas `AGENTS.md` yang ditulis instalasi
+[Kimi Code](/docs/harnesses/kimi-code), dan berkas konteks yang ditulis
+[instalasi untuk alat baris perintah lain](/docs/harnesses/gemini-cli):
+
+```text
+<project>/AGENTS.md
+<project>/GEMINI.md
+```
+
+Jadi, di proyek yang memiliki instalasi tersebut, blok Apothem miliknya juga
+menjangkau Copilot. Ketika salah satu berkas itu sudah memuat blok Apothem,
+pemasangan `github-copilot` mencetak catatan yang menyebutkan berkas itu dan
+instalasi yang menulisnya.
+[Registri harness](/docs/reference/harness-registry#shared-roots) mencantumkan
+alat lain yang memuat setiap berkas.
 
 Di dalam repositori Apothem, `.github/copilot-instructions.md` adalah satu suara
 di antara permukaan instruksi asisten milik repositori tersebut. Dalam checkout
@@ -335,14 +356,26 @@ yang menjadi kosong dihapus. Setiap folder dicadangkan di bawah
 ## Gerbang konformitas
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
 
-Eksekusi `--all` mencakup validator mandiri. Eksekusi tersebut tidak menjalankan pemeriksaan koherensi multi-permukaan yang dijelaskan di bawah Catatan kompatibilitas. Untuk menjalankan pemeriksaan itu dengan nama di dalam checkout:
+Jalankan dari folder proyek Anda. Di Windows, gunakan `python` sebagai pengganti
+`python3` dan jalur lengkapnya, karena Windows PowerShell dan cmd tidak mengekspansi
+`~`: `$HOME\.apothem\src\apothem\conformity\gate.py` di PowerShell, atau
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` di cmd. Jalur itu adalah
+tempat installer menaruh engine, dan `-E -s` menjauhkan `PYTHONPATH` serta
+site-packages pengguna Anda dari gerbang; [Gerbang konformitas](/docs/conformity-gate)
+menjelaskan keduanya dan instalasi lainnya.
+
+Eksekusi `--all` mencakup validator mandiri. Eksekusi tersebut tidak menjalankan pemeriksaan koherensi multi-permukaan yang dijelaskan di bawah Catatan kompatibilitas. Untuk menjalankan pemeriksaan itu dengan nama, jalankan gerbang milik checkout itu sendiri dari akar checkout repositori Apothem:
 
 ```bash
-python -m apothem.conformity.gate --check multi-surface-coherence-grep AGENTS.md
+python3 -E -s src/apothem/conformity/gate.py --check multi-surface-coherence-grep AGENTS.md
 ```
+
+Salinan terpasang di bawah `~/.apothem` menemukan berkas yang dibandingkannya di
+sampingnya sendiri, sehingga bila dijalankan terhadap checkout, salinan itu
+melewati pemeriksaan tersebut dan melaporkan lulus.
 
 ## Pemecahan masalah
 

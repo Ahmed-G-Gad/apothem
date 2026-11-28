@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "Adaptador de entorno de Apothem para Claude Code (GA)."
 machineTranslated: true
-sourceHash: "42277b35237235a2"
+sourceHash: "4e5a2944b6820b60"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,18 +17,22 @@ sourceHash: "42277b35237235a2"
 apothem install --harness claude-code
 ```
 
-El adaptador `claude-code` instala el corpus compartido de Apothem en el árbol de descubrimiento nativo de Claude Code. Los agentes Markdown, las reglas, las skills, los output-styles y los ajustes se instalan en sus ubicaciones nativas; los prompts de comando se convierten en skills para que los flujos de trabajo reutilizables sigan visibles a través de la superficie de skills actual de Claude Code. El renderizador de la línea de estado se copia en `~/.claude/statuslines/`, pero no está conectado: Claude Code lee su línea de estado del ajuste `statusLine`, que el adaptador deja sin definir. Para activarla, añade a `settings.json` una entrada `statusLine` de `"type": "command"` que ejecute `~/.claude/statuslines/render.py`. El valor `commandWindows` del fragmento se ejecuta en Windows y nombra el intérprete sin comillas. Cuando la ruta del intérprete contiene un espacio, la instalación escribe en ese valor su forma corta de 8.3 de Windows, si el volumen la tiene. Las entradas de hook de `settings.json` conservan la ruta completa.
+El adaptador `claude-code` instala el corpus compartido de Apothem en el árbol de descubrimiento nativo de Claude Code. Los agentes Markdown, las reglas, las skills, los output-styles y los ajustes se instalan en sus ubicaciones nativas; los prompts de comando se convierten en skills para que los flujos de trabajo reutilizables sigan visibles a través de la superficie de skills actual de Claude Code. El renderizador de la línea de estado se copia en `~/.claude/statuslines/`, pero no está conectado: Claude Code lee su línea de estado del ajuste `statusLine`, que el adaptador deja sin definir. Para activarla, añade a `settings.json` una entrada `statusLine` de `"type": "command"` que ejecute `~/.claude/statuslines/render.py`. Los comandos del fragmento inician Python con `-E -s`, igual que los hooks. Ninguna instalación ni actualización cambia `statusLine`, así que si copiaste el comando de un fragmento anterior, que no tenía `-E -s`, añade tú mismo `-E -s` después del intérprete. Su valor `commandWindows` se ejecuta en Windows y nombra el intérprete sin comillas. Cuando la ruta del intérprete contiene un espacio, la instalación escribe en ese valor su forma corta de 8.3 de Windows, si el volumen la tiene. Las entradas de hook de `settings.json` conservan la ruta completa.
 
 **Archivos escritos:** `settings.json`, el bloque de Apothem en `CLAUDE.md`, `agents/`, `rules/`, `skills/`,
 `statuslines/`, `output-styles/` y el subárbol de soporte `.apothem/support/`
 (`.apothem/support/hooks/`, `.apothem/support/conformity/`,
 `.apothem/support/schemas/`, `.apothem/support/templates/`) bajo `~/.claude/`.
+La instalación también crea la carpeta de datos de Apothem, `~/.claude/.apothem/`
+de forma predeterminada, con `contexts/`, `learning/`, `memory/` y `plans/` dentro.
 Los archivos de comando se convierten en
 directorios de skill hijos. El despachador de hooks y la puerta de conformidad
 se ejecutan desde sus copias materializadas — las entradas de hook de
 `settings.json` invocan `~/.claude/.apothem/support/hooks/dispatch.py` y
 `~/.claude/.apothem/support/conformity/gate.py` por ruta absoluta, por lo que no
-se necesita ningún paquete `apothem` importable en el host.
+se necesita ningún paquete `apothem` importable en el host. Cada entrada inicia
+Python con `-E -s`, de modo que `PYTHONPATH`, las demás variables `PYTHON*` y tus
+site-packages de usuario nunca llegan a un hook.
 
 `~/.claude/CLAUDE.md` sigue siendo propiedad del operador. El adaptador escribe
 en él un único bloque de Apothem delimitado por centinelas, que contiene la
@@ -58,7 +62,29 @@ Apothem que ya existen se respaldan antes de su reemplazo; las entradas no
 relacionadas creadas por el operador se conservan. `settings.json` se fusiona
 para que las claves creadas por el operador sigan siendo recuperables.
 
-Los archivos escritos por el operador solo se conservan fuera de las carpetas siguientes. Cada instalación y cada actualización elimina cada una de estas carpetas bajo `~/.claude/` que exista, la haya escrito o no Apothem: `src/`, `conformity/`, `schemas/`, `hooks/`, `config/`, `scripts/`, `tools/`, `lib/`, `templates/`, `docs/`, `tests/`, `packaging/`, `mcp/`, `examples/`, `assets/`, `site/`, `public/` y `commands/`. También elimina `statuslines/__init__.py` y los archivos `AGENTS.md` de `agents/`, `rules/`, `skills/`, `statuslines/` y `output-styles/`. Una carpeta eliminada se borra completa, incluidos los archivos que hayas colocado en ella. También se eliminan los comandos de barra que conservas en `commands/`, y Apothem instala sus propios prompts de comando como skills bajo `skills/`. Un script de hook que conservas en `hooks/` se elimina, lo que deja cualquier entrada de `settings.json` que lo invoque apuntando a nada. La limpieza se ejecuta antes de que la instalación escriba sus propios archivos. Cada ruta eliminada se copia primero a `~/.apothem/backups/`, y el registro de instalación indica esa copia. Desinstalar no la restaura. Para restaurar una ruta eliminada, ejecuta `apothem rollback --harness claude-code --install-id ID` para la instalación que la eliminó, tal como se describe en la [referencia de rollback](/docs/cli-reference/rollback). Un `apothem rollback` sin más opciones solo revierte la última instalación. Los registros de instalación y sus copias se conservan para las 10 instalaciones más recientes, así que una ruta eliminada solo puede restaurarse mientras su instalación esté entre ellas. `apothem diff --harness claude-code` muestra estas eliminaciones como `Prune stale files` antes de que instales.
+La instalación y la actualización no tocan tus propios archivos bajo `~/.claude/`,
+incluidos los comandos de barra de `commands/` y los scripts de hook de `hooks/`.
+Las versiones anteriores, en cambio, eliminaban carpetas completas allí en cada
+instalación y actualización (`commands/`, `hooks/`, `scripts/`, `templates/` y
+otras), con los archivos que hubieras colocado en ellas; el
+[registro de cambios](/docs/changelog) nombra esas versiones. Consulta
+[Recuperar archivos que eliminó una versión
+anterior](#recovering-files-an-earlier-release-removed).
+
+### Recuperar archivos que eliminó una versión anterior [#recovering-files-an-earlier-release-removed]
+
+Cada carpeta eliminada se copió antes a
+`~/.apothem/backups/<timestamp>/claude_code/.claude/<folder>/`. La versión actual
+nunca borra un conjunto de respaldo que contenga una carpeta así, pero la
+retención de una versión anterior puede haber borrado ya conjuntos más antiguos.
+Para recuperarlos:
+
+1. Copia `~/.apothem/backups/` a otro lugar antes de volver a ejecutar Apothem.
+2. Copia a mano los archivos que necesites desde esa copia de vuelta a `~/.claude/`.
+3. Ejecuta `apothem update` después.
+
+`apothem rollback --install-id` revierte toda la instalación anterior, incluidos
+`settings.json` y `CLAUDE.md`, así que no es la forma de recuperar estos archivos.
 
 Las skills instaladas, y las skills incluidas en el plugin de Claude Code,
 llevan `user-invocable` en lugar del `userInvocable` del corpus de origen,
@@ -190,6 +216,29 @@ settings.json se puedan resolver. El adaptador no crea ninguna entrada de
 servidor MCP: registra los servidores con `claude mcp add` (consulta
 [Servidores MCP](/docs/reference/mcp)).
 
+Claude Code también lee el `AGENTS.md` de un proyecto, a partir de la versión que
+nombra su [página de memoria](https://code.claude.com/docs/en/memory#agents-md).
+Con el ajuste predeterminado **Project instructions**, solo lo hace cuando no hay
+ningún `CLAUDE.md`, `.claude/CLAUDE.md` ni `CLAUDE.local.md` en la carpeta de
+trabajo ni en una carpeta superior. Lee los archivos `AGENTS.md` de esas carpetas
+al iniciar una sesión, y el `AGENTS.md` de una carpeta por debajo de la carpeta de
+trabajo cuando su herramienta Read abre un archivo de esa carpeta y la carpeta no
+tiene ninguno de esos tres archivos. `~/.claude/CLAUDE.md` no cuenta, así que el
+bloque de Apothem que hay allí se sigue cargando junto a un `AGENTS.md` de
+proyecto. La instalación de Kimi Code escribe un bloque de Apothem en el
+`AGENTS.md` del proyecto, así que en un proyecto así Claude Code carga ambos
+bloques; el [registro de entornos](/docs/reference/harness-registry#shared-roots)
+lista los lectores de ese archivo y sus condiciones.
+
+**Project instructions** es un ajuste de todo el usuario, no por proyecto:
+establecerlo en `claude-md` en `/config` limita Claude Code a sus archivos
+`CLAUDE.md` en todos los proyectos, y `claude-md-and-agents-md` carga ambos tipos
+de archivo dondequiera que estén. Algunas sesiones no leen ningún `AGENTS.md`
+sea cual sea el ajuste: las que tienen desactivado el plugin integrado que lo lee,
+algunas primeras sesiones después de actualizar desde una versión que no podía
+leerlo y, en las primeras versiones, algunas sesiones en Amazon Bedrock o con la
+telemetría desactivada. La página de memoria las enumera y nombra las versiones.
+
 `~/.claude/agents/` es una raíz compartida que posee `Claude Code`, igual que
 `~/.claude/skills/` y `~/.claude/CLAUDE.md`: otras herramientas compatibles
 cargan esas rutas, así que los agentes, las skills y el bloque de Apothem que una
@@ -267,8 +316,17 @@ El paquete `apothem` instalado y el repositorio de origen no se ven afectados.
 ## Puerta de conformidad
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Ejecútalo desde la carpeta de tu proyecto. En Windows, usa `python` en lugar de
+`python3` y la ruta completa, ya que Windows PowerShell y cmd no expanden `~`:
+`$HOME\.apothem\src\apothem\conformity\gate.py` en PowerShell, o
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` en cmd. La ruta es
+donde el instalador coloca el motor, y `-E -s` mantiene tu `PYTHONPATH` y tus
+site-packages de usuario fuera de la puerta;
+[Puerta de conformidad](/docs/conformity-gate) explica ambas cosas y las demás
+instalaciones.
 
 Ejecutada contra el repositorio, la puerta exige la sección `## Bindings` en cada
 regla, comando, ayudante y skill. Ejecutada contra un árbol `~/.claude/`

@@ -2,7 +2,7 @@
 title: "OpenCode"
 description: "Adapter harness Apothem untuk OpenCode (Beta)."
 machineTranslated: true
-sourceHash: "d7cbf6354ea54e5b"
+sourceHash: "52003fe2932f10e5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,6 +32,10 @@ OpenCode, dan menormalkan definisi helper Apothem sebagai subhelper OpenCode.
 ~/.config/opencode/.apothem/support/{rules,templates,hooks}/
 ```
 
+Instalasi juga membuat folder data Apothem,
+`~/.config/opencode/.apothem/` secara default, yang berisi `contexts/`,
+`learning/`, `memory/`, dan `plans/`.
+
 Ini adalah jalur default. Ketika `XDG_CONFIG_HOME` disetel ke folder absolut,
 adapter menulis ke `$XDG_CONFIG_HOME/opencode/` sebagai gantinya, folder yang
 dibaca baik oleh OpenCode 1 maupun OpenCode 2. Nilai relatif atau root sistem
@@ -40,6 +44,47 @@ diikuti: OpenCode 1 membaca folder itu serta folder default, tetapi OpenCode 2
 membacanya sebagai pengganti folder default, sehingga ketika variabel itu menunjuk
 ke folder lain, instalasi memperingatkan bahwa OpenCode 2 tidak memuat instalasi
 tersebut.
+
+`~/.config` yang berupa tautan ke dalam direktori home Anda, seperti yang dibuat
+pengelola dotfile, tetap diikuti. Di Windows, junction dihitung sebagai tautan.
+Ketika tautan itu mengarah ke luar direktori home Anda, instalasi berhenti dengan
+`target path crosses
+a symlink` sebelum menulis berkas apa pun. Pada eksekusi pertama, ketika belum
+ada profil, instalasi berhenti satu langkah lebih awal, sebelum profil awal
+ditulis, dengan `Apothem
+could not create the starter profile`. Untuk menyimpan profil di luar direktori
+home Anda, buat profil itu di sana dengan `apothem profile init --profile PATH`
+dan berikan `--profile PATH` yang sama ke instalasi; instalasi kemudian tetap
+memerlukan `XDG_CONFIG_HOME`, seperti dijelaskan di bawah. `XDG_CONFIG_HOME`
+yang dituliskan di dalam direktori home Anda tetapi dibawa keluar oleh sebuah
+tautan, seperti `~/xdg` yang ditautkan ke drive lain, juga menghentikan
+instalasi, pencopotan, dan `apothem rollback`. Tautan pada jalur yang ditulis
+instalasi di dalam `~/.config/opencode/` juga menghentikannya, dengan
+`target path crosses a link`, atau dengan `target escapes the
+allowed materialization root` ketika tautan itu mengarah ke luar `~/.config`.
+
+Untuk memasang melalui tautan `~/.config` yang keluar dari direktori home Anda,
+setel `XDG_CONFIG_HOME` ke folder yang dituju tautan itu, dituliskan sebagai
+jalur folder itu sendiri, di luar direktori home Anda. Hanya jalur sebagaimana
+Anda menuliskannya yang dihitung: jalur di luar direktori home Anda diikuti ke
+mana pun tautannya mengarah. Instalasi kemudian menulis ke sana, dan entri
+`instructions` yang ditulis instalasi sebelumnya di `~/.config/opencode`
+diganti, sehingga konfigurasi mencantumkan setiap berkas satu kali. Pencopotan
+dengan pengaturan yang sama juga menghapus instalasi sebelumnya itu, bahkan
+ketika belum ada yang dipasang dengan pengaturan tersebut: `opencode.json`-nya,
+jika hanya berisi entri Apothem, disalin ke root cadangan Apothem
+(`~/.apothem/backups/`) sebelum dihapus, dan folder kosong yang dibuat instalasi
+itu juga dihapus. Ketika `XDG_CONFIG_HOME` menunjuk ke `~/.config` dengan
+penulisan lain di dalam direktori home Anda (`$HOME/.config` melalui tautan,
+huruf besar-kecil yang berbeda, atau nama pendek), instalasi tetap memakai
+`~/.config/opencode`, sehingga tetap menjadi satu instalasi.
+
+`XDG_CONFIG_HOME` tidak harus berasal dari profil shell Anda. `.envrc` sebuah
+proyek atau skrip yang Anda source juga dapat menyetelnya. Ketika variabel itu
+menunjuk ke folder di luar direktori home Anda, instalasi, pembaruan,
+pencopotan, dan `apothem rollback` mengubah berkas di folder itu, karena itulah
+folder yang ditunjuknya. Periksa `XDG_CONFIG_HOME` sebelum Anda menjalankan
+Apothem di folder proyek yang menyetelnya.
 
 ## Pemetaan profil ke konfigurasi native
 
@@ -72,23 +117,80 @@ konfigurasi OpenCode Anda sendiri, sehingga sebuah helper mengikuti pengaturan
 Ketika profil bersama mencantumkan server MCP, instalasi menulisnya ke blok `mcp`
 di `opencode.json`. OpenCode melakukan substitusi `{env:NAME}`, bukan `${NAME}`,
 sehingga setiap `${NAME}` di lingkungan, header, atau URL sebuah server ditulis
-sebagai `{env:NAME}`. Argumen command disalin apa adanya: referensi di sana
-dibiarkan agar diekspansi oleh server, atau shell yang dijalankannya. `$NAME` di
-dalam nilai lingkungan atau header, dan setiap bentuk `${...}` yang dibiarkan apa
-adanya, termasuk yang ada di argumen command, disalin apa adanya, dan instalasi
-memperingatkan bahwa OpenCode tidak mengekspansinya. Peringatan itu menyebutkan
-letak referensi, seperti `environment.TOKEN`, dan tidak pernah mencetak nilainya.
+sebagai `{env:NAME}`, kecuali entri lingkungan penerusan yang dijelaskan di
+bawah. Argumen command disalin apa adanya: referensi di sana dibiarkan agar
+diekspansi oleh server, atau shell yang dijalankannya. Instalasi memperingatkan
+tentang dua jenis referensi `$` yang tidak diekspansi OpenCode, yang kemudian
+diterima server apa adanya: `$NAME` di dalam nilai lingkungan atau header, dan
+setiap bentuk `${...}` lainnya, termasuk `${NAME}` biasa di argumen command.
+Peringatan itu menyebutkan letak referensi, seperti `environment.TOKEN`, dan
+tidak pernah mencetak nilainya.
+
+Instalasi menghilangkan entri lingkungan yang hanya meneruskan sebuah variabel
+dengan namanya sendiri, seperti `GITHUB_TOKEN: ${GITHUB_TOKEN}`, dan tidak
+menulis `environment` untuk server yang tidak lagi memiliki entri. OpenCode 1 dan
+OpenCode 2 menjalankan server lokal dengan lingkungan OpenCode sendiri dan
+menambahkan `environment` server di atasnya, sehingga server tetap menerima
+`GITHUB_TOKEN` yang dipakai OpenCode saat berjalan. Menghilangkan entri itu
+berbeda dari menuliskannya sebagai `{env:GITHUB_TOKEN}` dalam hal-hal berikut:
+
+- Ketika variabel tidak disetel, server melihatnya tidak disetel. Jika ditulis
+  sebagai `{env:GITHUB_TOKEN}`, variabel itu akan disetel ke string kosong.
+- OpenCode 1 menyetel beberapa variabel sendiri setelah membaca konfigurasinya:
+  `AWS_BEARER_TOKEN_BEDROCK` dan `AICORE_SERVICE_KEY` dari login penyedia yang
+  disimpannya, serta `OPENCODE_CONSOLE_TOKEN`. OpenCode 2 menyetel
+  `AICORE_SERVICE_KEY` dari pengaturan `serviceKey` milik penyedia yang
+  memakainya, saat pertama kali memakai penyedia itu. Server mendapatkan nilai
+  yang dimiliki variabel semacam itu saat server dimulai; jika ditulis sebagai
+  `{env:NAME}`, variabel itu akan memegang nilai dari saat konfigurasi dibaca,
+  yang sering kali berupa string kosong.
+- OpenCode 1 juga mengisi `{env:NAME}` dari login organisasi yang dibuat dengan
+  `opencode auth login <url>`, dan membaca token login itu sebelum lingkungannya
+  sendiri, tetapi tidak memasukkan token itu ke lingkungannya. Ketika hanya login
+  yang menyetel sebuah variabel, server tidak mendapatkannya; ketika keduanya
+  menyetelnya, server mendapatkan nilai dari lingkungan. Jika ditulis sebagai
+  `{env:NAME}`, server akan mendapatkan nilai dari login dalam kedua kasus.
+- Aplikasi yang dibangun di atas SDK OpenCode dapat mendaftarkan penyedia
+  workspace yang menjalankan server di dalam sandbox; CLI `opencode` dan
+  aplikasi desktop tidak mendaftarkan satu pun. Menurut kode sumber OpenCode,
+  server semacam itu mendapatkan lingkungan sandbox, bukan lingkungan tempat
+  OpenCode berjalan, sehingga variabel yang hanya disetel di tempat OpenCode
+  berjalan tidak sampai ke server itu.
+- Di Windows, tempat nama variabel tidak membedakan huruf besar-kecil, ketika
+  lingkungan OpenCode memegang nama itu dengan huruf besar-kecil yang berbeda
+  dari kunci entri, seperti `Github_Token` untuk `GITHUB_TOKEN`, server
+  mendapatkannya dalam bentuk huruf itu; jika ditulis sebagai
+  `{env:GITHUB_TOKEN}`, entri akan meneruskannya sebagai `GITHUB_TOKEN`. Program
+  yang membaca nama dengan memperhatikan huruf besar-kecil, seperti shell Git
+  Bash atau Cygwin, mungkin kemudian tidak menemukannya.
+- Jika ditulis sebagai `{env:NAME}`, nilai yang di dalamnya memuat teks
+  `{file:path}` akan diganti dengan isi berkas tersebut, dan entri `BUN_BE_BUN`
+  pada server yang command-nya `opencode` akan menggantikan `1` yang disetel
+  OpenCode di sana. Jika dihilangkan, nilai sampai ke server apa adanya, dan
+  `1` dari OpenCode tetap ada.
+
+Ketika sebuah server membutuhkan apa yang diberikan entri itu, nyatakan ulang
+server tersebut di bawah `harnesses.opencode.mcp_servers.<name>` dengan nilai
+ditulis sebagai `{env:NAME}`, yang disalin instalasi apa adanya. Hal itu
+mengembalikan risiko OpenCode 1 yang dijelaskan di bawah.
+
+Entri yang mengganti nama variabel (`TOKEN: ${FS_TOKEN}`), referensi di dalam
+nilai yang lebih panjang, setiap referensi header dan URL, serta `{env:NAME}`
+yang ditulis di override tetap ditulis sebagai `{env:NAME}`, dan paragraf
+berikutnya berlaku untuk semuanya.
 
 OpenCode menyisipkan nilai `{env:NAME}` ke dalam teks konfigurasi yang dibacanya
 tanpa meng-escape-nya; OpenCode 2 meng-escape-nya hanya ketika teks itu tidak
 dapat diurai tanpa itu. Karena itu, nilai dengan backslash (seperti jalur
 Windows), tanda kutip ganda, atau karakter kontrol dapat membuat OpenCode 1 gagal
-membaca berkas, dan di kedua versi `\t` atau `\n` di dalamnya sampai ke server
-sebagai karakter kontrol. Instalasi memeriksa setiap variabel semacam itu saat
-dijalankan dan memperingatkan tentang variabel yang berisi karakter tersebut.
-Sebagai gantinya, setel nilai itu sebagai `{file:path}` di bawah
-`harnesses.opencode.mcp_servers.<name>`, agar alat lain tetap memegang
-referensi `${NAME}`.
+membaca berkas, dan pesan galat OpenCode 1 kemudian mencetak teks konfigurasi
+dengan setiap nilai sudah terisi, termasuk rahasia. Di kedua versi, `\t` atau
+`\n` di dalam nilai semacam itu sampai ke server sebagai karakter kontrol.
+Instalasi memeriksa setiap variabel semacam itu saat dijalankan dan
+memperingatkan tentang variabel yang berisi karakter tersebut. Nyatakan ulang
+seluruh server itu di bawah `harnesses.opencode.mcp_servers.<name>`, karena
+override menggantikan seluruh server, dan tulis nilainya di sana sebagai
+`{file:path}`; alat lain tetap memegang referensi `${NAME}`.
 
 OpenCode menggabungkan setiap berkas yang disebut daftar `instructions` ke dalam
 setiap sesi ([aturan OpenCode](https://opencode.ai/docs/rules/)). Karena itu,
@@ -106,6 +208,149 @@ bawah `~/.config/opencode/.apothem/support/`, dan indeks menyebutkan setiap
 aturan serta situasi yang memerlukannya. Aturan, skill, atau command yang
 mengutip sebuah aturan, templat, atau prompt hook membacanya dari sana. Command,
 skill, dan definisi helper menggunakan lokasi penemuan native.
+
+OpenCode 1 membaca `config.json`, `opencode.json`, lalu `opencode.jsonc` dari
+folder konfigurasinya, dan daftar di berkas yang dibaca belakangan menggantikan
+daftar di berkas sebelumnya. Hal ini sama di setiap rilis OpenCode 1 yang kode
+sumbernya diperiksa, dari yang pertama hingga yang terbaru. Jadi daftar
+`instructions` di `opencode.jsonc` di samping `opencode.json` yang ditulis
+Apothem, bahkan daftar kosong, membuat OpenCode 1 tidak memuat dokumen profil
+dan aturan. `apothem
+install`, `apothem update`, dan `apothem verify` mencetak catatan yang
+menyebutkan berkas itu ketika hal itu terjadi; verify mencetaknya hanya selama
+`opencode.json` mencantumkan entri yang ditulis instalasi, dan catatan itu tidak
+menggagalkan pemeriksaan. Ketika daftar di `opencode.jsonc` sudah memuat setiap
+entri yang ditulis Apothem, OpenCode 1 memuatnya, tetapi dari salinan yang tidak
+diperbarui oleh instalasi dan pembaruan, dan catatan menyatakan hal itu. Ketika
+daftar itu hanya memuat sebagian, catatan menyebutkan berapa banyak yang
+dimuatnya dan bahwa sisanya tidak sampai ke OpenCode 1. OpenCode 2 menggabungkan
+daftar `instructions` dari setiap berkas yang dibacanya, sehingga catatan itu
+hanya berlaku untuk OpenCode 1.
+
+Selain berkas yang menghentikan OpenCode 1 seperti dijelaskan di bawah, tidak
+ada catatan untuk `opencode.jsonc` tanpa daftar `instructions`, atau untuk
+tautan simbolik ke `opencode.json`. Tidak ada catatan selama
+`OPENCODE_CONFIG_DIR` menunjuk ke folder ini, karena rilis OpenCode 1 saat ini
+kemudian membaca kedua berkas di sana untuk kedua kalinya dan menggabungkan
+daftarnya (rilis OpenCode 1 pertama tidak membacanya lagi). Tidak ada catatan
+juga selama `OPENCODE_CONFIG` menunjuk ke `opencode.json` ini, karena OpenCode 1
+kemudian membaca berkas itu lagi setelah berkas lainnya dan menggabungkan
+daftarnya. Untuk memuat daftar itu di OpenCode 1, hapus kunci `instructions` dari
+`opencode.jsonc`, atau pindahkan entrinya ke daftar di `opencode.json`, tempat
+instalasi dan pembaruan mempertahankan entri yang tidak mereka tulis.
+
+OpenCode 1 membaca `config.json`, `opencode.json`, dan `opencode.jsonc` sebagai
+JSONC: JSON dengan komentar dan koma di akhir, tidak lebih. Di setiap berkas,
+OpenCode 1 terlebih dahulu mengganti setiap `{env:NAME}` dengan nilai variabel
+itu dan setiap `{file:path}` dengan teks berkas itu. OpenCode 1 berhenti dengan
+galat dan tidak memuat konfigurasinya sama sekali, sehingga dokumen profil dan
+aturan juga tidak sampai kepadanya, ketika salah satu berkas itu:
+
+- tidak dapat diurai setelah nilai-nilai itu dimasukkan. Sintaks JSON5 seperti
+  kunci tanpa tanda kutip atau tanda kutip tunggal, `NaN`, komentar yang tidak
+  pernah ditutup, dan berkas yang hanya berisi spasi atau hanya komentar
+  semuanya termasuk. Begitu juga berkas yang hanya berisi satu `{env:NAME}` atau
+  `{file:path}` yang tidak memasukkan apa pun. OpenCode 1 memasukkan nilai
+  `{env:NAME}` apa adanya, sehingga nilai dengan backslash, seperti jalur
+  Windows, tanda kutip ganda, atau karakter kontrol dapat merusak berkas yang
+  selain itu valid; catatan itu menyatakannya, dan juga menyatakan ketika berkas
+  memiliki tingkat teratas atau nilai `instructions` yang ditolak OpenCode 1
+  setelah nilai itu diperbaiki. Apothem sendiri menulis `{env:NAME}` ke
+  `opencode.json` untuk setiap `${NAME}` di lingkungan, header, atau URL server
+  MCP di profil Anda, dan pembaruan menuliskannya kembali ketika Anda
+  menghapusnya dari berkas, sehingga untuk referensi semacam itu catatan
+  menyebutkan server tersebut beserta perbaikannya: nyatakan ulang server itu di
+  bawah `harnesses.opencode.mcp_servers.<name>` dengan nilai disimpan di sebuah
+  berkas dan ditulis sebagai `{file:path}` yang menyebut berkas itu.
+- memiliki tingkat teratas yang bukan objek, atau nilai `instructions` yang
+  bukan daftar teks.
+- memiliki `{file:path}` yang menyebut berkas yang tidak dapat dibaca
+  OpenCode 1, bahkan di dalam komentar `/* */`. `{file:path}` pada baris yang
+  diawali `//` dibiarkan apa adanya. Socket tidak dapat dibaca. Di Linux dan
+  macOS, OpenCode 1 menggunakan jalur absolut persis seperti yang tertulis, dan
+  mempertahankan `/` di akhir pada jalur `~/`, sehingga jalur ke sebuah berkas
+  yang ditulis dengan `/` di akhir, atau dengan `/.` di akhir pada jalur
+  absolut, tidak dapat dibaca.
+- adalah folder, atau berkas yang tidak dapat dibaca OpenCode 1 karena alasan
+  selain yang dijelaskan di bawah, seperti tautan simbolik yang mengarah kembali
+  ke dirinya sendiri.
+
+`apothem install`, `apothem update`, dan `apothem verify` mencetak catatan yang
+menyebutkan setiap berkas semacam itu, dan catatan tetap ada bahkan selama
+`OPENCODE_CONFIG_DIR` atau `OPENCODE_CONFIG` disetel, karena OpenCode 1 tetap
+membaca berkas itu. Dua dari nama-nama ini yang mengarah ke satu berkas melalui
+tautan simbolik mendapat satu catatan bersama; nama dalam lingkaran tautan
+simbolik tidak mengarah ke berkas mana pun, sehingga masing-masing mendapat
+catatannya sendiri. Pemeriksaan hanya melihat tingkat teratas dan nilai
+`instructions`, bukan setiap pengaturan yang dibaca OpenCode, dan tidak membaca
+berkas yang bukan berkas biasa, seperti named pipe atau perangkat, atau berkas
+yang sangat besar. Berkas konfigurasi semacam itu tidak mendapat catatan.
+`{file:path}` yang menyebut berkas yang sangat besar, yang muncul setelah 16 MiB
+pertama yang dimasukkan oleh nilai `{env:NAME}` dan berkas `{file:path}` dalam
+berkas itu (dihitung sebagai teks yang dimasukkan, setelah di-escape, sehingga
+satu karakter kontrol dihitung sebagai enam karakter), atau yang di Windows
+dimulai dari root tanpa huruf drive (OpenCode 1 membacanya di drive folder
+tempat ia dijalankan), diperiksa sebagai teks kosong selama berada di dalam
+nilai string, tempat teksnya tidak dapat mengubah hasil, sehingga sisa berkas
+tetap diperiksa. Begitu pula, di Windows, token yang menyebut apa pun
+selain berkas atau folder, seperti perangkat `NUL`, atau jalur dengan bagian
+yang diakhiri titik atau spasi, yang biasanya dibaca Windows tanpa titik atau
+spasi itu tetapi mungkin tidak oleh OpenCode 1; catatannya menambahkan bahwa
+jika OpenCode 1 tidak dapat membaca berkas itu, OpenCode 1 berhenti pada
+referensi itu terlebih dahulu. Di dalam kunci, di luar tanda kutip, di dalam
+escape sequence seperti `\u00`, atau setelah komentar `/*` yang tidak pernah
+ditutup, teksnya menentukan hasil, dan berkas tidak mendapat catatan kecuali
+`{file:path}` lain di dalamnya menyebut berkas yang tidak dapat dibaca
+OpenCode 1. Nilai `{env:NAME}` yang memasukkan lebih dari 16 MiB juga membuat
+berkas tidak mendapat catatan, begitu pula token `{file:path}` yang menyebut
+lebih dari 1.000 jalur berbeda. `{file:path}` yang menyebut null device,
+`/dev/null`, dibaca sebagai teks kosong di mana pun letaknya, sebagaimana oleh
+OpenCode 1. Token yang menyebut named pipe atau perangkat lain di Linux
+dan macOS membuat berkas tidak mendapat catatan, karena OpenCode 1 mungkin
+menunggunya selamanya. Catatan menyebutkan referensi `{env:NAME}`, tidak pernah
+nilainya, dan menampilkan `{file:path}` dengan karakter kontrolnya di-escape dan
+dipotong menjadi 200 karakter. Verify mencetak catatan ini selama
+`opencode.json` mencantumkan entri yang ditulis instalasi; catatan untuk
+`opencode.json` itu sendiri juga dicetak selama dokumen profil memuat blok
+Apothem, karena berkas semacam itu mungkin tidak mencantumkan apa pun yang dapat
+dibaca Apothem. Ketika instalasi atau pembaruan tidak dapat mengurai
+`opencode.json` bahkan sebagai JSON5, keduanya berhenti dengan galat
+`config.unparseable` yang menyebutkan berkas itu alih-alih catatan; verify, yang
+kemudian menggagalkan pemeriksaan, mencetak catatan itu.
+
+OpenCode 2 tidak membaca `config.json`. OpenCode 2 melewati `opencode.json` atau
+`opencode.jsonc` yang tidak dapat diuraikannya atau yang tingkat teratasnya bukan
+objek, sehingga tetap memuat `opencode.json` ketika hanya `opencode.jsonc` yang
+rusak. OpenCode 2 meng-escape nilai `{env:NAME}` ketika sebuah berkas tidak
+dapat diurai dengan nilai itu apa adanya, memasukkan teks kosong untuk
+`{file:path}` yang tidak dapat dibacanya, mengabaikan nilai `instructions` yang
+bukan daftar, termasuk satu nilai teks tunggal, dan membuang item daftar yang
+bukan teks, sehingga tidak satu pun dari hal itu menghentikannya memuat berkas.
+Catatan menyebutkan apa yang dilakukan OpenCode 2 dengan berkasnya ketika hal
+itu diketahui.
+
+Apothem mengganti `{env:NAME}` dengan nilai di lingkungannya sendiri, sehingga
+catatan itu benar ketika Apothem berjalan dengan variabel lingkungan yang
+dilihat OpenCode. OpenCode 1 juga mengambil nilai untuk `{env:NAME}` dari
+penyedia tempat Anda masuk dengan `opencode auth`, yang tidak dapat dilihat
+Apothem, sehingga token di luar tanda kutip yang memuat nilai semacam itu dapat
+mendapat catatan penguraian yang tidak disetujui OpenCode 1.
+
+Di rilis OpenCode 1 saat ini, berkas tanpa byte sama sekali, atau yang hanya
+berisi byte order mark, dibaca sebagai konfigurasi kosong dan tidak mendapat
+catatan. Di Linux dan macOS, rilis OpenCode 1 saat ini melewati berkas yang
+tidak boleh dibacanya (`Permission denied`), sehingga berkas itu tidak mendapat
+catatan di sana; pembacaan yang ditolak sistem dengan `Operation not permitted`
+menghentikannya, dan mendapat catatan. Di Windows, rilis itu berhenti untuk
+berkas yang tidak boleh dibacanya, sehingga berkas itu mendapat catatan. Rilis
+OpenCode 1 sebelumnya berhenti untuk berkas itu di setiap sistem, tetapi Apothem
+mencatatnya hanya di Windows.
+
+Setiap instalasi dan pembaruan menghapus setiap berkas di
+`~/.config/opencode/apothem/rules/` yang tidak diletakkan di sana oleh Apothem,
+setelah menyimpannya dalam set cadangan di bawah `~/.apothem/backups/`. Cadangan
+itu dihapus begitu ada 10 set cadangan harness yang lebih baru, jadi simpan
+berkas Anda sendiri di tempat lain.
 
 Dokumen profil `~/.config/opencode/apothem/rules/00-apothem-profile.md`
 membawa identitas dan preferensi Anda dari profil bersama, dan diakhiri dengan
@@ -184,14 +429,27 @@ diubah atau dihapus. YAML profil bersama dan mesin Apothem tidak terpengaruh.
 
 Instalasi yang dibuat oleh rilis sebelumnya di `~/.config/opencode/` ketika
 `XDG_CONFIG_HOME` menunjuk ke folder lain tetap berada di sana, dan OpenCode tidak
-pernah membacanya. Instalasi berikutnya menyatakannya; untuk menghapusnya,
-jalankan pencopotan dengan `XDG_CONFIG_HOME` tidak disetel.
+pernah membacanya. Instalasi berikutnya menyatakannya selama berkasnya masih
+ada; untuk menghapusnya, jalankan pencopotan dengan `XDG_CONFIG_HOME` tidak
+disetel. Ketika `~/.config` sejak itu telah menjadi tautan yang mengarah ke luar
+direktori home Anda, pencopotan itu ditolak dengan
+`target path crosses a link`, dan catatan menyebutkan folder yang dituju tautan
+itu sebagai gantinya: jalankan pencopotan dengan `XDG_CONFIG_HOME` disetel ke
+folder itu.
 
 ## Gerbang konformitas
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Jalankan dari folder proyek Anda. Di Windows, gunakan `python` sebagai pengganti
+`python3` dan jalur lengkapnya, karena Windows PowerShell dan cmd tidak mengekspansi
+`~`: `$HOME\.apothem\src\apothem\conformity\gate.py` di PowerShell, atau
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` di cmd. Jalur itu adalah
+tempat installer menaruh engine, dan `-E -s` menjauhkan `PYTHONPATH` serta
+site-packages pengguna Anda dari gerbang; [Gerbang konformitas](/docs/conformity-gate)
+menjelaskan keduanya dan instalasi lainnya.
 
 ## Pemecahan masalah
 
@@ -200,6 +458,13 @@ python -m apothem.conformity.gate --all .
 | Berkas konfigurasi tidak ditemukan | Jalankan ulang `apothem install --harness opencode` |
 | Verifikasi gagal | Jalankan `apothem update --harness opencode`, lalu verifikasi lagi |
 | Konten konfigurasi tidak terduga | Periksa `~/.config/apothem/profile.yaml` atau `--profile PATH`, lalu jalankan ulang `apothem update --harness opencode` |
+| Catatan menyatakan OpenCode 1 membaca daftar `instructions` di `opencode.jsonc` | Hapus kunci `instructions` dari `opencode.jsonc` di folder konfigurasi, atau pindahkan entrinya ke daftar di `opencode.json` |
+| Catatan menyatakan OpenCode 1 tidak dapat mengurai sebuah berkas | Perbaiki berkas itu di folder konfigurasi agar menjadi JSON yang hanya ditambah komentar dan koma di akhir (beri tanda kutip pada setiap kunci, gunakan tanda kutip ganda, tutup setiap komentar `/*`), atau hapus berkas itu |
+| Catatan menyatakan OpenCode 1 tidak dapat mengurai sebuah berkas setelah memasukkan nilai `{env:NAME}`-nya | Ubah variabel itu agar nilainya tidak berisi backslash, tanda kutip ganda, atau karakter kontrol (di Windows, tulis jalur dengan garis miring biasa), atau hapus `{env:NAME}` itu. Ketika catatan menyatakan bahwa Apothem menulis referensi itu untuk server MCP di profil Anda, pembaruan menuliskannya kembali jika Anda menghapusnya, jadi ubah variabelnya atau, untuk mempertahankannya apa adanya, nyatakan ulang server itu di bawah `harnesses.opencode.mcp_servers.<name>` dengan nilai disimpan di sebuah berkas dan ditulis sebagai `{file:path}` yang menyebut berkas itu. Ketika catatan menyebutkan masalah kedua, perbaiki juga masalah itu |
+| Catatan menyatakan OpenCode 1 memerlukan objek di tingkat teratas sebuah berkas, atau nilai `instructions` yang berupa daftar teks | Jadikan berkas itu satu objek JSON, dan jadikan `instructions` daftar teks seperti `["notes.md"]`, atau hapus kunci itu |
+| Catatan menyatakan OpenCode 1 tidak dapat membaca berkas yang disebut sebuah `{file:path}` | Buat berkas itu, perbaiki jalurnya, atau hapus `{file:path}` itu |
+| Catatan menyatakan sebuah berkas adalah folder | Pindahkan atau ganti nama folder itu di folder konfigurasi |
+| Catatan menyatakan OpenCode 1 tidak dapat membaca sebuah berkas | Izinkan akun pengguna Anda membaca berkas itu, ganti tautan simbolik yang mengarah kembali ke dirinya sendiri, atau hapus berkas itu |
 
 ## Tombol konfigurasi
 

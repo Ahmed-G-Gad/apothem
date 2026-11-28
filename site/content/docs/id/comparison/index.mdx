@@ -2,7 +2,7 @@
 title: "Perbandingan"
 description: "Cara mengevaluasi Apothem dibandingkan konfigurasi harness yang dipelihara secara manual dan pendekatan konfigurasi lainnya, dengan matriks fitur dan halaman per harness."
 machineTranslated: true
-sourceHash: "3f105749820c670d"
+sourceHash: "e3a64866567c64ec"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -24,12 +24,12 @@ Alat lain menyelesaikan irisan-irisan yang berdekatan dari masalah ini. Pengelol
 | ---------- | :-----: | :----------------------------------: | :------: | :---: |
 | Satu sumber ke skema native banyak alat | Ya — tujuh belas adapter harness | Tidak — salin, symlink, atau templat, tanpa terjemahan | Ya — 60 alat ditambah standar AGENTS.md dan Agent Skills | Sebagian — aturan digabungkan ke dalam berkas instruksi setiap alat; MCP, skill, dan subagen ditulis dalam bentuk native |
 | Unit tersinkron | aturan, skill, subagen, slash-command, hook, output-style, statusline, templat, validator konformitas, skema, templat instruksi per-harness, dan templat pengaturan Claude Code | berkas sembarang | aturan, ignore, MCP, command, subagen, skill, hook, izin, checks (instruksi pemeriksaan tinjauan kode) | aturan, MCP, skill, subagen |
-| Korpus tata kelola (aturan perilaku ditambah gerbang konformitas mekanis) | Ya — `python -m apothem.conformity.gate` | Tidak | Tidak — fitur `checks`-nya menyinkronkan pemeriksaan tinjauan kode ke alat; tidak ada gerbang konformitas atas aturan | Tidak |
+| Korpus tata kelola (aturan perilaku ditambah gerbang konformitas mekanis) | Ya — skrip `conformity/gate.py` | Tidak | Tidak — fitur `checks`-nya menyinkronkan pemeriksaan tinjauan kode ke alat; tidak ada gerbang konformitas atas aturan | Tidak |
 | Pipeline rencana dan riset yang deterministik | Ya — `/plan-spec` hingga `/plan-execute`, `/research` tiga belas tahap | Tidak | Tidak | Tidak |
 | Benteng audit yang mendeteksi dan memperbaiki | Ya — sapuan sebelas perintah, loop audit ulang `/fortress` | Tidak | Tidak | Tidak |
 | Memori tahan lama lintas sesi | Ya — penyimpanan `memory/records.json` di bawah home data Apothem, dibuat saat pemasangan | Tidak dibandingkan | Tidak dinyatakan dalam README-nya | Tidak dinyatakan dalam README-nya |
 | Rilis yang diperkeras rantai pasoknya | Ya — SBOM, Sigstore, SLSA, target Scorecard | Tidak dibandingkan | Tidak dinyatakan dalam README-nya | Tidak dinyatakan dalam README-nya |
-| Siklus hidup terverifikasi yang dapat dibalik | Ya — cadangan, `apothem verify --json`, pencopotan tanpa berkas yatim | chezmoi: `chezmoi verify` memeriksa setiap target; Stow: hanya symlink | Tidak dinyatakan dalam README-nya | Cadangan `.bak` dan `ruler revert`; tidak ada perintah verify dalam README-nya |
+| Siklus hidup terverifikasi yang dapat dibalik | Ya — cadangan, `apothem verify --json`, pencopotan yang hanya menghapus berkas milik Apothem dan melaporkan apa yang harus ditinggalkannya | chezmoi: `chezmoi verify` memeriksa setiap target; Stow: hanya symlink | Tidak dinyatakan dalam README-nya | Cadangan `.bak` dan `ruler revert`; tidak ada perintah verify dalam README-nya |
 
 Ketika sebuah alat sejawat lebih kuat, alat itu disebutkan namanya: **rulesync** menjangkau lebih dari tiga kali lipat jumlah alat dan menyinkronkan MCP, berkas ignore, izin, dan pemeriksaan tinjauan, yang tidak dilakukan manifest Apothem; **ruler** menjangkau hampir dua kali lipat jumlah alat dengan perintah revert miliknya sendiri. Apothem menukar jumlah alat mentah dengan disiplin tata kelola, audit, dan siklus hidup yang disertakan di sekitar sinkronisasi — gerbang konformitas, pipeline rencana dan riset yang deterministik, benteng audit sebelas perintah, memori tahan lama, dan siklus hidup terverifikasi yang dapat dibalik — yang tidak dibawa oleh salah satu alat sinkronisasi tersebut.
 

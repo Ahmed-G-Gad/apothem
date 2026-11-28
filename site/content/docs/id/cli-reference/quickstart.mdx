@@ -2,7 +2,7 @@
 title: "quickstart"
 description: "Referensi CLI untuk perintah eksekusi pertama terpandu apothem quickstart."
 machineTranslated: true
-sourceHash: "951e6d6877611c54"
+sourceHash: "a461df3fe9749c28"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -39,7 +39,12 @@ setiap harness yang didukung dan selalu merupakan pilihan eksplisit.
 - **Profil** — jika jalur profil yang di-resolve tidak memiliki berkas, `quickstart` menawarkan untuk membuat profil awal (membuatnya otomatis di bawah `--yes`, shell non-interaktif, atau `--format json`) dan menyebutkan bidang identitas placeholder yang perlu dipersonalisasi.
 - **Pratinjau + konfirmasi** — untuk `--harness all`, target dicantumkan di bawah dua judul (root proyek versus direktori home Anda), dan eksekusi interaktif meminta konfirmasi sebelum menulis di luar proyek. Satu harness bernama dipasang tanpa pratinjau atau prompt. `--yes`, shell non-interaktif, dan `--format json` melanjutkan tanpa meminta konfirmasi. Menolak pratinjau `--harness all` membatalkan proses sebelum penulisan instalasi; profil awal yang dibuat pada langkah 1 tetap dipertahankan.
 - **Pemasangan** — kemampuan yang tidak didukung secara native oleh sebuah harness diringkas sebagai satu catatan terkelompok per harness (berikan `--verbose` untuk detail per kemampuan); himpunan lengkapnya selalu ada di larik warnings `--format json`.
-- **Langkah berikutnya** — keluaran terminal menyebutkan perintah lanjutan (`apothem verify …`, `apothem doctor`).
+- **Langkah berikutnya** — keluaran terminal menyebutkan perintah lanjutan (`apothem verify …`, `apothem doctor`). Folder `--project` dikutip untuk shell,
+  seperti [`doctor`](/docs/cli-reference/doctor) mengutipnya. Bila tanda kutip tidak dapat
+  menampungnya, keluaran mencetak perintah hingga `--project` dan menyebut folder
+  dengan kata-kata sesudahnya, dan entri `recommended_next` di JSON berbunyi
+  `Run apothem verify --harness … with --project set to <folder>`, yang bukan perintah
+  untuk dijalankan apa adanya.
 
 ## Opsi
 
@@ -70,11 +75,22 @@ terpandu:
   "steps": [
     {"step": "profile", "outcome": "created", "path": "…", "placeholder_identity": ["name", "email", "github"]},
     {"step": "install", "status": "success", "harness": "all", "files_written": ["…"], "warnings": [], "results": []},
-    {"step": "recommend", "next": ["apothem verify --harness all --project .", "apothem doctor"]}
+    {"step": "recommend", "next": ["apothem verify --harness all --project \".\"", "apothem doctor"]}
   ],
-  "recommended_next": ["apothem verify --harness all --project .", "apothem doctor"]
+  "recommended_next": ["apothem verify --harness all --project \".\"", "apothem doctor"]
 }
 ```
+
+Ketika langkah instalasi membiarkan sebuah berkas apa adanya karena baris penanda
+Apothem-nya (lihat [`install`](/docs/cli-reference/install#capability-notes)), kedua nilai
+`status` adalah `"partial"` dan kode keluarnya `2`. Dalam mode biasa, proses
+mencetak baris `✗` milik instalasi, lalu langkah berikutnya yang disarankan. Karena
+`apothem verify` gagal untuk berkas itu sampai Anda memperbaikinya, langkah pertama
+lalu adalah memperbaiki setiap berkas yang dibiarkan instalasi apa adanya, sesuai
+peringatannya, dan menjalankan `apothem update` untuk alat yang sama
+(`Fix the files it left:` dalam mode biasa, dan entri `recommended_next` pertama di
+JSON, `Fix each file the install left as it is, as its warning says, then run apothem update --harness …`),
+sebagai pengganti `apothem verify`.
 
 ## Contoh
 
@@ -91,7 +107,7 @@ apothem quickstart --harness claude-code --json
 |---|---|
 | 0 | Eksekusi terpandu selesai |
 | 1 | Galat validasi, profil, harness, proyek, atau adapter yang diharapkan |
-| 2 | Materialisasi batch parsial setelah setidaknya satu penulisan |
+| 2 | Parsial: sebuah batch berhenti setelah setidaknya satu penulisan, atau instalasi membiarkan berkas tempat Apothem menyimpan bloknya apa adanya karena baris penanda Apothem-nya |
 | 64 | Galat penggunaan: opsi atau perintah yang tidak dikenal, atau nilai opsi yang hilang atau tidak valid. Di bawah `--json`, galat berupa amplop JSON dengan kode `cli.usage`. |
 
 ## Lihat juga

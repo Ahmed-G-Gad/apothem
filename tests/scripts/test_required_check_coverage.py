@@ -5,7 +5,10 @@
 `ci.yml` runs the REAL `quality / <os> / py<ver>` matrix + `coverage`; the
 `ci-docs-stub.yml` workflow echoes those same context names green for
 documentation-only PRs so they can satisfy `main`'s branch protection without the full
-Python matrix.
+Python matrix. In `ci.yml` each Windows Python version runs as two shard cells
+of the `quality` job, and the `quality-windows` job reports the required
+`quality / windows-latest / py<ver>` contexts; two tests pin that the shards
+cover the whole suite and that those contexts fail unless every cell passed.
 
 Two mechanisms keep the stub honest, and these tests pin both:
 
@@ -34,6 +37,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import pytest
 import yaml
 
 _WORKFLOWS = Path(__file__).resolve().parents[2] / ".github" / "workflows"
@@ -77,16 +81,161 @@ def test_gated_surfaces_run_the_real_matrix_not_the_stub() -> None:
         )
 
 
+#: The suffix ci.yml's quality job adds to the name of a Windows shard cell.
+#: A Linux cell has shard 0, which the expression reads as false: no suffix.
+_SHARD_SUFFIX = "${{ matrix.shard && format(' / shard {0} of 2', matrix.shard) || '' }}"
+
+
+def _cells(matrix: dict) -> list[dict]:
+    """Return the cells of a workflow matrix: the product, less exclude, plus include.
+
+    It models only the two include shapes these workflows use, and fails on
+    any other: an entry that sets a matrix key to a value that key's list
+    lacks (a new Python version) adds a cell of its own, and an entry that
+    sets no matrix key and no key an earlier entry set is merged into every
+    cell, including cells an earlier include added (GitHub merges it only
+    into the original combinations). GitHub's full rule, under which an entry merges into the cells it
+    would not overwrite, is not modelled, so a new include shape must extend
+    this function before the tests can trust its context names.
+    """
+    keys = [key for key in matrix if key not in ("include", "exclude")]
+    cells: list[dict] = [{}]
+    for key in keys:
+        cells = [{**cell, key: value} for cell in cells for value in matrix[key]]
+    for rule in matrix.get("exclude", []):
+        cells = [c for c in cells if any(c.get(k) != v for k, v in rule.items())]
+    for extra in matrix.get("include", []):
+        if any(k in keys and v not in matrix[k] for k, v in extra.items()):
+            cells.append(dict(extra))
+            continue
+        assert not any(k in keys for k in extra), (
+            f"unsupported include {extra!r}: it sets a matrix key to a value "
+            "the matrix already has, which _cells does not model"
+        )
+        assert not any(k in cell for cell in cells for k in extra), (
+            f"unsupported include {extra!r}: it sets a key a cell already has"
+        )
+        for cell in cells:
+            cell.update(extra)
+    return cells
+
+
+def test_cells_refuses_an_include_shape_it_does_not_model() -> None:
+    matrix = {"os": ["a", "b"], "python-version": ["1"]}
+    assert _cells({**matrix, "include": [{"python-version": "2", "x": 1}]})[-1] == {
+        "python-version": "2",
+        "x": 1,
+    }
+    assert all(c["x"] == 1 for c in _cells({**matrix, "include": [{"x": 1}]}))
+    with pytest.raises(AssertionError, match="unsupported include"):
+        _cells({**matrix, "include": [{"os": "a", "x": 1}]})
+    with pytest.raises(AssertionError, match="unsupported include"):
+        _cells({**matrix, "include": [{"x": 1}, {"x": 2}]})
+
+
+def _context(template: str, cell: dict) -> str:
+    """Return the check name a job *template* reports for one matrix *cell*."""
+    shard = cell.get("shard")
+    name = template.replace(_SHARD_SUFFIX, f" / shard {shard} of 2" if shard else "")
+    for key, value in cell.items():
+        name = name.replace(f"${{{{ matrix.{key} }}}}", str(value))
+    assert "${{" not in name, name
+    return name
+
+
+def _required_ci_contexts(ci: dict) -> set[str]:
+    """Return the quality contexts ci.yml reports, the advisory cell left out."""
+    quality = ci["jobs"]["quality"]
+    windows = ci["jobs"]["quality-windows"]
+    return {
+        _context(quality["name"], cell)
+        for cell in _cells(quality["strategy"]["matrix"])
+        if not cell.get("prerelease")
+    } | {
+        _context(windows["name"], cell)
+        for cell in _cells(windows["strategy"]["matrix"])
+    }
+
+
 def test_stub_reports_the_required_context_names() -> None:
     stub = _load("ci-docs-stub.yml")
     jobs = stub["jobs"]
     assert "quality" in jobs
     assert "coverage" in jobs
-    # The stub's job NAME templates must match ci.yml's so the reported status
-    # contexts are byte-identical to the required ones.
+    # The stub must report exactly the quality contexts ci.yml reports, each
+    # Windows one from quality-windows, so a docs-only pull request satisfies
+    # the same required names a code change does.
     ci = _load("ci.yml")
-    assert jobs["quality"]["name"] == ci["jobs"]["quality"]["name"]
+    stub_contexts = {
+        _context(jobs["quality"]["name"], cell)
+        for cell in _cells(jobs["quality"]["strategy"]["matrix"])
+    }
+    assert len(stub_contexts) == 10
+    assert _required_ci_contexts(ci) == {
+        *stub_contexts,
+        *(
+            f"quality / windows-latest / py{version} / shard {k} of 2"
+            for version in ("3.10", "3.11", "3.12", "3.13", "3.14")
+            for k in (1, 2)
+        ),
+    }
     assert jobs["coverage"]["name"] == ci["jobs"]["coverage"]["name"]
+
+
+def test_each_windows_version_runs_every_shard_and_linux_runs_whole() -> None:
+    # The Windows cells split the suite with --shard=K/2. A shard value
+    # missing for one Python version would leave part of the suite unrun on
+    # it; a Linux cell with a shard would run only part of the suite.
+    quality = _load("ci.yml")["jobs"]["quality"]
+    [pytest] = [s for s in quality["steps"] if s.get("name") == "Pytest"]
+    assert pytest["run"] == (
+        "python -m pytest --color=yes "
+        "${{ matrix.shard && format('--shard={0}/2', matrix.shard) || '' }}"
+    )
+    assert "if" not in pytest
+    assert quality["name"].endswith(_SHARD_SUFFIX)
+    cells = _cells(quality["strategy"]["matrix"])
+    for version in ("3.10", "3.11", "3.12", "3.13", "3.14"):
+        shards = sorted(
+            c["shard"]
+            for c in cells
+            if c["os"] == "windows-latest" and c["python-version"] == version
+        )
+        assert shards == [1, 2], version
+        linux = [
+            c.get("shard")
+            for c in cells
+            if c["os"] == "ubuntu-latest" and c["python-version"] == version
+        ]
+        assert linux == [0], version
+    # Only the advisory pre-release cell may fail without failing the job.
+    assert quality["continue-on-error"] == "${{ matrix.prerelease || false }}"
+    assert [c for c in cells if c.get("prerelease")] == [
+        {"os": "ubuntu-latest", "python-version": "3.15", "prerelease": True}
+    ]
+    for step in quality["steps"]:
+        assert "continue-on-error" not in step, step.get("name")
+
+
+def test_the_windows_contexts_fail_unless_every_quality_cell_passed() -> None:
+    # As with coverage: GitHub skips a job whose needed job failed or was
+    # cancelled, and a skipped required check counts as passed. So the job
+    # that reports the required Windows contexts runs always() and fails
+    # itself, right after the harden-runner step, unless the quality cells'
+    # result is success.
+    job = _load("ci.yml")["jobs"]["quality-windows"]
+    assert job["name"] == "quality / windows-latest / py${{ matrix.python-version }}"
+    assert job["needs"] == ["quality"]
+    assert job["if"] == "always()"
+    assert "continue-on-error" not in job
+    check = job["steps"][1]
+    assert "if" not in check
+    assert "continue-on-error" not in check
+    assert check.get("shell", "bash") == "bash"
+    assert check["env"]["QUALITY_RESULT"] == "${{ needs.quality.result }}"
+    assert '[ "${QUALITY_RESULT}" != "success" ]' in check["run"]
+    assert "exit 1" in check["run"]
+    assert not _ERREXIT_OFF.search(check["run"])
 
 
 def _shard_parts(ci: dict) -> list[int]:

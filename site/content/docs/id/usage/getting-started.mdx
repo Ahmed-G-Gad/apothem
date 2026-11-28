@@ -2,7 +2,7 @@
 title: "Alur kerja inti"
 description: "Empat alur kerja inti Apothem — profil, aturan, rencana, dan gerbang konformitas."
 machineTranslated: true
-sourceHash: "a53e8d62d7df7ef4"
+sourceHash: "2c2b69afe24907e5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -70,16 +70,21 @@ Lihat [referensi perintah pipeline](/docs/pipeline) untuk alur lengkapnya.
 
 ## Gerbang konformitas
 
-Dari checkout Apothem, jalankan:
+Dari checkout Apothem, jalankan dari root checkout (`python -m` membaca modul
+dari folder saat ini terlebih dahulu, jadi gunakan folder yang Anda percayai):
 
 ```bash
 PYTHONPATH=src python -m apothem.conformity.gate --all .
 ```
 
-Setelah pemasangan skrip, jalankan:
+Setelah pemasangan skrip, jalankan gerbang melalui jalur skripnya dengan `-E -s`,
+dari proyek yang ingin Anda periksa. Di Windows, gunakan `python` sebagai pengganti
+`python3`, dan `$HOME\.apothem\...` di PowerShell atau `%USERPROFILE%\.apothem\...` di cmd
+sebagai pengganti `~/.apothem/...`, karena Windows PowerShell dan cmd tidak
+mengekspansi `~`; [Gerbang konformitas](/docs/conformity-gate) menjelaskan flag-nya:
 
 ```bash
-PYTHONPATH="$HOME/.apothem/src" python3 -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
 
 Menjalankan semua pemeriksaan konformitas mekanis dan melaporkan lulus/gagal per

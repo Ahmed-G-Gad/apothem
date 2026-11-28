@@ -2,7 +2,7 @@
 title: "متغيّرات بيئة المُثبِّت"
 description: "تحكّم في مُثبِّت السكربت (الوجهة، والمصدر، وإطار العمل، والملف التعريفي، والتحقّق) بمتغيّرات البيئة."
 machineTranslated: true
-sourceHash: "3210277a66924394"
+sourceHash: "50b79838c9651500"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -23,12 +23,12 @@ sourceHash: "3210277a66924394"
 
 | المتغيّر | يتحكّم في | القيمة الافتراضية |
 | --- | --- | --- |
-| <bdi>`APOTHEM_HOME`</bdi> | وجهة التثبيت لشجرة المصدر المُستنسَخة | <bdi>`$HOME/.apothem`</bdi> |
-| <bdi>`APOTHEM_REPO`</bdi> | مستودع <bdi>Git</bdi> البعيد المراد استنساخه | <bdi>`https://github.com/ahmed-g-gad/apothem`</bdi> |
+| <bdi>`APOTHEM_HOME`</bdi> | وجهة التثبيت لشجرة المصدر؛ ويجب أن يكون مجلدًا لا يكتب فيه أحد سواك (انظر أدناه)، وتُحذِّر المُثبِّتات حين يستطيع غيرك الكتابة فيه أو في المجلد الذي يحويه | <bdi>`$HOME/.apothem`</bdi> |
+| <bdi>`APOTHEM_REPO`</bdi> | مستودع <bdi>Git</bdi> البعيد المراد استنساخه؛ وتُرفَض القيمة التي تبدأ بـ <bdi>`-`</bdi> | <bdi>`https://github.com/ahmed-g-gad/apothem`</bdi> |
 | <bdi>`APOTHEM_REF`</bdi> | مرجع <bdi>Git</bdi> المراد سحبه؛ وغير المضبوط يَحُلّ أحدث وسم <bdi>`vMAJOR.MINOR.PATCH`</bdi> موقَّع، وقيمة الوسم تثبّته، و<bdi>`main`</bdi> يختار الفرع المتحرّك. ويُجهَض التثبيت عند أي مرجع ليس وسمًا، مثل <bdi>`main`</bdi>، ما لم يُضبَط <bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi> | غير مضبوط (أحدث وسم موقَّع) |
-| <bdi>`APOTHEM_ALLOW_UNVERIFIED`</bdi> | يُخفِّض فشل التحقّق من توقيع الوسم من إجهاض فادح إلى تحذير عند ضبطه على <bdi>`1`</bdi> | <bdi>`0`</bdi> (يتحقّق، ويرفض عند الفشل) |
-| <bdi>`APOTHEM_VERIFY`</bdi> | <bdi>`signature`</bdi> يتحقّق من توقيع <bdi>GPG</bdi> لوسم الإصدار؛ و<bdi>`checksum`</bdi> يُثبِّت أرشيف المنصّة الخاص بالإصدار بعد فحص بصمة <bdi>SHA-256</bdi> الخاصة به مقابل ملف <bdi>`SHA256SUMS`</bdi> الخاص بالإصدار (سلامة، لا إثبات لهوية من نشره) | <bdi>`signature`</bdi> |
-| <bdi>`APOTHEM_RELEASE_BASE`</bdi> | قاعدة التنزيل لوضع التحقّق بالمجموع الاختباري | <bdi>`<APOTHEM_REPO>/releases/download`</bdi> |
+| <bdi>`APOTHEM_ALLOW_UNVERIFIED`</bdi> | عند ضبطه على <bdi>`1`</bdi> يُخفِّض فشل فحص الوسم في مسار الاستنساخ من إجهاض فادح إلى تحذير، ويسمح بـ <bdi>`APOTHEM_VERIFY=checksum`</bdi>؛ أما مسار <bdi>`release`</bdi> فلا يُخفَّض أبدًا، ولا يتخطّى أي إعداد الفحصَ الذي يتأكّد من أن الوسم الموقَّع هو الوسم المسمّى للإصدار، لكن بما أنه يُمرِّر وسمًا غير موقَّع، أو موقَّعًا بمفتاح آخر، فإن ذلك الفحص لا يحمي إلا الوسوم التي تحمل توقيع مفتاح المشرف | <bdi>`0`</bdi> (يتحقّق، ويرفض عند الفشل) |
+| <bdi>`APOTHEM_VERIFY`</bdi> | <bdi>`auto`</bdi> يستخدم <bdi>`release`</bdi> حين يكون <bdi>`cosign`</bdi> على <bdi>`PATH`</bdi> ولا يكون <bdi>`APOTHEM_HOME`</bdi> نسخة <bdi>git</bdi> مُستنسَخة، و<bdi>`signature`</bdi> فيما عدا ذلك؛ و<bdi>`release`</bdi> يُثبِّت أرشيف المنصّة بعد أن يحمل الوسم توقيع مفتاح المشرف، ويؤكّد <bdi>cosign</bdi> أن سير عمل الإصدار وقّع <bdi>`SHA256SUMS`</bdi> في تشغيل على إيداع الوسم، وتطابق بصمة <bdi>SHA-256</bdi> للأرشيف ما فيه؛ و<bdi>`signature`</bdi> يفحص توقيع <bdi>GPG</bdi> لوسم الإصدار مقابل مفتاح المشرف المثبَّت؛ و<bdi>`checksum`</bdi> يُثبِّت الأرشيف بعد فحص <bdi>SHA-256</bdi> وحده ويحتاج إلى <bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi>. وضع المجموع الاختباري لا يتحقّق من الإصدار. فملف <bdi>SHA256SUMS</bdi> يأتي من الإصدار نفسه الذي يأتي منه الأرشيف، لذا لا يُثبت التطابق إلا أن التنزيل غير تالف؛ ومن يستطيع تغيير ملفات الإصدار يستطيع تغيير الاثنين. | <bdi>`auto`</bdi> |
+| <bdi>`APOTHEM_RELEASE_BASE`</bdi> | قاعدة التنزيل لوضعَي <bdi>`release`</bdi> و<bdi>`checksum`</bdi> | <bdi>`<APOTHEM_REPO>/releases/download`</bdi> |
 | <bdi>`APOTHEM_SOURCE`</bdi> | شجرة مصدر محلية صريحة تُستخدَم بدلًا من الاستنساخ | غير مضبوط (استنساخ) |
 | <bdi>`APOTHEM_HARNESS`</bdi> | إطار العمل ذو نطاق المستخدم المراد تثبيته (<bdi>`antigravity`</bdi>، <bdi>`claude-code`</bdi>، <bdi>`codex`</bdi>، <bdi>`hermes`</bdi>، <bdi>`open-claw`</bdi>، <bdi>`opencode`</bdi>، <bdi>`qwen-code`</bdi>). لا يمرّر المُثبِّت <bdi>`--project`</bdi>، لذا يفشل إطار العمل ذو نطاق المشروع بالرمز <bdi>`project.required`</bdi>؛ ثبِّت تلك الأُطُر بعد ذلك بالأمر <bdi>`apothem install --harness NAME --project PATH`</bdi>. | <bdi>`claude-code`</bdi> |
 | <bdi>`APOTHEM_PROFILE`</bdi> | مسار ملف <bdi>YAML</bdi> للملف التعريفي المشترك | <bdi>`$HOME/.config/apothem/profile.yaml`</bdi> |
@@ -42,17 +42,174 @@ sourceHash: "3210277a66924394"
 <bdi>`APOTHEM_REPO`</bdi> / <bdi>`APOTHEM_REF`</bdi> أبدًا، ويتخطّى حلّ الوسم
 والتحقّق من التوقيع (لا يُجلَب شيء للتحقّق منه).
 
-عندما يشير <bdi>`APOTHEM_HOME`</bdi> إلى دليل موجود ليس نسخة <bdi>git</bdi>
-مُستنسَخة، يرفض المُثبِّت حذفه: انقله جانبًا، أو وجِّه <bdi>`APOTHEM_HOME`</bdi>
-إلى مكان آخر، أو مرِّر <bdi>`--yes`</bdi> (<bdi>`-Yes`</bdi> على
-<bdi>Windows</bdi>) للتصريح بالاستبدال. أما الدليل الفارغ المتقادم فيُستبدَل دون
-الراية.
+<bdi>`APOTHEM_SOURCE`</bdi>، وتشغيل سكربت المُثبِّت الخاص بنسخة مسحوبة عبر مساره (من
+أي مجلد)، هما الطريقتان الوحيدتان لاستخدام شجرة محلية. أما الأمر ذو السطر الواحد
+المُمرَّر عبر أنبوب (<bdi>`curl
+... | sh`</bdi>، <bdi>`irm ... | iex`</bdi>) فلا يستخدم شجرة محلية أبدًا: إنه يتجاهل
+المجلد الحالي والمجلدات الأم له، ويجلب الإصدار ويتحقّق منه. وتُبقي المُثبِّتات
+والمُحدِّثات وأدوات إزالة التثبيت، وأغلفة <bdi>`apothem`</bdi>، ومُشغِّل <bdi>npm</bdi>،
+والخطّافات، وعمليات المُدقِّقات في بوابة المطابقة، المجلدَ الحالي خارج مسار بحث
+الوحدات في <bdi>Python</bdi>. أما أمر <bdi>`python -m apothem`</bdi> الذي تكتبه بنفسك
+فلا يفعل ذلك: إذ يقرأ <bdi>`-m`</bdi> الوحدات من المجلد الحالي أولًا.
+
+لا يمرّر أي مُشغِّل (المُثبِّتات، والمُحدِّثات، وأدوات إزالة التثبيت، وغلافا
+<bdi>`apothem`</bdi> لـ <bdi>POSIX</bdi> و<bdi>Windows</bdi>، ومُشغِّل <bdi>npm</bdi>) المُدخَلات
+الفارغة والنسبية في <bdi>`PYTHONPATH`</bdi> الخاص بك إلى المحرّك. ويجب أن يكون
+المُدخَل المُبقى عليه مسارًا كاملًا: على <bdi>Windows</bdi> مسار محرّك أقراص مثل
+<bdi>`C:\lib`</bdi> أو مسار شبكة، وفي غيره مسارًا يبدأ بـ <bdi>`/`</bdi>. ويُسقَط
+المسار المُجذَّر <bdi>`\lib`</bdi> والمسار النسبي لمحرّك الأقراص <bdi>`C:lib`</bdi>. وتسأل
+سكربتات <bdi>sh</bdi> نسخة <bdi>Python</bdi> التي تُشغِّلها عن الصيغة التي تقرؤها، ويُبقي
+غلاف <bdi>`apothem`</bdi> الذي تكتبه تلك الصيغة. فنسخة <bdi>Python</bdi> لـ <bdi>Windows</bdi>
+(المعتادة تحت <bdi>Git Bash</bdi>) تتلقّى مسارات المحرّك بصيغة <bdi>Windows</bdi>،
+مفصولة بـ <bdi>`;`</bdi>، ولا تُبقي إلا مسارات محرّكات الأقراص والشبكة من
+<bdi>`PYTHONPATH`</bdi> الخاص بك. أما نسخة <bdi>Python</bdi> لـ <bdi>POSIX</bdi>، بما فيها
+<bdi>`python3`</bdi> الخاص بـ <bdi>Cygwin</bdi> و<bdi>MSYS2</bdi>، فتتلقّى مسارات <bdi>POSIX</bdi>
+مفصولة بـ <bdi>`:`</bdi> ولا تُبقي إلا المُدخَلات التي تبدأ بـ <bdi>`/`</bdi>. ولا تقرأ
+أوامر <bdi>`git`</bdi> في المُثبِّتات التي لا تعمل على نسخة مُستنسَخة مستودعًا في
+المجلد الحالي.
+
+تعمل أوامر <bdi>`git`</bdi> تلك من مجلد مؤقّت فارغ يُنشئه المُثبِّت للتشغيل، لذا لم
+يَعُد المسار النسبي في متغيّر بيئة لـ <bdi>git</bdi> (<bdi>`GIT_SSH`</bdi>، و<bdi>`GIT_ASKPASS`</bdi>
+وما شابههما) يشير إلى حيث كان يشير من قبل. استخدم مسارًا مطلقًا في تلك المتغيّرات.
+أما <bdi>`APOTHEM_REPO`</bdi> النسبي الذي يسمّي مجلدًا أو ملفًا (مثل حزمة <bdi>git</bdi>)
+فلا يزال يُحَلّ من المجلد الذي بدأت منه.
+
+تتجاهل المُثبِّتات متغيّرات بيئة <bdi>git</bdi> التي تعيد توجيه <bdi>git</bdi>
+(<bdi>`GIT_DIR`</bdi>، و<bdi>`GIT_WORK_TREE`</bdi>، و<bdi>`GIT_INDEX_FILE`</bdi> وما شابهها)،
+وتتوقّف حين يبدأ <bdi>`APOTHEM_REPO`</bdi> بـ <bdi>`-`</bdi>، حتى لا تُقرأ القيمة على أنها
+خيار لـ <bdi>git</bdi>.
+
+وتمسح المُثبِّتات والمُحدِّثات أيضًا <bdi>`GIT_CONFIG`</bdi> و<bdi>`GIT_CONFIG_GLOBAL`</bdi>
+و<bdi>`GIT_CONFIG_SYSTEM`</bdi>، حتى لا تستطيع قيمة موروثة من بيئتك توجيه <bdi>git</bdi>
+إلى ملف إعداد آخر، وكذلك <bdi>`GIT_ATTR_SOURCE`</bdi>، الذي قد يجعل <bdi>git</bdi> يقرأ
+السمات من شجرة غير شجرة العمل والفهرس اللذين تقرؤهما الفحوص (ويُفرَّغ
+<bdi>`attr.tree`</bdi> في إعدادك الخاص في كل أمر <bdi>git</bdi> يعمل على نسخة مُستنسَخة
+للسبب نفسه، وكذلك <bdi>`core.attributesFile`</bdi>، فلا يقرأ <bdi>git</bdi> ملف السمات الذي
+يسمّيه ولا <bdi>`~/.config/git/attributes`</bdi>، اللذين قد تسمّي وحدات الماكرو فيهما
+مُرشِّحًا لا تراه الفحوص). وإن ضبطت أحدها، يتجاهله المُثبِّت؛
+وتعيده سكربتات <bdi>PowerShell</bdi> عند انتهاء التشغيل، فيترك تشغيل
+<bdi>`irm ... | iex`</bdi> جلستك كما كانت. ويبقى <bdi>`GIT_CONFIG_NOSYSTEM`</bdi> كما ضبطته:
+فهو لا يفعل إلا أن يمنع <bdi>git</bdi> من قراءة إعداد النظام. ولا يزال <bdi>git</bdi> يقرأ
+إعدادك العام الخاص (<bdi>`~/.gitconfig`</bdi> أو <bdi>`$XDG_CONFIG_HOME/git/config`</bdi>)
+وإعداد النظام من الأماكن التي يبحث فيها دائمًا، و<bdi>`git`</bdi> و<bdi>`gpg`</bdi>
+و<bdi>`cosign`</bdi> هي البرامج التي يعثر عليها <bdi>`PATH`</bdi> الخاص بك. وتثق المُثبِّتات
+بها كما وُجدت، ولذلك تثق بذلك الإعداد.
+
+وتضبط المُثبِّتات والمُحدِّثات أيضًا أربعة متغيّرات لـ <bdi>git</bdi> طوال التشغيل.
+<bdi>`GIT_NO_REPLACE_OBJECTS=1`</bdi> يمنع <bdi>git</bdi> من استبدال كائن بآخر عبر مراجع
+الاستبدال. و<bdi>`GIT_NO_LAZY_FETCH=1`</bdi> يمنع <bdi>git</bdi> من جلب كائن مفقود من
+المستودع البعيد من تلقاء نفسه أثناء قراءته نسخة مُستنسَخة.
+و<bdi>`GIT_ALLOW_PROTOCOL=file:git:http:https:ssh`</bdi> لا يسمح إلا بوسائل النقل
+الخمس تلك لكل أمر <bdi>git</bdi> في التشغيل، فلا تستطيع قيمة في بيئتك توسيع القائمة،
+ولا يستطيع عنوانٌ جعل <bdi>git</bdi> يُشغِّل برنامجًا مساعدًا مثل <bdi>`ext::`</bdi>.
+ويجب أن يستخدم <bdi>`APOTHEM_REPO`</bdi> إحداها؛ والمسار المحلي يُعَدّ <bdi>`file`</bdi>.
+و<bdi>`GIT_ATTR_NOSYSTEM=1`</bdi> يمنع <bdi>git</bdi> من قراءة ملف سمات النظام، الذي قد
+تسمّي وحدات الماكرو فيه مُرشِّحًا. وتعيد سكربتات <bdi>PowerShell</bdi> المتغيّرات الأربعة
+كلها إلى ما كانت عليه عند انتهاء التشغيل. كما
+تقرأ خرج <bdi>git</bdi> بترميز <bdi>UTF-8</bdi> طوال التشغيل، أيًّا كانت صفحة الترميز في
+وحدة التحكّم لديك، وتعيد إعداد وحدة التحكّم عند انتهاء التشغيل.
+
+يجب أن يكون <bdi>`APOTHEM_HOME`</bdi> مجلدًا لا يستطيع أحد سواك الكتابة فيه. فمن
+يستطيع الكتابة فيه يستطيع تغيير الشيفرة التي يُشغِّلها الأمر <bdi>`apothem`</bdi>. وعلى
+<bdi>Windows</bdi>، يستطيع كل مستخدم يسجّل الدخول إلى الحاسوب تغيير المجلد المُنشأ في
+جذر محرّك أقراص، مثل <bdi>`C:\apothem`</bdi>، وفق الأذونات الافتراضية لـ
+<bdi>Windows</bdi>. أبقِه تحت مجلد المستخدم الخاص بك، كما هو الافتراضي. وتُحذِّر
+سكربتات التثبيت والتحديث، بما فيها التشغيلات التجريبية، دون أن تتوقّف، حين يستطيع
+مستخدمون آخرون الكتابة في <bdi>`APOTHEM_HOME`</bdi> أو في المجلد الذي يحويه، أو حين
+يملكون أيًّا منهما؛ ويتخطّى التثبيتُ من نسخة مسحوبة محلية، والتحديثُ مع ضبط
+<bdi>`APOTHEM_SOURCE`</bdi>، هذا الفحص. وعلى
+<bdi>Windows</bdi> يأتي التحذير من <bdi>`install.ps1`</bdi> و<bdi>`update.ps1`</bdi>: إذ لا يفحص
+<bdi>`install.sh`</bdi> و<bdi>`update.sh`</bdi> ذلك تحت <bdi>Git Bash</bdi> أو <bdi>MSYS2</bdi> أو
+<bdi>Cygwin</bdi>؛ ويبيّن
+[استكشاف الأخطاء وإصلاحها](/docs/install/troubleshooting#the-installer-warns-other-users-can-change-apothem_home)
+كيفية إصلاحه.
+
+يحمل كل تشغيل لسكربتات التثبيت والتحديث وإزالة التثبيت قفلًا،
+<bdi>`<APOTHEM_HOME>.lock`</bdi>، طوال التشغيل؛ ويتوقّف تشغيل ثانٍ على
+<bdi>`APOTHEM_HOME`</bdi> نفسه. وحين يكون <bdi>`APOTHEM_HOME`</bdi> رابطًا رمزيًا (أو، على
+<bdi>Windows</bdi>، نقطة وصل)، تأخذ سكربتات <bdi>POSIX</bdi> و<bdi>PowerShell</bdi> كلتاهما القفل
+بجوار المجلد الذي يؤدّي إليه. وقد يترك الإنهاء القسري أو انقطاع الكهرباء مجلدات
+بجوار <bdi>`APOTHEM_HOME`</bdi>، فيسمّيها التثبيت المجلوب التالي ويتوقّف قبل تغيير أي
+شيء؛ انظر
+[استكشاف الأخطاء وإصلاحها](/docs/install/troubleshooting).
+
+عندما يشير <bdi>`APOTHEM_HOME`</bdi> إلى دليل موجود، يتوقّف ما يحدث على ما
+يحويه.
+
+- النسخة المُستنسَخة بـ <bdi>git</bdi> تُجلَب في وضع <bdi>`auto`</bdi> أو <bdi>`signature`</bdi>؛ ويُفحَص
+  الوسم الجديد أولًا، ولا تُسحَب النسخة المُستنسَخة إلا بعد ذلك. والفحص الفاشل يترك
+  النسخة دون تغيير، والتغييرات على الملفات المتتبَّعة توقف التحديث، مع رسالة
+  تطلب إيداعها أو تخبئتها، بدلًا من أن تضيع. ومع مرجع ليس إصدارًا مثل
+  <bdi>`main`</bdi>، تتبع النسخة المُستنسَخة نسخة <bdi>origin</bdi> من ذلك الفرع. ويُعَدّ ملف
+  <bdi>`.git`</bdi> (شجرة عمل مرتبطة) نسخة مُستنسَخة. ويرفض <bdi>`release`</bdi> و<bdi>`checksum`</bdi>
+  النسخة المُستنسَخة دون <bdi>`--yes`</bdi>، ومع <bdi>`--yes`</bdi> يظلّان يرفضانها ما دامت
+  تحوي عملًا محليًا (تغييرات، أو مخبّآت، أو إيداعات غير مدفوعة، أو ملفات غير
+  متتبَّعة في شجرة مصدرها)، وكذلك في التشغيل التجريبي. وحين يستبدل <bdi>`--yes`</bdi>
+  نسخة مُستنسَخة فعلًا، تنتقل شجرة النسخة نفسها إلى مجلد جديد،
+  <bdi>`<APOTHEM_HOME>.before-apothem-<time>`</bdi>، باسمها الخاص، بدلًا من أن
+  تُحذَف. وقبل الجلب، يتوقّف التحديث في المكان حين تُعلَّم ملفات بـ
+  <bdi>assume-unchanged</bdi> أو <bdi>skip-worktree</bdi>، أو حين لا تكون شجرة عمل النسخة
+  المُستنسَخة هي <bdi>`APOTHEM_HOME`</bdi>، أو حين تحوي النسخة وحدة فرعية أو مستودع
+  <bdi>git</bdi> لا يتتبّعه <bdi>git</bdi> (خارج مجلدات بيانات المحرّك نفسه، مثل
+  <bdi>`backups`</bdi>)، أو حين يسمّي <bdi>`.git/info/attributes`</bdi> مُرشِّحًا أو مُشغِّل
+  فروق، أو حين تستعير النسخة كائنات من مستودع آخر، أو حين يكون ملف
+  <bdi>`.gitattributes`</bdi> في شجرة العمل غير متتبَّع، أو يختلف عن النسخة المودَعة، أو
+  يسمّي مُشغِّلًا كهذا، أو له نسخة مودَعة لا يستطيع <bdi>git</bdi> قراءتها،
+  أو حين تكون ملفات تحت <bdi>`src`</bdi> غير متتبَّعة، أو حين يحوي
+  <bdi>`.git/config`</bdi> أو <bdi>`.git/config.worktree`</bdi> في النسخة إعدادًا غير تلك التي
+  يكتبها <bdi>`git clone`</bdi> و<bdi>`git init`</bdi> هناك لنسخة مُستنسَخة كاملة، وإعدادات
+  الفروع (يجب أن يكون <bdi>`remote`</bdi> و<bdi>`pushremote`</bdi> لأي فرع هو <bdi>`origin`</bdi>)،
+  و<bdi>`user.name`</bdi>، و<bdi>`user.email`</bdi>، و<bdi>`maintenance.auto`</bdi>،
+  و<bdi>`maintenance.strategy`</bdi>، و<bdi>`pull.rebase`</bdi> و
+  <bdi>`pull.ff`</bdi>
+  ([استكشاف الأخطاء وإصلاحها](/docs/install/troubleshooting#the-installer-stops-the-existing-clone-is-set-up-in-a-way-the-update-would-trust)
+  يسردها)؛ ولا تعمل خطّافات <bdi>git</bdi> الخاصة بالنسخة أبدًا أثناء التحديث. وبعد
+  السحب، يزيل التحديث مجلدات ذاكرة <bdi>Python</bdi> المؤقّتة (<bdi>`__pycache__`</bdi>) تحت
+  <bdi>`src`</bdi> قبل أن يعمل المحرّك من النسخة المُستنسَخة. ولا يُعَدّ إلا نسخة مُستنسَخة
+  من مصدر <bdi>Apothem</bdi>: أما نسخة مُستنسَخة من أي شيء آخر فتُعامَل معاملة مجلد
+  لا يحوي تثبيتًا لـ <bdi>Apothem</bdi>.
+- التثبيت السابق من أرشيف إصدار يُحدَّث بإعادة التشغيل في وضع <bdi>`auto`</bdi>
+  مع <bdi>cosign</bdi> (أو <bdi>`release`</bdi>، أو <bdi>`checksum`</bdi>).
+- المجلد الذي لا يحوي تثبيتًا لـ <bdi>Apothem</bdi> يُرفَض: انقله جانبًا، أو وجِّه
+  <bdi>`APOTHEM_HOME`</bdi> إلى مكان آخر، أو مرِّر <bdi>`--yes`</bdi> (<bdi>`-Yes`</bdi> على
+  <bdi>Windows</bdi>). ومع <bdi>`--yes`</bdi>، ينقل المُثبِّت المجلد كله، دون تغيير، إلى مجلد
+  جديد، <bdi>`<APOTHEM_HOME>.before-apothem-<time>`</bdi>، ويُثبِّت من جديد.
+- الدليل الفارغ المتقادم، أو الذي لا يحوي إلا بيانات المحرّك نفسه
+  (<bdi>`backups`</bdi>، و<bdi>`state`</bdi>، و<bdi>`plans`</bdi>، و<bdi>`memory`</bdi>، و<bdi>`contexts`</bdi>،
+  و<bdi>`learning`</bdi>، و<bdi>`providers`</bdi>)، يُحدَّث دون الراية، وتُحفَظ تلك البيانات.
+- الرابط الرمزي (على <bdi>Windows</bdi>، رابط رمزي أو نقطة وصل) يُرفَض
+  كلما كان التثبيت سيستبدله: وجِّه <bdi>`APOTHEM_HOME`</bdi> إلى المجلد الذي يؤدّي إليه
+  الرابط. أما النسخة المُستنسَخة بـ <bdi>git</bdi> الموجودة خلف رابط فتُحدَّث في مكانها.
+- على <bdi>Linux</bdi> و<bdi>macOS</bdi>، يوقف التثبيتَ ملفٌ أو مجلد مراد نقله يحوي اسمه
+  مسافة أو محرفًا خاصًا آخر: انقله خارج <bdi>`APOTHEM_HOME`</bdi>
+  أولًا.
+
+بالنسبة إلى تثبيت <bdi>Apothem</bdi> الذي يُستبدَل، يُفحَص المصدر الجديد في مجلد تجهيز
+بجوار <bdi>`APOTHEM_HOME`</bdi> ولا يُبدَّل إليه إلا بعد نجاح كل الفحوص.
+ويُحفَظ كل ما في التثبيت القديم مما ليس جزءًا من شجرة مصدره، بما في ذلك
+النسخ الاحتياطية للمحرّك، وسجلّات التثبيت، والخطط، والذاكرة. وإن فشلت خطوة أو
+أُوقف التشغيل بـ <bdi>Ctrl+C</bdi> أو بإشارة إنهاء، يُعاد التثبيت السابق دون تغيير؛
+وقد يترك الإنهاء القسري أو انقطاع الكهرباء مجلدات بجوار
+<bdi>`APOTHEM_HOME`</bdi> يُبلِغ عنها التثبيت المجلوب التالي. ويُجري <bdi>`--dry-run`</bdi>
+(<bdi>`-DryRun`</bdi> على <bdi>Windows</bdi>) فحوصه في مجلد مؤقّت ويترك <bdi>`APOTHEM_HOME`</bdi>
+دون تغيير. وهو يُجري الفحوص نفسها التي يُجريها التشغيل الفعلي، إلا أنه لا
+يجلب إلى نسخة مُستنسَخة موجودة، ولذلك لا يفحصها بحثًا عن تغييرات على الملفات
+المتتبَّعة، وهو ما يفعله التحديث الفعلي بعد الجلب.
 
 ## نموذج الثقة
 
-حين لا يكون <bdi>`APOTHEM_REF`</bdi> مضبوطًا، يَحُلّ المُثبِّت أحدث وسم إصدار
-موقَّع ويتحقّق من توقيعه بالأمر <bdi>`git verify-tag`</bdi> قبل تجسيد أي إعداد؛
-والوسم غير الموقَّع أو المُتلاعَب به يُجهِض التثبيت. أما الوسم الموقَّع الذي يغيب
+حين لا يكون <bdi>`APOTHEM_REF`</bdi> مضبوطًا، يَحُلّ المُثبِّت أحدث إصدار ويفحصه قبل
+تجسيد أي إعداد. فهو يتحقّق دائمًا من وسم الإصدار بالأمر <bdi>`git verify-tag`</bdi>
+ويشترط أن يأتي التوقيع من مفتاح المشرف المنشور في <bdi>SECURITY.md</bdi>؛ والوسم غير
+الموقَّع أو المُتلاعَب به، أو الموقَّع بأي مفتاح آخر، يُجهِض التثبيت، وكذلك كائن
+الوسم الموقَّع الذي ليس هو المسمّى للإصدار (وسم موقَّع لإصدار آخر، أُعيد توجيهه
+إلى هذا الاسم). ومع وجود <bdi>`cosign`</bdi> على <bdi>`PATH`</bdi>، يُثبِّت بعد ذلك أرشيف
+الإصدار متى أكّد <bdi>cosign</bdi> أن سير عمل الإصدار وقّع <bdi>`SHA256SUMS`</bdi>، وأكّد عبر
+فحص <bdi>`--certificate-github-workflow-sha`</bdi> أن الشهادة التي تحقّق منها صدرت لتشغيل
+على إيداع الوسم، وتطابقت بصمة <bdi>SHA-256</bdi> للأرشيف مع ما فيه. ويحتاج ذلك المسار
+إلى <bdi>`gpg`</bdi> و<bdi>cosign</bdi>. وبالنسبة إلى نسخة <bdi>git</bdi> مُستنسَخة موجودة، يجلب
+المُثبِّت الوسم ويفحصه قبل أن يسحب النسخة، فيترك الفحص الفاشل النسخة كما كانت.
+أما الوسم الموقَّع الذي يغيب
 المفتاح العام لمشرفه عن حلقة المفاتيح المحلية فيُجهِض التثبيت بدلًا من ذلك مع
 إرشادات لاستيراد المفتاح — استورِد المفتاح وطابِق بصمته مع القيمة المنشورة في
 [<bdi>SECURITY.md</bdi>](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md).
@@ -61,19 +218,30 @@ sourceHash: "3210277a66924394"
 الوسم المثبَّت بالطريقة نفسها. اختر الفرع المتحرّك عبر <bdi>`APOTHEM_REF=main`</bdi>
 مع <bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi>؛ ذلك التثبيت غير مُتحقَّق منه، ويُجهِض
 <bdi>`main`</bdi> وحده التثبيت لأن الفرع ليس وسمًا موقَّعًا. اضبط
-<bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi> وحده للمضيّ بعد فشل التحقّق مع تحذير
+<bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi> للمضيّ بعد فشل فحص الوسم مع تحذير
 (للاستخدام المعزول عن الشبكة، أو المحلي، أو مع الإصدارات السابقة لاعتماد التوقيع).
+وهو لا ينطبق إلا على مسار الاستنساخ، ولا ينطبق أبدًا على مسار <bdi>cosign</bdi>، لذا
+على مضيف فيه <bdi>cosign</bdi> اضبط معه <bdi>`APOTHEM_VERIFY=signature`</bdi>.
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh
 ```
 
-```bash title="Check the archive digest when the signing key is not imported"
-APOTHEM_VERIFY=checksum bash install.sh
+```bash title="Require the tag check and the cosign check"
+APOTHEM_VERIFY=release bash install.sh
 ```
 
-```bash title="Proceed without verification (interim / air-gapped)"
-APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
+وضع المجموع الاختباري لا يتحقّق من الإصدار. فملف <bdi>SHA256SUMS</bdi> يأتي من الإصدار
+نفسه الذي يأتي منه الأرشيف، لذا لا يُثبت التطابق إلا أن التنزيل غير تالف؛ ومن
+يستطيع تغيير ملفات الإصدار يستطيع تغيير الاثنين. ولا يُشغِّله المُثبِّت إلا مع ضبط
+<bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi> أيضًا.
+
+```bash title="Check the archive digest alone (no cosign, no gpg; does not verify the release)"
+APOTHEM_VERIFY=checksum APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
+```
+
+```bash title="Proceed past a failed tag check (interim / air-gapped)"
+APOTHEM_VERIFY=signature APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 ```
 
 ## الخطوات (<bdi>POSIX bash</bdi>)
@@ -88,7 +256,7 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
    موقَّعًا، لذلك يحتاج المُثبِّت أيضًا إلى <bdi>`APOTHEM_ALLOW_UNVERIFIED=1`</bdi>:
 
    ```bash
-   APOTHEM_REF=main APOTHEM_ALLOW_UNVERIFIED=1 APOTHEM_HOME=/opt/apothem bash install.sh
+   APOTHEM_REF=main APOTHEM_ALLOW_UNVERIFIED=1 APOTHEM_HOME="$HOME/tools/apothem" bash install.sh
    ```
 
 3. استخدم نسخة مسحوبة محلية وملفًا تعريفيًا مخصّصًا، مع تخطّي التحقّق:
@@ -112,7 +280,7 @@ pwsh -NoProfile -File install.ps1
 ```powershell
 $env:APOTHEM_ALLOW_UNVERIFIED = '1'
 $env:APOTHEM_REF = 'main'
-$env:APOTHEM_HOME = 'C:\opt\apothem'
+$env:APOTHEM_HOME = "$HOME\tools\apothem"
 pwsh -NoProfile -File install.ps1
 ```
 
@@ -143,8 +311,11 @@ apothem verify --harness cursor --project /path/to/project
 
 عندما لا يكون الملف التعريفي موجودًا بعد، يُنشئ المُثبِّت ملفًا من المثال ويتابع
 إلى التثبيت والتحقّق في التشغيل نفسه. حقول الهوية في المثال عناصر نائبة، لذا
-يطبع التثبيت ملاحظة؛ حرِّر <bdi>`$APOTHEM_PROFILE`</bdi>، ثم شغِّل
-<bdi>`apothem update --harness <name>`</bdi> لتطبيق هويتك. وتشغيل
+يطبع التثبيت ملاحظة. ويحوي المثال أيضًا قواعد نموذجية، وخادمَي <bdi>MCP</bdi> نموذجيين،
+وتجاوزات خاصة بكل إطار عمل، وإطار العمل الذي يأخذ خوادم <bdi>MCP</bdi> من الملف
+التعريفي، مثل <bdi>OpenCode</bdi>، يحصل على الخادمين كليهما. حرِّر
+<bdi>`$APOTHEM_PROFILE`</bdi>، مُزيلًا ما لا تريده، ثم شغِّل
+<bdi>`apothem update --harness <name>`</bdi> لتطبيقه. وتشغيل
 <bdi>`--dry-run`</bdi> دون ملف تعريفي يُعايِن باستخدام المثال في مكانه ولا يكتب
 شيئًا.
 

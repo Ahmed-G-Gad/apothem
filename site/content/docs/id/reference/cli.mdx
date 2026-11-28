@@ -2,7 +2,7 @@
 title: "Ikhtisar CLI"
 description: "Ikhtisar CLI Apothem — semua subperintah dan flag."
 machineTranslated: true
-sourceHash: "23e6a1450707e054"
+sourceHash: "ce86e94ba98910b5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,13 @@ adapter harness.
 | Flag | Deskripsi |
 |------|-------------|
 | `--version` | Mencetak versi Apothem lalu keluar |
-| `--help` | Mencetak bantuan untuk perintah |
+| `-h`, `--help` | Mencetak bantuan untuk perintah |
+
+Bagian di bawah membahas `install`, `update`, `uninstall`, `verify`, `status`,
+`profile`, `harnesses`, dan `doctor`. Tabel yang dihasilkan di akhir halaman ini
+dan [referensi CLI](/docs/cli-reference) mencantumkan setiap perintah, termasuk
+`quickstart`, `diff`, `rollback`, `backups`, `migrate-workspace`, dan
+`completion`.
 
 ## Subperintah
 
@@ -133,8 +139,12 @@ apothem status [--profile PATH] [--project PATH]
 | `--profile PATH` | Profil bersama yang dipakai sebagai acuan penyimpangan. Profil bawaan yang tidak terbaca menurunkan status penyimpangan menjadi `unknown` alih-alih membatalkan sapuan. |
 | `--project PATH` | Root proyek untuk harness berlingkup proyek. Tanpanya, harness tersebut melaporkan `needs-project`. |
 
-Setiap baris memasangkan flag `installed` dengan flag `verified`, dan keduanya
-bergabung menjadi status penyimpangan:
+Setiap baris membawa flag `installed`, flag `verified`, dan status penyimpangan.
+Baris yang flag `installed`-nya false melaporkan `absent`, `needs-project`, atau
+`error`; `in-sync`, `drift`, dan `unknown` hanya muncul pada baris yang terpasang.
+Status penyimpangan tidak pernah bergantung pada flag `verified`. Untuk harness yang terpasang,
+status ini membandingkan konfigurasi yang terpasang dengan acuan profil, atau menyebutkan
+mengapa tidak ada perbandingan yang dijalankan:
 
 | Status | Arti |
 |-------|---------|
@@ -143,6 +153,7 @@ bergabung menjadi status penyimpangan:
 | `drift` | Terpasang tetapi tidak lagi cocok — perbaiki dengan `apothem update`. |
 | `unknown` | Terpasang, tetapi profil acuan tidak dapat dibaca. |
 | `needs-project` | Harness lingkup proyek dilaporkan tanpa `--project`, sehingga targetnya tidak dapat diselesaikan. |
+| `error` | Adapter gagal saat diperiksa; `status` melaporkan galat tersebut dan keluar dengan `2`. |
 
 `installed` menjawab "apakah Apothem memasang di sini?", bukan "apakah harness
 ini ada di mesin?". Flag ini berpatokan pada artefak milik Apothem sendiri —

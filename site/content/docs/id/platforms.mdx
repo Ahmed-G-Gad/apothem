@@ -2,7 +2,7 @@
 title: "Platform"
 description: "Sistem operasi, shell, dan skrip pemasang yang didukung untuk Apothem, plus prasyarat Python sistem untuk runtime mandiri."
 machineTranslated: true
-sourceHash: "40276e881e9e631c"
+sourceHash: "1c6e2bce2e1da696"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -44,8 +44,10 @@ lainnya:
   Microsoft Store dan pelokasi `find-python` terbundel menerapkan
   batas bawah yang sama.
 - **Pustaka runtime dapat diimpor.** Mesin mengimpor `click` dan `rich` dari interpreter sistem; dependensi pihak ketiga lainnya disertakan (vendored) di dalam pohon sumber. Pemasang memverifikasi keduanya dapat diimpor, menyebut yang mana pun yang hilang, dan menawarkan untuk memasang prasyarat yang hilang untuk Anda — dengan konfirmasi Anda, atau otomatis dengan `--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1`.
-- **`git`** hanya diperlukan untuk pemasangan jaringan (skrip mengklon
-  pohon-sumber). Pemasangan lokal dari checkout tidak memerlukan `git`.
+- **`git`** dan **`gpg`** hanya diperlukan untuk pemasangan jaringan: skrip
+  memakainya untuk menemukan rilis terbaru dan memeriksa tag bertanda tangannya,
+  dan tanpa cosign skrip mengklon pohon-sumber. Pemasangan lokal dari checkout
+  tidak memerlukan keduanya.
 
 Jika interpreter, pustaka, atau `git` tidak ada, pemasang keluar
 dengan diagnostik yang menyebut persis apa yang harus disediakan, ketimbang menebak atau

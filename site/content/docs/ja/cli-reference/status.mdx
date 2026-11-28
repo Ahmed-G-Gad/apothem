@@ -2,7 +2,7 @@
 title: "status"
 description: "apothem status コマンドの CLI リファレンス。"
 machineTranslated: true
-sourceHash: "8b2767bb799e4c2e"
+sourceHash: "fe8df509dd01788b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -33,7 +33,7 @@ apothem status [--profile PATH] [--project PATH]
 | 値 | 意味 |
 |---|---|
 | `in-sync` | インストールされた設定が、新たに投影された共有プロファイルをそのまま含んでいる。 |
-| `drift` | ハーネスはインストールされているが、投影されたプロファイルの内容が現在の共有プロファイルと一致しなくなっている。再投影するには `apothem install` を再実行する。 |
+| `drift` | ハーネスはインストールされているが、投影されたプロファイルの内容が現在の共有プロファイルと一致しなくなっている。または、現在のインストールが管理ブロックを置くファイルに、完全なブロックを開始しない BEGIN マーカー、Apothem のマーカーの間にある 2 つ以上の完全なブロック、あるいは Apothem があなたのテキストと区別できないマーカーの組がある。以前のインストール記録にのみ載っているファイル（インストールがもう使わない OpenClaw ワークスペースのルールファイルなど）はここでは数えない。`apothem verify` と `apothem doctor` がそれを示す。現在のプロファイルを適用するには `apothem update` を実行し、そのようなマーカーは手で修正する（[トラブルシューティング](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)、[ファイルの Apothem のマーカーの間に 2 つのブロックがある](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)、[Apothem が自分のブロックとあなたのテキストを区別できない](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)を参照）。 |
 | `absent` | ハーネスがインストールされていないため、比較するものがない。 |
 | `needs-project` | プロジェクトスコープのハーネスが `--project` なしで報告されたため、そのターゲットを解決できない。検査するには `--project PATH` を渡す。 |
 | `unknown` | デフォルトのプロファイルを読み込めなかったため、インストール済みのハーネスに比較の基準がない。ドリフトの判定を取り戻すには、プロファイルを修正する。 |

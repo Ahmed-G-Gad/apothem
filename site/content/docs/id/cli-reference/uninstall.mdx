@@ -2,7 +2,7 @@
 title: "uninstall"
 description: "Referensi CLI untuk perintah apothem uninstall."
 machineTranslated: true
-sourceHash: "85553b3611d8d842"
+sourceHash: "774c779bd9ded4af"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -20,14 +20,180 @@ Menghapus target harness yang dikelola adapter, lalu direktori yang dibuat
 pemasangan setelah direktori tersebut kosong (direktori yang berisi apa pun
 milik Anda tetap ada).
 
-Memori, konteks, dan penyimpanan pembelajaran dari direktori kerja bersama dicadangkan dan dihapus hanya ketika ini adalah harness terakhir yang dipasang di direktori tersebut. Penghapusan dilakukan di lokasi yang dicatat oleh pemasangan, sehingga penghapusan menemukannya di mana pun pemasangan menulisnya (lihat bidang profil `workspace`). Direktori `plans/` tidak pernah dihapus.
+## Apa yang dihapus oleh pencopotan
+
+Pemasangan mencatat SHA-256 setiap berkas yang disalinnya ke tempatnya (skill,
+perintah, aturan, dan sejenisnya) di ledger pemasangan
+(`~/.apothem/state/<harness>/ledger.jsonl`). Pencopotan menghapus berkas
+semacam itu hanya selama isinya masih sama, lalu setiap folder yang tersisa
+tanpa isi, termasuk folder kosong yang Anda buat di dalam folder Apothem. Semua
+yang lain tetap ada dan mendapat baris `Warning:`: berkas yang Anda tambahkan ke
+folder Apothem, berkas Apothem yang Anda sunting, berkas milik Anda yang
+memiliki nama Apothem, dan path yang tidak dicantumkan catatan pemasangan.
+Berkas yang Anda pertahankan juga mempertahankan foldernya.
+
+Pemasangan yang dicatat oleh rilis sebelumnya tidak menyebutkan berkas mana yang
+ditulis Apothem. Untuk pemasangan tersebut, pencopotan membandingkan setiap
+berkas dengan apa yang ditulis rilis ini di path tersebut dan menghapus berkas
+yang byte-nya sama. Dua tempat menyimpan interpreter Python yang ditemukan
+pemasangan: perintah statusline dan sebuah komentar di gerbang konformitas.
+Tempat semacam itu dianggap sama hanya ketika berisi `py -3`, satu-satunya
+peluncur yang ditulis rilis sebelumnya di sana, atau path lengkap berkas
+interpreter di mesin ini, dan tidak ada yang lain. Path di sana yang berisi
+`&`, `#`, atau `$` (nama pengguna Windows seperti `R&D`), atau yang tidak
+menunjuk berkas apa pun di sini, tidak pernah dianggap sama, sehingga berkas
+tersebut dipertahankan. Path ke interpreter yang sejak itu Anda tingkatkan atau
+hapus juga tidak menunjuk berkas apa pun di sini, sehingga berkas tersebut juga
+dipertahankan: jalankan `apothem update`, lalu copot lagi. Entri hook Apothem di
+berkas pengaturan atau berkas hook tidak dibandingkan dengan cara ini: entri
+tersebut dikenali dari skrip dispatcher yang dijalankannya, apa pun
+interpreter yang mendahuluinya, dan dihapus setelah berkas dicadangkan.
+
+Berkas pada nama yang ditulis Apothem yang berbeda (ditulis oleh rilis
+sebelumnya itu, atau disunting oleh Anda) tetap ada, dan pencopotan tidak
+selesai: perintah mencetak `✗ <harness> uninstall did not finish:` beserta
+jumlah path semacam itu (sebuah folder dihitung sekali, dan berkasnya
+dicantumkan di bawah baris `Warning:`-nya) dan keluar dengan `2`. Begitu pula
+path yang dicatat rilis itu dan tidak lagi ditulis rilis ini, karena tidak ada
+pembandingnya. Pemasangan tanpa catatan sama sekali (ledger-nya dihapus)
+berakhir dengan cara yang sama, karena tidak ada yang menunjukkan berkas mana
+yang ditulis Apothem; setiap path yang dipertahankannya di luar tautan
+dicantumkan di bawah satu baris `Warning:`, termasuk berkas yang Anda
+tambahkan, karena tidak ada yang membedakannya. Folder bersama di direktori home
+Anda juga tetap ada untuknya. Beberapa bagian tetap dihapus: baris Apothem di
+berkas bersama seperti berkas aturan atau `hooks.json` (berkas yang tidak
+menyisakan apa pun lagi juga dihapus; berkas yang bloknya kehilangan penanda
+END tetap apa adanya, lihat
+[Pencopotan yang tidak selesai](#pencopotan-yang-tidak-selesai)), penyimpanan
+memori, konteks, dan pembelajaran di folder data (dicadangkan terlebih dahulu;
+penyimpanan itu berisi data Anda, bukan hanya milik Apothem), dan, untuk
+beberapa harness, folder tata letak lama yang dicantumkan harness sebagai
+usang. Setelah baris `✗`, baris `Note:
+<harness> - no install record matched` menyebutkan folder bersama yang
+ditinggalkannya dan apa yang masih dihapusnya. Untuk harness berlingkup-proyek,
+baris itu juga meminta Anda memastikan bahwa `--project` menunjuk folder tempat
+Anda memasang sebelum menjalankan `apothem update`, karena pembaruan di folder
+lain memasang di sana; folder tersebut dikutip seperti pada perintah tercetak
+lainnya, atau disebutkan apa adanya ketika tanda kutip itu tidak dapat
+membawanya, dalam kasus yang sama dengan baris `Warning:` penyimpanan data di
+bawah. Ketika sebuah peringatan menyebutkan berkas karena penanda Apothem yang
+ditinggalkan pencopotan (penanda BEGIN tanpa END setelahnya, dua blok berbeda
+di antara penanda Apothem, atau pasangan penanda yang tidak dapat ditempatkan
+Apothem), baris `✗` meminta Anda memperbaiki berkas itu sebelum pembaruan,
+dengan saran untuk jenis penandanya (lihat
+[Pencopotan yang tidak selesai](#pencopotan-yang-tidak-selesai)); untuk harness
+berlingkup-proyek, baris `Note:` juga menyebutkannya. Hanya `CLAUDE.md` atau
+dokumen profil yang berisi dua blok berbeda yang tidak disebutkan dalam baris
+itu (lihat di bawah). Baris
+`Note:` juga dicetak di bawah `--quiet`, ke aliran galat. Dalam keluaran
+`--format json`, baris `uninstall` milik harness memiliki
+`"outcome": "error"`, membawa catatan itu dalam pesannya, dan memiliki
+`"detail": {"kept_reason": "no-record"}`.
+`apothem update` menulis berkas rilis ini dan mencatatnya, sehingga
+menjalankannya lalu menjalankan `apothem uninstall` lagi menuntaskan pekerjaan.
+Sebelum melakukannya, salin setiap berkas tercantum yang Anda sunting atau
+tambahkan: pembaruan menimpa path yang ditulisnya dan mengganti utuh setiap
+entri folder Apothem yang ditulisnya (keduanya dicadangkan terlebih dahulu di
+bawah `~/.apothem/backups/`, tetapi tidak ada yang mengembalikannya). Perbaiki
+juga terlebih dahulu setiap berkas yang disebutkan peringatan karena penanda
+Apothem (lihat
+[Pencopotan yang tidak selesai](#pencopotan-yang-tidak-selesai)). Untuk
+pemasangan yang dicatat rilis sebelumnya, berkas di folder Apothem pada nama
+yang tidak pernah ditulis Apothem adalah milik Anda: berkas itu dicantumkan di
+bawah baris `Warning:` untuk berkas yang berubah atau milik Anda, berkas itu
+tetap ada, dan pencopotan tetap selesai.
+
+Ketika catatan terbaru di lokasi tersebut adalah pencopotan yang selesai (dan,
+misalnya, pemasangan setelahnya berhenti sebelum sempat mencatat dirinya),
+pencopotan membandingkan setiap path dengan apa yang ditulis rilis ini, kecuali
+folder bersama di direktori home Anda: folder itu tetap apa adanya, seperti
+ketika tidak ada catatan (lihat
+[Folder bersama di direktori home Anda](#folder-bersama-di-direktori-home-anda)).
+Pencopotan menghapus berkas hanya ketika byte-nya persis sama, dan menghapus
+folder yang tidak berisi berkas. Tidak ada di sana yang menunjukkan interpreter
+mana yang ditemukan pemasangan itu, sehingga berkas yang berisi path
+interpreter (perintah statusline, komentar di gerbang konformitas) tidak pernah
+dianggap sama dan tetap ada. Selama gerbang itu tetap ada, harness tetap
+terbaca sebagai terpasang, jadi periksa berkas itu dan hapus secara manual.
+Semua yang lain juga tetap ada (berkas milik Anda, berkas Apothem yang Anda
+sunting, cache yang ditulis program lain) dan mendapat baris `Warning:`, dan
+pencopotan selesai. Berkas yang tersisa di folder yang berkas lainnya telah
+dihapus dicantumkan di bawah baris untuk berkas yang berubah atau milik Anda;
+path lain dicantumkan di bawah baris yang menyatakan bahwa tidak ada catatan
+pemasangan yang mencantumkannya, bahwa path itu tidak cocok dengan apa yang
+ditulis rilis ini, dan bahwa Anda dapat menghapusnya secara manual jika tidak
+lagi menginginkannya. Berkas
+dengan byte yang persis sama di balik tautan menghentikan pencopotan,
+sebagaimana berkas milik Apothem sendiri di balik tautan menghentikannya untuk
+pemasangan yang tercatat (lihat di bawah). Jika pencopotan semacam itu tidak
+selesai (misalnya ada berkas yang tidak dapat dihapusnya), harness tetap
+terbaca sebagai terpasang, dan menjalankan pencopotan lagi bekerja dengan cara
+yang sama, juga setelah pemasangan yang gagal dan membatalkan perubahannya
+sendiri. Setelah rollback, atau setelah hanya ada pencopotan yang tidak
+selesai, path semacam itu menghentikan pencopotan seperti ketika tidak ada
+catatan.
+
+Ketika tidak ada pemasangan yang tercatat di lokasi tersebut, seperti pada
+kasus-kasus di atas, pencopotan juga membiarkan blok terkelola Apothem di
+tempatnya: di `~/.claude/CLAUDE.md` untuk Claude Code, dan di dokumen profil
+`apothem/rules/00-apothem-profile.md` di folder alat yang dikonfigurasi melalui
+satu berkas pengaturan, seperti Open-Claw, OpenCode, atau Qwen Code. Tidak ada
+yang menunjukkan pemasangan mana yang menulis blok itu, sehingga berkas tetap
+apa adanya, dan baris `Warning:` menyebutkannya; peringatan itu tidak
+menghentikan pencopotan. Jika Anda tidak lagi menginginkan blok tersebut
+(Claude Code masih membaca `CLAUDE.md`), keluarkan secara manual dengan
+perbaikan bernomor yang diberikan peringatan, misalnya "Fix A: A1. Change
+line 5: add a word inside its comment. Apothem then finds no block of its own
+in this file." (lihat
+[Ikuti perbaikan bernomor](/docs/install/troubleshooting#follow-a-numbered-fix)).
+Peringatan menyebutkan blok berdasarkan barisnya, dan perbaikan mengubah baris
+penanda BEGIN-nya di tempat, sehingga tidak ada baris milik Anda yang terbaca
+berbeda; teks Apothem lama di bawahnya, sampai baris penanda END-nya, kemudian
+menjadi milik Anda untuk dihapus secara manual. Penanda BEGIN milik Anda di
+atas blok, atau yang berada dalam pasangan penanda yang Anda kutip, bukan
+bagian darinya: perbaikan juga mengubah setiap baris semacam itu, karena baris
+itu akan terbaca sebagai milik Apothem setelah blok dikeluarkan. Ketika berkas
+itu berisi dua blok berbeda di antara penanda Apothem (misalnya pasangan
+penanda milik Anda di luar kode), menghapus dari penanda BEGIN pertama sampai
+penanda END berikutnya akan ikut mengambil teks milik Anda, sehingga peringatan
+memberikan teks untuk berkas semacam itu sebagai gantinya (lihat
+[Pencopotan yang tidak selesai](#pencopotan-yang-tidak-selesai)): teks itu
+menyebutkan setiap blok berdasarkan barisnya, atau blok Apothem dan baris
+penanda di sekitarnya, serta menjelaskan cara memperbaiki berkas dengan tetap
+mempertahankan teks Anda sendiri. Ketika teks itu menyebutkan blok Apothem dan
+baris penanda di sekitarnya, teks itu kemudian meminta Anda menghapus blok
+Apothem secara manual jika tidak lagi menginginkannya. Ketika teks itu
+menyebutkan dua blok utuh atau lebih, teks itu sebagai gantinya meminta Anda
+menjalankan `apothem update`, lalu `apothem uninstall` lagi: penanda BEGIN milik
+Anda di atas blok Apothem dan penanda END di bawahnya, yang tidak disebutkan
+teks itu, akan membentuk satu blok setelah blok Apothem dihapus secara manual,
+dan pembaruan berikutnya akan mengganti baris di antara keduanya. Pencopotan
+yang dijalankan lagi menyebutkan baris penanda itu terlebih dahulu. Peringatan
+ini juga tidak menghentikan pencopotan, dan baris `✗` tidak menyebutkan berkas
+itu. Perbaiki juga sebelum Anda menjalankan `apothem update`: pembaruan tidak
+memperbaikinya.
+
+Memori, konteks, dan penyimpanan pembelajaran dari direktori kerja bersama dicadangkan dan dihapus hanya ketika ini adalah harness terakhir yang dipasang di direktori tersebut. Penghapusan dilakukan di lokasi yang dicatat oleh pemasangan, sehingga penghapusan menemukannya di mana pun pemasangan menulisnya (lihat bidang profil `workspace`). Direktori `plans/` tidak pernah dihapus. Di sini, pemasangan yang foldernya sudah tidak ada (proyek yang dihapus) tetap dihitung sebagai menggunakan penyimpanan tersebut, berbeda dengan folder bersama di bawah, dan pencopotan menyebutkannya (lihat di bawah).
 
 Meminta konfirmasi kecuali
 `--yes` diberikan. Ketika prompt tidak mungkin ditampilkan — `--format json`
 (teks prompt akan merusak dokumen JSON tunggal) atau shell non-interaktif
 (tanpa TTY) — perintah menolak sejak awal dengan galat terstruktur
 `uninstall.confirmation_required` (keluar 1) kecuali `--yes` diberikan.
-Jika harness yang dipilih tidak terpasang, perintah berhasil (keluar 0) dan, pada keluaran biasa, mencetak `NAME is not installed; nothing to remove.`, dengan `NAME` berupa id harness.
+Jika harness yang dipilih tidak terpasang, perintah berhasil (keluar 0) dan, pada keluaran biasa, mencetak `NAME is not installed; nothing to remove.`, dengan `NAME` berupa id harness. Berkas dengan baris penanda yang tidak dapat dibedakan Apothem dari teks Anda dihitung sebagai terpasang selama catatan pemasangan mencantumkannya, dan juga selama ledger pemasangan tidak dapat dibaca: pencopotan kemudian berhenti pada ledger yang rusak (keluar 1) dan menyebutkannya, seperti untuk berkas dengan blok utuh, alih-alih melaporkan harness sebagai tidak terpasang.
+
+Pencopotan berhenti sebelum menghapus apa pun ketika sebuah tautan mengarahkan
+folder alat di direktori home Anda ke luar direktori tersebut, misalnya
+`~/work/tool` dengan `~/work` yang ditautkan ke drive lain. Di Windows, junction
+dihitung sebagai tautan. Dalam eksekusi interaktif, perintah tidak meminta
+konfirmasi terlebih dahulu. Eksekusi yang tidak dapat bertanya (keluaran JSON,
+atau tanpa terminal) tetap berhenti terlebih dahulu dan meminta `--yes`; galat
+tautan muncul setelah Anda memberikannya. Galat itu berisi `uninstall
+refused: target path crosses a link`, menyebutkan tautan dan folder yang
+ditujunya, serta menjelaskan apa yang harus dilakukan; perintah keluar dengan 1.
+Arahkan tautan ke folder di dalam direktori home Anda, atau ganti dengan
+folder itu sendiri, lalu jalankan pencopotan lagi. Folder yang Anda tulis
+sebagai path di luar direktori home Anda tetap diikuti.
 
 Penyimpanan data bersama di bawah `.apothem/` pada root pemasangan (`memory/`,
 `contexts/`, `learning/`) tetap ada selama harness terpasang lain pada root yang
@@ -35,6 +201,49 @@ sama masih menggunakannya. Ketika harness yang Anda hapus adalah yang terakhir
 pada root tersebut, perintah terlebih dahulu menyalin setiap penyimpanan ke root
 cadangan Apothem (`~/.apothem/backups/`), lalu menghapusnya beserta seluruh
 isinya. Apa pun yang Anda simpan di `plans/` tidak pernah dihapus.
+
+Ketika satu-satunya pemasangan yang mempertahankan penyimpanan berada di folder
+yang sudah tidak ada, perintah mempertahankan penyimpanan dan mencetak baris
+`Warning:` yang menyebutkan salah satu pemasangan tersebut beserta langkah untuk
+melepaskannya. Pencopotan di folder kosong yang dibuat ulang tidak menemukan apa
+pun yang terpasang, sehingga langkah-langkahnya terlebih dahulu memasang alat
+itu lagi di sana, dengan `--profile` yang sama dengan yang digunakan pemasangan
+tersebut. Penyimpanan berada di luar folder itu, sehingga profil pemasangan
+itulah yang menempatkannya di sana. Pemasangan tanpa profil itu menulis
+penyimpanannya sendiri, dan pencopotan setelahnya meninggalkan penyimpanan ini
+tanpa pemasangan yang menggunakannya. Apothem tidak mencatat profil mana yang
+digunakan sebuah pemasangan, sehingga peringatan mencetak
+`--profile <the profile it used>` untuk Anda isi. Untuk alat yang dipasang di
+sebuah proyek, langkah-langkahnya adalah:
+
+```bash
+mkdir -p /path/to/old-project
+apothem install --harness cursor --project /path/to/old-project --profile /path/to/that-profile.yaml
+apothem uninstall --harness cursor --project /path/to/old-project --yes
+```
+
+Peringatan menaruh folder dalam tanda kutip ganda di Windows dan dalam tanda
+kutip tunggal di tempat lain. Ketika tanda kutip itu tidak dapat membawa
+folder tersebut, peringatan memberikan langkah yang sama dalam kata-kata dan
+menyebutkan folder apa adanya. Di Windows, hal itu terjadi ketika folder berisi
+`$`, backquote, `%`, `!`, tanda kutip ganda lurus atau melengkung, atau karakter
+kontrol, yang akan diubah shell Windows di dalam tanda kutip ganda; `&`, `^`,
+`|`, `<`, atau `>` di folder tanpa spasi, yang kemudian diteruskan PowerShell
+dan Git Bash ke `apothem.cmd` milik penginstal tanpa tanda kutipnya, sehingga
+Command Prompt menindaklanjutinya; atau dua backslash berturut-turut, seperti di
+awal share jaringan (`\\server\share`), yang dibaca Git Bash sebagai satu. Di
+tempat lain, hal itu terjadi ketika folder berisi tanda kutip tunggal lurus atau
+melengkung (shell dapat mengakhiri tanda kutip tunggal pada yang melengkung
+juga), karakter kontrol, dua backslash berturut-turut, atau backslash di akhir
+(fish membaca dua sebagai satu di dalam tanda kutip tunggal, dan satu di akhir
+di sana meng-escape tanda kutip penutup).
+
+Untuk alat yang dipasang di direktori home Anda, peringatan memberikan langkah
+yang sama dalam kata-kata: folder tempat alat itu dipasang mungkin berasal dari
+variabel lingkungan (misalnya `XDG_CONFIG_HOME`) yang tidak akan diulang oleh
+perintah tercetak. Penyimpanan ikut terhapus bersama pencopotan itu ketika tidak
+ada pemasangan lain yang masih menggunakannya. Anda juga dapat menghapus
+penyimpanan secara manual.
 
 ## Folder bersama di direktori home Anda
 
@@ -52,6 +261,21 @@ lain yang masih menggunakannya.
   dihitung sebagai dua pemasangan, sehingga mencopotnya dari proyek A
   mempertahankan folder tersebut selama proyek B masih menggunakannya.
   Pencopotan terakhir menghapusnya (lihat contoh kedua di bawah).
+- Sebuah folder dihitung sebagai satu folder bagaimanapun folder home Anda
+  dituliskan saat setiap pemasangan berjalan. Ketika folder home Anda adalah
+  tautan, seperti `/home` yang mengarah ke `/var/home` di Fedora Silverblue atau
+  profil pengguna Windows yang dipindahkan ke balik junction, pemasangan yang
+  dibuat melalui tautan dan pemasangan yang dibuat melalui folder yang ditujunya
+  menggunakan folder yang sama. Dua alat yang dipasang dengan cara itu adalah
+  dua pemasangan, dan mencopot salah satunya mempertahankan folder untuk yang
+  lain. Satu alat yang dipasang dengan kedua cara adalah satu pemasangan:
+  mencopotnya, dengan home Anda dituliskan dengan cara mana pun, menghapus apa
+  yang ditulis oleh kedua pemasangan dan folder yang tidak digunakan pemasangan
+  lain. Jika pencopotan itu berhenti sebelum selesai, kedua pemasangan tetap
+  tercatat sampai Anda memperbaiki penyebabnya dan menjalankan pencopotan lagi.
+  Pencopotan menemukan sebuah pemasangan hanya dengan home Anda dituliskan
+  dengan salah satu cara yang digunakan pemasangan alat itu; dengan cara lain,
+  pencopotan tidak menemukan apa pun untuk dihapus.
 - Hanya apa yang tercantum dalam catatan milik pemasangan itu sendiri yang
   dihapus. Pemasangan yang dibuat sebelum folder tersebut dikelola tidak
   memiliki catatan semacam itu, sehingga mencopotnya tidak menghapus apa pun di
@@ -77,6 +301,336 @@ Entri itu membawa `path`, `holders` (pemasangan yang mempertahankan folder),
 `stale` (pemasangan yang diabaikan), serta `kept` dan `total` (entri tercatat
 yang dipertahankan dan entri yang dicantumkan oleh pemasangan).
 
+Pencopotan juga mencetak baris `Warning:` untuk setiap hal yang sengaja
+ditinggalkannya di tempat. Apothem tidak menghapus apa pun melalui tautan
+simbolik atau junction Windows, sehingga tautan di folder yang dihapusnya tetap
+ada, begitu pula folder sisa dari rilis sebelumnya yang dijangkau melalui
+tautan. Path yang dipertahankan karena tautan yang sama, atau karena alasan yang
+sama (bukan yang ditulis Apothem, tidak ada dalam catatan pemasangan), dicetak
+sebagai satu baris beserta jumlahnya. Di bawah baris untuk path yang
+dipertahankan, setiap berkas yang dipertahankannya dicantumkan, termasuk berkas
+di dalam folder yang dipertahankan (folder yang dipertahankan yang tidak berisi
+apa pun dicantumkan sendiri). Berkas yang ditulis Apothem yang tidak dapat
+dihapusnya dicantumkan di bawah baris `✗` yang melaporkannya, bukan sebagai
+berkas yang dipertahankan. Dengan `--quiet`, baris-baris ini hanya dicetak
+ketika pencopotan tidak selesai, dan saat itu di standard error bersama baris
+`✗`, sehingga path yang menjadi pokok sarannya tetap terlihat. Baris yang
+menyebutkan penanda Apothem yang tertinggal di sebuah berkas dicetak di standard
+error di bawah `--quiet` bahkan ketika pencopotan selesai: alat itu masih
+membaca teks Apothem lama apa pun di bawah penanda itu, pemasangan berikutnya
+mempertahankan keduanya, dan `verify` kemudian gagal sampai Anda menghapusnya.
+Dalam amplop `--format json`,
+setiap baris semacam itu adalah satu entri `warnings` dengan `"outcome": "warning"`,
+`message` baris tersebut, `count` (berapa banyak path yang dicakupnya), `paths`
+(masing-masing path) dan, untuk path yang dipertahankan, `files` (setiap berkas
+yang dipertahankan). Peringatan ini tidak menghentikan pencopotan. Empat jenis
+menghentikannya: berkas pemasangan yang dicatat rilis sebelumnya yang berbeda
+dari apa yang ditulis rilis ini, berkas pemasangan tanpa catatan sama sekali
+(lihat
+[Apa yang dihapus oleh pencopotan](#apa-yang-dihapus-oleh-pencopotan)), berkas
+yang berisi dua blok berbeda di antara penanda Apothem, dan berkas yang baris
+penandanya tidak dapat dibedakan Apothem dari teks Anda (lihat
+[Pencopotan yang tidak selesai](#pencopotan-yang-tidak-selesai)).
+
+Berkas milik Apothem sendiri yang dijangkau melalui tautan berbeda: sebagian
+besar alat masih memuatnya, sehingga pencopotan belum selesai. (OpenClaw tidak
+lagi memuat berkas aturannya setelah pencopotan mengeluarkan path Apothem dari
+entri hook-nya, sehingga untuk OpenClaw baris `✗` menyatakannya hanya selama
+alat itu masih memuatnya; lihat
+[OpenClaw](/docs/harnesses/open-claw#uninstalling).) Misalkan `~/.claude/rules`
+adalah junction ke folder dotfiles yang masih berisi aturan yang ditulis
+Apothem: perintah mencetak `✗ <harness> uninstall did not finish:` beserta
+tautan dan jumlah path yang ditinggalkannya, mempertahankan pemasangan sebagai
+tercatat, dan keluar dengan `2`. Ganti tautan dengan folder nyata yang berisi
+berkas yang sama, lalu jalankan perintah lagi. Untuk pemasangan yang catatannya
+mencantumkan berkas yang ditulisnya, folder bertaut yang hanya berisi berkas
+milik Anda, atau berkas Apothem yang telah Anda sunting, tidak menghentikan
+pencopotan: tautan tetap ada dengan peringatan dan pencopotan selesai. Untuk
+pemasangan yang dicatat rilis sebelumnya, berkas apa pun di balik tautan pada
+nama yang ditulis rilis ini menghentikan pencopotan, disunting atau tidak,
+karena tidak ada yang membedakannya dari apa yang ditulis rilis itu. Ganti
+tautan dengan folder nyata yang berisi berkas yang sama, lalu ikuti langkah
+untuk pemasangan semacam itu di atas: salin setiap berkas yang Anda sunting,
+perbaiki setiap berkas yang disebutkan peringatan karena penanda Apothem,
+jalankan `apothem update`, lalu copot lagi.
+
+Ketika sebuah langkah penghapusan melaporkan galat (misalnya berkas terpasang
+yang path-nya mengarah ke luar folder home Anda), perintah mencetak
+`✗ <harness> uninstall
+did not finish: <reason>` alih-alih `Uninstalled`, sekali per alasan beserta
+jumlah path yang terkena. Ketika sebuah tautan di folder home Anda mengarahkan
+path tersebut ke luarnya (`target escapes the allowed materialization root`),
+baris itu juga menyebutkan tautan dan folder yang ditujunya, serta meminta Anda
+mengganti tautan dengan folder nyata; path di balik dua tautan menghasilkan dua
+baris. Tautan itu tetap mendapat peringatan bahwa ia ditinggalkan di tempat.
+Pemasangan tetap tercatat, sehingga menjalankan perintah lagi menghapus apa yang
+ditinggalkan eksekusi pertama. Catatan retensi tidak dicetak, karena folder
+yang dijelaskannya tidak dilepaskan. Dalam keluaran JSON, harness mendapat baris
+`results` dengan `"outcome": "error"` dan `"operation": "uninstall"`, diikuti
+satu baris untuk setiap langkah yang gagal. Ketika alasan-alasan itu
+menyebutkan satu tautan, baris tersebut membawanya di `detail.symlink` dan
+folder yang ditujunya di `detail.leads_to`. Baris sebuah langkah mencantumkan
+berkas yang dipertahankannya sebagai `files` dan berkas yang ditulis Apothem
+yang tidak dapat dihapusnya sebagai `stuck`. `status` amplop bernilai
+`"partial"` dan kode keluar `2` ketika pencopotan telah menghapus berkas sebelum
+langkah itu gagal, atau ketika harness lain telah dihapus; selain itu `status`
+bernilai `"error"` dan kode keluar `1`. `error` tingkat atas tetap `null`:
+alasannya ada di `results`. Pencopotan yang berhenti karena eksepsi (misalnya
+cadangan yang tidak dapat ditulis) mencetak `✗ <harness> uninstall
+stopped after removing files:` ketika pencopotan telah menghapus berkas, atau
+telah mengeluarkan entri atau blok Apothem dari berkas seperti `openclaw.json`,
+sebelum berhenti (atau `failed:` ketika belum mengubah apa pun), beserta
+pesannya, dan mendapat baris `results` dengan pesannya, diikuti satu baris untuk
+setiap langkah yang gagal sebelumnya. Ketika sebuah langkah telah gagal sebelum
+pencopotan berhenti, atau pencopotan telah menemukan apa yang membuatnya tidak
+selesai (berkas milik Apothem sendiri di balik tautan, berkas pemasangan yang
+dicatat rilis sebelumnya yang berbeda dari apa yang ditulis rilis ini, berkas
+pemasangan tanpa catatan, berkas yang berisi dua blok berbeda di antara penanda
+Apothem, atau berkas dengan baris penanda yang tidak dapat dibedakan Apothem
+dari teks Anda), baris `✗ <harness> uninstall did not finish:` menyusul untuk
+setiap alasan, seperti di atas, dan teks yang sama ditambahkan ke akhir pesan
+baris tersebut. Untuk pemasangan tanpa catatan, baris `Note:` menyusulnya,
+dengan pemeriksaan folder `--project` untuk harness berlingkup-proyek, dan
+`detail` baris tersebut memiliki `"kept_reason": "no-record"`, seperti yang
+dijelaskan di
+[Apa yang dihapus oleh pencopotan](#apa-yang-dihapus-oleh-pencopotan). Ketika
+alasan-alasan itu dan langkah yang gagal sebelumnya menyebutkan satu tautan,
+baris tersebut membawanya di `detail.symlink` dan folder yang ditujunya di
+`detail.leads_to`. Perintah keluar dengan `2`
+dengan `status` `"partial"` ketika pencopotan telah menghapus atau mengubah
+berkas terlebih dahulu, menemukan berkas milik Apothem sendiri di balik tautan,
+mempertahankan berkas pemasangan rilis sebelumnya atau pemasangan tanpa
+catatan, atau meninggalkan berkas yang berisi dua blok berbeda di antara
+penanda Apothem atau baris penanda yang tidak dapat dibedakan Apothem dari teks
+Anda, atau ketika harness lain telah dihapus; selain itu `1`. Galat tak terduga
+(eksepsi, seperti cadangan yang tidak dapat ditulis) di dalam langkah pertama
+pencopotan Open-Claw, Antigravity, atau Kimi Code tidak melaporkan apa pun yang
+dilakukan langkah itu (lihat
+[Pencopotan yang tidak selesai](#pencopotan-yang-tidak-selesai)):
+pencopotan mencetak `failed:` dan keluar dengan `1` (`2` ketika harness lain
+telah dihapus), apa pun yang telah diubah langkah itu. Ketika langkah berkas
+aturan Open-Claw justru melaporkan galat (berkas aturan yang tidak dapat
+ditulis ulangnya, atau `openclaw.json` dengan komentar), itu adalah langkah yang
+gagal, seperti di atas: pencopotan mencetak `did not finish:`, mencatat dirinya
+sebagai tidak selesai beserta cadangan langkah itu, dan keluar dengan `2` ketika
+langkah itu telah mengubah berkas atau menemukan berkas aturan Apothem di balik
+tautan, atau ketika harness lain telah dihapus; selain itu `1`. `Ctrl+C`
+mencetak `Aborted!` dan keluar dengan `1`, apa pun yang telah dihapus pencopotan
+saat itu. Pencopotan yang ditolak (misalnya tautan yang mengarahkan folder ke
+luar direktori home Anda) tidak menghapus apa pun dan keluar dengan `1`;
+barisnya menyebutkan tautan itu di `detail.symlink` dan folder yang ditujunya
+di `detail.leads_to`, dan baris untuk langkah yang ditolak menyusulnya.
+
+### Pencopotan yang tidak selesai
+
+Ketika pencopotan tidak selesai, pencopotan menambahkan catatan
+`uninstall-incomplete` ke ledger pemasangan alih-alih catatan `uninstall`. Hal
+itu terjadi ketika sebuah langkah gagal, ketika berkas milik Apothem sendiri
+tetap berada di balik tautan, ketika berkas berisi dua blok berbeda di antara
+penanda Apothem atau baris penanda yang tidak dapat dibedakan Apothem dari teks
+Anda (lihat di bawah), ketika berkas pemasangan yang dicatat rilis sebelumnya
+berbeda dari apa yang ditulis rilis ini, dan ketika pemasangan tidak memiliki
+catatan. Empat yang terakhir keluar dengan `2` dengan `status` `"partial"`
+bahkan ketika tidak ada yang dihapus, termasuk eksekusi kedua sebelum Anda
+memperbaiki apa yang disebutkannya. Dua yang terakhir selesai hanya setelah
+`apothem update` (lihat
+[Apa yang dihapus oleh pencopotan](#apa-yang-dihapus-oleh-pencopotan)).
+Pencopotan yang dihentikan oleh eksepsi atau `Ctrl+C` menambahkan, menurut
+langkah tempat ia berhenti:
+
+- di langkah pertama Open-Claw, yang mengeluarkan blok Apothem dari berkas
+  aturan setiap workspace, atau langkah pertama Antigravity dan Kimi Code, yang
+  menghapus apa yang ditinggalkan tata letak lama: tidak ada, bahkan untuk
+  berkas yang telah diubah langkah itu saat itu, yang cadangannya tetap berada
+  di bawah `~/.apothem/backups/` tanpa catatan yang melindunginya dari
+  `backups prune`;
+- di langkah yang mengeluarkan entri Apothem dari berkas pengaturan alat yang
+  dikonfigurasi melalui satu berkas pengaturan, seperti Open-Claw, OpenCode,
+  atau Qwen Code: catatan hanya ketika langkah pertama Open-Claw telah
+  mengeluarkan blok Apothem dari berkas aturan atau mencadangkannya, dan tidak
+  ada dalam kasus lain, juga ketika langkah itu menemukan berkas aturan Apothem
+  di balik tautan;
+- di langkah yang menghapus apa yang dicantumkan catatan pemasangan, langkah
+  terakhir setiap pencopotan kecuali milik OpenCode: catatan, juga ketika
+  langkah itu tidak mengubah apa pun;
+- di langkah yang diambil pencopotan OpenCode setelahnya, yang menutup
+  pemasangan yang tercatat dengan penulisan lain dari foldernya (misalnya ketika
+  `XDG_CONFIG_HOME` menunjuk folder yang dituju tautan `~/.config`): tidak ada
+  lagi, sehingga pemasangan itu tetap tercatat. Eksekusi berikutnya belum
+  menutupnya: dengan berkas Apothem di folder itu sudah hilang, OpenCode
+  terbaca sebagai tidak terpasang di sana, sehingga `uninstall` melewatinya,
+  dan `status`, `verify`, serta `rollback` juga tidak melihat pemasangan itu.
+  Untuk menutupnya, pasang OpenCode di folder itu lagi, lalu copot:
+  `apothem install --harness opencode --profile PATH` dengan profil di luar
+  folder bertaut (`apothem profile init --profile PATH` membuatnya), lalu
+  `apothem uninstall --harness opencode`.
+
+Ketika tidak ada yang ditambahkan, ledger tetap seperti semula. Pemasangan tetap
+tercatat dalam kedua kasus. Kecuali dalam kasus terakhir itu, `apothem status`,
+`verify`, dan `rollback` masih melihatnya, dan harness terbaca sebagai terpasang
+selama sesuatu yang ditulis pemasangan masih ada sebagaimana ditulisnya (lihat
+di bawah), sehingga menjalankan `uninstall` lagi menuntaskan pekerjaan.
+Pemasangan tanpa catatan tidak memiliki catatan untuk dipertahankan: hanya
+berkasnya di disk yang membuat harness terbaca sebagai terpasang, dan
+`rollback` tidak memiliki apa pun untuk di-rollback. `install`, `update`,
+`rollback`, atau `uninstall` yang selesai untuk harness itu di lokasi itu
+menggantikan keadaan tersebut, begitu pula menghapus berkas yang tersisa secara
+manual: tanpa satu pun berkas Apothem yang tersisa sebagaimana ditulisnya dan
+tanpa apa pun yang tersisa di folder `.apothem`-nya, harness terbaca sebagai
+tidak terpasang, apa pun isi lain folder tersebut. Perintah pertama yang
+memeriksa apakah harness terpasang (`status`, `verify`, `uninstall`) kemudian
+menambahkan catatan `uninstall` yang menutup pemasangan. Namun, setelah
+pencopotan yang selesai, tidak ada catatan yang mencantumkan berkas yang
+ditulis pemasangan, sehingga di sana hanya pemasangan, pembaruan, atau
+pencopotan yang selesai yang menggantikan keadaan tersebut.
+`backups prune` mempertahankan catatan itu, beserta cadangan yang dirujuknya,
+selama pemasangan pemiliknya dipertahankan. Setelah pencopotan yang selesai,
+perintah itu mempertahankan catatan tersebut bersama catatan pencopotan itu,
+sehingga menjalankan pencopotan lagi tetap bekerja dengan cara yang sama.
+
+Yang masih dihitung: berkas utuh yang ditulis pemasangan, selama tidak berubah
+(untuk pemasangan yang dicatat rilis sebelumnya, selama berkas itu ada); apa pun
+di folder tempat Apothem memasang di bawah `.apothem`; dan berkas tempat Apothem
+menyimpan blok terkelola di samping teks Anda sendiri, selama blok itu masih ada
+di dalamnya, apa pun yang Anda tulis di sekitarnya. Berkas tersebut adalah
+`CLAUDE.md`, dokumen profil tempat profil bersama diproyeksikan, berkas aturan
+di setiap workspace OpenClaw, serta `AGENTS.md` dan berkas instruksi lain yang
+ditambahi blok oleh pemasangan.
+
+Blok terkelola berlangsung dari penanda `<!-- BEGIN APOTHEM MANAGED BLOCK -->`
+sampai penanda `<!-- END APOTHEM MANAGED BLOCK -->` berikutnya, masing-masing
+pada barisnya sendiri; Apothem membaca penanda hanya dengan cara itu dan di luar
+kode, seperti yang dilakukan penampil Markdown: blok kode berpagar (ditutup oleh
+pagar dengan karakter yang sama, setidaknya sama panjang, tanpa apa pun
+setelahnya) atau kode yang diindentasi empat kolom melewati butir daftarnya
+(atau margin) setelah baris kosong. Jadi penanda yang Anda kutip dalam kalimat
+atau contoh kode adalah teks Anda, dan penanda BEGIN dan END yang Anda kutip
+dalam dua blok kode terpisah tidak membentuk blok. Apothem menutup pagar kode
+yang dibiarkan terbuka oleh sebuah aturan di profil Anda pada akhir blok yang
+ditulisnya; dalam blok yang ditulis rilis sebelumnya, pagar semacam itu
+menyembunyikan penanda END hanya ketika pasangan penanda lain menyusul (lihat di
+bawah). Pagar yang Anda biarkan terbuka sampai akhir berkas dibaca sebagai teks,
+berapa pun jumlahnya, kecuali penanda BEGIN di luar kode di atasnya memiliki
+penanda END di dalam kode dan pasangan penanda lain menyusul keduanya.
+Byte order mark di awal berkas (seperti yang disimpan sebagian editor Windows)
+tidak menyembunyikan penanda di baris pertama. Penanda di dalam blok HTML atau
+blok kutipan, atau setelah butir daftar yang teksnya berlanjut di margin kiri,
+masih dapat dibaca berbeda dari penampil Markdown.
+
+Jika blok Apothem berada di dalam blok kode milik Anda (pagar yang dibiarkan
+terbuka di atasnya dan ditutup oleh pagar di bawahnya, atau oleh baris penutup
+di dalam blok), atau blok kode di antara penanda BEGIN dan END-nya
+menyembunyikan END itu dengan pasangan penanda lain setelahnya, Apothem tidak
+dapat membedakan bloknya dari contoh milik Anda. Pencopotan membiarkan berkas
+semacam itu apa adanya, menghapus sisa pemasangan, dan tidak selesai: perintah
+mencetak `✗ <harness> uninstall did not finish:` diikuti "1 file(s) hold marker
+lines Apothem cannot tell from your text, so Apothem left them as they are;
+fix the marker lines each warning names, keeping your own text, then run
+apothem uninstall again", dan keluar dengan `2`, termasuk pada eksekusi kedua.
+Catatan pemasangan tetap ada, sehingga pemasangan berikutnya tetap membiarkan
+berkas itu apa adanya, dan pencopotan berikutnya menyebutkannya lagi.
+Peringatannya menyebutkan setiap pasangan penanda di berkas berdasarkan
+barisnya, serta setiap penanda BEGIN di luar kode yang tidak memulai pasangan
+penanda. Tanpa catatan pemasangan, hanya penanda BEGIN yang penanda END-nya
+tersembunyi dengan cara itu yang mendapat peringatan: pasangan di dalam blok
+kode milik Anda kemudian dianggap teks Anda, dan pencopotan tetap tidak selesai
+untuk penanda itu dan untuk path yang tidak ditunjukkan catatan apa pun.
+Peringatan kemudian memberikan perbaikan bernomor dan diakhiri dengan "Then run
+the uninstall again.", misalnya "Fix A: A1. Change line 6: add a word inside
+its comment. Apothem then finds no block of its own in this file." Teks Apothem
+lama di bawah baris yang Anda ubah, sampai baris penanda END-nya, kemudian
+menjadi milik Anda untuk dihapus secara manual. Dengan beberapa perbaikan,
+pilih yang kasusnya benar dan lakukan setiap langkahnya sesuai urutan yang
+diberikan: pasangan penanda yang tersisa di berkas itu membuat pencopotan tetap
+tidak selesai, termasuk milik Anda, sehingga setiap perbaikan mengubah baris
+penanda BEGIN dari setiap pasangan yang tidak disebutnya sebagai blok Apothem,
+dan setiap penanda BEGIN yang tidak memulai pasangan (lihat
+[Apothem tidak dapat membedakan bloknya dari teks Anda](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+Setelah berkas tidak berisi pasangan semacam itu, menjalankan pencopotan lagi
+menyelesaikannya.
+
+Jika penanda END
+hilang, tidak ada yang menunjukkan di mana teks Apothem berhenti dan teks Anda
+dimulai, sehingga pencopotan membiarkan berkas apa adanya, menyebutkannya dalam
+peringatan, dan selesai (kecuali hal lain membuatnya tidak selesai, seperti
+pemasangan tanpa catatan); begitu pula percobaan ulang setelah pencopotan yang
+tidak selesai. Jika penanda BEGIN tertinggal tanpa END setelahnya begitu blok
+Apothem dikeluarkan (baris milik Anda, atau sisa blok lama yang kehilangan
+penanda END-nya), pencopotan juga menyebutkan berkas itu dan baris penandanya,
+dengan langkah bernomor yang mengubah baris itu (sebuah kata ditambahkan di
+dalam komentarnya), sehingga baris itu tidak lagi terbaca sebagai penanda:
+pemasangan mempertahankannya apa adanya, dan alat itu masih membaca teks di
+bawahnya. Teks Apothem lama apa pun di bawahnya kemudian menjadi milik Anda untuk
+dihapus secara manual. `install` atau `update` mempertahankan teks setelah
+penanda semacam itu apa adanya, menulis blok Apothem terpisah darinya dan
+menyebutkan berkas itu, dan `verify` gagal sampai penanda itu diubah (lihat
+[Berkas memiliki penanda BEGIN Apothem tanpa penanda END](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
+
+Berkas yang berisi dua blok berbeda di antara penanda (pasangan penanda yang
+Anda kutip di luar blok kode, blok lama yang penanda END-nya Anda kembalikan,
+atau blok yang Anda tempel untuk kedua kalinya) dibiarkan apa adanya dan
+disebutkan, dan pencopotan tidak selesai: perintah mencetak
+`✗ <harness> uninstall did not finish:` diikuti "1 file(s) hold two different
+blocks between Apothem's markers, so Apothem left them as they are; fix each as
+its warning says, keeping your own text (follow one of its numbered fixes,
+which change marker lines in place), then run apothem uninstall again", dan
+keluar dengan `2`, termasuk pada eksekusi kedua. Peringatannya menyebutkan
+setiap blok berdasarkan barisnya, seperti yang dilakukan install dan update,
+dan memberikan satu perbaikan bernomor untuk setiap blok, untuk kasus bahwa
+blok itu adalah blok Apothem: perbaikan mengubah baris penanda BEGIN dari setiap
+blok lain dan mempertahankan teksnya (dalam berkas yang diawali frontmatter
+Apothem, blok Apothem adalah yang tepat di bawahnya). Jangan hapus blok Apothem
+untuk mempertahankan pasangan milik Anda: pencopotan berikutnya kemudian akan
+mengeluarkan satu-satunya blok yang tersisa, yaitu milik Anda sendiri.
+`apothem update` tidak memperbaiki berkas semacam itu: perintah itu membiarkan
+berkas dengan dua blok utuh apa adanya, dengan peringatan yang sama, dan
+`verify` gagal sampai Anda memperbaikinya
+(lihat
+[Berkas berisi dua blok di antara penanda Apothem](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)).
+
+Penanda BEGIN di atas blok Apothem dan penanda END di bawahnya membentuk blok
+kedua yang baru terlihat setelah blok Apothem dikeluarkan. Peringatan
+pencopotan kemudian menyebutkan blok Apothem dan kedua baris penanda itu,
+misalnya "once the block from line 5 to line 36 is out, the BEGIN marker at
+line 2 and the END marker at line 39 make another", dan meminta Anda untuk
+tidak menghapus blok Apothem: eksekusi berikutnya kemudian akan membaca baris 2
+sampai 39 sebagai blok Apothem. Satu-satunya perbaikannya mengubah baris
+penanda BEGIN itu sebagai gantinya, dengan tetap mempertahankan teks Anda
+sendiri, dan penanda END di bawahnya kemudian tidak berpasangan dengan apa pun;
+jika penanda BEGIN itu adalah sisa blok Apothem lama, teks Apothem lama di
+bawahnya kemudian menjadi milik Anda untuk dihapus secara manual. Jangan
+menaruh kedua baris itu dalam satu blok kode: blok kode itu akan ikut berisi
+blok Apothem. `apothem update` juga tidak memperbaiki berkas semacam itu, dan
+`verify` gagal sampai Anda memperbaikinya. Nomor baris menghitung CR tunggal
+sebagai akhir baris, sama seperti CRLF dan LF (lihat
+[Berkas memiliki penanda BEGIN Apothem tanpa penanda END](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
+
+Ketika langkah berikutnya dari pencopotan adalah menjalankan `apothem update`
+dan sebuah peringatan menyebutkan berkas karena penanda Apothem (dalam amplop
+`--format json`, `detail`-nya memiliki `marker_left`), baris `✗`, dan
+peringatan setiap path yang dipertahankannya untuk rilis sebelumnya atau untuk
+catatan yang hilang, meminta Anda memperbaiki berkas itu terlebih dahulu,
+dengan saran untuk jenis penandanya.
+
+Jika ledger tidak dapat menerima catatan `uninstall-incomplete` (misalnya disk
+penuh), ledger tetap seperti semula, dan baris `Warning:` menyebutkan ledger
+dan folder cadangan yang diambil pencopotan: tidak ada catatan yang melindungi
+cadangan itu dari `backups prune`, jadi salin yang Anda perlukan. Tanpa catatan
+eksekusi yang tidak selesai itu, menjalankan perintah lagi mungkin mendapati
+harness tidak terpasang dan tidak menghapus apa pun; kemudian hapus secara
+manual berkas yang dicantumkan baris `✗` dan `Warning:`. Selama harness masih
+terbaca sebagai terpasang, menjalankan perintah lagi bekerja seperti
+sebelumnya: berdasarkan catatan pemasangan, atau, setelah pencopotan yang
+selesai tanpa pemasangan yang tercatat sejak itu, dengan cara yang sama seperti
+eksekusi itu (lihat
+[Apa yang dihapus oleh pencopotan](#apa-yang-dihapus-oleh-pencopotan)). Ketika
+catatan `uninstall` dari pencopotan yang selesai tidak dapat disimpan ke disk,
+pencopotan menghapusnya lagi dari ledger dan berakhir sebagai tidak selesai.
+Pencopotan selesai, dengan jenis peringatan yang sama, ketika ledger masih
+berakhir dengan pencopotan yang selesai: catatan itu tetap berada di ledger,
+atau pencopotan menyusul pencopotan lain yang selesai. Interupsi (`Ctrl+C`)
+setelah catatan disimpan membuat pencopotan tetap selesai.
+
 Jika sebuah folder tetap ada karena pemasangan yang tidak dapat Anda temukan,
 catatan menyebutkannya. Ketika folder proyek telah dihapus, pemasangan tersebut
 diabaikan dan folder itu ikut terhapus pada pencopotan berikutnya. Ketika
@@ -85,6 +639,53 @@ manual, `uninstall` melaporkan harness tersebut sebagai tidak terpasang dan
 tidak melepaskan klaimnya; jalankan `install` untuk harness dan proyek
 tersebut, lalu `uninstall`, untuk melepaskannya. `apothem verify` menunjukkan
 apakah sebuah folder masih lengkap.
+
+`--project` dibaca dengan tautannya diikuti dan `~` diekspansi. Pemasangan yang
+dibuat dari kode Python dengan folder proyek dituliskan dengan cara lain,
+misalnya melalui tautan, tetap ditemukan dengan penulisan yang disimpan
+catatannya. `install` atau `update` mencatat folder dalam bentuk yang telah
+di-resolve. Setelah pemasangan lolos pemeriksaannya, pemasangan memindahkan
+pemasangan yang tercatat dengan penulisan lain ke penulisan yang telah
+di-resolve, sehingga pemasangan tetap ditemukan setelah tautan dihapus;
+pemasangan yang ditolak tidak mengubah catatan apa pun. `uninstall` memindahkan
+pemasangan semacam itu dengan cara yang sama sebelum menghapus apa pun, sehingga
+pencopotan yang tidak selesai dicatat di bawah folder yang telah di-resolve,
+tempat menjalankan `uninstall` lagi tetap menemukannya setelah tautan dihapus.
+Folder yang dinamai catatan dengan cara lain di disk (path
+`\\localhost\C$` ke folder yang tercatat sebagai `C:\...`) mempertahankan
+penulisan yang dimiliki catatan, dan pemasangan atau pencopotan di folder yang
+masih memiliki pemasangannya sendiri membiarkan catatan dengan penulisan lain
+apa adanya. Penulisan yang pemasangannya masih ada didahulukan daripada
+penulisan yang pemasangannya telah dihapus; dari dua yang masih ada, yang
+memiliki lebih banyak berkasnya di folder, lalu yang lebih baru. Pemasangan yang
+tidak satu pun berkasnya ada di folder tidak dianggap sebagai pemasangan folder
+itu, kecuali pencopotannya tidak selesai: menjalankan `uninstall` lagi kemudian
+menyelesaikannya. Nama folder dibandingkan secara persis: di folder yang peka
+huruf besar-kecil (misalnya yang dibuat WSL) `Proj` dan `proj` adalah dua folder
+dan tidak pernah dianggap sama, dan mencopot salah satunya mempertahankan
+folder bersama yang digunakan yang lain. Di folder Windows biasa, keduanya
+adalah satu folder selama folder itu ada; setelah folder itu hilang, hanya
+penulisan yang dimiliki catatan yang menemukannya. Volume kloning yang
+dipasang di samping aslinya tidak dianggap sebagai volume aslinya ketika
+Windows dapat menamai kedua volume. Catatan di share jaringan lain (path
+`\\server\share` atau huruf drive yang dipetakan ke share) dibandingkan hanya
+berdasarkan teksnya, sehingga share yang tidak dapat dijangkau tidak menahan
+pencarian catatan. Catatan tentang folder bersama tetap memeriksa setiap folder
+yang tercatat, sehingga catatan itu masih dapat menunggu share semacam itu.
+
+Tiga kasus tidak ditemukan seperti yang mungkin Anda harapkan. Pemasangan yang
+dicatat dua kali oleh rilis sebelumnya, sekali dari baris perintah dan sekali
+dari Python melalui tautan, mempertahankan catatan kedua setelah `uninstall`,
+dan folder bersama tetap ada untuknya. Hapus yang itu dari Python dengan folder
+dituliskan seperti saat dipasang. Pemasangan yang tercatat dengan penulisan
+`\\localhost\C$` dari folder di komputer ini tidak ditemukan dari penulisan
+`C:\`-nya, karena catatan di share tidak dicari dari tempat lain. Dan ketika
+dua pemasangan dibuat melalui dua tautan ke dua folder berbeda, dan satu tautan
+kemudian diarahkan ke folder yang lain, pencopotan mengambil pemasangan yang
+memiliki lebih banyak berkasnya di folder itu. Jika keduanya menulis nama berkas
+yang sama (dua pemasangan dari rilis yang sama), atau rilis sebelumnya
+mencatatnya (rilis itu tidak mencantumkan berkasnya), pencopotan mengambil yang
+lebih baru, yang berkasnya mungkin berada di folder yang dulu dituju tautan.
 
 Penghapusan `--harness all` sengaja dibuat menyeluruh: penghapusan ini mencakup
 setiap harness yang terdaftar, termasuk harness apa pun yang dilewati
@@ -102,7 +703,7 @@ Alias bentuk-kontinu `apothem uninstalling` (juga diterima sebagai
 | `--harness NAME` | Adapter harness yang akan dihapus, atau `all` untuk himpunan selingkup registri (wajib). |
 | `--yes` | Melewati prompt konfirmasi. |
 | `--project PATH` | Root proyek untuk harness berlingkup-proyek. |
-| `--quiet`, `-q` | Menekan keluaran informatif; hanya galat yang dipancarkan. |
+| `--quiet`, `-q` | Menekan keluaran informatif; hanya galat yang dipancarkan. Pencopotan yang tidak selesai tetap mencetak baris `Warning:`-nya, yang mencantumkan apa yang dipertahankannya, ke standard error, dan setiap pencopotan mencetak di sana baris `Warning:` yang menyebutkan penanda Apothem yang tertinggal di sebuah berkas. |
 | `--verbose`, `-v` | Diterima demi konsistensi dengan perintah lain; perintah ini tidak mencetak keluaran tambahan. |
 | `--format plain\|json` | Format keluaran (default: `plain`). |
 | `--json` | Singkatan untuk `--format json`. |
@@ -143,6 +744,10 @@ amplop memiliki `"status": "success"` dan `"action": "uninstalled"`, dan baris
 results memiliki `"outcome": "skipped"` dengan pesan `"not installed; no files
 removed"`. Bidang `status` tidak pernah bernilai `"not_installed"`.
 
+Hasil yang ditolak di sebuah tautan menyebutkan tautan itu di `detail.symlink`
+dan folder yang ditujunya di `detail.leads_to`, seperti pada
+[`apothem install`](/docs/cli-reference/install#json-output).
+
 ## Contoh
 
 ```bash
@@ -168,8 +773,8 @@ apothem uninstall --harness cursor --project A --yes     # removes it: no instal
 | Kode | Arti |
 |---|---|
 | 0 | Adapter dihapus, atau memang tidak terpasang |
-| 1 | Harness tidak ditemukan, konfirmasi ditolak atau tidak tersedia (mode non-interaktif atau JSON tanpa `--yes`), atau setiap penghapusan gagal |
-| 2 | Penghapusan parsial — setidaknya satu harness telah dihapus sebelum terjadi kegagalan |
+| 1 | Harness tidak ditemukan, konfirmasi ditolak atau tidak tersedia (mode non-interaktif atau JSON tanpa `--yes`), tidak ada yang dihapus karena setiap harness terpasang gagal sebelum menghapus atau mengubah apa pun, tidak menyebutkan tautan yang mempertahankan berkas milik Apothem sendiri di tempatnya, tidak mempertahankan berkas pemasangan rilis sebelumnya atau pemasangan tanpa catatan, dan tidak meninggalkan berkas yang berisi dua blok berbeda di antara penanda Apothem atau baris penanda yang tidak dapat dibedakan Apothem dari teks Anda (galat tak terduga, yaitu eksepsi, di dalam langkah pertama pencopotan Open-Claw, Antigravity, atau Kimi Code dihitung sebagai kegagalan semacam itu, apa pun yang telah diubah langkah itu), atau perintah diinterupsi (`Ctrl+C`, yang mencetak `Aborted!`), apa pun yang telah dihapusnya saat itu |
+| 2 | Penghapusan parsial — pencopotan gagal atau berhenti setelah menghapus berkas atau mengeluarkan entri Apothem dari sebuah berkas (kecuali galat tak terduga di dalam langkah pertama semacam itu, lihat `1`), setidaknya satu harness telah dihapus dan yang lain gagal, pencopotan meninggalkan berkas milik Apothem sendiri di tempatnya karena sebuah tautan mengarah ke berkas itu, sebuah berkas berisi dua blok berbeda di antara penanda Apothem atau baris penanda yang tidak dapat dibedakan Apothem dari teks Anda, berkas pemasangan yang dicatat rilis sebelumnya berbeda dari apa yang ditulis rilis ini, atau pemasangan tidak memiliki catatan yang menunjukkan berkas mana yang ditulis Apothem |
 | 64 | Galat penggunaan: opsi atau perintah yang tidak dikenal, atau nilai opsi yang hilang atau tidak valid. Di bawah `--json`, galat berupa amplop JSON dengan kode `cli.usage`. |
 
 ## Lihat juga

@@ -2,7 +2,7 @@
 title: "Harness-Adapter-Abstraktion"
 description: "Das HarnessAdapter-Protokoll — wie Apothem-Adapter das gemeinsame Profil übersetzen."
 machineTranslated: true
-sourceHash: "da20d21cbe60d343"
+sourceHash: "20a51a9c0e55e94a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -102,6 +102,8 @@ eigenen Adapters.
 from pathlib import Path
 from typing import Protocol
 
+from apothem.harnesses._shared.install_driver_types import MaterializationRun
+
 class HarnessAdapter(Protocol):
     name: str
     output_path: Path
@@ -112,7 +114,7 @@ class HarnessAdapter(Protocol):
     def update(self, profile: dict[str, object]) -> object:
         ...
 
-    def uninstall(self) -> None:
+    def uninstall(self) -> MaterializationRun | None:
         ...
 
     def is_installed(self) -> bool:
@@ -121,6 +123,10 @@ class HarnessAdapter(Protocol):
     def verify(self) -> bool:
         ...
 ```
+
+Mitgelieferte Adapter geben aus `uninstall` einen `MaterializationRun` zurück,
+und die CLI meldet dessen Warnungen und Fehler; ein Adapter, der nichts zu
+melden hat, darf `None` zurückgeben.
 
 Projektbezogene Adapter können zusätzlich `project: Path | None` auf
 Lebenszyklusmethoden akzeptieren und `resolve_output_path(project)`

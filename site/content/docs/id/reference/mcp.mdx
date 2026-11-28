@@ -2,7 +2,7 @@
 title: "Server MCP"
 description: "Konfigurasi server Model Context Protocol — dimiliki operator dan didaftarkan melalui mekanisme MCP native setiap tool; beberapa adapter memproyeksikan inventaris MCP dari profil bersama, sisanya tidak menulis entri server apa pun."
 machineTranslated: true
-sourceHash: "1fbc48cd12ad0388"
+sourceHash: "0fdad1bd642d3d81"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -55,17 +55,23 @@ Adapter `OpenCode` menulis inventaris ke blok `mcp` di `opencode.json`. `OpenCod
 melakukan substitusi `{env:NAME}` di konfigurasinya, bukan `${NAME}`, sehingga
 adapter menulis setiap referensi `${NAME}` di lingkungan, header, atau URL sebuah
 server sebagai `{env:NAME}`; variabel yang tidak disetel menjadi string kosong.
+Entri lingkungan yang hanya meneruskan variabel dengan namanya sendiri, seperti
+`GITHUB_TOKEN: ${GITHUB_TOKEN}`, dihilangkan, karena `OpenCode` menjalankan server
+dengan lingkungannya sendiri, sehingga variabel yang tidak disetel tetap tidak
+disetel; [halaman OpenCode](/docs/harnesses/opencode) mencantumkan kasus yang berbeda.
 Argumen command disalin apa adanya. `$NAME` di dalam nilai lingkungan atau header,
-atau bentuk `${...}` lain, seperti `${NAME:-default}`, disalin apa adanya, dan
-`apothem install` memperingatkan bahwa `OpenCode` tidak mengekspansinya, dengan
-menyebutkan letak referensi itu, bukan nilainya. `OpenCode` menyisipkan nilai
+atau bentuk `${...}` lain apa pun, seperti `${NAME:-default}` atau `${NAME}` biasa
+di argumen command, disalin apa adanya, dan `apothem install` memperingatkan bahwa
+`OpenCode` tidak mengekspansinya, dengan menyebutkan letak referensi itu, bukan
+nilainya. `OpenCode` menyisipkan nilai
 `{env:NAME}` ke dalam teks konfigurasi yang dibacanya tanpa meng-escape-nya
 (`OpenCode` 2 meng-escape-nya hanya ketika teks itu tidak dapat diurai tanpa itu),
 sehingga nilai dengan backslash, tanda kutip ganda, atau karakter kontrol dapat
 membuat `OpenCode` 1 gagal membaca berkas, dan di kedua versi `\t` atau `\n` di
 dalamnya sampai ke server sebagai karakter kontrol. `apothem install`
-memperingatkan tentang nilai semacam itu; setel nilai tersebut sebagai
-`{file:path}` di bawah `harnesses.opencode.mcp_servers.<name>` agar tool lain tetap
+memperingatkan tentang nilai semacam itu; nyatakan ulang seluruh server tersebut di
+bawah `harnesses.opencode.mcp_servers.<name>`, karena penggantian menggantikan
+seluruh server, dan tulis nilainya di sana sebagai `{file:path}`; tool lain tetap
 memegang referensi `${NAME}`.
 
 ## Memberi helper akses ke server MCP

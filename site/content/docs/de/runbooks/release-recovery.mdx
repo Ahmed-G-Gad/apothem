@@ -2,7 +2,7 @@
 title: "Runbook zur Release-Wiederherstellung"
 description: "Wiederherstellungsverfahren für ein Release, das unter dem additiven Release-Modell mitten im Ablauf fehlschlägt, Stufe für Stufe und ohne veröffentlichten Verlauf umzuschreiben."
 machineTranslated: true
-sourceHash: "91a31722fb721a3e"
+sourceHash: "d3bcc2874d9e87b5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -51,8 +51,12 @@ git tag -v vX.Y.Z           # signature check
 Das Vorgehen hängt davon ab, ob aus dem Tag etwas veröffentlicht wurde:
 
 - **Noch nichts veröffentlicht** (der Release-Workflow schlug vor seinem
-  Publish-Job fehl, und `publish-npm.yml` hat nichts veröffentlicht): Löschen
-  Sie das Tag und taggen Sie denselben Commit mit `-a -s` neu.
+  Publish-Job fehl, `publish-npm.yml` hat nichts veröffentlicht, und
+  `publish-vscode.yml` hat nichts im Visual Studio Marketplace veröffentlicht):
+  Löschen Sie das Tag und taggen Sie denselben Commit mit `-a -s` neu. Braucht
+  der Fehlschlag zuerst eine Korrektur auf `main`, etwa eine vergessene Anhebung
+  der Plugin-Version, taggen Sie stattdessen den neuen Release-Commit (siehe die
+  Fehlertabelle des Runbooks zum Release-Zyklus).
 
   ```bash
   git push --delete origin vX.Y.Z
@@ -61,11 +65,12 @@ Das Vorgehen hängt davon ab, ob aus dem Tag etwas veröffentlicht wurde:
   git push origin vX.Y.Z
   ```
 
-- **Irgendetwas veröffentlicht** (ein GitHub Release mit Assets oder die
-  npm-Version): Verschieben Sie das Tag niemals, löschen Sie es niemals und
+- **Irgendetwas veröffentlicht** (ein GitHub Release mit Assets, die
+  npm-Version oder die Marketplace-Version): Verschieben Sie das Tag niemals, löschen Sie es niemals und
   verwenden Sie es niemals wieder. Korrigieren Sie nach vorn mit `vX.Y.(Z+1)`.
 
-Ein Tag-Name wird niemals für einen anderen Commit wiederverwendet.
+Sobald aus einem Tag etwas veröffentlicht wurde, wird sein Name niemals für
+einen anderen Commit wiederverwendet.
 
 ## 3. Publisher-Wiederherstellung
 

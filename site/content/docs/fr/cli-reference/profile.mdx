@@ -2,7 +2,7 @@
 title: "profile"
 description: "Référence de la CLI pour le groupe de commandes apothem profile."
 machineTranslated: true
-sourceHash: "012b17d6a7a7bc49"
+sourceHash: "93fe295d7fa540f1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -88,7 +88,32 @@ profil sur le disque reste inchangé.
 
 ### `profile edit`
 
-Ouvre le profil partagé dans l'éditeur du système.
+Ouvre le profil partagé dans l'éditeur du système. Lorsqu'aucun profil n'existe
+encore à ce chemin, `edit` écrit d'abord le profil de départ à cet endroit, le
+même échafaudage que celui qu'écrit `profile init`, puis l'ouvre.
+
+### Profils derrière un lien
+
+Un chemin de profil écrit à l'intérieur de votre répertoire personnel, comme le
+chemin par défaut `~/.config/apothem/profile.yaml`, n'est pas écrit à travers un
+lien qui mène hors de votre répertoire personnel. Ce lien peut être un dossier
+situé au-dessus du profil, comme `~/.config` (sous Windows, une jonction compte
+comme un lien), ou le fichier de profil lui-même, comme un fichier de dotfiles
+sur un autre lecteur. `profile init`, `profile set` et `profile edit` s'arrêtent
+alors avant d'écrire ou d'ouvrir quoi que ce soit. Sans profil existant, le
+message est `Apothem could not create the starter profile`. Sur un profil
+existant, `profile set`, `profile edit` et `profile init
+--force` s'arrêtent avec `Apothem could not write the profile` ; `profile init`
+sans `--force` s'arrête d'abord avec `profile file already exists`, comme
+partout ailleurs. `profile show` et les commandes qui ne font que lire le profil
+le lisent toujours. Un lien qui reste à l'intérieur de votre répertoire
+personnel, tel que le créent les gestionnaires de dotfiles, est suivi. Pour
+conserver le profil hors de votre répertoire personnel, passez
+`--profile PATH` avec le chemin propre du profil à cet endroit, y compris le
+chemin vers lequel mène un lien de fichier de profil : un chemin que vous écrivez
+hors de votre répertoire personnel est écrit là où ses liens mènent. Sans profil
+encore présent à cet endroit, créez-le d'abord avec
+`apothem profile init --profile PATH`.
 
 ## Erreurs de validation
 

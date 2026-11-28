@@ -2,7 +2,7 @@
 title: "Trae"
 description: "Trae（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "97ae18e3fc9b0b70"
+sourceHash: "1c892ed70350c956"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,7 +41,7 @@ apothem install --harness trae --project /path/to/project
 
 - `trae` をインストールするすべてのプロジェクトが同じ `~/.trae/skills/` のコピーを使い、インストールは毎回同じファイルをそこに書き込みます。そのフォルダーを読むツールは Trae だけです。`~/.config/apothem/` 配下のルールとテンプレートは、他のツールのインストールによっても同じファイルで書き込まれます。
 - `--project` は、書き込むルールファイルと、インストールがどのプロジェクトに属するかを選びます。スキルの書き込み先は変わりません。
-- インストールは、あなたのリポジトリにスキルファイルもルールファイルも追加しません。プロジェクトが受け取るのは、ルールファイルと `.trae/agents/` 内のサブエージェントファイル、そしてプロジェクトへのインストールが毎回作成する `.apothem/` データフォルダーです。
+- インストールは、あなたのリポジトリにスキルファイルもルールファイルも追加しません。プロジェクトが受け取るのは、ルールファイルと `.trae/agents/` 内のサブエージェントファイル、そしてプロジェクトへのインストールが毎回作成するデータフォルダー（デフォルトは `.apothem/`）です。
 - ホームのフォルダーが最初に書き込まれます。それが失敗した場合、たとえばパス内のフォルダーがホームディレクトリの外へ出るリンクである場合（内側にとどまるリンクはたどられます）や書き込めない場合、インストールはプロジェクト内の何かが変わる前にエラーで停止します。
 - Apothem のスキルの名前を持ち、Apothem が書き込んだのではないスキルフォルダーはそのまま残され、インストールはその名前を挙げる警告を表示します。名前を変えるか移動してから、`apothem update` を実行してください。その名前が占有されている間、`apothem verify` は失敗します。
 - ファイルの合計は数メガバイトになります。
@@ -148,8 +148,16 @@ apothem uninstall --harness trae --project /path/to/project
 ## コンフォーミティゲート
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+プロジェクトのフォルダーから実行します。Windows では、`python3` の代わりに `python` を使い、
+フルパスを指定します。Windows PowerShell と cmd は `~` を展開しないためです。
+PowerShell では `$HOME\.apothem\src\apothem\conformity\gate.py`、
+cmd では `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` です。このパスは
+インストーラーがエンジンを置く場所で、`-E -s` はあなたの `PYTHONPATH` とユーザーの
+site-packages をゲートから締め出します。両者とその他のインストールについては
+[コンフォーミティゲート](/docs/conformity-gate)で説明しています。
 
 ## トラブルシューティング
 

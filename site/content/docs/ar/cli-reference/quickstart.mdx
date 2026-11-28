@@ -2,7 +2,7 @@
 title: "quickstart"
 description: "مرجع واجهة سطر الأوامر لأمر التشغيل الأوّل الموجَّه apothem quickstart."
 machineTranslated: true
-sourceHash: "951e6d6877611c54"
+sourceHash: "a461df3fe9749c28"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -35,7 +35,7 @@ apothem quickstart [--harness NAME|all] [--project PATH] [--profile PATH]
 - **الملف التعريفي** — إذا لم يوجد ملف في مسار الملف التعريفي المُحَلّ، يعرض <bdi>`quickstart`</bdi> إنشاء ملف تعريفي مبدئي (ويُنشئه تلقائيًا مع <bdi>`--yes`</bdi>، أو في صدفة غير تفاعلية، أو مع <bdi>`--format json`</bdi>)، ويسمّي حقول الهوية النائبة التي ينبغي تخصيصها.
 - **المعاينة + التأكيد** — بالنسبة إلى <bdi>`--harness all`</bdi>، تُسرَد الأهداف تحت عنوانين (جذر المشروع مقابل دليلك المنزلي)، ويطلب التشغيل التفاعلي التأكيد قبل الكتابة خارج المشروع. ويُثبَّت إطار عمل واحد محدَّد دون معاينة أو مطالبة. ويمضي كلٌّ من <bdi>`--yes`</bdi>، والصدفة غير التفاعلية، و<bdi>`--format json`</bdi> دون مطالبة. ورفض معاينة <bdi>`--harness all`</bdi> يُلغي التثبيت قبل كتاباته، أما الملف التعريفي المبدئي الذي أُنشئ في الخطوة 1 فيبقى محفوظًا.
 - **التثبيت** — تُلخَّص القدرات التي لا يدعمها إطار العمل أصليًا في ملاحظة مُجمَّعة واحدة لكل إطار عمل (مرِّر <bdi>`--verbose`</bdi> للتفصيل لكل قدرة)؛ وتوجد المجموعة الكاملة دائمًا في مصفوفة التحذيرات في <bdi>`--format json`</bdi>.
-- **الخطوة التالية** — تسمّي مخرجات الطرفية الأوامر اللاحقة (<bdi>`apothem verify …`</bdi>، <bdi>`apothem doctor`</bdi>).
+- **الخطوة التالية** — تسمّي مخرجات الطرفية الأوامر اللاحقة (<bdi>`apothem verify …`</bdi>، <bdi>`apothem doctor`</bdi>). ويُوضَع مجلّد <bdi>`--project`</bdi> بين علامتَي اقتباس من أجل الصدفة، كما يقتبسه [<bdi>`doctor`</bdi>](/docs/cli-reference/doctor). وحين لا تستطيع علامات الاقتباس حمله، تطبع المخرجات الأمر حتى <bdi>`--project`</bdi> وتسمّي المجلّد بالكلمات بعده، ويكون مُدخَل <bdi>`recommended_next`</bdi> في <bdi>JSON</bdi> بالنصّ <bdi>`Run apothem verify --harness … with --project set to <folder>`</bdi>، وهو ليس أمرًا يُشغَّل كما هو.
 
 ## الخيارات
 
@@ -65,11 +65,22 @@ apothem quickstart [--harness NAME|all] [--project PATH] [--profile PATH]
   "steps": [
     {"step": "profile", "outcome": "created", "path": "…", "placeholder_identity": ["name", "email", "github"]},
     {"step": "install", "status": "success", "harness": "all", "files_written": ["…"], "warnings": [], "results": []},
-    {"step": "recommend", "next": ["apothem verify --harness all --project .", "apothem doctor"]}
+    {"step": "recommend", "next": ["apothem verify --harness all --project \".\"", "apothem doctor"]}
   ],
-  "recommended_next": ["apothem verify --harness all --project .", "apothem doctor"]
+  "recommended_next": ["apothem verify --harness all --project \".\"", "apothem doctor"]
 }
 ```
+
+عندما تترك خطوة التثبيت ملفًا كما هو بسبب أسطر علامات <bdi>Apothem</bdi> فيه (انظر
+[<bdi>`install`</bdi>](/docs/cli-reference/install#capability-notes))، تكون قيمتا
+<bdi>`status`</bdi> كلتاهما <bdi>`"partial"`</bdi> ويكون رمز الخروج <bdi>`2`</bdi>. وفي
+الوضع العادي يطبع التشغيل سطر <bdi>`✗`</bdi> الخاص بالتثبيت، ثم الخطوات التالية الموصى
+بها. ولأن <bdi>`apothem verify`</bdi> يفشل لذلك الملف إلى أن تُصلحه، تكون الخطوة الأولى
+عندئذٍ إصلاح كل ملف تركه التثبيت كما هو، وفق ما يقوله تحذيره، ثم تشغيل
+<bdi>`apothem update`</bdi> للأدوات نفسها (<bdi>`Fix the files it left:`</bdi> في الوضع
+العادي، وأول مُدخَل في <bdi>`recommended_next`</bdi> في <bdi>JSON</bdi>،
+<bdi>`Fix each file the install left as it is, as its warning says, then run apothem update --harness …`</bdi>)،
+بدلًا من <bdi>`apothem verify`</bdi>.
 
 ## أمثلة
 
@@ -86,7 +97,7 @@ apothem quickstart --harness claude-code --json
 |---|---|
 | 0 | اكتمل التشغيل الموجَّه |
 | 1 | خطأ متوقّع في التحقّق، أو الملف التعريفي، أو إطار العمل، أو المشروع، أو المحوّل |
-| 2 | تجسيد جزئي للدفعة بعد عملية كتابة واحدة على الأقل |
+| 2 | جزئي: توقّفت دفعة بعد عملية كتابة واحدة على الأقل، أو ترك التثبيت ملفًا يحتفظ <bdi>Apothem</bdi> بكتلته فيه كما هو بسبب أسطر علامات <bdi>Apothem</bdi> فيه |
 | 64 | خطأ استخدام: خيار أو أمر غير معروف، أو قيمة خيار مفقودة أو غير صالحة. ومع <bdi>`--json`</bdi> يكون الخطأ غلاف <bdi>JSON</bdi> يحمل الرمز <bdi>`cli.usage`</bdi>. |
 
 ## انظر أيضًا

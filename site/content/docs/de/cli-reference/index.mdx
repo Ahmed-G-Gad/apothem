@@ -2,7 +2,7 @@
 title: "CLI-Referenz"
 description: "Apothem-CLI-Referenz — Übersicht, Optionen und Exit-Codes je Befehl für die apothem-Befehlszeilenschnittstelle."
 machineTranslated: true
-sourceHash: "d05ea2b5171674a9"
+sourceHash: "aa091d12392e27c9"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -75,7 +75,7 @@ diejenigen auf, die der Befehl zurückgeben kann.
 |---|---|
 | 0 | Erfolg |
 | 1 | Erwarteter Fehlschlag: ein Validierungs-, Profil-, Harness-, Projekt- oder Adapterfehler |
-| 2 | Teilergebnis: Ein Batch hat vor einem Fehlschlag etwas geschrieben oder entfernt (nur die Befehle, deren Seite ihn auflistet) |
+| 2 | Teilergebnis: Der Befehl hat nur einen Teil seiner Arbeit erledigt, etwa ein Lauf, der vor einem Fehlschlag Dateien geschrieben, entfernt oder wiederhergestellt hat, ein `status`- oder `harnesses list`-Lauf, in dem ein Adapter keine Meldung liefern konnte, oder eine Deinstallation, die einige Dateien von Apothem zurückgelassen hat (nur die Befehle, deren Seite ihn auflistet) |
 | 64 | Verwendungsfehler: eine unbekannte Option oder ein unbekannter Befehl, eine fehlende Pflichtoption oder ein ungültiger Optionswert |
 
 Ein Verwendungsfehler berührt niemals das Dateisystem. Unter `--json` (oder

@@ -2,7 +2,7 @@
 title: "OpenSSF Scorecard 태세"
 description: "Apothem의 OpenSSF Scorecard 목표와 점수를 계속 개선하는 데 쓰는 증거 표면입니다."
 machineTranslated: true
-sourceHash: "2a073782c97e3b02"
+sourceHash: "9f1955ad5cb7c858"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,16 +17,16 @@ Apothem은 OpenSSF Scorecard 최고 점수를 목표로 하면서, Scorecard가 
 | **Binary-Artifacts** | [binary-artifacts-sweep.md](/docs/security/binary-artifacts-sweep) | 소스에서 추적되는 실행 가능 바이너리는 0개입니다. 생성된 배포 아카이브는 `dist/`에 머뭅니다. |
 | **Branch-Protection** | [branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) | 공개 릴리스 승격 전에 `main`이 보호됩니다. 새 릴리스 커밋이 반영된 후에는 강제 푸시와 삭제가 차단됩니다. |
 | **CI-Tests** | [`.github/workflows/ci.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/ci.yml) | Pytest 매트릭스, ruff, mypy, Trivy, 문서 빌드, 패키징 스모크 검사. |
-| **CII-Best-Practices** | OpenSSF Best Practices 등록 | 프로젝트는 bestpractices.dev에 [프로젝트 16427](https://www.bestpractices.dev/en/projects/16427)로 등록되어 있으며 2026-11-08부터 passing 배지를 보유하고 있고, 이 검사는 이를 반영합니다. |
+| **CII-Best-Practices** | [OpenSSF Best Practices 배지](/docs/security/openssf-best-practices) | OpenSSF Best Practices 페이지는 passing 기준 67개 모두에 각각의 근거와 함께 답합니다. 프로젝트는 bestpractices.dev에 [프로젝트 16427](https://www.bestpractices.dev/en/projects/16427)로 등록되어 있으며 2026-11-08부터 passing 배지를 보유하고 있고, 이 검사는 이를 반영합니다. |
 | **Code-Review** | 브랜치 보호 + CODEOWNERS | 저장소 관리자를 제외한 모든 사람에게 `main`에 대한 풀 리퀘스트가 필수이며, 프로젝트에 메인테이너가 한 명인 동안 브랜치 보호는 승인 검토 0건을 요구합니다([branch-protection-ruleset.md](/docs/security/branch-protection-ruleset) 참조). 검토된 PR이 생기기 전까지 Scorecard 이력은 제한적으로 남습니다. |
 | **Contributors** | [AUTHORS](https://github.com/ahmed-g-gad/apothem/blob/main/AUTHORS) | 새로운 단독 메인테이너 프로젝트는 여러 조직에 걸친 기여 이력을 만들어 낼 수 없습니다. 이 항목은 기여자가 합류하면서 자연스럽게 개선됩니다. |
 | **Dangerous-Workflow** | 워크플로 감사 | `pull_request_target`이 없습니다. Actions는 SHA로 고정되고 명시적 권한으로 범위가 한정됩니다. |
-| **Dependency-Update-Tool** | [`.github/dependabot.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/dependabot.yml) | Dependabot은 GitHub Actions 고정, 웹사이트, vsce 패키저 잠금 파일, 해시 잠금된 CI pip, pre-commit 훅에 대해 그룹화된 주간 업데이트를, channel-smoke 잠금 파일에 대해 월간 업데이트를 제안합니다. Dependabot 보안 업데이트는 감지된 모든 매니페스트를 다루지만, `scripts/ci/`에 있는 CI 의존성 및 도구의 전체 잠금 세트는 제외됩니다. 경고가 잠긴 패키지를 지목하면 `scripts/dev/refresh_ci_locks.py`가 이 세트를 다시 생성합니다. `.gitattributes`는 이 파일 하나를 GitHub 소스 아카이브에 유지하며, 액션의 기본 아카이브 모드로 실행하는 스캔이 이 아카이브를 읽습니다. Scorecard 워크플로는 git 모드로 실행되어 클론에서 이 파일을 읽습니다. |
-| **Fuzzing** | [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property) | Hypothesis 속성 테스트가 파서와 frontmatter 불변식을 검증합니다. 업스트림 Scorecard는 Hypothesis를 퍼저 통합으로 인정하지 않을 수 있습니다. |
+| **Dependency-Update-Tool** | [`.github/dependabot.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/dependabot.yml) | Dependabot은 GitHub Actions 고정, 웹사이트, vsce 패키저 잠금 파일, 해시 잠금된 CI pip, pre-commit 훅, 퍼징 빌드 이미지의 다이제스트에 대해 그룹화된 주간 업데이트를, channel-smoke 잠금 파일에 대해 월간 업데이트를 제안합니다. Dependabot 보안 업데이트는 감지된 모든 매니페스트를 다루지만, `scripts/ci/`에 있는 CI 의존성 및 도구의 전체 잠금 세트는 제외됩니다. 경고가 잠긴 패키지를 지목하면 `scripts/dev/refresh_ci_locks.py`가 이 세트를 다시 생성합니다. `.gitattributes`는 이 파일 하나를 GitHub 소스 아카이브에 유지하며, 액션의 기본 아카이브 모드로 실행하는 스캔이 이 아카이브를 읽습니다. Scorecard 워크플로는 git 모드로 실행되어 클론에서 이 파일을 읽습니다. |
+| **Fuzzing** | [`tests/fuzz/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/fuzz) + [`.github/workflows/fuzzing.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/fuzzing.yml) | Atheris 퍼즈 대상 5개가 운영자가 작성하거나 충돌로 손상될 수 있는 파일을 읽는 파서를 다룹니다. JSONC / JSON5 구성 리더(둘 다 받아들이는 모든 입력에서 `json.loads`와 대조), 운영자도 편집할 수 있는 훅 파일에서 훅 항목의 병합과 제거, 공유 프로필 로더, 설치 원장, frontmatter 프로브입니다. ClusterFuzzLite는 다이제스트로 고정된 OSS-Fuzz Python 이미지에서 [`.clusterfuzzlite/`](https://github.com/ahmed-g-gad/apothem/tree/main/.clusterfuzzlite)로부터 이들을 빌드합니다. `src/apothem/`를 건드리는 각 풀 리퀘스트를 5분 동안 퍼징하고 찾은 충돌이 있으면 실패 처리하며, 저장된 코퍼스를 키우기 위해 매일 15분 동안 퍼징합니다. Scorecard는 `import atheris` 대상과 ClusterFuzzLite 설정을 인정합니다. 모든 CI 테스트 실행도 각 대상의 시드 입력을 다시 재생하므로, 수정된 충돌은 모든 운영 체제에서 수정된 상태로 유지됩니다. [`tests/property/`](https://github.com/ahmed-g-gad/apothem/tree/main/tests/property)의 Hypothesis 속성 테스트는 함께 유지되지만, Scorecard는 이를 세지 않습니다. |
 | **License** | [LICENSE](https://github.com/ahmed-g-gad/apothem/blob/main/LICENSE) | 저장소 루트의 MIT 라이선스. |
 | **Maintained** | Git 히스토리 | 현재 릴리스 커밋과 활발한 워크플로 주기가 유지 관리를 입증합니다. 매우 새로운 저장소는 연령 경고를 받을 수 있습니다. |
 | **Packaging** | [`.github/workflows/`](https://github.com/ahmed-g-gad/apothem/tree/main/.github/workflows) | sdist, wheel, SBOM, SLSA 출처, Sigstore 서명을 생성하는 릴리스, Pages, npmjs.com 워크플로. |
-| **Pinned-Dependencies** | 워크플로 감사 + 해시 잠금된 요구 사항 | Actions는 SHA로 고정됩니다. 릴리스 도구, CI pip 업그레이드, CI 프로젝트 및 테스트 의존성, CI 도구(`ruff`, `bandit`, `pip-audit`, `pip-licenses`, `pre-commit`)는 `--require-hashes`를 사용해 설치됩니다. 프로젝트, 테스트, 도구 설치는 `scripts/ci/`의 잠금 파일 9개를 읽습니다. pip 업그레이드와 릴리스 도구는 각자 자체 잠금 파일을 읽고, 패키지 자체는 `--no-deps -e .` 옵션으로 설치됩니다. |
+| **Pinned-Dependencies** | 워크플로 감사 + 해시 잠금된 요구 사항 | Actions는 SHA로 고정되고, 퍼징 빌드 이미지의 베이스는 다이제스트로 고정됩니다. 릴리스 도구, CI pip 업그레이드, CI 프로젝트 및 테스트 의존성, CI 도구(`ruff`, `bandit`, `pip-audit`, `pip-licenses`, `pre-commit`)는 `--require-hashes`를 사용해 설치됩니다. 프로젝트, 테스트, 도구 설치는 `scripts/ci/`의 잠금 파일 9개를 읽습니다. pip 업그레이드와 릴리스 도구는 각자 자체 잠금 파일을 읽고, 패키지 자체는 `--no-deps -e .` 옵션으로 설치됩니다. |
 | **SAST** | [`.github/workflows/codeql.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/codeql.yml) | Python과 Actions 전반에 걸친 CodeQL `security-extended` 쿼리. |
 | **Security-Policy** | [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) | 조율된 공개 정책, 지원 버전 매트릭스, 대응 타임라인. |
 | **Signed-Releases** | [`.github/workflows/release.yml`](https://github.com/ahmed-g-gad/apothem/blob/main/.github/workflows/release.yml) | Sigstore 키리스 서명, SLSA 출처, SBOM, 체크섬, 릴리스 아티팩트. |
@@ -39,7 +39,7 @@ Scorecard는 각 검사를 0-10 척도로 채점하며, 전체 점수는 가중 
 
 Scorecard 워크플로는 `file_mode: git`으로 액션을 실행하므로 Scorecard는 저장소의 클론을 읽습니다. 소스 아카이브에는 `.github/`가 빠져 있습니다(`export-ignore`, `.gitattributes`에서 지정). 따라서 액션의 기본 아카이브 모드에서는 Dangerous-Workflow, Token-Permissions, Pinned-Dependencies, Packaging에 워크플로가 보이지 않게 됩니다.
 
-Pinned-Dependencies는 두 가지 이유로 의도적으로 10 미만에 머뭅니다. SLSA 생성기는 릴리스 태그로 참조되며, 이는 SHA 고정의 유일한 예외입니다. 그 출처가 해당 태그에 묶여 있기 때문입니다. evals 워크플로는 실행마다 선택되는 버전의 Claude Code CLI를 `npm install --global`로 설치합니다. Scorecard가 워크플로에서 스캔하는 Python 설치는 해시 잠금된 설치, 패키지 자체의 로컬 설치, 같은 실행에서 빌드한 wheel 설치 중 하나입니다.
+Pinned-Dependencies는 두 가지 이유로 의도적으로 10 미만에 머뭅니다. SLSA 생성기는 릴리스 태그로 참조되며, 이는 SHA 고정의 유일한 예외입니다. 그 출처가 해당 태그에 묶여 있기 때문입니다. evals 워크플로는 실행마다 선택되는 버전의 Claude Code CLI를 `npm install --global`로 설치합니다. Scorecard가 워크플로에서 스캔하는 Python 설치는 해시 잠금된 설치, 패키지 자체의 로컬 설치, 같은 실행에서 빌드한 wheel 설치 중 하나입니다. Scorecard가 읽는 범위 밖에 있는 고정이 하나 있습니다. ClusterFuzzLite 액션은 커밋으로 고정되지만, 그 `action.yml`은 ClusterFuzzLite 빌드 및 실행 이미지를 태그 `v1`로 실행하며, 워크플로는 이를 재정의할 수 없습니다.
 
 ## 갱신 주기
 

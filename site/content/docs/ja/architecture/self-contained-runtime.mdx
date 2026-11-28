@@ -2,7 +2,7 @@
 title: "自己完結型ランタイム"
 description: "Apothem のエンジンが任意のチェックアウトからどのように実行されるか — ベンダリングされた依存関係、PYTHONPATH=src による呼び出しモデル、プラグインツリーのブートストラップ。"
 machineTranslated: true
-sourceHash: "df04c51efc417e4a"
+sourceHash: "dc1f19f84eb15409"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -48,32 +48,46 @@ Apothem は意図的に `pyproject.toml` でコンソールスクリプトを宣
 
 | 面 | 呼び出し | コンテキスト |
 | ------- | ---------- | ------- |
-| エンジン CLI | `python -m apothem <command>` | `src/` を `PYTHONPATH` に含むソースツリー（チェックアウト、npx キャッシュ、プラグインツリー） |
+| エンジン CLI | `apothem <command>`。チェックアウトからは `PYTHONPATH=src python -m apothem <command>` | インストーラーの `apothem` シムと npm ランチャーは、現在のフォルダーを `sys.path` から外した状態で、パッケージをそのソースツリーから実行します。`-m` 形式は信頼できるチェックアウト向けです |
 | フックランタイム | `<resolved CPython> -E -s "<harness-root>/.apothem/support/hooks/dispatch.py" <event>` | Claude Code のマテリアライズ：ハーネスルートの共有 `.apothem/support/` ツリー配下にあるコピーを、絶対パスで指定したもの |
 
-- `python -m apothem` は `src/apothem/__main__.py` を実行します。これは
+- エンジンのエントリーポイントである `src/apothem/__main__.py` は、
   `src/apothem/_vendor` を `sys.path` に置き、`click` と `rich` が
   インポート可能であることをチェックしてから、`apothem.cli:main`（Click のコマンドグループ）を呼び出します。
+  `python -m apothem` はこれを直接実行します。`apothem` シムと npm
+  ランチャーは、まず現在のフォルダーを `sys.path` から外す `-c` プログラムから、`runpy` を介してこれを実行します。
 - マテリアライズされた `settings.json` / `hooks.json` 内のフックエントリは、
   ディスパッチャー（および Claude Code の場合は
-  `<harness-root>/.apothem/support/conformity/gate.py` にあるコンフォーミティゲート）を絶対スクリプトパスで呼び出します。
+  `<harness-root>/.apothem/support/conformity/gate.py` にあるコンフォーミティゲート）を絶対スクリプトパスで呼び出し、
+  `-E -s` を付けて Python を起動するため、`PYTHON*` 変数もユーザーの site-packages もフックに届きません。
   どちらも自身の `sys.path` をブートストラップするスタンドアロンの標準ライブラリスクリプトで、
   ゲートのスキーマフィクスチャは `<harness-root>/.apothem/support/schemas/` にゲートと並んで置かれるため、
-  フックは**ホスト上にインポート可能な `apothem` パッケージがなくても**実行されます。
+  フックは<strong>ホスト上にインポート可能な `apothem` パッケージがなくても</strong>実行されます。
   テンプレートは `${HARNESS_ROOT}` トークンを含み、`apothem install` がこれを
   スラッシュ区切り形式の実際のハーネスルートパスにレンダリングします。
 - ソースチェックアウトからは、モジュール形式の
   `python -m apothem.hooks.dispatch` と
   `python -m apothem.conformity.gate` が、開発用に同じコードを実行します。
 
-チェックアウトの `src/` ディレクトリを `PYTHONPATH` の先頭に追加すると、
+チェックアウトでは、チェックアウトの `src/` ディレクトリを `PYTHONPATH` の先頭に追加すると、
 パッケージディレクトリがインポート可能になります。
 
 ```bash
 PYTHONPATH=src python -m apothem <command>    # from the checkout root
 ```
 
-`apothem` ランチャーが PATH 上にない場合、`install.sh` は完了時にこの形式を表示します。その際、ベンダリングされたディレクトリを `src/` より前に置き、`python` の代わりに解決された CPython を使います。`install.ps1` は、同じ 2 つの設定を PowerShell の形式で表示します。すなわち、ベンダリングされたディレクトリと `src/` ディレクトリを `;` で連結する `$env:PYTHONPATH` の代入と、続けて `& '<CPython>' -m apothem <command>` です。
+`-m` は現在のフォルダーから最初にモジュールを読み込むため、この形式はチェックアウトのルートか、
+信頼できる別のフォルダーからのみ実行してください。
+
+インストーラーが `-m` コマンドを表示することはありません。完了時に `apothem` コマンドが
+`PATH` 上にない場合、`install.sh` と `install.ps1` は、配置した `apothem` シムのフルパスを表示します。
+シムを配置できなかった場合は、代わりに自己完結したコマンドを表示します。`install.sh` は
+`PYTHONSAFEPATH=1 PYTHONPATH='<vendor>:<src>' '<CPython>' -c '<program>'` を表示し、
+その後にコマンドが続きます。`install.ps1` は、`& '<CPython>' -c "<program>"` を 1 回実行する間だけ
+`PYTHONSAFEPATH` と `PYTHONPATH`（ベンダリングされたフォルダーと `src/` フォルダーを `;` で連結したもの）を設定し、
+その後で両方を元に戻す PowerShell ブロックを表示します。
+このプログラムは現在のフォルダーを `sys.path` から外し、`apothem` パッケージを実行します。
+`PYTHONSAFEPATH=1` により、Python 3.11 以降はそもそもそのフォルダーを追加しません。
 
 ## プラグインツリーのブートストラップ
 
@@ -91,7 +105,7 @@ Claude Code プラグインは、`PYTHONPATH` に頼るのではなく、エン�
 `site-packages` に Python パッケージがインストールされることはありません。
 クローンは完全なリポジトリであり、ランタイムが決してインポートしないテストスイートとドキュメントサイトも含みます。
 これには 2 つの意図的な理由があります。
-エンジンはツリーから各ハーネスへ直接**コホートをマテリアライズ**する（ルール、スキル、コマンド、テンプレート）ため、
+エンジンはツリーから各ハーネスへ直接<strong>コホートをマテリアライズ</strong>する（ルール、スキル、コマンド、テンプレート）ため、
 ツリーは単なるランタイムではなく、現に使われる信頼できる情報源であること。
 そして、`.git` ディレクトリがその場に残るため、`apothem update` が再ダウンロードする代わりに
 既存のクローンでリリースタグをチェックアウトすること、です。
@@ -114,5 +128,5 @@ npx シムは、`APOTHEM_PYTHON` が設定されている場合はまずそれ�
 
 ## 推奨される次のステップ
 
-チェックアウトの `src/` ディレクトリを `PYTHONPATH` に含めた状態で **`python -m apothem --help` を実行**し、
+Apothem チェックアウトのルートから <strong>`PYTHONPATH=src python -m apothem --help` を実行</strong>し、
 自己完結型 CLI のパスがあなたのホストで解決されることを確認してください。

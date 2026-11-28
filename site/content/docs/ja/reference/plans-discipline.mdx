@@ -2,7 +2,7 @@
 title: "計画ディシプリン — プロジェクトローカルな一時的作業メモリ"
 description: "フロントマタースキーマ、ライフサイクル遷移、ADR への昇格、フックとバリデーターによる強制を用いて、プロジェクトローカルの一時的な作業メモリを .apothem/plans/ で管理します（レガシーの .plans/ ツリーは apothem migrate-workspace でアップグレードされます）。"
 machineTranslated: true
-sourceHash: "175d0e7730335ebd"
+sourceHash: "78ba9223bd5803ab"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -155,7 +155,7 @@ promotes-to: <ADR path or null>
 
 このディシプリンは、今後のあらゆるセッションを生き延びなければなりません。以下の強制の面は必須であり、公開されたエコシステムに組み込まれています:
 
-1. **`AGENTS.md` およびミラーの指示面** — トップレベルの必須の挙動ブロックで、次の内容を述べます。*"Planning artifacts are written to `<project-root>/.apothem/plans/` — the sole canonical plans home (a legacy `<project-root>/.plans/` tree is upgraded via `apothem migrate-workspace`) — never to any harness configuration directory (for example `~/.codex/` or `~/.claude/`) and never to a global location. This rule is non-negotiable; cite §3 of the project spec on every related decision."* このブロックは `plans-discipline-language` バリデーターによって検出されます。
+1. **`AGENTS.md` およびミラーの指示面** — トップレベルの必須の挙動ブロックで、次の内容を述べます。*"Planning artifacts are written to `<project-root>/.apothem/plans/` — the sole canonical plans home. A legacy `<project-root>/.plans/` tree is no longer canonical; operators upgrade an existing one via `apothem migrate-workspace`. They are never written to any harness configuration directory (for example `~/.codex/` or `~/.claude/`) and never to a global location. This rule is non-negotiable; §2 of `site/content/docs/reference/plans-discipline.mdx` states it in full."* このブロックは `plans-discipline-language` バリデーターによって検出されます。
 2. **ハーネスごとのリポジトリ内指示ファイル** — そのハーネスの指示面に適したフレーミングで、同じ指令をミラーします（§4 *Plans Discipline*）。登録された各ハーネスの面で、同じバリデーターによって検出されます。
 3. **デフォルトの出力スタイル** — 応答が計画の形状を持つ内容（多段階の戦略、分解、設計のウォークスルー、デバッグ日誌）を生み出す場合、スタイルはその成果物をインラインで出力して破棄するのではなく、プロジェクトローカルの `.apothem/plans/` への書き込みへ振り向けます。スタイルは明示的に次のように指示します: *「プロジェクトルートが発見できない場合、どこで計画するかをオペレーターに尋ねる構造化照会で停止する。」*
 4. **すべての委任ワーカープロンプト** — 計画の成果物の宛先として `.apothem/plans/` を指定する *Output Surface* のスタンザと、ハーネスローカルの計画ディレクトリを禁止として指定する *Anti-Pattern* のスタンザを持ちます。

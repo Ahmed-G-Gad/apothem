@@ -2,7 +2,7 @@
 title: "Qwen Code"
 description: "Adapter harness Apothem untuk Qwen Code (Beta)."
 machineTranslated: true
-sourceHash: "f5b172839bc072f8"
+sourceHash: "60c859a693851061"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,8 +34,16 @@ mengadaptasi definisi helper sebagai subagen Qwen.
 ~/.qwen/.apothem/support/{rules,templates,hooks}/
 ```
 
+Instalasi juga membuat folder data Apothem, `~/.qwen/.apothem/` secara
+default, yang berisi `contexts/`, `learning/`, `memory/`, dan `plans/`.
+
 Berkas `~/.qwen/apothem/rules/00-apothem-profile.md` adalah dokumen profil.
 Berkas ini membawa identitas dan preferensi Anda dari profil bersama.
+
+Setiap instalasi dan pembaruan menghapus setiap berkas di `~/.qwen/apothem/rules/`
+yang tidak ditaruh di sana oleh Apothem, setelah menyimpannya dalam satu set cadangan
+di bawah `~/.apothem/backups/`. Cadangan itu dihapus begitu ada 10 set cadangan yang
+lebih baru untuk harness tersebut, jadi simpan berkas Anda sendiri di tempat lain.
 
 ## Pemetaan profil ke konfigurasi native
 
@@ -121,8 +129,16 @@ Apothem tidak terpengaruh.
 ## Gerbang konformitas
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Jalankan dari folder proyek Anda. Di Windows, gunakan `python` sebagai pengganti
+`python3` dan jalur lengkapnya, karena Windows PowerShell dan cmd tidak mengekspansi
+`~`: `$HOME\.apothem\src\apothem\conformity\gate.py` di PowerShell, atau
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` di cmd. Jalur itu adalah
+tempat installer menaruh engine, dan `-E -s` menjauhkan `PYTHONPATH` serta
+site-packages pengguna Anda dari gerbang; [Gerbang konformitas](/docs/conformity-gate)
+menjelaskan keduanya dan instalasi lainnya.
 
 ## Pemecahan masalah
 

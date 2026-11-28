@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "GitHub Copilot (GA) के लिए Apothem हार्नेस अडैप्टर।"
 machineTranslated: true
-sourceHash: "b1b8b4918d7d754d"
+sourceHash: "040eeddf99d35ec6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -171,6 +171,10 @@ camelCase इवेंट नामों का उपयोग करते �
 "/path/to/python" -E -s "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
 ```
 
+`-E -s` Python से `PYTHONPATH` और अन्य `PYTHON*` वेरिएबल को अनदेखा करवाता है और
+आपके उपयोगकर्ता site-packages को छोड़ देता है, इसलिए प्रोजेक्ट की कोई भी फ़ाइल हुक में
+लोड नहीं हो सकती।
+
 `--contract copilot` डिस्पैचर से Copilot का camelCase इनपुट पढ़वाता है और
 `{"additionalContext": ...}` प्रिंट करवाता है, जिसे Copilot इन दो इवेंट के लिए पढ़ता
 है।
@@ -230,6 +234,22 @@ GitHub Copilot कोई फ़ाइल-आधारित उपयोगक�
 को लक्षित करता है और IDE-स्तरीय उपयोगकर्ता सेटिंग्स को ऑपरेटर-स्वामित्व में छोड़
 देता है। यह एक हुक फ़ाइल, `.github/hooks/apothem.json`, लिखता है, और
 `.github/hooks/` में कोई अन्य फ़ाइल नहीं लिखता।
+
+Copilot दो ऐसी प्रोजेक्ट फ़ाइलें भी लोड करता है जिनमें अन्य Apothem इंस्टॉल एक ब्लॉक
+लिखते हैं: वह `AGENTS.md` फ़ाइल जिसे [Kimi Code](/docs/harnesses/kimi-code)
+इंस्टॉल लिखता है, और वह संदर्भ फ़ाइल जिसे
+[किसी अन्य कमांड-लाइन टूल का इंस्टॉल](/docs/harnesses/gemini-cli) लिखता है:
+
+```text
+<project>/AGENTS.md
+<project>/GEMINI.md
+```
+
+इसलिए उन इंस्टॉल वाले प्रोजेक्ट में, उनके Apothem ब्लॉक Copilot तक भी पहुँचते हैं।
+जब किसी भी फ़ाइल में पहले से एक Apothem ब्लॉक हो, तो `github-copilot` इंस्टॉल करने
+पर एक नोट प्रिंट होता है जो फ़ाइल और उसे लिखने वाले इंस्टॉल का नाम बताता है।
+[हार्नेस रजिस्ट्री](/docs/reference/harness-registry#shared-roots) हर फ़ाइल को लोड
+करने वाले अन्य टूल्स को सूचीबद्ध करती है।
 
 Apothem रिपॉज़िटरी के भीतर, `.github/copilot-instructions.md` उस रिपॉज़िटरी की
 सहायक निर्देश सतहों में से एक स्वर है। उस रिपॉज़िटरी के किसी चेकआउट में, अनुरूपता
@@ -321,14 +341,26 @@ Apothem इंस्टॉल अब भी उनका उपयोग न क
 ## अनुरूपता गेट
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
 
-`--all` रन स्टैंडअलोन वैलिडेटर को कवर करता है। वह बहु-सतह संगति जाँच नहीं चलाता, जिसका वर्णन संगतता टिप्पणियाँ के अंतर्गत है। किसी चेकआउट में उस जाँच को नाम से चलाने के लिए:
+इसे अपने प्रोजेक्ट फ़ोल्डर से चलाएँ। Windows पर `python3` के स्थान पर `python` और
+पूरा पथ उपयोग करें, क्योंकि Windows PowerShell और cmd `~` का विस्तार नहीं करते:
+PowerShell में `$HOME\.apothem\src\apothem\conformity\gate.py`, या cmd में
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`। यह पथ वह है जहाँ
+इंस्टॉलर इंजन रखता है, और `-E -s` आपके `PYTHONPATH` और उपयोगकर्ता site-packages को
+गेट से बाहर रखता है; [अनुरूपता गेट](/docs/conformity-gate) दोनों को और अन्य
+इंस्टॉल को समझाता है।
+
+`--all` रन स्टैंडअलोन वैलिडेटर को कवर करता है। वह बहु-सतह संगति जाँच नहीं चलाता, जिसका वर्णन संगतता टिप्पणियाँ के अंतर्गत है। उस जाँच को नाम से चलाने के लिए, Apothem रिपॉज़िटरी के किसी चेकआउट के रूट से उस चेकआउट का अपना गेट चलाएँ:
 
 ```bash
-python -m apothem.conformity.gate --check multi-surface-coherence-grep AGENTS.md
+python3 -E -s src/apothem/conformity/gate.py --check multi-surface-coherence-grep AGENTS.md
 ```
+
+`~/.apothem` के अंतर्गत इंस्टॉल की गई प्रति जिन फ़ाइलों की तुलना करती है उन्हें अपने
+बगल में खोजती है, इसलिए किसी चेकआउट के विरुद्ध चलाने पर वह जाँच छोड़ देती है और
+सफलता की रिपोर्ट करती है।
 
 ## समस्या निवारण
 

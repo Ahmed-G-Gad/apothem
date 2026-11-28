@@ -2,7 +2,7 @@
 title: "profile"
 description: "Referencia de la CLI para el grupo de comandos apothem profile."
 machineTranslated: true
-sourceHash: "012b17d6a7a7bc49"
+sourceHash: "93fe295d7fa540f1"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -89,7 +89,29 @@ queda sin cambios.
 
 ### `profile edit`
 
-Abre el perfil compartido en el editor del sistema.
+Abre el perfil compartido en el editor del sistema. Cuando todavía no existe un
+perfil en la ruta, `edit` primero escribe allí el perfil inicial, el mismo
+andamiaje que escribe `profile init`, y luego lo abre.
+
+### Perfiles detrás de un enlace
+
+Una ruta de perfil escrita dentro de tu directorio personal, como la predeterminada
+`~/.config/apothem/profile.yaml`, no se escribe a través de un enlace que salga de
+tu directorio personal. Ese enlace puede ser una carpeta por encima del perfil,
+como `~/.config` (en Windows una unión cuenta como enlace), o el propio archivo
+de perfil, como un archivo de dotfiles en otra unidad. `profile init`, `profile set`
+y `profile edit` se detienen entonces antes de escribir o abrir nada. Sin un
+perfil todavía, el mensaje es `Apothem could not create the starter profile`.
+Sobre un perfil existente, `profile set`, `profile edit` y `profile init
+--force` se detienen con `Apothem could not write the profile`; `profile init`
+sin `--force` se detiene primero con `profile file already exists`, como en
+cualquier lugar. `profile show` y los comandos que solo leen el perfil siguen
+leyéndolo. Un enlace que permanece dentro de tu directorio personal, como los que
+crean los gestores de dotfiles, se sigue. Para mantener el perfil fuera de tu
+directorio personal, pasa `--profile PATH` con la propia ruta del perfil allí,
+incluida la ruta a la que lleva un enlace de archivo de perfil: una ruta que
+escribes fuera de tu directorio personal se escribe allí adonde lleven sus enlaces.
+Sin un perfil allí todavía, créalo primero con `apothem profile init --profile PATH`.
 
 ## Errores de validación
 

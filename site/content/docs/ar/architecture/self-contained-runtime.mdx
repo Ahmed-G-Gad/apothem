@@ -2,7 +2,7 @@
 title: "زمن التشغيل المكتفي ذاتيًا"
 description: "كيف يعمل محرّك Apothem من أي نسخة مسحوبة — الاعتماديات المُضمَّنة، ونموذج الاستدعاء PYTHONPATH=src، وتمهيد شجرة الإضافة."
 machineTranslated: true
-sourceHash: "df04c51efc417e4a"
+sourceHash: "dc1f19f84eb15409"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -49,16 +49,21 @@ sourceHash: "df04c51efc417e4a"
 
 | السطح | الاستدعاء | السياق |
 | ------- | ---------- | ------- |
-| واجهة سطر أوامر المحرّك | <bdi>`python -m apothem <command>`</bdi> | شجرة مصدر يكون فيها <bdi>`src/`</bdi> على <bdi>`PYTHONPATH`</bdi> (نسخة مسحوبة، أو ذاكرة <bdi>npx</bdi> المؤقتة، أو شجرة الإضافة) |
+| واجهة سطر أوامر المحرّك | <bdi>`apothem <command>`</bdi>؛ ومن نسخة مسحوبة، <bdi>`PYTHONPATH=src python -m apothem <command>`</bdi> | يُشغِّل الغلاف <bdi>`apothem`</bdi> الذي تضعه المُثبِّتات ومُشغِّل <bdi>npm</bdi> الحزمةَ من شجرة مصدرها مع إبقاء المجلد الحالي خارج <bdi>`sys.path`</bdi>؛ وصيغة <bdi>`-m`</bdi> مخصّصة لنسخة مسحوبة تثق بها |
 | زمن تشغيل الخطّافات | <bdi>`<resolved CPython> -E -s "<harness-root>/.apothem/support/hooks/dispatch.py" <event>`</bdi> | التجسيد الخاص بـ <bdi>Claude Code</bdi>: النسخة الموجودة تحت الشجرة المشتركة <bdi>`.apothem/support/`</bdi> في جذر إطار العمل، بالمسار المطلق |
 
-- يُشغِّل <bdi>`python -m apothem`</bdi> الملف <bdi>`src/apothem/__main__.py`</bdi>، الذي
-  يضع <bdi>`src/apothem/_vendor`</bdi> في <bdi>`sys.path`</bdi>، ويتحقّق من أن
-  <bdi>`click`</bdi> و<bdi>`rich`</bdi> قابلتان للاستيراد، ثم يستدعي
+- تضع نقطة دخول المحرّك، <bdi>`src/apothem/__main__.py`</bdi>، الدليلَ
+  <bdi>`src/apothem/_vendor`</bdi> في <bdi>`sys.path`</bdi>، وتتحقّق من أن
+  <bdi>`click`</bdi> و<bdi>`rich`</bdi> قابلتان للاستيراد، ثم تستدعي
   <bdi>`apothem.cli:main`</bdi> — مجموعة أوامر <bdi>Click</bdi>.
+  ويُشغِّلها <bdi>`python -m apothem`</bdi> مباشرةً. أمّا أغلفة <bdi>`apothem`</bdi>
+  ومُشغِّل <bdi>npm</bdi> فتُشغِّلها عبر <bdi>`runpy`</bdi> من برنامج <bdi>`-c`</bdi>
+  يُسقِط أولًا المجلد الحالي من <bdi>`sys.path`</bdi>.
 - تستدعي مدخلات الخطّافات في <bdi>`settings.json`</bdi> / <bdi>`hooks.json`</bdi>
   المُجسَّدين المُوزِّعَ (وبالنسبة إلى <bdi>Claude Code</bdi>، بوابةَ المطابقة في
-  <bdi>`<harness-root>/.apothem/support/conformity/gate.py`</bdi>) بمسار السكربت المطلق.
+  <bdi>`<harness-root>/.apothem/support/conformity/gate.py`</bdi>) بمسار السكربت المطلق،
+  مع تشغيل <bdi>Python</bdi> بالخيارين <bdi>`-E -s`</bdi> كي لا يصل إلى الخطّاف أي متغيّر
+  <bdi>`PYTHON*`</bdi> ولا أي <bdi>site-packages</bdi> خاصّة بالمستخدم.
   وكلاهما سكربت قائم بذاته من المكتبة القياسية يُمهِّد <bdi>`sys.path`</bdi> الخاص به،
   وتنتقل تجهيزات مخططات البوابة بجوارها في
   <bdi>`<harness-root>/.apothem/support/schemas/`</bdi>، فتعمل الخطّافات **دون أي حزمة
@@ -69,14 +74,27 @@ sourceHash: "df04c51efc417e4a"
   <bdi>`python -m apothem.hooks.dispatch`</bdi> و
   <bdi>`python -m apothem.conformity.gate`</bdi> الشيفرةَ نفسها لأغراض التطوير.
 
-يصبح دليل الحزمة قابلًا للاستيراد بإضافة دليل <bdi>`src/`</bdi> من النسخة المسحوبة
+في نسخة مسحوبة، يصبح دليل الحزمة قابلًا للاستيراد بإضافة دليل <bdi>`src/`</bdi> من النسخة المسحوبة
 إلى مقدّمة <bdi>`PYTHONPATH`</bdi>:
 
 ```bash
 PYTHONPATH=src python -m apothem <command>    # from the checkout root
 ```
 
-عندما لا يكون مُشغِّل <bdi>`apothem`</bdi> على <bdi>PATH</bdi>، يطبع <bdi>`install.sh`</bdi> هذه الصيغة عند اكتماله، مع وضع الدليل المُضمَّن قبل <bdi>`src/`</bdi>، وبمُفسِّر <bdi>CPython</bdi> الذي حلّه المُثبِّت بدلًا من <bdi>`python`</bdi>. ويطبع <bdi>`install.ps1`</bdi> الإعدادين نفسيهما بصيغة <bdi>PowerShell</bdi>: إسنادٌ إلى <bdi>`$env:PYTHONPATH`</bdi> يصل الدليل المُضمَّن ودليل <bdi>`src/`</bdi> بالفاصلة المنقوطة <bdi>`;`</bdi>، ثم <bdi>`& '<CPython>' -m apothem <command>`</bdi>.
+تقرأ <bdi>`-m`</bdi> الوحدات من المجلد الحالي أولًا، لذا شغِّل هذه الصيغة من جذر
+النسخة المسحوبة فقط أو من مجلد آخر تثق به.
+
+لا تطبع المُثبِّتات أبدًا أمرًا بصيغة <bdi>`-m`</bdi>. وعندما لا يكون الأمر <bdi>`apothem`</bdi>
+على <bdi>`PATH`</bdi> عند الاكتمال، يطبع <bdi>`install.sh`</bdi> و<bdi>`install.ps1`</bdi>
+المسار الكامل لغلاف <bdi>`apothem`</bdi> الذي وضعاه. وعندما يتعذّر وضع أي غلاف، يطبعان
+بدلًا من ذلك أمرًا مكتفيًا ذاتيًا. يطبع <bdi>`install.sh`</bdi>
+<bdi>`PYTHONSAFEPATH=1 PYTHONPATH='<vendor>:<src>' '<CPython>' -c '<program>'`</bdi>،
+متبوعًا بالأمر. ويطبع <bdi>`install.ps1`</bdi> كتلة <bdi>PowerShell</bdi> تضبط
+<bdi>`PYTHONSAFEPATH`</bdi> و<bdi>`PYTHONPATH`</bdi> (المجلد المُضمَّن ومجلد <bdi>`src/`</bdi>
+موصولَين بالفاصلة المنقوطة <bdi>`;`</bdi>) لتشغيل واحد لـ <bdi>`& '<CPython>' -c "<program>"`</bdi>،
+ثم تُعيد كليهما إلى ما كانا عليه. يُسقِط البرنامج المجلد الحالي من <bdi>`sys.path`</bdi>
+ويُشغِّل الحزمة <bdi>`apothem`</bdi>؛ ويمنع <bdi>`PYTHONSAFEPATH=1`</bdi> الإصدارَ
+<bdi>Python 3.11</bdi> وما بعده من إضافة ذلك المجلد أصلًا.
 
 ## تمهيد شجرة الإضافة
 
@@ -124,6 +142,5 @@ PYTHONPATH=src python -m apothem <command>    # from the checkout root
 
 ## الخطوة التالية المُوصى بها
 
-**شغِّل <bdi>`python -m apothem --help`</bdi>** مع وجود دليل <bdi>`src/`</bdi> من النسخة
-المسحوبة على <bdi>`PYTHONPATH`</bdi> للتأكّد من أن مسار واجهة سطر الأوامر المكتفية
-ذاتيًا يُحَلّ على مضيفك.
+**شغِّل <bdi>`PYTHONPATH=src python -m apothem --help`</bdi>** من جذر نسخة مسحوبة من
+<bdi>Apothem</bdi> للتأكّد من أن مسار واجهة سطر الأوامر المكتفية ذاتيًا يُحَلّ على مضيفك.

@@ -2,7 +2,7 @@
 title: "Qwen Code"
 description: "محوّل إطار عمل Apothem لـ Qwen Code (إصدار تجريبي)."
 machineTranslated: true
-sourceHash: "f5b172839bc072f8"
+sourceHash: "60c859a693851061"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,8 +34,16 @@ apothem install --harness qwen-code
 ~/.qwen/.apothem/support/{rules,templates,hooks}/
 ```
 
+وينشئ التثبيت أيضًا مجلّد بيانات <bdi>Apothem</bdi>، وهو <bdi>`~/.qwen/.apothem/`</bdi>
+افتراضيًا، وفيه <bdi>`contexts/`</bdi>، و<bdi>`learning/`</bdi>، و<bdi>`memory/`</bdi>، و<bdi>`plans/`</bdi>.
+
 الملف <bdi>`~/.qwen/apothem/rules/00-apothem-profile.md`</bdi> هو وثيقة الملف التعريفي.
 وهو يحمل هويتك وتفضيلاتك من الملف التعريفي المشترك.
+
+يحذف كل تثبيت وتحديث كل ملف في <bdi>`~/.qwen/apothem/rules/`</bdi> لم يضعه
+<bdi>Apothem</bdi> هناك، بعد حفظه في مجموعة نسخ احتياطية تحت
+<bdi>`~/.apothem/backups/`</bdi>. وتُحذَف تلك النسخة الاحتياطية بمجرّد وجود 10 مجموعات نسخ
+احتياطية أحدث لإطار العمل، لذا احتفظ بملفاتك في مكان آخر.
 
 ## تعيين الملف التعريفي إلى الإعداد الأصلي
 
@@ -116,8 +124,17 @@ apothem uninstall --harness qwen-code
 ## بوابة المطابقة
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+شغّله من مجلّد مشروعك. وعلى <bdi>Windows</bdi>، استخدم <bdi>`python`</bdi> بدلًا من
+<bdi>`python3`</bdi> والمسار الكامل، لأن <bdi>Windows PowerShell</bdi> و<bdi>cmd</bdi> لا يوسّعان
+<bdi>`~`</bdi>:
+<bdi>`$HOME\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>PowerShell</bdi>، أو
+<bdi>`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>cmd</bdi>. هذا المسار هو
+الموضع الذي يضع فيه المُثبِّت المحرّك، ويُبقي <bdi>`-E -s`</bdi> متغيّر <bdi>`PYTHONPATH`</bdi> لديك وحِزَم
+<bdi>site-packages</bdi> الخاصّة بالمستخدم خارج البوابة؛ وتشرح صفحة [بوابة المطابقة](/docs/conformity-gate)
+كليهما وطرق التثبيت الأخرى.
 
 ## استكشاف الأخطاء وإصلاحها
 

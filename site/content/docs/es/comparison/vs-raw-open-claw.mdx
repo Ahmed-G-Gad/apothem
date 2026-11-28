@@ -2,22 +2,28 @@
 title: "Apothem vs. la configuración de Open-Claw en bruto"
 description: "Mantener a mano la configuración de Open-Claw frente a gestionarla a través del perfil compartido de Apothem."
 machineTranslated: true
-sourceHash: "5d78575328c10397"
+sourceHash: "a63d807f20acee09"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 Open-Claw lee `~/.openclaw/openclaw.json`. Apothem instala cohortes
 compartidas de comandos y skills bajo `~/.openclaw/.apothem/support/skills/` y
-escribe una clave allí, `skills.load.extraDirs`, que incluye ese directorio para
-que OpenClaw cargue las skills. Su `agents.defaults.skills` es una lista de
-nombres permitidos que te pertenece y MCP es una superficie de CLI, así que
-Apothem no escribe ninguna de las dos.
+edita dos lugares de `~/.openclaw/openclaw.json`. Añade ese directorio a
+`skills.load.extraDirs`, para que OpenClaw cargue las skills. Añade la ruta
+`apothem/AGENTS.md` a la lista de rutas de la entrada de hook
+`hooks.internal.entries.bootstrap-extra-files`, y crea la entrada con
+`enabled: true` cuando no existe, para que OpenClaw cargue el archivo de reglas
+de Apothem que escribe en cada espacio de trabajo. Su
+`agents.defaults.skills` es una lista de nombres permitidos que te pertenece y
+MCP es una superficie de CLI, así que Apothem no escribe ninguna de las dos.
 
 ## Estado
 
 **Vista previa.** El adaptador de Open-Claw apunta al archivo de configuración
-actualmente documentado y a la superficie adicional de directorio de skills. Las
-cohortes que no son de skills siguen siendo material de apoyo de Apothem.
+actualmente documentado, a la superficie adicional de directorio de skills y al
+hook incluido `bootstrap-extra-files`. Las reglas se cargan a través del archivo
+de espacio de trabajo `apothem/AGENTS.md`; las plantillas, los agents y el
+material de hooks siguen siendo material de apoyo de Apothem.
 
 ## Comparación de esfuerzo
 
@@ -34,10 +40,12 @@ El adaptador de Open-Claw escribe `openclaw.json`, envuelve los comandos de barr
 de Apothem como skills, copia las skills de Apothem en el directorio de apoyo
 referenciado y mantiene las reglas, plantillas, agents y material de hooks bajo el
 subárbol de soporte de Apothem.
-OpenClaw lee `skills.load.extraDirs` con la precedencia más baja de sus fuentes
-de skills, así que una skill con el mismo nombre en tu espacio de trabajo, en
-`~/.agents/skills` o en `~/.openclaw/skills` se usa en lugar de la copia de
-Apothem.
+También escribe `apothem/AGENTS.md` en cada espacio de trabajo y lo registra en
+el hook incluido `bootstrap-extra-files`, de modo que OpenClaw carga las reglas
+de Apothem sin ningún cambio en el propio `AGENTS.md` del espacio de trabajo.
+OpenClaw lee `skills.load.extraDirs` después de sus fuentes del espacio de
+trabajo, `~/.agents/skills` y `~/.openclaw/skills`, así que una skill con el
+mismo nombre en cualquiera de ellas se usa en lugar de la copia de Apothem.
 
 ## Ruta de migración
 

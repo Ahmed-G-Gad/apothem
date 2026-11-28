@@ -2,7 +2,7 @@
 title: "doctor"
 description: "Referensi CLI untuk perintah apothem doctor."
 machineTranslated: true
-sourceHash: "9336c060509b05e7"
+sourceHash: "78a7cea770c98762"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -27,19 +27,169 @@ apothem doctor [--project PATH] [--quiet|-q] [--verbose|-v]
   sebagai `not_installed` dan bukan merupakan kegagalan, sehingga mesin dengan
   satu harness yang sehat tetap lolos. Harness berlingkup-proyek diperiksa
   ketika `--project` menyebutkan root-nya; tanpa opsi itu, harness tersebut
-  dilaporkan sebagai `needs_project`.
+  dilaporkan sebagai `needs_project`. Berkas dengan baris penanda yang tidak
+  dapat dibedakan Apothem dari teks Anda dihitung sebagai pemasangan selama
+  ledger pemasangan tidak dapat dibaca, sehingga harness seperti itu diperiksa
+  alih-alih dilaporkan sebagai `not_installed`. Doctor menyebutkan ledger yang
+  tidak dapat dibacanya dalam pemeriksaan `ledger.unreadable` di tempat ia
+  membaca ledger itu untuk memulai hook milik harness (lihat **Runtime hook**
+  di bawah): untuk harness yang lolos verifikasi, dan untuk harness yang
+  pemeriksaannya gagal menyebutkan berkas dengan penanda Apothem
+  (`harness.stray_begin`). Perbaikannya meminta Anda memindahkan ledger yang
+  rusak ke samping dan menjalankan `update`, atau, untuk ledger yang tidak
+  dapat dibuka doctor (misalnya karena program lain sedang membukanya), membuat
+  berkas itu dapat dibaca. Harness yang verifikasinya gagal karena alasan lain
+  mendapat pemeriksaan `harness.verify_failed` dan tidak mendapat pemeriksaan
+  hook, sehingga juga tidak mendapat pemeriksaan `ledger.unreadable`.
 - **Verifikasi.** Setiap harness yang terpasang harus lolos pemeriksaan yang
-  sama dengan [`verify`](/docs/cli-reference/verify).
-- **Runtime hook.** Untuk setiap harness yang terverifikasi, doctor membaca
-  berkas yang ditulis oleh pemasangan terbarunya, menemukan perintah hook yang
-  didaftarkan Apothem di sana, lalu memulai setiap interpreter dan skrip hook
-  satu kali dengan payload no-op (argumen yang terdaftar ditambah `--help`, `{}`
-  pada stdin, direktori kerja sementara, dan `PYTHONPATH` dihapus). Tidak ada
-  yang ditulis. Interpreter yang hilang, skrip yang hilang, atau crash pada saat
-  impor menggagalkan pemeriksaan.
+  sama dengan [`verify`](/docs/cli-reference/verify). Ketika sebuah berkas
+  memuat penanda BEGIN Apothem tanpa penanda END, pemeriksaan yang gagal adalah
+  `harness.stray_begin`, dan perbaikannya menyebutkan setiap berkas seperti itu
+  beserta baris penandanya, memberikan langkah-langkah bernomor yang mengubah
+  baris itu dan setiap baris penanda BEGIN lainnya kecuali yang membuka blok
+  Apothem (sebuah kata ditambahkan di dalam setiap komentar), dan meminta Anda
+  untuk tidak menambahkan kembali penanda END sebagai gantinya, karena itu akan
+  menyisakan dua blok Apothem setelah pemasangan atau pembaruan menulis blok
+  Apothem terpisah darinya: pembaruan saja tidak membersihkannya
+  (lihat
+  [Pemecahan masalah](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker)).
+  Berkas yang memuat dua blok utuh atau lebih di antara penanda Apothem, atau
+  yang pasangan penandanya tidak dapat dibedakan Apothem dari teks Anda, seperti
+  bloknya yang berada di dalam blok kode milik Anda, gagal dalam pemeriksaan
+  yang sama: pesannya menyatakan bahwa berkas tersebut memuat "Apothem markers
+  to fix by hand", dan perbaikannya menyebutkan setiap blok berdasarkan
+  baris-barisnya (lihat
+  [Sebuah berkas memuat dua blok di antara penanda Apothem](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers)),
+  atau setiap pasangan penanda, isi baris-barisnya, dan cara memperbaikinya,
+  beserta setiap penanda BEGIN yang tidak memulai pasangan penanda (lihat
+  [Apothem tidak dapat membedakan bloknya dari teks Anda](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)).
+  Untuk berkas aturan OpenClaw, perbaikannya menyatakan, seperti catatan
+  verifikasi, bahwa pembaruan berikutnya menulis blok Apothem jika berkas itu
+  kemudian muat dalam batas per-berkas OpenClaw, yang juga diperhitungkan
+  terhadap teks Apothem lama yang Anda simpan.
+- **Runtime hook.** Untuk setiap harness yang terverifikasi, dan untuk setiap
+  harness yang gagal karena penanda seperti itu, doctor membaca berkas yang
+  ditulis oleh pemasangan yang diperiksanya: pemasangan di folder milik harness
+  itu sendiri (`CODEX_HOME` yang ditetapkan di tempat doctor dijalankan adalah
+  folder itu), atau, untuk harness berlingkup-proyek, di folder `--project`.
+  Pemasangan di folder lain, seperti `CODEX_HOME` yang tidak ditunjuk doctor
+  atau proyek yang telah Anda hapus, tidak dipakai sebagai gantinya. doctor
+  menemukan perintah hook yang didaftarkan Apothem dalam berkas JSON di antara
+  berkas-berkas itu, lalu memulai setiap interpreter dan skrip hook satu kali
+  dengan payload no-op (argumen yang terdaftar ditambah `--help`, `{}` pada
+  stdin, direktori kerja sementara, dan `PYTHONPATH` dihapus). Tidak ada yang
+  ditulis. Interpreter yang hilang, skrip yang hilang, atau crash pada saat
+  impor menggagalkan pemeriksaan. Ketika sebuah hook memiliki baris perintah
+  terpisah untuk setiap sistem, doctor memulai baris yang dijalankan alat itu
+  di mesin ini: baris `powershell` atau `commandWindows` di Windows dan baris
+  `bash` di macOS dan Linux, untuk alat yang membaca kunci tersebut. Alat yang
+  hanya membaca `command` mendapat baris `command`-nya yang dimulai. Doctor
+  hanya membaca kunci yang dibaca alat itu sendiri, dan daftar `args` hanya
+  untuk alat yang menjalankan perintahnya dengan daftar seperti itu, sehingga
+  baris atau daftar yang disimpan di bawah kunci lain tidak dimulai dan tidak
+  dihitung. Doctor memulai programnya sendiri, tanpa shell, sehingga di Windows
+  ia menghilangkan `&` yang mengawali baris yang ditulis untuk PowerShell. Hook
+  yang didaftarkan di luar berkas JSON tidak dimulai dan tidak dihitung dalam
+  `N started`. Catatan pemasangan ditemukan di bawah ejaan apa pun dari folder
+  itu, seperti huruf besar-kecil yang berbeda di Windows. Ketika ledger
+  pemasangan tidak memiliki catatan untuk folder itu, pemeriksaan tidak
+  dijalankan: laporan menampilkan `not checked`, baris terakhirnya menyebutkan
+  harness yang perintah hook-nya tidak diperiksa alih-alih
+  `All checks passed` (baris itu menyebut "some hook commands" untuk harness
+  yang juga memulai perintah lain yang lolos), dan keluaran JSON membawa
+  pemeriksaan `hook.unchecked`.
+- **Berkas hook proyek.** Siapa pun yang dapat melakukan commit ke sebuah
+  proyek dapat mengubah berkasnya, sehingga untuk harness berlingkup-proyek
+  doctor memulai perintah hook hanya ketika semua yang dijalankannya sudah
+  diketahui. Doctor membaca catatan pemasangan proyek yang disebutkan
+  `--project`, mengambil perintah hook hanya dari tempat alat itu membacanya
+  (paling banyak 100 dari satu berkas; melewati batas itu, satu baris
+  `hook.unchecked` menyebutkan berkasnya dan sisanya tidak dimulai), dan
+  memulai perintah hanya ketika interpreternya adalah yang dicatat oleh
+  pemasangan itu (kecuali jika berada di dalam proyek, tempat orang lain dapat
+  mengubahnya) atau Python yang menjalankan Apothem itu sendiri, opsi sebelum
+  skrip tidak menjalankan kode (seperti `-E` dan `-s`), skripnya adalah skrip
+  hook yang ditulis pemasangan itu, di folder yang berkas-berkasnya masih cocok
+  dengan checksum SHA-256 yang dicatat pemasangan dan yang tidak memuat berkas
+  Python lain maupun tautan, dan argumen setelahnya adalah yang ditulis
+  Apothem. Doctor kemudian memulai jalur-jalur yang diketahui itu, bukan teks
+  yang dibacanya, dan tidak mencari jalur lain yang disebutkan perintah hook.
+  Interpreter atau skrip hook tercatat yang sudah hilang menggagalkan
+  pemeriksaan tanpa ada yang dimulai; untuk skrip hook yang hilang,
+  perbaikannya menjalankan `update` untuk mengembalikan skrip-skrip itu. Doctor
+  tidak memulai perintah hook proyek lainnya, dan melaporkan masing-masing,
+  beserta alasannya, sebagai `hook.unchecked` (info, bukan kegagalan, ditandai
+  `!` dalam keluaran plain). Hal yang sama berlaku untuk perintah yang
+  jalur-jalur diketahuinya tidak dapat dicari doctor, seperti perintah di
+  folder yang tidak dapat Anda buka. Interpreter tercatat di dalam proyek tidak
+  dimulai, karena orang lain dapat mengubahnya, kecuali doctor sendiri
+  berjalan di bawahnya: perbaikannya menjalankan `update` dari folder di luar
+  proyek, dengan Apothem yang berjalan di bawah Python di luar proyek, yang
+  mencatat Python itu sebagai gantinya. Apothem yang dipasang ke dalam
+  lingkungan milik proyek itu sendiri tidak dapat melakukan ini; gunakan yang
+  dipasang di luarnya. Jika lingkungan virtual proyek sedang aktif, nonaktifkan
+  terlebih dahulu: selama aktif, Python-nya berada paling depan di `PATH` Anda,
+  dan perintah npx akan berjalan di bawahnya dan mencatatnya lagi. Untuk
+  memilih Python yang menjalankan perintah npx, tetapkan `APOTHEM_PYTHON` ke
+  jalurnya. Jalur yang bukan Python 3.10 atau yang lebih baru yang berfungsi
+  dilewati tanpa pesan dan `PATH` dicari sebagai gantinya, jadi jalankan doctor
+  lagi untuk memeriksa bahwa baris itu sudah hilang. Pembaruan dijalankan dari
+  luar proyek karena `python -m apothem`, yang dijalankan di folder proyek,
+  akan memulai folder bernama `apothem` yang di-commit di sana alih-alih
+  Apothem. Hook yang dipasang oleh rilis sebelumnya, yang tidak mencatat
+  interpreter atau checksum, tetap tidak diperiksa sampai Anda menjalankan
+  `update` dengan opsi yang sama seperti saat Anda memasang.
+- **Berkas hook yang tidak dibaca pemeriksaan.** Pemeriksaan hook tidak
+  membaca berkas hook yang lebih besar dari 4 MB dan tidak membaca apa pun
+  selain berkas biasa (misalnya pipe atau perangkat). Setiap berkas seperti
+  itu mendapat satu baris `hook.unchecked` yang menyebutkannya, baik berkas itu
+  hanya memuat hook maupun merupakan berkas pengaturan tempat hook digabungkan,
+  dan baik berada di proyek maupun di bawah folder home Anda. Pembaruan
+  mempertahankan berkas yang terlalu besar atau tidak biasa apa adanya,
+  sehingga perbaikannya meminta Anda mengecilkan berkas di bawah 4 MB atau
+  menggantinya dengan berkas biasa, lalu menjalankan doctor lagi. Berkas yang
+  tidak menjadi sumber hook yang dijalankan alat tidak mendapat baris: berkas
+  pengaturan dari alat yang hook-nya disimpan Apothem hanya di folder
+  dukungannya, atau salinan yang disimpan di bawah `.apothem/support`.
+  Berkas di bawah folder home Anda dibaca melalui tautan, karena berkas itu
+  milik Anda. Di dalam proyek, pemeriksaan tidak membaca berkas hook yang
+  dicapainya melalui tautan, seperti folder pengaturan yang diganti dengan
+  tautan ke folder di luar proyek. Setiap berkas seperti itu mendapat baris
+  `hook.unchecked`, baik berkas itu hanya memuat hook maupun merupakan berkas
+  pengaturan tempat hook digabungkan. Baris itu menyebutkan berkas dan
+  tautannya, yang dapat berupa berkas itu sendiri atau salah satu foldernya.
+  Perbaikannya meminta Anda memeriksa ke mana tautan itu mengarah: ganti
+  tautan yang Anda buat dengan salinan nyata dari folder atau berkas yang
+  ditujunya dan periksa perintah hook di dalamnya, atau hapus tautan yang tidak
+  Anda buat dan jalankan perintah `update` yang mengakhiri perbaikan itu.
+  Bagaimanapun juga, hanya tautan itu sendiri yang dihapus, bukan folder atau
+  berkas yang ditujunya. Perintah hook yang skrip hook-nya dicapai melalui
+  tautan tidak dimulai; barisnya menyebutkan skrip dan tautannya, yang dapat
+  berupa skrip itu sendiri atau salah satu foldernya, dan perbaikannya sama
+  kecuali tidak ada perintah hook yang perlu diperiksa. Skrip hook yang dicatat
+  pemasangan di luar proyek juga tidak dimulai, dan barisnya menyatakan hal
+  itu. Tautan, atau berkas Python yang tidak ditulis pemasangan, di dalam
+  folder skrip hook juga membuat perintah itu tidak dimulai. Pembaruan
+  mempertahankan keduanya, sehingga perbaikannya meminta Anda menghapus entri
+  yang disebutkan baris itu (untuk tautan, hanya tautannya saja; pindahkan
+  skrip milik Anda ke tempat lain), lalu menjalankan doctor lagi. Jika tautan
+  itu menggantikan folder yang ditulis pemasangan, proses berikutnya
+  melaporkan folder itu sebagai hilang, dan menjalankan `update`
+  mengembalikannya. Folder proyek yang tidak dapat dibuka pemeriksaan juga
+  mendapat baris, dan perbaikannya meminta Anda memberi akun Anda izin untuk
+  membukanya. Di Windows, yang tidak memiliki cara untuk membuka berkas sambil
+  menolak tautan, pemeriksaan tautan dilakukan tepat sebelum berkas dibuka.
+  Skrip hook yang lebih besar dari 4 MB dihitung sebagai telah berubah sejak
+  pemasangan, karena tidak ada skrip yang ditulis Apothem sebesar itu.
 
-Setiap pemeriksaan yang gagal menyebutkan perbaikannya. Keluar dengan 0 ketika
-tidak ada pemeriksaan yang gagal dan dengan 1 jika ada yang gagal.
+Setiap pemeriksaan yang gagal menyebutkan perbaikannya. Perbaikan yang
+menjalankan `update` diakhiri dengan perintahnya, setelah titik dua. Untuk
+harness berlingkup-proyek, perintah itu menyebutkan `--project` dengan folder
+yang dikutip untuk shell, seperti
+[`uninstall`](/docs/cli-reference/uninstall) mengutip langkah-langkahnya.
+Ketika tanda kutip itu tidak dapat membawa foldernya, perbaikan memberikan
+`--project` dalam kata-kata dan diakhiri dengan folder apa adanya. Keluar dengan
+0 ketika tidak ada pemeriksaan yang gagal dan dengan 1 jika ada yang gagal.
 
 ## Keluaran JSON
 
@@ -51,11 +201,13 @@ dan `profile_error` ketika profil tidak valid) dan menambahkan:
 - `project` — root `--project` yang telah di-resolve, atau `null`.
 - `harnesses[].status` — `ok`, `not_installed`, `needs_project`,
   `verify_failed`, `hook_failed`, atau `error`; ditambah `verified` dan `hooks`
-  (`{"probed": N, "failed": [...]}`, atau `null` ketika tidak ada catatan
-  pemasangan).
+  (`{"probed": N, "failed": [...]}`, atau `null` ketika folder yang diperiksa
+  tidak memiliki catatan pemasangan, ledger pemasangan tidak dapat dibaca, atau
+  doctor tidak dapat menyelesaikan pemeriksaan perintah hook; pemeriksaan
+  `hook.unchecked` menyebutkan alasannya).
 - `checks` — satu catatan per pemeriksaan: `code` (misalnya
-  `harness.verify_failed`, `hook.start_failed`, `ledger.unreadable`, atau kode
-  `profile.*`), `status` (`pass`, `fail`, atau `info`), `harness`, `message`,
+  `harness.verify_failed`, `harness.stray_begin`, `hook.start_failed`,
+  `hook.unchecked`, `ledger.unreadable`, atau kode `profile.*`), `status` (`pass`, `fail`, atau `info`), `harness`, `message`,
   dan `fix`.
 
 ```json
@@ -103,7 +255,7 @@ stdout, cocok untuk disalurkan ke perkakas lain.
 | Kode | Arti |
 |---|---|
 | 0 | Semua pemeriksaan lulus (juga ketika belum ada harness yang terpasang) |
-| 1 | Harness yang terpasang tidak lolos verifikasi, perintah hook yang terdaftar tidak dapat dimulai, adapter tidak dapat dimuat atau diperiksa, atau profil yang ada gagal validasi skema |
+| 1 | Harness yang terpasang tidak lolos verifikasi, perintah hook yang terdaftar tidak dapat dimulai, ledger pemasangan tidak dapat dibaca, adapter tidak dapat dimuat atau diperiksa, atau profil yang ada gagal validasi skema |
 | 64 | Galat penggunaan: opsi atau perintah yang tidak dikenal, atau nilai opsi yang hilang atau tidak valid. Di bawah `--json`, galat berupa amplop JSON dengan kode `cli.usage`. |
 
 ## Lihat juga

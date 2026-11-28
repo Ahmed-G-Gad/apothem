@@ -2,7 +2,7 @@
 title: "Plataformas"
 description: "Sistemas operativos, shells y scripts de instalación soportados por Apothem, además del requisito previo de Python del sistema para el entorno de ejecución autocontenido."
 machineTranslated: true
-sourceHash: "40276e881e9e631c"
+sourceHash: "1c6e2bce2e1da696"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -42,8 +42,10 @@ instalador comprueba el requisito previo antes de hacer cualquier otra cosa:
   reporte versión ≥ 3.10. En Windows rechaza los lanzadores de la Microsoft Store y
   el localizador `find-python` incluido aplica el mismo piso.
 - **Bibliotecas de ejecución importables.** El motor importa `click` y `rich` desde el intérprete del sistema; sus demás dependencias de terceros vienen incluidas (vendored) en el árbol de origen. El instalador verifica que ambas sean importables, nombra las que falten y ofrece instalar los prerrequisitos que falten por ti — con tu confirmación, o automáticamente con `--yes` / `APOTHEM_AUTO_INSTALL_DEPS=1`.
-- **`git`** se necesita solo para la instalación por red (el script clona el árbol de
-  código). Una instalación local desde una copia de trabajo no requiere `git`.
+- **`git`** y **`gpg`** se necesitan solo para la instalación por red: el
+  script busca la última versión publicada y comprueba con ellos su etiqueta
+  firmada, y sin cosign clona el árbol de código. Una instalación local desde
+  una copia de trabajo no necesita ninguno de los dos.
 
 Si el intérprete, las bibliotecas o `git` están ausentes, el instalador sale con un
 diagnóstico que nombra exactamente qué proporcionar, en lugar de adivinar o mutar tu

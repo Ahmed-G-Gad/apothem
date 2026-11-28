@@ -2,7 +2,7 @@
 title: "Disciplina de planes — Memoria de trabajo efímera y local al proyecto"
 description: "Gestiona la memoria de trabajo efímera y local al proyecto en .apothem/plans/ (un árbol heredado .plans/ se actualiza con apothem migrate-workspace) con esquema de frontmatter, transiciones de ciclo de vida, promoción a ADR y aplicación mediante hooks y validadores."
 machineTranslated: true
-sourceHash: "175d0e7730335ebd"
+sourceHash: "78ba9223bd5803ab"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -137,12 +137,12 @@ Cuando la confianza es `high` para muchos planes, el prompt ofrece una utilidad 
 Todo proyecto que adopte este ecosistema **DEBE** añadir el siguiente bloque a su `.gitignore`:
 
 ```text
-# Directorio de trabajo de Apothem (estado compartido local al proyecto: planes,
-# memoria, aprendizaje, contextos; gitignored — nunca se versiona). El único
-# hogar canónico de planes es `.apothem/plans/`.
-# Ver: <repo-url>/blob/main/site/content/docs/reference/plans-discipline.mdx
-# Ignora el CONTENIDO de este directorio (no el directorio) para que la
-# negación `.keep` de abajo surta efecto.
+# Apothem working directory (project-local shared state: plans, memory,
+# learning, contexts; gitignored — never committed). The sole canonical plans
+# home is `.apothem/plans/`.
+# See: <repo-url>/blob/main/site/content/docs/reference/plans-discipline.mdx
+# Ignore the CONTENTS of this directory (not the directory) so the
+# `.keep` negation below can take effect.
 .apothem/*
 !.apothem/.keep
 ```
@@ -155,7 +155,7 @@ La exención opcional `.keep` preserva la existencia del directorio en herramien
 
 La disciplina debe sobrevivir a cada sesión futura. Las siguientes superficies de aplicación son obligatorias y están codificadas en el ecosistema publicado:
 
-1. **`AGENTS.md` y superficies de instrucción espejo** — bloque de comportamiento obligatorio de nivel superior que declara: *"Los artefactos de planificación se escriben en `<project-root>/.apothem/plans/` — el único hogar canónico de planes (un árbol heredado `<project-root>/.plans/` se actualiza con `apothem migrate-workspace`) — nunca en ningún directorio de configuración del entorno (por ejemplo `~/.codex/` o `~/.claude/`) y nunca en una ubicación global. Esta regla no es negociable; cita §3 de la especificación del proyecto en cada decisión relacionada."* Este bloque es detectado por el validador `plans-discipline-language`.
+1. **`AGENTS.md` y superficies de instrucción espejo** — bloque de comportamiento obligatorio de nivel superior que declara: *"Los artefactos de planificación se escriben en `<project-root>/.apothem/plans/` — el único hogar canónico de planes. Un árbol heredado `<project-root>/.plans/` ya no es canónico; los operadores actualizan uno existente con `apothem migrate-workspace`. Nunca se escriben en ningún directorio de configuración del entorno (por ejemplo `~/.codex/` o `~/.claude/`) ni en una ubicación global. Esta regla no es negociable; el §2 de `site/content/docs/reference/plans-discipline.mdx` la enuncia completa."* Este bloque es detectado por el validador `plans-discipline-language`.
 2. **Archivo de instrucciones en el repositorio por entorno** — refleja la misma directiva en el encuadre apropiado para la superficie de instrucción de ese entorno (§4 *Disciplina de planes*); detectado por el mismo validador en cada superficie de entorno registrada.
 3. **Output-style por defecto** — cuando una respuesta produciría contenido con forma de plan (estrategia de varios pasos, descomposición, recorrido de diseño, diario de depuración), el estilo dirige el artefacto a una escritura en `.apothem/plans/` local al proyecto en lugar de imprimirlo-y-descartarlo en línea. El estilo instruye explícitamente: *"Si no se puede descubrir ninguna raíz de proyecto, deténte con una consulta estructurada preguntando al operador dónde planificar."*
 4. **Cada prompt de trabajador delegado** — lleva una estrofa de *Superficie de salida* que nombra `.apothem/plans/` como el destino de cualquier artefacto de planificación, y una estrofa de *Antipatrón* que nombra los directorios de planes locales al entorno como prohibidos.

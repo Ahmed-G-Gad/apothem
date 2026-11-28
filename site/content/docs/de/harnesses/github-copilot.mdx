@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "Apothem-Harness-Adapter für GitHub Copilot (GA)."
 machineTranslated: true
-sourceHash: "b1b8b4918d7d754d"
+sourceHash: "040eeddf99d35ec6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -182,6 +182,10 @@ beiden Pfade:
 "/path/to/python" -E -s "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
 ```
 
+`-E -s` sorgt dafür, dass Python `PYTHONPATH` und die anderen
+`PYTHON*`-Variablen ignoriert und Ihre Site-Packages des Benutzers überspringt,
+sodass keine Datei im Projekt in den Hook geladen werden kann.
+
 `--contract copilot` lässt den Dispatcher Copilots Eingabe in camelCase lesen und
 `{"additionalContext": ...}` ausgeben, was Copilot für diese beiden Ereignisse
 liest.
@@ -247,6 +251,25 @@ Anweisungspfad bereit, den dieser Adapter verwalten könnte. Apothem zielt auf
 die dokumentierte Anweisungsdatei auf Projektebene und überlässt die
 Benutzereinstellungen auf IDE-Ebene dem Operator. Es schreibt eine Hook-Datei,
 `.github/hooks/apothem.json`, und keine andere Datei in `.github/hooks/`.
+
+Copilot lädt außerdem zwei Projektdateien, in die andere Apothem-Installationen
+einen Block schreiben: die Datei `AGENTS.md`, die die
+[Kimi Code](/docs/harnesses/kimi-code)-Installation schreibt, und die
+Kontextdatei, die die
+[Installation für ein anderes Kommandozeilenwerkzeug](/docs/harnesses/gemini-cli)
+schreibt:
+
+```text
+<project>/AGENTS.md
+<project>/GEMINI.md
+```
+
+In einem Projekt mit diesen Installationen erreichen deren Apothem-Blöcke also
+auch Copilot. Enthält eine der beiden Dateien bereits einen Apothem-Block, gibt
+die Installation von `github-copilot` einen Hinweis aus, der die Datei und die
+Installation nennt, die ihn geschrieben hat. Die
+[Harness-Registry](/docs/reference/harness-registry#shared-roots) listet die
+anderen Werkzeuge auf, die jede dieser Dateien laden.
 
 Innerhalb des Apothem-Repositorys ist `.github/copilot-instructions.md` eine
 Stimme unter den Assistenten-Anweisungsoberflächen dieses Repositorys. In einem
@@ -346,14 +369,28 @@ Ordner wird unter `~/.apothem/backups/` gesichert, bevor er entfernt wird.
 ## Konformitäts-Gate
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
 
-Der Lauf mit `--all` umfasst die eigenständigen Validatoren. Er führt die unter „Kompatibilitätshinweise“ beschriebene Prüfung der Kohärenz über mehrere Oberflächen nicht aus. Um diese Prüfung in einem Checkout unter ihrem Namen auszuführen:
+Führen Sie ihn aus Ihrem Projektordner aus. Unter Windows verwenden Sie `python`
+statt `python3` und den vollständigen Pfad, da Windows PowerShell und cmd `~`
+nicht expandieren:
+`$HOME\.apothem\src\apothem\conformity\gate.py` in PowerShell oder
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` in cmd. Der Pfad ist der
+Ort, an den der Installer die Engine legt, und `-E -s` hält Ihren `PYTHONPATH`
+und die Site-Packages des Benutzers aus dem Gate heraus;
+[Konformitäts-Gate](/docs/conformity-gate) erklärt beides und die anderen
+Installationen.
+
+Der Lauf mit `--all` umfasst die eigenständigen Validatoren. Er führt die unter „Kompatibilitätshinweise“ beschriebene Prüfung der Kohärenz über mehrere Oberflächen nicht aus. Um diese Prüfung unter ihrem Namen auszuführen, starten Sie das Gate des Checkouts selbst aus dem Stammverzeichnis eines Checkouts des Apothem-Repositorys:
 
 ```bash
-python -m apothem.conformity.gate --check multi-surface-coherence-grep AGENTS.md
+python3 -E -s src/apothem/conformity/gate.py --check multi-surface-coherence-grep AGENTS.md
 ```
+
+Die installierte Kopie unter `~/.apothem` findet die Dateien, die sie vergleicht,
+neben sich selbst; gegen einen Checkout ausgeführt, überspringt sie die Prüfung
+daher und meldet ein Bestehen.
 
 ## Fehlerbehebung
 

@@ -2,7 +2,7 @@
 title: "Codex"
 description: "محوّل إطار عمل Apothem لـ Codex (تجريبي)."
 machineTranslated: true
-sourceHash: "ca4ad5f675a665ea"
+sourceHash: "3aff73a78f7a248b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -26,7 +26,9 @@ apothem install --harness codex
 و<bdi>`~/.codex/hooks/`</bdi>، و<bdi>`~/.codex/agents/*.toml`</bdi>،
 و<bdi>`~/.agents/skills/*/SKILL.md`</bdi>، و<bdi>`~/.agents/skills/*/agents/openai.yaml`</bdi>
 للمهارات التي يستدعيها المستخدم، وملفات الدعم تحت
-<bdi>`~/.config/apothem/{rules,templates}/`</bdi>.
+<bdi>`~/.config/apothem/{rules,templates}/`</bdi>. وينشئ التثبيت أيضًا مجلّد بيانات
+<bdi>Apothem</bdi>، وهو <bdi>`~/.codex/.apothem/`</bdi> افتراضيًا، وفيه <bdi>`contexts/`</bdi>، و<bdi>`learning/`</bdi>،
+و<bdi>`memory/`</bdi>، و<bdi>`plans/`</bdi>.
 
 **مُفسِّر الخطّافات.** قبل أن يكتب التثبيت أي شيء، يعثر على مُفسِّر <bdi>CPython 3.10+</bdi>.
 وعلى <bdi>Windows</bdi>، تُشغِّل كل مُدخلة <bdi>`commandWindows`</bdi> في الملف <bdi>`hooks.json`</bdi> المسارَ المطلق
@@ -97,12 +99,63 @@ apothem install --harness codex
 تحذير يسمّيه. يطبع التثبيت ملاحظة تُسمّي تلك الأدوات.
 <bdi>`~/.codex/agents/`</bdi> جذر مشترك ثانٍ: إذ تسرد أداة مدعومة أخرى ذلك المجلّد بوصفه موقع توافق (يسمّيها
 السجلّ)، ولا تقول وثائقها ما إذا كانت تقرأ ملفات <bdi>TOML</bdi> التي يكتبها
-تثبيت <bdi>`Codex`</bdi> هناك.
+تثبيت <bdi>`Codex`</bdi> هناك. ومع ضبط <bdi>`CODEX_HOME`</bdi> على مجلّد آخر، يكتب
+التثبيت عوامله تحت ذلك المجلّد بدلًا من ذلك، وهو مجلّد لا تسرده وثائق تلك الأداة
+(إذ لا تسمّي إلا <bdi>`~/.codex/agents/`</bdi>)، لذا تُسقِط ملاحظة التثبيت ذلك المجلّد. وإن ترك
+تثبيت سابق عوامل <bdi>Apothem</bdi> في <bdi>`~/.codex/agents/`</bdi>، ذكرت الملاحظة ذلك، لأن هذا
+التثبيت لا يحدّثها ولا يُزيلها.
+
+يقرأ <bdi>Apothem</bdi> قيمة <bdi>`CODEX_HOME`</bdi> كما يقرؤها <bdi>Codex</bdi>. فهو يستخدم القيمة كما
+كُتبت: لا تُوسَّع <bdi>`~`</bdi> البادئة، والقيمة النسبية تسمّي مجلّدًا تحت المجلّد الذي تشغّل
+منه الأمر. وتُعَدّ قيمة <bdi>`CODEX_HOME`</bdi> الفارغة غير مضبوطة. ويتوقّف <bdi>Codex</bdi> بخطأ حين
+تسمّي <bdi>`CODEX_HOME`</bdi> مجلّدًا غير موجود؛ وينشئ التثبيت المجلّد، لذا يبدأ <bdi>Codex</bdi>
+بعد تشغيل التثبيت.
+
+تعمل قيمة <bdi>`CODEX_HOME`</bdi> الواقعة تحت <bdi>`~/.config`</bdi> حين يكون <bdi>`~/.config`</bdi> رابطًا
+إلى داخل دليلك المنزلي، كما تجعله مديرات ملفات الإعداد النقطية؛ وعلى <bdi>Windows</bdi> تُعَدّ
+نقطة الوصل (<bdi>junction</bdi>) رابطًا. والرابط <bdi>`~/.config`</bdi> الذي يقود إلى خارج دليلك
+المنزلي يوقف كل تثبيت لـ <bdi>Codex</bdi> قبل أن يكتب أي ملف، أيًّا كان موضع
+<bdi>`CODEX_HOME`</bdi>، لأن التثبيت يكتب أيضًا القواعد والقوالب المشتركة في
+<bdi>`~/.config/apothem/`</bdi>. ولا يفيد ضبط <bdi>`CODEX_HOME`</bdi> على المجلّد الذي يقود إليه
+الرابط؛ بل اجعل الرابط يقود إلى مجلّد داخل دليلك المنزلي. وقيمة <bdi>`CODEX_HOME`</bdi>
+المكتوبة داخل دليلك المنزلي التي يقود رابطٌ إلى خارجه منها، مثل <bdi>`~/work/codex`</bdi> مع
+ربط <bdi>`~/work`</bdi> بمحرّك أقراص آخر، توقف التثبيت وإلغاء التثبيت و<bdi>`apothem rollback`</bdi>،
+أيًّا كان موضع الرابط فوق <bdi>`CODEX_HOME`</bdi>. أمّا قيمة <bdi>`CODEX_HOME`</bdi> المكتوبة بوصفها
+مسارًا خارج دليلك المنزلي فتُتَّبَع. والرابط على مسار يكتبه التثبيت داخل
+<bdi>`CODEX_HOME`</bdi> يوقفه أيضًا، مع <bdi>`target
+path crosses a link`</bdi>، أو مع <bdi>`target escapes the allowed materialization
+root`</bdi> حين يقود ذلك الرابط إلى خارج المجلّد الذي يحوي <bdi>`CODEX_HOME`</bdi>.
+
+لا يلزم أن تأتي <bdi>`CODEX_HOME`</bdi> من ملف تعريف الصدفة لديك. فيمكن أن يضبطها أيضًا
+ملف <bdi>`.envrc`</bdi> في مشروع أو سكربت تستدعيه بـ <bdi>source</bdi>. وحين تسمّي مجلّدًا خارج
+دليلك المنزلي، يغيّر التثبيت والتحديث وإلغاء التثبيت و<bdi>`apothem rollback`</bdi> الملفات في
+ذلك المجلّد، لأنه المجلّد الذي تسمّيه. ويظل الرابط عند <bdi>`~/.config`</bdi> الذي يقود إلى خارج
+دليلك المنزلي يوقف التثبيت. افحص <bdi>`CODEX_HOME`</bdi> قبل أن تشغّل <bdi>Apothem</bdi> في مجلّد
+مشروع يضبطها.
 
 يحجز <bdi>Codex</bdi> الدليل <bdi>`~/.codex/rules/`</bdi> لسياسات التنفيذ
 <bdi>`.rules`</bdi>. لا يضع <bdi>Apothem</bdi> قواعد السلوك بصيغة <bdi>Markdown</bdi>
 هناك؛ بل يحتفظ بها في <bdi>`~/.config/apothem/`</bdi> ويُشير إليها من
-<bdi>`AGENTS.md`</bdi> ومن المهارات المُثبَّتة.
+<bdi>`AGENTS.md`</bdi> ومن المهارات المُثبَّتة. وقد كانت إصدارات سابقة
+(يسمّيها [سجلّ التغييرات](/docs/changelog)) تُزيل المجلّد <bdi>`~/.codex/rules/`</bdi> كاملًا،
+بملفات <bdi>`.rules`</bdi> الخاصة بك، في كل تثبيت وتحديث، بعد نسخه إلى
+<bdi>`~/.apothem/backups/<timestamp>/codex/.codex/rules/`</bdi>. ولا يحذف الإصدار الحالي أبدًا
+مجموعة نسخ احتياطية تحوي تلك النسخة، لكن قواعد الاحتفاظ في إصدار سابق ربما حذفت
+بالفعل مجموعات أقدم. انسخ <bdi>`~/.apothem/backups/`</bdi> إلى مكان آخر قبل أن تشغّل
+<bdi>Apothem</bdi> مرة أخرى، وانسخ ملفات <bdi>`.rules`</bdi> يدويًا إلى <bdi>`~/.codex/rules/`</bdi>،
+ثم شغّل <bdi>`apothem update`</bdi>. ويعكس <bdi>`apothem rollback --install-id`</bdi> التثبيت السابق
+كاملًا، لذا فليس هو طريقة استعادة هذه الملفات.
+
+يُحمِّل <bdi>Codex</bdi> ملف تعليمات واحدًا من مجلّده المنزلي (<bdi>`~/.codex`</bdi>، أو المجلّد
+الذي تسمّيه <bdi>`CODEX_HOME`</bdi>): <bdi>`AGENTS.override.md`</bdi> حين يحوي ذلك الملف نصًّا،
+و<bdi>`AGENTS.md`</bdi> فقط في غير ذلك. وتذهب كتلة <bdi>Apothem</bdi> إلى <bdi>`AGENTS.md`</bdi>، لذا فإن
+ملف <bdi>`AGENTS.override.md`</bdi> فيه نصّ في ذلك المجلّد يمنع <bdi>Codex</bdi> من تحميلها، ما لم
+يكن ملف التجاوز رابطًا رمزيًا إلى <bdi>`AGENTS.md`</bdi>. أمّا الرابط الصلب أو النسخة فيصبح ملفًا
+منفصلًا بمجرّد أن يُعيد تثبيتٌ كتابة <bdi>`AGENTS.md`</bdi>، لذا يحصل على الملاحظة.
+ويطبع <bdi>`apothem install`</bdi> و<bdi>`apothem update`</bdi> و<bdi>`apothem verify`</bdi> ملاحظة تسمّي
+الملف حين يحدث ذلك. ويُتخطّى ملف <bdi>`AGENTS.override.md`</bdi> الفارغ، لذا لا يحصل على
+ملاحظة. ولتحميل الكتلة، أفرِغ ملف التجاوز أو أزِله، أو انقل نصّه إلى
+<bdi>`AGENTS.md`</bdi> خارج كتلة <bdi>Apothem</bdi>.
 
 ## إضافة <bdi>Codex</bdi>
 
@@ -144,6 +197,11 @@ apothem verify --harness codex
    المثبّتة تطابق ذلك الملف التعريفي.
 3. روتين التحقّق الخاص بالمحوّل يُبلِغ عن النجاح.
 
+حين تكون كتلة <bdi>Apothem</bdi> في <bdi>`AGENTS.md`</bdi> ويوجد بجوارها في المجلّد المنزلي لـ
+<bdi>Codex</bdi> ملف <bdi>`AGENTS.override.md`</bdi> فيه نصّ، يطبع التحقّق أيضًا ملاحظة تسمّي ملف
+التجاوز، لأن <bdi>Codex</bdi> يُحمِّل ذلك الملف بدلًا من الكتلة. ولا تُفشِل الملاحظة الفحص،
+ولا يُعطي التحقّق أي ملاحظة حين لا تكون الكتلة مُثبَّتة.
+
 ## التحديث
 
 ```bash
@@ -182,8 +240,17 @@ apothem uninstall --harness codex
 ## بوابة المطابقة
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+شغّله من مجلّد مشروعك. وعلى <bdi>Windows</bdi>، استخدم <bdi>`python`</bdi> بدلًا من
+<bdi>`python3`</bdi> واستخدم المسار الكامل، لأن <bdi>Windows PowerShell</bdi> و<bdi>cmd</bdi> لا يوسّعان
+<bdi>`~`</bdi>:
+<bdi>`$HOME\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>PowerShell</bdi>، أو
+<bdi>`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>cmd</bdi>. والمسار هو
+الموضع الذي يضع فيه المُثبِّت المحرّك، ويُبقي <bdi>`-E -s`</bdi> متغيّر <bdi>`PYTHONPATH`</bdi> وحزم
+<bdi>site-packages</bdi> الخاصة بالمستخدم خارج البوابة؛ ويشرح [بوابة المطابقة](/docs/conformity-gate)
+كليهما والتثبيتات الأخرى.
 
 ## استكشاف الأخطاء وإصلاحها
 

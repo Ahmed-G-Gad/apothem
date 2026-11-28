@@ -2,7 +2,7 @@
 title: "FAQ"
 description: "Häufige Fragen zum Zweck von Apothem, den unterstützten Harnesses, der Optionalität von Plan-Suiten, der Regelanpassung, den Artefakttypen und den Speicherorten des Ökosystem-Zustands."
 machineTranslated: true
-sourceHash: "39f28c46787a7498"
+sourceHash: "bc73f569d994fb5b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -41,13 +41,15 @@ Werkzeugkette sind unabhängig voneinander nützlich.
 
 ## Wie passe ich die Regeln an, ohne das Repository zu forken?
 
-Fügen Sie der Liste `rules:` in `~/.config/apothem/profile.yaml` eine Zeichenkette hinzu und führen Sie die Installation oder das Update erneut aus. Regeldateien unter `src/apothem/rules/` ändern den verpackten Quellbaum, den der Archiv-Installer ersetzt, wenn er mit `--yes` ausgeführt wird.
+Fügen Sie der Liste `rules:` in `~/.config/apothem/profile.yaml` eine Zeichenkette hinzu und führen Sie die Installation oder das Update erneut aus. Die Regeldateien unter `src/apothem/rules/` gehören zum installierten Quellbaum, daher übersteht eine Änderung dort kein Update von Apothem selbst. Ein erneuter Installer-Lauf, der das Release-Archiv installiert, wie er es tut, wenn cosign installiert ist, ersetzt die Quelldateien einer Release-Archiv-Installation einschließlich Ihrer Änderungen. Ein erneuter Lauf, der stattdessen den Git-Clone-Pfad nimmt, wie er es ohne cosign tut, ersetzt sie nur mit `--yes` (`-Yes` unter PowerShell), was die Installation auf einen Clone umstellt. Das Update eines Git-Clones hält bei einer geänderten versionierten Datei an, bis Sie die Änderung committen oder stashen, und checkt dann die Kopie der Datei aus dem Release aus.
 
 ## Wie deaktiviere ich eine Regel vorübergehend?
 
-Benennen Sie die Datei entweder so um, dass sie nicht mehr dem Muster `src/apothem/rules/*.md`
-entspricht, oder verschieben Sie sie in ein benachbartes Verzeichnis, das der Loader nicht
-durchsucht.
+Apothem hat keinen Profilschlüssel, der eine einzelne mitgelieferte Regel abschaltet. Das Umbenennen
+oder Verschieben einer Datei unter `src/apothem/rules/` ändert den installierten Quellbaum, daher
+übersteht es, wie eine Änderung (siehe die Antwort oben), kein Update von Apothem selbst. Um das
+Verhalten anzupassen, ohne den Quellbaum anzufassen, fügen Sie der Liste `rules:` in Ihrem Profil
+eine eigene Regel hinzu und führen Sie `apothem update` aus.
 
 ## Was ist der Unterschied zwischen Regeln, Skills und delegierten Workern?
 
@@ -100,7 +102,7 @@ Siehe [Fortsetzbare Planung](/docs/concepts/resumable-planning).
 ## Benötigt Apothem pip?
 
 Nein — nicht für die Engine selbst. Die Engine ist ein eigenständiger Quellbaum
-mit gebündelten Abhängigkeiten — sie läuft als `python -m apothem` aus jedem
+mit gebündelten Abhängigkeiten — sie läuft aus jedem
 Checkout, dem npx-Cache oder dem Plugin-Baum unter System-Python 3.10+ und
 installiert keinen ihres eigenen Codes in `site-packages` (`click` und `rich`
 sind die einzigen Interpreter-Voraussetzungen). Die eine optionale Ausnahme: Wenn

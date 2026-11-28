@@ -2,7 +2,7 @@
 title: "アーティファクトスキーマ仕様"
 description: "Apothem ソースツリー内のすべてのアーティファクトタイプに対する正規の YAML フロントマタースキーマと必須フィールド。クラスごとのテンプレートと検証ルールを含みます。"
 machineTranslated: true
-sourceHash: "2d46a5bcd2d249ba"
+sourceHash: "3fbf2c23ed47249f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -294,7 +294,7 @@ argument-hint: "[--focus area] [--fix]"
 | `matcher` | string | ツール名のパターン（ツールに依存しないイベントでは `"*"`） | `"Write"` |
 | `hooks[].type` | リテラル `"command"` | 現時点でサポートされる唯一のフックハンドラーの種類 | `"command"` |
 | `hooks[].command` | string | 実行可能なコマンド。Apothem は `${PYTHON_BIN}` プレースホルダーを使い、インストール時に解決されます | `"${PYTHON_BIN}"` |
-| `hooks[].args` | 文字列の配列 | exec 形式の引数: `${HARNESS_ROOT}/.apothem/support/` 配下のスクリプトパスに、その引数が続きます | `["-E", "-s", "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
+| `hooks[].args` | 文字列の配列 | exec 形式の引数: `-E` と `-s`（Python は `PYTHON*` 変数もユーザーの site-packages も読まない）、`${HARNESS_ROOT}/.apothem/support/` 配下のスクリプトパスに、その引数が続きます | `["-E", "-s", "${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py", "SessionStart"]` |
 | `hooks[].timeout` | 整数（秒） | ホストがフックを強制終了するまでの最大実行時間 | `30` |
 | `hooks[].statusMessage` | string | ホストの UI に表示される短いラベル | `"Session start"` |
 

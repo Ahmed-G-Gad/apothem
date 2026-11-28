@@ -2,7 +2,7 @@
 title: "توثيق settings.json"
 description: "اضبط تنفيذ خطّافات Claude Code والأذونات والأحداث والمُهَل وزمن تشغيل Python والتحقّق وأسبقية الإعدادات الطبقيّة لمنظومة Apothem."
 machineTranslated: true
-sourceHash: "f83dad93ea1dbe9c"
+sourceHash: "a7175abd0e0c77ac"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -38,7 +38,9 @@ sourceHash: "f83dad93ea1dbe9c"
 وبوّابة المطابقة (<bdi>`~/.claude/.apothem/support/conformity/gate.py`</bdi>، مع فيكسترات
 الـ <bdi>schema</bdi> بجانبها عند <bdi>`~/.claude/.apothem/support/schemas/`</bdi>) كلاهما نصّان برمجيّان
 مستقلّان من المكتبة القياسيّة — لا يلزم على المضيف حزمة <bdi>`apothem`</bdi> قابلة للاستيراد،
-وقالب واحد يخدم كل منصّة.
+وقالب واحد يخدم كل منصّة. يجعل <bdi>`-E -s`</bdi> لغة <bdi>Python</bdi> تتجاهل <bdi>`PYTHONPATH`</bdi>
+ومتغيّرات <bdi>`PYTHON*`</bdi> الأخرى وتتخطّى حزم <bdi>site-packages</bdi> الخاصة بالمستخدم، فلا
+يُحمَّل شيء من المشروع الذي فتحه المساعد داخل أي خطّاف.
 
 ## مخطّط إعداد الخطّافات
 
@@ -88,13 +90,13 @@ sourceHash: "f83dad93ea1dbe9c"
 ثلاثة مُحقِّقات تُغطّي سطح الخطّافات، بصرامة متصاعدة:
 
 ```bash
-# بنيويّ + نظافة Python (سريع، دون اتصال)
+# Structural + Python-hygiene (fast, offline)
 python scripts/dev/validate_hooks.py
 
-# المنظومة الكاملة (البنية + الفرونت-ماتر + فحوص الخطّافات المُفوَّضة)
+# Full ecosystem (structure + frontmatter + delegated hook checks)
 python scripts/dev/validate_ecosystem.py
 
-# مسح خصاميّ (يعصف بكل أمر خطّاف مُعَدّ بمدخلات مُتدهورة)
+# Adversarial sweep (storms every configured hook command with degraded inputs)
 python scripts/dev/chaos_pass.py
 ```
 

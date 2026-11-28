@@ -2,7 +2,7 @@
 title: "rollback"
 description: "CLI-Referenz für den Befehl apothem rollback."
 machineTranslated: true
-sourceHash: "398c0c678cace0b4"
+sourceHash: "a11c2a565e94b5b4"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -19,9 +19,14 @@ apothem rollback --harness NAME|all [--install-id ULID | --last] [--yes]
 ```
 
 `rollback` versetzt jeden ausgewählten Harness in den Zustand zurück, in dem er
-sich vor dem aufgezeichneten Installationsdurchlauf befand — standardmäßig dem
-neuesten oder dem durch `--install-id` benannten. Dabei arbeitet es den
-Ledger-Eintrag dieser Installation ab, die neueste Änderung zuerst, und:
+sich vor dem aufgezeichneten Installationsdurchlauf befand — standardmäßig der
+neuesten Installation, die noch in Kraft ist, oder der durch `--install-id`
+benannten. Ein zweites `rollback` macht daher die Installation vor derjenigen
+rückgängig, die das erste rückgängig gemacht hat. Eine `--install-id`, die eine
+Installation benennt, die ein Rollback oder eine Deinstallation bereits
+rückgängig gemacht hat, wird mit `rollback.already_reversed` (Exit-Code 1)
+abgewiesen, und nichts ändert sich. Dabei arbeitet es den Ledger-Eintrag dieser
+Installation ab, die neueste Änderung zuerst, und:
 
 - stellt jede Datei und jedes Verzeichnis, die die Installation überschrieben
   hat, aus der von der Installation erfassten Sicherung an ihrem aufgezeichneten
@@ -29,8 +34,40 @@ Ledger-Eintrag dieser Installation ab, die neueste Änderung zuerst, und:
   wiederhergestellt, ohne die Dateien, die die Installation ihm hinzugefügt
   hat);
 - entfernt jede Datei und jedes Verzeichnis, die die Installation angelegt hat,
-  und stellt jeden Pfad des veralteten Layouts wieder her, den die Installation
-  beseitigt hat;
+  sofern sie noch den Inhalt tragen, den diese Installation geschrieben hat:
+  Eine Datei, die Sie seitdem an diesem Pfad angelegt haben, oder eine, die Sie
+  bearbeitet haben, bleibt mit einer `Warning:`-Zeile erhalten (einem
+  `warnings`-Eintrag unter `--json`), ebenso ein Ordner, der sie enthält. Ein
+  leerer Ordner innerhalb eines Ordners, den die Installation angelegt hat, wird
+  entfernt, auch einer, den Sie angelegt haben. Die Zeile listet jede Datei auf,
+  die erhalten blieb, einschließlich der Dateien in einem erhaltenen Ordner,
+  unabhängig davon, ob eine Wiederherstellung fehlgeschlagen ist, und der
+  `warnings`-Eintrag listet sie als `files` auf. Eine Installation, die ein
+  früheres Release aufgezeichnet hat, gibt nicht an, was sie geschrieben hat,
+  und Rollback vergleicht nichts mit diesem Release, sodass das, was sie
+  angelegt hat, erhalten bleibt: Jeder solche Pfad erhält eine `Warning:`-Zeile,
+  die besagt, dass Rollback nicht erkennen kann, ob er zu Apothem gehört.
+  Außerdem stellt es jeden Pfad des veralteten Layouts wieder her, den die
+  Installation beseitigt hat. Ein Pfad, den das aktuelle Release nicht mehr
+  beseitigt (ein Ordner, der Ihre eigenen Dateien enthalten kann), wird nur
+  dort wiederhergestellt, wo Dateien fehlen: Jede Datei, die dort jetzt liegt,
+  bleibt erhalten, und die Ausgabe nennt die verwendete Sicherung. Eine Datei,
+  die es nicht schreiben kann, wird aufgeführt, damit Sie sie von Hand
+  kopieren, und das Rollback endet dann mit Exit-Code 2 (Teilergebnis), wenn es
+  irgendeine andere Datei geschrieben hat.
+  Durch einen Pfad, der jetzt ein Link ist (ein Symlink oder eine
+  Windows-Junction), oder eine Datei, wo die Sicherung einen Ordner hat, oder
+  umgekehrt, wird niemals hindurchgeschrieben. Dort wird nichts
+  wiederhergestellt, und ebenso wenig, wenn die Sicherung des Pfads fehlt. Das
+  Rollback endet trotzdem mit Exit-Code 0 und gibt eine `Warning:`-Zeile aus
+  (einen `warnings`-Eintrag unter `--json`), die die Sicherung nennt, aus der
+  Sie von Hand kopieren können. Rollback erreicht diese Installation nur,
+  solange ihr Eintrag zu den neuesten 10 aufbewahrten gehört (siehe unten).
+  `apothem backups prune --keep N` kürzt einmalig auf `N`; die nächste
+  Installation, Aktualisierung, Deinstallation oder das nächste Rollback kürzt
+  wieder auf 10. Der Backup-Satz selbst bleibt auch erhalten, nachdem der
+  Eintrag verschwunden ist, sodass das Kopieren der Dateien von Hand daraus der
+  verlässliche Weg zurück ist;
 - entfernt die gemeinsamen Datenspeicher (`memory`, `contexts`, `learning`),
   die die Installation angelegt hat, sofern nicht ein anderer installierter
   Harness sie noch verwendet;
@@ -46,10 +83,40 @@ sie bzw. ihn. Ein Ordner, den diese Installation bereits vorgefunden hat (ein
 zweites Werkzeug, das nach dem ersten installiert wurde), wird mit der letzten
 Installation entfernt, die ihn verwendet, wenn eine Installation ihn angelegt
 hat, die ihn inzwischen freigegeben hat, sodass das Zurücksetzen jedes Werkzeugs
-nichts zurücklässt. Wenn sich der Eintrag einer Installation, die den Ordner
-verwenden könnte, nicht lesen lässt, bricht Rollback mit einem Fehler ab, bevor
-es etwas ändert, und schreibt keinen `rollback`-Eintrag; reparieren Sie den
-Eintrag und führen Sie den Befehl erneut aus.
+nichts zurücklässt, selbst wenn das Werkzeug, das den Ordner angelegt hat,
+zwischenzeitlich erneut installiert oder aktualisiert wurde. Ein Ordner, den
+Apothem entfernt hat und den Sie selbst zurückgelegt haben, etwa aus einer
+Sicherung, gehört Ihnen: Ein Rollback behält ihn. Ein Rollback macht nur die
+Installation rückgängig, die mit Ihrem Home-Verzeichnis in der Schreibweise
+aufgezeichnet wurde, die es hat, wenn das Rollback läuft. Wenn dasselbe Werkzeug
+auch mit einer anderen Schreibweise Ihres Home-Verzeichnisses installiert wurde
+(über einen Link darauf oder unter Windows oder macOS in anderer
+Groß-/Kleinschreibung), verwendet diese Installation die gemeinsamen Ordner
+weiterhin und behält sie. Die Dateien im eigenen Ordner des Werkzeugs werden
+einzeln behandelt: Das Zurücksetzen der Installation, die sie zuerst geschrieben
+hat, entfernt diejenigen, die die andere Installation unverändert gelassen hat,
+etwa ihre Hook-Skripte, und behält mit einer Warnung diejenigen, die die andere
+Installation neu geschrieben hat, etwa ihre Anweisungsdatei. Führen Sie danach
+`apothem update` mit der anderen Schreibweise Ihres Home-Verzeichnisses aus,
+damit diese Installation `apothem verify` wieder besteht. Ein Rollback, das mit
+dieser Schreibweise Ihres Home-Verzeichnisses läuft, macht auch diese
+Installation rückgängig. Wenn sich der Eintrag einer Installation, die den
+Ordner verwenden könnte, nicht lesen lässt, bricht Rollback mit einem Fehler ab,
+bevor es etwas ändert, und schreibt keinen `rollback`-Eintrag; reparieren Sie
+den Eintrag und führen Sie den Befehl erneut aus.
+
+Ein Rollback bricht ebenfalls ab, bevor es etwas ändert, und schreibt keinen
+`rollback`-Eintrag, wenn ein Link den Ordner des Werkzeugs aus Ihrem
+Home-Verzeichnis hinausführt: ein `CODEX_HOME` oder `XDG_CONFIG_HOME`, das
+innerhalb Ihres Home-Verzeichnisses angegeben ist, etwa `~/work/tool`, wobei
+`~/work` nach der Installation zu einem Link auf ein anderes Laufwerk wurde.
+Unter Windows zählt eine Junction als Link. Der Fehler lautet `rollback
+refused: target path crosses a link` und nennt den Link und den Ordner, zu dem
+er führt, und der Befehl endet mit Exit-Code 1, ohne vorher um Bestätigung zu
+bitten. Lassen Sie den Link zu einem Ordner innerhalb Ihres Home-Verzeichnisses
+führen oder ersetzen Sie ihn durch den Ordner selbst, und führen Sie das
+Rollback erneut aus. Einem Ordner, den Sie als Pfad außerhalb Ihres
+Home-Verzeichnisses angeben, wird gefolgt.
 
 Alles, was rollback entfernt oder ersetzt, wird zuerst in die
 Apothem-Sicherungswurzel (`~/.apothem/backups/`) kopiert, sodass sich ein
@@ -68,10 +135,9 @@ sich nicht mehr per ID zurücksetzen und meldet `rollback.no_record`.
 Bedarf und entfernt niemals die Sicherung, aus der die Wiederherstellung für die
 neueste Installation erfolgt.
 
-Einträge, die ein Apothem-Release geschrieben hat, bevor dieses Verhalten
-hinzugefügt wurde, führen nicht auf, welche Dateien die Installation angelegt
-hat; das Zurücksetzen eines solchen Eintrags stellt nur die überschriebenen
-Dateien wieder her.
+Ein Installationseintrag aus einem früheren Release, der nicht kennzeichnet,
+welche Dateien die Installation angelegt hat, wird zurückgesetzt, indem nur die
+überschriebenen Dateien wiederhergestellt werden.
 
 Pro Harness wird eine Bestätigung abgefragt, sofern nicht `--yes` angegeben
 ist. Wenn keine Abfrage möglich ist — bei `--format json` (der Abfragetext würde
@@ -88,8 +154,8 @@ Ein Rollback mit `--harness all` ist bewusst erschöpfend: Er umfasst jeden regi
 | Option | Beschreibung |
 |---|---|
 | `--harness NAME` | Zurückzusetzender Harness-Adapter oder `all` für die registry-weite Menge (erforderlich). |
-| `--install-id ULID` | Setzt den benannten Installationsdurchlauf zurück. Standardmäßig die neueste aufgezeichnete Installation. |
-| `--last` | Setzt die neueste aufgezeichnete Installation zurück (der Standard; die explizite Form). Schließt sich mit `--install-id` gegenseitig aus. |
+| `--install-id ULID` | Setzt den benannten Installationsdurchlauf zurück, sofern er noch in Kraft ist. Standardmäßig die neueste Installation, die noch in Kraft ist. |
+| `--last` | Setzt die neueste Installation zurück, die noch in Kraft ist (der Standard; die explizite Form). Schließt sich mit `--install-id` gegenseitig aus. |
 | `--yes` | Überspringt die Bestätigungsabfrage pro Harness. |
 | `--project PATH` | Projektwurzel für Harnesses mit Projektgeltungsbereich. Erforderlich, wenn die ausgewählte Menge Adapter mit Projektgeltungsbereich enthält. |
 | `--quiet`, `-q` | Unterdrückt informative Ausgaben; nur Fehler werden ausgegeben. |
@@ -125,9 +191,32 @@ Jedes wiederhergestellte oder entfernte Ziel erscheint in `results` mit
 in `files_written`); die `message` gibt an, ob der Pfad wiederhergestellt oder
 entfernt wurde. Eine fehlgeschlagene Wiederherstellung (zum Beispiel bei einer
 gelöschten Sicherung) ist `"outcome": "error"`. Eine Installation, die keine
-Änderungen aufgezeichnet hat, wird mit `"outcome": "skipped"` gemeldet. Wenn für
-einen einzelnen benannten Harness kein passender Installationseintrag existiert,
-meldet der Befehl einen `rollback.no_record`-Fehler mit `"status": "error"`. Bei
+Änderungen aufgezeichnet hat, wird mit `"outcome": "skipped"` gemeldet. Ein
+beseitigter Pfad, an dem nichts wiederhergestellt wurde (er ist jetzt ein Link,
+eine Datei steht dort, wo die Sicherung einen Ordner hat, oder umgekehrt, oder
+seine Sicherung fehlt), ist eine `skipped`-Zeile in `results` und zugleich ein
+Eintrag in `warnings`, und das Rollback endet trotzdem mit Exit-Code 0:
+
+```json
+{
+  "harness": "claude-code",
+  "outcome": "advisory",
+  "operation": "rollback",
+  "path": "C:\\Users\\Example\\.claude\\commands",
+  "message": "left in place: C:\\Users\\Example\\.claude\\commands is now a link, so nothing was restored there; copy what you need from C:\\Users\\Example\\.apothem\\backups\\20261001T000000Z\\claude_code\\.claude\\commands"
+}
+```
+
+Ein an einem Link abgewiesenes Ergebnis nennt den Link in `detail.symlink` und
+den Ordner, zu dem er führt, in `detail.leads_to`, wie bei
+[`apothem install`](/docs/cli-reference/install#json-output).
+
+Wenn für einen einzelnen benannten Harness kein passender Installationseintrag
+existiert, meldet der Befehl einen `rollback.no_record`-Fehler mit
+`"status": "error"`, und eine `--install-id` einer Installation, die bereits
+zurückgesetzt oder deinstalliert wurde, meldet `rollback.already_reversed`.
+Sobald das Ledger diesen Eintrag gekürzt hat (siehe oben), meldet eine solche
+ID stattdessen `rollback.no_record`. Bei
 `--harness all` ist ein Harness ohne passenden Eintrag stattdessen eine Zeile mit
 `"outcome": "error"` in `results`.
 
@@ -143,7 +232,7 @@ apothem rollback --harness cursor --project . --last --json
 
 | Code | Bedeutung |
 |---|---|
-| 0 | Erfolgreich zurückgesetzt oder nichts zurückzusetzen (die Installation hat keine Änderungen aufgezeichnet) |
+| 0 | Erfolgreich zurückgesetzt oder nichts zurückzusetzen (die Installation hat keine Änderungen aufgezeichnet); auch wenn ein beseitigter Pfad mit einer `Warning:`-Zeile an seinem Ort belassen wurde (einem `warnings`-Eintrag unter `--json`) |
 | 1 | Erwarteter Fehler — kein Installationseintrag, widersprüchliche Selektoren, unbekannter Harness, fehlende Projektwurzel oder abgelehnte bzw. nicht verfügbare Bestätigung (nicht interaktiver oder JSON-Modus ohne `--yes`) |
 | 2 | Teilergebnis — mindestens ein Ziel wurde zurückgesetzt, und zusätzlich wurde ein Fehlschlag aufgezeichnet (eine fehlgeschlagene Wiederherstellung oder, bei `--harness all`, ein Harness ohne Installationseintrag) |
 | 64 | Verwendungsfehler: eine unbekannte Option oder ein unbekannter Befehl oder ein fehlender oder ungültiger Optionswert. Unter `--json` ist der Fehler ein JSON-Umschlag mit dem Code `cli.usage`. |

@@ -2,7 +2,7 @@
 title: "Zu Apothem beitragen — Entwicklerhandbuch"
 description: "Pflegen und erweitern Sie das Apothem-Ökosystem, indem Sie Regeln, Befehle, Helfer, Skills und Hooks mit kanonischen Schemas, Frontmatter-Anforderungen und Validierungsverfahren verfassen."
 machineTranslated: true
-sourceHash: "82cbd13f4a28f8cb"
+sourceHash: "a2dea5f7e64b7fbc"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -63,9 +63,12 @@ Verhaltensdelta zeigt.
 Der gemeinsame Install-Treiber validiert jede Quelle und jedes Ziel vor dem
 ersten Schreibvorgang. Er lehnt fehlende Manifestquellen, Ziel-Traversierung,
 Zielpfade außerhalb des gewählten Stammverzeichnisses und
-Symlink-Überschreitungen ab. Dry-Runs führen dieselbe Validierung aus und
-geben strukturierte `skipped`- oder `unchanged`-Ergebnisse zurück, ohne
-Dateien zu erstellen.
+Symlink-Überschreitungen ab; eine Windows-Junction wird wie ein Symlink
+geprüft. Ausgenommen sind die Links, die Dotfile-Manager unter `~/.config` oder
+an oder oberhalb eines gemeinsamen Skill-, Regel- oder Template-Ordners anlegen;
+ihnen wird gefolgt, solange sie innerhalb des Home-Verzeichnisses bleiben.
+Dry-Runs führen dieselbe Validierung aus und geben strukturierte `skipped`- oder
+`unchanged`-Ergebnisse zurück, ohne Dateien zu erstellen.
 
 ## Schwärzung und Beispieldaten
 
@@ -134,7 +137,10 @@ Unterstriche.
   geschrieben. Jeder Hook-Befehl in der `settings.json`-Vorlage für Claude Code
   verwendet die Exec-Form: `command` ist der Interpreter-Platzhalter
   `${PYTHON_BIN}`, der bei der Installation aufgelöst wird, und `args` enthält
-  den Skriptpfad und seine Argumente. Diese Vorlage ruft
+  `-E`, `-s`, den Skriptpfad und seine Argumente. Die beiden Flags halten
+  `PYTHONPATH`, die anderen `PYTHON*`-Variablen und die site-packages des
+  Benutzers aus jedem Hook heraus; behalten Sie sie bei jedem Hook bei, den Sie
+  hinzufügen. Diese Vorlage ruft
   `${HARNESS_ROOT}/.apothem/support/hooks/dispatch.py <event> [<message-name>]` und
   `${HARNESS_ROOT}/.apothem/support/conformity/gate.py --hook` über absolute Pfade auf, daher
   benötigt die installierte Kopie kein importierbares `apothem`-Paket. Das Plugin für
@@ -664,12 +670,190 @@ für Markdown `prettier` oder ein Äquivalent.
 ```bash
 python -m pytest                      # unit, integration, property, conformity, scripts
 python -m pytest tests/property       # Hypothesis properties (profile loader, frontmatter, merge)
+python -m pytest tests/fuzz           # replay each fuzz target's seed inputs (no Atheris needed)
 ```
+
+Die Fuzz-Ziele in `tests/fuzz/` laufen in der CI unter Atheris. Um eines auf
+Ihrem eigenen Rechner zu fuzzen (Linux oder macOS, Python 3.11 oder neuer),
+installieren Sie Atheris, nehmen Sie den Checkout in den Pfad auf und richten
+Sie das Ziel auf eine Kopie seiner Seeds:
+
+```bash
+python -m pip install atheris
+export PYTHONPATH="$PWD/src:$PWD/src/apothem/_vendor"
+mkdir -p /tmp/corpus && cp tests/fuzz/seeds/lenient-json/*.txt /tmp/corpus/
+python tests/fuzz/fuzz_lenient_json.py -max_total_time=60 /tmp/corpus
+```
+
+`tests/fuzz/README.md` listet die Ziele auf und beschreibt, was zu tun ist, wenn
+eines einen Absturz findet.
 
 Die Suite ist hermetisch: Sie besteht mit dem Checkout unter `$TMPDIR` und mit
 einem `python` auf dem `PATH`, dem die CLI-Voraussetzungen fehlen, weil die
 Integrationstests den Interpreter ausführen, der pytest ausführt, und
 verschachtelte temporäre Pfade und Quellpfade, längste zuerst, tokenisieren.
+
+### Tests schreiben nie in Ihr echtes Home-Verzeichnis
+
+Ein Probe-Skript oder ein automatisierter Assistent darf die Installer oder
+Adapter von Apothem niemals gegen Ihr echtes Home-Verzeichnis ausführen. Führen
+Sie Verhalten in einem Test unter `tests/` aus, wo `tests/conftest.py` das
+Home-Verzeichnis, das Installationsprotokoll und das Sicherungsverzeichnis auf
+temporäre Ordner richtet.
+
+Apothem verweigert diese Schreibvorgänge außerdem selbst, während pytest läuft,
+sodass eine Testdatei, die aus `tests/` herauskopiert und ohne
+`tests/conftest.py` ausgeführt wird, das echte Home-Verzeichnis nicht über
+Apothem erreichen kann. Solange `PYTEST_CURRENT_TEST` gesetzt und nicht leer ist
+(ein Test) oder `PYTEST_VERSION` die Version des laufenden pytest enthält (die
+ganze Sitzung, einschließlich Collection und Sitzungs-Hooks), bricht ein
+Schreiben, Entfernen, Kopieren, Umbenennen oder eine Sperrdatei in `~/.apothem`
+des Kontos, in `~/.config/apothem`, in einem Werkzeugordner im Home-Verzeichnis,
+den die Harness-Registry nennt (`~/.claude`, `~/.qwen`, `~/.config/opencode` und
+die übrigen), oder in einer Datei außerhalb dieser Ordner, die das
+Propagation-Manifest ändert (die `~/.antigravity/profile.yaml`, die ein früheres
+Release schrieb), ab, bevor sich etwas ändert, mit einem Fehler wie diesem:
+
+```text
+RealHomeWriteError: Apothem refused to create the lock file
+C:\Users\you\.apothem\state\codex\<id>.install.lock: it is inside or holds
+C:\Users\you\.apothem, a protected path in this account's real home, while a
+pytest test is running (PYTEST_CURRENT_TEST is set:
+test_probe.py::test_install (call)). Nothing in C:\Users\you\.apothem was
+changed. ...
+```
+
+Ein `PYTEST_VERSION` mit einem anderen Wert, etwa ein Pin wie `8.2`, den eine
+Shell oder ein CI-Job exportiert, zählt nicht, ebenso wenig ein leeres
+`PYTEST_CURRENT_TEST`. Außerhalb eines Tests nennt der Fehler statt des Tests
+`PYTEST_VERSION holds the version of the pytest imported in this process, <version>, outside any test`;
+er behauptet nicht, dass eine pytest-Sitzung läuft, da ein Prozess pytest
+importieren kann, ohne eine auszuführen. Ein `PYTEST_VERSION`, das eine Shell
+oder ein CI-Job mit der exakten Version des installierten pytest exportiert,
+zählt trotzdem, auch außerhalb von pytest, und in einem Prozess, der pytest
+nicht importiert hat, lautet der Fehler dann
+`PYTEST_VERSION holds the installed pytest's version, <version>, though no pytest runs in this process`.
+
+Eine Installation, ein Update, eine Deinstallation oder ein Rollback auf
+Projektebene, deren Projektwurzel das Home-Verzeichnis des Kontos selbst ist,
+wird auf dieselbe Weise verweigert, bevor etwas geschrieben wird: Ihre
+Projektdateien würden sonst direkt im Home-Verzeichnis landen. Ein Projektordner
+innerhalb des Home-Verzeichnisses bleibt erlaubt. Ein Daten-Home direkt im
+Home-Verzeichnis wird ebenfalls verweigert, welchen Namen das Profil ihm auch
+gibt (`workspace.scope: user-home` mit einem eigenen `directory_name`), bevor es
+angelegt wird und bevor seine Speicher entfernt werden. Ein Daten-Home, das ein
+Link (unter Windows eine Junction) auf einen Ordner direkt im Home-Verzeichnis
+ist, wird auf dieselbe Weise verweigert, ebenso eines, das direkt oder über eine
+Kette von Links zum Home-Verzeichnis selbst führt und dessen Speicher direkt im
+Home-Verzeichnis landen würden.
+
+Diese Schreibweisen eines geschützten Ordners zählen: ein Link oder eine
+Junction in ihn hinein und ein Ordner, der während des Tests gegen einen Link
+ausgetauscht wird. Unter Windows zählen außerdem Groß- und Kleinschreibung,
+Kurznamen (8.3), die Präfixe `\\?\`, `\\.\` und `\??\`, eine
+Loopback-Admin-Freigabe wie `\\localhost\C$` oder `\\--1.ipv6-literal.net\C$`,
+eine Freigabe, die über eine der eigenen Adressen des Rechners oder über ein
+verbundenes Laufwerk erreicht wird, und ein alternativer Datenstrom
+(`.apothem:name`), ebenso ein Gerätepfad hinter einem dieser Präfixe
+(`GLOBALROOT\Device\HarddiskVolume2` oder `Volume{GUID}`). Unter macOS werden
+außerdem Groß- und Kleinschreibung sowie Unicode-Normalisierung ignoriert, und
+`/System/Volumes/Data/<path>` wird als `/<path>` gelesen. Nur diese
+Zeichenkettenregeln kommen ohne Netzwerkkontakt aus: Ein Freigabepfad oder ein
+Pfad auf einem verbundenen Laufwerk wird geprüft, indem der Host der Freigabe
+befragt wird. `tests/README.md` listet die Schreibweisen auf, die die Prüfung
+nicht erkennt, etwa einen Hardlink auf eine Datei in einem geschützten Ordner,
+einen Bind-Mount des Home-Verzeichnisses und einen Linux-Mount ohne
+Unterscheidung von Groß- und Kleinschreibung.
+
+Die CLI gibt den Fehler unverändert aus, auch bei einer Deinstallation. Manche
+Durchläufe prüfen ihre Pfade vor der ersten Änderung, sodass eine Verweigerung
+dort alles so lässt, wie es war. Eine Stale-Bereinigung prüft jeden veralteten
+Pfad. Ein Rollback prüft jeden Pfad, den sein Installationsdatensatz nennt
+(selbst einen, den es an Ort und Stelle ließe), die Datenspeicher, die es
+entfernen würde, und die Ordner auf Benutzerebene im Home-Verzeichnis, die es
+zuletzt aufräumen würde. Ein Rollback und eine Deinstallation prüfen das
+Sicherungsverzeichnis und das Protokoll, und eine OpenClaw-Deinstallation prüft
+außerdem `openclaw.json` und jede Regeldatei eines Workspace. Eine verweigerte
+Deinstallation vermerkt eine unvollendete Deinstallation im Protokoll nur dann,
+wenn sie bereits Dateien außerhalb der geschützten Ordner geändert hatte, auch
+in einem Schritt vor der gemeinsamen Entfernung (etwa dem ersten Schritt einer
+Deinstallation der nativen Konfiguration), damit die Sicherungen dieser Dateien
+referenziert bleiben. Einige interne Aufrufer fangen den Fehler absichtlich ab
+(zum Beispiel eine Best-Effort-Protokollzeile), daher wird jede Verweigerung
+auch geloggt, und `tests/conftest.py` lässt den Test scheitern, nach dem eine
+geloggt wurde, selbst wenn der Test als `xfail` markiert ist. Eine, die
+außerhalb eines Tests geloggt wird, während pytest einen Knoten sammelt, lässt
+die Collection dieses Knotens scheitern. Jede andere, die außerhalb eines Tests
+geloggt wird, beim Sitzungsstart, zwischen zwei Collect-Berichten, nach der
+Collection, zwischen zwei Tests, nach dem letzten Test, in der Zusammenfassung
+oder in `pytest_unconfigure`, wird gemeldet, wenn die Sitzung endet, benannt
+nach dem Ort, an dem sie geschah, und lässt den Lauf scheitern, auch wenn ein
+Hook den Lauf dann mit `pytest.exit(returncode=0)` oder `sys.exit(0)` beendet
+(oder, auf jedem System, mit einem Code, den ein POSIX-System auf 0 oder 5
+kürzt, etwa 256), auch nachdem ein anderer Hook das Sitzungsende mit `sys.exit`
+oder einer Ausnahme beendet hat, und auch wenn ein paralleler Worker (`-n`) sie
+loggt, bevor oder nachdem er seine Verweigerungen an den Hauptprozess übergeben
+hat. Ein Worker schreibt jede Verweigerung, sobald er sie hat, in eine Datei,
+die der Hauptprozess liest, sodass eine, die er hatte, bevor er abstürzte oder
+vor dieser Übergabe gestoppt wurde oder bevor ein Sitzungsende-Hook ihn dort
+stoppte, den Lauf trotzdem scheitern lässt. Drei Fälle erscheinen weiterhin nur
+auf `stderr` und lassen den Exit-Code unverändert: einer, der nach dem `yield`
+eines `tryfirst`-Wrappers für `pytest_unconfigure` geloggt wird, den pytest
+nach dem Guard registriert hat, einer, der in einem mit `config.add_cleanup`
+registrierten Cleanup geloggt wird (jeweils sofern nicht ein erfolgreiches
+`sys.exit` den Lauf dann beendet oder eines das Sitzungsende davor beendet hat),
+und einer, den ein Worker loggt, aber weder übergibt noch in diese Datei
+schreibt, weil der Worker endete oder zuerst gestoppt wurde (etwa weil ein
+Sitzungsende-Hook ihn loggte und dann den Worker abstürzen ließ) oder weil diese
+Datei nicht angelegt oder beschrieben werden konnte (wenn der letzte
+Schreibvorgang des Workers in sie teilweise fehlschlägt, bleibt der Teil, der
+die Datei erreicht hat, erhalten, und der Hauptprozess lässt den Lauf daran
+scheitern, wie er es tut, wenn dieser Schreibvorgang die Datei leer hinterließ,
+es sei denn, die neben der Übergabe geschriebene Kopie hatte sie bereits leer
+hinterlassen und der Hauptprozess übernahm die Ausgabe des Workers). In diesem
+letzten Fall enthält die Ausgabe nur die Verweigerungen, die der Worker übergeben
+hat: Eine, die er nach der Übergabe findet und deren Schreibvorgang die Datei
+wieder leert, erscheint nur auf dem `stderr` des Workers, und nirgends, wenn
+der Worker während dieses Schreibvorgangs abstürzt; der Lauf scheitert dennoch an
+den übergebenen Verweigerungen. Am Ende des Laufs weist der Hauptprozess jeden
+Worker an, sich zu beenden; ein Worker, der 5 Sekunden später noch Python-Code
+ausführt, wird unterbrochen (unter Windows nicht einer, der in einem Sleep oder
+einem anderen Aufruf blockiert), und jeder Worker, der nach 10 Sekunden noch
+läuft, wird gestoppt. Der Guard kann den Exit-Code eines Laufs nicht ändern, der
+über `os._exit` im Hauptprozess endet (in einem Hook, einem Cleanup oder einem
+`atexit`-Handler), über einen `tryfirst`-Wrapper für `pytest_cmdline_main`, den
+pytest nach dem Guard registriert hat, oder über einen Hook
+`pytest_cmdline_main`, der zurückkehrt, bevor eine Sitzung läuft; bei
+`os._exit` kann auch der Terminalbericht des Guards verloren gehen, und im
+ersten und letzten Fall erscheint eine Verweigerung, die der Guard noch nicht
+gemeldet hat, nur als ihre `stderr`-Zeile. Das Log wird pro Prozess geführt:
+Eine Verweigerung, die ein untergeordneter Apothem-Prozess abfängt, erscheint
+nur als Zeile auf dem `stderr` des Kindprozesses, und der Test scheitert nicht
+daran.
+
+Das Home-Verzeichnis ist das, welches das Betriebssystem für das Konto
+verzeichnet, nicht `HOME` oder `USERPROFILE`. Lesevorgänge, Dry-Runs und
+Vorschauen funktionieren weiterhin; die eine Statusprüfung, die eine
+abgeschlossene Deinstallation im Protokoll vermerkt, ist ein Schreibvorgang und
+wird daher still verweigert und gemeldet. Ein Test, der absichtlich eine echte
+Installation ausführen muss, startet Apothem ohne `PYTEST_CURRENT_TEST` und
+`PYTEST_VERSION` in der Umgebung des Kindprozesses.
+
+Die Verweigerung deckt keine Ordner ab, die `CODEX_HOME`, `CLAUDE_CONFIG_DIR`
+oder `XDG_CONFIG_HOME` von ihren Standardnamen wegverschieben, außerhalb oder
+innerhalb des Home-Verzeichnisses (`XDG_CONFIG_HOME=~/xdg` legt den Ordner von
+OpenCode nach `~/xdg/opencode`), nicht den Hook-Zustandsordner und keine
+Programme, die nicht in Python geschrieben sind, etwa die Shell-Installer. Die
+Prüfung läuft vor dem Schreibvorgang und anhand des Pfads, daher wird ein Ordner,
+der zwischen beiden gegen einen Link ausgetauscht wird, nicht erkannt. Wenn das
+System keinen Eintrag für das Home-Verzeichnis des Kontos hat (ein
+Container-Benutzer ohne `passwd`-Eintrag), ist das Home-Verzeichnis des Kontos
+überhaupt nicht geschützt. Ein Checkout, der in einem geschützten Ordner liegt
+(etwa unter `~/.claude`), bekommt seine Apothem-Schreibvorgänge während der Tests
+verweigert. Die Verweigerung wirkt außerhalb von pytest nicht, also wenn die
+Umgebung weder ein nicht leeres `PYTEST_CURRENT_TEST` noch die Version des
+installierten pytest in `PYTEST_VERSION` enthält; deshalb gilt die obige Regel
+weiterhin. `tests/README.md` listet jede Lücke auf.
 
 ### Abdeckung pro Paket
 
@@ -690,7 +874,7 @@ an, wenn die Abdeckung steigt; senken Sie niemals eine ab, um eine Änderung
 bestehen zu lassen. Zur lokalen Prüfung:
 
 ```bash
-python -m pytest --cov=src/apothem --cov-report=json:coverage.json
+python -m pytest --cov=src/apothem --cov-fail-under=0 --cov-report=json:coverage.json
 python scripts/dev/collect_metrics.py --coverage-json coverage.json --check-floors \
   --skip-hooks --skip-coldstart --harness zed
 ```
@@ -698,7 +882,9 @@ python scripts/dev/collect_metrics.py --coverage-json coverage.json --check-floo
 ### Das Metrik-Artefakt
 
 Der CI-Job `metrics` führt `scripts/dev/collect_metrics.py` bei jedem Push und
-Pull Request aus und lädt `metrics.json` (`schema_version: 1`) hoch. Für
+Pull Request aus, sobald beide Coverage-Shards bestanden haben, verwendet die
+von ihnen gemessenen Abdeckungsdaten und lädt `metrics.json`
+(`schema_version: 1`) hoch. Für
 jeden Wert, der `null` ist, steht der Grund unter `nulls`.
 
 | Schlüssel | Was er misst |
@@ -716,13 +902,25 @@ Subagenten), werden nicht gezählt. Der Regeltext wird außerdem unter
 
 ```text
 antigravity     ~/.gemini/{GEMINI,AGENTS}.md, ~/.gemini/config/{GEMINI,AGENTS}.md,
-                ~/.gemini/config/rules/*.md with trigger: always_on, project
-                GEMINI.md and AGENTS.md. The plugin rules/ folder is not a
-                documented launch surface.
+                ~/.gemini/config/rules/*.md with trigger: always_on, and in the
+                project GEMINI.md, AGENTS.md, .agents/{GEMINI,AGENTS}.md and
+                .agents/rules/*.md with trigger: always_on, plus, for each
+                plugin in ~/.gemini/config/plugins/ with a plugin.json not
+                marked disabled: true, its rules/AGENTS.md (else
+                rules/GEMINI.md) and its rules/*.md with trigger: always_on.
+                A rule file counts only when its first line opens the
+                frontmatter. Each file counted up to 24,000 bytes. @ includes
+                are not expanded, the user's own plugin on/off choice is not
+                read, and the 20,000-token budget across always-on rules is
+                not modeled.
 claude-code     ~/.claude/CLAUDE.md and ~/.claude/rules/**/*.md without paths:
-                frontmatter, plus the project equivalents.
-codebuddy       .codebuddy/rules/**/*.md (project and home) unless
-                alwaysApply: false, plus CODEBUDDY.md.
+                frontmatter, plus the project equivalents and CLAUDE.local.md;
+                the project AGENTS.md and .claude/AGENTS.md only when the
+                project has no CLAUDE.md, .claude/CLAUDE.md or CLAUDE.local.md.
+codebuddy       .codebuddy/rules/**/*.md (project and home) unless enabled:
+                false or alwaysApply: false, ~/.codebuddy/CODEBUDDY.md, the
+                project CODEBUDDY.local.md, and the first of CODEBUDDY.md and
+                .codebuddy/CODEBUDDY.md, else AGENTS.md.
 codex           The first non-empty of ~/.codex/AGENTS.override.md and
                 ~/.codex/AGENTS.md, plus the first of AGENTS.override.md,
                 AGENTS.md and the project_doc_fallback_filenames names that
@@ -731,16 +929,26 @@ codex           The first non-empty of ~/.codex/AGENTS.override.md and
 cursor          .cursor/rules/**/*.mdc with alwaysApply: true, and AGENTS.md.
 gemini-cli      ~/.gemini/GEMINI.md and the project GEMINI.md.
 github-copilot  .github/copilot-instructions.md and the project AGENTS.md.
-hermes          ~/.hermes/SOUL.md, plus the first of these kinds in the project
-                with a non-empty file (Hermes loads one): .hermes.md or
-                HERMES.md (the first of the two that exists is the only
-                candidate), AGENTS.override.md or AGENTS.md, CLAUDE.md, then
-                .cursorrules with .cursor/rules/*.mdc. The support tree and
-                apothem/rules/ are not launch surfaces.
-kimi-code       ~/.kimi-code/AGENTS.md, project AGENTS.md and .kimi-code/AGENTS.md.
+hermes          ~/.hermes/SOUL.md when it holds text, plus the first of these
+                kinds in the project with a non-empty file (Hermes loads one):
+                .hermes.md or HERMES.md (the first of the two that exists is
+                the only candidate), AGENTS.override.md or AGENTS.md,
+                CLAUDE.md, then .cursorrules with .cursor/rules/*.mdc. The
+                support tree and apothem/rules/ are not launch surfaces.
+kimi-code       ~/.kimi-code/AGENTS.md, the first non-empty of
+                ~/.agents/AGENTS.md and ~/.agents/agents.md, and the project
+                .kimi-code/AGENTS.md and AGENTS.md; blank files load nothing.
+                Kimi also reads AGENTS.md in each folder from the git root
+                down; the scratch project has no .git, so only its root is
+                read.
 kiro            .kiro/steering/**/*.md with inclusion: always or no inclusion
                 key, and the project AGENTS.md.
-open-claw       Workspace bootstrap files ~/.openclaw/workspace/*.md.
+open-claw       The non-blank bootstrap files in ~/.openclaw/workspace/, in
+                order: AGENTS.md, SOUL.md, IDENTITY.md, USER.md, BOOTSTRAP.md,
+                MEMORY.md; each up to 20,000 characters (USER.md 4,000),
+                60,000 in all. Approximate: OpenClaw's own trimming,
+                head-and-tail truncation, missing-file markers and per-session
+                filtering are not modeled.
 opencode        ~/.config/opencode/AGENTS.md, the project AGENTS.md, and every
                 file the instructions globs in opencode.json match.
 qwen-code       The context files named by context.fileName in

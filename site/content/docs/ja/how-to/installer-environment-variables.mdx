@@ -2,7 +2,7 @@
 title: "インストーラーの環境変数"
 description: "環境変数でスクリプトインストーラー（インストール先、ソース、ハーネス、プロファイル、検証）を制御します。"
 machineTranslated: true
-sourceHash: "3210277a66924394"
+sourceHash: "50b79838c9651500"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -18,12 +18,12 @@ sourceHash: "3210277a66924394"
 
 | 変数 | 制御する対象 | デフォルト |
 | --- | --- | --- |
-| `APOTHEM_HOME` | クローンしたソースツリーのインストール先 | `$HOME/.apothem` |
-| `APOTHEM_REPO` | クローンする Git リモート | `https://github.com/ahmed-g-gad/apothem` |
+| `APOTHEM_HOME` | ソースツリーのインストール先。あなただけが書き込めるフォルダーでなければならず（後述）、他のユーザーがそこやその親フォルダーに書き込める場合、インストーラーは警告します | `$HOME/.apothem` |
+| `APOTHEM_REPO` | クローンする Git リモート。`-` で始まる値は拒否されます | `https://github.com/ahmed-g-gad/apothem` |
 | `APOTHEM_REF` | チェックアウトする Git ref。未設定の場合は、最新の署名付き `vMAJOR.MINOR.PATCH` タグを解決します。タグの値を指定するとそのタグに固定され、`main` は移動するブランチを選びます。`main` のような、タグではない ref は、`APOTHEM_ALLOW_UNVERIFIED=1` が設定されていない限り中止します。 | 未設定（最新の署名付きタグ） |
-| `APOTHEM_ALLOW_UNVERIFIED` | `1` に設定すると、タグ署名の検証失敗を、致命的な中断から警告へ格下げします | `0`（検証する、フェイルクローズ） |
-| `APOTHEM_VERIFY` | `signature` は、リリースタグの GPG 署名を検証します。`checksum` は、リリースのプラットフォーム用アーカイブを、その SHA-256 をリリースの `SHA256SUMS` と照合したうえでインストールします（完全性を確認するものであり、誰が公開したかの証明ではありません） | `signature` |
-| `APOTHEM_RELEASE_BASE` | チェックサムモードのダウンロード基点 | `<APOTHEM_REPO>/releases/download` |
+| `APOTHEM_ALLOW_UNVERIFIED` | `1` に設定すると、クローン経路でのタグチェックの失敗を、致命的な中断から警告へ格下げし、`APOTHEM_VERIFY=checksum` を許可します。`release` 経路は決して格下げされず、署名付きタグがそのリリース用に名付けられたものであることのチェックは、どの設定でもスキップされません。ただし、この設定は署名のないタグや別の鍵で署名されたタグを通してしまうため、そのチェックが保護するのはメンテナー鍵の署名を持つタグだけです | `0`（検証する、フェイルクローズ） |
+| `APOTHEM_VERIFY` | `auto` は、`cosign` が `PATH` 上にあり、`APOTHEM_HOME` が git クローンでない場合は `release` を、それ以外の場合は `signature` を使います。`release` は、タグがメンテナー鍵の署名を持ち、リリースワークフローがタグのコミット上の実行で `SHA256SUMS` に署名したことを cosign が確認し、アーカイブの SHA-256 がそれと一致した後で、プラットフォーム用アーカイブをインストールします。`signature` は、リリースタグの GPG 署名を、固定されたメンテナー鍵と照合します。`checksum` は、SHA-256 チェックだけでアーカイブをインストールし、`APOTHEM_ALLOW_UNVERIFIED=1` を必要とします。チェックサムモードはリリースを検証しません。SHA256SUMS はアーカイブと同じリリースから取得されるため、一致してもダウンロードが破損していないことしか示せません。リリースのファイルを変更できる人は、その両方を変更できます。 | `auto` |
+| `APOTHEM_RELEASE_BASE` | `release` モードと `checksum` モードのダウンロード基点 | `<APOTHEM_REPO>/releases/download` |
 | `APOTHEM_SOURCE` | クローンの代わりに使う、明示的なローカルソースツリー | 未設定（クローン） |
 | `APOTHEM_HARNESS` | インストールするユーザースコープのハーネス（`antigravity`、`claude-code`、`codex`、`hermes`、`open-claw`、`opencode`、`qwen-code`）。インストーラーは `--project` を渡さないため、プロジェクトスコープのハーネスは `project.required` で失敗します。それらは後から `apothem install --harness NAME --project PATH` でインストールしてください。 | `claude-code` |
 | `APOTHEM_PROFILE` | 共有プロファイル YAML へのパス | `$HOME/.config/apothem/profile.yaml` |
@@ -34,27 +34,109 @@ sourceHash: "3210277a66924394"
 
 `APOTHEM_SOURCE` はクローンよりも優先されます。`src/apothem` を含むチェックアウトに設定されている場合、インストーラーはそれを直接使用し、`APOTHEM_REPO` / `APOTHEM_REF` には決して触れず、タグの解決と署名の検証をスキップします（検証対象として取得されるものが何もないためです）。
 
-`APOTHEM_HOME` が git クローンではない既存のディレクトリを指している場合、インストーラーはそのディレクトリの削除を拒否します。そのディレクトリを別の場所へ移動するか、`APOTHEM_HOME` を別の場所に向けるか、`--yes`（Windows では `-Yes`）を渡して置き換えを承認してください。
-古い空のディレクトリは、このフラグなしで置き換えられます。
+ローカルツリーを使う方法は、`APOTHEM_SOURCE` と、チェックアウト自身のインストーラースクリプトをそのパスで（どのフォルダーからでも）実行することの 2 つだけです。
+パイプで渡すワンライナー（`curl
+... | sh`、`irm ... | iex`）は決してローカルツリーを使いません。現在のフォルダーとその親フォルダーを無視し、リリースを取得して検証します。
+インストーラー、アップデーター、アンインストーラー、`apothem` シム、npm ランチャー、フック、コンフォーミティゲートのバリデータープロセスは、現在のフォルダーを Python のモジュール検索パスから外します。
+あなた自身が入力する `python -m apothem` コマンドはそうではありません。`-m` はまず現在のフォルダーからモジュールを読み込みます。
+
+あなた自身の `PYTHONPATH` にある空のエントリと相対パスのエントリは、どのランチャー（インストーラー、アップデーター、アンインストーラー、POSIX と Windows の `apothem` シム、npm ランチャー）もエンジンに渡しません。
+残すエントリはフルパスでなければなりません。Windows では `C:\lib` のようなドライブパスかネットワークパス、それ以外では `/` で始まるパスです。
+ルート相対の `\lib` やドライブ相対の `C:lib` は除外されます。
+sh スクリプトは、実行する Python にどちらの形式を読むかを問い合わせ、それらが書き込む `apothem` シムはその形式を保持します。
+Windows の Python（Git Bash 上で通常使われるもの）は、エンジンのパスを `;` で連結した Windows 形式で受け取り、あなたの `PYTHONPATH` のうちドライブパスとネットワークパスだけを保持します。
+POSIX の Python（Cygwin や MSYS2 自身の `python3` を含む）は、`:` で連結した POSIX パスを受け取り、`/` で始まるエントリだけを保持します。
+インストーラーの `git` コマンドのうちクローンを対象としないものは、現在のフォルダーにあるリポジトリを読みません。
+
+それらの `git` コマンドは、インストーラーがその実行のために作成する空の一時フォルダーから実行されるため、git の環境変数（`GIT_SSH`、`GIT_ASKPASS` など）にある相対パスは、以前と同じ場所を指さなくなります。
+それらの変数には絶対パスを使ってください。
+フォルダーやファイル（git バンドルなど）を指す相対パスの `APOTHEM_REPO` は、引き続き開始したフォルダーから解決されます。
+
+インストーラーは git の参照先を変える git の環境変数（`GIT_DIR`、`GIT_WORK_TREE`、`GIT_INDEX_FILE` など）を無視し、`APOTHEM_REPO` が `-` で始まる場合は停止するため、値が git のオプションとして読まれることはありません。
+
+インストーラーとアップデーターは、`GIT_CONFIG`、`GIT_CONFIG_GLOBAL`、`GIT_CONFIG_SYSTEM` もクリアするため、環境から引き継いだ値が git を別の設定ファイルに向けることはできません。また `GIT_ATTR_SOURCE` もクリアします。これは、チェックが読むワークツリーやインデックスとは別のツリーから git に属性を読ませるものです（同じ理由で、あなた自身の設定にある `attr.tree` はクローン上で実行されるすべての git コマンドで空にされ、`core.attributesFile` も同様です。そのため git は、それが指す属性ファイルも `~/.config/git/attributes` も読みません。それらのマクロは、チェックが見ないフィルターを指定し得るためです）。
+それらのいずれかを設定しても、インストーラーはそれを無視します。
+PowerShell スクリプトは実行終了時にそれを元に戻すため、`irm ... | iex` の実行はセッションを元のままにします。
+`GIT_CONFIG_NOSYSTEM` は設定したとおりに残ります。これは git がシステム設定を読むのを止めるだけです。
+git は引き続き、あなた自身のグローバル設定（`~/.gitconfig` または `$XDG_CONFIG_HOME/git/config`）とシステム設定を、いつもの場所から読み込みます。また `git`、`gpg`、`cosign` は、あなたの `PATH` が見つけるプログラムです。
+インストーラーはそれらを見つかったとおりに信頼するため、その設定も信頼します。
+
+インストーラーとアップデーターは、実行全体に対して 4 つの git 変数も設定します。
+`GIT_NO_REPLACE_OBJECTS=1` は、git が replace ref を通じてオブジェクトを別のものに差し替えるのを止めます。
+`GIT_NO_LAZY_FETCH=1` は、git がクローンを読む間に、欠けているオブジェクトをリモートから自動的に取得するのを止めます。
+`GIT_ALLOW_PROTOCOL=file:git:http:https:ssh` は、実行中のすべての git コマンドでこの 5 つのトランスポートだけを許可するため、環境にある値がこのリストを広げることはできず、アドレスが `ext::` のようなヘルパープログラムを git に実行させることもできません。
+`APOTHEM_REPO` はそのいずれかを使わなければなりません。ローカルパスは `file` とみなされます。
+`GIT_ATTR_NOSYSTEM=1` は、git がシステムの属性ファイルを読むのを止めます。そのマクロはフィルターを指定し得るためです。
+PowerShell スクリプトは、実行終了時に 4 つすべてを元に戻します。
+また、コンソールのコードページにかかわらず、実行中は git の出力を UTF-8 として読み、実行終了時にコンソールの設定を元に戻します。
+
+`APOTHEM_HOME` は、あなただけが書き込めるフォルダーでなければなりません。
+そこに書き込める人は誰でも、`apothem` コマンドが実行するコードを変更できます。
+Windows では、`C:\apothem` のようにドライブのルートに作られたフォルダーは、Windows のデフォルトのアクセス許可の下で、そのコンピューターにサインインするすべてのユーザーが変更できます。
+デフォルトと同じく、あなた自身のユーザーフォルダーの下に置いてください。
+インストールスクリプトと更新スクリプトは、ドライランも含め、他のユーザーが `APOTHEM_HOME` またはそれを含むフォルダーに書き込める場合、またはそのいずれかを所有している場合、停止せずに警告します。ローカルチェックアウトからのインストールと、`APOTHEM_SOURCE` を設定した更新は、このチェックをスキップします。
+Windows では、警告は `install.ps1` と `update.ps1` から出ます。`install.sh` と `update.sh` は Git Bash、MSYS2、Cygwin の下ではチェックしません。
+[トラブルシューティング](/docs/install/troubleshooting#the-installer-warns-other-users-can-change-apothem_home)で修正方法を説明しています。
+
+インストール、更新、アンインストールの各スクリプトの実行は、実行全体を通じてロック `<APOTHEM_HOME>.lock` を保持し、同じ `APOTHEM_HOME` での 2 つ目の実行は停止します。
+`APOTHEM_HOME` がシンボリックリンク（Windows ではジャンクションも）の場合、POSIX スクリプトと PowerShell スクリプトはどちらも、リンクの指す先のフォルダーの隣でロックを取得します。
+強制終了や電源断によって `APOTHEM_HOME` の隣にフォルダーが残ることがあり、次の取得型インストールはそれらを示し、何も変更する前に停止します。[トラブルシューティング](/docs/install/troubleshooting)を参照してください。
+
+`APOTHEM_HOME` が既存のディレクトリを指している場合、何が起きるかはその中身によって決まります。
+
+- git クローンは、`auto` モードまたは `signature` モードで fetch されます。まず新しいタグがチェックされ、その後で初めてクローンがチェックアウトされます。チェックに失敗した場合、クローンは変更されず、追跡対象ファイルへの変更は失われる代わりに更新を停止させ、それらをコミットまたは stash するよう求めるメッセージが表示されます。
+  `main` のようなリリース以外の ref では、クローンは origin にあるそのブランチのコピーに従います。
+  `.git` ファイル（リンクされたワークツリー）もクローンとみなされます。
+  `release` と `checksum` は `--yes` なしではクローンを拒否し、`--yes` があっても、クローンがローカルの作業（変更、stash、プッシュされていないコミット、ソースツリー内の追跡されていないファイル）を保持している間は、ドライランでも拒否します。
+  `--yes` によってクローンが置き換えられる場合、クローン自身のツリーは削除されるのではなく、新しいフォルダー `<APOTHEM_HOME>.before-apothem-<time>` に元の名前のまま移されます。
+  fetch の前に、その場での更新は次の場合に停止します。ファイルが assume-unchanged または skip-worktree としてマークされている場合、クローンのワークツリーが `APOTHEM_HOME` ではない場合、クローンがサブモジュールや git が追跡していない git リポジトリを保持している場合（`backups` のようなエンジン自身のデータフォルダーの外）、`.git/info/attributes` がフィルターまたは diff ドライバーを指定している場合、クローンが別のリポジトリからオブジェクトを借用している場合、ワークツリー内の `.gitattributes` ファイルが追跡されていない、コミット済みのコピーと異なる、そのようなドライバーを指定している、または git が読めないコミット済みのコピーを持つ場合、`src` 配下に追跡されていないファイルがある場合、あるいはクローンの `.git/config` または `.git/config.worktree` が、完全なクローンのために `git clone` と `git init` がそこに書き込む設定、ブランチ設定（ブランチの `remote` と `pushremote` は `origin` でなければなりません）、`user.name`、`user.email`、`maintenance.auto`、`maintenance.strategy`、`pull.rebase`、`pull.ff` 以外の設定を保持している場合です
+  （[トラブルシューティング](/docs/install/troubleshooting#the-installer-stops-the-existing-clone-is-set-up-in-a-way-the-update-would-trust)にそれらを一覧しています）。更新中にクローンの git フックが実行されることはありません。
+  チェックアウトの後、更新はエンジンがクローンから実行される前に、`src` 配下の Python キャッシュフォルダー（`__pycache__`）を削除します。
+  Apothem のソースのクローンだけがクローンとみなされます。それ以外のもののクローンは、Apothem のインストールを含まないフォルダーとして扱われます。
+- 以前のリリースアーカイブによるインストールは、cosign がある状態の `auto` モード（または `release`、`checksum`）での再実行で更新されます。
+- Apothem のインストールを含まないフォルダーは拒否されます。それを別の場所へ移動するか、`APOTHEM_HOME` を別の場所に向けるか、`--yes`（Windows では `-Yes`）を渡してください。
+  `--yes` を付けると、インストーラーはフォルダー全体をそのまま新しいフォルダー `<APOTHEM_HOME>.before-apothem-<time>` に移し、新規にインストールします。
+- 古い空のディレクトリ、またはエンジン自身のデータ（`backups`、`state`、`plans`、`memory`、`contexts`、`learning`、`providers`）だけを含むディレクトリは、このフラグなしで更新され、そのデータは保持されます。
+- シンボリックリンク（Windows ではシンボリックリンクまたはジャンクション）は、インストールがそれを置き換えることになる場合は常に拒否されます。`APOTHEM_HOME` をリンクの指す先のフォルダーに向けてください。リンクの先にある既存の git クローンは、その場で更新されます。
+- Linux と macOS では、引き継ぐファイルやフォルダーの名前に空白やその他の特殊文字が含まれていると、インストールは停止します。先にそれを `APOTHEM_HOME` の外へ移してください。
+
+置き換えられる Apothem インストールについては、新しいソースは `APOTHEM_HOME` の隣のステージングフォルダーでチェックされ、すべてのチェックに合格した後で初めて入れ替えられます。
+エンジンのバックアップ、インストール台帳、プラン、メモリーを含め、古いインストールのうちソースツリーの一部ではないものはすべて保持されます。
+いずれかのステップが失敗した場合や、Ctrl+C または終了シグナルで実行が停止した場合、以前のインストールは変更されないまま元に戻されます。強制終了や電源断によって、次の取得型インストールが報告するフォルダーが `APOTHEM_HOME` の隣に残ることがあります。
+`--dry-run`（Windows では `-DryRun`）は一時フォルダーでチェックを行い、`APOTHEM_HOME` を変更しません。
+実際の実行と同じチェックを行いますが、既存のクローンへの fetch は行わないため、実際の更新が fetch の後に行う、追跡対象ファイルへの変更のチェックは行いません。
 
 ## 信頼モデル
 
-`APOTHEM_REF` が設定されていない場合、インストーラーは最新の署名付きリリースタグを解決し、いずれかの構成をマテリアライズする前に `git verify-tag` でその署名を検証します。署名されていないタグや改ざんされたタグは、インストールを中断させます。
+`APOTHEM_REF` が設定されていない場合、インストーラーは最新のリリースを解決し、いずれかの構成をマテリアライズする前にそれをチェックします。
+リリースタグは常に `git verify-tag` で検証され、署名は SECURITY.md で公開されているメンテナー鍵によるものでなければなりません。署名されていないタグ、改ざんされたタグ、他の鍵で署名されたタグはインストールを中断させ、そのリリース用に名付けられたものではない署名付きタグオブジェクト（別のリリースの署名付きタグをこの名前に付け替えたもの）も同様です。
+`cosign` が `PATH` 上にある場合、インストーラーは続いて、リリースワークフローが `SHA256SUMS` に署名したこと、そしてその `--certificate-github-workflow-sha` チェックを通じて、検証した証明書がタグのコミット上の実行に発行されたものであることを cosign が確認し、アーカイブの SHA-256 がそれと一致した時点で、リリースアーカイブをインストールします。
+この経路には `gpg` と cosign が必要です。
+既存の git クローンの場合、インストーラーはクローンをチェックアウトする前にタグを fetch してチェックするため、チェックに失敗してもクローンは元のままです。
 メンテナーの公開鍵がローカルのキーリングにない署名付きタグの場合は、代わりに鍵のインポート手順を案内して中断します — 鍵をインポートし、そのフィンガープリントを [SECURITY.md](https://github.com/ahmed-g-gad/apothem/blob/main/SECURITY.md) で公開されている値と照合してください。
 既知のリリースを固定するには `APOTHEM_REF=<tag>` を使い、タグは[リリースページ](https://github.com/ahmed-g-gad/apothem/releases)から取得します。固定したタグも同じ方法で検証されます。
 移動するブランチを選ぶには、`APOTHEM_REF=main` に加えて `APOTHEM_ALLOW_UNVERIFIED=1` を指定します。このインストールは検証されません。`main` だけを指定すると、ブランチは署名付きタグではないため中止します。
-検証の失敗を警告付きで通過させるには、`APOTHEM_ALLOW_UNVERIFIED=1` だけを設定します（エアギャップ環境、ローカル、または署名付きリリース以前の用途）。
+タグチェックの失敗を警告付きで通過させるには、`APOTHEM_ALLOW_UNVERIFIED=1` を設定します（エアギャップ環境、ローカル、または署名付きリリース以前の用途）。
+これはクローン経路にのみ適用され、cosign 経路には決して適用されないため、cosign のあるホストでは、これと一緒に `APOTHEM_VERIFY=signature` を設定してください。
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh
 ```
 
-```bash title="Check the archive digest when the signing key is not imported"
-APOTHEM_VERIFY=checksum bash install.sh
+```bash title="Require the tag check and the cosign check"
+APOTHEM_VERIFY=release bash install.sh
 ```
 
-```bash title="Proceed without verification (interim / air-gapped)"
-APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
+チェックサムモードはリリースを検証しません。
+SHA256SUMS はアーカイブと同じリリースから取得されるため、一致してもダウンロードが破損していないことしか示せません。リリースのファイルを変更できる人は、その両方を変更できます。
+インストーラーは、`APOTHEM_ALLOW_UNVERIFIED=1` も設定されている場合にのみこれを実行します。
+
+```bash title="Check the archive digest alone (no cosign, no gpg; does not verify the release)"
+APOTHEM_VERIFY=checksum APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
+```
+
+```bash title="Proceed past a failed tag check (interim / air-gapped)"
+APOTHEM_VERIFY=signature APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 ```
 
 ## 手順（POSIX bash）
@@ -68,7 +150,7 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 2. インストール先を固定し、移動する `main` ブランチを選択します。ブランチは署名付きタグではないため、インストーラーには `APOTHEM_ALLOW_UNVERIFIED=1` も必要です。
 
    ```bash
-   APOTHEM_REF=main APOTHEM_ALLOW_UNVERIFIED=1 APOTHEM_HOME=/opt/apothem bash install.sh
+   APOTHEM_REF=main APOTHEM_ALLOW_UNVERIFIED=1 APOTHEM_HOME="$HOME/tools/apothem" bash install.sh
    ```
 
 3. ローカルチェックアウトとカスタムプロファイルを使用し、検証をスキップします。
@@ -92,7 +174,7 @@ pwsh -NoProfile -File install.ps1
 ```powershell
 $env:APOTHEM_ALLOW_UNVERIFIED = '1'
 $env:APOTHEM_REF = 'main'
-$env:APOTHEM_HOME = 'C:\opt\apothem'
+$env:APOTHEM_HOME = "$HOME\tools\apothem"
 pwsh -NoProfile -File install.ps1
 ```
 
@@ -120,7 +202,9 @@ apothem verify --harness cursor --project /path/to/project
 ```
 
 プロファイルがまだ存在しなかった場合、インストーラーはサンプルからプロファイルを作成し、同じ実行の中でそのままインストールと検証に進みます。
-サンプルの識別情報フィールドはプレースホルダーであるため、インストールは注意書きを出力します。`$APOTHEM_PROFILE` を編集してから、`apothem update --harness <name>` を実行してあなたの識別情報を適用してください。
+サンプルの識別情報フィールドはプレースホルダーであるため、インストールは注意書きを出力します。
+サンプルにはサンプルのルール、2 つのサンプル MCP サーバー、ハーネスごとのオーバーライドも含まれており、OpenCode のようにプロファイルから MCP サーバーを受け取るハーネスには、両方のサーバーが入ります。
+`$APOTHEM_PROFILE` を編集して不要なものを削除してから、`apothem update --harness <name>` を実行して適用してください。
 プロファイルがない状態での `--dry-run` は、サンプルをその代わりとして用いてプレビューし、何も書き込みません。
 
 ## 関連

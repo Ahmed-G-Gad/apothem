@@ -2,7 +2,7 @@
 title: "Claude Code"
 description: "محوّل إطار عمل Apothem لـ Claude Code (إتاحة عامة)."
 machineTranslated: true
-sourceHash: "42277b35237235a2"
+sourceHash: "4e5a2944b6820b60"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -17,7 +17,7 @@ sourceHash: "42277b35237235a2"
 apothem install --harness claude-code
 ```
 
-يثبّت محوّل <bdi>`claude-code`</bdi> متن <bdi>Apothem</bdi> المشترك في شجرة الاكتشاف الأصلية لـ <bdi>Claude Code</bdi>. تُثبَّت عوامل <bdi>Markdown</bdi>، والقواعد، والمهارات، وأنماط الإخراج، والإعدادات في مواقعها الأصلية؛ وتُحوَّل مطالبات الأوامر إلى مهارات، لتبقى سير العمل القابلة لإعادة الاستخدام مرئية عبر سطح المهارات الحالي في <bdi>Claude Code</bdi>. يُنسَخ مُصيِّر شريط الحالة إلى <bdi>`~/.claude/statuslines/`</bdi> لكنه لا يُوصَل: يقرأ <bdi>Claude Code</bdi> شريط حالته من الإعداد <bdi>`statusLine`</bdi>، الذي يتركه المحوّل غير مضبوط. ولتفعيله، أضف إلى <bdi>`settings.json`</bdi> مدخلَ <bdi>`statusLine`</bdi> من النوع <bdi>`"type": "command"`</bdi> يُشغِّل <bdi>`~/.claude/statuslines/render.py`</bdi>. تعمل القيمة <bdi>`commandWindows`</bdi> في المقتطف على <bdi>Windows</bdi>، وتذكر المُفسِّر دون علامات اقتباس. وحين يحتوي مسار المُفسِّر على مسافة، يكتب التثبيت في تلك القيمة صيغة <bdi>Windows 8.3</bdi> القصيرة له إن توفّرت على وحدة التخزين. وتحتفظ مدخلات الخطّافات في <bdi>`settings.json`</bdi> بالمسار الكامل.
+يثبّت محوّل <bdi>`claude-code`</bdi> متن <bdi>Apothem</bdi> المشترك في شجرة الاكتشاف الأصلية لـ <bdi>Claude Code</bdi>. تُثبَّت عوامل <bdi>Markdown</bdi>، والقواعد، والمهارات، وأنماط الإخراج، والإعدادات في مواقعها الأصلية؛ وتُحوَّل مطالبات الأوامر إلى مهارات، لتبقى سير العمل القابلة لإعادة الاستخدام مرئية عبر سطح المهارات الحالي في <bdi>Claude Code</bdi>. يُنسَخ مُصيِّر شريط الحالة إلى <bdi>`~/.claude/statuslines/`</bdi> لكنه لا يُوصَل: يقرأ <bdi>Claude Code</bdi> شريط حالته من الإعداد <bdi>`statusLine`</bdi>، الذي يتركه المحوّل غير مضبوط. ولتفعيله، أضف إلى <bdi>`settings.json`</bdi> مدخلَ <bdi>`statusLine`</bdi> من النوع <bdi>`"type": "command"`</bdi> يُشغِّل <bdi>`~/.claude/statuslines/render.py`</bdi>. تُشغِّل أوامر المقتطف <bdi>Python</bdi> مع <bdi>`-E -s`</bdi>، كما تفعل الخطّافات. ولا يغيّر أي تثبيت أو تحديث <bdi>`statusLine`</bdi>، لذا إن كنت قد نسخت أمر مقتطف سابق، لم يكن يحوي <bdi>`-E -s`</bdi>، فأضِف <bdi>`-E -s`</bdi> بعد المُفسِّر بنفسك. وتعمل قيمته <bdi>`commandWindows`</bdi> على <bdi>Windows</bdi>، وتذكر المُفسِّر دون علامات اقتباس. وحين يحتوي مسار المُفسِّر على مسافة، يكتب التثبيت في تلك القيمة صيغة <bdi>Windows 8.3</bdi> القصيرة له إن توفّرت على وحدة التخزين. وتحتفظ مدخلات الخطّافات في <bdi>`settings.json`</bdi> بالمسار الكامل.
 
 **الملفات المكتوبة:** <bdi>`settings.json`</bdi>، وكتلة <bdi>Apothem</bdi> في
 <bdi>`CLAUDE.md`</bdi>، و<bdi>`agents/`</bdi>، و<bdi>`rules/`</bdi>،
@@ -25,11 +25,15 @@ apothem install --harness claude-code
 وشجرة الدعم الفرعية <bdi>`.apothem/support/`</bdi>
 (<bdi>`.apothem/support/hooks/`</bdi>، و<bdi>`.apothem/support/conformity/`</bdi>،
 و<bdi>`.apothem/support/schemas/`</bdi>، و<bdi>`.apothem/support/templates/`</bdi>)
-تحت <bdi>`~/.claude/`</bdi>. تُحوَّل ملفات الأوامر إلى أدلّة مهارات فرعية. يعمل موزّع
+تحت <bdi>`~/.claude/`</bdi>. وينشئ التثبيت أيضًا مجلّد بيانات <bdi>Apothem</bdi>، وهو <bdi>`~/.claude/.apothem/`</bdi>
+افتراضيًا، وفيه <bdi>`contexts/`</bdi>، و<bdi>`learning/`</bdi>، و<bdi>`memory/`</bdi>، و<bdi>`plans/`</bdi>.
+تُحوَّل ملفات الأوامر إلى أدلّة مهارات فرعية. يعمل موزّع
 الخطّافات وبوابة المطابقة من نسختيهما المُجسَّدتين — تستدعي مدخلات الخطّافات في
 <bdi>`settings.json`</bdi> الملف <bdi>`~/.claude/.apothem/support/hooks/dispatch.py`</bdi>
 والملف <bdi>`~/.claude/.apothem/support/conformity/gate.py`</bdi> بمسارهما المطلق، لذا
-لا حاجة إلى حزمة <bdi>`apothem`</bdi> قابلة للاستيراد على المضيف.
+لا حاجة إلى حزمة <bdi>`apothem`</bdi> قابلة للاستيراد على المضيف. ويبدأ كل مُدخَل <bdi>Python</bdi> مع <bdi>`-E -s`</bdi>،
+فلا يصل <bdi>`PYTHONPATH`</bdi> ولا متغيّرات <bdi>`PYTHON*`</bdi> الأخرى ولا حِزَم <bdi>site-packages</bdi> الخاصّة بمستخدمك
+إلى أي خطّاف أبدًا.
 
 يبقى <bdi>`~/.claude/CLAUDE.md`</bdi> ملكًا للمُشغِّل. يكتب المحوّل فيه كتلة
 <bdi>Apothem</bdi> واحدة محدَّدة بعلامات حارسة، تحمل إسقاط الملف التعريفي (الهوية،
@@ -58,7 +62,26 @@ apothem install --harness claude-code
 استبدالها؛ وتُحفَظ المدخلات غير ذات الصلة التي ألّفها المُشغِّل. يُدمَج
 <bdi>`settings.json`</bdi> بحيث تبقى المفاتيح التي ألّفها المُشغِّل قابلة للاستعادة.
 
-لا تبقى الملفات التي كتبها المشغّل إلا خارج المجلّدات أدناه. يُزيل كل تثبيت وتحديث كل مجلّد من هذه المجلّدات تحت <bdi>`~/.claude/`</bdi> إن كان موجودًا، سواء كتبه <bdi>Apothem</bdi> أم لا: <bdi>`src/`</bdi>، و<bdi>`conformity/`</bdi>، و<bdi>`schemas/`</bdi>، و<bdi>`hooks/`</bdi>، و<bdi>`config/`</bdi>، و<bdi>`scripts/`</bdi>، و<bdi>`tools/`</bdi>، و<bdi>`lib/`</bdi>، و<bdi>`templates/`</bdi>، و<bdi>`docs/`</bdi>، و<bdi>`tests/`</bdi>، و<bdi>`packaging/`</bdi>، و<bdi>`mcp/`</bdi>، و<bdi>`examples/`</bdi>، و<bdi>`assets/`</bdi>، و<bdi>`site/`</bdi>، و<bdi>`public/`</bdi>، و<bdi>`commands/`</bdi>. ويزيل أيضًا <bdi>`statuslines/__init__.py`</bdi> وملفات <bdi>`AGENTS.md`</bdi> في <bdi>`agents/`</bdi> و<bdi>`rules/`</bdi> و<bdi>`skills/`</bdi> و<bdi>`statuslines/`</bdi> و<bdi>`output-styles/`</bdi>. يُزال المجلّد المحذوف كاملًا، بما في ذلك الملفات التي وضعتها فيه. وتُزال أوامر الشرطة المائلة التي تحتفظ بها في <bdi>`commands/`</bdi> أيضًا، ويثبّت <bdi>Apothem</bdi> أوامره الخاصة بوصفها مهارات تحت <bdi>`skills/`</bdi>. ويُزال سكربت الخطّاف الذي تحتفظ به في <bdi>`hooks/`</bdi>، فيبقى أي مُدخَل في <bdi>`settings.json`</bdi> يستدعيه يشير إلى لا شيء. ويجري المسح قبل أن يكتب التثبيت ملفاته الخاصة. يُنسَخ كل مسار مُزال إلى <bdi>`~/.apothem/backups/`</bdi> أولًا، ويسمّي سجلّ التثبيت تلك النسخة. ولا يستعيد إلغاء التثبيت المسار. ولاستعادة مسار مُزال، شغّل <bdi>`apothem rollback --harness claude-code --install-id ID`</bdi> للتثبيت الذي أزاله، كما هو موضح في [مرجع الاسترجاع](/docs/cli-reference/rollback). ويعكس <bdi>`apothem rollback`</bdi> المجرّد آخر تثبيت فقط. وتُحفَظ سجلّات التثبيت ونسخها لأحدث 10 تثبيتات، ولذلك لا يمكن استعادة المسار المُزال إلا ما دام تثبيته من بينها. ويسرد <bdi>`apothem diff --harness claude-code`</bdi> هذه الإزالات بوصفها <bdi>`Prune stale files`</bdi> قبل أن تثبّت.
+يترك التثبيت والتحديث ملفاتك الخاصة تحت <bdi>`~/.claude/`</bdi> دون مساس، بما في ذلك
+أوامر الشرطة المائلة في <bdi>`commands/`</bdi> وسكربتات الخطّافات في <bdi>`hooks/`</bdi>. أمّا الإصدارات
+السابقة فكانت تُزيل بدلًا من ذلك مجلّدات كاملة هناك في كل تثبيت وتحديث
+(<bdi>`commands/`</bdi>، و<bdi>`hooks/`</bdi>، و<bdi>`scripts/`</bdi>، و<bdi>`templates/`</bdi> وغيرها)، مع الملفات
+التي وضعتها فيها؛ ويسمّي [سجلّ التغييرات](/docs/changelog) تلك الإصدارات. راجع
+[استعادة الملفات التي أزالها إصدار سابق](#استعادة-الملفات-التي-أزالها-إصدار-سابق).
+
+### استعادة الملفات التي أزالها إصدار سابق
+
+نُسِخ كل مجلّد مُزال أولًا إلى
+<bdi>`~/.apothem/backups/<timestamp>/claude_code/.claude/<folder>/`</bdi>. ولا يحذف الإصدار
+الحالي أبدًا مجموعة نسخ احتياطية تحوي مثل هذا المجلّد، لكن سياسة الاحتفاظ في إصدار سابق
+ربما حذفت بالفعل مجموعات أقدم. للاستعادة:
+
+1. انسخ <bdi>`~/.apothem/backups/`</bdi> إلى موضع آخر قبل أن تشغّل <bdi>Apothem</bdi> مجدّدًا.
+2. انسخ الملفات التي تحتاجها من تلك النسخة إلى <bdi>`~/.claude/`</bdi> يدويًا.
+3. شغّل <bdi>`apothem update`</bdi> بعد ذلك.
+
+يعكس <bdi>`apothem rollback --install-id`</bdi> التثبيت السابق بأكمله، بما في ذلك
+<bdi>`settings.json`</bdi> و<bdi>`CLAUDE.md`</bdi>، لذا فهو ليس الطريقة لاستعادة هذه الملفات.
 
 تحمل المهارات المُثبَّتة، والمهارات المُحزَّمة في إضافة <bdi>Claude Code</bdi>،
 المفتاح <bdi>`user-invocable`</bdi> بدلًا من <bdi>`userInvocable`</bdi> الوارد في متن
@@ -181,6 +204,27 @@ python scripts/dev/measure_claude_skills.py --check  # exit 1 on a breach
 <bdi>MCP</bdi>: سجّل الخوادم باستخدام <bdi>`claude mcp add`</bdi> (راجع
 [خوادم <bdi>MCP</bdi>](/docs/reference/mcp)).
 
+يقرأ <bdi>Claude Code</bdi> أيضًا ملف <bdi>`AGENTS.md`</bdi> الخاص بالمشروع، ابتداءً من الإصدار الذي تسمّيه
+[صفحة الذاكرة](https://code.claude.com/docs/en/memory#agents-md) الخاصة به.
+وفي ظل الإعداد الافتراضي <strong><bdi>Project instructions</bdi></strong> لا يفعل ذلك إلا حين لا يوجد
+<bdi>`CLAUDE.md`</bdi> ولا <bdi>`.claude/CLAUDE.md`</bdi> ولا <bdi>`CLAUDE.local.md`</bdi> في مجلّد العمل
+أو في مجلّد أعلى منه. فيقرأ ملفات <bdi>`AGENTS.md`</bdi> هناك عند بدء الجلسة، ويقرأ
+<bdi>`AGENTS.md`</bdi> الخاص بمجلّد أدنى من مجلّد العمل حين تفتح أداة <bdi>Read</bdi> الخاصة به ملفًا
+في ذلك المجلّد ولا يحوي المجلّد أيًّا من تلك الملفات الثلاثة.
+ولا يُحتسَب <bdi>`~/.claude/CLAUDE.md`</bdi>، لذا تواصل كتلة <bdi>Apothem</bdi> فيه التحميل
+إلى جانب <bdi>`AGENTS.md`</bdi> الخاص بالمشروع. ويكتب تثبيت <bdi>Kimi Code</bdi> كتلة <bdi>Apothem</bdi>
+في <bdi>`AGENTS.md`</bdi> الخاص بالمشروع، لذا يُحمِّل <bdi>Claude Code</bdi> في مثل هذا المشروع
+الكتلتين كلتيهما؛ ويسرد [سجلّ أُطُر العمل](/docs/reference/harness-registry#shared-roots)
+قرّاء ذلك الملف وشروطهم.
+
+<strong><bdi>Project instructions</bdi></strong> إعداد على مستوى المستخدم كلّه، لا على مستوى كل مشروع: فضبطه
+على <bdi>`claude-md`</bdi> في <bdi>`/config`</bdi> يُبقي <bdi>Claude Code</bdi> مقتصرًا على ملفات <bdi>`CLAUDE.md`</bdi> الخاصة به في
+كل مشروع، ويُحمِّل <bdi>`claude-md-and-agents-md`</bdi> نوعَي الملفات كليهما أينما
+وُجدا. وبعض الجلسات لا تقرأ أي <bdi>`AGENTS.md`</bdi> أيًّا كان الإعداد: الجلسات التي
+عُطِّلت فيها الإضافة المدمجة التي تقرؤه، وبعض الجلسات الأولى بعد
+الترقية من إصدار لم يكن قادرًا على قراءته، وفي الإصدارات المبكرة، بعض الجلسات على <bdi>Amazon Bedrock</bdi> أو التي
+عُطِّل فيها القياس عن بُعد (<bdi>telemetry</bdi>). وتسردها صفحة الذاكرة وتسمّي الإصدارات.
+
 <bdi>`~/.claude/agents/`</bdi> جذر مشترك يملكه <bdi>`Claude Code`</bdi>، وكذلك
 <bdi>`~/.claude/skills/`</bdi> و<bdi>`~/.claude/CLAUDE.md`</bdi>: فأدوات مدعومة أخرى تُحمِّلها،
 لذا تظهر العوامل والمهارات وكتلة <bdi>Apothem</bdi> التي يكتبها تثبيت <bdi>`Claude Code`</bdi>
@@ -257,8 +301,17 @@ apothem uninstall --harness claude-code
 ## بوابة المطابقة
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+شغّله من مجلّد مشروعك. وعلى <bdi>Windows</bdi>، استخدم <bdi>`python`</bdi> بدلًا من
+<bdi>`python3`</bdi> والمسار الكامل، لأن <bdi>Windows PowerShell</bdi> و<bdi>cmd</bdi> لا يوسّعان
+<bdi>`~`</bdi>:
+<bdi>`$HOME\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>PowerShell</bdi>، أو
+<bdi>`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>cmd</bdi>. هذا المسار هو
+الموضع الذي يضع فيه المُثبِّت المحرّك، ويُبقي <bdi>`-E -s`</bdi> متغيّر <bdi>`PYTHONPATH`</bdi> لديك وحِزَم
+<bdi>site-packages</bdi> الخاصّة بالمستخدم خارج البوابة؛ وتشرح صفحة [بوابة المطابقة](/docs/conformity-gate)
+كليهما وطرق التثبيت الأخرى.
 
 حين تُشغَّل البوابة على المستودع، فإنها تشترط القسم <bdi>`## Bindings`</bdi> في كل
 قاعدة وأمر ومساعِد ومهارة. وحين تُشغَّل على شجرة <bdi>`~/.claude/`</bdi> مُثبَّتة، فإنها

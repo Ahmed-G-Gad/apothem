@@ -2,7 +2,7 @@
 title: "نظرة عامة على واجهة سطر الأوامر"
 description: "نظرة عامة على واجهة سطر الأوامر في Apothem — جميع الأوامر الفرعية والرايات."
 machineTranslated: true
-sourceHash: "23e6a1450707e054"
+sourceHash: "ce86e94ba98910b5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,13 @@ sourceHash: "23e6a1450707e054"
 | الراية | الوصف |
 |------|-------------|
 | <bdi>`--version`</bdi> | يطبع نسخة <bdi>Apothem</bdi> ويخرج |
-| <bdi>`--help`</bdi> | يطبع التعليمات الخاصة بالأمر |
+| <bdi>`-h`</bdi>، <bdi>`--help`</bdi> | يطبع التعليمات الخاصة بالأمر |
+
+تغطّي الأقسام أدناه <bdi>`install`</bdi> و<bdi>`update`</bdi> و<bdi>`uninstall`</bdi> و<bdi>`verify`</bdi>
+و<bdi>`status`</bdi> و<bdi>`profile`</bdi> و<bdi>`harnesses`</bdi> و<bdi>`doctor`</bdi>. ويسرد الجدول
+المولَّد في نهاية هذه الصفحة و[مرجع واجهة سطر الأوامر](/docs/cli-reference) كل أمر، بما في ذلك
+<bdi>`quickstart`</bdi> و<bdi>`diff`</bdi> و<bdi>`rollback`</bdi> و<bdi>`backups`</bdi>
+و<bdi>`migrate-workspace`</bdi> و<bdi>`completion`</bdi>.
 
 ## الأوامر الفرعية
 
@@ -130,8 +136,12 @@ apothem status [--profile PATH] [--project PATH]
 | <bdi>`--profile PATH`</bdi> | الملف التعريفي المشترك الذي يُستخدَم خطَّ أساسٍ للانحراف. والملف التعريفي الافتراضي غير القابل للقراءة يُخفِّض الانحراف إلى <bdi>`unknown`</bdi> بدلًا من إجهاض المسح. |
 | <bdi>`--project PATH`</bdi> | جذر المشروع لأُطُر العمل ذات نطاق المشروع. ومن دونه تُبلِغ هذه الأُطُر عن <bdi>`needs-project`</bdi>. |
 
-يقرن كل صفٍّ راية <bdi>`installed`</bdi> براية <bdi>`verified`</bdi>، وتجتمع
-الرايتان في حالة الانحراف:
+يحمل كل صفٍّ راية <bdi>`installed`</bdi> وراية <bdi>`verified`</bdi> وحالة انحراف.
+والصفّ الذي تكون راية <bdi>`installed`</bdi> فيه خاطئة يُبلِغ عن <bdi>`absent`</bdi> أو
+<bdi>`needs-project`</bdi> أو <bdi>`error`</bdi>؛ ولا تظهر <bdi>`in-sync`</bdi> و<bdi>`drift`</bdi>
+و<bdi>`unknown`</bdi> إلا في الصفوف المُثبَّتة. ولا تعتمد حالة الانحراف أبدًا على راية
+<bdi>`verified`</bdi>. ففي إطار عمل مُثبَّت تقارن الإعداد المُثبَّت بخط أساس الملف التعريفي،
+أو تسمّي سبب عدم إجراء أي مقارنة:
 
 | الحالة | المعنى |
 |-------|---------|
@@ -140,6 +150,7 @@ apothem status [--profile PATH] [--project PATH]
 | <bdi>`drift`</bdi> | مُثبَّت لكنه لم يعد مطابقًا — عالِجه بـ <bdi>`apothem update`</bdi>. |
 | <bdi>`unknown`</bdi> | مُثبَّت، لكن تعذّرت قراءة الملف التعريفي الأساس. |
 | <bdi>`needs-project`</bdi> | أُبلِغ عن إطار عمل ذي نطاق مشروع من دون <bdi>`--project`</bdi>، فتعذّر تحديد هدفه. |
+| <bdi>`error`</bdi> | فشل المحوّل أثناء فحصه؛ يُبلِغ <bdi>`status`</bdi> عن الخطأ ويخرج بالرمز <bdi>`2`</bdi>. |
 
 تُجيب <bdi>`installed`</bdi> عن السؤال «هل ثبّت <bdi>Apothem</bdi> هنا؟»، لا عن
 «هل إطار العمل هذا موجود على الجهاز؟». وهي مبنيّة على مُنتَجات <bdi>Apothem</bdi>

@@ -2,7 +2,7 @@
 title: "Cursor"
 description: "Cursor（GA）向けの Apothem ハーネスアダプター。"
 machineTranslated: true
-sourceHash: "817b5e32ce317949"
+sourceHash: "0aa24ff454d74139"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -123,6 +123,8 @@ Cursor は、プロジェクトのフックファイルのコミットされな�
 "/path/to/python" -E -s "/path/to/project/.apothem/support/cursor/hooks/dispatch.py" --contract cursor sessionStart
 ```
 
+`-E -s` により、Python は `PYTHONPATH` とその他の `PYTHON*` 変数を無視し、ユーザーの site-packages を読み飛ばすため、プロジェクト内のどのファイルもフックに読み込まれることはありません。
+
 Windows ホストでは、コマンドは PowerShell の呼び出し演算子である `& ` で始まります。Cursor のデスクトップアプリはフックコマンドを PowerShell を通じて実行し、PowerShell では引用符で囲まれたプログラムパスで始まる行は呼び出しにならないためです。
 `sh` は先頭の `&` を構文エラーとして読むため、他のホストにはこれが付きません。
 ドキュメントはシェルを挙げていますがクォートについては述べていないため、これは PowerShell の構文に対する Apothem の解釈です。
@@ -161,7 +163,7 @@ Apothem が管理するブロックがその後に続きます。ブロックの
 
 ## 互換性に関する注意
 
-Cursor 0.45+ は、`.cursor/rules/` を通じてプロジェクトレベルの命令をサポートします。
+Cursor は、[Cursor のルールに関するドキュメント](https://cursor.com/docs/rules)にあるとおり、`.cursor/rules/` からプロジェクトレベルの命令を読み込みます。
 アダプターはデフォルトで、プロジェクトスコープの `.cursor/rules/` ディレクトリに書き込みます。Cursor には、このアダプターが管理できる、ファイルベースのユーザーグローバルなルールパスが文書化されていません。
 
 [Devin Desktop](/docs/harnesses/windsurf) も、このインストールが書き込むルールファイルを読み込みます。
@@ -228,8 +230,16 @@ apothem uninstall --harness cursor --project /path/to/project
 ## コンフォーミティゲート
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+プロジェクトのフォルダーから実行します。Windows では、`python3` の代わりに `python` を使い、
+フルパスを指定します。Windows PowerShell と cmd は `~` を展開しないためです。
+PowerShell では `$HOME\.apothem\src\apothem\conformity\gate.py`、
+cmd では `%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` です。このパスは
+インストーラーがエンジンを置く場所で、`-E -s` はあなたの `PYTHONPATH` とユーザーの
+site-packages をゲートから締め出します。両者とその他のインストールについては
+[コンフォーミティゲート](/docs/conformity-gate)で説明しています。
 
 ## トラブルシューティング
 

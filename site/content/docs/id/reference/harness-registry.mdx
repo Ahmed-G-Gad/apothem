@@ -2,7 +2,7 @@
 title: "Registri harness"
 description: "Referensi registri teknis untuk adapter harness bawaan Apothem."
 machineTranslated: true
-sourceHash: "242f7f2bf421b85e"
+sourceHash: "2f51bca3eb9467c5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -16,7 +16,7 @@ bawah dapat dilacak ke registri itu, ke `capabilities.yml` per adapter, dan ke
 
 | Harness | Nama instal | Cakupan | Format | Target | MCP | Pin konvensi |
 | --- | --- | --- | --- | --- | --- | --- |
-| Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md`; `~/.gemini/antigravity-cli/plugins/apothem/` | discovery-pending | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
+| Antigravity | `antigravity` | user | markdown | `~/.gemini/GEMINI.md`; `~/.gemini/config/plugins/apothem/` | discovery-pending | `src/apothem/harnesses/antigravity/STANDARD-CONVENTION-PIN.md` |
 | Claude Code | `claude-code` | user | json | `~/.claude/settings.json`; `~/.claude/CLAUDE.md`; `agents`, `rules`, `skills`, `statuslines`, `output-styles` native; `~/.claude/.apothem/support/` | discovery-pending | `src/apothem/harnesses/claude_code/STANDARD-CONVENTION-PIN.md` |
 | CodeBuddy | `codebuddy` | project | markdown | `<project>/.codebuddy/rules/apothem-rules.md`; `<project>/.codebuddy/agents/`; `<project>/.codebuddy/settings.local.json`; `<project>/.apothem/support/hooks/`; `~/.codebuddy/skills/`; `~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/codebuddy/STANDARD-CONVENTION-PIN.md` |
 | Codex | `codex` | user | markdown | `~/.codex/AGENTS.md`; `hooks.json`; `hooks/`; `agents/*.toml`; `~/.agents/skills/`; `~/.config/apothem/` | discovery-pending | `src/apothem/harnesses/codex/STANDARD-CONVENTION-PIN.md` |
@@ -27,7 +27,7 @@ bawah dapat dilacak ke registri itu, ke `capabilities.yml` per adapter, dan ke
 | Hermes | `hermes` | user | yaml | `~/.hermes/config.yaml`; `~/.hermes/.apothem/support/` | native | `src/apothem/harnesses/hermes/STANDARD-CONVENTION-PIN.md` |
 | Kimi Code | `kimi-code` | project | markdown | `<project>/AGENTS.md`; `<project>/.kimi-code/skills/`; `<project>/.kimi-code/agents/`; `<project>/.kimi-code/.apothem/support/` | discovery-pending | `src/apothem/harnesses/kimi_code/STANDARD-CONVENTION-PIN.md` |
 | Kiro | `kiro` | project | markdown | `<project>/.kiro/steering/apothem-rules.md`; `<project>/.kiro/agents/`; `<project>/.kiro/hooks/apothem.json`; `<project>/.apothem/support/kiro/hooks/`; `~/.kiro/skills/`; `~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/kiro/STANDARD-CONVENTION-PIN.md` |
-| Open-Claw | `open-claw` | user | json | `~/.openclaw/openclaw.json`; `~/.openclaw/.apothem/support/` | unsupported | `src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md` |
+| Open-Claw | `open-claw` | user | json | `~/.openclaw/openclaw.json`; `~/.openclaw/.apothem/support/`; `<workspace>/apothem/AGENTS.md` (dimuat oleh hook `bootstrap-extra-files`; tidak ada dalam daftar target registri, sehingga tabel yang dihasilkan di bawah tidak mencantumkannya) | unsupported | `src/apothem/harnesses/open_claw/STANDARD-CONVENTION-PIN.md` |
 | OpenCode | `opencode` | user | json | `~/.config/opencode/opencode.json`; `commands`, `skills`, `agents` native; `~/.config/opencode/.apothem/support/` | native | `src/apothem/harnesses/opencode/STANDARD-CONVENTION-PIN.md` |
 | Qwen Code | `qwen-code` | user | json | `~/.qwen/settings.json`; `~/.qwen/QWEN.md`; `commands`, `skills`, `agents` native; `~/.qwen/.apothem/support/` | native | `src/apothem/harnesses/qwen_code/STANDARD-CONVENTION-PIN.md` |
 | Trae | `trae` | project | markdown | `<project>/.trae/rules/apothem-rules.md`; `<project>/.trae/agents/`; `~/.trae/skills/`; `~/.config/apothem/{rules,templates}/` | discovery-pending | `src/apothem/harnesses/trae/STANDARD-CONVENTION-PIN.md` |
@@ -113,7 +113,7 @@ pemilik atau co-installer menempatkan konten Apothem di hadapan setiap pembaca.
 | `~/.claude/agents/` | Claude Code | tidak ada | Cursor |
 | `~/.codex/agents/` | Codex | tidak ada | Cursor |
 | `~/.claude/CLAUDE.md` | Claude Code | tidak ada | OpenCode, Windsurf |
-| `<project>/AGENTS.md` | Kimi Code | tidak ada | Antigravity, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
+| `<project>/AGENTS.md` | Kimi Code | tidak ada | Antigravity, Claude Code, CodeBuddy, Codex, Cursor, GitHub Copilot, Hermes, Kiro, OpenCode, Windsurf, Zed |
 | `<project>/GEMINI.md` | Gemini CLI | tidak ada | Antigravity, GitHub Copilot, Zed |
 | `~/.gemini/GEMINI.md` | Antigravity | tidak ada | Gemini CLI |
 | `<project>/.github/copilot-instructions.md` | GitHub Copilot | tidak ada | Zed |
@@ -141,7 +141,21 @@ sehingga ia tidak memuat `~/.claude/CLAUDE.md`. `Codex` mengambil yang pertama
 dari `AGENTS.override.md` dan `AGENTS.md` di setiap folder, sehingga ia memuat
 `<project>/AGENTS.md` hanya jika proyek tidak memiliki `AGENTS.override.md` di
 sebelahnya. `CodeBuddy` memakai `<project>/AGENTS.md` sebagai memori proyek
-hanya jika proyek tidak memiliki `CODEBUDDY.md`. `Zed` hanya memuat berkas
+hanya jika proyek tidak memiliki `CODEBUDDY.md`. `Claude Code` membaca
+`AGENTS.md` pada rilis yang disebutkan
+[halaman memorinya](https://code.claude.com/docs/en/memory#agents-md), dan
+catatan instalasi memberikan rilis pertamanya. Di bawah setelan bawaan
+**Project instructions**, ia memuat setiap `AGENTS.md` dan `.claude/AGENTS.md`
+di folder kerja dan folder-folder di atasnya ketika sesi dimulai, tetapi hanya
+jika tidak satu pun dari folder itu menyimpan `CLAUDE.md`, `.claude/CLAUDE.md`,
+atau `CLAUDE.local.md`. Ia memuat `AGENTS.md` dari folder di bawah folder kerja,
+seperti proyek yang dibuka dari folder induk, ketika alat Read-nya membuka
+berkas di sana dan folder itu juga tidak memiliki satu pun dari ketiga berkas
+tersebut. `~/.claude/CLAUDE.md` tidak dihitung, sehingga blok Apothem di sana
+tetap dimuat bersama `<project>/AGENTS.md`. Setelan `claude-md-and-agents-md`
+memuat kedua jenis berkas, sedangkan `claude-md` dan `managed-only` tidak
+memuat `AGENTS.md` apa pun. Beberapa sesi tidak membaca `AGENTS.md` di bawah
+setelan apa pun; halaman memori mencantumkannya. `Zed` hanya memuat berkas
 instruksi proyek pertama dalam daftarnya: `.rules`, `.cursorrules`,
 `.windsurfrules`, `.clinerules`, `.github/copilot-instructions.md`, `AGENT.md`,
 `AGENTS.md`, `CLAUDE.md`, lalu `GEMINI.md`. Karena itu ia memuat
@@ -217,8 +231,57 @@ Registri tetap tersinkronisasi melalui pemeriksaan berikut:
 | --- | --- |
 | `python scripts/dev/validate_harness_convention_pins.py --today YYYY-MM-DD` | Memastikan setiap adapter memiliki pin konvensi yang berusia paling lama 90 hari, mengutip setidaknya satu URL vendor, dan tidak memiliki target penemuan yang lewat tenggat. CI menjalankannya pada setiap pull request, setiap minggu, dan sebelum rilis. |
 | `python scripts/dev/check_vendor_urls.py` | Mengambil setiap URL vendor yang dikutip pin dan templat harness, dan gagal pada halaman yang dipindahkan atau mati, termasuk nama host yang tidak lagi ter-resolve atau sertifikat yang gagal verifikasi; timeout, koneksi yang ditolak atau di-reset, atau galat server 5xx dilaporkan sebagai tidak terjangkau dan tidak menggagalkannya. Nama host yang hanya ter-resolve ke alamat placeholder yang tidak mungkin dimiliki server mana pun (name server vendor dapat mengembalikan alamat semacam itu untuk wilayah tempat pemeriksaan dijalankan) tidak dikirimi permintaan: nama host itu dilaporkan sebagai tidak dapat dirutekan, tidak menggagalkan pemeriksaan, dan halamannya perlu diperiksa secara manual. Monitor konvensi mingguan menjalankannya, memberi peringatan tentang setiap host semacam itu pada setiap eksekusi, dan mencantumkan halamannya di issue yang dibuatnya. |
-| `python -m apothem.conformity.gate --all .` | Menjalankan pemeriksaan konformitas dokumentasi dan implementasi. |
+| `python scripts/dev/check_vendor_releases.py` | Menanyakan versi terkini kepada setiap kanal rilis di `scripts/dev/vendor-release-channels.json`: dist-tag paket npm, rilis terbaru repositori GitHub (atau, untuk kanal dengan pola tag, rilis stabil terbaru dengan tag yang cocok di antara 100 rilis terbaru), atau proyek PyPI. Untuk alamat installer, ia menanyakan ke mana alamat itu dialihkan. Ia membandingkan jawabannya dengan apa yang terakhir ditinjau. Versi mayor baru, rilis yang melewati pemicu yang disebutkan berkas, alamat installer yang dialihkan ke tempat lain, atau paket, dist-tag, rilis, atau alamat yang tidak lagi ada menggagalkannya, begitu pula pola tag yang tidak cocok dengan rilis stabil mana pun di antara 100 rilis terbaru. Versi minor atau patch yang lebih baru dilaporkan dan tidak menggagalkannya, kecuali tingkat `watch` kanal menyebutkan tingkat itu. Registri yang tidak menjawab, atau yang jawabannya terputus di tengah jalan, dilaporkan sebagai tidak terjangkau dan juga tidak menggagalkannya. Setiap percobaan permintaan memiliki total 30 detik, dan setelah 20 menit pemeriksaan tidak lagi menanyai kanal lain, sehingga ia selalu menulis laporannya. Sebelum permintaan apa pun, ia memeriksa bahwa setiap folder harness memiliki entri dan bahwa frasa bukti setiap kanal ada di pin-nya, dan ia keluar dengan 1 jika ada yang tidak; laporan dan issue kemudian menyebutkan apa yang salah. Monitor konvensi mingguan menjalankannya dengan token hanya-baca, mencantumkan setiap kanal dalam ringkasan eksekusi, dan membuat issue ketika gagal. `--list` mencetak kanal tanpa menanyai registri mana pun. |
+| `python3 -E -s src/apothem/conformity/gate.py --all .` | Menjalankan pemeriksaan konformitas dokumentasi dan implementasi. |
 | `python -m pytest` | Menjalankan pengujian fixture registri dan pengujian kontrak adapter. |
+
+## Kanal rilis
+
+`scripts/dev/vendor-release-channels.json` memiliki satu entri untuk setiap
+folder harness. Harness yang dipantau mencantumkan kanal rilisnya. Setiap kanal
+mencatat versi yang terakhir ditinjau, beserta tanggalnya. Itu adalah versi
+yang disebutkan pin-nya atau, jika pin tidak menyebutkan versi, versi yang
+disajikan registri saat kanal itu dicatat. Sebuah catatan juga dapat hanya
+menyimpan versi mayor. Setiap kanal mengutip frasa pin yang menyebutkannya.
+Angka pertama sebuah versi adalah versi mayornya, termasuk 0, sehingga lini 0.x
+yang berpindah dari 0.26 ke 0.27 melaporkan versi minor yang lebih baru dan
+tidak gagal. Kanal dengan versi kalender, seperti nomor tahun.bulan.rilis milik
+OpenClaw, melaporkan setiap rilis yang lebih baru tanpa gagal, dan tidak
+memakai tingkat `watch`. Codex, Gemini CLI, Hermes, Qwen Code, dan GLM berada
+pada lini 0.x, sehingga versi baru salah satunya dicantumkan dalam ringkasan
+eksekusi dan tidak membuat issue sampai mencapai 1.0, kecuali kanalnya
+menyetel tingkat `watch`.
+
+OpenCode memiliki empat kanal. `opencode-ai` membawa OpenCode 1, dan
+`@opencode/cli` membawa OpenCode 2. Rilis GitHub dari `anomalyco/opencode`
+menunjukkan lini mayor baru apa pun paket npm yang mengirimkannya. Kanal
+keempat menanyakan ke mana `opencode.ai/install` dialihkan. Pada 2026-11-03
+alamat itu dialihkan ke skrip installer OpenCode 1. Skrip itu memasang versi
+yang disebutkan dist-tag `latest` milik `opencode-ai` jika itu versi OpenCode 1,
+dan tidak pernah memasang OpenCode 2. Keputusan OpenCode tanggal 2026-11-03
+beralih ke penulisan format milik OpenCode 2 sendiri di tempat OpenCode 2
+berjalan ketika salah satu dari dua sinyal muncul: OpenCode 2 mengumumkan
+tanggal penghapusan terjemahannya atas format OpenCode 1, atau
+`opencode.ai/install` atau `opencode-ai` berpindah ke OpenCode 2. Pemeriksaan
+memantau sinyal kedua. Kanal `opencode-ai` dan kanal installer masing-masing
+membawa pemicu: pemeriksaan gagal ketika versi `latest` milik `opencode-ai`
+melewati versi mayor 1, atau ketika `opencode.ai/install` berhenti dialihkan ke
+skrip OpenCode 1. Perubahan di dalam skrip itu tidak mengubah pengalihan,
+sehingga pemeriksaan tidak melihatnya. Tidak ada registri yang menjawab sinyal
+pertama, sehingga sinyal itu tetap diperiksa secara manual, paling lambat
+2027-02-01 bersama tinjauan pin OpenCode berikutnya.
+
+Antigravity, Cursor, Kiro, Trae, dan Windsurf tidak dipantau. Masing-masing
+adalah aplikasi desktop, atau alat baris perintah yang dipasang dengan skrip,
+dan pin-nya tidak menyebutkan kanal rilis yang dapat ditanyai skrip tanpa
+kredensial. Berkas tersebut memberikan alasan untuk masing-masing.
+
+Setelah Anda memeriksa ulang sebuah pin terhadap rilis baru atau target
+pengalihan baru, perbarui kolom `reviewed`, `reviewed_on`, dan `reviewed_from`
+kanal tersebut. Pemicu pada kanal versi menggagalkan pemeriksaan setiap minggu
+sampai Anda menghapus atau mengubahnya. Pemicu pada alamat installer berhenti
+setelah `reviewed` mencatat target baru, jadi catat target itu hanya setelah
+tindakan pemicu selesai.
 
 ## Referensi Adapter Harness yang Dihasilkan
 

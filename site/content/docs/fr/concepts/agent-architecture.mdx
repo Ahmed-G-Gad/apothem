@@ -2,7 +2,7 @@
 title: "Architecture des agents"
 description: "Comment Apothem projette une cohorte unique de capacités agentiques sur dix-sept environnements IA aux surfaces de hooks et aux formats de règles divergents."
 machineTranslated: true
-sourceHash: "f7b510f076abbabd"
+sourceHash: "be0f8df513fb3c8f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -43,7 +43,7 @@ configuration native via un materializer.
 | hermes | Matériel de support uniquement | `config.yaml` et répertoire de skills externe | Classe II-B | `config.yaml` |
 | kimi-code | Matériel de support uniquement | `AGENTS.md` et règles de support sous `.kimi-code/.apothem/support/` | Classe I | aucun |
 | kiro | SessionStart natif dans `.kiro/hooks/apothem.json` ; pas de hook d'événement d'outil (l'éditeur en ignore la sortie) | fichier de steering `.kiro/steering/apothem-rules.md` | Classe I | aucun |
-| open-claw | Matériel de support uniquement | `openclaw.json` et répertoire de skills supplémentaire | Classe II-B | `openclaw.json` |
+| open-claw | Matériel de support uniquement | `openclaw.json` et répertoire de skills supplémentaire, ainsi qu'un fichier de règles d'espace de travail `apothem/AGENTS.md` chargé par le hook `bootstrap-extra-files` | Classe II-B | `openclaw.json` |
 | opencode | Matériel de support uniquement | JSON rendu depuis le profil, ainsi que commandes, skills et agents natifs | Classe II-B | `opencode.json` |
 | qwen-code | PreToolUse / Stop / SessionStart natifs | `QWEN.md` ainsi que commandes, skills et agents natifs | Classe II-B | `settings.json` / `QWEN.md` |
 | trae | Aucune | fichier de règles de projet `.trae/rules/apothem-rules.md` | Classe I | aucun |
@@ -62,7 +62,7 @@ Remarques sur la matrice :
   les agents en TOML, encapsule les prompts de commandes comme skills Codex, et
   laisse `config.toml` à la propriété de l'opérateur.
 - **antigravity** conserve `~/.gemini/GEMINI.md` comme ancre de contexte global et
-  installe un plugin Apothem sous `~/.gemini/antigravity-cli/plugins/apothem/`.
+  installe un plugin Apothem sous `~/.gemini/config/plugins/apothem/`.
   Les fichiers de hooks sont conservés comme matériel de support jusqu'à ce que
   l'adaptateur prenne en charge la traduction du schéma de hooks d'Antigravity.
 - **cursor** active les règles via un fichier `.mdc` portant le frontmatter MDC
@@ -152,7 +152,7 @@ environnement de la matrice se ramène à l'un d'entre eux.
 | Axe | Plage observée sur les dix-sept environnements |
 |------|---------------------------------------------|
 | Surface de hook | Multi-événements natifs (claude-code, codex, qwen-code) → natifs sur les événements que l'éditeur transmet au modèle (codebuddy : SessionStart et PostToolUse ; cursor : sessionStart ; github-copilot : sessionStart et postToolUse ; kiro : SessionStart ; windsurf : SessionStart et PostToolUse) → matériel de hook de support uniquement (antigravity, gemini-cli, hermes, kimi-code, open-claw, opencode) → aucun hook enregistré par l'adaptateur (glm, trae, zed) |
-| Format d'activation des règles | `.md` plat (claude-code) → règles de plugin (antigravity) → espace de travail `.mdc` (cursor) → règles de répertoire (codebuddy, trae, windsurf) → fichier de steering (kiro) → fichier plat à la racine du projet (zed) → fichier unique intégré (codex, gemini-cli, github-copilot, kimi-code) → matériel de support référencé par la configuration (hermes, open-claw, opencode, qwen-code) → configuration de fournisseur backend (glm) |
+| Format d'activation des règles | `.md` plat (claude-code) → règles de plugin (antigravity) → espace de travail `.mdc` (cursor) → règles de répertoire (codebuddy, trae, windsurf) → fichier de steering (kiro) → fichier plat à la racine du projet (zed) → fichier unique intégré (codex, gemini-cli, github-copilot, kimi-code) → fichier de règles d'espace de travail chargé par un hook (open-claw) → matériel de support référencé par la configuration (hermes, opencode, qwen-code) → configuration de fournisseur backend (glm) |
 | Classe d'adaptateur | Classe I propagation brute → Classe II-A brute + settings éditeur → Classe II-B surface unique rendue depuis le profil |
 
 

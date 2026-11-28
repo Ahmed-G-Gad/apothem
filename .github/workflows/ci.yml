@@ -6,7 +6,9 @@
 #   1. lint               — ruff check
 #   2. format-check       — ruff format --check
 #   3. type-check         — mypy
-#   4. test               — pytest across an OS x Python matrix
+#   4. test               — pytest across an OS x Python matrix; each Windows
+#                           cell runs in two shards, and quality-windows
+#                           reports the required Windows contexts
 #   5. coverage           — pytest-cov in two parallel shards, combined into one
 #                           report with HTML + XML artifacts
 #   6. security-scan      — bandit static analysis (CodeQL owned by codeql.yml)
@@ -91,15 +93,22 @@ jobs:
 
   # 1, 2, 3, 4 — lint, format-check, type-check, test
   quality:
-    name: quality / ${{ matrix.os }} / py${{ matrix.python-version }}
+    # A Linux cell runs the whole suite and reports the required context
+    # `quality / ubuntu-latest / py<ver>` itself. A Windows cell runs half of
+    # it (see the shard note on the matrix) and is named with its shard; the
+    # required `quality / windows-latest / py<ver>` contexts come from the
+    # quality-windows job below, which passes only when every quality cell
+    # passed.
+    name: quality / ${{ matrix.os }} / py${{ matrix.python-version }}${{ matrix.shard && format(' / shard {0} of 2', matrix.shard) || '' }}
     runs-on: ${{ matrix.os }}
-    # The Windows cells run the full suite in 64 to 88 minutes (November
-    # 2026), and the 90-minute limit cancelled cells whose tests had passed,
-    # so they get 120, the workflow-concurrency validator's Windows ceiling.
-    # The Linux cells finish in under 10 minutes and keep 90, the validator's
-    # matrix-job ceiling, which still stops a hung run. ci-matrix.yml gives
-    # its Windows cells the same limit.
-    timeout-minutes: ${{ matrix.os == 'windows-latest' && 120 || 90 }}
+    # A Linux cell finishes in under 10 minutes. A Windows shard runs half the
+    # suite, which took 73 to 118 minutes whole on one Windows runner (the
+    # last six successful ci.yml runs on main, November 2026). Pytest is
+    # nearly all of that time (106.6 of 108.5 minutes in one cell), so a
+    # shard takes about half: 61 minutes at most. 90, the
+    # workflow-concurrency validator's matrix-job ceiling, leaves room for
+    # that and still stops a hung run.
+    timeout-minutes: 90
     # A pre-release cell is advisory: it exercises the next Python against the
     # suite for early-warning without gating the merge. matrix.include carries
     # `prerelease: true` on the 3.15 cell only; the job's continue-on-error and
@@ -111,17 +120,34 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        # The whole suite took 73 to 118 minutes on one Windows runner (the
+        # last six successful ci.yml runs on main, November 2026, 13,806
+        # tests), close to the 120-minute ceiling, and it grows with every
+        # install test. So each Windows Python version runs as two cells,
+        # shard 1 and shard 2, each with `pytest --shard=K/2`
+        # (tests/conftest.py), which together run every test exactly once.
+        # Shard 0 is a Linux cell that runs the whole suite. The other steps
+        # run in both Windows shards. ci-matrix.yml splits its Windows cells
+        # the same way.
+        shard: [0, 1, 2]
+        exclude:
+          - os: ubuntu-latest
+            shard: 1
+          - os: ubuntu-latest
+            shard: 2
+          - os: windows-latest
+            shard: 0
         include:
           - os: ubuntu-latest
             python-version: "3.15"
             prerelease: true
     steps:
       - name: Harden runner
-        # harden-runner supports only Ubuntu runners; guard it so the step is
-        # skipped (not a silent no-op) on the windows-latest cells and the
-        # "Harden runner" name does not overstate coverage. Matches
-        # clean-install-gate.yml. Non-Linux cells run unhardened by platform
-        # limitation.
+        # harden-runner supports only Ubuntu runners, so the step's `if:`
+        # skips its main part on the windows-latest cells. The action's `pre`
+        # part has no condition of its own, so on Windows it still installs
+        # and starts its agent for the whole job; the cells are not hardened
+        # by it all the same. Matches clean-install-gate.yml.
         if: runner.os == 'Linux'
         uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a  # v2.22.4
         with:
@@ -207,7 +233,9 @@ jobs:
             time node -e 0
           fi
       - name: Pytest
-        run: python -m pytest --color=yes
+        # A Windows cell runs its part of the suite (--shard=K/2); a Linux
+        # cell, shard 0, runs all of it.
+        run: python -m pytest --color=yes ${{ matrix.shard && format('--shard={0}/2', matrix.shard) || '' }}
       - name: Ecosystem validator
         run: python scripts/dev/validate_ecosystem.py --content-root src/apothem
       - name: Conformity validators (corpus mode)
@@ -242,6 +270,43 @@ jobs:
           }
       - name: Chaos sweep
         run: python scripts/dev/chaos_pass.py --content-root src/apothem
+
+  # The required Windows contexts. Each Windows Python version runs as two
+  # shard cells of the quality job; this job reports
+  # `quality / windows-latest / py<ver>`, the context names branch
+  # protection requires, and fails unless every quality cell passed. GitHub
+  # skips a job when a job it needs failed or was cancelled, and a skipped
+  # required check counts as passed, so it runs always() and fails itself.
+  # `needs.quality.result` covers every cell, Linux and Windows, so a failure
+  # in any of them turns all five of these contexts red; the quality cells'
+  # own names show which one failed. The advisory py3.15 cell does not count: its
+  # continue-on-error lets it read as success here.
+  quality-windows:
+    name: quality / windows-latest / py${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    if: always()
+    timeout-minutes: 10
+    needs: [quality]
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - name: Harden runner
+        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a  # v2.22.4
+        with:
+          egress-policy: audit
+      - name: Require every quality cell to pass
+        # "success" only when every cell passed, both Windows shards of each
+        # Python version included. "failure", "cancelled" (a cell ran past
+        # its time limit, or the run was cancelled) and "skipped" fail here.
+        env:
+          QUALITY_RESULT: ${{ needs.quality.result }}
+        run: |
+          if [ "${QUALITY_RESULT}" != "success" ]; then
+            echo "::error title=quality::Not every quality cell passed (result: ${QUALITY_RESULT}); the failing cell may be on any OS. See the quality / ubuntu-latest / py<ver> cells and the quality / windows-latest / py<ver> / shard K of 2 cells."
+            exit 1
+          fi
 
   # 5 — coverage, in two shards
   #

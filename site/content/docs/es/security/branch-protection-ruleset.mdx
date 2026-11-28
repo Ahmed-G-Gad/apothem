@@ -2,7 +2,7 @@
 title: "Protección de ramas"
 description: "Protección de ramas de Apothem en main: la regla de protección vigente, sus verificaciones de estado requeridas y las verificaciones pendientes de agregar."
 machineTranslated: true
-sourceHash: "7d54aae6581f03ec"
+sourceHash: "a8e8cbd39d06d78f"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,7 +22,7 @@ Esta página registra exactamente los ajustes vigentes, tal como se leyeron por 
 | **Exigir que las verificaciones de estado pasen** | `required_status_checks` | ✅ | Los 12 contextos listados en [Verificaciones de estado requeridas](#verificaciones-de-estado-requeridas) deben pasar. |
 | **Exigir que las ramas estén actualizadas antes de fusionar** | `required_status_checks.strict` | ❌ | Una pull request puede fusionarse cuando sus verificaciones requeridas pasaron contra un `main` más antiguo. Los flujos de trabajo que se ejecutan con un push a `main` prueban entonces el resultado fusionado. |
 | **Exigir la resolución de conversaciones antes de fusionar** | `required_conversation_resolution` | ✅ | Los hilos de revisión abiertos bloquean la fusión. |
-| **Exigir commits firmados** | `required_signatures` | ❌ | Los commits de lanzamiento se firman localmente. La aplicación obligatoria espera hasta que la documentación de incorporación de colaboradores describa la configuración de firma SSH o GPG. |
+| **Exigir commits firmados** | `required_signatures` | ❌ | Los commits de lanzamiento llegan a `main` como fusiones squash que GitHub firma con su propia clave; la firma del mantenedor está en la etiqueta de lanzamiento. La aplicación obligatoria espera hasta que la documentación de incorporación de colaboradores describa la configuración de firma SSH o GPG. |
 | **Exigir historial lineal** | `required_linear_history` | ✅ | Mantiene el historial público de `main` en una sola línea. |
 | **Bloquear la rama** | `lock_branch` | ❌ | `main` acepta fusiones. |
 | **No permitir omitir los ajustes anteriores** | `enforce_admins` | ❌ | Los ajustes anteriores no obligan a un administrador del repositorio. Un administrador puede fusionar sin las verificaciones requeridas o hacer push directamente a `main`. |

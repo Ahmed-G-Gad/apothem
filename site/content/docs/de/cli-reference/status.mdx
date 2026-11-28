@@ -2,7 +2,7 @@
 title: "status"
 description: "CLI-Referenz für den Befehl apothem status."
 machineTranslated: true
-sourceHash: "8b2767bb799e4c2e"
+sourceHash: "fe8df509dd01788b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -36,7 +36,7 @@ Der Wert von `drift` ist einer der folgenden:
 | Wert | Bedeutung |
 |---|---|
 | `in-sync` | Die installierte Konfiguration trägt das frisch projizierte gemeinsame Profil wortgetreu. |
-| `drift` | Der Harness ist installiert, aber sein projizierter Profilinhalt stimmt nicht mehr mit dem aktuellen gemeinsamen Profil überein. Führen Sie `apothem install` erneut aus, um neu zu projizieren. |
+| `drift` | Der Harness ist installiert, aber sein projizierter Profilinhalt stimmt nicht mehr mit dem aktuellen gemeinsamen Profil überein, oder eine Datei, in der die aktuelle Installation einen verwalteten Block führt, enthält einen BEGIN-Marker, der keinen ganzen Block beginnt, zwei oder mehr ganze Blöcke zwischen Apothems Markern oder Markerpaare, die Apothem nicht von Ihrem Text unterscheiden kann. Eine Datei, die nur ein früherer Installationseintrag aufführt, etwa die Regeldatei in einem OpenClaw-Workspace, den die Installation nicht mehr verwendet, zählt hier nicht; `apothem verify` und `apothem doctor` nennen sie. Führen Sie `apothem update` aus, um das aktuelle Profil anzuwenden; korrigieren Sie solche Marker von Hand (siehe [Fehlerbehebung](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker), [Eine Datei enthält zwei Blöcke zwischen Apothems Markern](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers) und [Apothem kann seinen Block nicht von Ihrem Text unterscheiden](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)). |
 | `absent` | Der Harness ist nicht installiert, es gibt also nichts zu vergleichen. |
 | `needs-project` | Ein Harness mit Projektgeltungsbereich wurde ohne `--project` gemeldet, sodass sein Ziel nicht aufgelöst werden kann. Übergeben Sie `--project PATH`, um ihn zu inspizieren. |
 | `unknown` | Das Standardprofil konnte nicht geladen werden, sodass ein installierter Harness keine Vergleichsbasis hat. Korrigieren Sie das Profil, um das Drift-Urteil wiederherzustellen. |

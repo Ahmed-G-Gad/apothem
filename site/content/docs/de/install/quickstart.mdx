@@ -2,7 +2,7 @@
 title: "Schnellstart"
 description: "Apothem installieren, ein Profil verfassen, den ersten Harness materialisieren und verifizieren — eine Tour zum Kopieren und Einfügen mit erwarteter Ausgabe."
 machineTranslated: true
-sourceHash: "7a414de2fdc9eea3"
+sourceHash: "549fab5f56f4cf9e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -32,7 +32,7 @@ jeden unterstützten Namen.
 
 ## 1. Apothem installieren
 
-Apothem wird als eigenständige Laufzeit ausgeliefert — die Engine läuft direkt aus ihrem Quellbaum mit vendorten Abhängigkeiten. Ein einziger Befehl holt den Quellcode, legt die Engine ab und materialisiert Ihren ersten Harness. Er prüft zuerst das signierte Release. Importieren Sie daher den Maintainer-Signaturschlüssel vor der ersten Installation einmalig und prüfen Sie, dass der Fingerabdruck `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163` lautet:
+Apothem wird als eigenständige Laufzeit ausgeliefert — die Engine läuft direkt aus ihrem Quellbaum mit vendorten Abhängigkeiten. Ein einziger Befehl holt den Quellcode, legt die Engine ab und materialisiert Ihren ersten Harness. Er prüft zuerst das signierte Release: Er prüft den signierten Release-Tag gegen den Maintainer-Schlüssel, und wenn [cosign](https://docs.sigstore.dev/cosign/system_config/installation/) installiert ist, prüft er zusätzlich das signierte Release-Archiv. Eine fehlgeschlagene Prüfung stoppt die Installation, bevor sich `~/.apothem` ändert, und ein dortiger Git-Klon mit Änderungen an versionierten Dateien stoppt das Update, bis Sie diese committen oder per Stash zurücklegen. Importieren Sie den Maintainer-Signaturschlüssel vor der ersten Installation einmalig und prüfen Sie, dass der Fingerabdruck `5C89 98F9 F241 7204 45D3  F28B 7039 6FED 9C63 4163` lautet:
 
 ```bash title="macOS · Linux · WSL2 · BSD — import the key once"
 curl -fsSL https://github.com/ahmed-g-gad.gpg | gpg --import
@@ -53,7 +53,7 @@ curl -fsSL https://apothem.ahmedgad.com/install.sh | bash
 irm https://apothem.ahmedgad.com/install.ps1 | iex
 ```
 
-Der Installer setzt ein System-Python 3.10+ voraus, dazu `git` und `gpg` für die Netzwerkform. Er prüft die Voraussetzungen und legt die Engine unter `~/.apothem` ab. Fehlt `click` oder `rich`, installiert er das Paket nach Ihrer Bestätigung, bei Angabe von `--yes` (`-Yes` unter PowerShell) oder bei gesetztem `APOTHEM_AUTO_INSTALL_DEPS=1`; andernfalls bricht er mit dem auszuführenden pip-Befehl ab (siehe [Voraussetzungen auf einen Blick](/docs/install#prerequisites-at-a-glance)). Nach Abschluss gibt er ein Banner mit den nächsten Schritten aus; unter POSIX sieht das Banner, wenn das Verzeichnis des Shims bereits im `PATH` liegt, so aus:
+Der Installer setzt ein System-Python 3.10+ voraus, dazu `git` und `gpg` (und optional cosign) für die Netzwerkform. Er prüft die Voraussetzungen und legt die Engine unter `~/.apothem` ab. Fehlt `click` oder `rich`, installiert er das Paket nach Ihrer Bestätigung, bei Angabe von `--yes` (`-Yes` unter PowerShell) oder bei gesetztem `APOTHEM_AUTO_INSTALL_DEPS=1`; andernfalls bricht er mit dem auszuführenden pip-Befehl ab (siehe [Voraussetzungen auf einen Blick](/docs/install#prerequisites-at-a-glance)). Nach Abschluss gibt er ein Banner mit den nächsten Schritten aus; unter POSIX sieht das Banner, wenn das Verzeichnis des Shims bereits im `PATH` liegt, so aus:
 
 ```text
 Installation complete.
@@ -66,12 +66,21 @@ Recommended first step — the guided setup (profile -> preview -> install):
 ```
 
 <Callout title="Erster Lauf ohne Profil">
-  Wenn Sie noch kein Profil haben, kopiert der Installer das Beispielprofil nach
+  Wenn Sie noch kein Profil haben, kopiert der Installer das Beispielprofil
+  (`src/apothem/schemas/profile.example.yaml` im Quellbaum) nach
   `~/.config/apothem/profile.yaml` und macht weiter: Er materialisiert Ihren
-  ersten Harness und verifiziert ihn im selben Lauf. Die Identitätsfelder des
-  Beispiels sind Platzhalter, daher gibt die Installation einen Hinweis aus.
-  Machen Sie das Profil in Schritt 2 zu Ihrem eigenen und wenden Sie es dann wie
-  in Schritt 5 mit `apothem update --harness <name>` an.
+  ersten Harness und verifiziert ihn im selben Lauf. Das Beispiel ist ein
+  Muster, kein leeres Profil. Seine Identitätsfelder sind Platzhalter, daher
+  gibt die Installation einen Hinweis aus, und es enthält außerdem drei
+  Beispielregeln, zwei Beispiel-MCP-Server (`docs` unter
+  `https://mcp.example.invalid/docs` und einen `filesystem`-Server, der mit
+  `npx` gestartet wird), harness-spezifische Überschreibungen unter
+  `harnesses:` sowie eine Liste, die `antigravity` und `open-claw` von
+  `--harness all` ausnimmt. Ein Harness, der MCP-Server aus dem Profil
+  übernimmt, etwa OpenCode oder Qwen Code, erhält beide Beispielserver in seiner
+  eigenen Konfiguration. Machen Sie das Profil in Schritt 2 zu Ihrem eigenen,
+  entfernen Sie dabei, was Sie nicht möchten, und wenden Sie es dann wie in
+  Schritt 5 mit `apothem update --harness <name>` an.
 </Callout>
 
 <Callout title="Der Befehl apothem">
@@ -79,10 +88,11 @@ Recommended first step — the guided setup (profile -> preview -> install):
   bzw. `%LOCALAPPDATA%\Microsoft\WindowsApps` (Windows) und ändert Ihren `PATH`
   niemals. Sobald dieses Verzeichnis im `PATH` liegt, führen Sie die Engine
   direkt als `apothem <command>` aus. Liegt es noch nicht im `PATH`, gibt das
-  Banner eine eigenständige Ausweichlösung aus —
-  `PYTHONPATH="$HOME/.apothem/src" python3 -m apothem <command>` —, die keinen
-  Shim benötigt; stellen Sie jedem Befehl das exakte Präfix voran, das Ihr Banner
-  ausgegeben hat.
+  Banner den vollständigen Pfad des Shims aus (standardmäßig
+  `~/.local/bin/apothem`) oder, wenn kein Shim abgelegt wurde, einen Befehl, der
+  die Engine startet und dabei den aktuellen Ordner aus `sys.path` heraushält;
+  verwenden Sie in jedem Befehl das, was das Banner ausgegeben hat, anstelle von
+  `apothem`.
 </Callout>
 
 Die [Installationsanleitung](/docs/install) behandelt die anderen
@@ -111,8 +121,12 @@ apothem profile show --json
 Das Gerüst verwendet fiktive Platzhalter-Identitätsdaten und kann gefahrlos
 bearbeitet werden, bevor Sie irgendeine Harness-Ausgabe installieren.
 `show --json` liest es zurück und meldet das validierte Profil mit allen
-ausgefüllten Standardwerten, beginnend mit `schema_version`. Der Befehl gibt es
-in einer Zeile aus; hier ist es aufgeklappt:
+ausgefüllten Standardwerten, beginnend mit `schema_version`. Für das Gerüst,
+das `profile init` schreibt, gibt er das folgende Dokument in einer Zeile aus;
+hier ist es aufgeklappt. Wenn Sie das Beispielprofil behalten haben, das der
+Installer in Schritt 1 kopiert hat, zeigt die Ausgabe stattdessen die Werte des
+Beispiels, einschließlich seiner Beispielregeln, MCP-Server und
+harness-spezifischen Überschreibungen.
 
 ```json
 {

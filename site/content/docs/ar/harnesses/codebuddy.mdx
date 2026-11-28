@@ -2,7 +2,7 @@
 title: "CodeBuddy"
 description: "محوّل إطار عمل Apothem لـ Tencent CodeBuddy (إتاحة عامة)."
 machineTranslated: true
-sourceHash: "fbf19289d20e8ab7"
+sourceHash: "325f29aff29de35e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -163,6 +163,10 @@ AskUserQuestion, ExitPlanMode, LSP, Skill, SlashCommand
 "/path/to/python" -E -s "/path/to/project/.apothem/support/hooks/dispatch.py" --contract codebuddy SessionStart
 ```
 
+يجعل <bdi>`-E -s`</bdi> لغة <bdi>Python</bdi> تتجاهل <bdi>`PYTHONPATH`</bdi> ومتغيّرات <bdi>`PYTHON*`</bdi> الأخرى،
+وتتخطّى حِزَم <bdi>site-packages</bdi> الخاصّة بمستخدمك، فلا يمكن لأي ملف في المشروع أن يُحمَّل داخل
+الخطّاف.
+
 لا يغيّر <bdi>`--contract codebuddy`</bdi> شيئًا في المُخرَج: إذ يقرأ <bdi>CodeBuddy</bdi> المغلّف
 نفسه الذي يقرؤه <bdi>Claude Code</bdi>. ويُشغِّل <bdi>CodeBuddy</bdi> أوامر الخطّافات عبر الصدفة لديك،
 وعبر <bdi>Git Bash</bdi> على <bdi>Windows</bdi> (فهو لا يدعم <bdi>cmd.exe</bdi> ولا <bdi>PowerShell</bdi>)، لذا
@@ -196,12 +200,13 @@ AskUserQuestion, ExitPlanMode, LSP, Skill, SlashCommand
 
 يقرأ المحوّل الملف التعريفي المشترك لـ <bdi>Apothem</bdi> ويُجسِّد ملف قواعد المشروع
 في كل تشغيل لـ <bdi>`apothem install`</bdi> أو <bdi>`apothem update`</bdi>. يقرأ
-<bdi>CodeBuddy</bdi> كل ملف <bdi>`*.md`</bdi> تحت <bdi>`.codebuddy/rules/`</bdi>
+<bdi>CodeBuddy Code</bdi> كل ملف <bdi>`*.md`</bdi> تحت <bdi>`.codebuddy/rules/`</bdi>، بما في ذلك المجلّدات الفرعية،
 بوصفه <bdi>Markdown</bdi> مع بيانات أمامية <bdi>YAML</bdi> اختيارية
 (<bdi>`alwaysApply`</bdi>، و<bdi>`paths`</bdi>، و<bdi>`enabled`</bdi>) وفق
-[وثائق <bdi>CodeBuddy Rules</bdi>](https://www.codebuddy.ai/docs/ide/Rules)؛ ويحمل
-ملف <bdi>Apothem</bdi> القيمة <bdi>`alwaysApply: true`</bdi> بحيث يسري سطح الحوكمة في
-كل تفاعل. البيانات الأمامية هي أول محتوى في الملف، وتليها الكتلة التي يديرها
+[وثائق الذاكرة في <bdi>CodeBuddy</bdi>](https://www.codebuddy.ai/docs/cli/memory#modular-rules-with-codebuddy-rules)؛ ويحمل
+ملف <bdi>Apothem</bdi> القيمة <bdi>`alwaysApply: true`</bdi>، لذا يُحمِّله <bdi>CodeBuddy Code</bdi> في
+كل جلسة يبدؤها في المجلّد الجذر للمشروع. وهو لا يقرأ قواعد المشروع إلا من المجلّد الذي يبدأ فيه،
+ولا يقرأ ملف قواعد أضافه التثبيت أو غيّره إلا بعد إعادة التشغيل. البيانات الأمامية هي أول محتوى في الملف، وتليها الكتلة التي يديرها
 <bdi>Apothem</bdi>؛ ويُحتفَظ بالنص الذي تضيفه بعد الكتلة في كل مزامنة. الملف التعريفي
 المشترك هو مصدر الحقيقة؛ وتُنسَخ التعديلات المحلية للمشروع على الملف المُولَّد
 احتياطيًا قبل أن تستبدل المزامنة التالية المحتوى الذي يديره <bdi>Apothem</bdi>.
@@ -211,7 +216,10 @@ AskUserQuestion, ExitPlanMode, LSP, Skill, SlashCommand
 سطح القواعد في <bdi>CodeBuddy</bdi> مقصور على نطاق المشروع تحت
 <bdi>`.codebuddy/rules/`</bdi>. يكتب المحوّل ملفًا مخصّصًا هو
 <bdi>`apothem-rules.md`</bdi> يتعايش مع أي ملفات قواعد يؤلّفها المُشغِّل في الدليل
-نفسه. ملف ذاكرة المشروع <bdi>`CODEBUDDY.md`</bdi>، والملف المُودَع <bdi>`.codebuddy/settings.json`</bdi>،
+نفسه. وتصف [صفحة القواعد](https://www.codebuddy.ai/docs/ide/User-guide/Rules#project-rules)
+في بيئة التطوير <bdi>CodeBuddy IDE</bdi> مجلّدًا لكل قاعدة، يحوي كلٌّ منها ملف <bdi>`RULE.mdc`</bdi>، بدلًا من
+ملف <bdi>`.md`</bdi> عادي كملف <bdi>Apothem</bdi>. ولا تذكر الصفحة ما إذا كانت بيئة التطوير تُحمِّل أيضًا
+ملف <bdi>`.md`</bdi> عاديًا، ولم يتحقّق <bdi>Apothem</bdi> من أنها تفعل ذلك. ملف ذاكرة المشروع <bdi>`CODEBUDDY.md`</bdi>، والملف المُودَع <bdi>`.codebuddy/settings.json`</bdi>،
 و<bdi>`.mcp.json`</bdi> الخاص بالمشروع (خوادم <bdi>MCP</bdi>) ملك للمُشغِّل؛ ولا
 يكتبها <bdi>Apothem</bdi>. يوثّق <bdi>CodeBuddy</bdi> أيضًا أوامر الشرطة المائلة؛ ولا يكتب
 المحوّل أيًّا منها، بل يُشير إلى تلك الانضباطات داخل ملف القواعد بدلًا من ذلك. لكنه
@@ -300,8 +308,17 @@ apothem uninstall --harness codebuddy --project /path/to/project
 ## بوابة المطابقة
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+شغّله من مجلّد مشروعك. وعلى <bdi>Windows</bdi>، استخدم <bdi>`python`</bdi> بدلًا من
+<bdi>`python3`</bdi> والمسار الكامل، لأن <bdi>Windows PowerShell</bdi> و<bdi>cmd</bdi> لا يوسّعان
+<bdi>`~`</bdi>:
+<bdi>`$HOME\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>PowerShell</bdi>، أو
+<bdi>`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>cmd</bdi>. هذا المسار هو
+الموضع الذي يضع فيه المُثبِّت المحرّك، ويُبقي <bdi>`-E -s`</bdi> متغيّر <bdi>`PYTHONPATH`</bdi> لديك وحِزَم
+<bdi>site-packages</bdi> الخاصّة بالمستخدم خارج البوابة؛ وتشرح صفحة [بوابة المطابقة](/docs/conformity-gate)
+كليهما وطرق التثبيت الأخرى.
 
 ## استكشاف الأخطاء وإصلاحها
 

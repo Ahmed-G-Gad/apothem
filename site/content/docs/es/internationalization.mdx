@@ -2,7 +2,7 @@
 title: "Internacionalización (i18n)"
 description: "Cómo el sitio de documentación de Apothem declara su cohorte de locales, emite enlaces hreflang de idiomas alternativos y renderiza de derecha a izquierda en doce idiomas."
 machineTranslated: true
-sourceHash: "cf9e0b89b61893f8"
+sourceHash: "eb1fc830d88563ac"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -140,8 +140,57 @@ marcada como texto en inglés.
 
 El inglés sigue siendo la fuente de verdad; cada página de locale refleja
 literalmente la estructura, los enlaces y los ejemplos de código de su
-contraparte en inglés, con una excepción para los enlaces a secciones. Un enlace
-a una sección de otra página copia su ancla (`#...`) de la página en inglés; un
-enlace a una sección de la misma página construye su ancla a partir del
-encabezado traducido, porque el sitio deriva el id de cada encabezado a partir
-de su texto.
+contraparte en inglés. La única excepción es un enlace a una sección de la
+misma página; consulta
+[Enlaces en páginas traducidas](#enlaces-en-páginas-traducidas).
+
+## Enlaces en páginas traducidas
+
+Un enlace a otra página de la documentación se escribe una vez y es el mismo en
+todos los idiomas: `/docs/<page>` o `/docs/<page>#<section-id>`. En una página
+traducida, el sitio lo convierte en un enlace a la copia traducida de esa página
+cuando el idioma tiene una, de modo que quien lo sigue permanece en su idioma.
+Un enlace a una página que el idioma no ha traducido abre la página en inglés.
+
+El id de una sección se forma a partir del texto del encabezado de su propia
+página, así que una página traducida tiene ids traducidos. De ello se derivan
+dos reglas:
+
+- Un enlace a una sección de **otra** página lleva el id **en inglés**, copiado
+  de la página en inglés. El sitio lo asigna al encabezado traducido que está en
+  la misma posición, así que ambas páginas necesitan los mismos encabezados en
+  los mismos niveles. Cuando no es así, el enlace abre la página en inglés en
+  esa sección.
+- Un enlace a una sección de la **misma** página lleva el id que tiene el
+  encabezado traducido en esa página, porque el sitio no lo cambia.
+
+`python scripts/dev/check_site_anchor_links.py` comprueba ambas reglas en cada
+página sin compilar el sitio, y el conjunto de pruebas lo ejecuta en cada cambio
+del sitio. Falla cuando:
+
+- un enlace con un `#section` nombra un encabezado que no tiene la página que
+  abre;
+- una traducción que registra el texto actual en inglés tiene encabezados
+  distintos de los de la página en inglés, lo que rompería la asignación;
+- un elemento explícito como `<a href="/docs/…">` o `<Card href="/docs/…">`
+  lleva un enlace de la documentación, porque solo los enlaces Markdown se
+  dirigen a la página traducida;
+- un enlace se escribe a mano como `/<language>/docs/<page>` para una página que
+  ese idioma no ha traducido, lo que es un duplicado en inglés;
+- un encabezado es un encabezado setext (subrayado con `===` o `---`) o está
+  vacío, porque la comprobación no puede situarlo entre los encabezados de la
+  página.
+
+Un encabezado cuyo texto la comprobación no puede convertir exactamente en un id
+recibe en su lugar un id explícito: `## Heading [#custom-id]`. Cambiar el nombre
+de un encabezado cambia su id, así que un enlace a él en cualquier página,
+traducciones incluidas, hace fallar la comprobación: actualiza los enlaces, o
+conserva el id anterior en el encabezado renombrado con `[#old-id]`.
+
+El sitio elige la página de destino de un enlace mientras se compila, así que el
+trabajo `docs-build` también ejecuta
+`python scripts/dev/check_built_docs_links.py site/dist` sobre el sitio
+terminado. Falla cuando un enlace de una página traducida sigue abriendo la
+página en inglés aunque su idioma tiene una copia que el sitio podría haber
+usado, y cuando un enlace a una sección nombra un id que no tiene la página
+compilada que abre.

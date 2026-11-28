@@ -2,7 +2,7 @@
 title: "Windsurf"
 description: "Adapter harness Apothem untuk Windsurf (GA)."
 machineTranslated: true
-sourceHash: "26f3db9f3fdef394"
+sourceHash: "6ddfbde9bafb1d18"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -187,6 +187,10 @@ menggantikan kedua jalur tersebut:
 ```text
 "/path/to/python" -E -s "/path/to/project/.apothem/support/windsurf/hooks/dispatch.py" --contract devin SessionStart
 ```
+
+`-E -s` membuat Python mengabaikan `PYTHONPATH` dan variabel `PYTHON*` lainnya
+serta melewati site-packages pengguna Anda, sehingga tidak ada berkas di proyek yang
+dapat dimuat ke dalam hook.
 
 `--contract devin` memetakan nama alat huruf kecil Devin (`exec`, `write`, `edit`,
 `read`, `grep`, `glob`) ke nama yang diuji oleh handler Apothem, dan membiarkan
@@ -389,8 +393,16 @@ yang menjadi kosong dihapus. Setiap folder dicadangkan di bawah
 ## Gerbang konformitas
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
+
+Jalankan dari folder proyek Anda. Di Windows, gunakan `python` sebagai pengganti
+`python3` dan jalur lengkapnya, karena Windows PowerShell dan cmd tidak mengekspansi
+`~`: `$HOME\.apothem\src\apothem\conformity\gate.py` di PowerShell, atau
+`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py` di cmd. Jalur itu adalah
+tempat installer menaruh engine, dan `-E -s` menjauhkan `PYTHONPATH` serta
+site-packages pengguna Anda dari gerbang; [Gerbang konformitas](/docs/conformity-gate)
+menjelaskan keduanya dan instalasi lainnya.
 
 ## Pemecahan masalah
 

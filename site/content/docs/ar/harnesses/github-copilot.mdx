@@ -2,7 +2,7 @@
 title: "GitHub Copilot"
 description: "محوّل إطار عمل Apothem لـ GitHub Copilot (إتاحة عامة)."
 machineTranslated: true
-sourceHash: "b1b8b4918d7d754d"
+sourceHash: "040eeddf99d35ec6"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -163,6 +163,10 @@ apothem install --harness github-copilot --project /path/to/project
 "/path/to/python" -E -s "/path/to/project/.apothem/support/github-copilot/hooks/dispatch.py" --contract copilot sessionStart
 ```
 
+يجعل <bdi>`-E -s`</bdi> بايثون يتجاهل <bdi>`PYTHONPATH`</bdi> ومتغيّرات <bdi>`PYTHON*`</bdi> الأخرى
+ويتخطّى حزم <bdi>site-packages</bdi> الخاصة بالمستخدم، فلا يمكن لأي ملف في المشروع أن يُحمَّل
+في الخطّاف.
+
 يجعل <bdi>`--contract copilot`</bdi> المُوزِّعَ يقرأ مُدخَل <bdi>Copilot</bdi> بصيغة <bdi>camelCase</bdi> ويطبع
 <bdi>`{"additionalContext": ...}`</bdi>، وهو ما يقرؤه <bdi>Copilot</bdi> لهذين الحدثين.
 
@@ -219,6 +223,22 @@ apothem install --harness github-copilot --project /path/to/project
 المشروع، ويترك إعدادات المستخدم على مستوى بيئة التطوير المتكاملة ملكًا للمُشغِّل. ويكتب
 ملف خطّافات واحدًا، <bdi>`.github/hooks/apothem.json`</bdi>، ولا يكتب أي ملف آخر في
 <bdi>`.github/hooks/`</bdi>.
+
+ويُحمِّل <bdi>Copilot</bdi> أيضًا ملفَّي مشروع تكتب فيهما تثبيتات أخرى لـ <bdi>Apothem</bdi> كتلة:
+ملف <bdi>`AGENTS.md`</bdi> الذي يكتبه تثبيت [<bdi>Kimi Code</bdi>](/docs/harnesses/kimi-code)،
+وملف السياق الذي يكتبه
+[تثبيت أداة أخرى لسطر الأوامر](/docs/harnesses/gemini-cli):
+
+```text
+<project>/AGENTS.md
+<project>/GEMINI.md
+```
+
+لذا ففي مشروع فيه هذان التثبيتان، تصل كتل <bdi>Apothem</bdi> الخاصة بهما إلى <bdi>Copilot</bdi> أيضًا.
+وحين يحوي أيٌّ من الملفين كتلة <bdi>Apothem</bdi> بالفعل، يطبع تثبيت <bdi>`github-copilot`</bdi>
+ملاحظة تسمّي الملف والتثبيت الذي كتبه. ويسرد
+[سجلّ أُطُر العمل](/docs/reference/harness-registry#shared-roots) الأدوات
+الأخرى التي تُحمِّل كل ملف.
 
 داخل مستودع <bdi>Apothem</bdi>، يُعَدّ <bdi>`.github/copilot-instructions.md`</bdi>
 صوتًا واحدًا بين أسطح تعليمات المساعد في ذلك المستودع. وفي نسخة مسحوبة من ذلك
@@ -305,14 +325,27 @@ apothem uninstall --harness github-copilot --project /path/to/project
 ## بوابة المطابقة
 
 ```bash
-python -m apothem.conformity.gate --all .
+python3 -E -s ~/.apothem/src/apothem/conformity/gate.py --all .
 ```
 
-يغطّي التشغيل <bdi>`--all`</bdi> المدقّقات المستقلّة، ولا يُشغّل فحص الاتساق متعدّد الأسطح المذكور ضمن ملاحظات التوافق. ولتشغيل ذلك الفحص باسمه من نسخة مسحوبة:
+شغّله من مجلّد مشروعك. وعلى <bdi>Windows</bdi>، استخدم <bdi>`python`</bdi> بدلًا من
+<bdi>`python3`</bdi> واستخدم المسار الكامل، لأن <bdi>Windows PowerShell</bdi> و<bdi>cmd</bdi> لا يوسّعان
+<bdi>`~`</bdi>:
+<bdi>`$HOME\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>PowerShell</bdi>، أو
+<bdi>`%USERPROFILE%\.apothem\src\apothem\conformity\gate.py`</bdi> في <bdi>cmd</bdi>. والمسار هو
+الموضع الذي يضع فيه المُثبِّت المحرّك، ويُبقي <bdi>`-E -s`</bdi> متغيّر <bdi>`PYTHONPATH`</bdi> وحزم
+<bdi>site-packages</bdi> الخاصة بالمستخدم خارج البوابة؛ ويشرح [بوابة المطابقة](/docs/conformity-gate)
+كليهما والتثبيتات الأخرى.
+
+يغطّي التشغيل <bdi>`--all`</bdi> المدقّقات المستقلّة، ولا يُشغّل فحص الاتساق متعدّد الأسطح المذكور ضمن ملاحظات التوافق. ولتشغيل ذلك الفحص باسمه، شغّل البوابة الخاصة بالنسخة المسحوبة نفسها من جذر نسخة مسحوبة من
+مستودع <bdi>Apothem</bdi>:
 
 ```bash
-python -m apothem.conformity.gate --check multi-surface-coherence-grep AGENTS.md
+python3 -E -s src/apothem/conformity/gate.py --check multi-surface-coherence-grep AGENTS.md
 ```
+
+تعثر النسخة المُثبَّتة تحت <bdi>`~/.apothem`</bdi> على الملفات التي تقارنها بجوارها، لذا فإن
+تشغيلها على نسخة مسحوبة يتخطّى الفحص ويُبلِغ عن نجاح.
 
 ## استكشاف الأخطاء وإصلاحها
 

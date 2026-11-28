@@ -2,7 +2,7 @@
 title: "Variables d'environnement de l'installateur"
 description: "Piloter l'installateur par script (destination, source, environnement, profil, vérification) avec des variables d'environnement."
 machineTranslated: true
-sourceHash: "3210277a66924394"
+sourceHash: "50b79838c9651500"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -23,12 +23,12 @@ définissant des variables d'environnement avant de l'exécuter.
 
 | Variable | Contrôle | Valeur par défaut |
 | --- | --- | --- |
-| `APOTHEM_HOME` | Destination d'installation de l'arborescence source clonée | `$HOME/.apothem` |
-| `APOTHEM_REPO` | Dépôt Git distant à cloner | `https://github.com/ahmed-g-gad/apothem` |
+| `APOTHEM_HOME` | Destination d'installation de l'arborescence source ; ce doit être un dossier dans lequel vous seul pouvez écrire (voir ci-dessous), et les installateurs avertissent lorsque d'autres peuvent écrire dans ce dossier ou dans son dossier parent | `$HOME/.apothem` |
+| `APOTHEM_REPO` | Dépôt Git distant à cloner ; une valeur qui commence par `-` est refusée | `https://github.com/ahmed-g-gad/apothem` |
 | `APOTHEM_REF` | Ref Git à extraire ; non définie, elle résout la dernière étiquette signée `vMAJOR.MINOR.PATCH`, une valeur d'étiquette l'épingle, `main` sélectionne la branche mouvante. Une ref qui n'est pas une étiquette, comme `main`, interrompt l'opération sauf si `APOTHEM_ALLOW_UNVERIFIED=1`. | non définie (dernière étiquette signée) |
-| `APOTHEM_ALLOW_UNVERIFIED` | Lorsqu'elle vaut `1`, rétrograde un échec de vérification de la signature de l'étiquette d'un arrêt fatal à un avertissement | `0` (vérification, échec fermé) |
-| `APOTHEM_VERIFY` | `signature` vérifie la signature GPG de l'étiquette de publication ; `checksum` installe l'archive de plateforme de la publication après avoir contrôlé son SHA-256 par rapport au `SHA256SUMS` de la publication (intégrité, et non preuve de l'identité de la personne qui l'a publiée) | `signature` |
-| `APOTHEM_RELEASE_BASE` | Base de téléchargement pour le mode checksum | `<APOTHEM_REPO>/releases/download` |
+| `APOTHEM_ALLOW_UNVERIFIED` | Lorsqu'elle vaut `1`, rétrograde l'échec du contrôle de l'étiquette sur le chemin du clone d'un arrêt fatal à un avertissement, et autorise `APOTHEM_VERIFY=checksum` ; le chemin `release` ne rétrograde jamais, et aucun réglage n'ignore le contrôle qui vérifie que l'étiquette signée est bien celle nommée pour la publication, mais comme elle laisse passer une étiquette non signée, ou signée par une autre clé, ce contrôle ne protège que les étiquettes qui portent la signature de la clé du mainteneur | `0` (vérification, échec fermé) |
+| `APOTHEM_VERIFY` | `auto` utilise `release` lorsque `cosign` est dans le `PATH` et que `APOTHEM_HOME` n'est pas un clone git, et `signature` sinon ; `release` installe l'archive de plateforme une fois que l'étiquette porte la signature de la clé du mainteneur, que cosign confirme que le workflow de publication a signé `SHA256SUMS` lors d'une exécution sur le commit de l'étiquette, et que le SHA-256 de l'archive y correspond ; `signature` vérifie la signature GPG de l'étiquette de publication par rapport à la clé épinglée du mainteneur ; `checksum` installe l'archive après le seul contrôle SHA-256 et exige `APOTHEM_ALLOW_UNVERIFIED=1`. Le mode checksum ne vérifie pas la publication. SHA256SUMS provient de la même publication que l'archive : une correspondance montre seulement que le téléchargement n'est pas endommagé ; quiconque peut modifier les fichiers de la publication peut modifier les deux. | `auto` |
+| `APOTHEM_RELEASE_BASE` | Base de téléchargement pour les modes `release` et `checksum` | `<APOTHEM_REPO>/releases/download` |
 | `APOTHEM_SOURCE` | Arborescence source locale explicite à utiliser au lieu de cloner | non définie (clonage) |
 | `APOTHEM_HARNESS` | Environnement de portée utilisateur à installer (`antigravity`, `claude-code`, `codex`, `hermes`, `open-claw`, `opencode`, `qwen-code`). L'installateur ne transmet pas `--project` ; un environnement de portée projet échoue donc avec `project.required` ; installez ceux-ci ensuite avec `apothem install --harness NAME --project PATH`. | `claude-code` |
 | `APOTHEM_PROFILE` | Chemin vers le YAML du profil partagé | `$HOME/.config/apothem/profile.yaml` |
@@ -43,17 +43,200 @@ jamais à `APOTHEM_REPO` / `APOTHEM_REF`, et ignore la résolution de l'étiquet
 et la vérification de la signature (rien n'est récupéré, donc il n'y a rien à
 vérifier).
 
-Lorsque `APOTHEM_HOME` pointe vers un répertoire existant qui n'est pas un clone
-git, l'installateur refuse de le supprimer : déplacez-le, faites pointer
-`APOTHEM_HOME` ailleurs, ou passez `--yes` (`-Yes` sous Windows) pour autoriser
-le remplacement. Un répertoire vide obsolète est remplacé sans cette option.
+`APOTHEM_SOURCE` et l'exécution du script d'installation propre à un checkout
+par son chemin (depuis n'importe quel dossier) sont les deux seules façons
+d'utiliser une arborescence locale. Une commande en une ligne via un pipe
+(`curl ... | sh`, `irm ... | iex`) n'en utilise jamais : elle ignore le dossier
+courant et ses dossiers parents, et récupère et vérifie la publication. Les
+installateurs, les scripts de mise à jour et de désinstallation, les shims
+`apothem`, le lanceur npm, les hooks et les processus de validation du portail
+de conformité excluent le dossier courant du chemin de recherche des modules de
+Python. Une commande `python -m apothem` que vous tapez vous-même ne le fait
+pas : `-m` lit d'abord les modules du dossier courant.
+
+Les entrées vides et relatives de votre propre `PYTHONPATH` ne sont transmises
+au moteur par aucun lanceur (les installateurs, les scripts de mise à jour et
+de désinstallation, les shims `apothem` POSIX et Windows, et le lanceur npm).
+Une entrée conservée doit être un chemin complet : sous Windows, un chemin avec
+lecteur tel que `C:\lib` ou un chemin réseau ; ailleurs, un chemin qui commence
+par `/`. Un chemin enraciné `\lib` ou un chemin relatif à un lecteur `C:lib`
+est écarté. Les scripts sh demandent au Python qu'ils exécutent quelle forme il
+lit, et le shim `apothem` qu'ils écrivent conserve cette forme. Un Python
+Windows (le Python habituel sous Git Bash) reçoit les chemins du moteur sous
+forme Windows, joints par `;`, et ne conserve que les chemins avec lecteur et
+les chemins réseau de votre `PYTHONPATH`. Un Python POSIX, y compris le
+`python3` propre à Cygwin et à MSYS2, reçoit des chemins POSIX joints par `:`
+et ne conserve que les entrées qui commencent par `/`. Les commandes `git` des
+installateurs qui ne travaillent pas sur un clone ne lisent pas de dépôt situé
+dans le dossier courant.
+
+Ces commandes `git` s'exécutent depuis un dossier temporaire vide que
+l'installateur crée pour l'exécution : un chemin relatif dans une variable
+d'environnement git (`GIT_SSH`, `GIT_ASKPASS` et similaires) ne pointe donc
+plus là où il pointait auparavant. Utilisez un chemin absolu dans ces
+variables. Un `APOTHEM_REPO` relatif qui désigne un dossier ou un fichier (tel
+qu'un bundle git) est toujours résolu depuis le dossier où vous avez démarré.
+
+Les installateurs ignorent les variables d'environnement git qui redirigent git
+(`GIT_DIR`, `GIT_WORK_TREE`, `GIT_INDEX_FILE` et similaires), et ils s'arrêtent
+lorsque `APOTHEM_REPO` commence par `-`, afin qu'une valeur ne puisse pas être
+lue comme une option git.
+
+Les installateurs et les scripts de mise à jour effacent aussi `GIT_CONFIG`,
+`GIT_CONFIG_GLOBAL` et `GIT_CONFIG_SYSTEM`, afin qu'une valeur héritée de votre
+environnement ne puisse pas diriger git vers un autre fichier de configuration,
+ainsi que `GIT_ATTR_SOURCE`, qui ferait lire à git les attributs d'une autre
+arborescence que l'arbre de travail et l'index que lisent les contrôles (un
+`attr.tree` dans votre propre configuration est vidé à chaque commande git
+exécutée sur un clone pour la même raison, tout comme `core.attributesFile`, de
+sorte que git ne lit ni le fichier d'attributs qu'il désigne ni
+`~/.config/git/attributes`, dont les macros pourraient nommer un filtre que les
+contrôles ne voient pas). Si vous définissez l'une d'elles, l'installateur
+l'ignore ;
+les scripts PowerShell la rétablissent à la fin de l'exécution, de sorte
+qu'une exécution `irm ... | iex` laisse votre session telle qu'elle était.
+`GIT_CONFIG_NOSYSTEM` reste tel que vous l'avez défini : il empêche seulement
+git de lire la configuration système. git lit toujours votre propre
+configuration globale (`~/.gitconfig` ou `$XDG_CONFIG_HOME/git/config`) et la
+configuration système aux emplacements habituels, et `git`, `gpg` et `cosign`
+sont les programmes que trouve votre `PATH`. Les installateurs leur font
+confiance tels qu'ils sont trouvés, et font donc confiance à cette
+configuration.
+
+Les installateurs et les scripts de mise à jour définissent aussi quatre
+variables git pour toute l'exécution. `GIT_NO_REPLACE_OBJECTS=1` empêche git de
+remplacer un objet par un autre via des refs de remplacement.
+`GIT_NO_LAZY_FETCH=1` empêche git de récupérer de lui-même un objet manquant
+depuis le dépôt distant pendant qu'il lit un clone.
+`GIT_ALLOW_PROTOCOL=file:git:http:https:ssh` n'autorise que ces cinq transports
+pour chaque commande git de l'exécution, de sorte qu'une valeur de votre
+environnement ne peut pas élargir la liste et qu'une adresse ne peut pas faire
+exécuter à git un programme auxiliaire tel que `ext::`. `APOTHEM_REPO` doit
+utiliser l'un d'eux ; un chemin local compte comme `file`.
+`GIT_ATTR_NOSYSTEM=1` empêche git de lire le fichier d'attributs système, dont
+les macros pourraient nommer un filtre. Les scripts PowerShell rétablissent les
+quatre variables telles qu'elles étaient à la fin de l'exécution. Ils
+lisent aussi la sortie de git en UTF-8 pendant l'exécution, quelle que soit la
+page de codes de votre console, et rétablissent le réglage de la console à la
+fin de l'exécution.
+
+`APOTHEM_HOME` doit être un dossier dans lequel vous seul pouvez écrire.
+Quiconque peut y écrire peut modifier le code qu'exécute la commande `apothem`.
+Sous Windows, un dossier créé à la racine d'un lecteur, tel que `C:\apothem`,
+peut être modifié par chaque utilisateur qui se connecte à l'ordinateur, avec
+les permissions par défaut de Windows. Gardez-le sous votre propre dossier
+utilisateur, comme le fait la valeur par défaut. Les scripts d'installation et
+de mise à jour, exécutions à blanc comprises, avertissent sans s'arrêter lorsque
+d'autres utilisateurs peuvent écrire dans `APOTHEM_HOME` ou dans le dossier qui
+le contient, ou possèdent l'un ou l'autre ; une installation depuis un
+checkout local, et une mise à jour avec `APOTHEM_SOURCE` définie, ignorent ce
+contrôle. Sous Windows,
+l'avertissement provient de `install.ps1` et `update.ps1` : `install.sh` et
+`update.sh` n'effectuent pas ce contrôle sous Git Bash, MSYS2 ou Cygwin ;
+[Dépannage](/docs/install/troubleshooting#the-installer-warns-other-users-can-change-apothem_home)
+montre comment corriger cela.
+
+Chaque exécution des scripts d'installation, de mise à jour et de
+désinstallation détient un verrou, `<APOTHEM_HOME>.lock`, pendant toute
+l'exécution ; une deuxième exécution sur le même `APOTHEM_HOME` s'arrête.
+Lorsque `APOTHEM_HOME` est un lien symbolique (ou, sous Windows, une jonction),
+les scripts POSIX comme les scripts PowerShell prennent le verrou à côté du
+dossier vers lequel il mène. Un arrêt forcé ou une coupure de courant peut
+laisser des dossiers à côté de `APOTHEM_HOME`, et la prochaine installation
+récupérée les nomme et s'arrête avant de modifier quoi que ce soit ; voir
+[Dépannage](/docs/install/troubleshooting).
+
+Lorsque `APOTHEM_HOME` pointe vers un répertoire existant, ce qui se passe
+dépend de ce qu'il contient.
+
+- Un clone git est mis à jour par fetch en mode `auto` ou `signature` ; la
+  nouvelle étiquette est d'abord contrôlée, et ce n'est qu'ensuite que le clone
+  est extrait. Un contrôle échoué laisse le clone inchangé, et des
+  modifications de fichiers suivis arrêtent la mise à jour, avec un message
+  invitant à les committer ou à les remiser (stash), au lieu d'être perdues.
+  Avec une ref qui n'est pas une publication, comme `main`, le clone suit la
+  copie de cette branche sur origin. Un fichier `.git` (un worktree lié) compte
+  comme un clone. `release` et `checksum` refusent un clone sans `--yes`, et
+  avec `--yes` ils le refusent encore tant que le clone contient du travail
+  local (modifications, stashes, commits non poussés ou fichiers non suivis
+  dans son arborescence source), y compris lors d'une exécution à blanc. Lorsque
+  `--yes` remplace bien un clone, l'arborescence propre au clone est déplacée
+  dans un nouveau dossier, `<APOTHEM_HOME>.before-apothem-<time>`, sous son
+  propre nom, au lieu d'être supprimée. Avant le fetch, une mise à jour sur
+  place s'arrête lorsque des fichiers sont marqués assume-unchanged ou
+  skip-worktree, lorsque l'arbre de travail du clone n'est pas `APOTHEM_HOME`,
+  lorsque le clone contient un sous-module ou un dépôt git que git ne suit pas
+  (en dehors des dossiers de données propres au moteur, tels que `backups`),
+  lorsque `.git/info/attributes` nomme un filtre ou un pilote de diff,
+  lorsque le clone emprunte des objets à un autre dépôt, lorsqu'un fichier
+  `.gitattributes` de l'arbre de travail n'est pas suivi, diffère de la copie
+  commitée, nomme un tel pilote ou a une copie commitée que git ne peut pas
+  lire, lorsque des fichiers sous `src` ne sont pas suivis, ou lorsque le
+  `.git/config` ou le `.git/config.worktree` du clone contient un réglage autre
+  que ceux que `git clone` et `git init` y écrivent pour un clone complet, les
+  réglages de branche (le `remote` et le `pushremote` d'une branche doivent
+  être `origin`), `user.name`, `user.email`, `maintenance.auto`,
+  `maintenance.strategy`, `pull.rebase` et `pull.ff`
+  ([Dépannage](/docs/install/troubleshooting#the-installer-stops-the-existing-clone-is-set-up-in-a-way-the-update-would-trust)
+  les énumère) ; les hooks git du clone ne s'exécutent jamais pendant la mise
+  à jour. Après l'extraction, la mise à jour supprime les dossiers de cache
+  Python (`__pycache__`) sous `src` avant que le moteur ne s'exécute depuis le
+  clone. Seul un clone
+  d'une source Apothem compte : un clone de toute autre chose est traité comme
+  un dossier qui ne contient aucune installation Apothem.
+- Une installation antérieure depuis une archive de publication est mise à
+  jour par une nouvelle exécution en mode `auto` avec cosign (ou `release`, ou
+  `checksum`).
+- Un dossier qui ne contient aucune installation Apothem est refusé :
+  déplacez-le, faites pointer `APOTHEM_HOME` ailleurs, ou passez `--yes`
+  (`-Yes` sous Windows). Avec `--yes`, l'installateur déplace le dossier
+  entier, inchangé, dans un nouveau dossier,
+  `<APOTHEM_HOME>.before-apothem-<time>`, et effectue une installation neuve.
+- Un répertoire vide obsolète, ou un répertoire qui ne contient que les données
+  propres au moteur (`backups`, `state`, `plans`, `memory`, `contexts`,
+  `learning`, `providers`), est mis à jour sans l'option, et ces données sont
+  conservées.
+- Un lien symbolique (sous Windows, un lien symbolique ou une jonction) est
+  refusé chaque fois que l'installation le remplacerait : faites pointer
+  `APOTHEM_HOME` vers le dossier vers lequel mène le lien. Un clone git
+  existant derrière un lien est mis à jour sur place.
+- Sous Linux et macOS, un fichier ou un dossier à reprendre dont le nom contient
+  une espace ou un autre caractère spécial arrête l'installation : sortez-le
+  d'abord de `APOTHEM_HOME`.
+
+Pour une installation Apothem qui est remplacée, la nouvelle source est
+contrôlée dans un dossier de préparation à côté de `APOTHEM_HOME` et mise en
+place uniquement une fois que tous les contrôles ont réussi. Tout ce qui, dans
+l'ancienne installation, ne fait pas partie de son arborescence source, y
+compris les sauvegardes, les journaux d'installation, les plans et la mémoire
+du moteur, est conservé. Si une étape échoue ou si l'exécution est arrêtée par
+Ctrl+C ou un signal de terminaison, l'installation précédente est rétablie
+inchangée ; un arrêt forcé ou une coupure de courant peut laisser à côté de
+`APOTHEM_HOME` des dossiers que la prochaine installation récupérée signale.
+`--dry-run` (`-DryRun` sous Windows) effectue ses contrôles dans un dossier
+temporaire et laisse `APOTHEM_HOME` inchangé. Il effectue les mêmes contrôles
+qu'une exécution réelle, sauf qu'il ne fait pas de fetch dans un clone
+existant, et ne le contrôle donc pas à la recherche de modifications de
+fichiers suivis, ce que fait une mise à jour réelle après son fetch.
 
 ## Modèle de confiance
 
 Lorsque `APOTHEM_REF` n'est pas définie, l'installateur résout la dernière
-étiquette de publication signée et vérifie sa signature avec `git verify-tag`
-avant de matérialiser la moindre configuration ; une étiquette non signée ou
-altérée interrompt l'installation. Une étiquette signée dont la clé publique du
+publication et la contrôle avant de matérialiser la moindre configuration. Il
+vérifie toujours l'étiquette de publication avec `git verify-tag` et exige que
+la signature provienne de la clé du mainteneur publiée dans SECURITY.md ; une
+étiquette non signée ou altérée, ou signée par toute autre clé, interrompt
+l'installation, tout comme un objet d'étiquette signé qui n'est pas celui
+nommé pour la publication (une étiquette signée d'une autre publication,
+redirigée vers ce nom). Avec `cosign` dans le `PATH`, il installe ensuite
+l'archive de publication une fois que cosign confirme que le workflow de
+publication a signé `SHA256SUMS` et, grâce à son contrôle
+`--certificate-github-workflow-sha`, que le certificat qu'il a vérifié a été
+délivré à une exécution sur le commit de l'étiquette, et que le SHA-256 de
+l'archive y correspond. Ce chemin exige `gpg` et cosign. Pour un clone git
+existant, l'installateur récupère et contrôle l'étiquette avant d'extraire le
+clone : un contrôle échoué laisse donc le clone tel qu'il était. Une étiquette
+signée dont la clé publique du
 mainteneur est absente du trousseau local interrompt plutôt l'installation avec
 des indications pour importer la clé : importez la clé et comparez son
 empreinte avec la valeur publiée dans
@@ -65,20 +248,32 @@ sur la
 mouvante avec `APOTHEM_REF=main` plus `APOTHEM_ALLOW_UNVERIFIED=1` ; cette
 installation n'est pas vérifiée, et `main` seule interrompt l'installation,
 car une branche n'est pas une étiquette signée. Définissez
-`APOTHEM_ALLOW_UNVERIFIED=1` seule pour passer outre un échec de vérification
-avec un avertissement (usage isolé du réseau, local, ou antérieur aux
-publications signées).
+`APOTHEM_ALLOW_UNVERIFIED=1` pour passer outre un échec du contrôle de
+l'étiquette avec un avertissement (usage isolé du réseau, local, ou antérieur
+aux publications signées). Elle ne s'applique qu'au chemin du clone, jamais au
+chemin cosign : sur un hôte doté de cosign, définissez donc
+`APOTHEM_VERIFY=signature` avec elle.
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh
 ```
 
-```bash title="Check the archive digest when the signing key is not imported"
-APOTHEM_VERIFY=checksum bash install.sh
+```bash title="Require the tag check and the cosign check"
+APOTHEM_VERIFY=release bash install.sh
 ```
 
-```bash title="Proceed without verification (interim / air-gapped)"
-APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
+Le mode checksum ne vérifie pas la publication. SHA256SUMS provient de la même
+publication que l'archive : une correspondance montre seulement que le
+téléchargement n'est pas endommagé ; quiconque peut modifier les fichiers de la
+publication peut modifier les deux. L'installateur ne l'exécute que si
+`APOTHEM_ALLOW_UNVERIFIED=1` est également définie.
+
+```bash title="Check the archive digest alone (no cosign, no gpg; does not verify the release)"
+APOTHEM_VERIFY=checksum APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
+```
+
+```bash title="Proceed past a failed tag check (interim / air-gapped)"
+APOTHEM_VERIFY=signature APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 ```
 
 ## Étapes (POSIX bash)
@@ -94,7 +289,7 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
    aussi besoin de `APOTHEM_ALLOW_UNVERIFIED=1` :
 
    ```bash
-   APOTHEM_REF=main APOTHEM_ALLOW_UNVERIFIED=1 APOTHEM_HOME=/opt/apothem bash install.sh
+   APOTHEM_REF=main APOTHEM_ALLOW_UNVERIFIED=1 APOTHEM_HOME="$HOME/tools/apothem" bash install.sh
    ```
 
 3. Utiliser un checkout local et un profil personnalisé, en ignorant la
@@ -119,7 +314,7 @@ pwsh -NoProfile -File install.ps1
 ```powershell
 $env:APOTHEM_ALLOW_UNVERIFIED = '1'
 $env:APOTHEM_REF = 'main'
-$env:APOTHEM_HOME = 'C:\opt\apothem'
+$env:APOTHEM_HOME = "$HOME\tools\apothem"
 pwsh -NoProfile -File install.ps1
 ```
 
@@ -150,9 +345,12 @@ apothem verify --harness cursor --project /path/to/project
 Lorsque le profil n'existait pas encore, l'installateur en crée un à partir de
 l'exemple et poursuit l'installation et la vérification au cours de la même
 exécution. Les champs d'identité de l'exemple sont des espaces réservés ;
-l'installation affiche donc une remarque. Modifiez `$APOTHEM_PROFILE`, puis
-exécutez `apothem update --harness <name>` pour appliquer votre identité. Un
-`--dry-run` sans profil effectue l'aperçu avec l'exemple en place et n'écrit
+l'installation affiche donc une remarque. L'exemple contient aussi des règles
+d'exemple, deux serveurs MCP d'exemple et des surcharges par environnement, et
+un environnement qui prend les serveurs MCP dans le profil, tel qu'OpenCode,
+reçoit les deux serveurs. Modifiez `$APOTHEM_PROFILE`, en retirant ce que vous
+ne voulez pas, puis exécutez `apothem update --harness <name>` pour
+l'appliquer. Un `--dry-run` sans profil effectue l'aperçu avec l'exemple en place et n'écrit
 rien.
 
 ## Voir aussi

@@ -2,7 +2,7 @@
 title: "हार्नेस अडैप्टर अमूर्तन"
 description: "HarnessAdapter प्रोटोकॉल — Apothem अडैप्टर साझा प्रोफ़ाइल का अनुवाद कैसे करते हैं।"
 machineTranslated: true
-sourceHash: "da20d21cbe60d343"
+sourceHash: "20a51a9c0e55e94a"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -83,6 +83,8 @@ flowchart TD
 from pathlib import Path
 from typing import Protocol
 
+from apothem.harnesses._shared.install_driver_types import MaterializationRun
+
 class HarnessAdapter(Protocol):
     name: str
     output_path: Path
@@ -93,7 +95,7 @@ class HarnessAdapter(Protocol):
     def update(self, profile: dict[str, object]) -> object:
         ...
 
-    def uninstall(self) -> None:
+    def uninstall(self) -> MaterializationRun | None:
         ...
 
     def is_installed(self) -> bool:
@@ -103,8 +105,11 @@ class HarnessAdapter(Protocol):
         ...
 ```
 
-परियोजना-दायरे के अडैप्टर जीवनचक्र विधियों पर अतिरिक्त रूप से `project: Path |
-None` स्वीकार कर सकते हैं और `resolve_output_path(project)` को उजागर कर सकते हैं।
+शिप किए गए अडैप्टर `uninstall` से एक `MaterializationRun` लौटाते हैं, और CLI
+उसकी चेतावनियों और त्रुटियों की रिपोर्ट करता है; जिस अडैप्टर के पास रिपोर्ट करने को
+कुछ नहीं है, वह `None` लौटा सकता है।
+
+परियोजना-दायरे के अडैप्टर जीवनचक्र विधियों पर अतिरिक्त रूप से `project: Path | None` स्वीकार कर सकते हैं और `resolve_output_path(project)` को उजागर कर सकते हैं।
 CLI `--project PATH` को केवल उन्हीं अडैप्टरों को पास करता है जिनकी विधि हस्ताक्षर
 इसे स्वीकार करती है।
 

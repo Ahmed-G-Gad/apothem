@@ -2,7 +2,7 @@
 title: "प्लान अनुशासन — प्रोजेक्ट-स्थानीय क्षणभंगुर वर्किंग मेमोरी"
 description: ".apothem/plans/ में (पुराना .plans/ ट्री apothem migrate-workspace के माध्यम से अपग्रेड होता है) प्रोजेक्ट-स्थानीय क्षणभंगुर वर्किंग मेमोरी को frontmatter स्कीमा, जीवनचक्र संक्रमण, ADR में पदोन्नति, और हुक तथा वैलिडेटरों के माध्यम से प्रवर्तन के साथ प्रबंधित करें।"
 machineTranslated: true
-sourceHash: "175d0e7730335ebd"
+sourceHash: "78ba9223bd5803ab"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -155,7 +155,7 @@ promotes-to: <ADR path or null>
 
 यह अनुशासन हर भावी सत्र में टिके रहना चाहिए। निम्नलिखित प्रवर्तन सतहें अनिवार्य हैं और प्रकाशित इकोसिस्टम में एन्कोड की गई हैं:
 
-1. **`AGENTS.md` और मिरर निर्देश सतहें** — शीर्ष-स्तरीय अनिवार्य व्यवहार-ब्लॉक, जो यह कहता है: *"Planning artifacts are written to `<project-root>/.apothem/plans/` — the sole canonical plans home (a legacy `<project-root>/.plans/` tree is upgraded via `apothem migrate-workspace`) — never to any harness configuration directory (for example `~/.codex/` or `~/.claude/`) and never to a global location. This rule is non-negotiable; cite §3 of the project spec on every related decision."* यह ब्लॉक `plans-discipline-language` सत्यापक द्वारा पहचाना जाता है।
+1. **`AGENTS.md` और मिरर निर्देश सतहें** — शीर्ष-स्तरीय अनिवार्य व्यवहार-ब्लॉक, जो यह कहता है: *"Planning artifacts are written to `<project-root>/.apothem/plans/` — the sole canonical plans home. A legacy `<project-root>/.plans/` tree is no longer canonical; operators upgrade an existing one via `apothem migrate-workspace`. They are never written to any harness configuration directory (for example `~/.codex/` or `~/.claude/`) and never to a global location. This rule is non-negotiable; §2 of `site/content/docs/reference/plans-discipline.mdx` states it in full."* यह ब्लॉक `plans-discipline-language` सत्यापक द्वारा पहचाना जाता है।
 2. **प्रति-हार्नेस इन-रिपॉज़िटरी निर्देश फ़ाइल** — उस हार्नेस की निर्देश सतह के ढाँचे में वही निर्देश प्रतिबिंबित करती है (§4 *Plans Discipline*); प्रत्येक पंजीकृत हार्नेस सतह पर वही सत्यापक इसे खोजता है।
 3. **डिफ़ॉल्ट आउटपुट-स्टाइल** — जब कोई प्रतिक्रिया प्लान-आकार की सामग्री उत्पन्न करेगी (बहु-चरणीय रणनीति, अपघटन, डिज़ाइन वॉकथ्रू, डीबगिंग जर्नल), तो स्टाइल आर्टिफ़ैक्ट को इनलाइन प्रिंट-करके-त्यागने के बजाय एक प्रोजेक्ट-स्थानीय `.apothem/plans/` लेखन की ओर रूट करता है। स्टाइल स्पष्ट रूप से निर्देश देता है: *"If no project root is discoverable, halt with a structured inquiry asking the operator where to plan."*
 4. **हर प्रत्यायोजित वर्कर प्रॉम्प्ट** — किसी भी योजना आर्टिफ़ैक्ट के गंतव्य के रूप में `.apothem/plans/` को नामित करने वाली एक *Output Surface* स्टैन्ज़ा, और हार्नेस-स्थानीय प्लान डायरेक्टरियों को निषिद्ध के रूप में नामित करने वाली एक *Anti-Pattern* स्टैन्ज़ा वहन करता है।

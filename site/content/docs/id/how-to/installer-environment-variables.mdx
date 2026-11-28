@@ -2,7 +2,7 @@
 title: "Variabel lingkungan pemasang"
 description: "Kendalikan pemasang skrip (tujuan, sumber, harness, profil, verifikasi) dengan variabel lingkungan."
 machineTranslated: true
-sourceHash: "3210277a66924394"
+sourceHash: "50b79838c9651500"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -22,12 +22,12 @@ menyetel variabel lingkungan sebelum Anda menjalankannya.
 
 | Variabel | Mengendalikan | Default |
 | --- | --- | --- |
-| `APOTHEM_HOME` | Tujuan instalasi untuk pohon sumber yang dikloning | `$HOME/.apothem` |
-| `APOTHEM_REPO` | Remote Git yang dikloning | `https://github.com/ahmed-g-gad/apothem` |
+| `APOTHEM_HOME` | Tujuan instalasi untuk pohon sumber; harus berupa folder yang hanya dapat ditulis oleh Anda (lihat di bawah), dan pemasang memperingatkan ketika pihak lain dapat menulis ke folder itu atau ke folder yang memuatnya | `$HOME/.apothem` |
+| `APOTHEM_REPO` | Remote Git yang dikloning; nilai yang diawali `-` ditolak | `https://github.com/ahmed-g-gad/apothem` |
 | `APOTHEM_REF` | Ref Git yang di-checkout; jika tidak disetel, me-resolve tag `vMAJOR.MINOR.PATCH` bertanda tangan terbaru, sebuah nilai tag mematoknya, dan `main` memilih branch yang bergerak. Ref non-tag seperti `main` membatalkan proses kecuali `APOTHEM_ALLOW_UNVERIFIED=1`. | tidak disetel (tag bertanda tangan terbaru) |
-| `APOTHEM_ALLOW_UNVERIFIED` | Menurunkan kegagalan verifikasi tanda tangan tag dari pembatalan fatal menjadi peringatan ketika disetel ke `1` | `0` (verifikasi, gagal-tertutup) |
-| `APOTHEM_VERIFY` | `signature` memverifikasi tanda tangan GPG tag rilis; `checksum` memasang arsip platform rilis setelah memeriksa SHA-256-nya terhadap `SHA256SUMS` rilis (integritas, bukan bukti siapa yang memublikasikannya) | `signature` |
-| `APOTHEM_RELEASE_BASE` | Basis unduhan untuk mode checksum | `<APOTHEM_REPO>/releases/download` |
+| `APOTHEM_ALLOW_UNVERIFIED` | Menurunkan pemeriksaan tag yang gagal pada jalur klon dari pembatalan fatal menjadi peringatan ketika disetel ke `1`, dan mengizinkan `APOTHEM_VERIFY=checksum`; jalur `release` tidak pernah menurunkannya, dan tidak ada pengaturan yang melewati pemeriksaan bahwa tag bertanda tangan adalah tag yang dinamai untuk rilis itu, tetapi karena variabel ini meloloskan tag tanpa tanda tangan, atau tag yang ditandatangani kunci lain, pemeriksaan itu hanya melindungi tag yang membawa tanda tangan kunci pemelihara | `0` (verifikasi, gagal-tertutup) |
+| `APOTHEM_VERIFY` | `auto` menggunakan `release` ketika `cosign` ada di `PATH` dan `APOTHEM_HOME` bukan klon git, dan `signature` jika tidak; `release` memasang arsip platform setelah tag membawa tanda tangan kunci pemelihara, cosign memastikan workflow rilis menandatangani `SHA256SUMS` dalam eksekusi pada commit tag tersebut, dan SHA-256 arsip cocok dengannya; `signature` memeriksa tanda tangan GPG tag rilis terhadap kunci pemelihara yang dipatok; `checksum` memasang arsip setelah pemeriksaan SHA-256 saja dan memerlukan `APOTHEM_ALLOW_UNVERIFIED=1`. Mode checksum tidak memverifikasi rilis. SHA256SUMS berasal dari rilis yang sama dengan arsip, sehingga kecocokan hanya menunjukkan bahwa unduhan tidak rusak; siapa pun yang dapat mengubah berkas rilis dapat mengubah keduanya. | `auto` |
+| `APOTHEM_RELEASE_BASE` | Basis unduhan untuk mode `release` dan `checksum` | `<APOTHEM_REPO>/releases/download` |
 | `APOTHEM_SOURCE` | Pohon sumber lokal eksplisit yang digunakan alih-alih mengkloning | tidak disetel (kloning) |
 | `APOTHEM_HARNESS` | Harness bercakupan pengguna yang dipasang (`antigravity`, `claude-code`, `codex`, `hermes`, `open-claw`, `opencode`, `qwen-code`). Pemasang tidak meneruskan `--project`, sehingga harness bercakupan proyek gagal dengan `project.required`; pasang harness tersebut setelahnya dengan `apothem install --harness NAME --project PATH`. | `claude-code` |
 | `APOTHEM_PROFILE` | Jalur ke YAML profil bersama | `$HOME/.config/apothem/profile.yaml` |
@@ -41,18 +41,186 @@ berisi `src/apothem`, pemasang menggunakannya secara langsung, tidak pernah
 menyentuh `APOTHEM_REPO` / `APOTHEM_REF`, dan melewati resolusi tag serta
 verifikasi tanda tangan (tidak ada yang diambil untuk diverifikasi).
 
-Ketika `APOTHEM_HOME` menunjuk ke direktori yang sudah ada dan bukan klon git,
-pemasang menolak menghapusnya: pindahkan direktori itu ke tempat lain, arahkan
-`APOTHEM_HOME` ke lokasi lain, atau berikan `--yes` (`-Yes` di Windows) untuk
-mengizinkan penggantian. Direktori kosong yang usang diganti tanpa flag
-tersebut.
+`APOTHEM_SOURCE` dan menjalankan skrip pemasang milik sebuah checkout melalui
+jalurnya (dari folder mana pun) adalah satu-satunya dua cara untuk menggunakan
+pohon lokal. Perintah satu baris yang di-pipe (`curl
+... | sh`, `irm ... | iex`) tidak pernah menggunakannya: perintah itu
+mengabaikan folder saat ini dan folder induknya, lalu mengambil dan memverifikasi
+rilis. Pemasang, skrip pembaruan dan pencopotan, shim `apothem`, peluncur npm,
+hook, dan proses validator gerbang konformitas menjauhkan folder saat ini dari
+jalur pencarian modul Python. Perintah `python -m apothem` yang Anda ketik
+sendiri tidak demikian: `-m` membaca modul dari folder saat ini terlebih dahulu.
+
+Entri kosong dan relatif di `PYTHONPATH` Anda sendiri tidak diteruskan ke mesin
+oleh peluncur mana pun (pemasang, skrip pembaruan, skrip pencopotan, shim
+`apothem` POSIX dan Windows, serta peluncur npm). Entri yang dipertahankan harus
+berupa jalur lengkap: di Windows jalur drive seperti `C:\lib` atau jalur
+jaringan, di tempat lain jalur yang diawali `/`. `\lib` yang berakar atau
+`C:lib` yang relatif terhadap drive dibuang. Skrip sh menanyakan kepada Python
+yang dijalankannya bentuk mana yang dibacanya, dan shim `apothem` yang ditulisnya
+mempertahankan bentuk itu. Python Windows (yang biasa dipakai di Git Bash)
+mendapatkan jalur mesin dalam bentuk Windows, digabung dengan `;`, dan hanya
+mempertahankan jalur drive dan jaringan dari `PYTHONPATH` Anda. Python POSIX,
+termasuk `python3` milik Cygwin dan MSYS2 sendiri, mendapatkan jalur POSIX yang
+digabung dengan `:` dan hanya mempertahankan entri yang diawali `/`. Perintah
+`git` pemasang yang tidak bekerja pada sebuah klon tidak membaca repositori di
+folder saat ini.
+
+Perintah `git` itu berjalan dari folder sementara kosong yang dibuat pemasang
+untuk eksekusi tersebut, sehingga jalur relatif dalam variabel lingkungan git
+(`GIT_SSH`, `GIT_ASKPASS`, dan sejenisnya) tidak lagi menunjuk ke tempat
+sebelumnya. Gunakan jalur absolut dalam variabel-variabel itu. `APOTHEM_REPO`
+relatif yang menunjuk ke folder atau berkas (seperti git bundle) tetap
+di-resolve dari folder tempat Anda memulai.
+
+Pemasang mengabaikan variabel lingkungan git yang mengalihkan git (`GIT_DIR`,
+`GIT_WORK_TREE`, `GIT_INDEX_FILE`, dan sejenisnya), dan berhenti ketika
+`APOTHEM_REPO` diawali `-`, sehingga sebuah nilai tidak dapat dibaca sebagai
+opsi git.
+
+Pemasang dan skrip pembaruan juga mengosongkan `GIT_CONFIG`,
+`GIT_CONFIG_GLOBAL`, dan `GIT_CONFIG_SYSTEM`, sehingga nilai yang diwarisi dari
+lingkungan Anda tidak dapat mengarahkan git ke berkas konfigurasi lain, serta
+`GIT_ATTR_SOURCE`, yang akan membuat git membaca atribut dari pohon lain selain
+pohon kerja dan indeks yang dibaca pemeriksaan (`attr.tree` di konfigurasi Anda
+sendiri dikosongkan pada setiap perintah git yang dijalankan pada klon karena
+alasan yang sama, begitu pula `core.attributesFile`, sehingga git tidak membaca
+berkas atribut yang ditunjuknya maupun `~/.config/git/attributes`, yang makronya
+dapat menyebut filter yang tidak dilihat pemeriksaan). Jika Anda menyetel salah
+satunya, pemasang mengabaikannya;
+skrip PowerShell mengembalikannya ketika eksekusi berakhir, sehingga eksekusi
+`irm ... | iex` membiarkan sesi Anda seperti semula. `GIT_CONFIG_NOSYSTEM`
+tetap seperti yang Anda setel: variabel itu hanya menghentikan git membaca
+konfigurasi sistem. git tetap membaca konfigurasi global Anda sendiri
+(`~/.gitconfig` atau `$XDG_CONFIG_HOME/git/config`) dan konfigurasi sistem dari
+tempat yang selalu dicarinya, dan `git`, `gpg`, serta `cosign` adalah program
+yang ditemukan oleh `PATH` Anda. Pemasang memercayainya sebagaimana ditemukan,
+sehingga juga memercayai konfigurasi itu.
+
+Pemasang dan skrip pembaruan juga menyetel empat variabel git untuk seluruh
+eksekusi. `GIT_NO_REPLACE_OBJECTS=1` mencegah git menukar sebuah objek dengan
+objek lain melalui replace ref. `GIT_NO_LAZY_FETCH=1` mencegah git mengambil
+sendiri objek yang hilang dari remote saat membaca klon.
+`GIT_ALLOW_PROTOCOL=file:git:http:https:ssh` hanya mengizinkan kelima transport
+itu untuk setiap perintah git dalam eksekusi, sehingga nilai di lingkungan Anda
+tidak dapat memperluas daftar itu dan sebuah alamat tidak dapat membuat git
+menjalankan program pembantu seperti `ext::`. `APOTHEM_REPO` harus menggunakan
+salah satunya; jalur lokal dihitung sebagai `file`. `GIT_ATTR_NOSYSTEM=1`
+mencegah git membaca berkas atribut sistem, yang makronya dapat menyebut filter.
+Skrip PowerShell mengembalikan keempatnya seperti semula ketika eksekusi
+berakhir. Skrip itu
+juga membaca keluaran git sebagai UTF-8 selama eksekusi, apa pun code page
+konsol Anda, dan mengembalikan pengaturan konsol ketika eksekusi berakhir.
+
+`APOTHEM_HOME` harus berupa folder yang hanya dapat ditulis oleh Anda. Siapa pun
+yang dapat menulis ke folder itu dapat mengubah kode yang dijalankan perintah
+`apothem`. Di Windows, folder yang dibuat di root sebuah drive, seperti
+`C:\apothem`, dapat diubah oleh setiap pengguna yang masuk ke komputer itu, di
+bawah izin default Windows. Simpan folder itu di bawah folder pengguna Anda
+sendiri, seperti default-nya. Skrip instalasi dan pembaruan, termasuk dry run,
+memperingatkan tanpa berhenti ketika pengguna lain dapat menulis ke
+`APOTHEM_HOME` atau ke folder yang memuatnya, atau memiliki salah satunya;
+instalasi dari checkout lokal, dan pembaruan dengan `APOTHEM_SOURCE` disetel,
+melewati pemeriksaan ini. Di
+Windows, peringatan itu berasal dari `install.ps1` dan `update.ps1`: `install.sh`
+dan `update.sh` tidak memeriksa di Git Bash, MSYS2, atau Cygwin;
+[Pemecahan masalah](/docs/install/troubleshooting#the-installer-warns-other-users-can-change-apothem_home)
+menunjukkan cara memperbaikinya.
+
+Setiap eksekusi skrip instalasi, pembaruan, dan pencopotan memegang sebuah
+kunci, `<APOTHEM_HOME>.lock`, selama seluruh eksekusi; eksekusi kedua pada
+`APOTHEM_HOME` yang sama berhenti. Ketika `APOTHEM_HOME` adalah tautan simbolik
+(atau, di Windows, junction), skrip POSIX maupun PowerShell mengambil kunci itu
+di samping folder yang dituju tautan tersebut. Penghentian paksa atau mati
+listrik dapat meninggalkan folder di samping `APOTHEM_HOME`, dan instalasi
+berikutnya yang mengambil rilis menyebutkan folder-folder itu dan berhenti
+sebelum mengubah apa pun; lihat
+[Pemecahan masalah](/docs/install/troubleshooting).
+
+Ketika `APOTHEM_HOME` menunjuk ke direktori yang sudah ada, apa yang terjadi
+bergantung pada isinya.
+
+- Klon git di-fetch dalam mode `auto` atau `signature`; tag baru diperiksa
+  terlebih dahulu, dan baru setelah itu klon di-checkout. Pemeriksaan yang gagal
+  membiarkan klon tidak berubah, dan perubahan pada berkas terlacak menghentikan
+  pembaruan, dengan pesan untuk meng-commit atau men-stash perubahan itu, alih-alih
+  hilang. Dengan ref non-rilis seperti `main`, klon mengikuti salinan branch itu
+  di origin. Berkas `.git` (worktree tertaut) dihitung sebagai klon. `release`
+  dan `checksum` menolak klon tanpa `--yes`, dan dengan `--yes` keduanya tetap
+  menolak selama klon memegang pekerjaan lokal (perubahan, stash, commit yang
+  belum di-push, atau berkas tak terlacak di pohon sumbernya), juga dalam dry
+  run. Ketika `--yes` memang mengganti sebuah klon, pohon klon itu sendiri
+  dipindahkan ke folder baru,
+  `<APOTHEM_HOME>.before-apothem-<time>`, dengan namanya sendiri, alih-alih
+  dihapus. Sebelum fetch, pembaruan di tempat berhenti ketika berkas ditandai
+  assume-unchanged atau skip-worktree, ketika pohon kerja klon bukan
+  `APOTHEM_HOME`, ketika klon memuat submodule atau repositori git yang tidak
+  dilacak git (di luar folder data milik mesin sendiri, seperti
+  `backups`), ketika `.git/info/attributes` menyebut driver filter atau diff,
+  ketika klon meminjam objek dari repositori lain, ketika berkas
+  `.gitattributes` di pohon kerja tidak terlacak, berbeda dari salinan yang
+  di-commit, menyebut driver semacam itu, atau memiliki salinan ter-commit yang
+  tidak dapat dibaca git, ketika berkas di bawah `src` tidak terlacak, atau
+  ketika `.git/config` atau `.git/config.worktree` klon memuat pengaturan selain
+  yang ditulis `git clone` dan `git init` di sana untuk klon penuh, pengaturan
+  branch (`remote` dan `pushremote` sebuah branch harus `origin`), `user.name`,
+  `user.email`, `maintenance.auto`, `maintenance.strategy`, `pull.rebase`, dan
+  `pull.ff`
+  ([Pemecahan masalah](/docs/install/troubleshooting#the-installer-stops-the-existing-clone-is-set-up-in-a-way-the-update-would-trust)
+  mencantumkannya); hook git milik klon tidak pernah berjalan selama pembaruan.
+  Setelah checkout, pembaruan menghapus folder cache Python (`__pycache__`) di
+  bawah `src` sebelum mesin berjalan dari klon. Hanya klon dari sumber Apothem
+  yang dihitung: klon dari hal lain ditangani sebagai folder yang tidak memuat
+  instalasi Apothem.
+- Instalasi arsip rilis sebelumnya diperbarui dengan menjalankan ulang dalam
+  mode `auto` dengan cosign (atau `release`, atau `checksum`).
+- Folder yang tidak memuat instalasi Apothem ditolak: pindahkan folder itu ke
+  tempat lain, arahkan `APOTHEM_HOME` ke lokasi lain, atau berikan `--yes`
+  (`-Yes` di Windows). Dengan `--yes`, pemasang memindahkan seluruh folder itu,
+  tanpa diubah, ke folder baru, `<APOTHEM_HOME>.before-apothem-<time>`, lalu
+  memasang dari awal.
+- Direktori kosong yang usang, atau direktori yang hanya memuat data milik mesin
+  sendiri (`backups`, `state`, `plans`, `memory`, `contexts`, `learning`,
+  `providers`), diperbarui tanpa flag tersebut, dan data itu dipertahankan.
+- Tautan simbolik (di Windows, tautan simbolik atau junction) ditolak setiap kali
+  instalasi akan menggantinya: arahkan `APOTHEM_HOME` ke folder yang dituju
+  tautan itu. Klon git yang sudah ada di balik sebuah tautan diperbarui di
+  tempat.
+- Di Linux dan macOS, berkas atau folder yang akan dibawa serta dan namanya
+  memuat spasi atau karakter khusus lain menghentikan instalasi: pindahkan
+  berkas atau folder itu keluar dari `APOTHEM_HOME` terlebih dahulu.
+
+Untuk instalasi Apothem yang diganti, sumber baru diperiksa di folder staging di
+samping `APOTHEM_HOME` dan ditukar masuk hanya setelah setiap pemeriksaan lolos.
+Segala sesuatu di instalasi lama yang bukan bagian dari pohon sumbernya,
+termasuk cadangan, ledger instalasi, rencana, dan memori milik mesin,
+dipertahankan. Jika sebuah langkah gagal atau eksekusi dihentikan oleh Ctrl+C
+atau sinyal terminasi, instalasi sebelumnya dikembalikan tanpa perubahan;
+penghentian paksa atau mati listrik dapat meninggalkan folder di samping
+`APOTHEM_HOME` yang dilaporkan oleh instalasi berikutnya yang mengambil rilis.
+`--dry-run` (`-DryRun` di Windows) melakukan pemeriksaannya di folder sementara
+dan membiarkan `APOTHEM_HOME` tidak berubah. Mode itu melakukan pemeriksaan yang
+sama seperti eksekusi sungguhan, kecuali bahwa ia tidak melakukan fetch ke klon
+yang sudah ada, sehingga tidak memeriksa klon itu untuk perubahan pada berkas
+terlacak, yang dilakukan pembaruan sungguhan setelah fetch-nya.
 
 ## Model kepercayaan
 
-Tanpa `APOTHEM_REF` yang disetel, pemasang me-resolve tag rilis bertanda tangan
-terbaru dan memverifikasi tanda tangannya dengan `git verify-tag` sebelum
-mematerialisasikan konfigurasi apa pun; tag yang tidak bertanda tangan atau telah
-dirusak membatalkan instalasi. Tag bertanda tangan yang kunci publik pemeliharanya
+Tanpa `APOTHEM_REF` yang disetel, pemasang me-resolve rilis terbaru dan
+memeriksanya sebelum mematerialisasikan konfigurasi apa pun. Pemasang selalu
+memverifikasi tag rilis dengan `git verify-tag` dan mensyaratkan tanda tangan itu
+berasal dari kunci pemelihara yang dipublikasikan di SECURITY.md; tag yang tidak
+bertanda tangan atau telah dirusak, atau yang ditandatangani kunci lain,
+membatalkan instalasi, begitu pula objek tag bertanda tangan yang bukan tag yang
+dinamai untuk rilis itu (tag bertanda tangan untuk rilis lain, yang diarahkan
+ulang ke nama ini). Dengan `cosign` di `PATH`, pemasang kemudian
+memasang arsip rilis begitu cosign memastikan bahwa workflow rilis menandatangani
+`SHA256SUMS` dan, melalui pemeriksaan `--certificate-github-workflow-sha`-nya,
+bahwa sertifikat yang diverifikasinya diterbitkan untuk eksekusi pada commit tag
+tersebut, dan SHA-256 arsip cocok dengannya. Jalur itu memerlukan `gpg` dan
+cosign. Untuk klon git yang sudah ada, pemasang mengambil dan memeriksa tag
+sebelum men-checkout klon, sehingga pemeriksaan yang gagal membiarkan klon
+seperti semula. Tag bertanda tangan yang kunci publik pemeliharanya
 tidak ada di keyring lokal justru membatalkan instalasi dengan panduan impor
 kunci - impor kunci tersebut dan periksa sidik jarinya terhadap nilai yang
 dipublikasikan di
@@ -62,20 +230,31 @@ Patok rilis yang diketahui dengan `APOTHEM_REF=<tag>`, dengan mengambil tag dari
 dipatok diverifikasi dengan cara yang sama. Pilih branch yang bergerak dengan
 `APOTHEM_REF=main` ditambah `APOTHEM_ALLOW_UNVERIFIED=1`; instalasi itu tidak
 diverifikasi, dan `main` saja membatalkan proses karena branch bukan tag
-bertanda tangan. Setel `APOTHEM_ALLOW_UNVERIFIED=1` secara tersendiri untuk
-melanjutkan melewati kegagalan verifikasi dengan peringatan (penggunaan
-air-gapped, lokal, atau rilis pra-penandatanganan).
+bertanda tangan. Setel `APOTHEM_ALLOW_UNVERIFIED=1` untuk melanjutkan melewati
+pemeriksaan tag yang gagal dengan peringatan (penggunaan air-gapped, lokal, atau
+rilis pra-penandatanganan). Variabel ini hanya berlaku untuk jalur klon, tidak
+pernah untuk jalur cosign, jadi pada host yang memiliki cosign setel juga
+`APOTHEM_VERIFY=signature` bersamanya.
 
 ```bash title="Pinned, verified install"
 APOTHEM_REF=vMAJOR.MINOR.PATCH bash install.sh
 ```
 
-```bash title="Check the archive digest when the signing key is not imported"
-APOTHEM_VERIFY=checksum bash install.sh
+```bash title="Require the tag check and the cosign check"
+APOTHEM_VERIFY=release bash install.sh
 ```
 
-```bash title="Proceed without verification (interim / air-gapped)"
-APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
+Mode checksum tidak memverifikasi rilis. SHA256SUMS berasal dari rilis yang sama
+dengan arsip, sehingga kecocokan hanya menunjukkan bahwa unduhan tidak rusak;
+siapa pun yang dapat mengubah berkas rilis dapat mengubah keduanya. Pemasang
+menjalankannya hanya jika `APOTHEM_ALLOW_UNVERIFIED=1` juga disetel.
+
+```bash title="Check the archive digest alone (no cosign, no gpg; does not verify the release)"
+APOTHEM_VERIFY=checksum APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
+```
+
+```bash title="Proceed past a failed tag check (interim / air-gapped)"
+APOTHEM_VERIFY=signature APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
 ```
 
 ## Langkah-langkah (POSIX bash)
@@ -91,7 +270,7 @@ APOTHEM_ALLOW_UNVERIFIED=1 bash install.sh
    `APOTHEM_ALLOW_UNVERIFIED=1`:
 
    ```bash
-   APOTHEM_REF=main APOTHEM_ALLOW_UNVERIFIED=1 APOTHEM_HOME=/opt/apothem bash install.sh
+   APOTHEM_REF=main APOTHEM_ALLOW_UNVERIFIED=1 APOTHEM_HOME="$HOME/tools/apothem" bash install.sh
    ```
 
 3. Gunakan checkout lokal dan profil khusus, dengan melewati verifikasi:
@@ -115,7 +294,7 @@ pwsh -NoProfile -File install.ps1
 ```powershell
 $env:APOTHEM_ALLOW_UNVERIFIED = '1'
 $env:APOTHEM_REF = 'main'
-$env:APOTHEM_HOME = 'C:\opt\apothem'
+$env:APOTHEM_HOME = "$HOME\tools\apothem"
 pwsh -NoProfile -File install.ps1
 ```
 
@@ -145,10 +324,13 @@ apothem verify --harness cursor --project /path/to/project
 
 Ketika profil belum ada, pemasang membuatnya dari contoh dan terus berjalan
 untuk memasang dan memverifikasi dalam eksekusi yang sama. Kolom identitas pada
-contoh adalah placeholder, sehingga instalasi mencetak sebuah catatan; sunting
-`$APOTHEM_PROFILE`, lalu jalankan `apothem update --harness <name>` untuk
-menerapkan identitas Anda. `--dry-run` tanpa profil menampilkan pratinjau dengan
-contoh sebagai profilnya dan tidak menulis apa pun.
+contoh adalah placeholder, sehingga instalasi mencetak sebuah catatan. Contoh
+itu juga memuat aturan contoh, dua server MCP contoh, dan override per harness,
+dan harness yang mengambil server MCP dari profil, seperti OpenCode, mendapatkan
+kedua server itu. Sunting `$APOTHEM_PROFILE`, dengan menghapus apa yang tidak
+Anda inginkan, lalu jalankan `apothem update --harness <name>` untuk
+menerapkannya. `--dry-run` tanpa profil menampilkan pratinjau dengan contoh
+sebagai profilnya dan tidak menulis apa pun.
 
 ## Terkait
 

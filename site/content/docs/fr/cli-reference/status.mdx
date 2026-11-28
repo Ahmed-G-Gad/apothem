@@ -2,7 +2,7 @@
 title: "status"
 description: "Référence de la CLI pour la commande apothem status."
 machineTranslated: true
-sourceHash: "8b2767bb799e4c2e"
+sourceHash: "fe8df509dd01788b"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -36,7 +36,7 @@ La valeur de `drift` est l'une des suivantes :
 | Valeur | Signification |
 |---|---|
 | `in-sync` | La configuration installée porte mot pour mot le profil partagé fraîchement projeté. |
-| `drift` | L'environnement est installé, mais le contenu de profil projeté ne correspond plus au profil partagé actuel. Relancez `apothem install` pour le projeter à nouveau. |
+| `drift` | L'environnement est installé, mais le contenu de profil projeté ne correspond plus au profil partagé actuel, ou un fichier dans lequel l'installation actuelle conserve un bloc géré contient un marqueur BEGIN qui n'ouvre aucun bloc complet, deux blocs complets ou plus entre les marqueurs d'Apothem, ou des paires de marqueurs qu'Apothem ne peut pas distinguer de votre texte. Un fichier que seul un enregistrement d'installation antérieur liste, comme le fichier de règles d'un espace de travail OpenClaw que l'installation n'utilise plus, n'est pas compté ici ; `apothem verify` et `apothem doctor` le nomment. Lancez `apothem update` pour appliquer le profil actuel ; corrigez ces marqueurs à la main (voir [Dépannage](/docs/install/troubleshooting#a-file-has-an-apothem-begin-marker-with-no-end-marker), [Un fichier contient deux blocs entre les marqueurs d'Apothem](/docs/install/troubleshooting#a-file-holds-two-blocks-between-apothems-markers) et [Apothem ne distingue pas son bloc de votre texte](/docs/install/troubleshooting#apothem-cannot-tell-its-block-from-your-text)). |
 | `absent` | L'environnement n'est pas installé ; il n'y a donc rien à comparer. |
 | `needs-project` | Un environnement à portée de projet a été signalé sans `--project` ; sa cible ne peut donc pas être résolue. Passez `--project PATH` pour l'inspecter. |
 | `unknown` | Le profil par défaut n'a pas pu être chargé ; un environnement installé n'a donc aucune base de référence à laquelle se comparer. Corrigez le profil pour rétablir le verdict de dérive. |

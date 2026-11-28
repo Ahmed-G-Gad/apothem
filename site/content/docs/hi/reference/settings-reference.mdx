@@ -2,7 +2,7 @@
 title: "settings.json दस्तावेज़ीकरण"
 description: "Apothem इकोसिस्टम के लिए Claude Code हुक निष्पादन, अनुमतियाँ, इवेंट, टाइमआउट, Python रनटाइम, सत्यापन और स्तरित सेटिंग्स प्राथमिकता कॉन्फ़िगर करें।"
 machineTranslated: true
-sourceHash: "f83dad93ea1dbe9c"
+sourceHash: "a7175abd0e0c77ac"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -38,7 +38,9 @@ sourceHash: "f83dad93ea1dbe9c"
 कॉन्फ़ॉर्मिटी गेट (`~/.claude/.apothem/support/conformity/gate.py`, जिसके schema
 फ़िक्स्चर इसके बगल में `~/.claude/.apothem/support/schemas/` पर हैं) दोनों स्टैंडर्ड-लाइब्रेरी
 के स्वतंत्र स्क्रिप्ट हैं — होस्ट पर किसी इम्पोर्ट-योग्य `apothem` पैकेज की आवश्यकता नहीं है, और एक ही
-टेम्पलेट प्रत्येक प्लेटफ़ॉर्म की सेवा करता है।
+टेम्पलेट प्रत्येक प्लेटफ़ॉर्म की सेवा करता है। `-E -s` के कारण Python `PYTHONPATH` और
+अन्य `PYTHON*` वेरिएबल को अनदेखा करता है और उपयोगकर्ता के site-packages को छोड़ देता है, ताकि
+असिस्टेंट द्वारा खोले गए प्रोजेक्ट की कोई भी चीज़ किसी हुक में लोड न हो।
 
 ## हुक कॉन्फ़िगरेशन Schema
 
@@ -88,13 +90,13 @@ sourceHash: "f83dad93ea1dbe9c"
 तीन वैलिडेटर बढ़ती कठोरता के साथ हुक सरफ़ेस को कवर करते हैं:
 
 ```bash
-# संरचनात्मक + Python स्वच्छता (तेज़, ऑफ़लाइन)
+# Structural + Python-hygiene (fast, offline)
 python scripts/dev/validate_hooks.py
 
-# पूर्ण इकोसिस्टम (संरचना + frontmatter + प्रत्यायोजित हुक जाँच)
+# Full ecosystem (structure + frontmatter + delegated hook checks)
 python scripts/dev/validate_ecosystem.py
 
-# प्रतिकूल स्वीप (प्रत्येक कॉन्फ़िगर किए गए हुक कमांड पर अवक्रमित इनपुट से प्रहार करता है)
+# Adversarial sweep (storms every configured hook command with degraded inputs)
 python scripts/dev/chaos_pass.py
 ```
 

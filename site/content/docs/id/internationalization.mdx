@@ -2,7 +2,7 @@
 title: "Internasionalisasi (i18n)"
 description: "Cara situs dokumentasi Apothem mendeklarasikan kohor lokalnya, memancarkan tautan bahasa alternatif hreflang, dan merender kanan-ke-kiri, di seluruh dua belas bahasa."
 machineTranslated: true
-sourceHash: "cf9e0b89b61893f8"
+sourceHash: "eb1fc830d88563ac"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -140,7 +140,58 @@ Inggris.
 
 Bahasa Inggris tetap menjadi sumber kebenaran; setiap halaman lokal
 mencerminkan struktur, tautan, dan contoh kode padanannya dalam bahasa Inggris
-secara verbatim, dengan satu pengecualian untuk tautan ke bagian. Tautan ke
-bagian di halaman lain menyalin anchor-nya (`#...`) dari halaman bahasa Inggris;
-tautan ke bagian di halaman yang sama membentuk anchor-nya dari judul yang
-diterjemahkan, karena situs membuat ID setiap judul dari teks judul tersebut.
+secara verbatim. Satu-satunya pengecualian adalah tautan ke bagian di halaman
+yang sama; lihat
+[Tautan pada halaman terjemahan](#links-on-translated-pages).
+
+## Tautan pada halaman terjemahan [#links-on-translated-pages]
+
+Tautan ke halaman dokumentasi lain ditulis sekali dan sama dalam setiap bahasa:
+`/docs/<page>` atau `/docs/<page>#<section-id>`. Pada halaman terjemahan, situs
+mengubahnya menjadi tautan ke salinan terjemahan halaman tersebut ketika bahasa
+itu memilikinya, sehingga pembaca yang mengikutinya tetap berada dalam
+bahasanya. Tautan ke halaman yang belum diterjemahkan oleh bahasa itu membuka
+halaman bahasa Inggris.
+
+ID bagian dibentuk dari teks judul pada halamannya sendiri, sehingga halaman
+terjemahan memiliki ID yang diterjemahkan. Dua aturan mengikutinya:
+
+- Tautan ke bagian di halaman **lain** membawa ID **bahasa Inggris**, yang
+  disalin dari halaman bahasa Inggris. Situs memetakannya ke judul terjemahan
+  pada posisi yang sama, sehingga kedua halaman memerlukan judul yang sama pada
+  tingkat yang sama. Jika tidak, tautan membuka halaman bahasa Inggris pada
+  bagian tersebut.
+- Tautan ke bagian di halaman yang **sama** membawa ID yang dimiliki judul
+  terjemahan pada halaman itu, karena situs tidak mengubahnya.
+
+`python scripts/dev/check_site_anchor_links.py` memeriksa kedua aturan pada
+setiap halaman tanpa membangun situs, dan rangkaian pengujian menjalankannya
+pada setiap perubahan pada situs. Pemeriksaan gagal ketika:
+
+- tautan dengan `#section` menyebutkan judul yang tidak dimiliki halaman yang
+  dibukanya;
+- terjemahan yang mencatat teks bahasa Inggris terkini memiliki judul yang
+  berbeda dari halaman bahasa Inggris, yang akan merusak pemetaan;
+- elemen eksplisit seperti `<a href="/docs/…">` atau `<Card href="/docs/…">`
+  membawa tautan dokumentasi, karena hanya tautan Markdown yang diarahkan ke
+  halaman terjemahan;
+- tautan ditulis secara manual sebagai `/<language>/docs/<page>` untuk halaman
+  yang belum diterjemahkan oleh bahasa itu, yang merupakan duplikat bahasa
+  Inggris;
+- judul berupa judul setext (digarisbawahi dengan `===` atau `---`) atau
+  kosong, karena pemeriksaan tidak dapat menempatkannya di antara judul-judul
+  halaman.
+
+Judul yang teksnya tidak dapat diubah pemeriksaan menjadi ID secara persis
+memakai ID eksplisit sebagai gantinya: `## Heading [#custom-id]`. Mengganti nama
+judul mengubah ID-nya, sehingga tautan ke judul itu di halaman mana pun,
+termasuk terjemahan, kemudian menggagalkan pemeriksaan: perbarui tautannya, atau
+pertahankan ID lama pada judul yang diganti namanya dengan `[#old-id]`.
+
+Situs memilih halaman tujuan sebuah tautan saat situs dibangun, sehingga job
+`docs-build` juga menjalankan
+`python scripts/dev/check_built_docs_links.py site/dist` pada situs yang sudah
+jadi. Pemeriksaan gagal ketika tautan pada halaman terjemahan masih membuka
+halaman bahasa Inggris padahal bahasanya memiliki salinan yang dapat dipakai
+situs, dan ketika tautan bagian menyebutkan ID yang tidak dimiliki halaman
+hasil build yang dibukanya.

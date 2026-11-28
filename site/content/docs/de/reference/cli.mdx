@@ -2,7 +2,7 @@
 title: "CLI-Übersicht"
 description: "Übersicht über die Apothem-CLI — alle Unterbefehle und Flags."
 machineTranslated: true
-sourceHash: "23e6a1450707e054"
+sourceHash: "ce86e94ba98910b5"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -14,7 +14,13 @@ Profils und der Harness-Adapter.
 | Flag | Beschreibung |
 |------|-------------|
 | `--version` | Gibt die Apothem-Version aus und beendet sich |
-| `--help` | Gibt die Hilfe zum Befehl aus |
+| `-h`, `--help` | Gibt die Hilfe zum Befehl aus |
+
+Die folgenden Abschnitte behandeln `install`, `update`, `uninstall`, `verify`,
+`status`, `profile`, `harnesses` und `doctor`. Die generierte Tabelle am Ende
+dieser Seite und die [CLI-Referenz](/docs/cli-reference) führen jeden Befehl
+auf, einschließlich `quickstart`, `diff`, `rollback`, `backups`,
+`migrate-workspace` und `completion`.
 
 ## Unterbefehle
 
@@ -134,8 +140,12 @@ apothem status [--profile PATH] [--project PATH]
 | `--profile PATH` | Gemeinsames Profil, das als Drift-Basislinie dient. Ein nicht lesbares Standardprofil stuft den Drift auf `unknown` herab, statt den Durchlauf abzubrechen. |
 | `--project PATH` | Projektwurzel für Harnesses mit Projektbereich. Ohne diese Option melden sie `needs-project`. |
 
-Jede Zeile kombiniert ein `installed`-Flag mit einem `verified`-Flag, und beide
-ergeben zusammen den Drift-Zustand:
+Jede Zeile trägt ein `installed`-Flag, ein `verified`-Flag und einen
+Drift-Zustand. Eine Zeile, deren `installed`-Flag false ist, meldet `absent`,
+`needs-project` oder `error`; `in-sync`, `drift` und `unknown` erscheinen nur
+in installierten Zeilen. Der Drift-Zustand hängt nie vom `verified`-Flag ab.
+Für einen installierten Harness vergleicht er die installierte Konfiguration
+mit der Profil-Basislinie oder nennt den Grund, warum kein Vergleich lief:
 
 | Zustand | Bedeutung |
 |-------|---------|
@@ -144,6 +154,7 @@ ergeben zusammen den Drift-Zustand:
 | `drift` | Installiert, aber nicht mehr übereinstimmend — beheben Sie dies mit `apothem update`. |
 | `unknown` | Installiert, aber das Basislinienprofil konnte nicht gelesen werden. |
 | `needs-project` | Ein Harness mit Projektbereich wurde ohne `--project` gemeldet, daher kann sein Ziel nicht aufgelöst werden. |
+| `error` | Der Adapter ist bei der Prüfung fehlgeschlagen; `status` meldet den Fehler und endet mit `2`. |
 
 `installed` beantwortet die Frage „Hat Apothem hier installiert?“, nicht „Ist
 dieser Harness auf dem Rechner vorhanden?“. Es stützt sich auf Apothems eigene
