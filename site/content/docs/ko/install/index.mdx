@@ -2,7 +2,7 @@
 title: "설치"
 description: "Apothem 설치 개요 — 여덟 개의 설치 채널과 각 채널의 사전 요건, 복사해서 바로 쓸 수 있는 명령 하나, 검증 단계: Claude Code 플러그인, npm 심, 원샷 설치 프로그램, VS Code 계열 확장, 세 개의 명령줄 부트스트랩 확장, 직접 엔진."
 machineTranslated: true
-sourceHash: "0ff204172c43dd9e"
+sourceHash: "ffdb3d79274d3b88"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -200,16 +200,20 @@ Python은 `:`로 연결된 POSIX 경로를 받고, `/`로 시작하는 항목만
 `install.ps1`에 넘깁니다. 파이프로 실행하는 한 줄 명령은 PowerShell 매개변수를
 넘길 수 없으므로, 매개변수를 쓰려면 먼저 `install.ps1`을 내려받으세요.
 
-```bash title="Pass a flag"
-curl -fsSL https://apothem.ahmedgad.com/install.sh | sh -s -- --dry-run    # POSIX
-irm https://apothem.ahmedgad.com/install.ps1 -OutFile install.ps1; pwsh -NoProfile -File install.ps1 -DryRun   # Windows
+```bash title="Pass a flag (POSIX)"
+curl -fsSL https://apothem.ahmedgad.com/install.sh | sh -s -- --dry-run
+```
+
+```powershell title="Pass a flag (Windows PowerShell 5.1 or later)"
+irm https://apothem.ahmedgad.com/install.ps1 -OutFile install.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 -DryRun
 ```
 
 | `install.sh` | `install.ps1` | 효과 |
 |---|---|---|
 | `--clean`, `--fresh` | `-Clean`, `-Fresh` | 설치 전에, 어떤 하니스를 설치하든 [`apothem install`](/docs/cli-reference/install#blast-radius-preview)이 나열하는 홈 디렉터리의 네 폴더(`~/.claude`와 `~/.agents` 포함)를 백업한 뒤 제거하고 새로 설치합니다. 설치 프로그램은 이를 `apothem install --clean`으로 엔진에 넘기며, 엔진은 제거할 때마다 묻고, 백업을 `~/.apothem/backups` 아래에 두고, 프로필을 다시 씁니다. |
 | `--dry-run` | `-DryRun` | 임시 폴더에서 릴리스를 가져와 확인하고, 아무것도 바꾸지 않은 채 설치가 무엇을 바꿀지 보여 줍니다([신뢰 모델](#신뢰-모델) 참조). |
-| `--yes` | `-Yes` | `--clean`이 제거할 때마다 묻지 않습니다. 또한 [신뢰 모델](#신뢰-모델)에서 `--yes`가 필요하다고 하는 `APOTHEM_HOME` 내용의 교체도 허용합니다. |
+| `--yes` | `-Yes` | `--clean`이 제거할 때마다 묻지 않습니다. 또한 [신뢰 모델](#신뢰-모델)에서 `--yes`가 필요하다고 하는 `APOTHEM_HOME` 내용의 교체도 허용합니다. 또한 `APOTHEM_AUTO_INSTALL_DEPS=1`처럼, 누락된 Python 필수 패키지(`click`, `rich`)를 묻지 않고 pip로 설치합니다. |
 | `-h`, `--help` | 없음 | 플래그와 신뢰 모델을 출력한 뒤 종료합니다. |
 
 ### 신뢰 모델

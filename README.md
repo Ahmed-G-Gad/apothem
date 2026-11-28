@@ -346,9 +346,10 @@ $env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/in
 ```
 
 The installers take three flags: `--dry-run` shows what the install would
-change and changes nothing, `--yes` skips the questions, and `--clean` (or
-`--fresh`) backs up and removes `~/.claude`, `~/.codex`, `~/.agents` and
-`~/.config/apothem` before a fresh install, whichever harness you install.
+change and changes nothing, `--yes` skips the questions (and installs missing
+`click` and `rich` with pip without asking), and `--clean` (or `--fresh`) backs
+up and removes `~/.claude`, `~/.codex`, `~/.agents` and `~/.config/apothem`
+before a fresh install, whichever harness you install.
 `install.ps1` spells them `-DryRun`, `-Yes`, `-Clean` and `-Fresh`. See
 [Installer flags](https://apothem.ahmedgad.com/docs/install/#installer-flags).
 

@@ -2,7 +2,7 @@
 title: "التثبيت"
 description: "نظرة عامة على تثبيت Apothem — ثماني قنوات تثبيت، لكلٍّ منها متطلّباتها المُسبقة، وأمر واحد جاهز للنسخ، وخطوة تحقّق: إضافة Claude Code، وغلاف npm، والمُثبِّتات بخطوة واحدة، وامتداد عائلة VS Code، وامتدادات سطر الأوامر التمهيدية الثلاثة، والمحرّك المباشر."
 machineTranslated: true
-sourceHash: "0ff204172c43dd9e"
+sourceHash: "ffdb3d79274d3b88"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -214,16 +214,20 @@ $env:APOTHEM_HARNESS = 'claude-code'; pwsh -NoProfile -File scripts/installer/in
 الأولى ويمرّر كلًّا منها إلى <bdi>`install.ps1`</bdi>. ولا يستطيع الأمر المُمرَّر عبر أنبوب في سطر
 واحد أن يمرّر معاملًا من معاملات <bdi>PowerShell</bdi>، لذا نزّل <bdi>`install.ps1`</bdi> أولًا لاستخدام أحدها:
 
-```bash title="Pass a flag"
-curl -fsSL https://apothem.ahmedgad.com/install.sh | sh -s -- --dry-run    # POSIX
-irm https://apothem.ahmedgad.com/install.ps1 -OutFile install.ps1; pwsh -NoProfile -File install.ps1 -DryRun   # Windows
+```bash title="Pass a flag (POSIX)"
+curl -fsSL https://apothem.ahmedgad.com/install.sh | sh -s -- --dry-run
+```
+
+```powershell title="Pass a flag (Windows PowerShell 5.1 or later)"
+irm https://apothem.ahmedgad.com/install.ps1 -OutFile install.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 -DryRun
 ```
 
 | <bdi>`install.sh`</bdi> | <bdi>`install.ps1`</bdi> | الأثر |
 |---|---|---|
 | <bdi>`--clean`</bdi>، <bdi>`--fresh`</bdi> | <bdi>`-Clean`</bdi>، <bdi>`-Fresh`</bdi> | قبل التثبيت، ينسخ احتياطيًا المجلّدات الأربعة في دليلك المنزلي التي يسردها [<bdi>`apothem install`</bdi>](/docs/cli-reference/install#blast-radius-preview)، ومن بينها <bdi>`~/.claude`</bdi> و<bdi>`~/.agents`</bdi>، ويزيلها، أيًّا كان إطار العمل الذي تثبّته، ثم يثبّت من جديد. ويمرّره المُثبِّت إلى المحرّك في صورة <bdi>`apothem install --clean`</bdi>، الذي يسأل قبل كل إزالة، ويحفظ النسخة الاحتياطية تحت <bdi>`~/.apothem/backups`</bdi>، ويعيد كتابة ملفك التعريفي. |
 | <bdi>`--dry-run`</bdi> | <bdi>`-DryRun`</bdi> | يجلب الإصدار ويفحصه في مجلّد مؤقّت ويعرض ما سيغيّره التثبيت، دون أن يغيّر شيئًا (انظر [نموذج الثقة](#نموذج-الثقة)). |
-| <bdi>`--yes`</bdi> | <bdi>`-Yes`</bdi> | لا يسأل قبل كل إزالة يجريها <bdi>`--clean`</bdi>. ويسمح أيضًا باستبدال ما في <bdi>`APOTHEM_HOME`</bdi> في الحالات التي يذكر [نموذج الثقة](#نموذج-الثقة) أنها تحتاج إلى <bdi>`--yes`</bdi>. |
+| <bdi>`--yes`</bdi> | <bdi>`-Yes`</bdi> | لا يسأل قبل كل إزالة يجريها <bdi>`--clean`</bdi>. ويسمح أيضًا باستبدال ما في <bdi>`APOTHEM_HOME`</bdi> في الحالات التي يذكر [نموذج الثقة](#نموذج-الثقة) أنها تحتاج إلى <bdi>`--yes`</bdi>. ويثبّت أيضًا متطلبات <bdi>Python</bdi> الناقصة (<bdi>`click`</bdi>، <bdi>`rich`</bdi>) باستخدام <bdi>pip</bdi> دون أن يسأل، كما يفعل <bdi>`APOTHEM_AUTO_INSTALL_DEPS=1`</bdi>. |
 | <bdi>`-h`</bdi>، <bdi>`--help`</bdi> | لا يوجد | يطبع الخيارات ونموذج الثقة، ثم يخرج. |
 
 ### نموذج الثقة

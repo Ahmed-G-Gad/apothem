@@ -2,7 +2,7 @@
 title: "Konvensi prosa"
 description: "Menerapkan hierarki modal RFC 2119, melarang kata sifat pemasaran dan pengisi mengelak, menggunakan tanggal ISO-8601 absolut, dan memvalidasi kerapatan prosa direktif."
 machineTranslated: true
-sourceHash: "e0ac867bbde5e646"
+sourceHash: "366516186263000e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,4 +34,4 @@ Tanggal adalah ISO-8601 absolut (`YYYY-MM-DD`) pada setiap referensi. Tanggal re
 
 ## 4. Validator
 
-Pemeriksaan kerapatan UDA dari `scripts/dev/validate_ecosystem.py` adalah permukaan penegakan mekanis untuk §2.3. Validator kesesuaian per-tulis, di antaranya `hedging-grep`, `token-efficiency-grep`, `link-check`, dan `file-header-grep`, menegakkan standar kualitas prosa yang lebih luas pada batas hook PreToolUse Write/Edit.
+Pemeriksaan kerapatan UDA dari `scripts/dev/validate_ecosystem.py` adalah permukaan penegakan mekanis untuk §2.3. Validator kesesuaian per-tulis, di antaranya `hedging-grep`, `token-efficiency-grep`, `link-check`, dan `file-header-grep`, memeriksa standar kualitas prosa yang lebih luas pada batas hook PreToolUse Write/Edit. Dari keempatnya, hanya `file-header-grep` yang memblokir; tiga lainnya bersifat anjuran: melaporkan temuannya tanpa memblokir apa pun.

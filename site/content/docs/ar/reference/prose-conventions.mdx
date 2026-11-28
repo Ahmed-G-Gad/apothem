@@ -2,7 +2,7 @@
 title: "اصطلاحات النثر"
 description: "تَفرض تسلسل الصِّيَغ الإلزامية وفق RFC 2119، وتحظر الصفات التسويقية والحشو المُتهرِّب، وتستخدم تواريخ ISO-8601 المطلقة، وتتحقّق من إحكام النثر التوجيهي."
 machineTranslated: true
-sourceHash: "e0ac867bbde5e646"
+sourceHash: "366516186263000e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,4 +34,4 @@ sourceHash: "e0ac867bbde5e646"
 
 ## 4. المُتحقِّقات
 
-فحص إحكام <bdi>UDA</bdi> في <bdi>`scripts/dev/validate_ecosystem.py`</bdi> هو سطح الإنفاذ الآلي للقسم <bdi>§2.3</bdi>. تَفرض مُتحقِّقات المطابقة العاملة عند كل كتابة، ومنها <bdi>`hedging-grep`</bdi> و<bdi>`token-efficiency-grep`</bdi> و<bdi>`link-check`</bdi> و<bdi>`file-header-grep`</bdi>، معيارَ جودة النثر الأوسع عند حدود خطّافات <bdi>PreToolUse Write/Edit</bdi>.
+فحص إحكام <bdi>UDA</bdi> في <bdi>`scripts/dev/validate_ecosystem.py`</bdi> هو سطح الإنفاذ الآلي للقسم <bdi>§2.3</bdi>. تَفحص مُتحقِّقات المطابقة العاملة عند كل كتابة، ومنها <bdi>`hedging-grep`</bdi> و<bdi>`token-efficiency-grep`</bdi> و<bdi>`link-check`</bdi> و<bdi>`file-header-grep`</bdi>، معيارَ جودة النثر الأوسع عند حدود خطّافات <bdi>PreToolUse Write/Edit</bdi>. ومن بينها لا يحجب إلا <bdi>`file-header-grep`</bdi>؛ أمّا الثلاثة الأخرى فاستشارية: تُبلغ عن نتائجها ولا تحجب شيئًا.

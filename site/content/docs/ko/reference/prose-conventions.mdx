@@ -2,7 +2,7 @@
 title: "산문 규약"
 description: "RFC 2119 모달 계층을 강제하고, 마케팅 형용사와 모호한 군더더기를 금지하며, 절대 ISO-8601 날짜를 사용하고, 지시적 산문의 빈틈없음을 검증합니다."
 machineTranslated: true
-sourceHash: "e0ac867bbde5e646"
+sourceHash: "366516186263000e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,4 +34,4 @@ sourceHash: "e0ac867bbde5e646"
 
 ## 4. 검증기
 
-`scripts/dev/validate_ecosystem.py`의 UDA 빈틈없음 검사는 §2.3의 기계적 강제 실행 표면입니다. 쓰기마다 실행되는 적합성 검증기(`hedging-grep`, `token-efficiency-grep`, `link-check`, `file-header-grep` 등)는 PreToolUse Write/Edit 훅 경계에서 더 넓은 산문 품질 기준을 강제합니다.
+`scripts/dev/validate_ecosystem.py`의 UDA 빈틈없음 검사는 §2.3의 기계적 강제 실행 표면입니다. 쓰기마다 실행되는 적합성 검증기(`hedging-grep`, `token-efficiency-grep`, `link-check`, `file-header-grep` 등)는 PreToolUse Write/Edit 훅 경계에서 더 넓은 산문 품질 기준을 검사합니다. 이 중 차단하는 것은 `file-header-grep`뿐이며, 나머지 세 개는 권고용으로 발견 사항을 보고할 뿐 아무것도 차단하지 않습니다.

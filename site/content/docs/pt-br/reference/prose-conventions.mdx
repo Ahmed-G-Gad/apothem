@@ -2,7 +2,7 @@
 title: "Convenções de prosa"
 description: "Impõe a hierarquia modal RFC 2119, proíbe adjetivos de marketing e enchimento evasivo, usa datas ISO-8601 absolutas e valida a hermeticidade da prosa diretiva."
 machineTranslated: true
-sourceHash: "e0ac867bbde5e646"
+sourceHash: "366516186263000e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,4 +34,4 @@ As datas são ISO-8601 absolutas (`YYYY-MM-DD`) em cada referência. Datas relat
 
 ## 4. Validadores
 
-A verificação de hermeticidade UDA de `scripts/dev/validate_ecosystem.py` é a superfície de imposição mecânica para §2.3. Os validadores de conformidade por escrita, entre eles `hedging-grep`, `token-efficiency-grep`, `link-check` e `file-header-grep`, impõem o padrão de qualidade de prosa mais amplo nos limites dos hooks PreToolUse Write/Edit.
+A verificação de hermeticidade UDA de `scripts/dev/validate_ecosystem.py` é a superfície de imposição mecânica para §2.3. Os validadores de conformidade por escrita, entre eles `hedging-grep`, `token-efficiency-grep`, `link-check` e `file-header-grep`, verificam o padrão de qualidade de prosa mais amplo nos limites dos hooks PreToolUse Write/Edit. Entre eles, só o `file-header-grep` bloqueia; os outros três são consultivos: relatam o que encontram e não bloqueiam nada.

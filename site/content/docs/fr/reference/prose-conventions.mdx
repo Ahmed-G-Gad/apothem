@@ -2,7 +2,7 @@
 title: "Conventions de prose"
 description: "Impose la hiérarchie modale RFC 2119, interdit les adjectifs marketing et le remplissage évasif, utilise des dates ISO-8601 absolues et valide l'étanchéité de la prose directive."
 machineTranslated: true
-sourceHash: "e0ac867bbde5e646"
+sourceHash: "366516186263000e"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,4 +34,4 @@ Les dates sont en ISO-8601 absolu (`YYYY-MM-DD`) à chaque référence. Les date
 
 ## 4. Validateurs
 
-La vérification d'étanchéité UDA de `scripts/dev/validate_ecosystem.py` est la surface d'imposition mécanique pour §2.3. Les validateurs de conformité par écriture, dont `hedging-grep`, `token-efficiency-grep`, `link-check` et `file-header-grep`, imposent la barre de qualité de prose plus large aux limites des hooks PreToolUse Write/Edit.
+La vérification d'étanchéité UDA de `scripts/dev/validate_ecosystem.py` est la surface d'imposition mécanique pour §2.3. Les validateurs de conformité par écriture, dont `hedging-grep`, `token-efficiency-grep`, `link-check` et `file-header-grep`, vérifient la barre de qualité de prose plus large aux limites des hooks PreToolUse Write/Edit. Parmi eux, seul `file-header-grep` bloque ; les trois autres sont consultatifs : ils signalent leurs constats et ne bloquent rien.

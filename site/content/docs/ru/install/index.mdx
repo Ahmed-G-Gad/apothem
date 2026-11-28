@@ -2,7 +2,7 @@
 title: "Установка"
 description: "Обзор установки Apothem — восемь каналов установки, каждый со своими предварительными требованиями, одной готовой к копированию командой и шагом проверки: плагин Claude Code, npm-шим, одношаговые установщики, расширение для семейства VS Code, три загрузочных расширения командной строки и прямой движок."
 machineTranslated: true
-sourceHash: "0ff204172c43dd9e"
+sourceHash: "ffdb3d79274d3b88"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -219,16 +219,20 @@ POSIX, включая собственный `python3` Cygwin и MSYS2, полу
 конвейер не может передать параметр PowerShell, поэтому, чтобы использовать
 его, сначала скачайте `install.ps1`:
 
-```bash title="Pass a flag"
-curl -fsSL https://apothem.ahmedgad.com/install.sh | sh -s -- --dry-run    # POSIX
-irm https://apothem.ahmedgad.com/install.ps1 -OutFile install.ps1; pwsh -NoProfile -File install.ps1 -DryRun   # Windows
+```bash title="Pass a flag (POSIX)"
+curl -fsSL https://apothem.ahmedgad.com/install.sh | sh -s -- --dry-run
+```
+
+```powershell title="Pass a flag (Windows PowerShell 5.1 or later)"
+irm https://apothem.ahmedgad.com/install.ps1 -OutFile install.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File install.ps1 -DryRun
 ```
 
 | `install.sh` | `install.ps1` | Действие |
 |---|---|---|
 | `--clean`, `--fresh` | `-Clean`, `-Fresh` | Перед установкой создаёт резервную копию и удаляет четыре папки в вашем домашнем каталоге, которые перечисляет [`apothem install`](/docs/cli-reference/install#blast-radius-preview), в том числе `~/.claude` и `~/.agents`, какое бы окружение вы ни устанавливали, а затем устанавливает заново. Установщик передаёт флаг движку как `apothem install --clean`; движок спрашивает перед каждым удалением, хранит резервную копию в `~/.apothem/backups` и записывает ваш профиль обратно. |
 | `--dry-run` | `-DryRun` | Загружает и проверяет выпуск во временной папке и показывает, что изменила бы установка, ничего не меняя (см. [Модель доверия](#trust-model)). |
-| `--yes` | `-Yes` | Не спрашивает перед каждым удалением при `--clean`. Также разрешает замены содержимого `APOTHEM_HOME`, для которых [Модель доверия](#trust-model) требует `--yes`. |
+| `--yes` | `-Yes` | Не спрашивает перед каждым удалением при `--clean`. Также разрешает замены содержимого `APOTHEM_HOME`, для которых [Модель доверия](#trust-model) требует `--yes`. Также без вопроса устанавливает через pip недостающие зависимости Python (`click`, `rich`), как и `APOTHEM_AUTO_INSTALL_DEPS=1`. |
 | `-h`, `--help` | нет | Выводит флаги и модель доверия и завершает работу. |
 
 ### Модель доверия [#trust-model]
