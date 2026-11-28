@@ -32,4 +32,4 @@ Dates are absolute ISO-8601 (`YYYY-MM-DD`) at every reference. Relative dates (`
 
 ## 4. Validators
 
-`scripts/dev/validate_ecosystem.py`'s UDA airtightness check is the mechanical enforcement surface for §2.3. The per-write `markdown` family of conformity-grep validators enforces the broader prose-quality bar at PreToolUse Write/Edit hook boundaries.
+`scripts/dev/validate_ecosystem.py`'s UDA airtightness check is the mechanical enforcement surface for §2.3. The per-write conformity validators, among them `hedging-grep`, `token-efficiency-grep`, `link-check` and `file-header-grep`, enforce the broader prose-quality bar at PreToolUse Write/Edit hook boundaries.

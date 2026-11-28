@@ -2,7 +2,7 @@
 title: "Posicionamento"
 description: "Compreenda o Apothem como governança de ratificação de artefatos com quinze mandatos, disciplina de entrada por canal canônico e arquitetura criativa de identidade cognitiva para o trabalho conduzido por assistentes."
 machineTranslated: true
-sourceHash: "e5b17260b2a78c11"
+sourceHash: "b81b17f4cc8e4c02"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -148,11 +148,11 @@ emissão; a iteração continua até que todas as barras passem.
 
 ### M10 — Vinculação bidirecional e encadeamento da execução de fases
 
-**Escopo.** Todo elemento estrutural substantivo carrega vínculos recíprocos com seus pares na notação canônica de cinco direções: **Drives →** / **Driven by ←** / **Satisfies →** / **Established by ↑** / **Cross-bound with ↔**. Todo vínculo declarado em uma direção tem um ponteiro de retorno recíproco na outra ponta; semiarestas são falhas estruturais, não preferências estéticas. Um grep mecânico de reciprocidade em `src/apothem/conformity/binding_reciprocity_grep.py` aplica o invariante no portão.
+**Escopo.** Todo elemento estrutural substantivo carrega vínculos recíprocos com seus pares na notação canônica de cinco direções: **Drives →** / **Driven by ←** / **Satisfies →** / **Established by ↑** / **Cross-bound with ↔**. Todo vínculo declarado em uma direção tem um ponteiro de retorno recíproco na outra ponta; semiarestas são falhas estruturais, não preferências estéticas. No portão, `binding-reciprocity-corpus-grep` (`src/apothem/conformity/binding_reciprocity_corpus_grep.py`) relata cada citação `Cross-bound with ↔` do corpus de regras que não tem citação de volta, e a cada escrita `binding-reciprocity-grep` mantém cada seção Bindings na notação canônica de setas.
 
 **Especificação canônica.** `src/apothem/rules/bidirectional-binding.md`.
 
-**Por que importa.** Vínculos recíprocos transformam o corpus em um grafo navegável. A linha `Cross-bound with ↔` de qualquer regra aponta para cada par que a cita, e cada par citado aponta de volta. Refatorar o corpus se torna mecânico — renomeie uma regra, e o grep de reciprocidade sinaliza cada citação obsoleta no mesmo conjunto de mudanças.
+**Por que importa.** Vínculos recíprocos transformam o corpus em um grafo navegável. A linha `Cross-bound with ↔` de qualquer regra aponta para cada par que a cita, e cada par citado aponta de volta. Refatorar o corpus se torna mecânico — renomeie uma regra, e sua linha `Cross-bound with ↔` lista cada par cuja citação muda no mesmo conjunto de mudanças.
 
 ### M11 — Sprints ágeis e controle empírico de processo
 

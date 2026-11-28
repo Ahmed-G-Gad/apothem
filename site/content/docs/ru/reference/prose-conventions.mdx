@@ -2,7 +2,7 @@
 title: "Соглашения о прозе"
 description: "Обеспечивает модальную иерархию RFC 2119, запрещает маркетинговые прилагательные и уклончивый наполнитель, использует абсолютные даты ISO-8601 и проверяет герметичность директивной прозы."
 machineTranslated: true
-sourceHash: "ade825a58eb1c3d7"
+sourceHash: "e0ac867bbde5e646"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,4 +34,4 @@ sourceHash: "ade825a58eb1c3d7"
 
 ## 4. Валидаторы
 
-Проверка герметичности UDA в `scripts/dev/validate_ecosystem.py` — это поверхность механического обеспечения для §2.3. Семейство `markdown` валидаторов conformity-grep, выполняемых при каждой записи, обеспечивает более широкую планку качества прозы на границах хуков PreToolUse Write/Edit.
+Проверка герметичности UDA в `scripts/dev/validate_ecosystem.py` — это поверхность механического обеспечения для §2.3. Валидаторы соответствия, выполняемые при каждой записи, в том числе `hedging-grep`, `token-efficiency-grep`, `link-check` и `file-header-grep`, обеспечивают более широкую планку качества прозы на границах хуков PreToolUse Write/Edit.

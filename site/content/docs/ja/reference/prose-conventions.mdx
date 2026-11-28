@@ -2,7 +2,7 @@
 title: "散文の規約"
 description: "RFC 2119 のモーダル階層を強制し、マーケティング形容詞とぼかしフィラーを禁止し、絶対的な ISO-8601 日付を使用し、指令的散文の隙のなさを検証する。"
 machineTranslated: true
-sourceHash: "ade825a58eb1c3d7"
+sourceHash: "e0ac867bbde5e646"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
@@ -34,4 +34,4 @@ sourceHash: "ade825a58eb1c3d7"
 
 ## 4. 検証器
 
-`scripts/dev/validate_ecosystem.py` の UDA 隙のなさチェックは、§2.3 の機械的強制実行面です。書き込みごとの `markdown` 系の conformity-grep 検証器は、PreToolUse Write/Edit フックの境界でより広範な散文品質基準を強制します。
+`scripts/dev/validate_ecosystem.py` の UDA 隙のなさチェックは、§2.3 の機械的強制実行面です。書き込みごとの適合性検証器（`hedging-grep`、`token-efficiency-grep`、`link-check`、`file-header-grep` など）は、PreToolUse Write/Edit フックの境界でより広範な散文品質基準を強制します。
