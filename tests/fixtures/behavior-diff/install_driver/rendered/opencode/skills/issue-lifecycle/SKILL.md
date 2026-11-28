@@ -114,7 +114,7 @@ Records write to STDOUT. Issue drafts are shown in the conversation. Code and te
 
 ### File-Authoring Contract
 
-Every new source or test file routes through `scripts/inject-header.py`; exempt classes are listed in `src/apothem/schemas/header-exceptions.txt`. Commits follow Conventional Commits, and the change-set meets `rules/production-ready-prs.md`, including its human-only authorship clause for commit and pull request text.
+Every new source or test file follows the project's own header and license convention, found per `rules/host-discovery.md`, or carries no header when the project has none. In a user project the skill MUST NOT stamp the Apothem SPDX header or run Apothem scripts; inside the Apothem repository, a new file gets the canonical header through `scripts/inject-header.py`. Commits follow Conventional Commits, and the change-set meets `rules/production-ready-prs.md`, including its human-only authorship clause for commit and pull request text.
 
 ### Structured Inquiry on Ambiguity
 

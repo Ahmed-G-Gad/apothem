@@ -1,15 +1,15 @@
 ---
 title: "/perf-audit"
-description: "/perf-audit — USE 메서드를 사용하여 클래스별 성능 예산(훅 런타임, verify-ecosystem, 적합성 게이트, 테스트, 위임된 워커, 셸, 린트)에 대해 감사합니다."
+description: "/perf-audit — USE 메서드를 사용하여 클래스별 성능 예산(훅 런타임, verify-ecosystem, 적합성 게이트, 테스트, 위임된 워커, 셸, 린트, 설치 해석)에 대해 감사합니다."
 machineTranslated: true
-sourceHash: "fecd1962acded819"
+sourceHash: "50f1ec06ca781019"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 - **역할:** 성능 감사자
 - **파이프라인 위치:** 포트리스
 
-USE 메서드를 사용하여 클래스별 성능 예산(훅 런타임, verify-ecosystem, 적합성 게이트, 테스트, 위임된 워커, 셸, 린트)에 대해 감사합니다.
+USE 메서드를 사용하여 클래스별 성능 예산(훅 런타임, verify-ecosystem, 적합성 게이트, 테스트, 위임된 워커, 셸, 린트, 설치 해석)에 대해 감사합니다.
 
 ## 표준 호출
 
@@ -25,7 +25,7 @@ USE 메서드를 사용하여 클래스별 성능 예산(훅 런타임, verify-e
 
 ## 입력
 
-`hooks/`, `src/apothem/benchmarks/`, `tests/`, 그리고 훅 부트스트랩 스텁 `hooks/lib/bootstrap.{sh,ps1}`를 포함한 호스트 저장소
+`src/apothem/hooks/`, `src/apothem/benchmarks/`, `tests/`, 그리고 훅 부트스트랩 스텁 `src/apothem/hooks/lib/bootstrap.{sh,ps1}`를 포함한 Apothem 저장소 체크아웃
 
 ## 출력
 
@@ -44,7 +44,7 @@ USE 메서드를 사용하여 클래스별 성능 예산(훅 런타임, verify-e
 | 증상 | 원인 | 복구 |
 |---------|-------|----------|
 | 품질 게이트 FAIL | 출력이 기준을 충족하지 않음 | 출력을 수정하고 다시 실행한다 |
-| 입력 파일 누락 | 저장소에 `src/apothem/benchmarks/`가 없음 | 벤치마크 드라이버를 추가한 뒤 다시 실행한다. 드라이버가 있을 때까지 명령은 실행을 거부한다 |
+| Apothem 체크아웃이 아님 | 저장소에 `src/apothem/benchmarks/`가 없음 | 고칠 것이 없다. 명령은 이 차원을 해당 없음으로 보고하고, `/audit`는 이를 건너뛴다 |
 
 ## 예시
 

@@ -61,7 +61,7 @@ Out-of-axis: Concurrency, Performance, Security, Testing, Observability. Out-of-
 
 - **Refusal & escalation.** REFUSE tasks outside mission (scaffold an MCP server from a tool/resource spec) — name the refusal, the boundary crossed, and surface escalation via the structured-inquiry channel per `rules/interactive-questions.md` (three-segment annotation). A partially-blocked in-scope task surfaces as inquiry.
 - **Output surface.** Planning artifacts go to the project-local plans directory. NEVER write to a global plans directory.
-- **File-authoring contract.** New files carry the canonical authorship-header per `rules/host-discovery.md`; inject via `scripts/inject-header.py`; exemptions at `src/apothem/schemas/header-exceptions.txt`.
+- **File-authoring contract.** A new file follows the project's own header and license convention, found per `rules/host-discovery.md`, or carries no header when the project has none. In a user project the agent MUST NOT stamp the Apothem SPDX header or run Apothem scripts; inside the Apothem repository, a new file gets the canonical header through `scripts/inject-header.py`.
 - **Structured inquiry on ambiguity.** Route identity / scope / preference / security / naming / infrastructure / version uncertainty — and all branch-points, deletions, and judgment-calls — through the structured-inquiry channel per `rules/interactive-questions.md` with three-segment annotation. Never fabricate authoritative data.
 
 ## Return Format Augmentation

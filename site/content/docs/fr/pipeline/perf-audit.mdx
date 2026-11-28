@@ -1,15 +1,15 @@
 ---
 title: "/perf-audit"
-description: "/perf-audit — Audite les budgets de performance par classe (runtime des hooks, verify-ecosystem, portail de conformité, tests, travailleurs délégués, shell, lint), selon la méthode USE."
+description: "/perf-audit — Audite les budgets de performance par classe (runtime des hooks, verify-ecosystem, portail de conformité, tests, travailleurs délégués, shell, lint, résolution de l'installation), selon la méthode USE."
 machineTranslated: true
-sourceHash: "fecd1962acded819"
+sourceHash: "50f1ec06ca781019"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 - **Rôle :** Auditeur de performance
 - **Position dans le pipeline :** forteresse
 
-Audite les budgets de performance par classe (runtime des hooks, verify-ecosystem, portail de conformité, tests, travailleurs délégués, shell, lint), selon la méthode USE.
+Audite les budgets de performance par classe (runtime des hooks, verify-ecosystem, portail de conformité, tests, travailleurs délégués, shell, lint, résolution de l'installation), selon la méthode USE.
 
 ## Invocation canonique
 
@@ -25,7 +25,7 @@ Avec des arguments :
 
 ## Entrées
 
-Dépôt hôte qui contient `hooks/`, `src/apothem/benchmarks/`, `tests/` et les stubs d'amorçage des hooks `hooks/lib/bootstrap.{sh,ps1}`
+Une copie du dépôt Apothem qui contient `src/apothem/hooks/`, `src/apothem/benchmarks/`, `tests/` et les stubs d'amorçage des hooks `src/apothem/hooks/lib/bootstrap.{sh,ps1}`
 
 ## Sorties
 
@@ -44,7 +44,7 @@ La commande exécute cinq phases d'audit : ingestion des entrées, découverte d
 | Symptôme | Cause | Récupération |
 |---------|-------|----------|
 | Portail de qualité FAIL | La sortie ne respecte pas les normes | Corrigez la sortie et relancez |
-| Fichier d'entrée manquant | Le dépôt ne contient pas `src/apothem/benchmarks/` | Ajoutez les pilotes de benchmarks, puis relancez ; la commande refuse de s'exécuter tant qu'ils n'existent pas |
+| Pas une copie du dépôt Apothem | Le dépôt ne contient pas `src/apothem/benchmarks/` | Rien à corriger : la commande signale la dimension comme non applicable, et `/audit` l'ignore |
 
 ## Exemples
 

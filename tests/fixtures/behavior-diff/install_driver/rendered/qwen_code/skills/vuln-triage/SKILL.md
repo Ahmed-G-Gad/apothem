@@ -75,7 +75,7 @@ The skill emits one triage record (the Return Contract). The record writes to ST
 
 ### File-Authoring Contract
 
-When the skill emits a NEW file — a fresh security-advisory ledger where the host has none — the file routes through `scripts/inject-header.py` so the canonical authorship-header banner is injected at the head; the injector is idempotent and detects the filetype variant automatically from the byte-exact fixture at `src/apothem/schemas/authorship-header.txt`. The exempt classes (LICENSE, JSON configuration files, lockfiles, generated assets, vendored trees, `.audit/` ephemera, `<project-root>/.apothem/plans/` ephemera, `.keep` / `.gitkeep` markers, binary files) are enumerated at `src/apothem/schemas/header-exceptions.txt`. Triage records emitted to STDOUT are header-exempt. Edits that append a record to an existing ledger preserve the ledger's existing banner.
+When the skill emits a NEW file — a fresh security-advisory ledger where the host has none — the file follows the project's own header and license convention, found per `rules/host-discovery.md`, or carries no header when the project has none. In a user project the skill MUST NOT stamp the Apothem SPDX header or run Apothem scripts; inside the Apothem repository, a new file gets the canonical header through `scripts/inject-header.py`. Triage records emitted to STDOUT are header-exempt. Edits that append a record to an existing ledger preserve the ledger's existing banner.
 
 ### Structured Inquiry on Ambiguity
 

@@ -1,15 +1,15 @@
 ---
 title: "/perf-audit"
-description: "/perf-audit — Prüft gegen die Performance-Budgets je Klasse (Hook-Laufzeit, verify-ecosystem, Konformitäts-Gate, Tests, delegierte Worker, Shell, Lint) mit der USE-Methode."
+description: "/perf-audit — Prüft gegen die Performance-Budgets je Klasse (Hook-Laufzeit, verify-ecosystem, Konformitäts-Gate, Tests, delegierte Worker, Shell, Lint, Installationsauflösung) mit der USE-Methode."
 machineTranslated: true
-sourceHash: "fecd1962acded819"
+sourceHash: "50f1ec06ca781019"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 - **Rolle:** Performance-Prüfer
 - **Pipeline-Position:** Festung
 
-Prüft gegen die Performance-Budgets je Klasse (Hook-Laufzeit, verify-ecosystem, Konformitäts-Gate, Tests, delegierte Worker, Shell, Lint) nach der USE-Methode.
+Prüft gegen die Performance-Budgets je Klasse (Hook-Laufzeit, verify-ecosystem, Konformitäts-Gate, Tests, delegierte Worker, Shell, Lint, Installationsauflösung) nach der USE-Methode.
 
 ## Kanonischer Aufruf
 
@@ -25,7 +25,7 @@ Mit Argumenten:
 
 ## Eingaben
 
-Host-Repository, das `hooks/`, `src/apothem/benchmarks/`, `tests/` und die Hook-Bootstrap-Stubs `hooks/lib/bootstrap.{sh,ps1}` enthält
+Ein Apothem-Checkout, der `src/apothem/hooks/`, `src/apothem/benchmarks/`, `tests/` und die Hook-Bootstrap-Stubs `src/apothem/hooks/lib/bootstrap.{sh,ps1}` enthält
 
 ## Ausgaben
 
@@ -44,7 +44,7 @@ Der Befehl durchläuft fünf Audit-Phasen: Eingabeaufnahme, Ermittlung der Budge
 | Symptom | Ursache | Behebung |
 |---------|-------|----------|
 | Qualitätstor FAIL | Die Ausgabe erfüllt die Standards nicht | Behebe die Ausgabe und führe erneut aus |
-| Fehlende Eingabedatei | Im Repository fehlt `src/apothem/benchmarks/` | Ergänze die Benchmark-Treiber und führe dann erneut aus; der Befehl verweigert die Ausführung, bis sie existieren |
+| Kein Apothem-Checkout | Im Repository fehlt `src/apothem/benchmarks/` | Nichts zu beheben: Der Befehl meldet die Dimension als nicht anwendbar, und `/audit` überspringt sie |
 
 ## Beispiele
 

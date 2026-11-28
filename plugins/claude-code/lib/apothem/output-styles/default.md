@@ -67,7 +67,7 @@ Each next-step names its owner explicitly.
 - File references use the renderer's clickable file-link syntax; example label `file.ts:42`, target `path/file.ts#L42`.
 - No decorative ASCII art.
 - No emojis by default; opt-in per response only when the operator explicitly requests them.
-- The canonical single-line SPDX license header is provenance, not decoration, and is required per the [authorship-header policy](https://apothem.ahmedgad.com/docs/reference/authorship-header/).
+- A file header is provenance, not decoration: inside the Apothem repository the canonical single-line SPDX license header is required per the [authorship-header policy](https://apothem.ahmedgad.com/docs/reference/authorship-header/); in a user project the project's own header convention applies.
 
 ## Citations
 
@@ -91,9 +91,9 @@ If no project root is resolvable, halt with a structured-inquiry invocation surf
 
 ## File-Authoring Contract
 
-Any response that creates a new file routes through the apothem header-injector (`scripts/inject-header.sh` / `scripts/inject-header.py` in the apothem source repo at <https://github.com/ahmed-g-gad/apothem>) so the canonical single-line SPDX license header is injected at the file's head per `site/content/docs/reference/authorship-header.mdx`. The byte-exact header fixture is at `src/apothem/schemas/authorship-header.txt`; the per-comment-family variant is detected automatically by the injector.
+A new file follows the project's own header and license convention, found per `rules/host-discovery.md`, or carries no header when the project has none. In a user project a response MUST NOT stamp the Apothem SPDX header or run Apothem scripts. Inside the Apothem repository, a new file gets the canonical single-line SPDX license header through `scripts/inject-header.py`, which reads the fixture at `src/apothem/schemas/authorship-header.txt` and picks the comment family from the filetype.
 
-The exempt classes (LICENSE, JSON configuration files, lockfiles, generated assets, vendored trees, `.audit/` ephemera, `<project-root>/.apothem/` working-directory ephemera, `.keep` / `.gitkeep` markers, binary files) are enumerated at `src/apothem/schemas/header-exceptions.txt`. The chat surface confirms header injection in its file-creation summary, naming the comment-family variant emitted and the injector's exit code.
+The exempt classes (LICENSE, JSON configuration files, lockfiles, generated assets, vendored trees, `.audit/` ephemera, `<project-root>/.apothem/` working-directory ephemera, `.keep` / `.gitkeep` markers, binary files) are enumerated at `src/apothem/schemas/header-exceptions.txt`. When the injector runs, the chat surface names the comment-family variant emitted and the injector's exit code in its file-creation summary.
 
 ## Preservation
 

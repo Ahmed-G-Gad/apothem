@@ -95,7 +95,7 @@ Diagram source and rendered images land at the operator's chosen location (a str
 
 ### File-Authoring Contract
 
-Diagram-source files (a `.mmd` / `.svg` / data-viz spec) authored as host-project artifacts route through `scripts/inject-header.{sh,py}` where the filetype carries a header variant; rendered binary images (`.png` / `.pdf`) are header-exempt per `src/apothem/schemas/header-exceptions.txt`. Edits preserve any existing banner; the header-inject-guard hook enforces the contract.
+A diagram-source file (a `.mmd` / `.svg` / data-viz spec) authored as a host-project artifact follows the project's own header and license convention, found per `rules/host-discovery.md`, or carries no header when the project has none. In a user project the skill MUST NOT stamp the Apothem SPDX header or run Apothem scripts; inside the Apothem repository, a new file gets the canonical header through `scripts/inject-header.py`. Rendered binary images (`.png` / `.pdf`) carry no header. Edits preserve any existing header.
 
 ### Structured Inquiry on Ambiguity
 

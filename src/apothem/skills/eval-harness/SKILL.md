@@ -70,7 +70,7 @@ The harness emits the dataset and scorer at the host's ratified eval location (d
 
 ### File-Authoring Contract
 
-Every NEW file the harness creates routes through `scripts/inject-header.py` so the canonical `SPDX-License-Identifier` `MIT` header is injected in the comment family matching the filetype; the injector is idempotent and detects the variant from the byte-exact fixture at `src/apothem/schemas/authorship-header.txt`. Exempt classes — LICENSE, JSON configuration files, lockfiles, generated assets, vendored trees, `.audit/` ephemera, `.apothem/plans/` ephemera, `.keep` / `.gitkeep` markers, binaries — are enumerated at `src/apothem/schemas/header-exceptions.txt`. Generated run logs and metrics reports are header-exempt under the generated-asset class.
+Every NEW file the harness creates follows the project's own header and license convention, found per `rules/host-discovery.md`, or carries no header when the project has none. In a user project the skill MUST NOT stamp the Apothem SPDX header or run Apothem scripts; inside the Apothem repository, a new file gets the canonical header through `scripts/inject-header.py`. Generated run logs and metrics reports carry no header.
 
 ### Structured Inquiry on Ambiguity
 

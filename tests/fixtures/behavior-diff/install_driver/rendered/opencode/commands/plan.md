@@ -54,7 +54,7 @@ Stage artifacts land where their stage commands place them (inside the active su
 
 ### File-Authoring Contract
 
-The orchestrator authors no codebase files of its own (it dispatches stages that do). Stage commands honor the authorship-header contract via `scripts/inject-header.{sh,py}` (byte-exact fixture at `src/apothem/schemas/authorship-header.txt`); the workflow trace is a plan-suite artifact, header-exempt under the `.apothem/**` class at `src/apothem/schemas/header-exceptions.txt`.
+The orchestrator authors no codebase files of its own (it dispatches stages that do). Stage commands give a new file the project's own header convention per `rules/host-discovery.md` (inside the Apothem repository, the canonical header through `scripts/inject-header.py`; in a user project, never the Apothem header or Apothem scripts); the workflow trace is a plan-suite artifact, header-exempt under the `.apothem/**` class at `src/apothem/schemas/header-exceptions.txt`.
 
 ### Structured Inquiry on Ambiguity
 

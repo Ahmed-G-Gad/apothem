@@ -1,13 +1,13 @@
 ---
 name: "dev-toolkit"
-description: "Run a disciplined engineering loop: reproduce-first debugging, test-first red-green-refactor, vertical slices, or a requirement split into issues. Use for 'diagnose a bug', 'do TDD', 'break this into vertical slices' or 'turn this into issues'. Not for one-line edits or multi-agent orchestration."
+description: "Run a disciplined engineering loop: reproduce-first debugging, test-first red-green-refactor, vertical slices, or a requirement split into issues. Use for 'diagnose a bug', 'do TDD', 'break this into vertical slices' or 'turn this into issues'. Not for one-line edits or multi-agent orchestration; new tests for a unit with no code change: test-authoring."
 user-invocable: true
 argument-hint: "[task or defect] [--mode diagnose|tdd|slice|decompose]"
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep, TodoWrite, TaskCreate, TaskGet, TaskList, TaskUpdate"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-24"
+  updated: "2026-11-28"
   archetype: "engineering-template"
 ---
 
@@ -102,7 +102,7 @@ Code changes, tests, and decomposition artifacts land at their domain-natural ho
 
 ### File-Authoring Contract
 
-Every NEW code / test file routes through `scripts/inject-header.{sh,py}` for the canonical SPDX banner (fixture at `src/apothem/schemas/authorship-header.txt`); exempt classes at `src/apothem/schemas/header-exceptions.txt`. Edits preserve any existing banner; the header-inject-guard hook enforces the contract. Code honors the host's per-language code-craft conventions (discovered).
+Every NEW code / test file follows the project's own header and license convention, found per `rules/host-discovery.md`, or carries no header when the project has none. In a user project the skill MUST NOT stamp the Apothem SPDX header or run Apothem scripts; inside the Apothem repository, a new file gets the canonical header through `scripts/inject-header.py`. Edits preserve any existing header. Code honors the host's per-language code-craft conventions (discovered).
 
 ### Structured Inquiry on Ambiguity
 

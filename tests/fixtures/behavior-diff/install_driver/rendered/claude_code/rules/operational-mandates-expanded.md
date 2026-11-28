@@ -56,7 +56,7 @@ Carry the expanded per-mandate Violation indicators and Recovery sub-blocks for 
 
 ### CM-7 — Coherent Product (→TM-11)
 
-- **Violation indicators:** Plan-internal terminology in output artifacts (any term in the canonical forbidden-terms block at `CLAUDE.md` §CM-7). Partial implementations without TODO markers. Inconsistent naming across files.
+- **Violation indicators:** Plan-internal terminology in output artifacts (any term in the closed term set of `rules/plain-language.md`). Partial implementations without TODO markers. Inconsistent naming across files.
 - **Recovery:** Strip plan references. Complete partial work. Verify naming consistency. PreToolUse hooks enforce automatically.
 
 ### CM-8 — Bottleneck-First Focus

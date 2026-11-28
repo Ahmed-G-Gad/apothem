@@ -93,7 +93,7 @@ The pack prints in the conversation as one Markdown document in part order, with
 
 ### File-Authoring Contract
 
-Each new file carries the canonical header through `scripts/inject-header.py`; exempt classes are listed in `src/apothem/schemas/header-exceptions.txt`. A pack printed to the conversation is header-exempt, and edits to an existing file keep its header.
+Each new file follows the project's own header and license convention, found per `rules/host-discovery.md`, or carries no header when the project has none. In a user project the skill MUST NOT stamp the Apothem SPDX header or run Apothem scripts; inside the Apothem repository, a new file gets the canonical header through `scripts/inject-header.py`. A pack printed to the conversation is header-exempt, and edits to an existing file keep its header.
 
 ### Structured Inquiry on Ambiguity
 

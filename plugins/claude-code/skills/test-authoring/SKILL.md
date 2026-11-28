@@ -1,13 +1,13 @@
 ---
 name: "test-authoring"
-description: "Writes new behavior-first tests in Arrange-Act-Assert form, failing assertions first, covering happy path, edge boundaries and failures, when the user asks to 'write tests' or 'test this function'. Authors tests only. Whole-repo suite: test-suite; running tests: test-runner."
+description: "Writes new behavior-first tests in Arrange-Act-Assert form, failing assertions first, covering happy path, edge boundaries and failures, when the user asks to 'write tests' or 'test this function'. Authors tests only. Whole-repo suite: test-suite; running tests: test-runner; a test-driven change to code: dev-toolkit."
 user-invocable: true
 argument-hint: "[--focus PATH] [--framework NAME]"
 disable-model-invocation: false
 allowed-tools: "Read, Glob, Grep"
 metadata:
   version: "0.1.0"
-  updated: "2026-10-24"
+  updated: "2026-11-28"
   archetype: "authoring-template"
 ---
 
@@ -68,7 +68,7 @@ The skill emits test files at the host's ratified test location, discovered per 
 
 ### File-Authoring Contract
 
-Every NEW test file routes through `scripts/inject-header.py` so the canonical `SPDX-License-Identifier: MIT` header is injected at the head in the comment family matching the filetype; the injector is idempotent and resolves the variant from the byte-exact fixture at `src/apothem/schemas/authorship-header.txt`. Exempt classes are enumerated at `src/apothem/schemas/header-exceptions.txt`. The header-inject-guard hook at `hooks/messages/pretooluse-{write,edit}-header-guard.md` enforces the contract at every Write / Edit invocation.
+Every NEW test file follows the project's own header and license convention, found per `rules/host-discovery.md`, or carries no header when the project has none. In a user project the skill MUST NOT stamp the Apothem SPDX header or run Apothem scripts; inside the Apothem repository, a new file gets the canonical header through `scripts/inject-header.py`. There, the header-inject-guard hook at `hooks/messages/pretooluse-{write,edit}-header-guard.md` reports a missing header at every Write / Edit.
 
 ### Structured Inquiry on Ambiguity
 

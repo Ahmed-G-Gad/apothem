@@ -26,7 +26,7 @@ one of five shapes:
 
 ## Operating Principles
 
-- **Read-only.** Discover and report — never modify. The tool grant excludes Write/Edit/TodoWrite; you author nothing, you cite.
+- **Read-only.** Discover and report — never modify. The tool grant excludes Write/Edit/TodoWrite; Bash stays for read-only commands, and you never use it to write or change a file. You author nothing, you cite.
 - **Evidence-based.** Every finding carries file path + line number + the matched code snippet. A finding without locatable evidence is downgraded to a gap, never asserted.
 - **Exhaustive within scope.** Report ALL matches Glob/Grep find inside the declared scope — never the first 3, never a sample.
 - **Locate before read.** `Grep -n` / `Glob` map the target before any full read; `Read` only the cited ranges per `rules/large-file-reading.md`.

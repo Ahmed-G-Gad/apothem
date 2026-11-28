@@ -1,13 +1,13 @@
 ---
 title: "/perf-audit"
-description: "/perf-audit — Audits against per-class performance budgets (hook runtime, verify-ecosystem, conformity gate, tests, delegated workers, shell, lint), using the USE method."
+description: "/perf-audit — Audits against per-class performance budgets (hook runtime, verify-ecosystem, conformity gate, tests, delegated workers, shell, lint, install resolution), using the USE method."
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 - **Role:** Perf auditor
 - **Pipeline position:** fortress
 
-Audits against per-class performance budgets (hook runtime, verify-ecosystem, conformity gate, tests, delegated workers, shell, lint), using the USE method.
+Audits against per-class performance budgets (hook runtime, verify-ecosystem, conformity gate, tests, delegated workers, shell, lint, install resolution), using the USE method.
 
 ## Canonical invocation
 
@@ -23,7 +23,7 @@ With arguments:
 
 ## Inputs
 
-Host repository that contains `hooks/`, `src/apothem/benchmarks/`, `tests/`, and the hook bootstrap stubs `hooks/lib/bootstrap.{sh,ps1}`
+An Apothem checkout that contains `src/apothem/hooks/`, `src/apothem/benchmarks/`, `tests/`, and the hook bootstrap stubs `src/apothem/hooks/lib/bootstrap.{sh,ps1}`
 
 ## Outputs
 
@@ -42,7 +42,7 @@ The command runs five audit phases: input ingest, per-class budget discovery, be
 | Symptom | Cause | Recovery |
 |---------|-------|----------|
 | Quality gate FAIL | Output does not meet standards | Fix the output and re-run |
-| Missing input file | Repository lacks `src/apothem/benchmarks/` | Add the benchmark drivers, then re-run; the command refuses until they exist |
+| Not an Apothem checkout | Repository lacks `src/apothem/benchmarks/` | Nothing to fix: the command reports the dimension as not applicable, and `/audit` skips it |
 
 ## Examples
 

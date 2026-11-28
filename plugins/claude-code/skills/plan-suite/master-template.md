@@ -316,7 +316,7 @@ Seriousness Level — see `CLAUDE.md` Section 4.
 8. **Quality Gates & Repository Sync (TM-8):** Lint, format, type-check, test. All artifacts publication-ready.
 9. **Preserve Nuances (TM-9):** [OVERHAUL] Maintain original intentions.
 10. **Critical Evaluation (TM-10/CM-1):** Never obey blindly. Push back on suboptimal paths.
-11. **Coherent Product (TM-11/CM-7):** Production-ready deliverables. Plan-internal isolation: enforce CM-7 forbidden-terms and protected-artifacts lists (canonical definition in CLAUDE.md CM-7). Everything reads as natural, organic development as if no plan ever existed.
+11. **Coherent Product (TM-11/CM-7):** Production-ready deliverables. Plan-internal isolation: enforce CM-7 (CM-7 is defined at `rules/operational-mandates.md` §CM-7; the forbidden terms are the closed term set in `rules/plain-language.md` §1, and the protected artifacts are the output artifacts CM-7 names: every codebase deliverable and development artifact, including the in-scope surfaces in `rules/plain-language.md` §3). Everything reads as natural, organic development as if no plan ever existed.
 12. **Phase Architecture (TM-12):** Independently-promptable phases with shared preamble.
 13. **Phase Manageability (TM-13):** Hard constraints: ≤10 tasks, ≤5 unrelated files, ≤2000 tokens, no mixed concerns.
 14. **Granular Commits (TM-14/CM-13):** Per-task at SHARED+, per-phase at PERSONAL_USE. End-of-phase commit gate: all codebase changes committed before phase report.
@@ -328,12 +328,14 @@ Seriousness Level — see `CLAUDE.md` Section 4.
 20. **Manual Approval (TM-20):** STOP before applying changes to plan files. Invoke the structured-inquiry channel to solicit user review and approval (canonical channel per `rules/interactive-questions.md`).
 21. **Final Sweep (TM-21):** After finalizing Q&A: Prose Fidelity + Internal Consistency Scorecards + Appendix checklist. FAIL blocks execution at SHARED+.
 22. **Creative Architecture (TM-22/CM-21):** Cognitive Filters, language standards, originality threshold. Conceptual elegance is a deliverable quality.
-23. **Persistent Conventions Vigilance (TM-23/CM-22):** Always-on. See `persistent-conventions-vigilance.md` for full specification.
-24. **Large File Generation (TM-24/CM-23):** Always-on. See `large-file-generation.md` for full specification.
+23. **Persistent Conventions Vigilance (TM-23/CM-22):** Path-filtered. See `persistent-conventions-vigilance.md` for full specification.
+24. **Large File Generation (TM-24/CM-23):** Path-filtered. See `large-file-generation.md` for full specification.
 25. **Context Management (TM-25/CM-24):** Always-on. See `context-management.md` for full specification.
-26. **Worker Orchestration (TM-26/CM-25):** Always-on. See `agent-orchestration.md` for full specification.
-27. **Auto Memory Lifecycle (TM-27/CM-26):** Always-on. See `auto-memory.md` for full specification.
-28. **Clean Architecture Layers (TM-28/CM-27):** See `clean-architecture-layers.md` for full specification.
+26. **Worker Orchestration (TM-26/CM-25):** Path-filtered. See `agent-orchestration.md` for full specification.
+27. **Auto Memory Lifecycle (TM-27/CM-26):** Path-filtered. See `auto-memory.md` for full specification.
+28. **Clean Architecture Layers (TM-28/CM-27):** Path-filtered. See `clean-architecture-layers.md` for full specification.
+
+Always-on means loaded into every context; `rules/apothem-rule-index.md` lists that set and how a path-filtered rule loads (a matching file path, a step that cites it, or a read the agent makes itself).
 
 ---
 
@@ -346,7 +348,7 @@ After completing EVERY phase or sub-phase, verify before marking done:
 - [ ] All tests pass (existing + new)
 - [ ] New code integrates correctly (imports, interfaces, no regressions)
 - [ ] No stale/orphan/unused code introduced
-- [ ] Plan-internal isolation verified — zero CM-7 forbidden terms in all protected artifacts (CLAUDE.md CM-7). Everything must read naturally as if no plan ever existed
+- [ ] Plan-internal isolation verified — zero CM-7 forbidden terms in all protected artifacts (`rules/operational-mandates.md` §CM-7). Everything must read naturally as if no plan ever existed
 - [ ] Documentation updated (scope per seriousness level)
 - [ ] Guider files current (scope per seriousness level)
 - [ ] Cross-repo dependencies audited
@@ -918,7 +920,7 @@ Key skills created or evolved. **The one constraining belief overcome:** [the as
 
 ## 8. Formal Completion
 
-**Plan-Internal Isolation:** Confirmed — zero CM-7 forbidden terms in all protected artifacts (CLAUDE.md CM-7). Everything reads naturally as if built organically with no prior planning artifacts.
+**Plan-Internal Isolation:** Confirmed — zero CM-7 forbidden terms in all protected artifacts (`rules/operational-mandates.md` §CM-7). Everything reads naturally as if built organically with no prior planning artifacts.
 
 **Status: ✅ COMPLETE**
 ```
@@ -971,7 +973,7 @@ Never obey blindly. Identify root causes the user can't see. Challenge assumptio
 
 ### TM-11: Coherent Product
 
-Every deliverable: complete, working, publication-ready. Not scaffolding. Add the details that separate "works" from "finished": logging, health checks, graceful shutdown, config validation, meaningful errors. **Plan-internal isolation:** enforce CM-7 forbidden-terms and protected-artifacts lists (canonical definition in CLAUDE.md CM-7). The codebase must stand entirely on its own as if no plan ever existed.
+Every deliverable: complete, working, publication-ready. Not scaffolding. Add the details that separate "works" from "finished": logging, health checks, graceful shutdown, config validation, meaningful errors. **Plan-internal isolation:** enforce CM-7 (CM-7 is defined at `rules/operational-mandates.md` §CM-7; the forbidden terms are the closed term set in `rules/plain-language.md` §1, and the protected artifacts are the output artifacts CM-7 names: every codebase deliverable and development artifact, including the in-scope surfaces in `rules/plain-language.md` §3). The codebase must stand entirely on its own as if no plan ever existed.
 
 ### TM-12: Phase Architecture
 
@@ -1045,7 +1047,7 @@ Apply the Five Cognitive Filters (cognitive identity rule, Section 2) to all sub
 
 > **Canonical specification:** `rules/persistent-conventions-vigilance.md` and CM-22.
 
-Always-on. See rule file for full specification — naming conventions, directory structure, proactive evolution, ecosystem coherence, and gap detection.
+Path-filtered. See rule file for full specification — naming conventions, directory structure, proactive evolution, ecosystem coherence, and gap detection.
 
 ### TM-24: Large File Generation
 
@@ -1063,13 +1065,13 @@ Always-on. See rule file for full specification — health monitoring, externali
 
 > **Canonical specification:** `rules/agent-orchestration.md` and CM-25. Supplements TM-17.
 
-Always-on. See rule file for full specification — team patterns (CM-25A), deployment criteria, launch protocol, return contracts, isolation, and error handling.
+Path-filtered. See rule file for full specification — team patterns (CM-25A), deployment criteria, launch protocol, return contracts, isolation, and error handling.
 
 ### TM-27: Auto Memory Lifecycle
 
 > **Canonical specification:** `rules/auto-memory.md` and CM-26.
 
-Always-on. See rule file for full specification — memory organization, read/write discipline, hygiene, and state distinction.
+Path-filtered. See rule file for full specification — memory organization, read/write discipline, hygiene, and state distinction.
 
 ### TM-28: Clean Architecture Layer Discipline
 
@@ -1175,7 +1177,7 @@ After corrections: create or evolve skills per CLAUDE.md Section 7.6 (Artifact E
 
 > **Creative Architecture (TM-22/CM-21)** applies across all skills per seriousness scaling. Cognitive Filters, language standards, and originality threshold are quality gates, not decorative layers.
 >
-> **Always-on mandates (TM-23/CM-22, TM-25–TM-27/CM-24–CM-26). Path-filtered: TM-24/CM-23, TM-28/CM-27, CM-28.** See `rules/` for full specifications. These rules apply across all skills and ad-hoc interactions (always-on are loaded into every context; path-filtered activate on matching file paths).
+> **Always-on mandate: TM-25/CM-24 (`rules/context-management.md`). Path-filtered: TM-23/CM-22, TM-24/CM-23, TM-26–TM-28/CM-25–CM-27, CM-28.** See `rules/` for full specifications and `rules/apothem-rule-index.md` for the always-on set. These rules apply across all skills and ad-hoc interactions (always-on rules are loaded into every context; path-filtered rules activate on matching file paths or when a step cites them).
 
 ---
 

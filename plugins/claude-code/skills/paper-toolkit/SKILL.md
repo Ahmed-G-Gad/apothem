@@ -107,7 +107,7 @@ Results print to STDOUT. A file is written only when the user names a path or as
 
 ### File-Authoring Contract
 
-A NEW saved note, draft, or report routes through `scripts/inject-header.py` where the host project requires authorship headers; exempt classes are listed in `src/apothem/schemas/header-exceptions.txt`. A corrected bibliography edits entries in the existing file and leaves its header alone.
+Where the host project requires authorship headers, a NEW saved note, draft, or report carries the project's own header, found per `rules/host-discovery.md`. In a user project the skill MUST NOT stamp the Apothem SPDX header or run Apothem scripts; inside the Apothem repository, use `scripts/inject-header.py`. A corrected bibliography edits entries in the existing file and leaves its header alone.
 
 ### Structured Inquiry on Ambiguity
 

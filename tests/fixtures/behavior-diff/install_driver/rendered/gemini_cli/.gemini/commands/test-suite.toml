@@ -49,7 +49,7 @@ The report lands at the consuming suite's `_inputs/test-suite-report.md` per the
 
 ### File-Authoring Contract
 
-Authored test files are codebase artifacts and carry the canonical `SPDX-License-Identifier: MIT` header in the comment family matching the filetype, injected via `scripts/inject-header.py --mode fix-in-place <path>` per the File Headers discipline. The exemption list at `src/apothem/schemas/header-exceptions.txt` governs which paths skip the banner; test files are not exempt. The report itself is header-exempt per the `.apothem/**` exception class.
+Authored test files are codebase artifacts. Each new one follows the project's own header and license convention, found per `rules/host-discovery.md`, or carries no header when the project has none. In a user project the command MUST NOT stamp the Apothem SPDX header or run Apothem scripts. Inside the Apothem repository, test files are not exempt and get the canonical header through `scripts/inject-header.py --mode fix-in-place <path>`. The report itself is header-exempt per the `.apothem/**` exception class.
 
 ### Structured Inquiry on Ambiguity
 
@@ -83,7 +83,7 @@ When uncertain about the host's test framework, the behavior contract under test
 | Host-Agnostic Discovery (M1) | Discover the test framework, coverage tool, and test-location convention; never assume pytest or any single framework. |
 | Behavior-First (M8) | Tests assert observable behavior with pre / post / failure conditions; implementation-coupled tests are findings. |
 | Structured Inquiry (CM-2) | Framework ambiguity and contract ambiguity route through the canonical channel; free-form prose as primary input is forbidden. |
-| File Headers | Every authored test file carries the canonical SPDX header via `scripts/inject-header.py`. |
+| File Headers | Every authored test file follows the project's own header convention per `rules/host-discovery.md`; the canonical header through `scripts/inject-header.py` applies only inside the Apothem repository. |
 | Pre-Emission Gate (M4) | The report and authored test files pass the fifteen-bar gate before promotion. |
 | Worker Orchestration (CM-25) | The test-runner agent carries an explicit 200-token return contract. |
 
@@ -92,7 +92,7 @@ When uncertain about the host's test framework, the behavior contract under test
 ## Output
 
 - The report at the consuming suite's `_inputs/test-suite-report.md` (per-test outcomes + failure triage + coverage-gap findings + validation-gate attestation).
-- The authored behavior-first test files at the host's ratified test location, each carrying the canonical SPDX header.
+- The authored behavior-first test files at the host's ratified test location, each carrying the header the project's own convention calls for (the canonical SPDX header only inside the Apothem repository).
 
 ---
 

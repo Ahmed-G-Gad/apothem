@@ -1,15 +1,15 @@
 ---
 title: "/perf-audit"
-description: "/perf-audit — USE メソッドを用いて、クラス別のパフォーマンス予算（フックランタイム、verify-ecosystem、コンフォーミティゲート、テスト、委任されたワーカー、シェル、lint）に対して監査します。"
+description: "/perf-audit — USE メソッドを用いて、クラス別のパフォーマンス予算（フックランタイム、verify-ecosystem、コンフォーミティゲート、テスト、委任されたワーカー、シェル、lint、インストール解決）に対して監査します。"
 machineTranslated: true
-sourceHash: "fecd1962acded819"
+sourceHash: "50f1ec06ca781019"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 - **役割：** パフォーマンス監査者
 - **パイプライン位置：** フォートレス
 
-USE メソッドを用いて、クラス別のパフォーマンス予算（フックランタイム、verify-ecosystem、コンフォーミティゲート、テスト、委任されたワーカー、シェル、lint）に対して監査します。
+USE メソッドを用いて、クラス別のパフォーマンス予算（フックランタイム、verify-ecosystem、コンフォーミティゲート、テスト、委任されたワーカー、シェル、lint、インストール解決）に対して監査します。
 
 ## 正規の呼び出し
 
@@ -25,7 +25,7 @@ USE メソッドを用いて、クラス別のパフォーマンス予算（フ�
 
 ## 入力
 
-`hooks/`、`src/apothem/benchmarks/`、`tests/`、およびフックのブートストラップスタブ `hooks/lib/bootstrap.{sh,ps1}` を含むホストリポジトリ
+`src/apothem/hooks/`、`src/apothem/benchmarks/`、`tests/`、およびフックのブートストラップスタブ `src/apothem/hooks/lib/bootstrap.{sh,ps1}` を含む Apothem リポジトリのチェックアウト
 
 ## 出力
 
@@ -44,7 +44,7 @@ USE メソッドを用いて、クラス別のパフォーマンス予算（フ�
 | 症状 | 原因 | 復旧 |
 |---------|-------|----------|
 | 品質ゲート FAIL | 出力が基準を満たさない | 出力を修正して再実行する |
-| 入力ファイルが欠落 | リポジトリに `src/apothem/benchmarks/` が存在しない | ベンチマークのドライバーを追加してから再実行する。存在するまで、コマンドは実行を拒否する |
+| Apothem のチェックアウトではない | リポジトリに `src/apothem/benchmarks/` が存在しない | 修正は不要。コマンドはこの観点を対象外として報告し、`/audit` はそれをスキップする |
 
 ## 例
 
