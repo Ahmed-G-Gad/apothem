@@ -11,7 +11,7 @@ abstract: >
   consistent AI assistant behavior across seventeen AI assistant harnesses —
   among them Claude Code, Cursor, Gemini CLI, and GitHub Copilot.
 version: "1.6.0"
-date-released: "2026-11-26"
+date-released: "2026-11-28"
 license: MIT
 url: "https://github.com/ahmed-g-gad/apothem"
 repository-code: "https://github.com/ahmed-g-gad/apothem"
@@ -46,7 +46,7 @@ preferred-citation:
   license: MIT
   url: "https://github.com/ahmed-g-gad/apothem"
   repository-code: "https://github.com/ahmed-g-gad/apothem"
-  date-released: "2026-11-26"
+  date-released: "2026-11-28"
   keywords:
     - ai
     - llm
