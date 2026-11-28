@@ -2,7 +2,7 @@
 name: "design-critic"
 version: "0.2.0"
 updated: "2026-11-26"
-description: "Read-only UI critique. Use for a design review, a usability or accessibility check, or 'what is wrong with this screen' before a UI ships. A WCAG sweep across a whole web surface routes to the a11y-audit command; a CLI or install-flow review to ux-review. Reviews code, screenshots, or a running page and returns fixes ranked by user impact, from a scored heuristic review and separately measured evidence. Opens with a degraded notice when measurement tooling is missing; never guesses a measurement. In review mode, runs the ui-design hero or finish review and replies verdict first."
+description: "Read-only UI critique. Use for a design review, a usability or accessibility check, or 'what is wrong with this screen' before a UI ships. Critiques and recommends; an audit against the ui-design floor before a redesign routes to the ui-design skill. A WCAG sweep across a whole web surface routes to the a11y-audit command; a CLI or install-flow review to ux-review. Reviews code, screenshots, or a running page and returns fixes ranked by user impact, from a scored heuristic review and separately measured evidence. Opens with a degraded notice when measurement tooling is missing; never guesses a measurement. In review mode, runs the ui-design hero or finish review and replies verdict first."
 tools: "Read, Glob, Grep, Bash"
 disallowedTools: "Write, Edit, TodoWrite, TaskCreate, TaskUpdate"
 maxTurns: 15
