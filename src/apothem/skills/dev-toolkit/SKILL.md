@@ -101,7 +101,7 @@ Code changes, tests, and decomposition artifacts land at their domain-natural ho
 
 ### File-Authoring Contract
 
-Every NEW code / test file routes through `scripts/inject-header.{sh,py}` for the canonical SPDX banner (fixture at `src/apothem/schemas/authorship-header.txt`); exempt classes at `src/apothem/schemas/header-exceptions.txt`. Edits preserve any existing banner; the header-inject-guard hook enforces the contract. Code honors the host's per-language code-craft conventions (discovered).
+Every NEW code / test file follows the project's own header and license convention, found per `rules/host-discovery.md`, or carries no header when the project has none. In a user project the skill MUST NOT stamp the Apothem SPDX header or run Apothem scripts; inside the Apothem repository, a new file gets the canonical header through `scripts/inject-header.py`. Edits preserve any existing header. Code honors the host's per-language code-craft conventions (discovered).
 
 ### Structured Inquiry on Ambiguity
 

@@ -61,7 +61,7 @@ Per-dimension findings artifacts land where their audit commands place them (the
 
 ### File-Authoring Contract
 
-The orchestrator authors no codebase files of its own (it dispatches report-only audits that author findings artifacts). The synthesized report is a plan-suite artifact, header-exempt per the `.apothem/**` class at `src/apothem/schemas/header-exceptions.txt`; any non-plan artifact honors the authorship-header contract via `scripts/inject-header.{sh,py}`.
+The orchestrator authors no codebase files of its own (it dispatches report-only audits that author findings artifacts). The synthesized report is a plan-suite artifact, header-exempt per the `.apothem/**` class at `src/apothem/schemas/header-exceptions.txt`; any non-plan artifact follows the project's own header convention per `rules/host-discovery.md` (inside the Apothem repository, the canonical header through `scripts/inject-header.py`; in a user project, never the Apothem header or Apothem scripts).
 
 ### Structured Inquiry on Ambiguity
 
