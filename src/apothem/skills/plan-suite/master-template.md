@@ -316,7 +316,7 @@ Seriousness Level — see `CLAUDE.md` Section 4.
 8. **Quality Gates & Repository Sync (TM-8):** Lint, format, type-check, test. All artifacts publication-ready.
 9. **Preserve Nuances (TM-9):** [OVERHAUL] Maintain original intentions.
 10. **Critical Evaluation (TM-10/CM-1):** Never obey blindly. Push back on suboptimal paths.
-11. **Coherent Product (TM-11/CM-7):** Production-ready deliverables. Plan-internal isolation: enforce CM-7 forbidden-terms and protected-artifacts lists (canonical definition in `rules/operational-mandates.md` §CM-7, with the forbidden terms in the closed term set of `rules/plain-language.md`). Everything reads as natural, organic development as if no plan ever existed.
+11. **Coherent Product (TM-11/CM-7):** Production-ready deliverables. Plan-internal isolation: enforce CM-7 (CM-7 is defined at `rules/operational-mandates.md` §CM-7; the forbidden terms are the closed term set in `rules/plain-language.md` §1, and the protected artifacts are the output artifacts CM-7 names: every codebase deliverable and development artifact, including the in-scope surfaces in `rules/plain-language.md` §3). Everything reads as natural, organic development as if no plan ever existed.
 12. **Phase Architecture (TM-12):** Independently-promptable phases with shared preamble.
 13. **Phase Manageability (TM-13):** Hard constraints: ≤10 tasks, ≤5 unrelated files, ≤2000 tokens, no mixed concerns.
 14. **Granular Commits (TM-14/CM-13):** Per-task at SHARED+, per-phase at PERSONAL_USE. End-of-phase commit gate: all codebase changes committed before phase report.
@@ -973,7 +973,7 @@ Never obey blindly. Identify root causes the user can't see. Challenge assumptio
 
 ### TM-11: Coherent Product
 
-Every deliverable: complete, working, publication-ready. Not scaffolding. Add the details that separate "works" from "finished": logging, health checks, graceful shutdown, config validation, meaningful errors. **Plan-internal isolation:** enforce CM-7 forbidden-terms and protected-artifacts lists (canonical definition in `rules/operational-mandates.md` §CM-7, with the forbidden terms in the closed term set of `rules/plain-language.md`). The codebase must stand entirely on its own as if no plan ever existed.
+Every deliverable: complete, working, publication-ready. Not scaffolding. Add the details that separate "works" from "finished": logging, health checks, graceful shutdown, config validation, meaningful errors. **Plan-internal isolation:** enforce CM-7 (CM-7 is defined at `rules/operational-mandates.md` §CM-7; the forbidden terms are the closed term set in `rules/plain-language.md` §1, and the protected artifacts are the output artifacts CM-7 names: every codebase deliverable and development artifact, including the in-scope surfaces in `rules/plain-language.md` §3). The codebase must stand entirely on its own as if no plan ever existed.
 
 ### TM-12: Phase Architecture
 
