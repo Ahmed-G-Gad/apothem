@@ -1,7 +1,7 @@
 ---
 name: "dev-toolkit"
 version: "0.1.0"
-updated: "2026-10-24"
+updated: "2026-11-28"
 description: "Run a disciplined engineering loop: reproduce-first debugging, test-first red-green-refactor, vertical slices, or a requirement split into issues. Use for 'diagnose a bug', 'do TDD', 'break this into vertical slices' or 'turn this into issues'. Not for one-line edits or multi-agent orchestration; new tests for a unit with no code change: test-authoring."
 archetype: "engineering-template"
 userInvocable: true

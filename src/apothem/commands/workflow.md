@@ -1,7 +1,7 @@
 ---
 name: "workflow"
 version: "0.1.0"
-updated: "2026-10-24"
+updated: "2026-11-28"
 description: "Use for a non-trivial mission that needs independent parallel work plus adversarial verification: decomposes it, dispatches independent subagents under named return contracts, runs a refute-by-default critique on every finding, and discloses any beyond-mission fixes. Runs only when the user invokes it, as in 'fan out and verify'."
 argument-hint: "[<<mission>>] [--autonomous] [--verify-panel N]"
 disable-model-invocation: true

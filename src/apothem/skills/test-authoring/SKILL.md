@@ -1,7 +1,7 @@
 ---
 name: "test-authoring"
 version: "0.1.0"
-updated: "2026-10-24"
+updated: "2026-11-28"
 description: "Writes new behavior-first tests in Arrange-Act-Assert form, failing assertions first, covering happy path, edge boundaries and failures, when the user asks to 'write tests' or 'test this function'. Authors tests only. Whole-repo suite: test-suite; running tests: test-runner; a test-driven change to code: dev-toolkit."
 archetype: "authoring-template"
 userInvocable: true
