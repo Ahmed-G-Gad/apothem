@@ -61,7 +61,7 @@ Stage artifacts land where their stage commands place them: research-suite worki
 
 ### File-Authoring Contract
 
-The orchestrator authors no codebase files of its own (it dispatches stages that do). Stage commands honor the authorship-header contract via `scripts/inject-header.{sh,py}` (byte-exact fixture at `src/apothem/schemas/authorship-header.txt`) on deliverable artifacts; research-suite working state is a plan-suite artifact, header-exempt per the `.apothem/**` class at `src/apothem/schemas/header-exceptions.txt`. Cited sources are documentary (permalinked URL / DOI, author or organization, access date per R4); a source is never written by this command.
+The orchestrator authors no codebase files of its own (it dispatches stages that do). Stage commands give deliverable artifacts the project's own header convention per `rules/host-discovery.md` (inside the Apothem repository, the canonical header through `scripts/inject-header.py`; in a user project, never the Apothem header or Apothem scripts); research-suite working state is a plan-suite artifact, header-exempt per the `.apothem/**` class at `src/apothem/schemas/header-exceptions.txt`. Cited sources are documentary (permalinked URL / DOI, author or organization, access date per R4); a source is never written by this command.
 
 ### Structured Inquiry on Ambiguity
 

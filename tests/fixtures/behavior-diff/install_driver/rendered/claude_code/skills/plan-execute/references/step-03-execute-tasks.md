@@ -32,7 +32,7 @@ Verify each skipped task's declared outputs exist on disk before proceeding.
 
 **3.2 — Search Before Implement:** Find reusable components. Flag existing similar logic.
 
-**3.3 — Implement:** Per phase specs + preamble standards. Best solution with rationale. Strict logical rigor. All values configurable. **Plan-internal isolation (CM-7):** enforce per the canonical forbidden-terms and protected-artifacts lists in `CLAUDE.md` CM-7. Every artifact reads as natural domain-language with zero trace of planning structure. **Cognitive-filter application:** Filters 1+5 always-on; the full suite for non-trivial decisions. Seriousness scaling per `rules/cognitive-identity.md` Section 2.
+**3.3 — Implement:** Per phase specs + preamble standards. Best solution with rationale. Strict logical rigor. All values configurable. **Plan-internal isolation (CM-7):** enforce CM-7 (CM-7 is defined at `rules/operational-mandates.md` §CM-7; the forbidden terms are the closed term set in `rules/plain-language.md` §1, and the protected artifacts are the output artifacts CM-7 names: every codebase deliverable and development artifact, including the in-scope surfaces in `rules/plain-language.md` §3). Every artifact reads as natural domain-language with zero trace of planning structure. **Cognitive-filter application:** Filters 1+5 always-on; the full suite for non-trivial decisions. Seriousness scaling per `rules/cognitive-identity.md` Section 2.
 
 **3.4 — Verify Integration:** Imports resolve, interfaces match, types align, no regressions. Run tests immediately. If unfixable without design changes beyond scope → STOP and consult the user.
 

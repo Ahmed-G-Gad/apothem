@@ -14,7 +14,7 @@ Detect / findings artifacts land where their commands place them (the consuming 
 
 ### File-Authoring Contract
 
-The orchestrator authors no codebase files of its own; the remediations it routes land through the minimal-diff `surgical-guard` skill, which preserves each file's existing authorship-header banner and routes any NEW file through `scripts/inject-header.{sh,py}` (byte-exact fixture at `src/apothem/schemas/authorship-header.txt`; exempt classes at `src/apothem/schemas/header-exceptions.txt`). The fortress-posture report is a plan-suite artifact, header-exempt under the `.apothem/**` class.
+The orchestrator authors no codebase files of its own; the remediations it routes land through the minimal-diff `surgical-guard` skill, which preserves each file's existing authorship-header banner and gives any NEW file the project's own header convention per `rules/host-discovery.md` (inside the Apothem repository, the canonical header through `scripts/inject-header.py`; in a user project, never the Apothem header or Apothem scripts). The fortress-posture report is a plan-suite artifact, header-exempt under the `.apothem/**` class.
 
 ### Structured Inquiry on Ambiguity
 

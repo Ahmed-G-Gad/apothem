@@ -1,15 +1,15 @@
 ---
 title: "/perf-audit"
-description: "/perf-audit —— 依据每类性能预算（钩子运行时、verify-ecosystem、合规闸门、测试、委派工作者、shell、lint）进行审计，采用 USE 方法。"
+description: "/perf-audit —— 依据每类性能预算（钩子运行时、verify-ecosystem、合规闸门、测试、委派工作者、shell、lint、安装解析）进行审计，采用 USE 方法。"
 machineTranslated: true
-sourceHash: "fecd1962acded819"
+sourceHash: "50f1ec06ca781019"
 ---
 {/* SPDX-License-Identifier: MIT */}
 
 - **角色：** 性能审计者
 - **流水线位置：** 堡垒
 
-依据每类性能预算进行审计（钩子运行时、verify-ecosystem、合规闸门、测试、委派工作者、shell、lint），采用 USE 方法。
+依据每类性能预算进行审计（钩子运行时、verify-ecosystem、合规闸门、测试、委派工作者、shell、lint、安装解析），采用 USE 方法。
 
 ## 规范调用
 
@@ -25,7 +25,7 @@ sourceHash: "fecd1962acded819"
 
 ## 输入
 
-包含 `hooks/`、`src/apothem/benchmarks/`、`tests/` 以及钩子引导桩 `hooks/lib/bootstrap.{sh,ps1}` 的宿主仓库
+包含 `src/apothem/hooks/`、`src/apothem/benchmarks/`、`tests/` 以及钩子引导桩 `src/apothem/hooks/lib/bootstrap.{sh,ps1}` 的 Apothem 仓库检出
 
 ## 输出
 
@@ -44,7 +44,7 @@ sourceHash: "fecd1962acded819"
 | 症状 | 原因 | 恢复 |
 |---------|-------|----------|
 | 质量门 FAIL | 输出未达到标准 | 修复输出并重新运行 |
-| 缺失输入文件 | 仓库缺少 `src/apothem/benchmarks/` | 添加基准驱动程序后重新运行；在驱动程序存在之前，该命令将拒绝运行 |
+| 不是 Apothem 检出 | 仓库缺少 `src/apothem/benchmarks/` | 无需修复：该命令将此维度报告为不适用，`/audit` 会跳过它 |
 
 ## 示例
 

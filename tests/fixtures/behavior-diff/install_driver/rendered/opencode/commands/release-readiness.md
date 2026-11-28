@@ -48,7 +48,7 @@ The verdict artifact lands at the consuming suite's `_inputs/release-readiness-f
 
 ### File-Authoring Contract
 
-The verdict artifact is header-exempt per the `.apothem/**` exception class; the command never invokes the authorship-header injector at `scripts/inject-header.py` on its own emissions. New source files in the host carry the canonical SPDX header per the `rules/host-discovery.md`-discovered comment family, but this command authors no host source. When a finding cites a surface, the citation is documentary (`file:line`); the underlying source is never written.
+The verdict artifact is header-exempt per the `.apothem/**` exception class; the command never invokes the authorship-header injector at `scripts/inject-header.py` on its own emissions. New source files in the host follow the project's own header convention per `rules/host-discovery.md`, but this command authors no host source. When a finding cites a surface, the citation is documentary (`file:line`); the underlying source is never written.
 
 ### Structured Inquiry on Ambiguity
 

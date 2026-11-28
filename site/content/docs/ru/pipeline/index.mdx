@@ -185,7 +185,7 @@ flowchart LR
 | [/code-review](/docs/pipeline/code-review) | Reviews source files one at a time for readability, naming, complexity, idiom fit and comment quality, and reports severity-ranked findings without editing. |
 | [/dependency-audit](/docs/pipeline/dependency-audit) | Audits direct and transitive dependencies for known vulnerabilities, license conflicts, deprecation and loose pins, ranking findings per dependency. |
 | [/docs-review](/docs/pipeline/docs-review) | Reviews documentation pages for prose clarity, broken links, code-block tags, citations and public-API coverage, reporting severity-ranked findings per page. |
-| [/perf-audit](/docs/pipeline/perf-audit) | Audits an Apothem installation's per-class budgets (hooks, ecosystem verification, conformity gate, tests, agents, shell, lint) with its benchmark drivers, … |
+| [/perf-audit](/docs/pipeline/perf-audit) | Audits an Apothem installation's per-class budgets (hooks, ecosystem verification, conformity gate, tests, agents, shell, lint, install resolution) with its … |
 | [/security-audit](/docs/pipeline/security-audit) | Audits a repository's security posture: secrets, injection, unsafe deserialization, path traversal, vulnerable dependencies. |
 | [/supply-chain-audit](/docs/pipeline/supply-chain-audit) | Audits a repository's release pipeline: build provenance, artifact signing, SBOM completeness, pinned CI actions and minimum permissions. |
 | [/threat-model-audit](/docs/pipeline/threat-model-audit) | Threat-models a repository with STRIDE per element and trust boundaries, classifying actors and rating residual risk. |
@@ -196,9 +196,9 @@ flowchart LR
 | [/freshify](/docs/pipeline/freshify) | Use when a repository must be made fresh and release-clean: purges caches and stale artifacts, removes legacy narrative and back-references, normalizes file … |
 | [/github-deploy-fresh](/docs/pipeline/github-deploy-fresh) | Use when a GitHub repository needs one clean first release on origin/main: a single v0.1.0 release commit, green workflow cards, a first-version changelog, and … |
 | [/github-deploy-next](/docs/pipeline/github-deploy-next) | Use to run the next release cycle on a GitHub repository: merge ready pull requests, resolve the issues the release addresses, derive the SemVer bump from … |
-| [/projectify](/docs/pipeline/projectify) | Builds the Description, Instruction and knowledge files for a chat-app Project or custom assistant through guided questions, within the platform's context … |
+| [/projectify](/docs/pipeline/projectify) | Builds the Description, Instruction and knowledge files for a chat-app Project or custom assistant within a measured context budget, when the user asks to … |
 | [/release-readiness](/docs/pipeline/release-readiness) | Pre-release gate sweep: use before shipping a repository to check lint, format, types, tests, dependency and supply-chain risk, visibility surfaces, changelog … |
 | [/test-suite](/docs/pipeline/test-suite) | Authors and runs behavior-first tests for a repository, triages failures and reports coverage gaps on critical paths. |
-| [/workflow](/docs/pipeline/workflow) | Use to run a non-trivial mission as an independent multi-agent workflow: parallel subagents under named return contracts, refute-by-default verification of … |
+| [/workflow](/docs/pipeline/workflow) | Use for a non-trivial mission that needs independent parallel work plus adversarial verification: decomposes it, dispatches independent subagents under named … |
 
 {/* apothem:generated-reference:end */}

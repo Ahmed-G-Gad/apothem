@@ -70,7 +70,7 @@ The record prints to STDOUT as a markdown table plus short prose. Nothing is wri
 
 ### File-Authoring Contract
 
-A saved record is a new file and routes through `scripts/inject-header.py`; exempt classes are listed in `src/apothem/schemas/header-exceptions.txt`. A record printed to STDOUT is header-exempt.
+A saved record follows the project's own header and license convention, found per `rules/host-discovery.md`, or carries no header when the project has none. In a user project the skill MUST NOT stamp the Apothem SPDX header or run Apothem scripts; inside the Apothem repository, a new file gets the canonical header through `scripts/inject-header.py`. A record printed to STDOUT is header-exempt.
 
 ### Structured Inquiry on Ambiguity
 

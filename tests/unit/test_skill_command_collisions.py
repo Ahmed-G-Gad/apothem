@@ -27,6 +27,7 @@ from apothem.harnesses._shared.install_driver_converters import (
     claude_code_skill_text,
 )
 from apothem.harnesses._shared.install_driver_shared import SHARED_EMISSION
+from apothem.lib.frontmatter import field_value
 from apothem.lib.plugin_tree import assemble_plugin_tree
 from apothem.lib.propagation import load_manifest, resolve_target
 
@@ -65,6 +66,16 @@ def test_the_corpus_has_shared_names() -> None:
     # both ways today.
     assert {"projectify", "workflow"} <= set(_SHARED_NAMES)
     assert "claude_code" in _FOLDING_HARNESSES
+
+
+@pytest.mark.parametrize("name", _SHARED_NAMES)
+def test_shared_names_carry_one_description(name: str) -> None:
+    # Installs that keep commands and skills apart list both entries, so the
+    # routing text a model reads must not depend on which one it sees.
+    # allowed-tools stays per kind: a command pre-approves only read tools.
+    skill = _SRC / "skills" / name / "SKILL.md"
+    command = _SRC / "commands" / f"{name}.md"
+    assert field_value(command, "description") == field_value(skill, "description")
 
 
 @pytest.fixture(scope="module")

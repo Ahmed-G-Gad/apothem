@@ -1,8 +1,8 @@
 ---
 name: "projectify"
 version: "0.1.0"
-updated: "2026-10-24"
-description: "Builds the Description, Instruction and knowledge files for a chat-app Project or custom assistant through guided questions, within the platform's context budget. Use when the user asks to 'projectify this', 'write the project instructions', or 'set up a custom assistant'."
+updated: "2026-11-28"
+description: "Builds the Description, Instruction and knowledge files for a chat-app Project or custom assistant within a measured context budget, when the user asks to 'projectify this', 'write Project instructions' or 'set up a custom assistant'. Not for repository rules, skills or commands."
 argument-hint: "[project subject] [--platform claude|chatgpt|gemini] [--autonomous]"
 disable-model-invocation: false
 portability: "universal"

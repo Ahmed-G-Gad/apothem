@@ -85,7 +85,7 @@ Reports write to STDOUT. Page and log writes land only inside the resolved base,
 
 ### File-Authoring Contract
 
-A NEW page follows the templates in the page-templates reference, with front matter at byte 0. Where the host project requires an authorship header on Markdown files, route the new file through `scripts/inject-header.py`; exempt classes are listed in `src/apothem/schemas/header-exceptions.txt`. Edits to an existing page preserve its header.
+A NEW page follows the templates in the page-templates reference, with front matter at byte 0. Where the host project requires an authorship header on Markdown files, the new page carries the project's own header, found per `rules/host-discovery.md`. In a user project the skill MUST NOT stamp the Apothem SPDX header or run Apothem scripts; inside the Apothem repository, use `scripts/inject-header.py`. Edits to an existing page preserve its header.
 
 ### Structured Inquiry on Ambiguity
 

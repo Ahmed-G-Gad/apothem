@@ -37,6 +37,22 @@ and the project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.
   harness `--harness` names: `~/.claude`, `~/.codex`, `~/.agents` and
   `~/.config/apothem`.
 
+- **Skills and commands no longer stamp Apothem's license header in your
+  project.** Their instructions told the assistant to run Apothem's own
+  header script and add Apothem's one-line MIT license header to every
+  new file, even in a project with its own header convention or none.
+  New files now follow the project's own header and license convention, and
+  Apothem's header applies only inside the Apothem repository. Related
+  fixes: `/perf-audit` names the real Apothem paths and reports itself as
+  not applicable on any other repository, including inside the `/audit`
+  sweep; `ui-design` audits a page against its floor before a redesign,
+  while `design-critic` critiques it and ranks fixes; the `workflow` and
+  `projectify` commands carry the same description as the skills of the same
+  name; the read-only helpers that keep a shell now say that the shell can
+  still write, so staying read-only is an instruction they follow; and the
+  token-efficiency rewrite protocol no longer loads on every Markdown file
+  without its parent rule.
+
 ## [1.6.0] - 2026-11-28
 
 ### Data loss in earlier releases: recover your files
